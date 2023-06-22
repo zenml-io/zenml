@@ -127,6 +127,15 @@ class StepRunner:
             cache_enabled=cache_enabled,
         ):
             self._stack.prepare_step_run(info=step_run_info)
+
+            # Initialize the step context singleton and set the output info
+            StepContext._clear()
+            new_step_context = StepContext()
+            new_step_context.set_outputs(
+                output_materializers=output_materializers,
+                output_artifact_uris=output_artifact_uris,
+            )
+
             step_failed = False
             try:
                 return_values = step_instance.call_entrypoint(
@@ -140,8 +149,6 @@ class StepRunner:
                     self.load_and_run_hook(
                         failure_hook_source,
                         step_exception=step_exception,
-                        output_artifact_uris=output_artifact_uris,
-                        output_materializers=output_materializers,
                     )
                 raise
             finally:
@@ -164,9 +171,8 @@ class StepRunner:
                         self.load_and_run_hook(
                             success_hook_source,
                             step_exception=None,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
                         )
+                StepContext._clear()  # Remove the step context singleton
 
             # Store and publish the output artifacts of the step function.
             output_annotations = parse_return_type_annotations(
@@ -267,12 +273,14 @@ class StepRunner:
 
             if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
-                context = arg_type(
-                    step_name=step_name,
-                    output_materializers=output_materializers,
-                    output_artifact_uris=output_artifact_uris,
+                logger.warning(
+                    "Passing a `StepContext` as an argument to a step function "
+                    "is deprecated and will be removed in a future release. "
+                    f"Please adjust your '{step_name}' step to instead import "
+                    "the `StepContext` inside your step, as shown here: "
+                    "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
                 )
-                function_params[arg] = context
+                function_params[arg] = StepContext()
             elif arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
@@ -291,8 +299,6 @@ class StepRunner:
         args: List[str],
         annotations: Dict[str, Any],
         step_exception: Optional[BaseException],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a hook function.
 
@@ -300,8 +306,6 @@ class StepRunner:
             args: The arguments of the hook function.
             annotations: The annotations of the hook function.
             step_exception: The exception of the original step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
 
         Returns:
             The parsed inputs for the hook function.
@@ -330,12 +334,14 @@ class StepRunner:
             # Parse the step context
             elif issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
-                context = arg_type(
-                    step_name=step_name,
-                    output_materializers=output_materializers,
-                    output_artifact_uris=output_artifact_uris,
+                logger.warning(
+                    "Passing a `StepContext` as an argument to a hook function "
+                    "is deprecated and will be removed in a future release. "
+                    f"Please adjust your '{step_name}' hook to instead import "
+                    "the `StepContext` inside your hook, as shown here: "
+                    "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
                 )
-                function_params[arg] = context
+                function_params[arg] = StepContext()
 
             elif issubclass(arg_type, BaseException):
                 function_params[arg] = step_exception
@@ -343,7 +349,7 @@ class StepRunner:
             else:
                 # It should not be of any other type
                 raise TypeError(
-                    "Hook functions can only take parameters of type `StepContext`,"
+                    "Hook functions can only take arguments of type "
                     f"`BaseParameters`, or `BaseException`, not {arg_type}"
                 )
 
@@ -514,16 +520,12 @@ class StepRunner:
         self,
         hook_source: "Source",
         step_exception: Optional[BaseException],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> None:
         """Loads hook source and runs the hook.
 
         Args:
             hook_source: The source of the hook function.
             step_exception: The exception of the original step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
         """
         try:
             hook = source_utils.load(hook_source)
@@ -533,8 +535,6 @@ class StepRunner:
                 args=hook_spec.args,
                 annotations=hook_spec.annotations,
                 step_exception=step_exception,
-                output_artifact_uris=output_artifact_uris,
-                output_materializers=output_materializers,
             )
             logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)

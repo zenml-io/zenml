@@ -27,11 +27,14 @@ from typing import (
 from zenml.client import Client
 from zenml.environment import Environment
 from zenml.exceptions import StepContextError
+from zenml.logger import get_logger
+from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.stack import Stack
+
+logger = get_logger(__name__)
 
 
 class StepContextOutput(NamedTuple):
@@ -41,41 +44,62 @@ class StepContextOutput(NamedTuple):
     artifact_uri: str
 
 
-class StepContext:
+class StepContext(metaclass=SingletonMetaClass):
     """Provides additional context inside a step function.
 
-    This class is used to access pipelines, materializers, and artifacts
-    inside a step function. To use it, add a `StepContext` object
-    to the signature of your step function like this:
+    This singleton class is used to access information about the current run,
+    step run, or its outputs inside a step function.
+
+    Usage example:
 
     ```python
+    from zenml.steps import StepContext
+
     @step
-    def my_step(context: StepContext, ...)
-        context.get_output_materializer(...)
+    def my_trainer_step() -> Any:
+        context = StepContext()
+
+        # get info about the current pipeline run
+        current_pipeline_run = context.pipeline_run
+
+        # get info about the current step run
+        current_step_run = context.step_run
+
+        # get info about the future output artifacts of this step
+        output_artifact_uri = context.get_output_artifact_uri()
+
+        ...
     ```
-
-    You do not need to create a `StepContext` object yourself and pass it
-    when creating the step, as long as you specify it in the signature ZenML
-    will create the `StepContext` and automatically pass it when executing your
-    step.
-
-    **Note**: When using a `StepContext` inside a step, ZenML disables caching
-    for this step by default as the context provides access to external
-    resources which might influence the result of your step execution. To
-    enable caching anyway, explicitly enable it in the `@step` decorator or when
-    initializing your custom step class.
     """
 
-    def __init__(
+    def __init__(self):
+        """Initialize the step context."""
+        env = Environment().step_environment
+        client = Client()
+
+        # Get the stack that we are running in
+        self.stack = client.active_stack
+
+        # Get the current step run
+        step_run_id = env.step_run_info.step_run_id
+        self.step_run = client.get_run_step(step_run_id)
+        self.step_name = self.step_run.name
+
+        # Get the current pipeline run
+        # TODO: after post exec merge use `self._step_run.run` instead
+        pipeline_run_id = self.step_run.pipeline_run_id
+        self.pipeline_run = client.get_pipeline_run(pipeline_run_id)
+
+        self.outputs: Dict[str, StepContextOutput] = {}
+
+    def set_outputs(
         self,
-        step_name: str,
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
     ):
-        """Initializes a StepContext instance.
+        """Set the output materializers and artifact URIs for the current step.
 
         Args:
-            step_name: The name of the step that this context is used in.
             output_materializers: The output materializers of the step that
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
@@ -87,20 +111,17 @@ class StepContext:
         """
         if output_materializers.keys() != output_artifact_uris.keys():
             raise StepContextError(
-                f"Mismatched keys in output materializers and output "
-                f"artifacts URIs for step '{step_name}'. Output materializer "
+                f"Mismatched keys in output materializers and output artifact "
+                f"URIs for step '{self.step_name}'. Output materializer "
                 f"keys: {set(output_materializers)}, output artifact URI "
                 f"keys: {set(output_artifact_uris)}"
             )
-
-        self.step_name = step_name
         self._outputs = {
             key: StepContextOutput(
                 output_materializers[key], output_artifact_uris[key]
             )
             for key in output_materializers.keys()
         }
-        self._stack = Client().active_stack
 
     def _get_output(
         self, output_name: Optional[str] = None
@@ -147,60 +168,86 @@ class StepContext:
             return next(iter(self._outputs.values()))
 
     @property
-    def stack(self) -> Optional["Stack"]:
-        """Returns the current active stack.
-
-        Returns:
-            The current active stack or None.
-        """
-        return self._stack
-
-    @property
     def pipeline_name(self) -> Optional[str]:
-        """Returns the current pipeline name.
+        """(Deprecated) Returns the current pipeline name.
 
         Returns:
             The current pipeline name or None.
+
+        Raises:
+            StepContextError: If the pipeline run does not have a pipeline.
         """
-        env = Environment().step_environment
-        return env.pipeline_name
+        logger.warning(
+            "`StepContext.pipeline_name` is deprecated and will be removed in "
+            "a future release. Please use "
+            "`StepContext.pipeline_run.pipeline.name` instead."
+        )
+        pipeline = self.pipeline_run.pipeline
+        if not pipeline:
+            raise StepContextError(
+                f"Unable to get pipeline name in step '{self.step_name}' of "
+                f"pipeline run '{self.pipeline_run.name}': The pipeline run "
+                f"does not have a pipeline associated with it."
+            )
+        return pipeline.name
 
     @property
     def run_name(self) -> Optional[str]:
-        """Returns the current run name.
+        """(Deprecated) Returns the current run name.
 
         Returns:
             The current run name or None.
         """
-        env = Environment().step_environment
-        return env.run_name
+        logger.warning(
+            "`StepContext.run_name` is deprecated and will be removed in a "
+            "future release. Please use `StepContext.pipeline_run.name` "
+            "instead."
+        )
+        return self.pipeline_run.name
 
     @property
     def parameters(self) -> Dict[str, Any]:
-        """The step parameters.
+        """(Deprecated) The step parameters.
 
         Returns:
             The step parameters.
         """
-        return self.step_run_info.config.parameters
+        logger.warning(
+            "`StepContext.parameters` is deprecated and will be removed in "
+            "a future release. Please use "
+            "`StepContext.step_run.config.parameters` instead."
+        )
+        # TODO: adjust below after post exec merge
+        return self.step_run.step.config.parameters
 
     @property
     def step_run_info(self) -> "StepRunInfo":
-        """Info about the currently running step.
+        """(Deprecated) Info about the currently running step.
 
         Returns:
             Info about the currently running step.
         """
+        logger.warning(
+            "`StepContext.step_run_info` is deprecated and will be removed in "
+            "a future release. Please use `StepContext.step_run` or "
+            "`StepContext.pipeline_run` to access information about the "
+            "current run instead."
+        )
         env = Environment().step_environment
         return env.step_run_info
 
     @property
     def cache_enabled(self) -> bool:
-        """Returns whether cache is enabled for the step.
+        """(Deprecated) Returns whether cache is enabled for the step.
 
         Returns:
             True if cache is enabled for the step, otherwise False.
         """
+        logger.warning(
+            "`StepContext.cache_enabled` is deprecated and will be removed in "
+            "a future release. Please use "
+            "`StepContext.step_run.config.enable_cache` instead."
+        )
         env = Environment().step_environment
         return env.cache_enabled
 
