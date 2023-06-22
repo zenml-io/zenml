@@ -127,6 +127,7 @@ def create_cloud_function(
 
     Raises:
         TimeoutError: If function times out.
+        RuntimeError: If scheduling runs into a problem.
     """
     sanitized_function_name = function_name.replace("_", "-")
     parent = f"projects/{project}/locations/{location}"
