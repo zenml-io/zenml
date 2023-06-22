@@ -75,56 +75,58 @@ You can run predictions on the deployed model with something like:
 
 ```python
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml.steps import Output, StepContext
+from zenml import step
 from zenml.services.utils import load_last_service_from_step
 
 ...
 
 
-class MLFlowDeploymentLoaderStepParams(BaseParameters):
-    """MLflow deployment getter configuration.
+# Step to retrieve the service associated with the last pipeline run
+@step(enable_cache=False)
+def prediction_service_loader(
+    pipeline_name: str,
+    pipeline_step_name: str,
+    running: bool = True,
+    model_name: str = "model",
+) -> MLFlowDeploymentService:
+    """Get the prediction service started by the deployment pipeline.
 
-    Attributes:
+    Args:
         pipeline_name: name of the pipeline that deployed the MLflow prediction
             server
         step_name: the name of the step that deployed the MLflow prediction
             server
         running: when this flag is set, the step only returns a running service
+        model_name: the name of the model that is deployed
     """
+    # get the MLflow model deployer stack component
+    model_deployer = MLFlowModelDeployer.get_active_model_deployer()
 
-    pipeline_name: str
-    step_name: str
-    running: bool = True
-    ...
-
-
-# Step to retrieve the service associated with the last pipeline run
-@step(enable_cache=False)
-def prediction_service_loader(
-        params: MLFlowDeploymentLoaderStepParams, context: StepContext
-) -> MLFlowDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
-
-    service = load_last_service_from_step(
-        pipeline_name=params.pipeline_name,
-        step_name=params.step_name,
-        running=params.running,
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=pipeline_step_name,
+        model_name=model_name,
+        running=running,
     )
-    if not service:
+
+    if not existing_services:
         raise RuntimeError(
             f"No MLflow prediction service deployed by the "
-            f"{params.step_name} step in the {params.pipeline_name} pipeline "
-            f"is currently running."
+            f"{pipeline_step_name} step in the {pipeline_name} "
+            f"pipeline for the '{model_name}' model is currently "
+            f"running."
         )
 
-    return service
+    return existing_services[0]
 
 
 # Use the service for inference
 @step
 def predictor(
-        service: MLFlowDeploymentService,
-        data: np.ndarray,
+    service: MLFlowDeploymentService,
+    data: np.ndarray,
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
@@ -139,10 +141,8 @@ def predictor(
 inference = inference_pipeline(
     ...,
     prediction_service_loader=prediction_service_loader(
-        MLFlowDeploymentLoaderStepParams(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-        )
+        pipeline_name="continuous_deployment_pipeline",
+        step_name="model_deployer",
     ),
     predictor=predictor(),
 )

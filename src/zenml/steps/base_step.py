@@ -153,13 +153,13 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with three possible parameters, `StepContext`,
-                `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can
                 be a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
+                `BaseException`, or a source path to a function of the same
                 specifications (e.g. `module.my_function`).
+            on_success: Callback function in event of failure of the step. Can
+                be a function with one parameter of type `StepContext`, or a
+                source path to a function of the same specifications
+                (e.g. `module.my_function`).
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set["BaseStep"] = set()
@@ -666,13 +666,13 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with three possible parameters, `StepContext`,
-                `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can
                 be a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
+                `BaseException`, or a source path to a function of the same
                 specifications (e.g. `module.my_function`).
+            on_success: Callback function in event of failure of the step. Can
+                be a function with one parameter of type `StepContext`, or a
+                source path to a function of the same specifications
+                (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -788,13 +788,13 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with three possible parameters, `StepContext`,
-                `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can
                 be a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
+                `BaseException`, or a source path to a function of the same
                 specifications (e.g. `module.my_function`).
+            on_success: Callback function in event of failure of the step. Can
+                be a function with one parameter of type `StepContext`, or a
+                source path to a function of the same specifications
+                (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will

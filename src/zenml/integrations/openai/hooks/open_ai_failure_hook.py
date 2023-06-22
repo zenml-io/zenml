@@ -21,14 +21,13 @@ from rich.console import Console
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext
+from zenml.steps import StepContext
 
 logger = get_logger(__name__)
 
 
 def openai_alerter_failure_hook_helper(
     context: StepContext,
-    params: BaseParameters,
     exception: BaseException,
     model_name: str,
 ) -> None:
@@ -39,7 +38,6 @@ def openai_alerter_failure_hook_helper(
 
     Args:
         context: The context of the step.
-        params: The parameters of the step.
         exception: The exception that was raised.
         model_name: The OpenAI model to use for the chatbot.
     """
@@ -75,7 +73,7 @@ def openai_alerter_failure_hook_helper(
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
         message += f"Run name: `{context.run_name}`" + "\n"
         message += f"Step name: `{context.step_name}`" + "\n"
-        message += f"Parameters: `{params}`" + "\n"
+        message += f"Parameters: `{context.parameters}`" + "\n"
         message += f"Exception: `({type(exception)}) {exception}`" + "\n\n"
         message += (
             f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
@@ -98,31 +96,25 @@ def openai_alerter_failure_hook_helper(
 
 def openai_chatgpt_alerter_failure_hook(
     context: StepContext,
-    params: BaseParameters,
     exception: BaseException,
 ) -> None:
     """Alerter hook that uses the OpenAI ChatGPT model.
 
     Args:
         context: The context of the step.
-        params: The parameters of the step.
         exception: The exception that was raised.
     """
-    openai_alerter_failure_hook_helper(
-        context, params, exception, "gpt-3.5-turbo"
-    )
+    openai_alerter_failure_hook_helper(context, exception, "gpt-3.5-turbo")
 
 
 def openai_gpt4_alerter_failure_hook(
     context: StepContext,
-    params: BaseParameters,
     exception: BaseException,
 ) -> None:
     """Alerter hook that uses the OpenAI GPT-4 model.
 
     Args:
         context: The context of the step.
-        params: The parameters of the step.
         exception: The exception that was raised.
     """
-    openai_alerter_failure_hook_helper(context, params, exception, "gpt-4")
+    openai_alerter_failure_hook_helper(context, exception, "gpt-4")
