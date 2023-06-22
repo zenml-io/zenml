@@ -134,8 +134,10 @@ class Environment(metaclass=SingletonMetaClass):
         """
         from zenml.steps import STEP_ENVIRONMENT_NAME
 
-        # A step is considered to be running if there is an active step
-        # environment
+        logger.warning(
+            "`Environment().step_is_running` is deprecated and will be "
+            "removed in a future release."
+        )
         return self.has_component(STEP_ENVIRONMENT_NAME)
 
     @staticmethod
@@ -450,6 +452,13 @@ class Environment(metaclass=SingletonMetaClass):
         """
         from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
+        logger.warning(
+            "The `StepEnvironment` class and corresponding "
+            "`Environment.step_environment` property are deprecated and will "
+            "be removed in a future release. Please use the `StepContext` to "
+            "access information about the current run instead, as shown here: "
+            "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
+        )
         return cast(StepEnvironment, self[STEP_ENVIRONMENT_NAME])
 
 
