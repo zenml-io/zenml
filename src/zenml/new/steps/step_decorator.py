@@ -93,9 +93,7 @@ def step(
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
         enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default unless the step
-            requires a `StepContext` (see
-            `zenml.steps.step_context.StepContext` for more information).
+            value is passed, caching is enabled by default.
         enable_artifact_metadata: Specify whether metadata is enabled for this
             step. If no value is passed, metadata is enabled by default.
         enable_artifact_visualization: Specify whether visualization is enabled
