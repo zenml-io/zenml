@@ -208,6 +208,8 @@ pipelines, check out [this page](../advanced-guide/configure-steps-pipelines.md#
 invocation ID.
 {% endhint %}
 
+### Step Information
+
 Similar to the run, you can use the `step` object to access a variety of useful information:
 
 * The parameters used to run the step via `step.config.parameters`,
@@ -229,24 +231,23 @@ Alternatively, if your step only has a single output, you can use the `output`
 property as a shortcut directly:
 
 ```python
-# The outputs of a step
-# If there are multiple outputs they are accessible by name
+# The outputs of a step are accessible by name
 output = step.outputs["output_name"]
 
 # If there is only one output, you can use the `.output` property instead 
 output = step.output
 
-# load the output artifact into memory
-output.load()  
+# use the `.load()` method to load the artifact into memory
+my_pytorch_model = output.load()  
 ```
 
-{% hint style="info" %}
-Similarly, you can use the `inputs` and `input` properties to get the input
-artifacts of a step.
+Similarly, you can use the `inputs` and `input` properties to get the input 
+artifacts of a step instead.
 
+{% hint style="info" %}
 The names of the outputs can be found in the `Output` typing of your steps and
-the input names are names of the corresponding arguments in the step function
-definition:
+the names of the inputs are the corresponding argument names in the step 
+function definition:
 
 ```python
 from zenml import step
@@ -262,8 +263,8 @@ def some_step(input_name: int) -> Output(output_name=int):
 
 Similar to the other entities, each artifact is represented by a corresponding
 [ArtifactResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
-which contains a lot of general information of the artifact as well as
-component-specific metadata and visualizations.
+which contains a lot of general information about the artifact as well as
+datatype-specific metadata and visualizations.
 
 #### Artifact Metadata
 
@@ -271,7 +272,7 @@ All output artifacts saved through ZenML will automatically have certain datatyp
 
 ```python
 output_metadata = output.metadata
-storage_size = output_metadata["storage_size"]
+storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 
 #### Artifact Visualizations
@@ -289,9 +290,7 @@ output.visualize()
 {% hint style="info" %}
 If you're not in a Jupyter notebook, you can simply view the visualizations in
 the ZenML dashboard by running `zenml up` and clicking on the respective 
-artifact in the pipeline run DAG. 
-
-Checkout the
+artifact in the pipeline run DAG instead. Checkout the
 [artifact visualization page](../advanced-guide/visualize-artifacts.md) to learn
 more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
@@ -348,7 +347,7 @@ def my_step():
 
 {% hint style="info" %}
 As shown in the example, we can get additional information about the current
-run using the `StepEnvironment`, something we will learn in more detail in the 
+run using the `StepEnvironment`, which is explained in more detail in the 
 [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
 {% endhint %}
 
