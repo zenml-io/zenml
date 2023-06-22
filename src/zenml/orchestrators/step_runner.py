@@ -110,8 +110,6 @@ class StepRunner:
             args=spec.args,
             annotations=spec.annotations,
             input_artifacts=input_artifacts,
-            output_artifact_uris=output_artifact_uris,
-            output_materializers=output_materializers,
         )
 
         # Wrap the execution of the step function in a step environment
@@ -128,10 +126,12 @@ class StepRunner:
         ):
             self._stack.prepare_step_run(info=step_run_info)
 
-            # Initialize the step context singleton and set the output info
+            # Initialize the step context singleton and set its values
             StepContext._clear()
             new_step_context = StepContext()
-            new_step_context.set_outputs(
+            new_step_context.set_values(
+                step_run_info=step_run_info,
+                cache_enabled=cache_enabled,
                 output_materializers=output_materializers,
                 output_artifact_uris=output_artifact_uris,
             )
@@ -244,8 +244,6 @@ class StepRunner:
         args: List[str],
         annotations: Dict[str, Any],
         input_artifacts: Dict[str, "ArtifactResponseModel"],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -253,8 +251,6 @@ class StepRunner:
             args: The arguments of the step entrypoint function.
             annotations: The annotations of the step entrypoint function.
             input_artifacts: The input artifacts of the step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
 
         Returns:
             The parsed inputs for the step entrypoint function.

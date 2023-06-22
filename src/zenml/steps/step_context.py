@@ -25,7 +25,6 @@ from typing import (
 )
 
 from zenml.client import Client
-from zenml.environment import Environment
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
@@ -72,34 +71,18 @@ class StepContext(metaclass=SingletonMetaClass):
     ```
     """
 
-    def __init__(self):
-        """Initialize the step context."""
-        env = Environment().step_environment
-        client = Client()
-
-        # Get the stack that we are running in
-        self.stack = client.active_stack
-
-        # Get the current step run
-        step_run_id = env.step_run_info.step_run_id
-        self.step_run = client.get_run_step(step_run_id)
-        self.step_name = self.step_run.name
-
-        # Get the current pipeline run
-        # TODO: after post exec merge use `self._step_run.run` instead
-        pipeline_run_id = self.step_run.pipeline_run_id
-        self.pipeline_run = client.get_pipeline_run(pipeline_run_id)
-
-        self.outputs: Dict[str, StepContextOutput] = {}
-
-    def set_outputs(
+    def set_values(
         self,
+        step_run_info: "StepRunInfo",
+        cache_enabled: bool,
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
-    ):
+    ) -> None:
         """Set the output materializers and artifact URIs for the current step.
 
         Args:
+            step_run_info: Info about the currently running step.
+            cache_enabled: Whether caching is enabled for the current step run.
             output_materializers: The output materializers of the step that
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
@@ -109,6 +92,24 @@ class StepContext(metaclass=SingletonMetaClass):
             StepContextError: If the keys of the output materializers and
                 output artifacts do not match.
         """
+        self._step_run_info = step_run_info
+        self._cache_enabled = cache_enabled
+        client = Client()
+
+        # Get the stack that we are running in
+        self.stack = client.active_stack
+
+        # Get the current step run
+        step_run_id = step_run_info.step_run_id
+        self.step_run = client.get_run_step(step_run_id)
+        self.step_name = self.step_run.name
+
+        # Get the current pipeline run
+        # TODO: after post exec merge use `self._step_run.run` instead
+        pipeline_run_id = self.step_run.pipeline_run_id
+        self.pipeline_run = client.get_pipeline_run(pipeline_run_id)
+
+        # set outputs
         if output_materializers.keys() != output_artifact_uris.keys():
             raise StepContextError(
                 f"Mismatched keys in output materializers and output artifact "
@@ -233,8 +234,7 @@ class StepContext(metaclass=SingletonMetaClass):
             "`StepContext.pipeline_run` to access information about the "
             "current run instead."
         )
-        env = Environment().step_environment
-        return env.step_run_info
+        return self._step_run_info
 
     @property
     def cache_enabled(self) -> bool:
@@ -245,11 +245,9 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         logger.warning(
             "`StepContext.cache_enabled` is deprecated and will be removed in "
-            "a future release. Please use "
-            "`StepContext.step_run.config.enable_cache` instead."
+            "a future release."
         )
-        env = Environment().step_environment
-        return env.cache_enabled
+        return self._cache_enabled
 
     def get_output_materializer(
         self,
