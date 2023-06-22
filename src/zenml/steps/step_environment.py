@@ -27,7 +27,7 @@ STEP_ENVIRONMENT_NAME = "step_environment"
 
 
 class StepEnvironment(BaseEnvironmentComponent):
-    """Added information about a step runtime inside a step function.
+    """(Deprecated) Added information about a run inside a step function.
 
     This takes the form of an Environment component. This class can be used from
     within a pipeline step implementation to access additional information about
