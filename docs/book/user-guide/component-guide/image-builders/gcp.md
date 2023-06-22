@@ -110,7 +110,7 @@ Alternatively, you can configure a GCP Service Connector through the ZenML dashb
 ![GCP Service Connector Type](../../../.gitbook/assets/gcp-service-connector-type.png)
 ![GCP Generic Service Connector Configuration](../../../.gitbook/assets/gcp-generic-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles)). The GCP Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles)). The GCP Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic GCP resources like the GCP Image Builder required for your GCP Image Builder by running e.g.:
 
@@ -175,8 +175,8 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 {% tab title="GCP Credentials" %}
 When you register the GCP Image Builder, you
-can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa)
-, save it a local file and then reference it in the Image Builder configuration.
+can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), 
+save it to a local file and then reference it in the Image Builder configuration.
 
 This method has the advantage that you don't need to install and configure the GCP CLI on your host, but it's still not as secure as using a GCP Service Connector and the stack component configuration is not portable to other hosts.
 

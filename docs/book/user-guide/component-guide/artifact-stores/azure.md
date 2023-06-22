@@ -114,7 +114,7 @@ trying to access the Azure Artifact Store:
 * [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
 * [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
 
-To enable these use-cases, it is recommended to use [an Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) to link your Azure Artifact Store to the remote Azure Blob storage container.
+To enable these use cases, it is recommended to use [an Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) to link your Azure Artifact Store to the remote Azure Blob storage container.
 {% endhint %}
 {% endtab %}
 
@@ -172,7 +172,7 @@ The following 'blob-container' resources can be accessed by service connectors c
 ```
 {% endcode %}
 
-After having set up or decided on a Azure Service Connector to use to connect to the target Azure Blob storage container, you can register the Azure Artifact Store as follows:
+After having set up or decided on an Azure Service Connector to use to connect to the target Azure Blob storage container, you can register the Azure Artifact Store as follows:
 
 ```sh
 # Register the Azure artifact-store and reference the target blob storage container

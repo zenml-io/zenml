@@ -104,7 +104,7 @@ pre-authenticated python-docker client instance.
 
 The configured credentials must have at least the following
 Azure IAM permissions associated with the ACR registries
-that the connector that the connector will be allowed to access:
+that the connector will be allowed to access:
 
 - allow access to pull and push images (e.g. the `AcrPull` and `AcrPush` roles)
 - allow access to list registries (e.g. the `Contributor` role)
@@ -118,7 +118,7 @@ following formats:
 If a resource group is configured in the connector, only ACR registries in that
 resource group will be accessible.
 
-If an authentication method other than the Azure service principal is used for authentication, the admin account must be enabled for the registry, otherwise clients will not be able to authenticate to the registry. See the official Azure [documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
+If an authentication method other than the Azure service principal is used for authentication, the admin account must be enabled for the registry, otherwise, clients will not be able to authenticate to the registry. See the official Azure [documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
 
 ## Authentication Methods
 
@@ -212,7 +212,7 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 
 ### Azure Service Principal
 
-Azure service principal credentials consisting of an Azure client ID and
+Azure service principal credentials consists of an Azure client ID and
 client secret. These credentials are used to authenticate clients to Azure
 services.
 

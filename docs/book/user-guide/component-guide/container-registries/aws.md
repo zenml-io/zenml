@@ -142,7 +142,7 @@ Alternatively, you can configure an AWS Service Connector through the ZenML dash
 ![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png)
 ![AWS ECR Service Connector Configuration](../../../.gitbook/assets/aws-ecr-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to one or more ECR repositories as well as to list accessible ECR repositories. For a full list of permissions required to use an AWS Service Connector to access an ECR registry, please refer to the [AWS Service Connector ECR registry resource type documentation](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md#ecr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to one or more ECR repositories as well as to list accessible ECR repositories. For a full list of permissions required to use an AWS Service Connector to access an ECR registry, please refer to the [AWS Service Connector ECR registry resource type documentation](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md#ecr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more AWS Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the ECR registry you want to use for your AWS Container Registry by running e.g.:
 
@@ -163,7 +163,7 @@ The following 'docker-registry' resources can be accessed by service connectors 
 ```
 {% endcode %}
 
-After having set up or decided on a AWS Service Connector to use to connect to the target ECR registry, you can register the AWS Container Registry as follows:
+After having set up or decided on an AWS Service Connector to use to connect to the target ECR registry, you can register the AWS Container Registry as follows:
 
 ```sh
 # Register the AWS container registry and reference the target ECR registry URI

@@ -155,7 +155,7 @@ After having set up or decided on a Service Connector to use to connect to the t
 
 ```sh
 # Register the Seldon Core Model Deployer
-zenml model-deployer register <<MODEL_DEPLOYER_NAME>> --flavor=seldon \
+zenml model-deployer register <MODEL_DEPLOYER_NAME> --flavor=seldon \
   --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
   --base_url=http://$INGRESS_HOST
 

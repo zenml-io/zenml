@@ -100,7 +100,7 @@ while trying to access the GCS Artifact Store:
 * [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
 * [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
 
-To enable these use-cases, it is recommended to use [a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) to link your GCS Artifact Store to the remote GCS bucket.
+To enable these use cases, it is recommended to use [a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) to link your GCS Artifact Store to the remote GCS bucket.
 {% endhint %}
 {% endtab %}
 
@@ -138,7 +138,7 @@ Alternatively, you can configure a GCP Service Connector through the ZenML dashb
 ![GCP Service Connector Type](../../../.gitbook/assets/gcp-service-connector-type.png)
 ![GCP GCS Service Connector Configuration](../../../.gitbook/assets/gcp-gcs-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCS bucket as well as to list accessible GCS buckets. For a full list of permissions required to use a GCP Service Connector to access one or more GCS buckets, please refer to the [GCP Service Connector GCS bucket resource type documentation](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#gcs-bucket) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to read and write to your GCS bucket as well as to list accessible GCS buckets. For a full list of permissions required to use a GCP Service Connector to access one or more GCS buckets, please refer to the [GCP Service Connector GCS bucket resource type documentation](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#gcs-bucket) or read the documentation available in the interactive CLI commands and dashboard. The GCP Service Connector supports [many different authentication methods](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the GCS bucket you want to use for your GCS Artifact Store by running e.g.:
 
