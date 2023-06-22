@@ -565,9 +565,7 @@ def register_service_connector(
                     footer="",
                     print=False,
                 )
-            console.print(
-                Markdown(f"{message}---"), justify="left", width=80
-            )
+            console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a resource type
         resource_type = prompt_resource_type(
