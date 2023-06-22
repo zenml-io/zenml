@@ -14,7 +14,7 @@ You should use the Google Cloud image builder if:
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using GCP.
 * your stack is mainly composed of other Google Cloud components such as
-  the [GCP Image Builder](../artifact-stores/gcp.md) or the [Vertex Orchestrator](../orchestrators/vertex.md).
+  the [GCS Artifact Store](../artifact-stores/gcp.md) or the [Vertex Orchestrator](../orchestrators/vertex.md).
 
 ### How to deploy it
 

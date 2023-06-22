@@ -2,8 +2,6 @@
 description: Connect your ZenML deployment to a cloud provider and other infrastructure services and resources.
 ---
 
-# Connect ZenML to infrastructure
-
 A production-grade MLOps platform involves interactions between a diverse combination of third-party libraries and external services sourced from various different vendors. One of the most daunting hurdles in building and operating an MLOps platform composed of multiple components is configuring and maintaining uninterrupted and secured access to the infrastructure resources and services that it consumes.
 
 In layman's terms, your pipeline code needs to "connect" to a handful of different services to run successfully and do what it's designed to do. For example, it might need to connect to a private AWS S3 bucket to read and store artifacts, a Kubernetes cluster to execute steps with Kubeflow or Tekton, and a private GCR container registry to build and store container images. ZenML makes this possible by allowing you to configure authentication information and credentials embedded directly into your Stack Components, but this doesn't scale well when you have more than a few Stack Components and has many other disadvantages related to usability and security.
