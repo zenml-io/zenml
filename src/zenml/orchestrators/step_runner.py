@@ -43,7 +43,7 @@ from zenml.orchestrators.publish_utils import (
     publish_successful_step_run,
 )
 from zenml.orchestrators.utils import is_setting_enabled
-from zenml.steps.step_context import StepContext
+from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     parse_return_type_annotations,
@@ -126,10 +126,9 @@ class StepRunner:
         ):
             self._stack.prepare_step_run(info=step_run_info)
 
-            # Initialize the step context singleton and set its values
+            # Initialize the step context singleton
             StepContext._clear()
-            new_step_context = StepContext()
-            new_step_context.set_values(
+            StepContext(
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
                 output_materializers=output_materializers,
@@ -276,7 +275,7 @@ class StepRunner:
                     "the `StepContext` inside your step, as shown here: "
                     "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
                 )
-                function_params[arg] = StepContext()
+                function_params[arg] = get_step_context()
             elif arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
@@ -337,7 +336,7 @@ class StepRunner:
                     "the `StepContext` inside your hook, as shown here: "
                     "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
                 )
-                function_params[arg] = StepContext()
+                function_params[arg] = get_step_context()
 
             elif issubclass(arg_type, BaseException):
                 function_params[arg] = step_exception

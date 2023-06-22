@@ -36,11 +36,20 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class StepContextOutput(NamedTuple):
-    """Tuple containing materializer class and URI for a step output."""
+def get_step_context() -> "StepContext":
+    """Get the context of the currently running step.
 
-    materializer_classes: Sequence[Type["BaseMaterializer"]]
-    artifact_uri: str
+    Returns:
+        The context of the currently running step.
+
+    Raises:
+        RuntimeError: If no step is currently running.
+    """
+    if not isinstance(StepContext.__singleton_instance, StepContext):
+        raise RuntimeError(
+            "The step context is only available inside a step function."
+        )
+    return StepContext.__singleton_instance
 
 
 class StepContext(metaclass=SingletonMetaClass):
@@ -52,11 +61,11 @@ class StepContext(metaclass=SingletonMetaClass):
     Usage example:
 
     ```python
-    from zenml.steps import StepContext
+    from zenml.steps import get_step_context
 
     @step
     def my_trainer_step() -> Any:
-        context = StepContext()
+        context = get_step_context()
 
         # get info about the current pipeline run
         current_pipeline_run = context.pipeline_run
@@ -71,14 +80,14 @@ class StepContext(metaclass=SingletonMetaClass):
     ```
     """
 
-    def set_values(
+    def __init__(
         self,
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
     ) -> None:
-        """Set the output materializers and artifact URIs for the current step.
+        """Initialize the context of the currently running step.
 
         Args:
             step_run_info: Info about the currently running step.
@@ -126,7 +135,7 @@ class StepContext(metaclass=SingletonMetaClass):
 
     def _get_output(
         self, output_name: Optional[str] = None
-    ) -> StepContextOutput:
+    ) -> "StepContextOutput":
         """Returns the materializer and artifact URI for a given step output.
 
         Args:
@@ -306,3 +315,10 @@ class StepContext(metaclass=SingletonMetaClass):
             Artifact URI for the given output.
         """
         return self._get_output(output_name).artifact_uri
+
+
+class StepContextOutput(NamedTuple):
+    """Tuple containing materializer class and URI for a step output."""
+
+    materializer_classes: Sequence[Type["BaseMaterializer"]]
+    artifact_uri: str
