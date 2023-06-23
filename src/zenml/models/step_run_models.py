@@ -125,6 +125,19 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         return Client().get_pipeline_run(self.pipeline_run_id)
 
     @property
+    def parent_steps(self) -> List["StepRunResponseModel"]:
+        """Returns the parent (upstream) steps of this step run.
+
+        Returns:
+            The parent steps.
+        """
+        from zenml.client import Client
+
+        return [
+            Client().get_run_step(step_id) for step_id in self.parent_step_ids
+        ]
+
+    @property
     def input(self) -> "ArtifactResponseModel":
         """Returns the input artifact that was used to run this step.
 

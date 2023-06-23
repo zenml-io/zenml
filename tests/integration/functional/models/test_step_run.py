@@ -49,6 +49,22 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     assert step_run_2.status == ExecutionStatus.CACHED
 
 
+def test_step_run_parent_steps_linkage(
+    clean_client: "Client", connected_two_step_pipeline
+):
+    """Integration test for `step.parent_steps` property."""
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    pipeline_instance.run()
+    pipeline_run = pipeline_instance.model.last_run
+    step_1 = pipeline_run.steps["step_1"]
+    step_2 = pipeline_run.steps["step_2"]
+    assert step_1.parent_steps == []
+    assert step_2.parent_steps == [step_1]
+
+
 def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
     """Test that the step run has correct source code."""
     pipeline_instance = connected_two_step_pipeline(
