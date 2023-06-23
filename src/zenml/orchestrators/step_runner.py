@@ -35,9 +35,6 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.models.artifact_models import (
-    ArtifactResponseModel,
-)
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -56,6 +53,9 @@ if TYPE_CHECKING:
 
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
+    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
+    from zenml.models.step_run_models import StepRunResponseModel
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -87,6 +87,8 @@ class StepRunner:
 
     def run(
         self,
+        pipeline_run: "PipelineRunResponseModel",
+        step_run: "StepRunResponseModel",
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
@@ -94,6 +96,8 @@ class StepRunner:
         """Runs the step.
 
         Args:
+            pipeline_run: The model of the current pipeline run.
+            step_run: The model of the current step run.
             input_artifacts: The input artifacts of the step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
@@ -129,10 +133,12 @@ class StepRunner:
             # Initialize the step context singleton
             StepContext._clear()
             StepContext(
-                step_run_info=step_run_info,
-                cache_enabled=cache_enabled,
+                pipeline_run=pipeline_run,
+                step_run=step_run,
                 output_materializers=output_materializers,
                 output_artifact_uris=output_artifact_uris,
+                step_run_info=step_run_info,
+                cache_enabled=cache_enabled,
             )
 
             step_failed = False
