@@ -26,6 +26,7 @@ from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
+from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -201,7 +202,7 @@ def remote_container_registry():
 
 
 @pytest.fixture
-def sample_step_operator():
+def sample_step_operator() -> BaseStepOperator:
     """Fixture that creates a stub step operator for testing."""
 
     class StubStepOperator(BaseStepOperator):
@@ -311,26 +312,64 @@ def step_with_two_int_inputs():
 
 
 @pytest.fixture
-def step_context_with_no_output():
+def sample_step_run_info(
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+) -> StepRunInfo:
+    step_run_info = StepRunInfo(
+        step_run_id=sample_step_run.id,
+        run_id=sample_pipeline_run.id,
+        run_name=sample_pipeline_run.name,
+        pipeline_step_name=sample_step_run.name,
+        config=sample_step_run.step.config,
+        pipeline=sample_pipeline_run.pipeline_configuration,
+    )
+    return step_run_info
+
+
+@pytest.fixture
+def step_context_with_no_output(
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
+    StepContext._clear()
     return StepContext(
-        step_name="", output_materializers={}, output_artifact_uris={}
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
+        output_materializers={},
+        output_artifact_uris={},
     )
 
 
 @pytest.fixture
-def step_context_with_single_output():
+def step_context_with_single_output(
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
 
+    StepContext._clear()
     return StepContext(
-        step_name="",
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
     )
 
 
 @pytest.fixture
-def step_context_with_two_outputs():
+def step_context_with_two_outputs(
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
     materializers = {
         "output_1": (BaseMaterializer,),
         "output_2": (BaseMaterializer,),
@@ -340,8 +379,12 @@ def step_context_with_two_outputs():
         "output_2": "",
     }
 
+    StepContext._clear()
     return StepContext(
-        step_name="",
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
     )
@@ -395,14 +438,19 @@ def sample_step_request_model() -> StepRunRequestModel:
 
 
 @pytest.fixture
-def sample_step_view(create_step_run) -> StepView:
+def sample_step_run(create_step_run) -> StepRunResponseModel:
+    """Return a sample step response model for testing purposes."""
+    return create_step_run()
+
+
+@pytest.fixture
+def sample_step_view(sample_step_run) -> StepView:
     """Return a sample step view for testing purposes."""
-    sample_step_run = create_step_run()
     return StepView(sample_step_run)
 
 
 @pytest.fixture
-def sample_pipeline_run_model(
+def sample_pipeline_run(
     sample_user_model: UserResponseModel,
     sample_workspace_model: WorkspaceResponseModel,
 ) -> PipelineRunResponseModel:
@@ -436,10 +484,10 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
 
 @pytest.fixture
 def sample_pipeline_run_view(
-    sample_step_view, sample_pipeline_run_model
+    sample_step_view, sample_pipeline_run
 ) -> PipelineRunView:
     """Return sample pipeline run view for testing purposes."""
-    sample_pipeline_run_view = PipelineRunView(sample_pipeline_run_model)
+    sample_pipeline_run_view = PipelineRunView(sample_pipeline_run)
     setattr(
         sample_pipeline_run_view,
         "_steps",
