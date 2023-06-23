@@ -22,8 +22,7 @@ stacks.
 #### Secret Store
 
 For a production setting, you should also set up a secret manager as a backend
-for all the secrets that will be used to
-configure stacks
+for all the secrets that will be used to configure stacks.
 
 {% hint style="info" %}
 See the following section to learn about the different ways
@@ -36,42 +35,36 @@ of [deploying ZenML](deploy-zenml/deploy-zenml.md).
 
 The Compute infrastructure (e.g. Kubernetes or serverless alternatives)
 
-* This will be used to run the pipeline code runs in production using the *
-  *orchestrator** and **step operator** stack
+* This will be used to run the pipeline code runs in production using the **orchestrator** 
+and **step operator** stack.
   components
 * Optionally, the same infrastructure can be used for the deployment of models
-  using the **model deployer** stack
-  component
+  using the **model deployer** stack component.
 
 {% hint style="warning" %}
 The **orchestrator** will need to have access to all the other stack components,
-and an egress path to post to the ZenML
-Server
+and an egress path to post to the ZenML Server.
 {% endhint %}
 
 #### Data Storage
 
 The **orchestrator**/**step operator** will use this as the **artifact store**
-where step outputs are persisted. You can
-also use the same infrastructure to host your data as data sources/ data sinks
+where step outputs are persisted. You can also use the same infrastructure to host your data as data sources/data sinks.
 
 #### Container Registry
 
-This is where the docker images for all pipeline code is pushed. The *
-*orchestrator** will consume docker images from
-here
+This is where the docker images for all pipeline code is pushed. The **orchestrator** will consume docker images from here.
 
 #### Other Tools
 
-Deployments of all the other tools that you need (such as **experiment trackers
-**, **model registries**, and **feature
-stores**). Learn more about the options in
+Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, 
+and **feature stores**). Learn more about the options in
 our [Component Guide](../../user-guide/component-guide/component-guide.md).
 
 ### Additional Tools
 
 There are some additional tools that should be considered in the setup of the
-MLOps Platform
+MLOps Platform.
 
 #### Image Builder
 
@@ -94,7 +87,7 @@ client no longer needs to have any access
 to the individual stack components. In the meantime, we recommend using your
 favorite CI/CD tool to enable using ZenML
 without the need to configure direct access to stack components from the client
-machines. Check our examplary implementation of this 
+machines. Check our exemplary implementation of this 
 [here](https://github.com/zenml-io/zenml-gitflow).
 {% endhint %}
 

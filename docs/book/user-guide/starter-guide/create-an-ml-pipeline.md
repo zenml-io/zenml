@@ -162,7 +162,6 @@ first_pipeline()
 ```
 
 If you are unsure how to format this config file, you can generate a template
-
 config file from a pipeline instance.
 ```python
 first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')

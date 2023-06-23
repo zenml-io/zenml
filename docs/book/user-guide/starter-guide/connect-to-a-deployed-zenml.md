@@ -33,14 +33,13 @@ to it and share stacks and pipelines.
 
 ### Deployment
 
-Further down in the Platform Guide you can find a guide on the different 
+Further down in the Platform Guide, you can find a guide on the different 
 [deployment strategies](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md). 
-This will help you deploy a ZenML Serve ron the backedn of your choice.
+This will help you deploy a ZenML Server on the backend of your choice.
 
 Alternatively, if you do not yet want to deploy ZenML yourself, you can use
 the [MLOps Sandbox](https://sandbox.zenml.io/) offering to try ZenML with a 
-production stack. You can find a more in-depth guide on this in the next chapter
-on the [Switch to production](switch-to-production.md).
+production stack. You can find a more in-depth guide on this in [the next chapter](switch-to-production.md).
 
 #### Connect your client to the server
 
