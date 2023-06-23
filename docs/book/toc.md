@@ -121,8 +121,6 @@
     * [Interact with secrets](platform-guide/set-up-your-mlops-platform/use-the-secret-store/interact-with-secrets.md)
     * [Custom secret stores](platform-guide/set-up-your-mlops-platform/use-the-secret-store/custom-secret-stores.md)
   * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md)
-    * [Service Connectors use cases](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-use-cases.md)
-    * [Connecting ZenML to resources](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/connecting-zenml-to-resources.md)
     * [Service Connectors guide](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)
     * [Security best practices](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/best-security-practices.md)
     * [Docker Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/docker-service-connector.md)
