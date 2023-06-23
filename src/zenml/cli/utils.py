@@ -244,6 +244,9 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
+    if active_models is None:
+        active_models = list()
+
     def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
@@ -1362,7 +1365,7 @@ def print_components_table(
         active_component = active_components[0] if active_components else None
 
     components = list(components)
-    if show_active:
+    if show_active and active_component is not None:
         if active_component.id not in [c.id for c in components]:
             components.append(active_component)
 
@@ -1372,7 +1375,11 @@ def print_components_table(
 
     configurations = []
     for component in components:
-        is_active = component.id == active_component.id
+        is_active = False
+
+        if active_component is not None:
+            is_active = component.id == active_component.id
+
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,

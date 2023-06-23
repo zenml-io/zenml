@@ -135,7 +135,7 @@ def generate_stack_component_describe_command(
 
 def generate_stack_component_list_command(
     component_type: StackComponentType,
-) -> Callable[[], None]:
+) -> Callable[..., None]:
     """Generates a `list` command for the specific stack component type.
 
     Args:
