@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -114,7 +115,7 @@ class StepContext(metaclass=SingletonMetaClass):
         self._cache_enabled = cache_enabled
 
         # Get the stack that we are running in
-        self.stack = Client().active_stack
+        self._stack = Client().active_stack
 
         self.step_name = self.step_run.name
         self.pipeline = pipeline_run.pipeline
@@ -177,6 +178,19 @@ class StepContext(metaclass=SingletonMetaClass):
             return self._outputs[output_name]
         else:
             return next(iter(self._outputs.values()))
+
+    @property
+    def stack(self) -> Optional["Stack"]:
+        """(Deprecated) Returns the current active stack.
+
+        Returns:
+            The current active stack or None.
+        """
+        logger.warning(
+            "`StepContext.stack` is deprecated and will be removed in a "
+            "future release. Please use `Client().active_stack` instead."
+        )
+        return self._stack
 
     @property
     def pipeline_name(self) -> Optional[str]:
