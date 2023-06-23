@@ -131,7 +131,7 @@ def test_step_parameter_merging():
     )
 
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 9):
 
     @step
     def step_with_non_generic_inputs(
@@ -140,7 +140,9 @@ if sys.version_info >= (3, 8):
         return set()
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9))
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="Only works on python>=3.9"
+)
 def test_step_allows_dict_list_annotations():
     """Tests that a step can use `list`, `dict` annotations instead of
     `typing.Dict`/`typing.List`"""
