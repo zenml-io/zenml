@@ -23,6 +23,11 @@ follows:
 
 ![Scenario 2: ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
 
+{% hint style="info" %}
+In Scenario 2, the `zenml up` command implicitly connects the client to the
+server.
+{% endhint %}
+
 In order to move into production, you will need to deploy this server somewhere
 centrally so that the different cloud stack components can read from and write
 to the server. Additionally, this also allows all your team members to connect
@@ -56,11 +61,6 @@ You will be prompted for your password:
 Connecting to: 'https://<your-own-deployment>'...
 Password for user zenml (press ENTER for empty password) []:
 ```
-
-{% hint style="info" %}
-In Scenario 2, the `zenml up` command implicitly connects the client to the
-server.
-{% endhint %}
 
 {% hint style="warning" %}
 In order to use the `zenml connect` command, you need to first deploy a remote

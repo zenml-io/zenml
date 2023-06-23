@@ -33,7 +33,8 @@ of [deploying ZenML](deploy-zenml/deploy-zenml.md).
 
 #### Compute Infrastructure
 
-The Compute infrastructure (e.g. Kubernetes or serverless alternatives)
+The Compute infrastructure (e.g. Kubernetes or serverless alternatives) is the 
+location where the pipeline code is executed.
 
 * This will be used to run the pipeline code runs in production using the **orchestrator** 
 and **step operator** stack.
