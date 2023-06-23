@@ -19,13 +19,13 @@ import sys
 from rich.console import Console
 
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext
+from zenml.steps import StepContext
 
 logger = get_logger(__name__)
 
 
 def alerter_failure_hook(
-    context: StepContext, params: BaseParameters, exception: BaseException
+    context: StepContext, exception: BaseException
 ) -> None:
     """Standard failure hook that executes after step fails.
 
@@ -33,7 +33,6 @@ def alerter_failure_hook(
 
     Args:
         context: Context of the step.
-        params: Parameters used in the step.
         exception: Original exception that lead to step failing.
     """
     if context.stack and context.stack.alerter:
@@ -50,7 +49,7 @@ def alerter_failure_hook(
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
         message += f"Run name: `{context.run_name}`" + "\n"
         message += f"Step name: `{context.step_name}`" + "\n"
-        message += f"Parameters: `{params}`" + "\n"
+        message += f"Parameters: `{context.parameters}`" + "\n"
         message += (
             f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
         )
@@ -65,14 +64,13 @@ def alerter_failure_hook(
         )
 
 
-def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
+def alerter_success_hook(context: StepContext) -> None:
     """Standard success hook that executes after step finishes successfully.
 
     This hook uses any `BaseAlerter` that is configured within the active stack to post a message.
 
     Args:
         context: Context of the step.
-        params: Parameters used in the step.
     """
     if context.stack and context.stack.alerter:
         message = (
@@ -81,7 +79,7 @@ def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
         message += f"Run name: `{context.run_name}`" + "\n"
         message += f"Step name: `{context.step_name}`" + "\n"
-        message += f"Parameters: `{params}`" + "\n"
+        message += f"Parameters: `{context.parameters}`" + "\n"
         message += (
             f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
             + "\n"
