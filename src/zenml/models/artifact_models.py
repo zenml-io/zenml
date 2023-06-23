@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.enums import ArtifactType
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -32,6 +33,9 @@ if TYPE_CHECKING:
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
+
+
+logger = get_logger(__name__)
 
 # ---- #
 # BASE #
@@ -118,12 +122,9 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
         Returns:
             The materialized data.
         """
-        from zenml.logger import get_logger
-
-        logger = get_logger(__name__)
         logger.warning(
-            "`output.read()` is deprecated and will be removed in a future "
-            "release. Please use `output.load()` instead."
+            "`artifact.read()` is deprecated and will be removed in a future "
+            "release. Please use `artifact.load()` instead."
         )
         return self.load()
 
