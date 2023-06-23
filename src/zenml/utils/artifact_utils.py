@@ -445,18 +445,20 @@ def get_producer_step_of_artifact(
 
 
 def get_artifacts_of_pipeline_run(
-    pipeline_run: "PipelineRunResponseModel",
+    pipeline_run: "PipelineRunResponseModel", only_produced: bool = False
 ) -> List["ArtifactResponseModel"]:
     """Get all artifacts produced during a pipeline run.
 
     Args:
         pipeline_run: The pipeline run.
+        only_produced: If only artifacts produced by the pipeline run should be
+            returned or also cached artifacts.
 
     Returns:
         A list of all artifacts produced during the pipeline run.
     """
     artifacts: List["ArtifactResponseModel"] = []
     for step in pipeline_run.steps.values():
-        if step.status == ExecutionStatus.COMPLETED:  # no cached artifacts
+        if not only_produced or step.status == ExecutionStatus.COMPLETED:
             artifacts.extend(step.outputs.values())
     return artifacts

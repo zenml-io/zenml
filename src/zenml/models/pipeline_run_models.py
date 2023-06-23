@@ -152,6 +152,17 @@ class PipelineRunResponseModel(
 
     @property
     def artifacts(self) -> List["ArtifactResponseModel"]:
+        """Get all artifacts that are outputs of steps of this pipeline run.
+
+        Returns:
+            All output artifacts of this pipeline run (including cached ones).
+        """
+        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+
+        return get_artifacts_of_pipeline_run(self)
+
+    @property
+    def produced_artifacts(self) -> List["ArtifactResponseModel"]:
         """Get all artifacts produced during this pipeline run.
 
         Returns:
@@ -159,7 +170,7 @@ class PipelineRunResponseModel(
         """
         from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
 
-        return get_artifacts_of_pipeline_run(self)
+        return get_artifacts_of_pipeline_run(self, only_produced=True)
 
     def get_step(self, step: str) -> "StepRunResponseModel":
         """(Deprecated) Get a step by name.
