@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
 from contextlib import ExitStack as does_not_raise
 from typing import Dict, List, Tuple
 
@@ -130,13 +131,16 @@ def test_step_parameter_merging():
     )
 
 
-@step
-def step_with_non_generic_inputs(
-    a: dict[str, int], b: list[float]
-) -> set[bytes]:
-    return set()
+if sys.version_info >= (3, 8):
+
+    @step
+    def step_with_non_generic_inputs(
+        a: dict[str, int], b: list[float]
+    ) -> set[bytes]:
+        return set()
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9))
 def test_step_allows_dict_list_annotations():
     """Tests that a step can use `list`, `dict` annotations instead of
     `typing.Dict`/`typing.List`"""
