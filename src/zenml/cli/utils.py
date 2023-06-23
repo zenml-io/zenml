@@ -2463,7 +2463,7 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
     Args:
         ctx: the Click context of the CLI call.
 
-    Return:
+    Returns:
         a boolean indicating whether any sorting or filtering parameters were
         used during the list CLI call.
     """
