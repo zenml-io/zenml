@@ -38,12 +38,12 @@ from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.models.artifact_models import (
     ArtifactResponseModel,
 )
+from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
 )
 from zenml.orchestrators.utils import is_setting_enabled
-from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     parse_return_type_annotations,

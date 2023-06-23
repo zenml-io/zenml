@@ -44,8 +44,8 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
     if not callable(func):
         raise ValueError(f"{func} is not a valid function.")
 
+    from zenml.new.steps.step_context import StepContext
     from zenml.steps.base_parameters import BaseParameters
-    from zenml.steps.step_context import StepContext
 
     sig = inspect.getfullargspec(inspect.unwrap(func))
     sig_annotations = sig.annotations

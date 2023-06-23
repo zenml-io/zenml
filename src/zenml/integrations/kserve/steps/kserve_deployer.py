@@ -39,10 +39,10 @@ from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
+    StepContext,
     StepEnvironment,
     step,
 )
-from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
 from zenml.utils.artifact_utils import save_model_metadata
 

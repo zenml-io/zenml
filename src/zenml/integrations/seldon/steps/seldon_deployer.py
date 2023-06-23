@@ -40,11 +40,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import ModelVersionStage
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
-)
-from zenml.steps.step_context import StepContext
+from zenml.steps import STEP_ENVIRONMENT_NAME, StepContext, StepEnvironment
 from zenml.utils import io_utils, source_utils
 from zenml.utils.artifact_utils import save_model_metadata
 
