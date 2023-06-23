@@ -34,6 +34,7 @@ def create_scheduler_job(
     project: str,
     region: str,
     http_uri: str,
+    service_account_email: str,
     body: Dict[str, Union[Dict[str, str], bool, str, None]],
     credentials: Optional["Credentials"] = None,
     schedule: str = "* * * * *",
@@ -47,6 +48,8 @@ def create_scheduler_job(
         project: GCP project ID.
         region: GCP region.
         http_uri: HTTP URI of the cloud function to call.
+        service_account_email: Service account email to use to authenticate to
+            the Google Cloud Function through an OIDC token.
         body: The body of values to send to the cloud function in the POST call.
         schedule: Cron expression of the schedule. Defaults to "* * * * *".
         time_zone: Time zone of the schedule. Defaults to "Etc/UTC".
@@ -68,9 +71,7 @@ def create_scheduler_job(
                     body=json.dumps(body).encode(),
                     http_method=HttpMethod.POST,
                     oidc_token=OidcToken(
-                        service_account_email=credentials.signer_email
-                        if credentials and hasattr(credentials, "signer_email")
-                        else None
+                        service_account_email=service_account_email
                     ),
                 ),
                 schedule=schedule,
