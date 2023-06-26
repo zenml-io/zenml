@@ -125,7 +125,7 @@ def prediction_service_loader(
 def predictor(
         service: MLFlowDeploymentService,
         data: np.ndarray,
-) -> Output(predictions=np.ndarray):
+) -> Annotated[np.ndarray, "predictions"]:
     """Run a inference request against a prediction service"""
 
     service.start(timeout=10)  # should be a NOP if already started

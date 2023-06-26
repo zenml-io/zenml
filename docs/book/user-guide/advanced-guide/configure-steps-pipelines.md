@@ -2,6 +2,73 @@
 description: Configuring pipelines, steps, and stack components in ZenML.
 ---
 
+# Define steps
+
+To define a step, all you need to do is decorate your Python functions with ZenML's
+`@step` decorator:
+
+```python
+from zenml import step
+
+@step
+def my_function():
+    ...
+```
+
+## Type annotations
+
+Your functions will work as ZenML steps even if you don't provide any type annotations
+for their inputs and outputs.
+However, adding type annotations to your step functions gives you
+lots of additional benefits:
+- **Type validation of your step inputs**: ZenML makes sure that your step functions
+receive an object of the correct type from the upstream steps in your pipeline.
+- **Better serialization**: Without type annotations, ZenML uses
+[Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs.
+When provided with type annotations, ZenML can choose a [materializer](../../getting-started/core-concepts.md#materializers)
+that is best suited for the output. In case non of the builtin materializers work, you can even
+[write a custom materializer](./handle-custom-data-types.md).
+
+```python
+from typing import Tuple
+from zenml import step
+
+@step
+def square_root(number: int) -> float:
+    return number ** 0.5
+
+# To define a step with multiple outputs, use a `Tuple` type annotation
+@step
+def divide(a: int, b: int) -> Tuple[int, int]:
+    return a // b, a % b
+```
+
+## Step output names
+
+By default, ZenML uses the output name `output` for single output steps
+and `output_0, output_1, ...` for steps with multiple outputs. These output names
+are used to display your outputs in the dashboard and
+[fetch them after your pipeline finished](../starter-guide/fetch-runs-after-execution.md).
+
+If you want to use custom output names for your steps, use the `Annotated` type
+annotation:
+
+```python
+from typing import Annotated, Tuple
+from zenml import step
+
+@step
+def square_root(number: int) -> Annotated[float, "custom_output_name"]:
+    return number ** 0.5
+
+@step
+def divide(a: int, b: int) -> Tuple[
+    Annotated[int, "quotient"],
+    Annotated[int, "remainder"]
+]:
+    return a // b, a % b
+```
+
 # Configure steps/pipelines
 
 ## Parameters for your steps

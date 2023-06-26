@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Test Step."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Annotated, Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 
@@ -23,7 +23,6 @@ from zenml.integrations.evidently.column_mapping import (
 )
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
-from zenml.steps import Output
 from zenml.types import HTMLString
 
 
@@ -36,9 +35,7 @@ def evidently_test_step(
     tests: Optional[List[EvidentlyTestConfig]] = None,
     test_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     download_nltk_data: bool = False,
-) -> Output(  # type:ignore[valid-type]
-    test_json=str, test_html=HTMLString
-):
+) -> Tuple[Annotated[str, "test_json"], Annotated[HTMLString, "test_html"]]:
     """Run an Evidently test suite on one or two pandas datasets.
 
     Args:

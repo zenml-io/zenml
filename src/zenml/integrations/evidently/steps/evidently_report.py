@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Report Step."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Annotated, Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 
@@ -21,7 +21,6 @@ from zenml import step
 from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
-from zenml.steps import Output
 from zenml.types import HTMLString
 
 
@@ -34,9 +33,9 @@ def evidently_report_step(
     metrics: Optional[List[EvidentlyMetricConfig]] = None,
     report_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     download_nltk_data: bool = False,
-) -> Output(  # type:ignore[valid-type]
-    report_json=str, report_html=HTMLString
-):
+) -> Tuple[
+    Annotated[str, "report_json"], Annotated[HTMLString, "report_html"]
+]:
     """Generate an Evidently report on one or two pandas datasets.
 
     Args:

@@ -75,12 +75,19 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
             return_annotation = Any
 
     if isinstance(return_annotation, Output):
+        logger.warning(
+            "Using the `Output` class to define the outputs of your steps is "
+            "deprecated. You should instead use the standard Python way of "
+            "type annotating your functions. Check out our documentation "
+            "https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline"  # TODO: replace with exact link
+            "for more information on how to assign custom names to your step "
+            "outputs."
+        )
         return {
             output_name: resolve_type_annotation(output_type)
             for output_name, output_type in return_annotation.items()
         }
     elif pydantic_typing.get_origin(return_annotation) is tuple:
-        # TODO: should we also enter this for `Annotated[Tuple[...], ...]`?
         requires_multiple_artifacts = has_tuple_return(func)
 
         if requires_multiple_artifacts:

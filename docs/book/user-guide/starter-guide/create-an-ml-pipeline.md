@@ -7,6 +7,7 @@ description: Learning how to configure pipelines and their steps.
 In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
 
 ```python
+from typing import Tuple, Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
@@ -14,7 +15,6 @@ from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml import pipeline, step
-from zenml.steps import Output
 ```
 
 Make sure to install the requirements as well:
@@ -28,18 +28,21 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 #### Steps with multiple outputs
 
-Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` annotation. Here we load an open-source dataset and split it into a train and a test dataset.
+Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
+Additionally, you can use the `Annotated` annotation to assign
+[custom output names](../advanced-guide/configure-steps-pipelines.md#step-output-names).
+Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
 import logging
 
 @step
-def training_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
-):
+def training_data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
     """Load the iris dataset as a tuple of Pandas DataFrame / Series."""
     logging.info("Loading iris...")
     iris = load_iris(as_frame=True)
@@ -65,7 +68,10 @@ def svc_trainer(
         X_train: pd.DataFrame,
         y_train: pd.Series,
         gamma: float = 0.001,
-) -> Output(trained_model=ClassifierMixin, training_acc=float):
+) -> Tuple[
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
+]:
     """Train a sklearn SVC classifier."""
 
     model = SVC(gamma=gamma)
@@ -169,12 +175,12 @@ from zenml.steps import Output
 
 
 @step
-def training_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
-):
+def training_data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
     """Load the iris dataset as tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -188,7 +194,10 @@ def svc_trainer(
         X_train: pd.DataFrame,
         y_train: pd.Series,
         gamma: float = 0.001,
-) -> Output(trained_model=ClassifierMixin, training_acc=float):
+) -> Tuple[
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
+]:
     """Train a sklearn SVC classifier and log to MLflow."""
     model = SVC(gamma=gamma)
     model.fit(X_train.to_numpy(), y_train.to_numpy())

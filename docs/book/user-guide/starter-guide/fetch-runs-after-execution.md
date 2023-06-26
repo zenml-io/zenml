@@ -250,17 +250,8 @@ output.read()
 ```
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps:
-
-```python
-from zenml import step
-from zenml.steps import Output
-
-
-@step
-def some_step() -> Output(output_name=int):
-    ...
-```
+Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names)
+for more information on default step output names and how to define custom names for your step outputs. 
 {% endhint %}
 
 #### Visualizing Artifacts
