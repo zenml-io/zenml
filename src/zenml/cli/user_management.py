@@ -19,7 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import is_sorted_or_filtered, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
@@ -74,10 +74,12 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 @user.command("list")
 @list_options(UserFilterModel)
-def list_users(**kwargs: Any) -> None:
+@click.pass_context
+def list_users(ctx: click.Context, **kwargs: Any) -> None:
     """List all users.
 
     Args:
+        ctx: The click context object
         kwargs: Keyword arguments to filter the list of users.
     """
     cli_utils.print_active_config()
@@ -97,7 +99,8 @@ def list_users(**kwargs: Any) -> None:
                 "email_opted_in",
                 "activation_token",
             ],
-            is_active=lambda u: u.name == Client().active_user.name,
+            active_models=[Client().active_user],
+            show_active=not is_sorted_or_filtered(ctx),
         )
 
 

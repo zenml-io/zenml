@@ -37,6 +37,7 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
+from zenml.artifact_stores import step_logging_utils
 from zenml.client import Client
 from zenml.enums import SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -1079,7 +1080,7 @@ def test_get_run_step_outputs_succeeds():
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
 
         for step in steps.items:
-            run_step_outputs = store.get_run_step(step.id).output_artifacts
+            run_step_outputs = store.get_run_step(step.id).outputs
             assert len(run_step_outputs) == 1
 
 
@@ -1091,7 +1092,7 @@ def test_get_run_step_inputs_succeeds():
     with PipelineRunContext(1):
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
-            run_step_inputs = store.get_run_step(step.id).input_artifacts
+            run_step_inputs = store.get_run_step(step.id).inputs
             assert len(run_step_inputs) == 1
 
 
@@ -1178,16 +1179,37 @@ def test_logs_are_recorded_properly_when_disabled():
         steps = store.list_run_steps(StepRunFilterModel())
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        artifact_store = _load_artifact_store(
-            step1_logs.artifact_store_id, store
+        assert not step1_logs
+        assert not step2_logs
+
+        artifact_store_id = steps[0].output.artifact_store_id
+        assert artifact_store_id
+
+        artifact_store = _load_artifact_store(artifact_store_id, store)
+
+        logs_uri_1 = step_logging_utils.prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[0].name,
+        )
+
+        logs_uri_2 = step_logging_utils.prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[1].name,
+        )
+
+        step_logging_utils.prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[1].name,
         )
 
         with pytest.raises(DoesNotExistException):
             _load_file_from_artifact_store(
-                step1_logs.uri, artifact_store=artifact_store, mode="r"
+                logs_uri_1, artifact_store=artifact_store, mode="r"
             )
+
+        with pytest.raises(DoesNotExistException):
             _load_file_from_artifact_store(
-                step2_logs.uri, artifact_store=artifact_store, mode="r"
+                logs_uri_2, artifact_store=artifact_store, mode="r"
             )
 
 
