@@ -47,11 +47,11 @@ def get_step_context() -> "StepContext":
     Raises:
         RuntimeError: If no step is currently running.
     """
-    if not isinstance(StepContext.__singleton_instance, StepContext):
-        raise RuntimeError(
-            "The step context is only available inside a step function."
-        )
-    return StepContext.__singleton_instance
+    if StepContext._exists():
+        return StepContext()  # type: ignore
+    raise RuntimeError(
+        "The step context is only available inside a step function."
+    )
 
 
 class StepContext(metaclass=SingletonMetaClass):
