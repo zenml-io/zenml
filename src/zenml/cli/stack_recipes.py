@@ -24,7 +24,6 @@ from rich.text import Text
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
-from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
