@@ -60,10 +60,10 @@ If your orchestrator comes with a separate user interface (for example Kubeflow,
 to the orchestrator UI of a specific pipeline run using the following code snippet:
 
 ```python
-from zenml.post_execution import get_run
+from zenml.client import Client
 
-pipeline_run = get_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
 ```
 
 #### Specifying per-step resources

@@ -16,7 +16,6 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
-from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -34,13 +33,14 @@ def test_example(request: pytest.FixtureRequest) -> None:
         pipelines={"mlflow_example_pipeline": (1, 4)},
         timeout_limit=750,
     ) as (example, runs):
-        pipeline = get_pipeline("mlflow_example_pipeline")
+        client = Client()
+        pipeline = client.get_pipeline("mlflow_example_pipeline")
         assert pipeline
 
         run = runs["mlflow_example_pipeline"][0]
 
         # activate the stack set up and used by the example
-        client = Client()
+
         experiment_tracker = client.active_stack.experiment_tracker
         assert isinstance(experiment_tracker, MLFlowExperimentTracker)
         experiment_tracker.configure_mlflow()

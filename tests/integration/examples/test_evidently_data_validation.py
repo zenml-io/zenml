@@ -15,7 +15,7 @@
 import pytest
 
 from tests.integration.examples.utils import run_example
-from zenml.post_execution.pipeline import get_pipeline
+from zenml.client import Client
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -26,7 +26,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         name="evidently_data_validation",
         pipelines={"text_data_report_test_pipeline": (1, 5)},
     ) as (example, runs):
-        pipeline = get_pipeline("text_data_report_test_pipeline")
+        pipeline = Client().get_pipeline("text_data_report_test_pipeline")
         assert pipeline
 
         # Analyzer step should have output missing values
