@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Great Expectations data profiling standard step."""
 
-from typing import Optional, cast
+from typing import Optional
 
 import pandas as pd
 from great_expectations.core.batch import (  # type: ignore[import]
@@ -23,9 +23,8 @@ from great_expectations.data_context.data_context import (  # type: ignore[impor
     BaseDataContext,
 )
 
-from zenml.environment import Environment
+from zenml import get_step_context
 from zenml.logger import get_logger
-from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
@@ -48,11 +47,11 @@ def create_batch_request(
     """
     try:
         # get pipeline name, step name and run id
-        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-        pipeline_name = step_env.pipeline_name
-        run_name = step_env.run_name
-        step_name = step_env.step_name
-    except KeyError:
+        step_context = get_step_context()
+        pipeline_name = step_context.pipeline.name
+        run_name = step_context.pipeline_run.name
+        step_name = step_context.step_run.name
+    except RuntimeError:
         # if not running inside a pipeline step, use random values
         pipeline_name = f"pipeline_{random_str(5)}"
         run_name = f"pipeline_{random_str(5)}"

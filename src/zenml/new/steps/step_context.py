@@ -31,6 +31,7 @@ from zenml.utils.singleton import SingletonMetaClass
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
     from zenml.stack.stack import Stack
@@ -118,7 +119,6 @@ class StepContext(metaclass=SingletonMetaClass):
         self._stack = Client().active_stack
 
         self.step_name = self.step_run.name
-        self.pipeline = pipeline_run.pipeline
 
         # set outputs
         if output_materializers.keys() != output_artifact_uris.keys():
@@ -180,6 +180,24 @@ class StepContext(metaclass=SingletonMetaClass):
             return next(iter(self._outputs.values()))
 
     @property
+    def pipeline(self) -> "PipelineResponseModel":
+        """Returns the current pipeline.
+
+        Returns:
+            The current pipeline or None.
+
+        Raises:
+            StepContextError: If the pipeline run does not have a pipeline.
+        """
+        if self.pipeline_run.pipeline:
+            return self.pipeline_run.pipeline
+        raise StepContextError(
+            f"Unable to get pipeline in step '{self.step_name}' of pipeline "
+            f"run '{self.pipeline_run.id}': This pipeline run does not have "
+            f"a pipeline associated with it."
+        )
+
+    @property
     def stack(self) -> Optional["Stack"]:
         """(Deprecated) Returns the current active stack.
 
@@ -193,7 +211,7 @@ class StepContext(metaclass=SingletonMetaClass):
         return self._stack
 
     @property
-    def pipeline_name(self) -> Optional[str]:
+    def pipeline_name(self) -> str:
         """(Deprecated) Returns the current pipeline name.
 
         Returns:
