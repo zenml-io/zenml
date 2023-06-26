@@ -11,50 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for the post-execution module.
+"""Deprecated post-execution utility functions."""
 
-After executing a pipeline, the user needs to be able to fetch it from history
-and perform certain tasks. The post_execution submodule provides a set of
-interfaces with which the user can interact with artifacts, the pipeline, steps,
-and the post-run pipeline object.
-"""
-
-from zenml.post_execution.artifact import ArtifactView
-from zenml.post_execution.lineage import (
-    ArtifactNode,
-    ArtifactNodeDetails,
-    BaseNode,
-    Edge,
-    LineageGraph,
-    StepNode,
-    StepNodeDetails,
-)
 from zenml.post_execution.pipeline import (
-    PipelineVersionView,
-    PipelineView,
     get_pipeline,
     get_pipelines,
 )
 from zenml.post_execution.pipeline_run import (
-    PipelineRunView,
     get_run,
     get_unlisted_runs,
 )
-from zenml.post_execution.step import StepView
 
 __all__ = [
-    "PipelineVersionView",
-    "PipelineView",
-    "PipelineRunView",
-    "StepView",
-    "ArtifactView",
-    "BaseNode",
-    "ArtifactNode",
-    "StepNode",
-    "Edge",
-    "LineageGraph",
-    "StepNodeDetails",
-    "ArtifactNodeDetails",
     "get_pipeline",
     "get_pipelines",
     "get_run",

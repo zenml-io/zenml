@@ -38,9 +38,7 @@
 The code contained within this file has been inspired by the
 fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
-from __future__ import annotations
-
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, List, TypeVar
 
 from pydantic import SecretStr
 from pydantic.generics import GenericModel
@@ -59,7 +57,7 @@ class Page(GenericModel, Generic[B]):
     max_size: PositiveInt
     total_pages: NonNegativeInt
     total: NonNegativeInt
-    items: Sequence[B]
+    items: List[B]
 
     __params_type__ = BaseFilterModel
 

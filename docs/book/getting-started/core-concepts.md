@@ -90,7 +90,7 @@ First, in order to utilize _stack components_ that are running remotely on a clo
 
 #### Metadata Tracking
 
-On top of the communication with the stack components, a **ZenML Server** also keeps track of all the bits of metadata around a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details. This is extremely helpful in troubleshooting.
+On top of the communication with the stack components, the **ZenML Server** also keeps track of all the bits of metadata around a pipeline run. With a ZenML server, you are able to access all of your previous experiments with the associated details. This is extremely helpful in troubleshooting.
 
 #### Secrets
 
