@@ -109,7 +109,6 @@ def openai_gpt4_alerter_failure_hook(
     """Alerter hook that uses the OpenAI GPT-4 model.
 
     Args:
-        context: The context of the step.
         exception: The exception that was raised.
     """
     openai_alerter_failure_hook_helper(exception, "gpt-4")

@@ -31,7 +31,6 @@ def alerter_failure_hook(exception: BaseException) -> None:
     This hook uses any `BaseAlerter` that is configured within the active stack to post a message.
 
     Args:
-        context: Context of the step.
         exception: Original exception that lead to step failing.
     """
     context = get_step_context()
