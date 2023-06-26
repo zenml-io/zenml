@@ -90,9 +90,7 @@ def test_publishing_a_successful_step_run(mocker):
     )
     _, call_kwargs = mock_update_run_step.call_args
     assert call_kwargs["step_run_id"] == step_run_id
-    assert (
-        call_kwargs["step_run_update"].output_artifacts == output_artifact_ids
-    )
+    assert call_kwargs["step_run_update"].outputs == output_artifact_ids
     assert call_kwargs["step_run_update"].status == ExecutionStatus.COMPLETED
 
 

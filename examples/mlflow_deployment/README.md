@@ -104,13 +104,13 @@ deployment = continuous_deployment_pipeline(
 
 ```python
 from zenml import step
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowModelDeployer,
+)
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.steps import Output, StepContext
-from zenml.services import load_last_service_from_step
 
-...
 
-# Step to retrieve the service associated with the last pipeline run
 @step(enable_cache=False)
 def prediction_service_loader(
     pipeline_name: str,

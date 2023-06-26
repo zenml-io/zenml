@@ -46,7 +46,7 @@ def get_run_url(
         return ""
 
     url = client.zen_store.url
-    runs = depaginate(partial(client.list_runs, name=run_name))
+    runs = depaginate(partial(client.list_pipeline_runs, name=run_name))
 
     if pipeline_id:
         url += f"/workspaces/{client.active_workspace.name}/pipelines/{str(pipeline_id)}/runs"

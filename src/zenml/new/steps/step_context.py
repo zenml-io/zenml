@@ -240,8 +240,7 @@ class StepContext(metaclass=SingletonMetaClass):
             "a future release. Please use "
             "`StepContext.step_run.config.parameters` instead."
         )
-        # TODO: adjust below after post exec merge
-        return self.step_run.step.config.parameters
+        return self.step_run.config.parameters
 
     @property
     def step_run_info(self) -> "StepRunInfo":

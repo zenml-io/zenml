@@ -48,9 +48,7 @@ def alerter_failure_hook(
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
-        message += (
-            f"Parameters: `{context.step_run.step.config.parameters}`" + "\n"
-        )
+        message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
         message += (
             f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
         )
@@ -75,9 +73,7 @@ def alerter_success_hook(context: StepContext) -> None:
         )
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
-        message += (
-            f"Parameters: `{context.step_run.step.config.parameters}`" + "\n"
-        )
+        message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
         context.stack.alerter.post(message)
     else:
         logger.warning(

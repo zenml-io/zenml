@@ -140,7 +140,7 @@ class PipelineRunContext:
                 StepRunFilterModel(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifacts += [a for a in s.output_artifacts.values()]
+                self.artifacts += [a for a in s.outputs.values()]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -728,7 +728,7 @@ pipeline_run_crud_test_config = CrudTestConfig(
         id=uuid.uuid4(),
         name=sample_name("sample_pipeline_run"),
         status=ExecutionStatus.RUNNING,
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),

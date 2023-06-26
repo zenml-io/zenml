@@ -72,9 +72,7 @@ def openai_alerter_failure_hook_helper(
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
-        message += (
-            f"Parameters: `{context.step_run.step.config.parameters}`" + "\n"
-        )
+        message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
         message += f"Exception: `({type(exception)}) {exception}`" + "\n\n"
         message += (
             f"*OpenAI ChatGPT's suggestion (model = `{model_name}`) on how to fix it:*\n `{suggestion}`"
