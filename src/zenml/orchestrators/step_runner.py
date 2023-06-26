@@ -109,14 +109,7 @@ class StepRunner:
         output_materializers = self._load_output_materializers()
         spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
 
-        # Parse the inputs for the entrypoint function.
-        function_params = self._parse_inputs(
-            args=spec.args,
-            annotations=spec.annotations,
-            input_artifacts=input_artifacts,
-        )
-
-        # Wrap the execution of the step function in a step environment
+        # (Deprecated) Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
@@ -139,6 +132,13 @@ class StepRunner:
                 output_artifact_uris=output_artifact_uris,
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
+            )
+
+            # Parse the inputs for the entrypoint function.
+            function_params = self._parse_inputs(
+                args=spec.args,
+                annotations=spec.annotations,
+                input_artifacts=input_artifacts,
             )
 
             step_failed = False
