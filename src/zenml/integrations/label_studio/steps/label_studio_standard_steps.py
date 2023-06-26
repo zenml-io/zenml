@@ -113,7 +113,7 @@ def get_or_create_dataset(
             Label Studio.
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    annotator = Client().active_stack.annotator  # type: ignore[union-attr]
+    annotator = Client().active_stack.annotator
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
         LabelStudioAnnotator,
     )
@@ -150,7 +150,7 @@ def get_labeled_data(dataset_name: str) -> List:  # type: ignore[type-arg]
         StackComponentInterfaceError: If no active annotator could be found.
     """
     # TODO [MEDIUM]: have this check for new data *since the last time this step ran*
-    annotator = Client().active_stack.annotator  # type: ignore[union-attr]
+    annotator = Client().active_stack.annotator
     if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
@@ -192,8 +192,8 @@ def sync_new_data_to_label_studio(
         StackComponentInterfaceError: If no active annotator could be found.
     """
     stack = Client().active_stack
-    annotator = stack.annotator  # type: ignore[union-attr]
-    artifact_store = stack.artifact_store  # type: ignore[union-attr]
+    annotator = stack.annotator
+    artifact_store = stack.artifact_store
     if not annotator or not artifact_store:
         raise StackComponentInterfaceError(
             "An active annotator and artifact store are required to run this step."
