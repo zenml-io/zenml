@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 
 import pytest
 
@@ -20,10 +19,6 @@ from tests.integration.examples.utils import run_example
 from zenml.client import Client
 
 
-@pytest.mark.skipif(
-    sys.version_info.major == 3 and sys.version_info.minor == 7,
-    reason="MLflow model registry is only supported on Python>3.7",
-)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the MLFlow Registry example."""
     import mlflow

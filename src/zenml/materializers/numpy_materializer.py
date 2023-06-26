@@ -15,7 +15,7 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import numpy as np
 
@@ -61,12 +61,7 @@ class NumpyMaterializer(BaseMaterializer):
 
         if fileio.exists(numpy_file):
             with fileio.open(numpy_file, "rb") as f:
-                # This function is untyped for numpy versions supporting python
-                # 3.7, but typed for numpy versions installed on python 3.8+.
-                # We need to cast it to any here so that numpy doesn't complain
-                # about either an untyped function call or an unused ignore
-                # statement
-                return cast(Any, np.load)(f, allow_pickle=True)
+                return np.load(f, allow_pickle=True)
         elif fileio.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
@@ -108,12 +103,7 @@ class NumpyMaterializer(BaseMaterializer):
             arr: The numpy array to write.
         """
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
-            # This function is untyped for numpy versions supporting python
-            # 3.7, but typed for numpy versions installed on python 3.8+.
-            # We need to cast it to any here so that numpy doesn't complain
-            # about either an untyped function call or an unused ignore
-            # statement
-            cast(Any, np.save)(f, arr)
+            np.save(f, arr)
 
     def save_visualizations(
         self, arr: "NDArray[Any]"
@@ -229,12 +219,8 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
-        # These functions are untyped for numpy versions supporting python
-        # 3.7, but typed for numpy versions installed on python 3.8+.
-        # We need to cast them to Any here so that numpy doesn't complain
-        # about either an untyped function call or an unused ignore statement.
-        min_val = cast(Any, np.min)(arr).item()
-        max_val = cast(Any, np.max)(arr).item()
+        min_val = np.min(arr).item()
+        max_val = np.max(arr).item()
 
         numpy_metadata: Dict[str, "MetadataType"] = {
             "shape": tuple(arr.shape),

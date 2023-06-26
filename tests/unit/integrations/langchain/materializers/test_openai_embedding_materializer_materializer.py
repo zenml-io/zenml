@@ -11,17 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 
-import pytest
 
 from tests.unit.test_general import _test_materializer
 
 
-@pytest.mark.skipif(
-    sys.version_info.major == 3 and sys.version_info.minor <= 7,
-    reason="Langchain is only supported on Python >=3.8",
-)
 def test_langchain_openai_embedding_materializer(clean_client):
     """Tests the Langchain OpenAI Embeddings materializer."""
     from langchain.embeddings import OpenAIEmbeddings

@@ -11,17 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 
-import pytest
 
 from tests.unit.test_general import _test_materializer
 
 
-@pytest.mark.skipif(
-    sys.version_info.major == 3 and sys.version_info.minor == 7,
-    reason="Langchain (used by llama_index) is only supported on Python>3.7",
-)
 def test_llama_index_document_materializer(clean_client):
     """Tests whether the steps work for the Llama Index Document
     materializer."""

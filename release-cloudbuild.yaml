@@ -1,26 +1,4 @@
-steps:
-  # build base image - python 3.7
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.7 \
-          --target base \
-          -f docker/base.Dockerfile . \
-          -t $$USERNAME/zenml:$TAG_NAME-py3.7
-
-        # use latest tags only for official releases
-        if [[ $TAG_NAME =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-          docker tag $$USERNAME/zenml:$TAG_NAME-py3.7 $$USERNAME/zenml:py3.7
-        fi
-    id: build-base-3.7
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
-  
+steps:  
   # build base image - python 3.8
   - name: gcr.io/cloud-builders/docker
     args:

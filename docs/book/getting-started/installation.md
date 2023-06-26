@@ -11,7 +11,7 @@ pip install zenml
 ```
 
 {% hint style="warning" %}
-Note that ZenML currently supports **Python 3.7, 3.8, 3.9, and 3.10**. Please make sure that you are using a
+Note that ZenML currently supports **Python 3.8, 3.9, and 3.10**. Please make sure that you are using a
 supported Python version.
 {% endhint %}
 
