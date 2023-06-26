@@ -358,7 +358,7 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-See the [seldon_model_deployer_step](https://apidocs.zenml.io/0.40.2/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
+See the [seldon_model_deployer_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 Within the `SeldonDeploymentConfig` you can configure:
 

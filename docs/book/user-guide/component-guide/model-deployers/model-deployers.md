@@ -90,7 +90,7 @@ zenml model-deployer register seldon --flavor=seldon \
    model version. Every model server that the Model Deployer provisions externally to deploy a model is represented
    internally as a `Service` object that may be accessed for visibility and control over a single model deployment. This
    functionality can be consumed directly from ZenML pipeline steps, but it can also be used outside the pipeline to
-   deploy ad-hoc models. See the [seldon_model_deployer_step](https://apidocs.zenml.io/0.40.2/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
+   deploy ad-hoc models. See the [seldon_model_deployer_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 3. Acts as a registry for all Services that represent remote model servers. External model deployment servers can be
    listed and filtered using a variety of criteria, such as the name of the model or the names of the pipeline and step
    that was used to deploy the model. The Service objects returned by the Model Deployer can be used to interact with
