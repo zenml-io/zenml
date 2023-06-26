@@ -388,15 +388,16 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be fetched later with the [post-execution workflow](../starter-guide/fetch-runs-after-execution.md):
+This tag is now associated and tracked with all pipeline runs, and can be 
+[fetched later](../starter-guide/fetch-runs-after-execution.md):
 
 ```python
-from zenml.post_execution import get_pipeline
+from zenml.client import Client
 
-p = get_pipeline('my_pipeline')
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 
 # print out the extra
-print(p.runs[0].pipeline_configuration['extra'])
+print(pipeline_run.config.extra)
 # {'tag': 'production'}
 ```
 

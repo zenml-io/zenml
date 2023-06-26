@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,4 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Integration tests for post-execution functionality."""
+"""Initialization of lineage generation module."""
+
+from zenml.lineage_graph.edge import Edge  # noqa
+from zenml.lineage_graph.lineage_graph import LineageGraph  # noqa
+from zenml.lineage_graph.node import (  # noqa
+    ArtifactNode,
+    ArtifactNodeDetails,
+    BaseNode,
+    StepNode,
+    StepNodeDetails,
+)
+
+__all__ = [
+    "BaseNode",
+    "ArtifactNode",
+    "StepNode",
+    "Edge",
+    "LineageGraph",
+    "StepNodeDetails",
+    "ArtifactNodeDetails",
+]

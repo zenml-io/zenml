@@ -11,24 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of lineage generation module."""
+"""Class for all lineage artifact nodes."""
 
-from zenml.post_execution.lineage.edge import Edge  # noqa
-from zenml.post_execution.lineage.lineage_graph import LineageGraph  # noqa
-from zenml.post_execution.lineage.node import (  # noqa
-    ArtifactNode,
-    ArtifactNodeDetails,
+
+from typing import List, Optional, Tuple
+
+from zenml.lineage_graph.node.base_node import (
     BaseNode,
-    StepNode,
-    StepNodeDetails,
+    BaseNodeDetails,
 )
 
-__all__ = [
-    "BaseNode",
-    "ArtifactNode",
-    "StepNode",
-    "Edge",
-    "LineageGraph",
-    "StepNodeDetails",
-    "ArtifactNodeDetails",
-]
+
+class ArtifactNodeDetails(BaseNodeDetails):
+    """Captures all artifact details for the node."""
+
+    is_cached: bool
+    artifact_type: str
+    artifact_data_type: str
+    parent_step_id: str
+    producer_step_id: Optional[str]
+    uri: str
+    metadata: List[Tuple[str, str, str]]  # (key, value, type)
+
+
+class ArtifactNode(BaseNode):
+    """A class that represents an artifact node in a lineage graph."""
+
+    type: str = "artifact"
+    data: ArtifactNodeDetails

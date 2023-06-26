@@ -23,9 +23,9 @@ from typing import Dict, Generator, List, Optional, Tuple
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.post_execution.pipeline import get_pipeline
-from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.utils.pagination_utils import depaginate
 
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
@@ -72,7 +72,7 @@ def run_example(
     # run_count: Optional[int] = None,
     # step_count: Optional[int] = None,
 ) -> Generator[
-    Tuple[LocalExample, Dict[str, List[PipelineRunView]]], None, None
+    Tuple[LocalExample, Dict[str, List[PipelineRunResponseModel]]], None, None
 ]:
     """Runs the given example and validates it ran correctly.
 
@@ -115,7 +115,7 @@ def run_example(
     example.run_example_directly(*example_args)
 
     pipelines = pipelines or {}
-    runs: Dict[str, List[PipelineRunView]] = {}
+    runs: Dict[str, List[PipelineRunResponseModel]] = {}
     for pipeline_name, (run_count, step_count) in pipelines.items():
         runs[pipeline_name] = wait_and_validate_pipeline_run(
             pipeline_name=pipeline_name,
@@ -180,7 +180,7 @@ def wait_and_validate_pipeline_run(
     start_timeout: int = DEFAULT_PIPELINE_RUN_START_TIMEOUT,
     finish_timeout: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     poll_period: int = 10,
-) -> List[PipelineRunView]:
+) -> List[PipelineRunResponseModel]:
     """A basic example validation function.
 
     This function makes sure that a pipeline is registered and optionally waits
@@ -212,13 +212,13 @@ def wait_and_validate_pipeline_run(
     # runs older than the supplied timestamp to be recorded and finish before
     # we can validate them.
 
-    pipeline = get_pipeline(pipeline_name)
+    pipeline = Client().get_pipeline(pipeline_name)
     assert pipeline
 
     if not run_count:
         return []
 
-    runs: List[PipelineRunView] = []
+    runs: List[PipelineRunResponseModel] = []
 
     # Wait for all pipeline runs to be recorded and complete. We assume the
     # runs will be executed in sequence, so we wait for an increasing number

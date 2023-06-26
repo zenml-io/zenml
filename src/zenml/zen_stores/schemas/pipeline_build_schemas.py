@@ -145,9 +145,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,
             stack=self.stack.to_model() if self.stack else None,
-            pipeline=(
-                self.pipeline.to_model(False) if self.pipeline else None
-            ),
+            pipeline=self.pipeline.to_model() if self.pipeline else None,
             created=self.created,
             updated=self.updated,
             images=json.loads(self.images),

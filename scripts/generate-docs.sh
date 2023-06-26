@@ -79,14 +79,6 @@ rm -rf src/zenml/zen_stores/migrations/env.py
 rm -rf src/zenml/zen_stores/migrations/versions
 rm -rf src/zenml/zen_stores/migrations/script.py.mako
 
-########################## Temporary workaround that removes a line of code that typically fails #######################
-file_name="${SRC}new/pipelines/pipeline.py"
-
-# currently `get_runs = GetRunsDescriptor()` fails the building of the API docs
-# Find the offending line of code, if it exists delete the line of code and overwrite the file.
-awk '!/^\s*get_runs\s*=\s*GetRunsDescriptor\(\s*\)$/' "$file_name" > "${file_name}.tmp" && mv "${file_name}.tmp" "$file_name"
-echo "Processed file, continuing."
-
 
 ########################################## Generate Structure of API docs ##############################################
 python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/

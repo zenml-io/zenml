@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List, Tuple
 
-from zenml.post_execution.lineage.node.base_node import (
+from zenml.lineage_graph.node.base_node import (
     BaseNode,
     BaseNodeDetails,
 )
