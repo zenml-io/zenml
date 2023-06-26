@@ -15,10 +15,28 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml import get_step_context
 from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import StepContext
+
+
+def test_step_context_is_singleton(step_context_with_no_output):
+    """Tests that the step context is a singleton."""
+    assert StepContext() is step_context_with_no_output
+
+
+def test_get_step_context(step_context_with_no_output):
+    """Unit test for `get_step_context()`."""
+
+    # step context exists -> returns the step context
+    assert get_step_context() is StepContext()
+
+    # step context does not exist -> raises an exception
+    StepContext._clear()
+    with pytest.raises(RuntimeError):
+        get_step_context()
 
 
 def test_initialize_step_context_with_mismatched_keys(
