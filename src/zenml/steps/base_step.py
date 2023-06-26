@@ -167,6 +167,19 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name = name or self.__class__.__name__
 
+        requires_context = self.entrypoint_definition.context is not None
+        if enable_cache is None:
+            if requires_context:
+                # Using the StepContext inside a step provides access to
+                # external resources which might influence the step execution.
+                # We therefore disable caching unless it is explicitly enabled
+                enable_cache = False
+                logger.debug(
+                    "Step '%s': Step context required and caching not "
+                    "explicitly enabled.",
+                    name,
+                )
+
         logger.debug(
             "Step '%s': Caching %s.",
             name,

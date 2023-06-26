@@ -97,14 +97,14 @@ def test_disable_caching_for_step():
     assert some_step().enable_cache is False
 
 
-def test_step_with_context_has_caching_not_disabled_by_default():
-    """Tests that defining a step with a context doesn't disables caching."""
+def test_step_with_context_has_caching_disabled_by_default():
+    """Tests that defining a step with a context disables caching by default."""
 
     @step
     def some_step(context: StepContext) -> None:
         pass
 
-    assert some_step().enable_cache is None
+    assert some_step().enable_cache is False
 
 
 def test_enable_caching_for_step_with_context():
