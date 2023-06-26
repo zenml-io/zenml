@@ -78,7 +78,7 @@ runs:
         rm integration-requirements.txt
 
     - name: Install langchain and llama_index integrations
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes' && inputs.python-version != '3.7'
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
       shell: bash
       run: |
         zenml integration install -y langchain llama_index

@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -60,7 +60,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -73,7 +73,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -99,7 +99,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
         test_environment:
           [
             "default",
@@ -107,8 +107,6 @@ jobs:
           ]
         exclude:
           # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator
-            python-version: "3.7"
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator
@@ -128,7 +126,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
         test_environment: ["default"]
 
       fail-fast: false
