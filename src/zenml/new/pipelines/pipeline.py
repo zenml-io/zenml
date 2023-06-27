@@ -134,13 +134,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -303,13 +301,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
