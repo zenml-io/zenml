@@ -409,16 +409,16 @@ from zenml import pipeline, step
 
 @step
 def step_1() -> Tuple[
-    Annoated[Dict, "dict_"],
-    Annoated[List, "list_"],
+    Annoated[Dict[str, str], "dict_"],
+    Annoated[List[str], "list_"],
 ]:
     return {"some": "data"}, []
 
 
 @step
 def step_2() -> Tuple[
-    Annoated[Dict, "dict_"],
-    Annoated[List, "list_"],
+    Annoated[Dict[str, str], "dict_"],
+    Annoated[List[str], "list_"],
 ]:
     return {"some": "data"}, []
 

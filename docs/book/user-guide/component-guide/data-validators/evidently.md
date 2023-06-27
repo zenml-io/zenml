@@ -464,7 +464,7 @@ def data_profiling(
         comparison_dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "report_json"],
-    Annotated[strm "report_html"]
+    Annotated[str, "report_html"]
 ]:
     """Custom data profiling step with Evidently
 
@@ -518,7 +518,7 @@ def data_validation(
         comparison_dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "test_json"],
-    Annotated[strm "test_html"]
+    Annotated[str, "test_html"]
 ]:
     """Custom data validation step with Evidently
 
@@ -586,7 +586,7 @@ def data_profiler(
         dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "report_json"],
-    Annotated[strm "report_html"]
+    Annotated[str, "report_html"]
 ]:
     """Custom data profiler step with Evidently
 
@@ -614,7 +614,7 @@ def data_tester(
         dataset: pd.DataFrame,
 ) -> Tuple[
     Annotated[str, "test_json"],
-    Annotated[strm "test_html"]
+    Annotated[str, "test_html"]
 ]:
     """Custom data tester step with Evidently
 

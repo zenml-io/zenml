@@ -188,7 +188,7 @@ def get_output_name_from_annotation_metadata(annotation: Any) -> Optional[str]:
 
 
 class ReturnVisitor(ast.NodeVisitor):
-    """AST visitor class that can be subclasses to visit function returns."""
+    """AST visitor class that can be subclassed to visit function returns."""
 
     def __init__(self, ignore_nested_functions: bool = True) -> None:
         """Initializes a return visitor instance.

@@ -26,7 +26,7 @@ receive an object of the correct type from the upstream steps in your pipeline.
 - **Better serialization**: Without type annotations, ZenML uses
 [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs.
 When provided with type annotations, ZenML can choose a [materializer](../../getting-started/core-concepts.md#materializers)
-that is best suited for the output. In case non of the builtin materializers work, you can even
+that is best suited for the output. In case none of the builtin materializers work, you can even
 [write a custom materializer](./handle-custom-data-types.md).
 
 ```python
