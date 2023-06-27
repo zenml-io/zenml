@@ -46,6 +46,7 @@ def alerter_failure_hook(exception: BaseException) -> None:
         rich_traceback = output_captured.getvalue()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
+        message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
@@ -70,6 +71,7 @@ def alerter_success_hook() -> None:
         message = (
             "*Success Hook Notification! Step completed successfully*" + "\n\n"
         )
+        message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
