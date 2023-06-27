@@ -245,8 +245,8 @@ Similarly, you can use the `inputs` and `input` properties to get the input
 artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names)
-for more information on default step output names and how to define custom names for your step outputs. 
+Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names) to see what
+the output names of your steps are and how to customize them.
 {% endhint %}
 
 ### Artifact Information

@@ -33,14 +33,18 @@ def test_type_annotation_resolving():
     assert resolve_type_annotation(ndarray) is ndarray
 
 
-def func_with_no_output_annoation_and_no_return():
-    return
-    return None
+def func_with_no_output_annoation_and_no_return(condition):
+    if condition:
+        return
+    else:
+        return None
 
 
-def func_with_no_output_annoation_and_return():
-    return 1
-    return
+def func_with_no_output_annoation_and_return(condition):
+    if condition:
+        return 1
+    else:
+        return
 
 
 def func_with_single_output() -> int:

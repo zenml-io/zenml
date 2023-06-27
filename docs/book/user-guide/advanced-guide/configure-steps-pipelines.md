@@ -43,6 +43,53 @@ def divide(a: int, b: int) -> Tuple[int, int]:
     return a // b, a % b
 ```
 
+{% hint style="info" %}
+It is impossible for ZenML to detect whether you want your step to
+have a singe output artifact of type `Tuple` or multiple output artifacts
+just by looking at the type annotation.
+
+We use the following convention to differentiate between the two: When
+the `return` statement is followed by a tuple literal (e.g. `return 1, 2`
+or `return (value_1, value_2)`) we treat it as a step with multiple outputs.
+All other cases are treated as a step with a single output of type `Tuple`.
+
+```python
+# Single output artifact
+@step
+def my_step() -> Tuple[int, int]:
+    output_value = (0, 1)
+    return output_value
+
+# Single output artifact with variable length
+@step
+def my_step(condition) -> Tuple[int, ...]:
+    if condition:
+        output_value = (0, 1)
+    else:
+        output_value = (0, 1, 2)
+
+    return output_value
+
+# Single output artifact using the `Annotated` annotation
+@step
+def my_step() -> Annotated[Tuple[int, ...], "my_output"]:
+    return 0, 1
+
+
+# Multiple output artifacts
+@step
+def my_step() -> Tuple[int, int]:
+    return 0, 1
+
+
+# Not allowed: Variable length tuple annotation when using
+# multiple output artifacts
+@step
+def my_step() -> Tuple[int, ...]:
+    return 0, 1
+```
+{% endhint %}
+
 ## Step output names
 
 By default, ZenML uses the output name `output` for single output steps
