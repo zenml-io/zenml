@@ -141,7 +141,7 @@ ingress_tls_generate_certs: true
 # The name of the Kubernetes secret to use for the ingress.
 ingress_tls_secret_name: zenml-tls-certs
 
-# The ingress controller's IP address. The ZenML server will be exposed on a subdomain of this IP. In AWS, if you have a hostname instead, use the following command to get the IP address: `dig +short <hostname>`.
+# The ingress controller's IP address. The ZenML server will be exposed on a subdomain of this IP. For AWS, if you have a hostname instead, use the following command to get the IP address: `dig +short <hostname>`.
 ingress_controller_ip:
 
 # Whether to create a SQL database service as part of the recipe.

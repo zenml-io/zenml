@@ -129,7 +129,7 @@ variable "database_ssl_verify_server_cert" {
 # Enable secrets manager API. Listing services might need elevated permissions.
 # Disable this if you don't have the ListServices permission.
 variable "enable_secrets_manager_api" {
-  description = "Should the recipe enable the secrets manager API?"
+  description = "Enable the secrets manager API"
   default     = true
   type        = bool
 }

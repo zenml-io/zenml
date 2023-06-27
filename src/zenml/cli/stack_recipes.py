@@ -473,8 +473,8 @@ def deploy(
     """
     cli_utils.warning(ALPHA_MESSAGE)
     logger.info(
-        "No server is deployed by default anymore. "
-        "Please use `zenml deploy` to create a ZenML server."
+        "Servers are no longer deployed by default. Please use the "
+        "`zenml deploy` command to deploy a ZenML server."
     )
 
     with event_handler(
@@ -618,7 +618,7 @@ def deploy(
                 )
         # invoke server deploy
         if no_server:
-            logger.warning("The flag `--no-server` has been deprecated. ")
+            logger.warning("The `--no-server` flag has been deprecated. ")
         # get the stack yaml path
         stack_yaml_file = os.path.join(
             stack_recipe_service.config.directory_path,
