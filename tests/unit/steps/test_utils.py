@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Annotated, Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pytest
 from numpy import ndarray
+from typing_extensions import Annotated
 
 from zenml.steps.utils import (
     parse_return_type_annotations,

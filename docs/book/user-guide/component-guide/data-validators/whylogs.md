@@ -56,7 +56,8 @@ zenml data-validator register whylogs_data_validator --flavor=whylogs \
 You'll also need to enable whylabs logging for your custom pipeline steps if you want to upload the whylogs data profiles that they return as artifacts to the WhyLabs platform. This is enabled by default for the standard whylogs step. For custom steps, you can enable WhyLabs logging by setting the `upload_to_whylabs` parameter to `True` in the step configuration, e.g.:
 
 ```python
-from typing import Tuple, Annotated
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 import whylogs as why
 from sklearn import datasets

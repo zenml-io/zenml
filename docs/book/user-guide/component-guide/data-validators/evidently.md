@@ -448,7 +448,8 @@ The Evidently Data Validator implements the same interface as do all Data Valida
 All you have to do is call the Evidently Data Validator methods when you need to interact with Evidently to generate data reports or to run test suites, e.g.:
 
 ```python
-from typing import Tuple, Annotated
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.pipeline.column_mapping import ColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
@@ -569,7 +570,8 @@ Have a look at [the complete list of methods and parameters available in the `Ev
 You can use the Evidently library directly in your custom pipeline steps, e.g.:
 
 ```python
-from typing import Tuple, Annotated
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.report import Report
 import evidently.metric_preset as metric_preset

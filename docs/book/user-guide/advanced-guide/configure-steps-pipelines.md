@@ -54,7 +54,8 @@ If you want to use custom output names for your steps, use the `Annotated` type
 annotation:
 
 ```python
-from typing import Annotated, Tuple
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 from zenml import step
 
 @step

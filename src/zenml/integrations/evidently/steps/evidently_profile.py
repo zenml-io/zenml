@@ -110,4 +110,4 @@ def evidently_profile_step(
         profile_options=profile_options or [],
         dashboard_options=dashboard_options or [],
     )
-    return [profile, HTMLString(dashboard.html())]
+    return profile, HTMLString(dashboard.html())

@@ -101,7 +101,7 @@ def evidently_test_step(
         test_options=test_options or [],
         download_nltk_data=download_nltk_data,
     )
-    return [
+    return (
         test_suite.json(),
         HTMLString(test_suite.show(mode="inline").data),
-    ]
+    )

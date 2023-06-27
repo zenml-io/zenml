@@ -7,7 +7,8 @@ description: Learning how to configure pipelines and their steps.
 In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
 
 ```python
-from typing import Tuple, Annotated
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split

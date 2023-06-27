@@ -17,10 +17,10 @@
 import ast
 import inspect
 import textwrap
-import typing
-from typing import Annotated, Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import pydantic.typing as pydantic_typing
+from typing_extensions import Annotated
 
 from zenml.logger import get_logger
 from zenml.steps.step_output import Output
@@ -32,7 +32,7 @@ SINGLE_RETURN_OUT_NAME = "output"
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
-    """Get arguments of a Union type annotation.
+    """Get arguments of a type annotation.
 
     Example:
         `get_args(Union[int, str]) == (int, str)`
@@ -41,7 +41,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
         obj: The annotation.
 
     Returns:
-        The args of the Union annotation.
+        The args of the annotation.
     """
     return tuple(
         pydantic_typing.get_origin(v) or v
@@ -93,7 +93,7 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
         if requires_multiple_artifacts:
             output_signature = {}
 
-            args = typing.get_args(return_annotation)
+            args = pydantic_typing.get_args(return_annotation)
             if args[-1] is Ellipsis:
                 raise RuntimeError(
                     "Variable length output annotations are not allowed."
@@ -137,7 +137,7 @@ def resolve_type_annotation(obj: Any) -> Tuple[Any, Optional[str]]:
     origin = pydantic_typing.get_origin(obj) or obj
 
     if origin is Annotated:
-        annotation, *_ = typing.get_args(obj)
+        annotation, *_ = pydantic_typing.get_args(obj)
         output_name = validate_annotation_metadata(obj)
 
         resolved_annotation, _ = resolve_type_annotation(annotation)
@@ -162,7 +162,7 @@ def validate_annotation_metadata(annotation: Any) -> str:
     Returns:
         The annotation metadata.
     """
-    annotation, *metadata = typing.get_args(annotation)
+    annotation, *metadata = pydantic_typing.get_args(annotation)
 
     if len(metadata) != 1:
         raise ValueError(

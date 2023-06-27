@@ -103,4 +103,4 @@ def evidently_report_step(
         report_options=report_options or [],
         download_nltk_data=download_nltk_data,
     )
-    return [report.json(), HTMLString(report.show(mode="inline").data)]
+    return report.json(), HTMLString(report.show(mode="inline").data)

@@ -969,7 +969,9 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The finalized step configuration.
         """
-        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
+        outputs: Dict[
+            str, Dict[str, Union[Source, Tuple[Source, ...]]]
+        ] = defaultdict(dict)
 
         for (
             output_name,
