@@ -123,3 +123,14 @@ def test_get_package_information_works():
         cli_utils.get_package_information("zenml")["zenml"]
         == current_zenml_version
     )
+
+
+def test_validate_keys():
+    """Test that validation of proper identifier as key works"""
+    with pytest.raises(ClickException):
+        cli_utils.validate_keys("12abc")
+    with pytest.raises(ClickException):
+        cli_utils.validate_keys("abc d")
+    with pytest.raises(ClickException):
+        cli_utils.validate_keys("")
+    assert cli_utils.validate_keys("abcd") is None

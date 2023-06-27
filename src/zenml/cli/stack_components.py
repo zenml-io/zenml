@@ -31,6 +31,7 @@ from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
     fail_secrets_manager_creation,
+    is_sorted_or_filtered,
     list_options,
     print_page_info,
     warn_deprecated_secrets_manager,
@@ -134,7 +135,7 @@ def generate_stack_component_describe_command(
 
 def generate_stack_component_list_command(
     component_type: StackComponentType,
-) -> Callable[[], None]:
+) -> Callable[..., None]:
     """Generates a `list` command for the specific stack component type.
 
     Args:
@@ -145,10 +146,14 @@ def generate_stack_component_list_command(
     """
 
     @list_options(ComponentFilterModel)
-    def list_stack_components_command(**kwargs: Any) -> None:
+    @click.pass_context
+    def list_stack_components_command(
+        ctx: click.Context, **kwargs: Any
+    ) -> None:
         """Prints a table of stack components.
 
         Args:
+            ctx: The click context object
             kwargs: Keyword arguments to filter the components.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
@@ -166,6 +171,7 @@ def generate_stack_component_list_command(
                 client=client,
                 component_type=component_type,
                 components=components.items,
+                show_active=not is_sorted_or_filtered(ctx),
             )
             print_page_info(components)
 

@@ -12,24 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Step that allows you to send messages to Slack and wait for a response."""
+from typing import Optional
 
-from zenml import step
-from zenml.alerter.alerter_utils import (
-    get_active_alerter,
-    get_active_stack_name,
-)
-from zenml.environment import Environment
+from zenml import get_step_context, step
+from zenml.client import Client
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
     SlackAlerterParameters,
     SlackAlerterPayload,
 )
-from zenml.steps import StepContext
 
 
 @step
 def slack_alerter_ask_step(
-    params: SlackAlerterParameters, context: StepContext, message: str
+    message: str,
+    params: Optional[SlackAlerterParameters] = None,
 ) -> bool:
     """Posts a message to the Slack alerter component and waits for approval.
 
@@ -37,9 +34,8 @@ def slack_alerter_ask_step(
     deploying models.
 
     Args:
-        params: Parameters for the Slack alerter.
-        context: StepContext of the ZenML repository.
         message: Initial message to be posted.
+        params: Parameters for the Slack alerter.
 
     Returns:
         True if a user approved the operation, else False.
@@ -47,7 +43,10 @@ def slack_alerter_ask_step(
     Raises:
         RuntimeError: If currently active alerter is not a `SlackAlerter`.
     """
-    alerter = get_active_alerter(context)
+    context = get_step_context()
+    client = Client()
+    active_stack = client.active_stack
+    alerter = active_stack.alerter
     if not isinstance(alerter, SlackAlerter):
         # TODO: potential duplicate code for other components
         # -> generalize to `check_component_flavor()` utility function?
@@ -57,14 +56,16 @@ def slack_alerter_ask_step(
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
     if (
-        hasattr(params, "include_format_blocks")
+        params
+        and hasattr(params, "include_format_blocks")
         and params.include_format_blocks
     ):
-        env = Environment().step_environment
+        pipeline_name = context.pipeline.name
+        step_name = context.step_run.name
         payload = SlackAlerterPayload(
-            pipeline_name=env.pipeline_name,
-            step_name=env.step_name,
-            stack_name=get_active_stack_name(context),
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+            stack_name=active_stack.name,
         )
         params.payload = payload
     return alerter.ask(message, params)

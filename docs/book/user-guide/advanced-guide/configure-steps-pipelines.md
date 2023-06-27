@@ -74,6 +74,35 @@ from uuid import UUID
 artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 ```
 
+## Using a custom step invocation ID
+
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID**
+that you can use to reference this step invocation when [defining the execution order](#control-the-execution-order)
+of your pipeline steps or use it to [fetch information](../starter-guide/fetch-runs-after-execution.md#steps)
+about the invocation after the pipeline finished running.
+
+```python
+from zenml import pipeline, step
+
+@step
+def my_step() -> None:
+    ...
+
+@pipeline
+def example_pipeline():
+    # When calling a step for the first time inside a pipeline,
+    # the invocation ID will be equal to the step name -> `my_step`.
+    my_step()
+    # When calling the same step again, the suffix `_2`, `_3`, ... will
+    # be appended to the step name to generate a unique invocation ID.
+    # For this call, the invocation ID would be `my_step_2`.
+    my_step()
+    # If you want to use a custom invocation ID when calling a step, you can
+    # do so by passing it like this. If you pass a custom ID, it needs to be
+    # unique for all the step invocations that happen as part of this pipeline.
+    my_step(id="my_custom_invocation_id")
+```
+
 ## Control the execution order
 
 By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.&#x20;
@@ -90,15 +119,19 @@ def example_pipeline():
     step_3(step_1_output, step_2_output)
 ```
 
-If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by calling `step.after(some_other_step)`:
+If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by passing the invocation IDs of steps that should run before your step like this: `my_step(after="other_step")`. If you want to define multiple upstream steps, you can also pass a list for the `after` argument when calling your step: `my_step(after=["other_step", "other_step_2"])`.
+
+{% hint style="info" %}
+Check out the [previous section](#using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a
+custom one for your steps.
+{% endhint %}
 
 ```python
 from zenml.pipelines import pipeline
 
 @pipeline
 def example_pipeline():
-    step_1.after(step_2)
-    step_1_output = step_1()
+    step_1_output = step_1(after="step_2")
     step_2_output = step_2()
     step_3(step_1_output, step_2_output)
 ```
@@ -355,15 +388,16 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be fetched later with the [post-execution workflow](../starter-guide/fetch-runs-after-execution.md):
+This tag is now associated and tracked with all pipeline runs, and can be 
+[fetched later](../starter-guide/fetch-runs-after-execution.md):
 
 ```python
-from zenml.post_execution import get_pipeline
+from zenml.client import Client
 
-p = get_pipeline('my_pipeline')
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 
 # print out the extra
-print(p.runs[0].pipeline_configuration['extra'])
+print(pipeline_run.config.extra)
 # {'tag': 'production'}
 ```
 

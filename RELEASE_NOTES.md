@@ -1,5 +1,54 @@
 <!-- markdown-link-check-disable -->
 
+# 0.40.3
+
+This is a minor ZenML release that introduces a couple of new features:
+
+* the [Azure Service Connector](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/azure-service-connector) is now available in addition to the AWS and GCP ones. It can be used to connect ZenML and Stack Components to Azure cloud infrastructure resources like Azure Blob Storage, Azure Container Registry and Azure Kubernetes Service.
+* Service Connectors can now also be managed through the ZenML Dashboard
+* adds `zenml secret export` CLI command to export secrets from the ZenML Secret Store to a local file
+* adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (courtesy of @bhatt-priyadutt)
+
+In addition to that, this release also contains a couple of bug fixes and improvements, including:
+
+* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/user-guide/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/user-guide/component-guide/step-operators/vertex)
+* adjust Seldon and BentoML Steps and Examples to new pipeline interface
+
+## What's Changed
+* Add option to list all resources when verifying service connector config by @stefannica in https://github.com/zenml-io/zenml/pull/1573
+* Fix sandbox time limit by @schustmi in https://github.com/zenml-io/zenml/pull/1602
+* Secrets input structure change method by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1547
+* Implement Azure service connector by @stefannica in https://github.com/zenml-io/zenml/pull/1589
+* Adding the ability to tag the source of an event for the analytics by @bcdurak in https://github.com/zenml-io/zenml/pull/1599
+* Move all the logic into the script to make it as easy as possible to … by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1605
+* Only set mysql session variables when necessary by @schustmi in https://github.com/zenml-io/zenml/pull/1568
+* Bug in creating upstream_steps by @sidsaurb in https://github.com/zenml-io/zenml/pull/1601
+* Added logs endpoint to display on the dashboard by @htahir1 in https://github.com/zenml-io/zenml/pull/1526
+* Fix CI by @fa9r in https://github.com/zenml-io/zenml/pull/1612
+* Fix Azure Integration Imports and Improve Flavor Registration Error Handling by @fa9r in https://github.com/zenml-io/zenml/pull/1615
+* Deprecation Cleanup by @fa9r in https://github.com/zenml-io/zenml/pull/1608
+* Cleanup Local Logging Temp Files by @fa9r in https://github.com/zenml-io/zenml/pull/1621
+* Add cloud orchestrator warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1418
+* Update custom code run in sandbox docs by @safoinme in https://github.com/zenml-io/zenml/pull/1610
+* Remove the GH Actions review reminder bot by @strickvl in https://github.com/zenml-io/zenml/pull/1624
+* Automatically optimize image sizes on PR creation by @strickvl in https://github.com/zenml-io/zenml/pull/1626
+* Deprecation Warning Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1620
+* Fix ZenML Installation when FastAPI is not Installed by @fa9r in https://github.com/zenml-io/zenml/pull/1627
+* Fix unnecessary / extra deprecation warnings by @strickvl in https://github.com/zenml-io/zenml/pull/1630
+* Add `zenml secret export` CLI command by @fa9r in https://github.com/zenml-io/zenml/pull/1607
+* Missing pipeline features docs by @schustmi in https://github.com/zenml-io/zenml/pull/1619
+* Fix for valid secret name by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1617
+* Fix and document Vertex AI orchestrator and step operator by @stefannica in https://github.com/zenml-io/zenml/pull/1606
+* Deprecate KServe Integration by @fa9r in https://github.com/zenml-io/zenml/pull/1631
+* Adjust Seldon Steps and Examples to New Pipeline Interface by @fa9r in https://github.com/zenml-io/zenml/pull/1560
+* Adjust BentoML Steps and Example to New Pipeline Interface by @fa9r in https://github.com/zenml-io/zenml/pull/1614
+* Moved kubernetes imports to inner function to avoid module not found error by @htahir1 in https://github.com/zenml-io/zenml/pull/1622
+
+## New Contributors
+* @sidsaurb made their first contribution in https://github.com/zenml-io/zenml/pull/1601
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.2...test
+
 # 0.40.2
 
 Documentation and example updates.
@@ -78,7 +127,7 @@ def my_pipeline(step_count: int) -> None:
     data = load_data_step()
     after = []
     for i in range(step_count):
-        train_step(data, learning_rate=i * 0.0001, name=f"train_step_{i}")
+        train_step(data, learning_rate=i * 0.0001, id=f"train_step_{i}")
         after.append(f"train_step_{i}")
     model = select_model_step(..., after=after)
 ```

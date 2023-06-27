@@ -109,6 +109,6 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     def close(self) -> None:
         """Tidy up any resources used by the handler."""
         self.flush()
+        super().close()
         if self.local_temp_file and fileio.exists(self.local_temp_file):
             fileio.remove(self.local_temp_file)
-        super().close()

@@ -33,6 +33,7 @@ from zenml.cli.utils import (
     print_list_items,
     print_page_info,
     print_table,
+    validate_keys,
     warn_deprecated_secrets_manager,
     warning,
 )
@@ -793,6 +794,8 @@ def create_secret(
                 "interactive mode."
             )
 
+        for key in parsed_args:
+            validate_keys(key)
         declare("The following secret will be registered.")
         pretty_print_secret(secret=parsed_args, hide_secret=True)
 

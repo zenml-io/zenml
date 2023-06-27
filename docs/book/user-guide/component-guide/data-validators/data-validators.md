@@ -23,8 +23,9 @@ Related concepts:
 registered as part of your ZenML [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md).
 * Data Validators used in ZenML pipelines usually generate data profiles and
 data quality check reports that are versioned and stored in the 
-[Artifact Store](../artifact-stores/artifact-stores.md). They can be retrieved 
-and inspected using [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md).
+[Artifact Store](../artifact-stores/artifact-stores.md) and can be 
+[retrieved and visualized](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md)
+later.
 
 ## When to use it
 
@@ -80,7 +81,7 @@ your own custom pipeline steps and simply return the results (e.g. data
 profiles, test reports) as artifacts that are versioned and stored by ZenML in 
 its Artifact Store.
 * you can access the data validation artifacts in subsequent pipeline steps, or
-you can load them in [the post-execution workflow](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) 
+[fetch them afterwards](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) 
 to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](#data-validator-flavors)

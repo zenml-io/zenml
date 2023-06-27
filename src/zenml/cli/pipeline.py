@@ -466,7 +466,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
     client = Client()
     try:
         with console.status("Listing pipeline runs...\n"):
-            pipeline_runs = client.list_runs(**kwargs)
+            pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:

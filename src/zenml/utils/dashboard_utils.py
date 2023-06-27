@@ -40,10 +40,15 @@ def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
         return ""
 
     url = client.zen_store.url
-    pipeline_id = str(run.pipeline.id)
     run_id = str(run.id)
 
-    url += f"/workspaces/{client.active_workspace.name}/pipelines/{pipeline_id}/runs/{run_id}/dag"
+    if run.pipeline:
+        pipeline_id = str(run.pipeline.id)
+        url += f"/workspaces/{client.active_workspace.name}/pipelines/{pipeline_id}/runs"
+    else:
+        url += "/runs"
+
+    url += f"/{run_id}/dag"
 
     return url
 

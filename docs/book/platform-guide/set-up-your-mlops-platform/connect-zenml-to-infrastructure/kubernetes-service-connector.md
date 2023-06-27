@@ -46,16 +46,27 @@ This Service Connector does not support generating short-lived credentials from 
 
 The Kubernetes Service Connector allows fetching credentials from the local Kubernetes CLI (i.e. `kubectl`) during registration. The current Kubernetes kubectl configuration context is used for this purpose. The following is an example of lifting Kubernetes credentials granting access to a GKE cluster:
 
+```sh
+zenml service-connector register kube-auto --type kubernetes --auto-configure
 ```
-$ zenml service-connector register kube-auto --type kubernetes --auto-configure
-Successfully registered service connector `kube-auto` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 4315e8eb-fcbd-4938-a4d7-a9218ab372a1 │ kube-auto      │ 🌀 kubernetes  │ 🌀 kubernetes-cluster │ 35.175.95.223  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
-$ zenml service-connector describe kube-auto 
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `kube-auto` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES ┃
+┠───────────────────────┼────────────────┨
+┃ 🌀 kubernetes-cluster │ 35.185.95.223  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+```sh
+zenml service-connector describe kube-auto 
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'kube-auto' of type 'kubernetes' with id '4315e8eb-fcbd-4938-a4d7-a9218ab372a1' is owned by user 'default' and is 'private'.
      'kube-auto' kubernetes Service Connector Details      
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -104,6 +115,7 @@ Service connector 'kube-auto' of type 'kubernetes' with id '4315e8eb-fcbd-4938-a
 ┃ certificate_authority │ [HIDDEN]              ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 {% hint style="info" %}
 Credentials auto-discovered and lifted through the Kubernetes Service Connector might have a limited lifetime, especially if the target Kubernetes cluster is managed through a 3rd party authentication provider such a GCP or AWS. Using short-lived credentials with your Service Connectors could lead to loss of connectivity and other unexpected errors in your pipeline.
@@ -113,8 +125,12 @@ Credentials auto-discovered and lifted through the Kubernetes Service Connector 
 
 This Service Connector allows configuring the local Kubernetes client (i.e. `kubectl`) with credentials:
 
+```sh
+zenml service-connector login kube-auto 
 ```
-$ zenml service-connector login kube-auto 
+
+{% code title="Example Command Output" %}
+```text
 ⠦ Attempting to configure local client using service connector 'kube-auto'...
 Cluster "35.185.95.223" set.
 ⠇ Attempting to configure local client using service connector 'kube-auto'...
@@ -122,6 +138,7 @@ Cluster "35.185.95.223" set.
 Updated local kubeconfig with the cluster details. The current kubectl context was set to '35.185.95.223'.
 The 'kube-auto' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
+{% endcode %}
 
 ## Stack Components use
 

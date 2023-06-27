@@ -20,51 +20,30 @@ import bentoml
 from bentoml import bentos
 from bentoml._internal.bento import bento
 
+from zenml import get_step_context, step
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
-from zenml.steps import BaseParameters, step
-from zenml.steps.step_context import StepContext
 from zenml.utils import source_utils
 from zenml.utils.artifact_utils import load_artifact
 
 logger = get_logger(__name__)
 
 
-class BentoMLBuilderParameters(BaseParameters):
-    """BentoML Bento builder step parameters.
-
-    Attributes:
-        service: the name of the BentoML service to be deployed.
-        model_name: the name of the model to be packaged.
-        model_type: the type of the model.
-        version: the version of the model if given.
-        labels: the labels of the model if given.
-        description: the description of the model if given.
-        include: the files to be included in the BentoML bundle.
-        exclude: the files to be excluded from the BentoML bundle.
-        python: dictionary for configuring Bento's python dependencies,
-        docker: dictionary for configuring Bento's docker image.
-    """
-
-    service: str
-    model_name: str
-    model_type: str
-    version: Optional[str] = None
-    labels: Optional[Dict[str, str]] = None
-    description: Optional[str] = None
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
-    python: Optional[Dict[str, Any]] = None
-    docker: Optional[Dict[str, Any]] = None
-    working_dir: Optional[str] = None
-
-
 @step
 def bento_builder_step(
     model: UnmaterializedArtifact,
-    params: BentoMLBuilderParameters,
-    context: StepContext,
+    model_name: str,
+    model_type: str,
+    service: str,
+    version: Optional[str] = None,
+    labels: Optional[Dict[str, str]] = None,
+    description: Optional[str] = None,
+    include: Optional[List[str]] = None,
+    exclude: Optional[List[str]] = None,
+    python: Optional[Dict[str, Any]] = None,
+    docker: Optional[Dict[str, Any]] = None,
+    working_dir: Optional[str] = None,
 ) -> bento.Bento:
     """Build a BentoML Model and Bento bundle.
 
@@ -73,14 +52,25 @@ def bento_builder_step(
 
     Args:
         model: the model to be packaged.
-        params: the parameters for the BentoML builder step.
-        context: the step context.
+        model_name: the name of the model to be packaged.
+        model_type: the type of the model.
+        service: the name of the BentoML service to be deployed.
+        version: the version of the model if given.
+        labels: the labels of the model if given.
+        description: the description of the model if given.
+        include: the files to be included in the BentoML bundle.
+        exclude: the files to be excluded from the BentoML bundle.
+        python: dictionary for configuring Bento's python dependencies,
+        docker: dictionary for configuring Bento's docker image.
+        working_dir: the working directory of the BentoML bundle.
 
     Returns:
         the BentoML Bento object.
     """
+    context = get_step_context()
+
     # save the model and bento uri as part of the bento labels
-    labels = params.labels or {}
+    labels = labels or {}
     labels["model_uri"] = model.uri
     labels["bento_uri"] = os.path.join(
         context.get_output_artifact_uri(), DEFAULT_BENTO_FILENAME
@@ -91,25 +81,25 @@ def bento_builder_step(
 
     # Save the model to a BentoML model based on the model type
     try:
-        module = importlib.import_module(f".{params.model_type}", "bentoml")
-        module.save_model(params.model_name, model, labels=params.labels)
+        module = importlib.import_module(f".{model_type}", "bentoml")
+        module.save_model(model_name, model, labels=labels)
     except importlib.metadata.PackageNotFoundError:
         bentoml.picklable_model.save_model(
-            params.model_name,
+            model_name,
             model,
         )
 
     # Build the BentoML bundle
     bento = bentos.build(
-        service=params.service,
-        version=params.version,
+        service=service,
+        version=version,
         labels=labels,
-        description=params.description,
-        include=params.include,
-        exclude=params.exclude,
-        python=params.python,
-        docker=params.docker,
-        build_ctx=params.working_dir or source_utils.get_source_root(),
+        description=description,
+        include=include,
+        exclude=exclude,
+        python=python,
+        docker=docker,
+        build_ctx=working_dir or source_utils.get_source_root(),
     )
 
     # Return the BentoML Bento bundle
