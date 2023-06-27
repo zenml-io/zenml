@@ -17,13 +17,12 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
-from zenml.post_execution import get_pipeline
-from zenml.post_execution.lineage.lineage_graph import (
+from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
     STEP_PREFIX,
     LineageGraph,
 )
+from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 
 
 def test_generate_run_nodes_and_edges(
@@ -43,7 +42,9 @@ def test_generate_run_nodes_and_edges(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[0]
+    pipeline_run = clean_client.get_pipeline(
+        "connected_two_step_pipeline"
+    ).runs[0]
 
     # Write some metadata for the pipeline run
     clean_client.create_run_metadata(
@@ -54,7 +55,7 @@ def test_generate_run_nodes_and_edges(
 
     # Write some metadata for all steps
     steps = pipeline_run.steps
-    for step_ in steps:
+    for step_ in steps.values():
         clean_client.create_run_metadata(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
@@ -71,7 +72,9 @@ def test_generate_run_nodes_and_edges(
             )
 
     # Get the run again so all the metadata is loaded
-    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[0]
+    pipeline_run = clean_client.get_pipeline(
+        "connected_two_step_pipeline"
+    ).runs[0]
 
     # Generate a lineage graph for the pipeline run
     graph = LineageGraph()
@@ -82,12 +85,14 @@ def test_generate_run_nodes_and_edges(
     assert (
         len(graph.edges) == 3
     )  # step_1 -> artifact_1 -> step_2 -> artifact_2
-    assert graph.root_step_id == STEP_PREFIX + str(pipeline_run.steps[0].id)
+    assert graph.root_step_id == STEP_PREFIX + str(
+        pipeline_run.steps["step_1"].id
+    )
 
     # Check that the graph makes sense
     edge_id_to_model_mapping = {edge.id: edge for edge in graph.edges}
     node_id_to_model_mapping = {node.id: node for node in graph.nodes}
-    for step_ in pipeline_run.steps:
+    for step_ in pipeline_run.steps.values():
         step_id = STEP_PREFIX + str(step_.id)
 
         # Check that each step has a corresponding node

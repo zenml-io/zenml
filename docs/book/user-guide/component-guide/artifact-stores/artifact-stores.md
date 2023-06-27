@@ -40,8 +40,6 @@ Related concepts:
   using [Materializers](/docs/book/user-guide/advanced-guide/handle-custom-data-types.md). Materializers implement the
   logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents
   to/from the Artifact Store.
-* you can access the artifacts produced by your pipeline runs from the Artifact Store
-  using [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md).
 
 ### When to use it
 
@@ -86,8 +84,7 @@ higher-level APIs that can be used as an alternative to store and access artifac
 
 * return one or more objects from your pipeline steps to have them automatically saved in the active Artifact Store as
   pipeline artifacts.
-* use [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) to retrieve pipeline
-  artifacts from the active Artifact Store after a pipeline run is complete.
+* [retrieve pipeline artifacts](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) from the active Artifact Store after a pipeline run is complete.
 
 You will probably need to interact with the [low-level Artifact Store API](artifact-stores.md#the-artifact-store-api)
 directly:

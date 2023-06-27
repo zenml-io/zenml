@@ -18,29 +18,30 @@ from typing import List, Optional, Tuple, Union
 from pydantic import BaseModel
 
 from zenml.enums import ExecutionStatus
-from zenml.post_execution.lineage.edge import Edge
-from zenml.post_execution.lineage.node import (
+from zenml.lineage_graph.edge import Edge
+from zenml.lineage_graph.node import (
     ArtifactNode,
     ArtifactNodeDetails,
     StepNode,
     StepNodeDetails,
 )
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.step import StepView
+from zenml.models import PipelineRunResponseModel, StepRunResponseModel
 
 ARTIFACT_PREFIX = "artifact_"
 STEP_PREFIX = "step_"
 
 
 class LineageGraph(BaseModel):
-    """A lineage graph representation of a PipelineRunView."""
+    """A lineage graph representation of a PipelineRunResponseModel."""
 
     nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
     root_step_id: Optional[str] = None
     run_metadata: List[Tuple[str, str, str]] = []
 
-    def generate_step_nodes_and_edges(self, step: StepView) -> None:
+    def generate_step_nodes_and_edges(
+        self, step: StepRunResponseModel
+    ) -> None:
         """Generates the step nodes and the edges between them.
 
         Args:
@@ -49,7 +50,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step_configuration.dict()
+        step_config = step.config.dict()
         if step_config:
             step_config = {
                 key: value
@@ -63,8 +64,8 @@ class LineageGraph(BaseModel):
                     execution_id=str(step.id),
                     name=step.name,  # redundant for consistency
                     status=step.status,
-                    entrypoint_name=step.entrypoint_name,  # redundant for consistency
-                    parameters=step.parameters,
+                    entrypoint_name=step.config.name,  # redundant for consistency
+                    parameters=step.config.parameters,
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
@@ -116,14 +117,16 @@ class LineageGraph(BaseModel):
                 )
             )
 
-    def generate_run_nodes_and_edges(self, run: PipelineRunView) -> None:
+    def generate_run_nodes_and_edges(
+        self, run: PipelineRunResponseModel
+    ) -> None:
         """Generates the run nodes and the edges between them.
 
         Args:
-            run: The PipelineRunView to generate the lineage graph for.
+            run: The PipelineRunResponseModel to generate the lineage graph for.
         """
         self.run_metadata = [
             (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
         ]
-        for step in run.steps:
+        for step in run.steps.values():
             self.generate_step_nodes_and_edges(step)

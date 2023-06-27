@@ -184,9 +184,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,
             stack=self.stack.to_model() if self.stack else None,
-            pipeline=(
-                self.pipeline.to_model(False) if self.pipeline else None
-            ),
+            pipeline=self.pipeline.to_model() if self.pipeline else None,
             build=self.build.to_model() if self.build else None,
             schedule=self.schedule.to_model() if self.schedule else None,
             code_reference=self.code_reference.to_model()

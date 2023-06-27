@@ -31,7 +31,10 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
-from zenml.steps.utils import parse_return_type_annotations
+from zenml.steps.utils import (
+    parse_return_type_annotations,
+    resolve_type_annotation,
+)
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -70,6 +73,7 @@ def get_step_entrypoint_signature(
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
 
     def _is_param_of_class(annotation: Any, class_: Type[Any]) -> bool:
+        annotation = resolve_type_annotation(annotation)
         return inspect.isclass(annotation) and issubclass(annotation, class_)
 
     parameters = list(signature.parameters.values())
@@ -280,6 +284,7 @@ def validate_entrypoint_function(
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
+        annotation = resolve_type_annotation(annotation)
         if inspect.isclass(annotation) and issubclass(
             annotation, BaseParameters
         ):

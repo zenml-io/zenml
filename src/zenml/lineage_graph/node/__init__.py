@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Initialization of lineage nodes."""
 
-from zenml.post_execution.lineage.node.artifact_node import (  # noqa
+from zenml.lineage_graph.node.artifact_node import (  # noqa
     ArtifactNode,
     ArtifactNodeDetails,
 )
-from zenml.post_execution.lineage.node.base_node import BaseNode  # noqa
-from zenml.post_execution.lineage.node.step_node import (  # noqa
+from zenml.lineage_graph.node.base_node import BaseNode  # noqa
+from zenml.lineage_graph.node.step_node import (  # noqa
     StepNode,
     StepNodeDetails,
 )
