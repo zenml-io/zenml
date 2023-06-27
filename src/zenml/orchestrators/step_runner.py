@@ -263,7 +263,7 @@ class StepRunner:
 
         for arg in args:
             arg_type = annotations.get(arg, None)
-            arg_type, _ = resolve_type_annotation(arg_type)
+            arg_type = resolve_type_annotation(arg_type)
 
             if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
@@ -318,7 +318,7 @@ class StepRunner:
 
         for arg in args:
             arg_type = annotations.get(arg, None)
-            arg_type, _ = resolve_type_annotation(arg_type)
+            arg_type = resolve_type_annotation(arg_type)
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):

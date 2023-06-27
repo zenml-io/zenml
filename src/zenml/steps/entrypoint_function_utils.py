@@ -247,7 +247,6 @@ def validate_entrypoint_function(
             `BaseParameter` arguments.
         StepInterfaceError: If the entrypoint function has multiple
             `StepContext` arguments.
-        StepInterfaceError: If the entrypoint function has no return annotation.
 
     Returns:
         A validated definition of the entrypoint function.

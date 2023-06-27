@@ -25,17 +25,12 @@ from zenml.steps.utils import (
 
 def test_type_annotation_resolving():
     """Tests that resolving type annotations works as expected."""
-    assert resolve_type_annotation(Dict)[0] is dict
-    assert resolve_type_annotation(List[int])[0] is list
-    assert resolve_type_annotation(Set[str])[0] is set
+    assert resolve_type_annotation(Dict) is dict
+    assert resolve_type_annotation(List[int]) is list
+    assert resolve_type_annotation(Set[str]) is set
 
-    assert resolve_type_annotation(set)[0] is set
-    assert resolve_type_annotation(ndarray)[0] is ndarray
-
-    assert resolve_type_annotation(Annotated[Set[int], "test"]) == (
-        set,
-        "test",
-    )
+    assert resolve_type_annotation(set) is set
+    assert resolve_type_annotation(ndarray) is ndarray
 
 
 def func_with_no_output_annoation_and_no_return():

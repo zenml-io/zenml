@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Test Step."""
 
-from typing import Annotated, Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.integrations.evidently.column_mapping import (

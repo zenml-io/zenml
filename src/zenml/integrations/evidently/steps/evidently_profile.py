@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Evidently Profile Step."""
-
-from typing import Annotated, Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.integrations.evidently.column_mapping import (

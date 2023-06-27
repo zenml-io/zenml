@@ -79,7 +79,7 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
             "Using the `Output` class to define the outputs of your steps is "
             "deprecated. You should instead use the standard Python way of "
             "type annotating your functions. Check out our documentation "
-            "https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline"  # TODO: replace with exact link
+            "https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines#step-output-names"
             "for more information on how to assign custom names to your step "
             "outputs."
         )
@@ -100,10 +100,11 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
                 )
 
             for i, annotation in enumerate(args):
-                resolved_annotation, output_name = resolve_type_annotation(
-                    annotation
+                resolved_annotation = resolve_type_annotation(annotation)
+                output_name = (
+                    get_output_name_from_annotation_metadata(annotation)
+                    or f"output_{i}"
                 )
-                output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
                     raise RuntimeError(f"Duplicate output name {output_name}.")
 
@@ -111,17 +112,18 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
 
             return output_signature
 
-    resolved_annotation, output_name = resolve_type_annotation(
-        return_annotation
+    resolved_annotation = resolve_type_annotation(return_annotation)
+    output_name = (
+        get_output_name_from_annotation_metadata(return_annotation)
+        or SINGLE_RETURN_OUT_NAME
     )
-    output_signature = {
-        output_name or SINGLE_RETURN_OUT_NAME: resolved_annotation
-    }
+
+    output_signature = {output_name: resolved_annotation}
 
     return output_signature
 
 
-def resolve_type_annotation(obj: Any) -> Tuple[Any, Optional[str]]:
+def resolve_type_annotation(obj: Any) -> Any:
     """Returns the non-generic class for generic aliases of the typing module.
 
     Example: if the input object is `typing.Dict`, this method will return the
@@ -131,29 +133,30 @@ def resolve_type_annotation(obj: Any) -> Tuple[Any, Optional[str]]:
         obj: The object to resolve.
 
     Returns:
-        The non-generic class for generic aliases of the typing module and
-        optional annotation metadata if it exists.
+        The non-generic class for generic aliases of the typing module.
     """
     origin = pydantic_typing.get_origin(obj) or obj
 
     if origin is Annotated:
         annotation, *_ = pydantic_typing.get_args(obj)
-        output_name = validate_annotation_metadata(obj)
-
-        resolved_annotation, _ = resolve_type_annotation(annotation)
-        return resolved_annotation, output_name
-
+        return resolve_type_annotation(annotation)
     elif pydantic_typing.is_union(origin):
-        return obj, None
+        return obj
 
-    return origin, None
+    return origin
 
 
-def validate_annotation_metadata(annotation: Any) -> str:
-    """Validates annotation metadata.
+def get_output_name_from_annotation_metadata(annotation: Any) -> Optional[str]:
+    """Get the output name from a type annotation.
+
+    Example:
+    ```python
+    get_output_name_from_annotation_metadata(int)  # None
+    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name
+    ```
 
     Args:
-        annotation: The type annotation, must be of type `Annotated[...]`
+        annotation: The type annotation.
 
     Raises:
         ValueError: If the annotation contains multiple metadata fields or a
@@ -162,6 +165,9 @@ def validate_annotation_metadata(annotation: Any) -> str:
     Returns:
         The annotation metadata.
     """
+    if pydantic_typing.get_origin(annotation) is not Annotated:
+        return None
+
     annotation, *metadata = pydantic_typing.get_args(annotation)
 
     if len(metadata) != 1:
@@ -261,7 +267,7 @@ def has_tuple_return(func: Callable[..., Any]) -> bool:
     (with or without brackets).
 
     Example:
-    ```
+    ```python
     def f1():
       return 1, 2
 

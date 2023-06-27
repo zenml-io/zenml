@@ -991,19 +991,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
             if not output.materializer_source:
                 if output_annotation is Any:
-                    logger.warning(
-                        "No materializer specified for output with `Any` type "
-                        f"annotation (output '{output_name}' of step "
-                        f"'{self.name}'). ZenML will try to find a "
-                        "materializer at runtime "
-                        "and if unable will use the Cloudpickle materializer "
-                        "to store the artifact. Artifacts stored using "
-                        "cloudpickle won't be readable in different Python "
-                        "versions. Please consider specifying an explicit "
-                        "materializer for this output by following this guide: "
-                        "https://docs.zenml.io/advanced-guide/pipelines/materializers."
-                    )
-
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name][
                         "default_materializer_source"
