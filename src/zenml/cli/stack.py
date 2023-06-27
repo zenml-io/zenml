@@ -23,6 +23,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     _component_display_name,
+    is_sorted_or_filtered,
     list_options,
     print_page_info,
     print_stacks_table,
@@ -720,10 +721,12 @@ def rename_stack(
 
 @stack.command("list")
 @list_options(StackFilterModel)
-def list_stacks(**kwargs: Any) -> None:
+@click.pass_context
+def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
+        ctx: the Click context
         kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
@@ -732,8 +735,11 @@ def list_stacks(**kwargs: Any) -> None:
         if not stacks:
             cli_utils.declare("No stacks found for the given filters.")
             return
-
-        print_stacks_table(client, stacks.items)
+        print_stacks_table(
+            client=client,
+            stacks=stacks.items,
+            show_active=not is_sorted_or_filtered(ctx),
+        )
         print_page_info(stacks)
 
 

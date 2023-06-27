@@ -25,7 +25,7 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -51,8 +51,6 @@ from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.step import StepView
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,
@@ -372,33 +370,26 @@ def sample_workspace_model() -> WorkspaceResponseModel:
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
-    step = Step.parse_obj(
+    spec = StepSpec.parse_obj(
         {
-            "spec": {
-                "source": "module.step_class",
-                "upstream_steps": [],
-                "inputs": {},
-            },
-            "config": {"name": "step_name", "enable_cache": True},
+            "source": "module.step_class",
+            "upstream_steps": [],
+            "inputs": {},
         }
+    )
+    config = StepConfiguration.parse_obj(
+        {"name": "step_name", "enable_cache": True}
     )
 
     return StepRunRequestModel(
         name="sample_step",
-        parents_step_ids=[0],
         pipeline_run_id=uuid4(),
         status=ExecutionStatus.COMPLETED,
-        step=step,
+        spec=spec,
+        config=config,
         workspace=uuid4(),
         user=uuid4(),
     )
-
-
-@pytest.fixture
-def sample_step_view(create_step_run) -> StepView:
-    """Return a sample step view for testing purposes."""
-    sample_step_run = create_step_run()
-    return StepView(sample_step_run)
 
 
 @pytest.fixture
@@ -410,7 +401,7 @@ def sample_pipeline_run_model(
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
@@ -426,26 +417,12 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         workspace=uuid4(),
     )
-
-
-@pytest.fixture
-def sample_pipeline_run_view(
-    sample_step_view, sample_pipeline_run_model
-) -> PipelineRunView:
-    """Return sample pipeline run view for testing purposes."""
-    sample_pipeline_run_view = PipelineRunView(sample_pipeline_run_model)
-    setattr(
-        sample_pipeline_run_view,
-        "_steps",
-        {sample_step_view.name: sample_step_view},
-    )
-    return sample_pipeline_run_view
 
 
 @pytest.fixture
@@ -499,31 +476,32 @@ def create_step_run(
         step_run_name: str = "step_run_name",
         step_name: str = "step_name",
         outputs: Optional[Dict[str, Any]] = None,
+        output_artifacts: Optional[Dict[str, ArtifactResponseModel]] = None,
         **kwargs: Any,
     ) -> StepRunResponseModel:
-        step = Step.parse_obj(
+        spec = StepSpec.parse_obj(
+            {"source": "module.step_class", "upstream_steps": []}
+        )
+        config = StepConfiguration.parse_obj(
             {
-                "spec": {"source": "module.step_class", "upstream_steps": []},
-                "config": {
-                    "name": step_name,
-                    "outputs": outputs or {},
-                },
+                "name": step_name,
+                "outputs": outputs or {},
             }
         )
-        model_args = {
-            "id": uuid4(),
-            "name": step_run_name,
-            "pipeline_run_id": uuid4(),
-            "step": step,
-            "status": ExecutionStatus.COMPLETED,
-            "created": datetime.now(),
-            "updated": datetime.now(),
-            "workspace": sample_workspace_model,
-            "user": sample_user_model,
-            "output_artifacts": {},
+        return StepRunResponseModel(
+            id=uuid4(),
+            name=step_run_name,
+            pipeline_run_id=uuid4(),
+            spec=spec,
+            config=config,
+            status=ExecutionStatus.COMPLETED,
+            created=datetime.now(),
+            updated=datetime.now(),
+            workspace=sample_workspace_model,
+            user=sample_user_model,
+            outputs=output_artifacts or {},
             **kwargs,
-        }
-        return StepRunResponseModel(**model_args)
+        )
 
     return f
 
