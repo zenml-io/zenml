@@ -304,6 +304,25 @@ def has_only_none_returns(func: Callable[..., Any]) -> bool:
     A `None` return could be either an explicit `return None` or an empty
     `return` statement.
 
+    Example:
+    ```python
+    def f1():
+      return None
+
+    def f2():
+      return
+
+    def f3(condition):
+      if condition:
+        return None
+      else:
+        return 1
+
+    has_only_none_returns(f1)  # True
+    has_only_none_returns(f2)  # True
+    has_only_none_returns(f3)  # False
+    ```
+
     Args:
         func: The function to check.
 
