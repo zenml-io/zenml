@@ -16,6 +16,7 @@
 from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
+from zenml.client import Client
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
@@ -24,7 +25,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
 )
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext, step
+from zenml.steps import BaseParameters, step
 
 logger = get_logger(__name__)
 
@@ -98,13 +99,11 @@ class LabelStudioDatasetSyncParameters(BaseParameters):
 @step(enable_cache=False)
 def get_or_create_dataset(
     params: LabelStudioDatasetRegistrationParameters,
-    context: StepContext,
 ) -> str:
     """Gets preexisting dataset or creates a new one.
 
     Args:
         params: Step parameters.
-        context: Step context.
 
     Returns:
         The dataset name.
@@ -114,7 +113,7 @@ def get_or_create_dataset(
             Label Studio.
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    annotator = context.stack.annotator  # type: ignore[union-attr]
+    annotator = Client().active_stack.annotator
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
         LabelStudioAnnotator,
     )
@@ -136,12 +135,11 @@ def get_or_create_dataset(
 
 
 @step(enable_cache=False)
-def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: ignore[type-arg]
+def get_labeled_data(dataset_name: str) -> List:  # type: ignore[type-arg]
     """Gets labeled data from the dataset.
 
     Args:
         dataset_name: Name of the dataset.
-        context: The StepContext.
 
     Returns:
         List of labeled data.
@@ -152,7 +150,7 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: 
         StackComponentInterfaceError: If no active annotator could be found.
     """
     # TODO [MEDIUM]: have this check for new data *since the last time this step ran*
-    annotator = context.stack.annotator  # type: ignore[union-attr]
+    annotator = Client().active_stack.annotator
     if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
@@ -178,7 +176,6 @@ def sync_new_data_to_label_studio(
     dataset_name: str,
     predictions: List[Dict[str, Any]],
     params: LabelStudioDatasetSyncParameters,
-    context: StepContext,
 ) -> None:
     """Syncs new data to Label Studio.
 
@@ -187,7 +184,6 @@ def sync_new_data_to_label_studio(
         dataset_name: The name of the dataset to sync to.
         predictions: The predictions to sync.
         params: The parameters for the sync.
-        context: The StepContext.
 
     Raises:
         TypeError: If you are trying to use it with an annotator that is not
@@ -195,8 +191,9 @@ def sync_new_data_to_label_studio(
         ValueError: if you are trying to sync from outside ZenML.
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    annotator = context.stack.annotator  # type: ignore[union-attr]
-    artifact_store = context.stack.artifact_store  # type: ignore[union-attr]
+    stack = Client().active_stack
+    annotator = stack.annotator
+    artifact_store = stack.artifact_store
     if not annotator or not artifact_store:
         raise StackComponentInterfaceError(
             "An active annotator and artifact store are required to run this step."
