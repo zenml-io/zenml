@@ -140,7 +140,6 @@ class StepLauncher:
 
     def launch(self) -> None:
         """Launches the step."""
-        logger.info(f"Step `{self._step_name}` has started.")
 
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
@@ -162,6 +161,7 @@ class StepLauncher:
                     logs_uri
                 )
                 root_logger.addHandler(zenml_handler)
+                logger.addHandler(zenml_handler)
                 logs_model = LogsRequestModel(
                     uri=logs_uri,
                     artifact_store_id=self._stack.artifact_store.id,
@@ -208,14 +208,16 @@ class StepLauncher:
                     step_run
                 )
 
+            logger.info(f"Step `{self._step_name}` has started.")
             if execution_needed:
                 try:
                     self._run_step(
                         pipeline_run=pipeline_run,
                         step_run=step_run_response,
                     )
-                except:  # noqa: E722
+                except Exception as e:  # noqa: E722
                     logger.error(f"Failed to run step `{self._step_name}`.")
+                    logger.exception(e)
                     publish_utils.publish_failed_step_run(step_run_response.id)
                     raise
 
@@ -231,6 +233,7 @@ class StepLauncher:
             # Only do this if handler is initialized
             if zenml_handler:
                 root_logger.removeHandler(zenml_handler)
+                logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
