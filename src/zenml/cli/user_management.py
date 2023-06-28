@@ -40,7 +40,6 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
     Args:
         user_name_or_id: The name or ID of the user.
     """
-    cli_utils.print_active_config()
     client = Client()
     if not user_name_or_id:
         active_user = client.active_user
@@ -82,7 +81,6 @@ def list_users(ctx: click.Context, **kwargs: Any) -> None:
         ctx: The click context object
         kwargs: Keyword arguments to filter the list of users.
     """
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing stacks...\n"):
         users = client.list_users(**kwargs)
@@ -157,8 +155,6 @@ def create_user(
                 default="",
                 hide_input=True,
             )
-
-    cli_utils.print_active_config()
 
     try:
         new_user = client.create_user(
@@ -241,7 +237,6 @@ def delete_user(user_name_or_id: str) -> None:
     Args:
         user_name_or_id: The name or ID of the user to delete.
     """
-    cli_utils.print_active_config()
     try:
         Client().delete_user(user_name_or_id)
     except (KeyError, IllegalOperationError) as err:
@@ -262,7 +257,6 @@ def list_teams(**kwargs: Any) -> None:
     Args:
         kwargs: The filter options.
     """
-    cli_utils.print_active_config()
     client = Client()
 
     with console.status("Listing teams...\n"):
@@ -286,7 +280,6 @@ def describe_team(team_name_or_id: str) -> None:
     Args:
         team_name_or_id: The name or ID of the team to describe.
     """
-    cli_utils.print_active_config()
     try:
         team_ = Client().get_team(name_id_or_prefix=team_name_or_id)
     except KeyError as err:
@@ -318,7 +311,6 @@ def create_team(team_name: str, users: Optional[List[str]] = None) -> None:
         team_name: Name of the team to create.
         users: Users to add to this team
     """
-    cli_utils.print_active_config()
     try:
         Client().create_team(name=team_name, users=users)
     except EntityExistsError as err:
@@ -361,7 +353,6 @@ def update_team(
         remove_users: Users to remove from the team
         add_users: Users to add to the team.
     """
-    cli_utils.print_active_config()
     try:
         team_ = Client().update_team(
             name_id_or_prefix=team_name,
@@ -383,7 +374,6 @@ def delete_team(team_name_or_id: str) -> None:
     Args:
         team_name_or_id: The name or ID of the team to delete.
     """
-    cli_utils.print_active_config()
     try:
         Client().delete_team(team_name_or_id)
     except KeyError as err:

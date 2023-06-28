@@ -133,7 +133,7 @@ def clean(
             "directory."
         )
     elif not fileio.isdir(stack_recipes_directory):
-        logger.error(
+        cli_utils.error(
             f"Unable to delete the stack recipes directory - "
             f"{stack_recipes_directory} - "
             "as it was not found in your current working directory."
@@ -192,7 +192,7 @@ def describe(
         cli_utils.error(str(e))
     else:
         metadata = stack_recipe.metadata
-        logger.info(metadata["Description"])
+        cli_utils.declare(metadata["Description"])
 
 
 @stack_recipe.command(help="The active version of the mlops-stacks repository")
@@ -615,7 +615,7 @@ def deploy(
                 )
         # invoke server deploy
         if no_server:
-            logger.info(
+            cli_utils.declare(
                 "The --no-server flag was passed. "
                 "Skipping the remote deployment of ZenML. "
                 "Please note that if you wish to use the stack "
@@ -624,14 +624,14 @@ def deploy(
             )
         else:
             if zen_server_exists():
-                logger.info(
+                cli_utils.declare(
                     "A ZenML deployment exists already with URL: "
                     f"{GlobalConfiguration().zen_store.url}. "
                     f"The recipe will mot create a new "
                     f"installation."
                 )
             else:
-                logger.info("No remote deployment of ZenML detected. ")
+                cli_utils.declare("No remote deployment of ZenML detected. ")
                 vars = stack_recipe_service.get_vars()
                 filter = [
                     "aws-stores-minimal",
@@ -644,7 +644,7 @@ def deploy(
                     "enable_mlflow" not in vars
                     or vars["enable_mlflow"] is False
                 ):
-                    logger.warning(
+                    cli_utils.warning(
                         "This recipe doesn't create a Kubernetes "
                         "cluster and as of now, an existing "
                         "cluster is required for ZenML deployment. "
@@ -652,7 +652,7 @@ def deploy(
                         "guide for steps on how to proceed: "
                         "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli#option-1-starting-from-scratch"
                     )
-                    logger.info(
+                    cli_utils.declare(
                         "Not attempting to import the generated "
                         "YAML file since there isn't any active "
                         "ZenML deployment."
@@ -673,14 +673,14 @@ def deploy(
             stack_recipe_service.stack_file_path[2:],
         )
 
-        logger.info(
+        cli_utils.declare(
             "\nA stack configuration YAML file has been generated "
             f"as part of the deployment of the {stack_recipe_name} "
             f"recipe. Find it at {stack_yaml_file}."
         )
 
         if import_stack_flag:
-            logger.info(
+            cli_utils.declare(
                 "\nThe flag `--import` is set. Proceeding "
                 "to import a new ZenML stack from the created "
                 "resources."

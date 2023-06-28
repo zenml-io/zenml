@@ -48,7 +48,6 @@ from zenml.utils.yaml_utils import read_yaml, write_yaml
 )
 def stack() -> None:
     """Stacks to define various environments."""
-    cli_utils.print_active_config()
 
 
 @stack.command(
@@ -1153,7 +1152,6 @@ def register_secrets(
         stack_name_or_id: Name of the stack for which to register secrets.
                           If empty, the active stack will be used.
     """
-    cli_utils.print_active_config()
 
     from zenml.stack.stack import Stack
 

@@ -1743,8 +1743,6 @@ def register_single_stack_component_cli_commands(
     )
     def command_group() -> None:
         """Group commands for a single stack component type."""
-        cli_utils.print_active_config()
-        cli_utils.print_active_stack()
 
     # zenml stack-component get
     get_command = generate_stack_component_get_command(component_type)
