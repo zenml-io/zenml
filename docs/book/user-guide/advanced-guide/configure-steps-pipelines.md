@@ -90,6 +90,11 @@ def my_step() -> Tuple[int, ...]:
 ```
 {% endhint %}
 
+If you want to make sure you get all the benefits of type annotating your
+steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
+ZenML will then raise an exception in case one of the steps you're trying to run is
+missing a type annotation.
+
 ## Step output names
 
 By default, ZenML uses the output name `output` for single output steps
