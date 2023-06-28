@@ -17,16 +17,11 @@ import os
 from pathlib import Path
 from typing import Dict
 
-from PIL import Image
-
-from zenml.integrations.pillow.materializers.pillow_image_materializer import (
-    DEFAULT_IMAGE_FILENAME,
-)
 from zenml.steps import BaseParameters, Output, step
 from zenml.steps.step_context import StepContext
 
 
-class LoadImageDataParameters(BaseParameters):
+class LoadTextDataParameters(BaseParameters):
     base_path = str(
         Path(__file__).parent.absolute().parent.absolute() / "data"
     )
@@ -34,17 +29,17 @@ class LoadImageDataParameters(BaseParameters):
 
 
 @step(enable_cache=True)
-def load_image_data(
-    params: LoadImageDataParameters,
+def load_text_data(
+    params: LoadTextDataParameters,
     context: StepContext,
 ) -> Output(images=Dict, uri=str):
-    """Gets images from a cloud artifact store directory."""
-    image_dir_path = os.path.join(params.base_path, params.dir_name)
-    image_files = glob.glob(f"{image_dir_path}/*.txt")
+    """Gets texts from a cloud artifact store directory."""
+    text_dir_path = os.path.join(params.base_path, params.dir_name)
+    text_files = glob.glob(f"{text_dir_path}/*.txt")
     uri = context.get_output_artifact_uri("images")
 
     texts = {}
-    for i, text_file in enumerate(image_files):
+    for i, text_file in enumerate(text_files):
         with open(text_file, "r", encoding="utf-8") as file:
             text = file.readlines()[0]
         artifact_filepath = (
