@@ -47,7 +47,7 @@ def predictor(
     preds = []
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     for file_name, text in texts.items():
-        tokenized_text = tokenizer(" ".join(text.split(" ")[:200]), return_tensors="pt")
+        tokenized_text = tokenizer(" ".join(text.split(" ")[:300]), return_tensors="pt")
         pred = model(**tokenized_text)
         pred = pred.logits[0].softmax(0)
         class_id = pred.argmax().item()

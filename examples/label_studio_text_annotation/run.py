@@ -18,7 +18,7 @@ from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
 from steps.get_labeled_data import get_labeled_data_step
 from steps.get_or_create_dataset import get_or_create_the_dataset
-from steps.load_image_data_step import LoadImageDataParameters, load_image_data
+from steps.load_image_data_step import LoadTextDataParameters, load_text_data
 from steps.model_deployers import model_deployer
 from steps.prediction_steps import (
     PredictionServiceLoaderParameters,
@@ -67,8 +67,8 @@ def main(pipeline, rerun):
     elif pipeline == "inference":
         inference_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
-            inference_data_loader=load_image_data(
-                params=LoadImageDataParameters(
+            inference_data_loader=load_text_data(
+                params=LoadTextDataParameters(
                     dir_name="batch_2" if rerun else "batch_1"
                 )
             ),
