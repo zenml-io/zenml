@@ -73,6 +73,7 @@ def generate_text_classification_label_config(
         label_config_type,
     )
 
+
 def generate_image_classification_label_config(
     labels: List[str],
 ) -> Tuple[str, str]:

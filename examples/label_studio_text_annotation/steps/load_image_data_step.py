@@ -42,9 +42,7 @@ def load_text_data(
     for i, text_file in enumerate(text_files):
         with open(text_file, "r", encoding="utf-8") as file:
             text = file.readlines()[0]
-        artifact_filepath = (
-            f"{uri}/1/{i}/text.txt"
-        )
+        artifact_filepath = f"{uri}/1/{i}/text.txt"
 
         texts[artifact_filepath] = text
     return texts, uri

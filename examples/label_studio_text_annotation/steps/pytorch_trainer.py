@@ -16,17 +16,20 @@ import tempfile
 from typing import Dict, List
 from urllib.parse import urlparse
 
+import evaluate
 import numpy as np
 import torch
 import torch.nn as nn
-from steps.get_or_create_dataset import LABELS
 from steps.configuration import HuggingfaceParameters
+from steps.get_or_create_dataset import LABELS
 from transformers import (
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
-    AutoModelForSequenceClassification,
+    Trainer,
+    TrainingArguments,
 )
-from transformers import DataCollatorWithPadding, TrainingArguments, Trainer
+
 from zenml.integrations.label_studio.label_studio_utils import (
     get_file_extension,
     is_azure_url,
@@ -38,7 +41,6 @@ from zenml.post_execution import get_pipeline
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
-import evaluate
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
 
@@ -49,9 +51,7 @@ PIPELINE_STEP_NAME = "model_trainer"
 class CustomDataset:
     """Creates a dataset to be used in the PyTorch model training."""
 
-    def __init__(
-        self, text_urls, labels, artifact_store_path: str
-    ) -> None:
+    def __init__(self, text_urls, labels, artifact_store_path: str) -> None:
         assert len(text_urls) == len(labels)
 
         # Download all images from the artifact store as np.ndarray
@@ -130,13 +130,16 @@ def _is_new_data_available(
     last_text_urls = last_inputs["image_urls"].read()
     return len(last_text_urls) != len(text_urls)
 
+
 @step(enable_cache=False)
 def pytorch_model_trainer(
     text_urls: List[str],
     labels: List[Dict[str, str]],
     params: HuggingfaceParameters,
     context: StepContext,
-) -> nn.Module:#transformers.pipelines.text_classification.TextClassificationPipeline:
+) -> (
+    nn.Module
+):  # transformers.pipelines.text_classification.TextClassificationPipeline:
     """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
     # Try to load a model from a previous run, otherwise use a pretrained net
     # model = _load_last_model(context=context)
@@ -180,7 +183,6 @@ def pytorch_model_trainer(
         predictions, labels = eval_pred
         predictions = np.argmax(predictions, axis=1)
         return f1_score.compute(predictions=predictions, references=labels)
-
 
     training_args = TrainingArguments(
         output_dir="my_awesome_model",
