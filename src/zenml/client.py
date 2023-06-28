@@ -345,7 +345,7 @@ class Client(metaclass=ClientMetaClass):
                 directory.
         """
         enable_warnings = handle_bool_env_var(
-            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
+            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, False
         )
         self._root = self.find_repository(
             root, enable_warnings=enable_warnings
