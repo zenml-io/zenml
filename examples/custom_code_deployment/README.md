@@ -185,7 +185,7 @@ zenml artifact-store deploy gcs_store --flavor=gcp --project_id=my_project ...
 ```
 
 For more information on this `deploy` subcommand, please refer to the 
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 ## 📦 Seldon Core Custom Code Deployment
 
@@ -269,7 +269,7 @@ zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d 
 Note that the Seldon model deployer, the GCP artifact store and the GCP
 container registry can be deployed using the ZenML CLI as well, using the
 `zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 ### 🔦 Run The pipelines
 
@@ -284,7 +284,7 @@ is passed to the step configuration so that it can first be verified and then
 packaged with the model checkpoint and all the required artifacts/dependencies 
 to be deployed as a custom model.
 
-For more information about custom model deployment, please refer to the [Seldon Core integration custom deployment](https://docs.zenml.io/component-gallery/model-deployers/seldon#custom-model-deployment). 
+For more information about custom model deployment, please refer to the [Seldon Core integration custom deployment](https://docs.zenml.io/user-guide/component-guide/model-deployers/seldon#custom-model-deployment). 
 Or the [Seldon Custom Python Model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_component.html).
 
 The Inference pipeline consists of the following steps:
@@ -464,8 +464,8 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 Our docs regarding the custom model deployment can be found 
-[here](https://docs.zenml.io/component-gallery/model-deployers/model-deployers#custom-pre-processing-and-post-processing).
+[here](https://docs.zenml.io/user-guide/component-guide/model-deployers/model-deployers#custom-pre-processing-and-post-processing).
 
 If you want to learn more about the deployment in ZenML in general or about 
 how to build your deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/model-deployers/custom).
