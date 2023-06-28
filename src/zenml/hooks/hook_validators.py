@@ -44,8 +44,8 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
     if not callable(func):
         raise ValueError(f"{func} is not a valid function.")
 
+    from zenml.new.steps.step_context import StepContext
     from zenml.steps.base_parameters import BaseParameters
-    from zenml.steps.step_context import StepContext
 
     sig = inspect.getfullargspec(inspect.unwrap(func))
     sig_annotations = sig.annotations
@@ -54,9 +54,8 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
 
     if sig.args and len(sig.args) != len(sig_annotations):
         raise ValueError(
-            "If you pass args to a hook, you must annotate them with one "
-            "of the following types: `BaseException`, `BaseParameters`, "
-            "and/or `StepContext`."
+            "You can only pass arguments to a hook that are annotated with a "
+            "`BaseException` type."
         )
 
     if sig_annotations:
@@ -70,17 +69,15 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
                     StepContext,
                 ):
                     raise ValueError(
-                        "Hook parameters must be of type `BaseException`, `BaseParameters`, "
-                        f"and/or `StepContext`, not {annotation}"
+                        "Hook arguments must be of type `BaseException`, not "
+                        f"`{annotation}`."
                     )
 
                 if annotation in seen_annotations:
                     raise ValueError(
-                        "It looks like your hook function accepts more than of the "
-                        "same argument annotation type. Please ensure you pass exactly "
-                        "one of the following: `BaseException`, `BaseParameters`, "
-                        "and/or `StepContext`. Currently your function has "
-                        f"the following annotations: {sig_annotations}"
+                        "You can only pass one `BaseException` type to a hook."
+                        "Currently your function has the following"
+                        f"annotations: {sig_annotations}"
                     )
                 seen_annotations.add(annotation)
 

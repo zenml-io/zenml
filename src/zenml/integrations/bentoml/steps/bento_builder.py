@@ -20,11 +20,10 @@ import bentoml
 from bentoml import bentos
 from bentoml._internal.bento import bento
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
-from zenml.steps.step_context import StepContext
 from zenml.utils import source_utils
 from zenml.utils.artifact_utils import load_artifact
 
@@ -33,7 +32,6 @@ logger = get_logger(__name__)
 
 @step
 def bento_builder_step(
-    context: StepContext,
     model: UnmaterializedArtifact,
     model_name: str,
     model_type: str,
@@ -53,7 +51,6 @@ def bento_builder_step(
     previous step and save it with BentoML, then build a BentoML bundle.
 
     Args:
-        context: the step context.
         model: the model to be packaged.
         model_name: the name of the model to be packaged.
         model_type: the type of the model.
@@ -70,6 +67,8 @@ def bento_builder_step(
     Returns:
         the BentoML Bento object.
     """
+    context = get_step_context()
+
     # save the model and bento uri as part of the bento labels
     labels = labels or {}
     labels["model_uri"] = model.uri

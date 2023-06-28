@@ -14,30 +14,23 @@
 """Step that allows you to post messages to Slack."""
 from typing import Optional
 
-from zenml import step
-from zenml.alerter.alerter_utils import (
-    get_active_alerter,
-    get_active_stack_name,
-)
-from zenml.environment import Environment
+from zenml import get_step_context, step
+from zenml.client import Client
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
     SlackAlerterParameters,
     SlackAlerterPayload,
 )
-from zenml.steps import StepContext
 
 
 @step
 def slack_alerter_post_step(
-    context: StepContext,
     message: str,
     params: Optional[SlackAlerterParameters] = None,
 ) -> bool:
     """Post a message to the Slack alerter component of the active stack.
 
     Args:
-        context: StepContext of the ZenML repository.
         message: Message to be posted.
         params: Parameters for the Slack alerter.
 
@@ -47,7 +40,10 @@ def slack_alerter_post_step(
     Raises:
         RuntimeError: If currently active alerter is not a `SlackAlerter`.
     """
-    alerter = get_active_alerter(context)
+    context = get_step_context()
+    client = Client()
+    active_stack = client.active_stack
+    alerter = active_stack.alerter
     if not isinstance(alerter, SlackAlerter):
         raise RuntimeError(
             "Step `slack_alerter_post_step` requires an alerter component of "
@@ -59,11 +55,12 @@ def slack_alerter_post_step(
         and hasattr(params, "include_format_blocks")
         and params.include_format_blocks
     ):
-        env = Environment().step_environment
+        pipeline_name = context.pipeline.name
+        step_name = context.step_run.name
         payload = SlackAlerterPayload(
-            pipeline_name=env.pipeline_name,
-            step_name=env.step_name,
-            stack_name=get_active_stack_name(context),
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+            stack_name=active_stack.name,
         )
         params.payload = payload
     return alerter.post(message, params)
