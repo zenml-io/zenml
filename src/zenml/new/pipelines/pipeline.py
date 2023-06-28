@@ -649,27 +649,22 @@ class Pipeline:
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            if deployment_model:
-                runs = Client().list_pipeline_runs(
-                    deployment_id=deployment_model.id,
-                    sort_by="asc:start_time",
-                    size=1,
-                )
+            runs = Client().list_pipeline_runs(
+                deployment_id=deployment_model.id,
+                sort_by="asc:start_time",
+                size=1,
+            )
 
-                if runs.items:
-                    # Log the dashboard URL
-                    dashboard_utils.print_run_url(
-                        run_name=deployment.run_name_template,
-                        pipeline_id=runs[0].id,
-                    )
-                else:
-                    logger.warning(
-                        f"Your orchestrator '{stack.orchestrator.name}' is "
-                        f"running remotely. Note that the pipeline run will "
-                        f"only show up on the ZenML dashboard once the first "
-                        f"step has started executing on the remote "
-                        f"infrastructure.",
-                    )
+            if runs.items:
+                dashboard_utils.print_run_url(runs[0])
+            else:
+                logger.warning(
+                    f"Your orchestrator '{stack.orchestrator.name}' is "
+                    f"running remotely. Note that the pipeline run will "
+                    f"only show up on the ZenML dashboard once the first "
+                    f"step has started executing on the remote "
+                    f"infrastructure.",
+                )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.
