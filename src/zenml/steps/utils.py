@@ -203,7 +203,7 @@ class ReturnVisitor(ast.NodeVisitor):
     def _visit_function(
         self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]
     ) -> None:
-        """Visit a (async) function defition node.
+        """Visit a (async) function definition node.
 
         Args:
             node: The node to visit.

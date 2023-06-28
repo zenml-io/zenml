@@ -506,7 +506,7 @@ class StepRunner:
                 )
             else:
                 # If no materializer classes are stored in the IR, that means
-                # there was no/an `Any` type annotation for the outout and
+                # there was no/an `Any` type annotation for the output and
                 # we try to find a materializer for it at runtime
                 from zenml.materializers.materializer_registry import (
                     materializer_registry,

@@ -33,14 +33,14 @@ def test_type_annotation_resolving():
     assert resolve_type_annotation(ndarray) is ndarray
 
 
-def func_with_no_output_annoation_and_no_return(condition):
+def func_with_no_output_annotation_and_no_return(condition):
     if condition:
         return
     else:
         return None
 
 
-def func_with_no_output_annoation_and_return(condition):
+def func_with_no_output_annotation_and_return(condition):
     if condition:
         return 1
     else:
@@ -80,8 +80,8 @@ def func_with_multiple_annotated_outputs() -> (
 @pytest.mark.parametrize(
     "func,expected_output",
     [
-        (func_with_no_output_annoation_and_no_return, {}),
-        (func_with_no_output_annoation_and_return, {"output": Any}),
+        (func_with_no_output_annotation_and_no_return, {}),
+        (func_with_no_output_annotation_and_return, {"output": Any}),
         (func_with_single_output, {"output": int}),
         (func_with_single_annotated_output, {"custom_output": int}),
         (func_with_tuple_output, {"output": tuple}),
