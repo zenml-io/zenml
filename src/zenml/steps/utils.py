@@ -165,7 +165,7 @@ def get_output_name_from_annotation_metadata(annotation: Any) -> Optional[str]:
     Returns:
         The annotation metadata.
     """
-    if pydantic_typing.get_origin(annotation) is not Annotated:
+    if (pydantic_typing.get_origin(annotation) or annotation) is not Annotated:
         return None
 
     annotation, *metadata = pydantic_typing.get_args(annotation)
