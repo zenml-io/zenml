@@ -14,6 +14,7 @@
 
 import click
 from pipelines import inference_pipeline, training_pipeline
+from steps.configuration import HuggingfaceParameters
 from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
 from steps.get_labeled_data import get_labeled_data_step
@@ -25,7 +26,6 @@ from steps.prediction_steps import (
     prediction_service_loader,
     predictor,
 )
-from steps.configuration import HuggingfaceParameters
 from steps.pytorch_trainer import (
     pytorch_model_trainer,
 )
@@ -58,9 +58,7 @@ def main(pipeline, rerun):
             get_or_create_dataset=get_or_create_the_dataset,
             get_labeled_data=get_labeled_data_step,
             convert_annotations=convert_annotations(),
-            model_trainer=pytorch_model_trainer(
-                HuggingfaceParameters()
-            ),
+            model_trainer=pytorch_model_trainer(HuggingfaceParameters()),
             deployment_trigger=deployment_trigger(),
             model_deployer=model_deployer,
         ).run()

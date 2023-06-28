@@ -31,4 +31,3 @@ label_studio_registration_params = LabelStudioDatasetRegistrationParameters(
 get_or_create_the_dataset = get_or_create_dataset(
     label_studio_registration_params
 )
-

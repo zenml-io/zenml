@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps.get_or_create_dataset import LABELS
+
 from zenml.integrations.label_studio.label_config_generators import (
     generate_text_classification_label_config,
 )
@@ -18,14 +20,11 @@ from zenml.integrations.label_studio.steps import (
     LabelStudioDatasetSyncParameters,
     sync_new_data_to_label_studio,
 )
-from steps.get_or_create_dataset import LABELS
 
 TEXT_REGEX_FILTER = ".*txt"
 
 
-_, label_config_type = generate_text_classification_label_config(
-    LABELS
-)
+_, label_config_type = generate_text_classification_label_config(LABELS)
 
 
 zenml_sync_params = LabelStudioDatasetSyncParameters(
