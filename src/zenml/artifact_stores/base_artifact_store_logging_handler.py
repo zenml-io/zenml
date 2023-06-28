@@ -51,8 +51,8 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.last_upload_time = time.time()
         self.local_temp_file: Optional[str] = None
 
-        # set local_logging_file to self.logs_uri if self.logs_uri is a local path
-        # otherwise, set local_logging_file to a temporary file
+        # set local_logging_file to self.logs_uri if self.logs_uri is a
+        # local path otherwise, set local_logging_file to a temporary file
         if is_remote(self.logs_uri):
             # We log to a temporary file first, because
             # TimedRotatingFileHandler does not support writing
@@ -93,9 +93,10 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             with fileio.open(self.logs_uri, mode="wb") as log_file:
                 log_file.write(self.buffer.getvalue().encode("utf-8"))
         except (OSError, IOError) as e:
-            # This exception can be raised if there are issues with the underlying system calls,
-            # such as reaching the maximum number of open files, permission issues, file corruption,
-            # or other I/O errors
+            # This exception can be raised if there are issues with the
+            # underlying system calls, such as reaching the maximum number of
+            # open files, permission issues, file corruption, or other
+            # I/O errors.
             logger.error(f"Error while trying to write logs: {e}")
 
         self.message_count = 0

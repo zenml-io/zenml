@@ -100,8 +100,6 @@ ENV_ZENML_HUB_URL = "ZENML_HUB_URL"
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
-ZENML_LOGGING_VERBOSITY: str = "INFO"
-
 if IS_DEBUG_ENV:
     ZENML_LOGGING_VERBOSITY = os.getenv(
         ENV_ZENML_LOGGING_VERBOSITY, default="DEBUG"

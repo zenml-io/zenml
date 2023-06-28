@@ -760,7 +760,7 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     """
     client = Client()
 
-    with console.status("Describing stack...\n"):
+    with console.status("Describing the stack...\n"):
         try:
             stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
         except KeyError as err:
@@ -790,12 +790,14 @@ def delete_stack(
         stack_name_or_id: Name or id of the stack to delete.
         yes: Stack will be deleted without prompting for
             confirmation.
-        recursive: The stack will be deleted along with the corresponding stack associated with it.
+        recursive: The stack will be deleted along with the corresponding stack
+            associated with it.
     """
     recursive_confirmation = False
     if recursive:
         recursive_confirmation = yes or cli_utils.confirmation(
-            "If there are stack components present in another stack, those stack components will be ignored for removal \n"
+            "If there are stack components present in another stack, "
+            "those stack components will be ignored for removal \n"
             "Do you want to continue ?"
         )
 

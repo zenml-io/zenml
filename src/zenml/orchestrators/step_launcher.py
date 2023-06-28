@@ -149,6 +149,7 @@ class StepLauncher:
             is_enabled_on_step=self._step.config.enable_step_logs,
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
         )
+        root_logger = logging.getLogger()
         logs_model: Optional[LogsRequestModel] = None
         zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
         if step_logging_enabled:
@@ -160,7 +161,6 @@ class StepLauncher:
                 zenml_handler = step_logging_utils.get_step_logging_handler(
                     logs_uri
                 )
-                root_logger = logging.getLogger()
                 root_logger.addHandler(zenml_handler)
                 logs_model = LogsRequestModel(
                     uri=logs_uri,
@@ -225,11 +225,11 @@ class StepLauncher:
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
         finally:
+            for h in logger.handlers + root_logger.handlers:
+                h.close()
+
             # Only do this if handler is initialized
             if zenml_handler:
-                # Still write the logs to the artifact store regardless if we fail or not
-                zenml_handler.flush()
-                zenml_handler.close()
                 root_logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
@@ -409,7 +409,7 @@ class StepLauncher:
         duration = time.time() - start_time
         logger.info(
             f"Step `{self._step_name}` has finished in "
-            f"{string_utils.get_human_readable_time(duration)}."
+            f"`{string_utils.get_human_readable_time(duration)}`."
         )
 
     def _run_step_with_step_operator(
