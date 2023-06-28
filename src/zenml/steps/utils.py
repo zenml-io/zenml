@@ -49,15 +49,21 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
     )
 
 
-def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
+def parse_return_type_annotations(
+    func: Callable[..., Any], enforce_type_annotations: bool = False
+) -> Dict[str, Any]:
     """Parse the return type annotation of a step function.
 
     Args:
         func: The step function.
+        enforce_type_annotations: If `True`, raises an exception if a type
+            annotation is missing.
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
             duplicate output names.
+        RuntimeError: If type annotations should be enforced and a type
+            annotation is missing.
 
     Returns:
         The function output artifacts.
@@ -69,7 +75,12 @@ def parse_return_type_annotations(func: Callable[..., Any]) -> Dict[str, Any]:
         return {}
 
     if return_annotation is signature.empty:
-        if has_only_none_returns(func):
+        if enforce_type_annotations:
+            raise RuntimeError(
+                "Missing return type annotation for step function "
+                f"'{func.__name__}'."
+            )
+        elif has_only_none_returns(func):
             return {}
         else:
             return_annotation = Any
