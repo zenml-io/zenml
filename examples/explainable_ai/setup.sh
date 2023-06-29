@@ -4,10 +4,10 @@ set -Eeo pipefail
 
 pre_run () {
   pip install torchvision
-  zenml integration install pytorch foxai
+  zenml integration install pytorch
 }
 
 pre_run_forced () {
   pip install torchvision
-  zenml integration install pytorch foxai -y
+  zenml integration install pytorch -y
 }
