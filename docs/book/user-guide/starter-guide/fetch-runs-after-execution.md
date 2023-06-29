@@ -245,18 +245,8 @@ Similarly, you can use the `inputs` and `input` properties to get the input
 artifacts of a step instead.
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps and
-the names of the inputs are the corresponding argument names in the step 
-function definition:
-
-```python
-from zenml import step
-from zenml.steps import Output
-
-@step
-def some_step(input_name: int) -> Output(output_name=int):
-    ...
-```
+Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names) to see what
+the output names of your steps are and how to customize them.
 {% endhint %}
 
 ### Artifact Information

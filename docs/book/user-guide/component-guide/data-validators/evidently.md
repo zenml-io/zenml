@@ -448,22 +448,24 @@ The Evidently Data Validator implements the same interface as do all Data Valida
 All you have to do is call the Evidently Data Validator methods when you need to interact with Evidently to generate data reports or to run test suites, e.g.:
 
 ```python
-
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.pipeline.column_mapping import ColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
-from zenml.steps import Output, step
+from zenml.steps import step
 
 
 @step
 def data_profiling(
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
-) -> Output(
-    report_json=str, report_html=str
-):
+) -> Tuple[
+    Annotated[str, "report_json"],
+    Annotated[str, "report_html"]
+]:
     """Custom data profiling step with Evidently
 
     Args:
@@ -514,9 +516,10 @@ def data_profiling(
 def data_validation(
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
-) -> Output(
-    test_json=str, test_html=str
-):
+) -> Tuple[
+    Annotated[str, "test_json"],
+    Annotated[str, "test_html"]
+]:
     """Custom data validation step with Evidently
 
     Args:
@@ -567,7 +570,8 @@ Have a look at [the complete list of methods and parameters available in the `Ev
 You can use the Evidently library directly in your custom pipeline steps, e.g.:
 
 ```python
-
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.report import Report
 import evidently.metric_preset as metric_preset
@@ -575,15 +579,15 @@ from evidently.test_suite import TestSuite
 import evidently.test_preset as test_preset
 from evidently.pipeline.column_mapping import ColumnMapping
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def data_profiler(
         dataset: pd.DataFrame,
-) -> Output(
-    report_json=str, report_html=str
-):
+) -> Tuple[
+    Annotated[str, "report_json"],
+    Annotated[str, "report_html"]
+]:
     """Custom data profiler step with Evidently
 
     Args:
@@ -608,9 +612,10 @@ def data_profiler(
 @step
 def data_tester(
         dataset: pd.DataFrame,
-) -> Output(
-    test_json=str, test_html=str
-):
+) -> Tuple[
+    Annotated[str, "test_json"],
+    Annotated[str, "test_html"]
+]:
     """Custom data tester step with Evidently
 
     Args:

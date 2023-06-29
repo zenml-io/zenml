@@ -84,12 +84,12 @@ This is an example of such a step:
 # Various imports handled here
 
 @step(enable_cache=False)
-def staging_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
-):
+def staging_data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
     """Load the static staging dataset."""
     X_train = download_dataframe(env="staging", df_name="X_train")
     X_test = download_dataframe(env="staging", df_name="X_test")
