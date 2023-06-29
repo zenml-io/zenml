@@ -206,7 +206,7 @@ class ReturnVisitor(ast.NodeVisitor):
 
         Args:
             ignore_nested_functions: If `True`, will skip visiting nested
-            functions.
+                functions.
         """
         self._ignore_nested_functions = ignore_nested_functions
         self._inside_function = False
