@@ -382,7 +382,7 @@ class Pipeline:
         self._invocations = {}
 
         with self:
-            # Enter the context manager so we become the active pipeline. This
+            # Enter the context manager, so we become the active pipeline. This
             # means that all steps that get called while the entrypoint function
             # is executed will be added as invocation to this pipeline instance.
             self._call_entrypoint(*args, **kwargs)
@@ -515,6 +515,8 @@ class Pipeline:
             )
             return
 
+        logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
+
         with event_handler(
             event=AnalyticsEvent.RUN_PIPELINE, v2=True
         ) as analytics_handler:
@@ -542,6 +544,9 @@ class Pipeline:
             pipeline_id = None
             if register_pipeline:
                 pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            else:
+                logger.debug(f"Pipeline {self.name} is unlisted.")
 
             # TODO: check whether orchestrator even support scheduling before
             # registering the schedule
@@ -628,22 +633,9 @@ class Pipeline:
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=deployment_model, stack=stack
             )
-            caching_status = (
-                "enabled"
-                if deployment.pipeline_configuration.enable_cache is not False
-                else "disabled"
-            )
-            logger.info(
-                "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if deployment_model.schedule else "Running",
-                f"pipeline `{deployment_model.pipeline_configuration.name}`"
-                if register_pipeline
-                else "unlisted pipeline",
-                stack.name,
-                caching_status,
-            )
-
             stack.prepare_pipeline_deployment(deployment=deployment_model)
+
+            self.log_pipeline_deployment_metadata(deployment_model)
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
@@ -674,6 +666,69 @@ class Pipeline:
                         f"step has started executing on the remote "
                         f"infrastructure.",
                     )
+    @staticmethod
+    def log_pipeline_deployment_metadata(
+        deployment_model: PipelineDeploymentResponseModel
+    ) -> None:
+        """Displays logs based on the deployment model upon running a pipeline.
+
+        Args:
+            deployment_model: The model for the pipeline deployment
+        """
+        try:
+            # Log about the schedule/run
+            if deployment_model.schedule:
+                logger.warning(
+                    "Scheduling a run with the schedule: "
+                    f"`{deployment_model.schedule.name}`"
+                )
+            else:
+                logger.info("Executing a new run.")
+
+            # Log about the caching status
+            if not deployment_model.pipeline_configuration.enable_cache:
+                logger.warning("Caching disabled.")
+
+            # Log about the used builds
+            if deployment_model.build:
+                logger.info(f"Using a build:")
+                logger.info(
+                    f" Image(s): "
+                    f"{', '.join([i.image for i in deployment_model.build.images.values()])}"
+                )
+
+                # Log about version mismatches between local and build
+                from zenml import __version__
+
+                if deployment_model.build.zenml_version != __version__:
+                    logger.warning(
+                        f"ZenML version (different than the local version): "
+                        f"{deployment_model.build.zenml_version}"
+                    )
+
+                import platform
+
+                if (
+                    deployment_model.build.python_version
+                    != platform.python_version()
+                ):
+                    logger.warning(
+                        f"Python version (different than the local version): "
+                        f"{deployment_model.build.python_version}"
+                    )
+
+            # Log about the user, stack and components
+            logger.info(f"Using user: `{deployment_model.user.name}`")
+
+            logger.info(f"Using stack: `{deployment_model.stack.name}`")
+
+            for (
+                component_type,
+                component_models,
+            ) in deployment_model.stack.components.items():
+                logger.info(f"  {component_type.value}: `{component_models[0].name}`")
+        except Exception as e:
+            logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.
@@ -887,8 +942,7 @@ class Pipeline:
         if matching_pipelines.total:
             registered_pipeline = matching_pipelines.items[0]
             logger.info(
-                "Reusing registered pipeline `%s` (version: %s).",
-                registered_pipeline.name,
+                "Reusing registered version: `(version: %s)`.",
                 registered_pipeline.version,
             )
             return registered_pipeline
@@ -909,9 +963,8 @@ class Pipeline:
         registered_pipeline = client.zen_store.create_pipeline(
             pipeline=request
         )
-        logger.info(
-            "Registered pipeline `%s` (version %s).",
-            registered_pipeline.name,
+        logger.warning(
+            "Registered new version: `(version %s)`.",
             registered_pipeline.version,
         )
         return registered_pipeline
