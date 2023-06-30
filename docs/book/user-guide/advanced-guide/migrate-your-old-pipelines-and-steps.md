@@ -30,8 +30,7 @@ class MyStepParameters(BaseParameters):
 
 @step
 def my_step(
-    params: MyStepParameters,
-    context: StepContext,
+    params: MyStepParameters, context: StepContext,
 ) -> Output(int_output=int, str_output=str):
     result = int(params.param_1 * (params.param_2 or 1))
     result_uri = context.get_output_artifact_uri()
@@ -60,14 +59,16 @@ int_output = last_run.get_step["my_step"].outputs["int_output"].read()
 {% endtab %}
 {% tab title="New Syntax" %}
 ```python
-from typing import Annotated, Any, Dict, List, Optional, Tuple
+from typing import Annotated, Optional, Tuple
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 
 # Define a Step
 @step
-def my_step(param_1: int, param_2: Optional[float] = None) -> None:
+def my_step(
+    param_1: int, param_2: Optional[float] = None
+) -> Tuple[Annotated[int, "int_output"], Annotated[str, "str_output"]]:
     result = int(param_1 * (param_2 or 1))
     result_uri = get_step_context().get_output_artifact_uri()
     return result, result_uri
