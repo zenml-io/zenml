@@ -223,6 +223,38 @@ def my_pipeline():
 Check out [this page](./configure-steps-pipelines.md#control-the-execution-order)
 for more information on how to control the step execution order.
 
+## Defining steps with multiple outputs
+
+```python
+# Old: Use the `Output` class
+from zenml.steps import step, Output
+
+@step
+def my_step() -> Output(int_output=int, str_output=str):
+    ...
+
+# New: Use a `Tuple` annotation and optionally assign custom output names
+from typing_extensions import Annotated
+from typing import Tuple
+from zenml import step
+
+# Default output names `output_0`, `output_1`
+@step
+def my_step() -> Tuple[int, str]:
+    ...
+
+# Custom output names
+@step
+def my_step() -> Tuple[
+    Annotated[int, "int_output"],
+    Annotated[str, "str_output"],
+]:
+    ...
+```
+
+Check out [this page](./configure-steps-pipelines.md#type-annotations)
+for more information on how to annotate your step outputs.
+
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
