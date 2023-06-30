@@ -32,7 +32,7 @@ In ZenML, caching is enabled by default. Since ZenML automatically tracks and ve
 Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
 {% endhint %}
 
-### Configuring caching behavior of your pipelines
+## Configuring caching behavior of your pipelines
 
 With caching as the default behavior, there will be times when you need to disable it.
 
@@ -44,7 +44,7 @@ graph LR
   B["Step Settings"] -->|overwritten by| C["Changes in Code, Inputs or Parameters"] 
 ```
 
-#### Caching at the pipeline level
+### Caching at the pipeline level
 
 On a pipeline level, the caching policy can be set as a parameter within the `@pipeline` decorator as shown below:
 
@@ -60,7 +60,7 @@ The setting above will disable caching for all steps in the pipeline unless a st
 When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled for any given pipeline.
 {% endhint %}
 
-#### Dynamically configuring caching for a pipeline run
+### Dynamically configuring caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the hard-coded pipeline and step decorator settings. ZenML offers a way to override all caching settings at runtime:
 
@@ -70,7 +70,7 @@ first_pipeline = first_pipeline.with_options(enable_cache=False)
 
 The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
-#### Caching at a step-level
+### Caching at a step-level
 
 Caching can also be explicitly configured at a step level via a parameter of the `@step` decorator:
 
