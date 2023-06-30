@@ -13,96 +13,49 @@ Newer versions of ZenML still work with pipelines and steps defined using the
 old syntax, but the old syntax is deprecated and will be removed in the future.
 {% endhint %}
 
-## Full Example
-
-Let's look at a simplified version of the [LabelStudio Example TODO]() to get
-an overview over how the pipeline and step syntax has changed.
+## Main Change Overview
 
 {% tabs %}
 {% tab title="Old Syntax" %}
 ```python
+from typing import Optional
+
 from zenml.steps import BaseParameters, Output, StepContext, step
 from zenml.pipelines import pipeline
 
+# Define a Step
+class MyStepParameters(BaseParameters):
+    param_1: int
+    param_2: Optional[float] = None
 
-class LoadImageDataParameters(BaseParameters):
-    base_path = str(
-        Path(__file__).parent.absolute().parent.absolute() / "data"
-    )
-    dir_name = "batch_1"
-
-
-@step(enable_cache=False)
-def load_image_data(
-    params: LoadImageDataParameters,
+@step
+def my_step(
+    params: MyStepParameters,
     context: StepContext,
-) -> Output(images=Dict, uri=str):
-    """Gets images from a cloud artifact store directory."""
-    image_dir_path = os.path.join(params.base_path, params.dir_name)
-    image_files = glob.glob(f"{image_dir_path}/*.jpeg")
-    uri = context.get_output_artifact_uri("images")
+) -> Output(int_output=int, str_output=str):
+    result = int(params.param_1 * (params.param_2 or 1))
+    result_uri = context.get_output_artifact_uri()
+    return result, result_uri
 
-    images = {}
-    for i, image_file in enumerate(image_files):
-        image = Image.open(image_file)
-        image.load()
-        artifact_filepath = (
-            f"{uri}/1/{i}/{DEFAULT_IMAGE_FILENAME}.{image.format}"
-        )
+# Run the Step separately
+my_step.entrypoint()
 
-        images[artifact_filepath] = image
-
-    return images, uri
-
-
-class PredictionServiceLoaderParameters(BaseParameters):
-    training_pipeline_name = "training_pipeline"
-    training_pipeline_step_name = "model_trainer"
-
-
-@step
-def prediction_service_loader(
-    params: PredictionServiceLoaderParameters, context: StepContext
-) -> torch.nn.Module:
-    train_run = get_pipeline(params.training_pipeline_name).runs[0]
-    return train_run.get_step(params.training_pipeline_step_name).output.read()
-
-
-@step
-def predictor(
-    model: torch.nn.Module, images: Dict
-) -> Output(predictions=List):
-    ...
-
-
+# Define a Pipeline
 @pipeline
-def inference_pipeline(
-    inference_data_loader,
-    prediction_service_loader,
-    predictor,
-):
-    dataset_name = get_or_create_dataset()
-    new_images, new_images_uri = inference_data_loader()
-    model_deployment_service = prediction_service_loader()
-    preds = predictor(model_deployment_service, new_images)
-    data_syncer(
-        uri=new_images_uri, dataset_name=dataset_name, predictions=preds
-    )
+def my_pipeline(my_step):
+    my_step()
 
+step_instance = my_step(params=MyStepParameters(param_1=17))
+pipeline_instance = my_pipeline(my_step=step_instance)
 
-inference_pipeline(
-    inference_data_loader=load_image_data(
-        params=LoadImageDataParameters(
-            dir_name="batch_2" if rerun else "batch_1"
-        )
-    ),
-    prediction_service_loader=prediction_service_loader(
-        PredictionServiceLoaderParameters()
-    ),
-    predictor=predictor(),
-).run()
+# Configure and run the Pipeline
+pipeline_instance.configure(enable_cache=False)
+schedule = Schedule(...)
+pipeline_instance.run(schedule=schedule)
 
-prediction_result = inference_pipeline.get_runs()[0].steps["predictor"].output.read()
+# Fetch the Pipeline Run
+last_run = pipeline_instance.get_runs()[0]
+int_output = last_run.get_step["my_step"].outputs["int_output"].read()
 ```
 {% endtab %}
 {% tab title="New Syntax" %}
@@ -112,63 +65,28 @@ from typing import Annotated, Any, Dict, List, Optional, Tuple
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 
-
-@step(enable_cache=False)
-def load_image_data(
-    base_path: Optional[str] = None,
-    dir_name: str = "batch_1",
-) -> Tuple[Annotated[Dict[str, Image.Image], "images"], Annotated[str, "uri"]]:
-    """Gets images from a cloud artifact store directory."""
-    if base_path is None:
-        base_path = str(
-            Path(__file__).parent.absolute().parent.absolute() / "data"
-        )
-    image_dir_path = os.path.join(base_path, dir_name)
-    image_files = glob.glob(f"{image_dir_path}/*.jpeg")
-
-    context = get_step_context()
-    uri = context.get_output_artifact_uri("images")
-
-    images = {}
-    for i, image_file in enumerate(image_files):
-        image = Image.open(image_file)
-        image.load()
-        artifact_filepath = (
-            f"{uri}/1/{i}/{DEFAULT_IMAGE_FILENAME}.{image.format}"
-        )
-
-        images[artifact_filepath] = image
-
-    return images, uri
-
-
+# Define a Step
 @step
-def prediction_service_loader(
-    training_pipeline_name: str = "training_pipeline",
-    training_pipeline_step_name: str = "pytorch_model_trainer",
-) -> torch.nn.Module:
-    train_run = Client().get_pipeline(training_pipeline_name).last_run
-    return train_run.steps[training_pipeline_step_name].output.load()
+def my_step(param_1: int, param_2: Optional[float] = None) -> None:
+    result = int(param_1 * (param_2 or 1))
+    result_uri = get_step_context().get_output_artifact_uri()
+    return result, result_uri
 
+# Run the Step separately
+my_step()
 
-def predictor(
-    model: torch.nn.Module, images: Dict
-) -> Annotated[List[Any], "predictions"]:
-    ...
-
-
+# Define a Pipeline
 @pipeline
-def inference_pipeline(rerun: bool = False):
-    new_images, new_images_uri = load_image_data(
-        dir_name="batch_2" if rerun else "batch_1"
-    )
-    model_deployment_service = prediction_service_loader()
-    preds = predictor(model_deployment_service, new_images)
+def my_pipeline():
+    my_step(param_1=17)
 
+# Configure and run the Pipeline
+my_pipeline = my_pipeline.with_options(enable_cache=False, schedule=schedule)
+my_pipeline()
 
-inference_pipeline(rerun=rerun)
-
-prediction_result = inference_pipeline.last_run.steps["predictor"].output.load()
+# Fetch the Pipeline Run
+last_run = my_pipeline.last_run
+int_output = last_run.steps["my_step"].outputs["int_output"].load()
 ```
 {% endtab %}
 {% endtabs %}
