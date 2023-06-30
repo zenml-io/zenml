@@ -146,6 +146,7 @@ for more information on how to parameterize your steps.
 ```python
 from zenml.steps import step
 
+@step
 def my_step() -> None:
     ...
 
@@ -156,6 +157,7 @@ my_step.entrypoint()  # Old: Call `step.entrypoint(...)`
 ```python
 from zenml import step
 
+@step
 def my_step() -> None:
     ...
 
@@ -199,6 +201,7 @@ def my_pipeline():
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
+@step
 def my_step() -> None:
     ...
 
@@ -237,6 +240,7 @@ my_pipeline = my_pipeline.with_options(enable_cache=False)
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
+@step
 def my_step() -> None:
     ...
 
@@ -274,6 +278,7 @@ my_pipeline()  # New: Call the pipeline
 from zenml.pipelines import pipeline, Schedule
 from zenml.steps import step
 
+@step
 def my_step() -> None:
     ...
 
