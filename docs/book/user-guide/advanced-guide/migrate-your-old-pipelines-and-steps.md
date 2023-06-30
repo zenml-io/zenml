@@ -4,13 +4,176 @@ description: Migrating your pipelines and steps to the new syntax.
 
 # Migrate your old pipelines and steps
 
-ZenML version 0.40.0 introduced a new, more flexible syntax to define ZenML steps and pipelines. This page
-contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
+ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to 
+define ZenML steps and pipelines. This page contains code samples that show you 
+how to upgrade your steps and pipelines to the new syntax.
 
 {% hint style="warning" %}
-Newer versions of ZenML still work with pipelines and steps defined using the old syntax,
-but it is deprecated and will be removed in the future.
+Newer versions of ZenML still work with pipelines and steps defined using the 
+old syntax, but the old syntax is deprecated and will be removed in the future.
 {% endhint %}
+
+## Full Example
+
+Let's look at a simplified version of the [LabelStudio Example TODO]() to get
+an overview over how the pipeline and step syntax has changed.
+
+{% tabs %}
+{% tab title="Old Syntax" %}
+```python
+from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml.pipelines import pipeline
+
+
+class LoadImageDataParameters(BaseParameters):
+    base_path = str(
+        Path(__file__).parent.absolute().parent.absolute() / "data"
+    )
+    dir_name = "batch_1"
+
+
+@step(enable_cache=False)
+def load_image_data(
+    params: LoadImageDataParameters,
+    context: StepContext,
+) -> Output(images=Dict, uri=str):
+    """Gets images from a cloud artifact store directory."""
+    image_dir_path = os.path.join(params.base_path, params.dir_name)
+    image_files = glob.glob(f"{image_dir_path}/*.jpeg")
+    uri = context.get_output_artifact_uri("images")
+
+    images = {}
+    for i, image_file in enumerate(image_files):
+        image = Image.open(image_file)
+        image.load()
+        artifact_filepath = (
+            f"{uri}/1/{i}/{DEFAULT_IMAGE_FILENAME}.{image.format}"
+        )
+
+        images[artifact_filepath] = image
+
+    return images, uri
+
+
+class PredictionServiceLoaderParameters(BaseParameters):
+    training_pipeline_name = "training_pipeline"
+    training_pipeline_step_name = "model_trainer"
+
+
+@step
+def prediction_service_loader(
+    params: PredictionServiceLoaderParameters, context: StepContext
+) -> torch.nn.Module:
+    train_run = get_pipeline(params.training_pipeline_name).runs[0]
+    return train_run.get_step(params.training_pipeline_step_name).output.read()
+
+
+@step
+def predictor(
+    model: torch.nn.Module, images: Dict
+) -> Output(predictions=List):
+    ...
+
+
+@pipeline
+def inference_pipeline(
+    inference_data_loader,
+    prediction_service_loader,
+    predictor,
+):
+    dataset_name = get_or_create_dataset()
+    new_images, new_images_uri = inference_data_loader()
+    model_deployment_service = prediction_service_loader()
+    preds = predictor(model_deployment_service, new_images)
+    data_syncer(
+        uri=new_images_uri, dataset_name=dataset_name, predictions=preds
+    )
+
+
+inference_pipeline(
+    inference_data_loader=load_image_data(
+        params=LoadImageDataParameters(
+            dir_name="batch_2" if rerun else "batch_1"
+        )
+    ),
+    prediction_service_loader=prediction_service_loader(
+        PredictionServiceLoaderParameters()
+    ),
+    predictor=predictor(),
+).run()
+
+prediction_result = inference_pipeline.get_runs()[0].steps["predictor"].output.read()
+```
+{% endtab %}
+{% tab title="New Syntax" %}
+```python
+from typing import Annotated, Any, Dict, List, Optional, Tuple
+
+from zenml import get_step_context, pipeline, step
+from zenml.client import Client
+
+
+@step(enable_cache=False)
+def load_image_data(
+    base_path: Optional[str] = None,
+    dir_name: str = "batch_1",
+) -> Tuple[Annotated[Dict[str, Image.Image], "images"], Annotated[str, "uri"]]:
+    """Gets images from a cloud artifact store directory."""
+    if base_path is None:
+        base_path = str(
+            Path(__file__).parent.absolute().parent.absolute() / "data"
+        )
+    image_dir_path = os.path.join(base_path, dir_name)
+    image_files = glob.glob(f"{image_dir_path}/*.jpeg")
+
+    context = get_step_context()
+    uri = context.get_output_artifact_uri("images")
+
+    images = {}
+    for i, image_file in enumerate(image_files):
+        image = Image.open(image_file)
+        image.load()
+        artifact_filepath = (
+            f"{uri}/1/{i}/{DEFAULT_IMAGE_FILENAME}.{image.format}"
+        )
+
+        images[artifact_filepath] = image
+
+    return images, uri
+
+
+@step
+def prediction_service_loader(
+    training_pipeline_name: str = "training_pipeline",
+    training_pipeline_step_name: str = "pytorch_model_trainer",
+) -> torch.nn.Module:
+    train_run = Client().get_pipeline(training_pipeline_name).last_run
+    return train_run.steps[training_pipeline_step_name].output.load()
+
+
+def predictor(
+    model: torch.nn.Module, images: Dict
+) -> Annotated[List[Any], "predictions"]:
+    ...
+
+
+@pipeline
+def inference_pipeline(rerun: bool = False):
+    new_images, new_images_uri = load_image_data(
+        dir_name="batch_2" if rerun else "batch_1"
+    )
+    model_deployment_service = prediction_service_loader()
+    preds = predictor(model_deployment_service, new_images)
+
+
+inference_pipeline(rerun=rerun)
+
+prediction_result = inference_pipeline.last_run.steps["predictor"].output.load()
+```
+{% endtab %}
+{% endtabs %}
+
+## Step-by-Step Examples
 
 ## Defining steps
 
