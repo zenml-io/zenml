@@ -14,7 +14,8 @@
 """AzureMLPipelines orchestrator flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type, Any
-from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
+from uuid import UUID
+from pydantic import Field
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -27,25 +28,22 @@ AZURE_ML_PIPELINES_ORCHESTRATOR_FLAVOR = "azure_ml_pipelines"
 
 class AzureMLPipelinesOrchestratorSettings(BaseSettings):
     """Settings for the AzureMLPipelines orchestrator.
-
-    Attributes:
-        pod_settings: Pod settings to apply.
     """
 
 
-
-class AzureMLPipelinesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+class AzureMLPipelinesOrchestratorConfig(
     BaseOrchestratorConfig, AzureMLPipelinesOrchestratorSettings
 ):
     """Configuration for the AzureMLPipelines orchestrator.
 
     Attributes:
-        kubernetes_context: Name of a kubernetes context to run
-            pipelines in. If the stack component is linked to a Kubernetes
-            service connector, this field is ignored. Otherwise, it is
-            mandatory.
-        kubernetes_namespace: Name of the kubernetes namespace in which the
-            pods that run the pipeline steps should be running.
+        subscription_id: The Azure account's subscription ID
+        resource_group: The resource group to which the AzureML workspace
+            is deployed.
+        workspace_name: The name of the AzureML Workspace.
+        compute_target_name: The name of the configured ComputeTarget.
+            An instance of it has to be created on the portal if it doesn't
+            exist already.
         local: If `True`, the orchestrator will assume it is connected to a
             local kubernetes cluster and will perform additional validations and
             operations to allow using the orchestrator in combination with other
@@ -55,8 +53,10 @@ class AzureMLPipelinesOrchestratorConfig(  # type: ignore[misc] # https://github
         skip_local_validations: If `True`, the local validations will be
             skipped.
     """
-
-    kubernetes_context: Optional[str] = None
+    subscription_id: str
+    resource_group: str
+    workspace_name: str
+    compute_target_name: str
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
@@ -124,6 +124,7 @@ class AzureMLPipelinesOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
+        # TODO: validate link
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azure_ml_pipelines.png"
 
     @property
