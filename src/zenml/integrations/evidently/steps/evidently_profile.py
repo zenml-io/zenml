@@ -12,18 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Evidently Profile Step."""
-
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.integrations.evidently.column_mapping import (
     EvidentlyColumnMapping,
 )
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.steps import Output
 from zenml.types import HTMLString
 
 
@@ -37,9 +36,7 @@ def evidently_profile_step(
     verbose_level: int = 1,
     profile_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     dashboard_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
-) -> Output(  # type:ignore[valid-type]
-    profile=Profile, dashboard=HTMLString
-):
+) -> Tuple[Annotated[Profile, "profile"], Annotated[HTMLString, "dashboard"]]:
     """Run model drift analyses on two input pandas datasets.
 
     Args:
@@ -113,4 +110,4 @@ def evidently_profile_step(
         profile_options=profile_options or [],
         dashboard_options=dashboard_options or [],
     )
-    return [profile, HTMLString(dashboard.html())]
+    return profile, HTMLString(dashboard.html())

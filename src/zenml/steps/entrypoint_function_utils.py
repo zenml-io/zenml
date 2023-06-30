@@ -27,11 +27,15 @@ from typing import (
 
 from pydantic import BaseConfig, ValidationError, create_model
 
+from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
-from zenml.steps.utils import parse_return_type_annotations
+from zenml.steps.utils import (
+    parse_return_type_annotations,
+    resolve_type_annotation,
+)
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -44,23 +48,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def get_step_entrypoint_signature(
-    step: "BaseStep",
-    include_step_context: bool = False,
-    include_legacy_parameters: bool = False,
-) -> inspect.Signature:
+def get_step_entrypoint_signature(step: "BaseStep") -> inspect.Signature:
     """Get the entrypoint signature of a step.
 
     Args:
         step: The step for which to get the entrypoint signature.
-        include_step_context: Whether to include the `StepContext` as a
-            parameter of the returned signature. If `False`, a potential
-            signature parameter of type `StepContext` will be removed before
-            returning the signature.
-        include_legacy_parameters: Whether to include the `BaseParameters`
-            subclass as a parameter of the returned signature. If `False`, a
-            potential signature parameter of type `BaseParameters` will be
-            removed before returning the signature.
 
     Returns:
         The entrypoint function signature.
@@ -70,23 +62,18 @@ def get_step_entrypoint_signature(
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
 
     def _is_param_of_class(annotation: Any, class_: Type[Any]) -> bool:
+        annotation = resolve_type_annotation(annotation)
         return inspect.isclass(annotation) and issubclass(annotation, class_)
 
     parameters = list(signature.parameters.values())
 
-    if not include_step_context:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=StepContext)
-        ]
-
-    if not include_legacy_parameters:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=BaseParameters)
-        ]
+    # Filter out deprecated args: step context and legacy parameters
+    parameters = [
+        param
+        for param in parameters
+        if not _is_param_of_class(param.annotation, class_=BaseParameters)
+        and not _is_param_of_class(param.annotation, class_=StepContext)
+    ]
 
     signature = signature.replace(parameters=parameters)
     return signature
@@ -243,7 +230,8 @@ def validate_entrypoint_function(
             `BaseParameter` arguments.
         StepInterfaceError: If the entrypoint function has multiple
             `StepContext` arguments.
-        StepInterfaceError: If the entrypoint function has no return annotation.
+        RuntimeError: If type annotations should be enforced and a type
+            annotation is missing.
 
     Returns:
         A validated definition of the entrypoint function.
@@ -277,9 +265,16 @@ def validate_entrypoint_function(
 
         annotation = parameter.annotation
         if annotation is parameter.empty:
+            if ENFORCE_TYPE_ANNOTATIONS:
+                raise RuntimeError(
+                    f"Missing type annotation for input '{key}' of step "
+                    f"function '{func.__name__}'."
+                )
+
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
+        annotation = resolve_type_annotation(annotation)
         if inspect.isclass(annotation) and issubclass(
             annotation, BaseParameters
         ):
@@ -304,13 +299,8 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    if signature.return_annotation is signature.empty:
-        raise StepInterfaceError(
-            f"Missing return type annotation for function {func.__name__}."
-        )
-
     outputs = parse_return_type_annotations(
-        return_annotation=signature.return_annotation
+        func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
     )
 
     return EntrypointFunctionDefinition(

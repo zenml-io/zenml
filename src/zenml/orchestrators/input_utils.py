@@ -59,7 +59,7 @@ def resolve_step_inputs(
             )
 
         try:
-            artifact = step_run.output_artifacts[input_.output_name]
+            artifact = step_run.outputs[input_.output_name]
         except KeyError:
             raise InputResolutionError(
                 f"No output `{input_.output_name}` found for step "

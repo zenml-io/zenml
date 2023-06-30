@@ -20,6 +20,8 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.materializers import UnmaterializedArtifact
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models.step_run_models import StepRunResponseModel
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
@@ -35,7 +37,12 @@ def failing_step() -> None:
     raise RuntimeError()
 
 
-def test_running_a_successful_step(mocker, local_stack):
+def test_running_a_successful_step(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+):
     """Tests that running a successful step runs the step entrypoint
     and correctly prepares/cleans up."""
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
@@ -71,9 +78,11 @@ def test_running_a_successful_step(mocker, local_stack):
 
     runner = StepRunner(step=step, stack=local_stack)
     runner.run(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
         input_artifacts={},
         output_artifact_uris={},
-        step_run_info=step_run_info,
     )
     mock_prepare_step_run.assert_called_with(info=step_run_info)
     mock_cleanup_step_run.assert_called_with(
@@ -82,7 +91,12 @@ def test_running_a_successful_step(mocker, local_stack):
     mock_publish_successful_step_run.assert_called_once()
 
 
-def test_running_a_failing_step(mocker, local_stack):
+def test_running_a_failing_step(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponseModel,
+    sample_step_run: StepRunResponseModel,
+):
     """Tests that running a failing step runs the step entrypoint
     and correctly prepares/cleans up."""
 
@@ -120,9 +134,11 @@ def test_running_a_failing_step(mocker, local_stack):
     runner = StepRunner(step=step, stack=local_stack)
     with pytest.raises(RuntimeError):
         runner.run(
+            pipeline_run=sample_pipeline_run,
+            step_run=sample_step_run,
+            step_run_info=step_run_info,
             input_artifacts={},
             output_artifact_uris={},
-            step_run_info=step_run_info,
         )
 
     mock_prepare_step_run.assert_called_with(info=step_run_info)

@@ -21,7 +21,6 @@ from zenml.client import Client
 from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
-from zenml.post_execution.pipeline import get_pipeline
 
 
 @pytest.mark.skipif(
@@ -57,7 +56,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # Check that the deployment service is running
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        training_run = get_pipeline("inference_pipeline").runs[0]
+        training_run = client.get_pipeline("inference_pipeline").runs[0]
 
         service = training_run.get_step(
             "mlflow_model_registry_deployer_step"

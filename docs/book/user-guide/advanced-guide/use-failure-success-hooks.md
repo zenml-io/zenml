@@ -19,11 +19,13 @@ Failure and Success Hooks in ZenML Short Demo
 
 ## Defining hooks
 
-A hook can be defined as a callback function, and must be accessible within the repository where the pipeline and steps are located:
+A hook can be defined as a callback function, and must be accessible within the repository where the pipeline and steps are located.
+
+In case of failure hooks, you can optionally add a `BaseException` argument to the hook, allowing you to access the concrete Exception that caused your step to fail:
 
 ```python
-def on_failure():
-    print("Step failed!")
+def on_failure(exception: BaseException):
+    print(f"Step failed: {str(e)}")
 
 
 def on_success():
@@ -62,20 +64,17 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 ## Accessing step information inside a hook
 
-A hook function signature can optionally take two type annotated arguments of the following types:
-
-* `StepContext`: You can pass an object inside a hook of type `StepContext` to get access to information such as pipeline name, run name, step name, the parameters of your step and more.
-* `BaseException`: In case of failure hooks, if you add an `BaseException` argument to the hook, then ZenML passes the concrete Exception that caused your step to fail.
+Similar as for regular ZenML steps, you can use the 
+[StepContext](./fetch-metadata-within-steps.md) to access information about the 
+current pipeline run or step inside your hook function:
 
 ```python
-from zenml.steps import StepContext
-from zenml import step
+from zenml import step, get_step_context
 
-
-# Use one or any of these in the signature
-def on_failure(context: StepContext, exception: BaseException):
-    print(context.step_name)  # Output will be `my_step`
-    print(context.parameters)  # Use this to access the parameters of the step
+def on_failure(exception: BaseException):
+    context = get_step_context()
+    print(context.step_run.name)  # Output will be `my_step`
+    print(context.step_run.config.parameters)  # Print parameters of the step
     print(type(exception))  # Of type value error
     print("Step failed!")
 
@@ -90,10 +89,12 @@ def my_step(some_parameter: int = 1)
 A common use case is to use the [Alerter](../component-guide/alerters/alerters.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
-def on_failure(context: StepContext):
-    context.stack.alerter.post(
-        f"{context.step_name} just failed!"
-    )
+from zenml import get_step_context
+from zenml.client import Client
+
+def on_failure():
+    step_name = get_step_context().step_run.name
+    Client().active_stack.alerter.post(f"{step_name} just failed!")
 ```
 
 ZenML provides standard failure and success hooks that use the alerter you have configured in your stack. Here's an example of how to use them in your pipelines:

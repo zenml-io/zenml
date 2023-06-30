@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
+
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -43,6 +44,9 @@ class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
     materializer_source: Optional[Tuple[Source, ...]] = None
+    # TODO: This could be moved to the `PipelineDeployment` as it's the same
+    # for all steps/outputs
+    default_materializer_source: Optional[Source] = None
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
