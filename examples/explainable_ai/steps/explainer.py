@@ -24,12 +24,15 @@ from foxai.visualizer import mean_channels_visualization
 
 from zenml import step
 from zenml.steps import Output
+from zenml.types import HTMLString
+
+import mpld3
 
 
 @step
 def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
-        explanation=List,
-        figure_list=List,
+        figure_list=HTMLString,
+        explanation=Dict,
 ):
     """Explain predictions of the model."""
     explainer_list = [
@@ -38,8 +41,8 @@ def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model.to(device)
 
-    figure_list: List[Dict[str, np.ndarray]] = []
-    attributes_list: List[matplotlib.figure.Figure] = []
+    attributes_list: List[Dict[str, np.ndarray]] = []
+    figure_list: List[matplotlib.figure.Figure] = []
     counter: int = 0
     max_samples_to_explain: int = 20
 
@@ -81,4 +84,14 @@ def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
             attributes_list.append(attributes_dict)
 
         counter += 1
-    return attributes_list, figure_list
+
+    # convert matplotlib.figure.Figure to HTML string
+    figure_html_list = [mpld3.fig_to_html(figure) for figure in figure_list]
+
+    # construct HTML list of Figures to display
+    figure_string = "<ul>"
+    for fig in figure_html_list:
+        figure_string = f"{figure_string}<li>{fig}</li>"
+    figure_string = f"{figure_string}</ul>"
+
+    return HTMLString(figure_string), attributes_dict
