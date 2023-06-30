@@ -358,6 +358,38 @@ my_pipeline()
 Check out [this page](./schedule-pipeline-runs.md)
 for more information on how to schedule your pipelines.
 
+## Fetching Pipelines after Execution
+
+```python
+pipeline: PipelineView = zenml.post_execution.get_pipeline("first_pipeline")
+
+last_run: PipelineRunView = pipeline.runs[0]
+# OR: last_run = my_pipeline.get_runs()[0]
+
+model_trainer_step: StepView = last_run.get_step("model_trainer")
+
+model: ArtifactView = model_trainer_step.output
+loaded_model = model.read()
+```
+
+```python
+pipeline: PipelineResponseModel = zenml.client.Client().get_pipeline("first_pipeline")
+# OR: pipeline = pipeline_instance.model
+
+last_run: PipelineRunResponseModel = pipeline.last_run  
+# OR: last_run = pipeline.runs[0] 
+# OR: last_run = pipeline.get_runs(custom_filters)[0] 
+# OR: last_run = pipeline.last_successful_run
+
+model_trainer_step: StepRunResponseModel = last_run.steps["model_trainer"]
+
+model: ArtifactResponseModel = model_trainer_step.output
+loaded_model = model.load()
+```
+
+Check out [this page](./fetch-metadata-within-steps.md) for more information on
+how to programmatically fetch information about previous pipeline runs.
+
 ## Controlling the step execution order
 
 ```python
@@ -418,6 +450,32 @@ def my_step() -> Tuple[
 Check out [this page](./configure-steps-pipelines.md#type-annotations)
 for more information on how to annotate your step outputs.
 
+## Accessing Run information inside steps
+
+```python
+from zenml.steps import StepContext, step
+from zenml.environment import Environment
+
+@step
+def my_step(context: StepContext) -> Any:  # `StepContext` class defined as arg
+    env = Environment().step_environment
+    output_uri = context.get_output_artifact_uri()
+    step_name = env.step_name  # Run info accessible via `StepEnvironment`
+    ...
+
+# New
+from zenml import get_step_context, step
+
+@step
+def my_step() -> Any:  # StepContext is no longer an argument of the step
+    context = get_step_context()
+    output_uri = context.get_output_artifact_uri()
+    step_name = context.step_name  # StepContext now has ALL run/step info
+    ...
+```
+
+Check out [this page](./fetch-metadata-within-steps.md) for more information 
+on how to fetch run information inside your steps using `get_step_context()`.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
