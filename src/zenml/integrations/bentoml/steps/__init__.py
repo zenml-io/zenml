@@ -13,18 +13,12 @@
 #  permissions and limitations under the License.
 """Initialization of the BentoML standard interface steps."""
 
-from zenml.integrations.bentoml.steps.bento_builder import (
-    BentoMLBuilderParameters,
-    bento_builder_step,
-)
+from zenml.integrations.bentoml.steps.bento_builder import bento_builder_step
 from zenml.integrations.bentoml.steps.bentoml_deployer import (
-    BentoMLDeployerParameters,
     bentoml_model_deployer_step,
 )
 
 __all__ = [
-    "BentoMLBuilderParameters",
     "bento_builder_step",
-    "BentoMLDeployerParameters",
     "bentoml_model_deployer_step",
 ]

@@ -18,7 +18,7 @@ it, and embed it in an inference pipeline,
 
 {% hint style="warning" %}
 Please note that this version of the `quickstart` is intended for use with
-Python 3.7 and does not support the [MLflow model registry](https://docs.zenml.io/component-gallery/model-registries/mlflow).
+Python 3.7 and does not support the [MLflow model registry](https://docs.zenml.io/user-guide/component-guide/model-registries/mlflow).
 If you are using Python 3.8 or higher, we recommend that you use the quickstart
 instead. The main difference between the two versions is that this version
 deploys the model directly to MLflow after training, whereas the other version
@@ -206,7 +206,7 @@ If you are new to MLOps, you might want to take a look at our
 where we cover each MLOps concept in much more detail.
 
 Already have an MLOps stack in mind? ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/component-gallery/integrations) 
+[**:link: Integrations**](https://docs.zenml.io/user-guide/component-guide/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
 to see how to use a specific tool with ZenML.

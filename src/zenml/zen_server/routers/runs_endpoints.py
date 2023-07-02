@@ -27,6 +27,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
+from zenml.lineage_graph.lineage_graph import LineageGraph
 from zenml.models import (
     PipelineRunFilterModel,
     PipelineRunResponseModel,
@@ -35,7 +36,6 @@ from zenml.models import (
     StepRunResponseModel,
 )
 from zenml.models.page_model import Page
-from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -153,11 +153,9 @@ def get_run_dag(
     Returns:
         The DAG for a given pipeline run.
     """
-    from zenml.post_execution.pipeline_run import PipelineRunView
-
     run = zen_store().get_run(run_name_or_id=run_id)
     graph = LineageGraph()
-    graph.generate_run_nodes_and_edges(PipelineRunView(run))
+    graph.generate_run_nodes_and_edges(run)
     return graph
 
 
@@ -203,11 +201,7 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return (
-        zen_store()
-        .get_run(run_name_or_id=run_id)
-        .pipeline_configuration.dict()
-    )
+    return zen_store().get_run(run_name_or_id=run_id).config.dict()
 
 
 @router.get(

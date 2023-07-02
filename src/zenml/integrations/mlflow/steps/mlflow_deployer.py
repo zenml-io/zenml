@@ -17,13 +17,12 @@ from typing import Optional, cast
 
 from mlflow.tracking import MlflowClient, artifact_utils
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     MLFLOW_MODEL_FORMAT,
 )
-from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -42,10 +41,6 @@ from zenml.materializers import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
     ModelVersionStage,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
 )
 
 logger = get_logger(__name__)
@@ -103,10 +98,10 @@ def mlflow_model_deployer_step(
         )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    run_name = step_context.pipeline_run.name
+    step_name = step_context.step_run.name
 
     # Configure Mlflow so the client points to the correct store
     experiment_tracker.configure_mlflow()

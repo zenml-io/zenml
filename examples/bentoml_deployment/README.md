@@ -74,13 +74,10 @@ will save the source code, models, data files and dependency configurations
 required for running the service.
 
 ```python
-from zenml.integrations.bentoml.steps import (
-    BentoMLBuilderParameters,
-    bento_builder_step,
-)
+from zenml.integrations.bentoml.steps import bento_builder_step
 
-bento_builder = bento_builder_step(
-    params=BentoMLBuilderParameters(
+bento_builder = bento_builder_step.with_options(
+    parameters=dict(
         model_name=MODEL_NAME,
         model_type="pytorch",
         service="service.py:svc",
@@ -89,7 +86,10 @@ bento_builder = bento_builder_step(
             "dataset": "mnist",
             "zenml_version": "0.21.1",
         },
-       exclude=["data"], 
+        exclude=["data"],
+        python={
+            "packages": ["zenml", "torch", "torchvision"],
+        },
     )
 )
 ```
@@ -105,16 +105,13 @@ locally.
 
 ```python
 from constants import MODEL_NAME
-from zenml.integrations.bentoml.steps import (
-    BentoMLDeployerParameters,
-    bentoml_model_deployer_step,
-)
+from zenml.integrations.bentoml.steps import bentoml_model_deployer_step
 
-bentoml_model_deployer = bentoml_model_deployer_step(
-    params=BentoMLDeployerParameters(
-        model_name=MODEL_NAME,
-        port=3001,
-        production=False,
+bentoml_model_deployer = bentoml_model_deployer_step.with_options(
+    parameters=dict(
+        model_name=MODEL_NAME,  # Name of the model
+        port=3001,  # Port to be used by the http server
+        production=False,  # Deploy the model in production mode
     )
 )
 ```
@@ -367,8 +364,8 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 Our docs regarding the BentoML deployment integration can be found 
-[here](https://docs.zenml.io/component-gallery/model-deployers/bentoml).
+[here](https://docs.zenml.io/user-guide/component-guide/model-deployers/bentoml).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/model-deployers/custom).

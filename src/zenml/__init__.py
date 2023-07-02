@@ -36,5 +36,6 @@ __path__ = extend_path(__path__, __name__)
 from zenml.api import show
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
+from zenml.new.steps.step_context import get_step_context
 
-__all__ = ["show", "pipeline", "step"]
+__all__ = ["show", "pipeline", "step", "get_step_context"]

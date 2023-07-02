@@ -16,10 +16,9 @@
 import os
 from typing import Optional, cast
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT, MODEL_METADATA_YAML_FILE_NAME
-from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
@@ -40,11 +39,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import ModelVersionStage
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
-)
-from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
 from zenml.utils.artifact_utils import save_model_metadata
 
@@ -55,7 +49,6 @@ logger = get_logger(__name__)
 def seldon_model_deployer_step(
     model: UnmaterializedArtifact,
     service_config: SeldonDeploymentConfig,
-    context: StepContext,
     deploy_decision: bool = True,
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> SeldonDeploymentService:
@@ -67,7 +60,6 @@ def seldon_model_deployer_step(
     Args:
         model: the model artifact to deploy
         service_config: Seldon Core deployment service configuration.
-        context: the step context
         deploy_decision: whether to deploy the model or not
         timeout: the timeout in seconds to wait for the deployment to start
 
@@ -79,10 +71,10 @@ def seldon_model_deployer_step(
     )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    context = get_step_context()
+    pipeline_name = context.pipeline.name
+    run_name = context.pipeline_run.name
+    step_name = context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
     service_config = service_config.copy()
@@ -198,7 +190,6 @@ def seldon_custom_model_deployer_step(
     model: UnmaterializedArtifact,
     predict_function: str,
     service_config: SeldonDeploymentConfig,
-    context: StepContext,
     deploy_decision: bool = True,
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> SeldonDeploymentService:
@@ -211,7 +202,6 @@ def seldon_custom_model_deployer_step(
         model: the model artifact to deploy
         predict_function: Path to Python file containing predict function.
         service_config: Seldon Core deployment service configuration.
-        context: the step context
         deploy_decision: whether to deploy the model or not
         timeout: the timeout in seconds to wait for the deployment to start
 
@@ -238,10 +228,10 @@ def seldon_custom_model_deployer_step(
     )
 
     # get pipeline name, step name, run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    context = get_step_context()
+    pipeline_name = context.pipeline.name
+    run_name = context.pipeline_run.name
+    step_name = context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
     service_config.pipeline_name = pipeline_name
@@ -286,13 +276,13 @@ def seldon_custom_model_deployer_step(
     ]
 
     # verify if there is an active stack before starting the service
-    if not context.stack:
+    if not Client().active_stack:
         raise DoesNotExistException(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
 
-    image_name = step_env.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
+    image_name = context.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(
