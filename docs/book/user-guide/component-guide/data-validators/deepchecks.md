@@ -292,7 +292,7 @@ check.add_condition_number_of_outliers_less_or_equal(
 suite.run(train_dataset=train_dataset)
 ```
 
-You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) in the SDK docs.
 
 You can also check out our examples pages for working examples that use the Deepchecks standard steps:
 
@@ -344,7 +344,7 @@ def data_integrity_check(
 
 The arguments that the Deepchecks Data Validator methods can take in are the same as those used for [the Deepchecks standard steps](deepchecks.md#the-deepchecks-standard-steps).
 
-Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data\_validators.deepchecks\_data\_validator.DeepchecksDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data\_validators.deepchecks\_data\_validator.DeepchecksDataValidator) in the SDK docs.
 
 #### Call Deepchecks directly
 

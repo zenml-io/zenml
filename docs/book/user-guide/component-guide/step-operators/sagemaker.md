@@ -100,7 +100,7 @@ more about how ZenML builds these images and how you can customize them.
 
 For additional configuration of the SageMaker step operator, you can pass `SagemakerStepOperatorSettings` when defining
 or running your pipeline. Check out
-the [API docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
