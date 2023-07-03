@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from steps.explainer import explain_foxai, explain_shap, ExplainerType
-from steps.trainers import trainer
+from steps.explainer import ExplainerType, explain_foxai, explain_shap
 from steps.importers import importer_MNIST
+from steps.trainers import trainer
 
 from zenml import pipeline
 from zenml.config import DockerSettings

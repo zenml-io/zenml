@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import List
+
 import torch
+import torchvision
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
-import torchvision
-from typing import List
 
 from zenml import step
 from zenml.steps import Output
@@ -41,7 +42,7 @@ class Net(nn.Module):
             nn.ReLU(),
             nn.Dropout(),
             nn.Linear(50, 10),
-            nn.Softmax(dim=1)
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x):
@@ -58,14 +59,14 @@ def load_model():
     return model, list(range(0, 10)), transform
 
 
-@step(enable_cache=True)
-def importer_MNIST(batch_size: int) -> (
-    Output(
-        train_dataloader=DataLoader,
-        test_dataloader=DataLoader,
-        val_dataloader=DataLoader,
-        classes=List,
-    )
+@step
+def importer_MNIST(
+    batch_size: int,
+) -> Output(
+    train_dataloader=DataLoader,
+    test_dataloader=DataLoader,
+    val_dataloader=DataLoader,
+    classes=List,
 ):
     """Download the MNIST dataset."""
     # Download training data from open datasets.
@@ -95,7 +96,9 @@ def importer_MNIST(batch_size: int) -> (
     classes: List[str] = [str(x) for x in range(0, 10)]
 
     # Create dataloaders.
-    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(
+        training_data, batch_size=batch_size, shuffle=True
+    )
     val_dataloader = DataLoader(validation_data, batch_size=batch_size)
     test_dataloader = DataLoader(test_data, batch_size=batch_size)
 

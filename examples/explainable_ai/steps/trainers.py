@@ -13,16 +13,14 @@
 #  permissions and limitations under the License.
 
 import torch
+from pytorch_lightning import LightningModule, Trainer
+from steps.importers import load_model
 from torch import nn
+from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torchmetrics import Accuracy
 
-from pytorch_lightning import LightningModule, Trainer
-from torch.nn import functional as F
 from zenml import step
-
-from steps.importers import load_model
-
 
 
 class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, too-many-instance-attributes)
@@ -61,8 +59,12 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         self.dataloader_test = dataloader_test
         self.dataloader_val = dataloader_val
 
-        self.val_accuracy = Accuracy(task="multiclass", num_classes=self.num_classes)
-        self.test_accuracy = Accuracy(task="multiclass", num_classes=self.num_classes)
+        self.val_accuracy = Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
+        self.test_accuracy = Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
 
     def forward(  # pylint: disable = (arguments-differ)
         self, x: torch.Tensor
@@ -89,7 +91,9 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         logits = self(samples)
         loss = F.nll_loss(logits, targets)
         preds = torch.argmax(logits, dim=1)  # pylint: disable = (no-member)
-        self.val_accuracy.update(preds, targets)  # pylint: disable = (no-member)
+        self.val_accuracy.update(
+            preds, targets
+        )  # pylint: disable = (no-member)
 
         # Calling self.log will surface up scalars for you in TensorBoard
         self.log("val_loss", loss, prog_bar=True)
@@ -104,7 +108,9 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         logits = self(samples)
         loss = F.nll_loss(logits, targets)
         preds = torch.argmax(logits, dim=1)  # pylint: disable = (no-member)
-        self.test_accuracy.update(preds, targets)  # pylint: disable = (no-member)
+        self.test_accuracy.update(
+            preds, targets
+        )  # pylint: disable = (no-member)
 
         # Calling self.log will surface up scalars for you in TensorBoard
         self.log("test_loss", loss, prog_bar=True)
@@ -123,7 +129,8 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
     def val_dataloader(self) -> DataLoader:
         return self.dataloader_val
 
-@step(enable_cache=True)
+
+@step
 def trainer(
     dataloader_train: DataLoader,
     dataloader_test: DataLoader,

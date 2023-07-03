@@ -12,28 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from torch.utils.data import DataLoader
-from torch import nn
-import torch
-from typing import List, Dict
+from enum import Enum
+from typing import Dict, List
 
-import numpy as np
 import matplotlib
-
+import matplotlib.pyplot as plt
+import mpld3
+import numpy as np
 import shap
-from shap.plots import image
-from foxai.context_manager import FoXaiExplainer, ExplainerWithParams, CVClassificationExplainers
+import torch
+from foxai.context_manager import (
+    CVClassificationExplainers,
+    ExplainerWithParams,
+    FoXaiExplainer,
+)
 from foxai.visualizer import mean_channels_visualization
+from shap.plots import image
+from torch import nn
+from torch.utils.data import DataLoader
 
 from zenml import step
 from zenml.steps import Output
 from zenml.types import HTMLString
-
-import mpld3
-import numpy as np
-
-import matplotlib.pyplot as plt
-from enum import Enum
 
 
 class ExplainerType(Enum):
@@ -41,7 +41,9 @@ class ExplainerType(Enum):
     SHAP = "shap"
 
 
-def create_figure_list_html(figure_list: List[matplotlib.figure.Figure]) -> str:
+def create_figure_list_html(
+    figure_list: List[matplotlib.figure.Figure],
+) -> str:
     # convert matplotlib.figure.Figure to HTML string
     figure_html_list = [mpld3.fig_to_html(figure) for figure in figure_list]
 
@@ -53,21 +55,26 @@ def create_figure_list_html(figure_list: List[matplotlib.figure.Figure]) -> str:
     return figure_string
 
 
-@step(enable_cache=False)
+@step
 def explain_foxai(
     model: nn.Module,
     test_dataloader: DataLoader,
     classes: List[str],
-) -> Output(
-        figure_list=HTMLString,
-        explanation=Dict,
-):
+) -> Output(figure_list=HTMLString, explanation=Dict,):
     """Explain predictions of the model."""
     explainer_list = [
-        ExplainerWithParams(explainer_name=CVClassificationExplainers.CV_LAYER_GRADCAM_EXPLAINER),
-        ExplainerWithParams(explainer_name=CVClassificationExplainers.CV_DECONVOLUTION_EXPLAINER),
+        ExplainerWithParams(
+            explainer_name=CVClassificationExplainers.CV_LAYER_GRADCAM_EXPLAINER
+        ),
+        ExplainerWithParams(
+            explainer_name=CVClassificationExplainers.CV_DECONVOLUTION_EXPLAINER
+        ),
     ]
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = (
+        torch.device("cuda")
+        if torch.cuda.is_available()
+        else torch.device("cpu")
+    )
     model.to(device)
 
     idx2label = {index: label for index, label in enumerate(classes)}
@@ -92,7 +99,9 @@ def explain_foxai(
                 sample.shape[0],
                 sample.shape[1],
                 sample.shape[2],
-            ).to(device) # move it to specified device
+            ).to(
+                device
+            )  # move it to specified device
 
             label = idx2label[class_no.item()]
             with FoXaiExplainer(
@@ -112,16 +121,15 @@ def explain_foxai(
             figure_list.append(org_figure)
 
             for key, value in attributes_dict.items():
-                # create figure from attributes and original image          
+                # create figure from attributes and original image
                 figure = mean_channels_visualization(
                     attributions=value[0],
                     transformed_img=sample,
-                    title= f"Mean of channels ({key}). Class: {label}",
+                    title=f"Mean of channels ({key}). Class: {label}",
                 )
                 figure_list.append(figure)
 
             for k, v in attributes_dict.items():
-                print(k, type(v), v.shape)
                 attributes_dict[k] = v.detach().cpu().numpy()
 
             attributes_list.append(attributes_dict)
@@ -132,17 +140,19 @@ def explain_foxai(
 
     return HTMLString(figure_string), attributes_dict
 
-@step(enable_cache=False)
+
+@step
 def explain_shap(
     model: nn.Module,
     test_dataloader: DataLoader,
-    classes: List[str], # mypy: disable = unused-argument
-) -> Output(
-        figure_list=HTMLString,
-        explanation=List,
-):
+    classes: List[str],  # mypy: disable = unused-argument
+) -> Output(figure_list=HTMLString, explanation=List,):
     """Explain predictions of the model."""
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = (
+        torch.device("cuda")
+        if torch.cuda.is_available()
+        else torch.device("cpu")
+    )
     model.to(device)
 
     attributes_list: List[Dict[str, np.ndarray]] = []
@@ -170,8 +180,12 @@ def explain_shap(
     shap_values = explainer.shap_values(test_images)
     attributes_list.append({"shap": shap_values})
 
-    shap_numpy = [np.swapaxes(np.swapaxes(s, 1, -1), 1, 2) for s in shap_values]
-    test_numpy = np.swapaxes(np.swapaxes(test_images.cpu().detach().numpy(), 1, -1), 1, 2)
+    shap_numpy = [
+        np.swapaxes(np.swapaxes(s, 1, -1), 1, 2) for s in shap_values
+    ]
+    test_numpy = np.swapaxes(
+        np.swapaxes(test_images.cpu().detach().numpy(), 1, -1), 1, 2
+    )
 
     image(shap_numpy, -test_numpy, show=True)
     # get current figure
