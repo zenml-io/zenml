@@ -183,7 +183,7 @@ def validation_pipeline():
 
 You should consult [the official Deepchecks documentation](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html) for more information on what each test is useful for.
 
-For more customization, the data integrity step step also allows for additional keyword arguments to be supplied to be passed transparently to the Deepchecks library:
+For more customization, the data integrity step also allows for additional keyword arguments to be supplied to be passed transparently to the Deepchecks library:
 
 *   `dataset_kwargs`: Additional keyword arguments to be passed to the Deepchecks `tabular.Dataset` or `vision.VisionData` constructor. This is used to pass additional information about how the data is structured, e.g.:
 
