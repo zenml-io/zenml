@@ -174,7 +174,7 @@ my_step()  # New: Call the step directly `step(...)`
 from zenml.pipelines import pipeline
 
 @pipeline
-def my_pipeline(my_step):  # Old: steps are argument of the pipeline function
+def my_pipeline(my_step):  # Old: steps are arguments of the pipeline function
     my_step()
 ```
 {% endtab %}
@@ -316,7 +316,7 @@ my_pipeline()
 Check out [this page](./schedule-pipeline-runs.md)
 for more information on how to schedule your pipelines.
 
-## Fetching Pipelines after Execution
+## Fetching pipelines after execution
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -377,7 +377,7 @@ from zenml import pipeline
 def my_pipeline():
     step_1()
     step_2()
-    step_3(after=["step_1", "step_2"])  # New: Pass `after` argument when calling a step
+    step_3(after=["step_1", "step_2"])  # New: Pass the `after` argument when calling a step
 ```
 {% endtab %}
 {% endtabs %}
@@ -424,7 +424,7 @@ def my_step() -> Tuple[
 Check out [this page](./configure-steps-pipelines.md#type-annotations)
 for more information on how to annotate your step outputs.
 
-## Accessing Run information inside steps
+## Accessing run information inside steps
 
 {% tabs %}
 {% tab title="Old Syntax" %}
