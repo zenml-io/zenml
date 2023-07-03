@@ -99,7 +99,7 @@ The Great Expectations Data Validator has a few advanced configuration attribute
 * `configure_zenml_stores`: if set, ZenML will automatically update the Great Expectation configuration to include Metadata Stores that use the Artifact Store as a backend. If neither `context_root_dir` nor `context_config` are set, this is the default behavior. You can set this flag to use the ZenML Artifact Store as a backend for Great Expectations with any of the deployment methods described above. Note that ZenML will not copy the information in your existing Great Expectations stores (e.g. Expectation Suites, Validation Results) in the ZenML Artifact Store. This is something that you will have to do yourself.
 * `configure_local_docs`: set this flag to configure a local Data Docs site where Great Expectations docs are generated and can be visualized locally. Use this in case you don't already have a local Data Docs site in your existing Great Expectations configuration.
 
-For more, up-to-date information on the Great Expectations Data Validator configuration, you can have a look at [the API docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.data\_validators.ge\_data\_validator.GreatExpectationsDataValidator) .
+For more, up-to-date information on the Great Expectations Data Validator configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.data\_validators.ge\_data\_validator.GreatExpectationsDataValidator) .
 
 ### How do you use it?
 
@@ -181,7 +181,7 @@ class GreatExpectationsProfilerStep(BaseStep):
         ...
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.GreatExpectationsProfilerConfig) in the API docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.GreatExpectationsProfilerConfig) in the SDK docs.
 
 #### The Great Expectations data validator step
 
@@ -252,7 +252,7 @@ class GreatExpectationsValidatorStep(BaseStep):
         ...
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.GreatExpectationsValidatorConfig) in the API docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.GreatExpectationsValidatorConfig) in the SDK docs.
 
 #### Call Great Expectations directly
 

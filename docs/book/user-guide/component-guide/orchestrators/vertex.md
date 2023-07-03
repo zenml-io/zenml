@@ -342,7 +342,7 @@ vertex_settings = VertexOrchestratorSettings(
 ```
 
 Check out
-the [API docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
