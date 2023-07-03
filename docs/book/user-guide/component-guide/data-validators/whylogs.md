@@ -66,7 +66,7 @@ from whylogs.core import DatasetProfileView
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps import step
+from zenml import step
 
 
 @step(
@@ -104,69 +104,41 @@ You can [visualize whylogs profiles](whylogs.md#visualizing-whylogs-profiles) in
 
 #### The whylogs standard step
 
-ZenML wraps the whylogs/WhyLabs functionality in the form of a standard `WhylogsProfilerStep` step. The only field in the step config is a `dataset_timestamp` attribute which is only relevant when you upload the profiles to WhyLabs that uses this field to group and merge together profiles belonging to the same dataset. The helper function `whylogs_profiler_step` used to create an instance of this standard step takes in an optional `dataset_id` parameter that is also used only in the context of WhyLabs upload to identify the model in the context of which the profile is uploaded, e.g.:
+ZenML wraps the whylogs/WhyLabs functionality in the form of a standard `WhylogsProfilerStep` step. The only field in the step config is a `dataset_timestamp` attribute which is only relevant when you upload the profiles to WhyLabs that uses this field to group and merge together profiles belonging to the same dataset. The helper function `get_whylogs_profiler_step` used to create an instance of this standard step takes in an optional `dataset_id` parameter that is also used only in the context of WhyLabs upload to identify the model in the context of which the profile is uploaded, e.g.:
 
 ```python
-from zenml.integrations.whylogs.steps import (
-    WhylogsProfilerParameters,
-    whylogs_profiler_step,
-)
+from zenml.integrations.whylogs.steps import get_whylogs_profiler_step
 
-train_data_profiler = whylogs_profiler_step(
-    step_name="train_data_profiler",
-    params=WhylogsProfilerParameters(),
-    dataset_id="model-2",
-    enable_whylogs=True,
-)
-test_data_profiler = whylogs_profiler_step(
-    step_name="test_data_profiler",
-    params=WhylogsProfilerParameters(),
-    dataset_id="model-3",
-    enable_whylogs=True,
-)
+
+train_data_profiler = get_whylogs_profiler_step(dataset_id="model-2")
+test_data_profiler = get_whylogs_profiler_step(dataset_id="model-3")
 ```
 
 The step can then be inserted into your pipeline where it can take in a `pandas.DataFrame` dataset, e.g.:
 
 ```python
-from zenml.pipelines import pipeline
-
+from zenml import pipeline
 
 @pipeline
-def data_profiling_pipeline(
-        data_loader,
-        data_splitter,
-        train_data_profiler,
-        test_data_profiler,
-):
+def data_profiling_pipeline():
     data, _ = data_loader()
     train, test = data_splitter(data)
     train_data_profiler(train)
     test_data_profiler(test)
+    
 
-
-p = data_profiling_pipeline(
-    data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    train_data_profiler=train_data_profiler,
-    test_data_profiler=test_data_profiler,
-)
-
-p.run()
+data_profiling_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerStep) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.whylogs_profiler_step) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
 
 ```python
-class WhylogsProfilerStep(BaseAnalyzerStep):
-    """Generates a whylogs data profile from a given pd.DataFrame."""
-
-    @staticmethod
-    def entrypoint(  # type: ignore[override]
-            dataset: pd.DataFrame,
-            params: WhylogsProfilerParameters,
-    ) -> DatasetProfileView:
-        ...
+@step
+def whylogs_profiler_step(
+    dataset: pd.DataFrame,
+    dataset_timestamp: Optional[datetime.datetime] = None,
+) -> DatasetProfileView:
+    ...
 ```
 
 You should consult [the official whylogs documentation](https://whylogs.readthedocs.io/en/latest/index.html) for more information on what you can do with the collected profiles.

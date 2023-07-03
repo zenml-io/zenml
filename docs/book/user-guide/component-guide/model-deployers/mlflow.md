@@ -79,7 +79,6 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)
