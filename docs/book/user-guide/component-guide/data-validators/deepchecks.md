@@ -189,7 +189,7 @@ For more customization, the data integrity step step also allows for additional 
 
     ```python
     deepchecks_data_integrity_check_step(
-        dataset_kwargs=...,
+        dataset_kwargs=dict(label='class', cat_features=['country', 'state']),
         ...
     )
     ```
