@@ -24,6 +24,8 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
+    filter_model,
+    slim_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
@@ -176,18 +178,20 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         return next(iter(self.outputs.values()))
 
 
+@slim_model
+class StepRunSlimResponseModel(StepRunResponseModel):
+    """Slim response model for step runs."""
+
+
 # ------ #
 # FILTER #
 # ------ #
 
 
-class StepRunFilterModel(WorkspaceScopedFilterModel):
+@filter_model
+class StepRunFilterModel(StepRunBaseModel, WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
-    name: Optional[str] = Field(
-        default=None,
-        description="Name of the step run",
-    )
     entrypoint_name: Optional[str] = Field(
         default=None,
         description="Entrypoint name of the step run",
@@ -195,26 +199,6 @@ class StepRunFilterModel(WorkspaceScopedFilterModel):
     code_hash: Optional[str] = Field(
         default=None,
         description="Code hash for this step run",
-    )
-    cache_key: Optional[str] = Field(
-        default=None,
-        description="Cache key for this step run",
-    )
-    status: Optional[str] = Field(
-        default=None,
-        description="Status of the Step Run",
-    )
-    start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time for this run"
-    )
-    end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time for this run"
-    )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Pipeline run of this step run"
-    )
-    original_step_run_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Original id for this step run"
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User that produced this step run"

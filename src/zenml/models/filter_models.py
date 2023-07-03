@@ -36,7 +36,6 @@ from sqlmodel import SQLModel
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     PAGE_SIZE_DEFAULT,
-    PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
 )
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
@@ -280,14 +279,9 @@ class BaseFilterModel(BaseModel):
         "['and', 'or']",
     )
     page: int = Field(
-        default=PAGINATION_STARTING_PAGE, ge=1, description="Page number"
+        default=PAGINATION_STARTING_PAGE, description="Page number"
     )
-    size: int = Field(
-        default=PAGE_SIZE_DEFAULT,
-        ge=1,
-        le=PAGE_SIZE_MAXIMUM,
-        description="Page size",
-    )
+    size: int = Field(default=PAGE_SIZE_DEFAULT, description="Page size")
 
     id: Optional[Union[UUID, str]] = Field(
         default=None, description="Id for this resource"

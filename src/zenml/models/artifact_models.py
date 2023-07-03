@@ -24,6 +24,8 @@ from zenml.logger import get_logger
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
+    filter_model,
+    slim_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
@@ -139,12 +141,18 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
         visualize_artifact(self, title=title)
 
 
+@slim_model
+class ArtifactSlimResponseModel(ArtifactResponseModel):
+    """Slim response model for artifacts."""
+
+
 # ------ #
 # FILTER #
 # ------ #
 
 
-class ArtifactFilterModel(WorkspaceScopedFilterModel):
+@filter_model
+class ArtifactFilterModel(ArtifactBaseModel, WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
     # `only_unused` refers to a property of the artifacts relationship
@@ -154,30 +162,6 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
         *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "only_unused",
     ]
-
-    name: Optional[str] = Field(
-        default=None,
-        description="Name of the artifact",
-    )
-    uri: Optional[str] = Field(
-        default=None,
-        description="Uri of the artifact",
-    )
-    materializer: Optional[str] = Field(
-        default=None,
-        description="Materializer used to produce the artifact",
-    )
-    type: Optional[str] = Field(
-        default=None,
-        description="Type of the artifact",
-    )
-    data_type: Optional[str] = Field(
-        default=None,
-        description="Datatype of the artifact",
-    )
-    artifact_store_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Artifact store for this artifact"
-    )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace for this artifact"
     )
