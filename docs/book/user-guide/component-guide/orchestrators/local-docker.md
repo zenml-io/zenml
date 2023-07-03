@@ -40,7 +40,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when
 defining or running your pipeline. Check out
-the [API docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
