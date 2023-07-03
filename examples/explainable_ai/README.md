@@ -48,4 +48,4 @@ sample are computed, saved and visualized to help ML engineers to investigate
 training process and gain trust in the model.
 
 Example of LayerGradCAM explainer in action:
-![LayerGradCAM](assets/explanation_visualization.png)
+![LayerGradCAM](assets/explanation_visualization_mnist.png)
