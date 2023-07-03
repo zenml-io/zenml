@@ -38,13 +38,12 @@ to pass a variable number of artifacts into a step programmatically, so the
 via the ZenML Client instead:
 
 ```python
-from zenml import step
+from zenml import step, get_step_context
 from zenml.client import Client
-from zenml.environment import Environment
 
 @step
 def select_model_step():
-    run_name = Environment().step_environment.run_name
+    run_name = get_step_context().pipeline_run.name
     run = Client().get_pipeline_run(run_name)
 
     # Fetch all models trained by a 'train_step' before

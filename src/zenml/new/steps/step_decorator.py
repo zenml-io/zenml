@@ -93,9 +93,7 @@ def step(
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
         enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default unless the step
-            requires a `StepContext` (see
-            `zenml.steps.step_context.StepContext` for more information).
+            value is passed, caching is enabled by default.
         enable_artifact_metadata: Specify whether metadata is enabled for this
             step. If no value is passed, metadata is enabled by default.
         enable_artifact_visualization: Specify whether visualization is enabled
@@ -110,13 +108,11 @@ def step(
             materializer will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
-        on_failure: Callback function in event of failure of the step. Can
-            be a function with two possible parameters, `StepContext` and
-            `BaseException`, or a source path to a function of the same
-            specifications (e.g. `module.my_function`).
-        on_success: Callback function in event of failure of the step. Can
-            be a function with one parameter of type `StepContext`, or a
-            source path to a function of the same specifications
+        on_failure: Callback function in event of failure of the step. Can be a
+            function with a single argument of type `BaseException`, or a source
+            path to such a function (e.g. `module.my_function`).
+        on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
 
     Returns:

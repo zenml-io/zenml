@@ -67,43 +67,35 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 import pandas as pd
 
-from zenml.steps import StepContext
 from zenml import step
+from zenml.client import Client
 
 
 @step
 def get_historical_features(
-    context: StepContext,
     entity_dict: Union[Dict[str, Any], str],
     features: List[str],
     full_feature_names: bool = False
 ) -> pd.DataFrame:
     """Feast Feature Store historical data step
 
-    Args:
-        context: The step context.
-
     Returns:
         The historical features as a DataFrame.
     """
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. Please make sure that you have registered and set a stack."
-        )
-    elif not context.stack.feature_store:
+    feature_store = Client().active_stack.feature_store
+    if not feature_store:
         raise DoesNotExistException(
             "The Feast feature store component is not available. "
             "Please make sure that the Feast stack component is registered as part of your current active stack."
         )
 
-    feature_store_component = context.stack.feature_store
     params.entity_dict["event_timestamp"] = [
         datetime.fromisoformat(val)
         for val in entity_dict["event_timestamp"]
     ]
     entity_df = pd.DataFrame.from_dict(entity_dict)
 
-    return feature_store_component.get_historical_features(
+    return feature_store.get_historical_features(
         entity_df=entity_df,
         features=features,
         full_feature_names=full_feature_names,

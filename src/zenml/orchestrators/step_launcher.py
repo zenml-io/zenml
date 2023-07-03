@@ -396,6 +396,8 @@ class StepLauncher:
                 )
             else:
                 self._run_step_without_step_operator(
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
                     step_run_info=step_run_info,
                     input_artifacts=step_run.inputs,
                     output_artifact_uris=output_artifact_uris,
@@ -453,6 +455,8 @@ class StepLauncher:
 
     def _run_step_without_step_operator(
         self,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         step_run_info: StepRunInfo,
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
@@ -460,12 +464,16 @@ class StepLauncher:
         """Runs the current step without a step operator.
 
         Args:
+            pipeline_run: The model of the current pipeline run.
+            step_run: The model of the current step run.
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifacts of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
+            pipeline_run=pipeline_run,
+            step_run=step_run,
             input_artifacts=input_artifacts,
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,

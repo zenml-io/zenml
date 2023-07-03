@@ -358,56 +358,7 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-The following code snippet shows how to use the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline
-step:
-
-```python
-from zenml.artifacts import ModelArtifact
-from zenml.environment import Environment
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import (
-    SeldonDeploymentConfig,
-    SeldonDeploymentService,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepContext,
-    step,
-)
-
-
-@step(enable_cache=True)
-def seldon_model_deployer_step(
-        context: StepContext,
-        model: ModelArtifact,
-) -> SeldonDeploymentService:
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    # get pipeline name, step name and run id
-    step_env = Environment()[STEP_ENVIRONMENT_NAME]
-
-    service_config = SeldonDeploymentConfig(
-        model_uri=model.uri,
-        model_name="my-model",
-        replicas=1,
-        implementation="TENSORFLOW_SERVER",
-        secret_name="seldon-secret",
-        pipeline_name=step_env.pipeline_name,
-        run_name=step_env.run_name,
-        pipeline_step_name=step_env.step_name,
-    )
-
-    service = model_deployer.deploy_model(
-        service_config, replace=True, timeout=300
-    )
-
-    print(
-        f"Seldon deployment service started and reachable at:\n"
-        f"    {service.prediction_url}\n"
-    )
-
-    return service
-```
+See the [seldon_model_deployer_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 Within the `SeldonDeploymentConfig` you can configure:
 

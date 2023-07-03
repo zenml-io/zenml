@@ -194,13 +194,13 @@ zenml deploy --provider aws  # aws, gcp and azure are supported providers
 
 You can also choose to deploy with docker or helm with full control over
 the configuration and deployment. Check out the
-[docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
+[docs](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)
 to find out how.
 
 ## 👨‍🍳 2. Deploy Stack Components
 
 ZenML boasts a ton of [integrations](https://zenml.io/integrations) into 
-popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) 
+popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/user-guide/starter-guide/understand-stacks) 
 concept ensures that these tools work nicely together, therefore bringing
 structure and standardization into the MLOps workflow.
 
