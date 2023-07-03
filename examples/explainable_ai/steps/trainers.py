@@ -15,15 +15,13 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from torchmetrics import Accuracy
 
 from pytorch_lightning import LightningModule, Trainer
 from torch.nn import functional as F
-from torch.utils.data import DataLoader
-from torchmetrics import Accuracy
-from steps.importers import load_model
-from torch.nn import functional as F
-
 from zenml import step
+
+from steps.importers import load_model
 
 
 
@@ -38,6 +36,7 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         num_labels: int,
         dataloader_train: DataLoader,
         dataloader_test: DataLoader,
+        dataloader_val: DataLoader,
         learning_rate: float = 2e-4,
     ):
         """Initialize class.
@@ -60,6 +59,7 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
 
         self.dataloader_train = dataloader_train
         self.dataloader_test = dataloader_test
+        self.dataloader_val = dataloader_val
 
         self.val_accuracy = Accuracy(task="multiclass", num_classes=self.num_classes)
         self.test_accuracy = Accuracy(task="multiclass", num_classes=self.num_classes)
@@ -120,30 +120,33 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
     def test_dataloader(self) -> DataLoader:
         return self.dataloader_test
 
+    def val_dataloader(self) -> DataLoader:
+        return self.dataloader_val
 
 @step(enable_cache=True)
 def trainer(
     dataloader_train: DataLoader,
     dataloader_test: DataLoader,
+    dataloader_val: DataLoader,
 ) -> nn.Module:
     """Trains on the train dataloader."""
-    pretrained_model, _, _ = load_model()
+    pretrained_model, categories, _ = load_model()
 
     # uncomment if you want to re-train model
-    # custom_model = CustomModel(
-    #     model=pretrained_model,
-    #     num_labels=10,
-    #     dataloader_train=dataloader_train,
-    #     dataloader_test=dataloader_test,
-    # )
+    custom_model = CustomModel(
+        model=pretrained_model,
+        num_labels=len(categories),
+        dataloader_train=dataloader_train,
+        dataloader_test=dataloader_test,
+        dataloader_val=dataloader_val,
+    )
 
-    # trainer = Trainer(
-    #     accelerator="auto",
-    #     devices=[0],
-    #     max_epochs=1,
-    #     max_steps=1,
-    # )
-    # trainer.fit(custom_model)
-    # trainer.test(custom_model)
-    # return trainer.model.model
-    return pretrained_model
+    trainer = Trainer(
+        accelerator="auto",
+        devices=[0],
+        max_epochs=3,
+        val_check_interval=1.0,
+    )
+    trainer.fit(custom_model)
+    trainer.test(custom_model)
+    return trainer.model.model

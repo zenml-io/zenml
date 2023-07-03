@@ -14,7 +14,7 @@
 
 from steps.explainer import explain
 from steps.trainers import trainer
-from steps.importers import importer_cifa10
+from steps.importers import importer_cifar10
 
 from zenml import pipeline
 from zenml.config import DockerSettings
@@ -27,8 +27,12 @@ docker_settings = DockerSettings(
 
 
 @pipeline(settings={"docker": docker_settings})
-def explain_pipeline():
+def explain_pipeline(batch_size: int):
     """Link all the steps and artifacts together."""
-    train, test = importer_cifa10()
-    model = trainer(dataloader_train=train, dataloader_test=test)
-    explain(model=model, test_dataloader=test)
+    train, test, val, classes = importer_cifar10(batch_size=batch_size)
+    model = trainer(
+        dataloader_train=train,
+        dataloader_test=test,
+        dataloader_val=val,
+    )
+    explain(model=model, test_dataloader=test, classes=classes)

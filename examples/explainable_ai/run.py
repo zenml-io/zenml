@@ -15,4 +15,5 @@
 from pipelines.explain_pipeline import explain_pipeline
 
 if __name__ == "__main__":
-    explain_pipeline()
+    batch_size: int = 64
+    explain_pipeline(batch_size=batch_size)

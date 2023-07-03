@@ -30,30 +30,39 @@ import mpld3
 
 
 @step
-def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
+def explain(
+    model: nn.Module,
+    test_dataloader: DataLoader,
+    classes: List[str],
+) -> Output(
         figure_list=HTMLString,
         explanation=Dict,
 ):
     """Explain predictions of the model."""
     explainer_list = [
-        ExplainerWithParams(explainer_name=CVClassificationExplainers.CV_GRADIENT_SHAP_EXPLAINER),
+        ExplainerWithParams(explainer_name=CVClassificationExplainers.CV_LAYER_GRADCAM_EXPLAINER),
+        ExplainerWithParams(explainer_name=CVClassificationExplainers.CV_DECONVOLUTION_EXPLAINER),
     ]
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model.to(device)
 
+    idx2label = {index: label for index, label in enumerate(classes)}
+
     attributes_list: List[Dict[str, np.ndarray]] = []
     figure_list: List[matplotlib.figure.Figure] = []
     counter: int = 0
-    max_samples_to_explain: int = 20
+    max_samples_to_explain: int = 10
 
     for sample_batch in test_dataloader:
         if counter > max_samples_to_explain:
             break
 
-        sample_list, label_list = sample_batch
+        sample_list, targets_list = sample_batch
         # iterate over all samples in batch
-        for sample, label in zip(sample_list, label_list):
+        for sample, class_no in zip(sample_list, targets_list):
             # add batch size dimension to the data sample
+            if counter > max_samples_to_explain:
+                break
             input_data = sample.reshape(
                 1,
                 sample.shape[0],
@@ -61,20 +70,29 @@ def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
                 sample.shape[2],
             ).to(device) # move it to specified device
 
+            label = idx2label[class_no.item()]
             with FoXaiExplainer(
                 model=model,
                 explainers=explainer_list,
-                target=label,
+                target=class_no,
             ) as xai_model:
                 # calculate attributes for every explainer
                 _, attributes_dict = xai_model(input_data)
+
+            org_figure = mean_channels_visualization(
+                attributions=sample,
+                title=f"Original image. Class: {label}",
+                transformed_img=sample,
+                alpha=0.0,
+            )
+            figure_list.append(org_figure)
 
             for key, value in attributes_dict.items():
                 # create figure from attributes and original image          
                 figure = mean_channels_visualization(
                     attributions=value[0],
                     transformed_img=sample,
-                    title= f"Mean of channels ({key})",
+                    title= f"Mean of channels ({key}). Class: {label}",
                 )
                 figure_list.append(figure)
 
@@ -83,7 +101,7 @@ def explain(model: nn.Module, test_dataloader: DataLoader) -> Output(
 
             attributes_list.append(attributes_dict)
 
-        counter += 1
+            counter += 1
 
     # convert matplotlib.figure.Figure to HTML string
     figure_html_list = [mpld3.fig_to_html(figure) for figure in figure_list]

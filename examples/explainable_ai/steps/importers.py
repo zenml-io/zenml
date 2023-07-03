@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
 import torchvision
+from typing import List
 
 from zenml import step
 from zenml.steps import Output
@@ -29,10 +31,12 @@ def load_model():
     return model, categories, transform
 
 @step
-def importer_cifa10() -> (
+def importer_cifar10(batch_size: int) -> (
     Output(
         train_dataloader=DataLoader,
         test_dataloader=DataLoader,
+        val_dataloader=DataLoader,
+        classes=List,
     )
 ):
     """Download the CIFAR10 dataset."""
@@ -52,10 +56,30 @@ def importer_cifa10() -> (
         download=True,
         transform=transform,
     )
-    batch_size = 1
+
+    train_size = int(0.8 * len(training_data))
+    val_size = len(training_data) - train_size
+    training_data, validation_data = torch.utils.data.random_split(
+        training_data,
+        [train_size, val_size],
+    )
+
+    classes: List[str] = [
+        "airplane",
+        "automobile",
+        "bird",
+        "cat",
+        "deer",
+        "dog",
+        "frog",
+        "horse",
+        "ship",
+        "truck",
+    ]
 
     # Create dataloaders.
-    train_dataloader = DataLoader(training_data, batch_size=batch_size)
+    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(validation_data, batch_size=batch_size)
     test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, test_dataloader, val_dataloader, classes

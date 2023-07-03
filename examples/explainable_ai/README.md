@@ -36,5 +36,11 @@ Now we're ready. Execute the pipeline:
 python run.py
 ```
 
-This will load pre-trained model from torchvision hub and explain the model
-against CIFAR10 dataset.
+This will load pre-trained model trained on ImageNet from torchvision hub,
+finetune it on CIFAR10 for few epochs, and explain the model against the
+testset. As a result pixel importances are computed, saved and visualized to
+help ML engineers to investigate training process and gain trust in the
+model.
+
+Example of LayerGradCAM explainer in action:
+![LayerGradCAM](assets/explanation_visualization.png)
