@@ -13,7 +13,12 @@
 #  permissions and limitations under the License.
 
 from pipelines.explain_pipeline import explain_pipeline
+from steps.explainer import ExplainerType
 
 if __name__ == "__main__":
-    batch_size: int = 64
-    explain_pipeline(batch_size=batch_size)
+    batch_size: int = 128
+    explainer: ExplainerType = ExplainerType.SHAP
+    explain_pipeline(
+        batch_size=batch_size,
+        explainer=explainer,
+    )

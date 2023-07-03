@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 import torchvision
@@ -22,16 +23,43 @@ from zenml import step
 from zenml.steps import Output
 
 
-def load_model():
-    """Load pre-trained model from torchvision hub."""
-    weights = torchvision.models.MobileNet_V3_Small_Weights.IMAGENET1K_V1
-    model = torchvision.models.mobilenet_v3_small(weights=weights)
-    categories = weights.meta["categories"]
-    transform = weights.transforms()
-    return model, categories, transform
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
 
-@step
-def importer_cifar10(batch_size: int) -> (
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(1, 10, kernel_size=5),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(10, 20, kernel_size=5),
+            nn.Dropout(),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+        )
+        self.fc_layers = nn.Sequential(
+            nn.Linear(320, 50),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(50, 10),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x):
+        x = self.conv_layers(x)
+        x = x.view(-1, 320)
+        x = self.fc_layers(x)
+        return x
+
+
+def load_model():
+    """Create new model."""
+    model = Net()
+    transform = torchvision.transforms.ToTensor()
+    return model, list(range(0, 10)), transform
+
+
+@step(enable_cache=True)
+def importer_MNIST(batch_size: int) -> (
     Output(
         train_dataloader=DataLoader,
         test_dataloader=DataLoader,
@@ -39,10 +67,10 @@ def importer_cifar10(batch_size: int) -> (
         classes=List,
     )
 ):
-    """Download the CIFAR10 dataset."""
+    """Download the MNIST dataset."""
     # Download training data from open datasets.
     _, _, transform = load_model()
-    training_data = datasets.CIFAR10(
+    training_data = datasets.MNIST(
         root="data",
         train=True,
         download=True,
@@ -50,7 +78,7 @@ def importer_cifar10(batch_size: int) -> (
     )
 
     # Download test data from open datasets.
-    test_data = datasets.CIFAR10(
+    test_data = datasets.MNIST(
         root="data",
         train=False,
         download=True,
@@ -64,18 +92,7 @@ def importer_cifar10(batch_size: int) -> (
         [train_size, val_size],
     )
 
-    classes: List[str] = [
-        "airplane",
-        "automobile",
-        "bird",
-        "cat",
-        "deer",
-        "dog",
-        "frog",
-        "horse",
-        "ship",
-        "truck",
-    ]
+    classes: List[str] = [str(x) for x in range(0, 10)]
 
     # Create dataloaders.
     train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)

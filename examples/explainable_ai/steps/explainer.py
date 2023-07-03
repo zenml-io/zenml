@@ -19,6 +19,9 @@ from typing import List, Dict
 
 import numpy as np
 import matplotlib
+
+import shap
+from shap.plots import image
 from foxai.context_manager import FoXaiExplainer, ExplainerWithParams, CVClassificationExplainers
 from foxai.visualizer import mean_channels_visualization
 
@@ -27,10 +30,31 @@ from zenml.steps import Output
 from zenml.types import HTMLString
 
 import mpld3
+import numpy as np
+
+import matplotlib.pyplot as plt
+from enum import Enum
 
 
-@step
-def explain(
+class ExplainerType(Enum):
+    FOXAI = "foxai"
+    SHAP = "shap"
+
+
+def create_figure_list_html(figure_list: List[matplotlib.figure.Figure]) -> str:
+    # convert matplotlib.figure.Figure to HTML string
+    figure_html_list = [mpld3.fig_to_html(figure) for figure in figure_list]
+
+    # construct HTML list of Figures to display
+    figure_string = "<ul>"
+    for fig in figure_html_list:
+        figure_string = f"{figure_string}<li>{fig}</li>"
+    figure_string = f"{figure_string}</ul>"
+    return figure_string
+
+
+@step(enable_cache=False)
+def explain_foxai(
     model: nn.Module,
     test_dataloader: DataLoader,
     classes: List[str],
@@ -97,19 +121,62 @@ def explain(
                 figure_list.append(figure)
 
             for k, v in attributes_dict.items():
+                print(k, type(v), v.shape)
                 attributes_dict[k] = v.detach().cpu().numpy()
 
             attributes_list.append(attributes_dict)
 
             counter += 1
 
-    # convert matplotlib.figure.Figure to HTML string
-    figure_html_list = [mpld3.fig_to_html(figure) for figure in figure_list]
-
-    # construct HTML list of Figures to display
-    figure_string = "<ul>"
-    for fig in figure_html_list:
-        figure_string = f"{figure_string}<li>{fig}</li>"
-    figure_string = f"{figure_string}</ul>"
+    figure_string = create_figure_list_html(figure_list=figure_list)
 
     return HTMLString(figure_string), attributes_dict
+
+@step(enable_cache=False)
+def explain_shap(
+    model: nn.Module,
+    test_dataloader: DataLoader,
+    classes: List[str], # mypy: disable = unused-argument
+) -> Output(
+        figure_list=HTMLString,
+        explanation=List,
+):
+    """Explain predictions of the model."""
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model.to(device)
+
+    attributes_list: List[Dict[str, np.ndarray]] = []
+    counter: int = 0
+    max_samples_to_explain: int = 100
+
+    selected_sample_list = []
+    for sample_batch in test_dataloader:
+        if counter > max_samples_to_explain:
+            break
+
+        sample_list, targets_list = sample_batch
+        # iterate over all samples in batch
+        for sample, _ in zip(sample_list, targets_list):
+            if counter > max_samples_to_explain:
+                break
+
+            selected_sample_list.append(sample)
+
+    selected_sample_list = torch.stack(selected_sample_list).to(device)
+
+    background = selected_sample_list[0:100]
+    test_images = selected_sample_list[25:30]
+    explainer = shap.DeepExplainer(model, background)
+    shap_values = explainer.shap_values(test_images)
+    attributes_list.append({"shap": shap_values})
+
+    shap_numpy = [np.swapaxes(np.swapaxes(s, 1, -1), 1, 2) for s in shap_values]
+    test_numpy = np.swapaxes(np.swapaxes(test_images.cpu().detach().numpy(), 1, -1), 1, 2)
+
+    image(shap_numpy, -test_numpy, show=True)
+    # get current figure
+    figure = plt.gcf()
+
+    figure_string = create_figure_list_html(figure_list=[figure])
+
+    return HTMLString(figure_string), attributes_list

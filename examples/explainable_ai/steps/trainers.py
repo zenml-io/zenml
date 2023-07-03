@@ -37,7 +37,7 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         dataloader_train: DataLoader,
         dataloader_test: DataLoader,
         dataloader_val: DataLoader,
-        learning_rate: float = 2e-4,
+        learning_rate: float = 1e-3,
     ):
         """Initialize class.
         Args:
@@ -45,7 +45,7 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
             num_labels: Number of classes to classify.
             dataloader_train: Training dataloader.
             dataloader_test: Test dataloader.
-            learning_rate: Learning rate parameter. Defaults to 2e-4.
+            learning_rate: Learning rate parameter. Defaults to 1e-3.
         """
 
         super().__init__()
@@ -111,7 +111,7 @@ class CustomModel(  # pylint: disable = (abstract-method, too-many-ancestors, to
         self.log("test_acc", self.test_accuracy, prog_bar=True)
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
         return optimizer
 
     def train_dataloader(self) -> DataLoader:
@@ -134,6 +134,7 @@ def trainer(
 
     # uncomment if you want to re-train model
     custom_model = CustomModel(
+        learning_rate=5e-4,
         model=pretrained_model,
         num_labels=len(categories),
         dataloader_train=dataloader_train,
@@ -144,7 +145,7 @@ def trainer(
     trainer = Trainer(
         accelerator="auto",
         devices=[0],
-        max_epochs=3,
+        max_epochs=10,
         val_check_interval=1.0,
     )
     trainer.fit(custom_model)
