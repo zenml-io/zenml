@@ -136,7 +136,7 @@ class BaseArtifactStoreFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see
 the full implementation and get the complete docstrings, please check
-the [API docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
 .
 {% endhint %}
 

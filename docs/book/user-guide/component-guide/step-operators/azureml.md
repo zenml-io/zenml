@@ -90,7 +90,7 @@ more about how ZenML builds these images and how you can customize them.
 
 For additional configuration of the AzureML step operator, you can pass `AzureMLStepOperatorSettings` when defining or
 running your pipeline. Check out
-the [API docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
 more information on how to specify settings.
 

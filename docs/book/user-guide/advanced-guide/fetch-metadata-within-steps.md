@@ -7,7 +7,7 @@ description: Accessing meta information in real-time within your pipeline.
 ### Step & run information using the `StepContext`
 
 To find information about the pipeline or step that is currently running, you
-can use the `zenml.get_step_context` function to access the `StepContext` of
+can use the `zenml.get_step_context()` function to access the `StepContext` of
 your step:
 
 ```python
@@ -27,16 +27,17 @@ of your current step will be stored and which
 
 ```python
 @step
-def my_step(context: StepContext):
+def my_step():
+    step_context = get_step_context()
     # Get the URI where the output will be saved.
-    uri = context.get_output_artifact_uri()
+    uri = step_context.get_output_artifact_uri()
 
     # Get the materializer that will be used to save the output.
-    materializer = context.get_output_materializer() 
+    materializer = step_context.get_output_materializer() 
 ```
 
 {% hint style="info" %}
-See the [API Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-steps/#zenml.steps.step_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
+See the [API Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.steps.step_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
 ### Fetching secret values in a step
