@@ -216,7 +216,7 @@ class Flavor:
         """
         from zenml import __version__
 
-        base = f"https://apidocs.zenml.io/{__version__}"
+        base = f"https://sdkdocs.zenml.io/{__version__}"
 
         component_type = self.type.plural
 

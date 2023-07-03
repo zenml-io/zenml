@@ -103,9 +103,9 @@ Accessing the low-level Artifact Store API can be done through the following Pyt
 
 * `zenml.io.fileio` provides low-level utilities for manipulating Artifact Store objects (e.g. `open`, `copy`, `rename`
   , `remove`, `mkdir`). These functions work seamlessly across Artifact Stores types. They have the same signature as
-  the [Artifact Store abstraction methods](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) (
+  the [Artifact Store abstraction methods](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) (
   in fact, they are one and the same under the hood).
-* [zenml.utils.io\_utils](https://apidocs.zenml.io/latest/core\_code\_docs/core-utils/#zenml.utils.io\_utils) includes
+* [zenml.utils.io\_utils](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-utils/#zenml.utils.io\_utils) includes
   some higher-level helper utilities that make it easier to find and transfer objects between the Artifact Store and the
   local filesystem or memory.
 
