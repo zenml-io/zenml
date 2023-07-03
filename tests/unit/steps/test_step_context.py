@@ -15,33 +15,67 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml import get_step_context
 from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import StepContext
 
 
-def test_initialize_step_context_with_mismatched_keys():
+def test_step_context_is_singleton(step_context_with_no_output):
+    """Tests that the step context is a singleton."""
+    assert StepContext() is step_context_with_no_output
+
+
+def test_get_step_context(step_context_with_no_output):
+    """Unit test for `get_step_context()`."""
+
+    # step context exists -> returns the step context
+    assert get_step_context() is StepContext()
+
+    # step context does not exist -> raises an exception
+    StepContext._clear()
+    with pytest.raises(RuntimeError):
+        get_step_context()
+
+
+def test_initialize_step_context_with_mismatched_keys(
+    sample_pipeline_run,
+    sample_step_run,
+    sample_step_run_info,
+):
     """Tests that initializing a step context with mismatched keys for materializers and artifacts raises an Exception."""
     materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_different_output_name": ""}
 
     with pytest.raises(StepContextError):
+        StepContext._clear()
         StepContext(
-            step_name="",
+            pipeline_run=sample_pipeline_run,
+            step_run=sample_step_run,
+            step_run_info=sample_step_run_info,
+            cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
         )
 
 
-def test_initialize_step_context_with_matching_keys():
+def test_initialize_step_context_with_matching_keys(
+    sample_pipeline_run,
+    sample_step_run,
+    sample_step_run_info,
+):
     """Tests that initializing a step context with matching keys for materializers and artifacts works."""
     materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_output_name": ""}
 
     with does_not_raise():
+        StepContext._clear()
         StepContext(
-            step_name="",
+            pipeline_run=sample_pipeline_run,
+            step_run=sample_step_run,
+            step_run_info=sample_step_run_info,
+            cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
         )

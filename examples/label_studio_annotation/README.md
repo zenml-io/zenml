@@ -298,7 +298,7 @@ rm -rf zenml_examples
 
 If you want to learn more about annotation in general or about how to use your
 own annotation tool in ZenML check out our
-[docs](https://docs.zenml.io/component-gallery/annotators/annotators).
+[docs](https://docs.zenml.io/user-guide/component-guide/annotators/annotators).
 
 To explore other available CLI commands related to the annotator stack
 components, check out the [CLI docs annotator

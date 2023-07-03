@@ -25,8 +25,6 @@ class Output(object):
         Args:
             **kwargs: The output values.
         """
-        # TODO [ENG-161]: do we even need the named tuple here or is
-        #  a list of tuples (name, Type) sufficient?
         self.outputs = NamedTuple("ZenOutput", **kwargs)  # type: ignore[misc]
 
     def items(self) -> Iterator[Tuple[str, Type[Any]]]:

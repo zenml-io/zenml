@@ -127,8 +127,9 @@ def test_define_step_without_input_annotation():
 
 
 def test_define_step_without_return_annotation():
-    """Tests that defining a step with a missing return annotation raises a StepInterfaceError."""
-    with pytest.raises(StepInterfaceError):
+    """Tests that defining a step with a missing return annotation does not
+    raise a StepInterfaceError."""
+    with does_not_raise():
 
         @step
         def some_step(some_argument: int, some_other_argument: int):

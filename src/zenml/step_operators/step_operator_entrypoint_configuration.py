@@ -100,6 +100,8 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
 
         step_runner = StepRunner(step=step, stack=stack)
         step_runner.run(
+            pipeline_run=pipeline_run,
+            step_run=step_run,
             input_artifacts=input_artifacts,
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,

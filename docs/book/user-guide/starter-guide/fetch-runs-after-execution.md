@@ -131,7 +131,7 @@ succeeded, you can use the `last_successful_run` property instead.
 
 If you already know the exact run that you want to fetch (e.g., from looking at
 the dashboard), you can use the 
-[Client.get_pipeline_run](https://apidocs.zenml.io/0.40.2/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
+[Client.get_pipeline_run](https://apidocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
 method to fetch the model of the run directly without having to query the
 pipeline first:
 
@@ -245,18 +245,8 @@ Similarly, you can use the `inputs` and `input` properties to get the input
 artifacts of a step instead.
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps and
-the names of the inputs are the corresponding argument names in the step 
-function definition:
-
-```python
-from zenml import step
-from zenml.steps import Output
-
-@step
-def some_step(input_name: int) -> Output(output_name=int):
-    ...
-```
+Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names) to see what
+the output names of your steps are and how to customize them.
 {% endhint %}
 
 ### Artifact Information
@@ -330,13 +320,13 @@ For example, this is how we can fetch the last pipeline run of the same pipeline
 from within a ZenML step:
 
 ```python
+from zenml import get_step_context
 from zenml.client import Client
-from zenml.environment import Environment
 
 @step
 def my_step():
     # Get the name of the current pipeline run
-    current_run_name = Environment().step_environment.run_name
+    current_run_name = get_step_context().pipeline_run.name
 
     # Fetch the current pipeline run
     current_run = Client().get_pipeline_run(current_run_name)
@@ -347,7 +337,7 @@ def my_step():
 
 {% hint style="info" %}
 As shown in the example, we can get additional information about the current
-run using the `StepEnvironment`, which is explained in more detail in the 
+run using the `StepContext`, which is explained in more detail in the 
 [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
 {% endhint %}
 
