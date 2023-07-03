@@ -24,7 +24,6 @@ from rich.text import Text
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
-from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
@@ -473,6 +472,10 @@ def deploy(
             variables to the stack recipe.
     """
     cli_utils.warning(ALPHA_MESSAGE)
+    logger.info(
+        "Servers are no longer deployed by default. Please use the "
+        "`zenml deploy` command to deploy a ZenML server."
+    )
 
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -615,58 +618,7 @@ def deploy(
                 )
         # invoke server deploy
         if no_server:
-            logger.info(
-                "The --no-server flag was passed. "
-                "Skipping the remote deployment of ZenML. "
-                "Please note that if you wish to use the stack "
-                "that you created through this recipe, you will "
-                "need to deploy ZenML on the cloud."
-            )
-        else:
-            if zen_server_exists():
-                logger.info(
-                    "A ZenML deployment exists already with URL: "
-                    f"{GlobalConfiguration().zen_store.url}. "
-                    f"The recipe will mot create a new "
-                    f"installation."
-                )
-            else:
-                logger.info("No remote deployment of ZenML detected. ")
-                vars = stack_recipe_service.get_vars()
-                filter = [
-                    "aws-stores-minimal",
-                    "azureml-minimal",
-                    "vertex-ai",
-                ]
-                if Path(
-                    stack_recipe_service.terraform_client.working_dir
-                ).name in filter and (
-                    "enable_mlflow" not in vars
-                    or vars["enable_mlflow"] is False
-                ):
-                    logger.warning(
-                        "This recipe doesn't create a Kubernetes "
-                        "cluster and as of now, an existing "
-                        "cluster is required for ZenML deployment. "
-                        "Please take a look at the "
-                        "guide for steps on how to proceed: "
-                        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli#option-1-starting-from-scratch"
-                    )
-                    logger.info(
-                        "Not attempting to import the generated "
-                        "YAML file since there isn't any active "
-                        "ZenML deployment."
-                    )
-                    return
-                else:
-                    from zenml.cli import server
-
-                    ctx.invoke(
-                        server.deploy,
-                        config=stack_recipe_service.get_deployment_info(),
-                        connect=True,
-                    )
-
+            logger.warning("The `--no-server` flag has been deprecated. ")
         # get the stack yaml path
         stack_yaml_file = os.path.join(
             stack_recipe_service.config.directory_path,
@@ -712,15 +664,6 @@ def deploy(
                 "use the command 'terraform output metadata-db-password' "
                 "to get the value in the command-line."
             )
-
-
-def zen_server_exists() -> bool:
-    """Check if a remote ZenServer is active.
-
-    Returns:
-        True if active, false otherwise.
-    """
-    return not GlobalConfiguration().zen_store.is_local_store()
 
 
 @stack_recipe.command(

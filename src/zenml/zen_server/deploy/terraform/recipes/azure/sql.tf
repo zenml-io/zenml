@@ -1,6 +1,14 @@
+# random string for the Flexible Server instance name
+resource "random_string" "flexible_server_suffix" {
+  count  = var.deploy_db ? 1 : 0
+  length = 4
+  upper  = false
+  special = false
+}
+
 resource "azurerm_mysql_flexible_server" "mysql" {
   count                  = var.deploy_db ? 1 : 0
-  name                   = var.db_instance_name
+  name                   = "${var.db_instance_name}-${random_string.flexible_server_suffix[0].result}"
   resource_group_name    = local.rg
   location               = data.azurerm_resource_group.rg.location
   administrator_login    = var.database_username
