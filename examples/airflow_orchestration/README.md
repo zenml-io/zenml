@@ -124,14 +124,14 @@ rm -rf zenml_examples
 ### 📄 Additional pre-requisites
 
 * A remote ZenML server deployed to the cloud. See the 
-[deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) for
+[deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for
 more information.
 * A deployed Airflow server. See the 
-[deployment section](https://docs.zenml.io/component-gallery/orchestrators/airflow#how-to-deploy-it)
+[deployment section](https://docs.zenml.io/user-guide/component-guide/orchestrators/airflow#how-to-deploy-it)
 for more information.
-* A [remote artifact store](https://docs.zenml.io/component-gallery/artifact-stores)
+* A [remote artifact store](https://docs.zenml.io/user-guide/component-guide/artifact-stores)
 as part of your stack.
-* A [remote container registry](https://docs.zenml.io/component-gallery/container-registries)
+* A [remote container registry](https://docs.zenml.io/user-guide/component-guide/container-registries)
 as part of your stack.
 
 ```bash
@@ -167,4 +167,4 @@ of your Airflow deployment.
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build
-your orchestrators in ZenML check out our [docs](https://docs.zenml.io/component-gallery/orchestrators).
+your orchestrators in ZenML check out our [docs](https://docs.zenml.io/user-guide/component-guide/orchestrators).

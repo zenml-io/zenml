@@ -12,69 +12,57 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
-from functools import partial
 from typing import Optional
-from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
-from zenml.utils.pagination_utils import depaginate
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 logger = get_logger(__name__)
 
 
-def get_run_url(
-    run_name: str, pipeline_id: Optional[UUID] = None
-) -> Optional[str]:
+def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
     """Computes a dashboard url to directly view the run.
 
     Args:
-        run_name: Name of the pipeline run.
-        pipeline_id: Optional pipeline_id, to be sent when available.
+        run: Pipeline run to be viewed.
 
     Returns:
         A direct url link to the pipeline run details page. If run does not exist,
         returns None.
     """
-    # Connected to ZenML Server
     client = Client()
 
     if client.zen_store.type != StoreType.REST:
         return ""
 
-    url = client.zen_store.url
-    runs = depaginate(partial(client.list_pipeline_runs, name=run_name))
+    url = client.zen_store.url + f"/workspaces/{client.active_workspace.name}"
+    run_id = str(run.id)
 
-    if pipeline_id:
-        url += f"/workspaces/{client.active_workspace.name}/pipelines/{str(pipeline_id)}/runs"
-    elif runs:
-        url += "/runs"
+    if run.pipeline:
+        pipeline_id = str(run.pipeline.id)
+        url += f"/pipelines/{pipeline_id}/runs"
     else:
-        url += "/pipelines/all-runs"
+        url += "/all-runs"
 
-    if runs:
-        url += f"/{runs[0].id}/dag"
+    url += f"/{run_id}/dag"
 
     return url
 
 
-def print_run_url(run_name: str, pipeline_id: Optional[UUID] = None) -> None:
+def print_run_url(run: PipelineRunResponseModel) -> None:
     """Logs a dashboard url to directly view the run.
 
     Args:
-        run_name: Name of the pipeline run.
-        pipeline_id: Optional pipeline_id, to be sent when available.
+        run: Pipeline run to be viewed.
     """
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
-        url = get_run_url(
-            run_name,
-            pipeline_id,
-        )
+        url = get_run_url(run)
         if url:
             logger.info(f"Dashboard URL: {url}")
     elif client.zen_store.type == StoreType.SQL:
