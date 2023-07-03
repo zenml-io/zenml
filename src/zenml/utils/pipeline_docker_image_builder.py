@@ -606,14 +606,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if download_files:
-            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
-
-        lines.append(
-            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
-        )
-
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
@@ -633,6 +625,14 @@ class PipelineDockerImageBuilder:
                 f"RUN pip install --default-timeout=60 --no-cache-dir "
                 f"{option_string} -r {file}"
             )
+
+        lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
+        if download_files:
+            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
+
+        lines.append(
+            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
+        )
 
         lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
