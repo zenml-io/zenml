@@ -230,7 +230,7 @@ By default, ZenML uses the data flowing between steps of your pipeline to determ
 The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def example_pipeline():
@@ -247,7 +247,7 @@ custom one for your steps.
 {% endhint %}
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def example_pipeline():

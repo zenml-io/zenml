@@ -124,28 +124,24 @@ At a minimum, the step configuration expects a name to be used for the Expectati
 
 ```python
 from zenml.integrations.great_expectations.steps import (
-    GreatExpectationsProfilerParameters,
     great_expectations_profiler_step,
 )
 
-# instantiate a builtin Great Expectations data profiling step
-ge_profiler_params = GreatExpectationsProfilerParameters(
-    expectation_suite_name="breast_cancer_suite",
-    data_asset_name="breast_cancer_ref_df",
-)
-ge_profiler_step = great_expectations_profiler_step(
-    step_name="ge_profiler_step",
-    params=ge_profiler_params,
+ge_profiler_step = great_expectations_profiler_step.with_options(
+    parameters={
+        "expectation_suite_name": "steel_plates_suite",
+        "data_asset_name": "steel_plates_train_df",
+    }
 )
 ```
 
 The step can then be inserted into your pipeline where it can take in a pandas dataframe, e.g.:
 
 ```python
+from zenml import pipeline
+
 @pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
-def profiling_pipeline(
-        importer, profiler
-):
+def profiling_pipeline():
     """Data profiling pipeline for Great Expectations.
 
     The pipeline imports a reference dataset from a source then uses the builtin
@@ -158,30 +154,27 @@ def profiling_pipeline(
         profiler: data profiler step
     """
     dataset, _ = importer()
-    profiler(dataset)
+    ge_profiler_step(dataset)
 
 
-profiling_pipeline(
-    importer=importer(),
-    profiler=ge_profiler_step,
-).run()
+profiling_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.GreatExpectationsProfilerStep) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great_expectations_profiler_step) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
 
 ```python
-class GreatExpectationsProfilerStep(BaseStep):
-    """Standard Great Expectations profiling step implementation."""
-
-    def entrypoint(
-            self,
-            dataset: pd.DataFrame,
-            params: GreatExpectationsProfilerParameters,
-    ) -> ExpectationSuite:
-        ...
+@step
+def great_expectations_profiler_step(
+    dataset: pd.DataFrame,
+    expectation_suite_name: str,
+    data_asset_name: Optional[str] = None,
+    profiler_kwargs: Optional[Dict[str, Any]] = None,
+    overwrite_existing_suite: bool = True,
+) -> ExpectationSuite:
+    ...
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.GreatExpectationsProfilerConfig) in the SDK docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great_expectations_profiler_step) in the SDK docs.
 
 #### The Great Expectations data validator step
 
@@ -191,18 +184,14 @@ At a minimum, the step configuration expects the name of the Expectation Suite t
 
 ```python
 from zenml.integrations.great_expectations.steps import (
-    GreatExpectationsValidatorParameters,
     great_expectations_validator_step,
 )
 
-# instantiate a builtin Great Expectations data validation step
-ge_validator_params = GreatExpectationsValidatorParameters(
-    expectation_suite_name="breast_cancer_suite",
-    data_asset_name="breast_cancer_test_df",
-)
-ge_validator_step = great_expectations_validator_step(
-    step_name="ge_validator_step",
-    params=ge_validator_params,
+ge_validator_step = great_expectations_validator_step.with_options(
+    parameters={
+        "expectation_suite_name": "steel_plates_suite",
+        "data_asset_name": "steel_plates_train_df",
+    }
 )
 ```
 
@@ -210,9 +199,7 @@ The step can then be inserted into your pipeline where it can take in a pandas d
 
 ```python
 @pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
-def validation_pipeline(
-        importer, validator, checker
-):
+def validation_pipeline():
     """Data validation pipeline for Great Expectations.
 
     The pipeline imports a test data from a source, then uses the builtin
@@ -225,34 +212,27 @@ def validation_pipeline(
         checker: checks the validation results
     """
     dataset, condition = importer()
-    results = validator(dataset, condition)
+    results = ge_validator_step(dataset, condition)
     message = checker(results)
 
 
-validation_pipeline(
-    importer=importer(),
-    validator=ge_validator_step,
-    checker=analyze_result(),
-).run()
+validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.GreatExpectationsValidatorStep) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great_expectations_validator_step) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
 
 ```python
-
-class GreatExpectationsValidatorStep(BaseStep):
-    """Standard Great Expectations data validation step implementation."""
-
-    def entrypoint(
-            self,
-            dataset: pd.DataFrame,
-            condition: bool,
-            params: GreatExpectationsValidatorParameters,
-    ) -> CheckpointResult:
-        ...
+@step
+def great_expectations_validator_step(
+    dataset: pd.DataFrame,
+    expectation_suite_name: str,
+    data_asset_name: Optional[str] = None,
+    action_list: Optional[List[Dict[str, Any]]] = None,
+    exit_on_error: bool = False,
+) -> CheckpointResult:
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.GreatExpectationsValidatorConfig) in the SDK docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great_expectations_validator_step) in the SDK docs.
 
 #### Call Great Expectations directly
 
