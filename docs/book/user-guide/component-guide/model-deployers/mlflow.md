@@ -151,7 +151,7 @@ You can check the MLflow deployment example for more details.
 * [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_deployment)
 
 For more information and a full list of configurable attributes of the MLflow Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
 .
 
 <!-- For scarf -->

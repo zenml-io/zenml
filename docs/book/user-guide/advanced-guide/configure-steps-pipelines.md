@@ -180,7 +180,7 @@ def my_pipeline():
     # trainer(data=np.array([1, 2, 3]))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [API docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
