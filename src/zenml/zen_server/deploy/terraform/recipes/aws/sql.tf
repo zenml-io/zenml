@@ -7,8 +7,9 @@ resource "random_string" "rds_suffix" {
 }
 
 module "metadata_store" {
-  source = "terraform-aws-modules/rds/aws"
-  count  = var.deploy_db ? 1 : 0
+  source  = "terraform-aws-modules/rds/aws"
+  version = "5.9.0"
+  count   = var.deploy_db ? 1 : 0
 
   identifier = "${var.name}${var.rds_name}${random_string.rds_suffix[0].result}"
 

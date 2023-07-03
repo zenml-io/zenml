@@ -48,6 +48,10 @@ resource "helm_release" "zen-server" {
   
   # set up the right path for ZenML
   set {
+    name  = "zenml.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
+    value = ""
+  }
+  set {
     name  = "zenml.ingress.host"
     value = var.create_ingress_controller ? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.hostname}" : "zenml.${var.ingress_controller_ip}.nip.io"
   }
