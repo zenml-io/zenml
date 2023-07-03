@@ -36,7 +36,7 @@ def my_step(context: StepContext):
 ```
 
 {% hint style="info" %}
-See the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-steps/#zenml.steps.step_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
+See the [API Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-steps/#zenml.steps.step_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
 ### Fetching secret values in a step

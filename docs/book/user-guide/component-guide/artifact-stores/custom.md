@@ -13,7 +13,7 @@ ZenML to provide your own custom Artifact Store implementation.
 
 The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the
 fundamentals behind its abstraction,
-namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore):
+namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore):
 
 1. As ZenML only supports filesystem-based artifact stores, it features a configuration parameter called `path`, which
    will indicate the root path of the artifact store. When registering an artifact store, users will have to define this
@@ -136,7 +136,7 @@ class BaseArtifactStoreFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see
 the full implementation and get the complete docstrings, please check
-the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
+the [API docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
 .
 {% endhint %}
 
@@ -154,7 +154,7 @@ defined within your artifact store.
 If you want to implement your own custom Artifact Store, you can follow the following steps:
 
 1. Create a class that inherits
-   from [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
+   from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
    and implements the abstract methods.
 2. Create a class that inherits from [the `BaseArtifactStoreConfig` class](custom.md) and fill in
    the `SUPPORTED_SCHEMES` based on your file system.

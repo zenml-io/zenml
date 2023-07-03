@@ -155,7 +155,7 @@ p = data_profiling_pipeline(
 p.run()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerStep) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
+As can be seen from the [step definition](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerStep) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
 
 ```python
 class WhylogsProfilerStep(BaseAnalyzerStep):
@@ -171,7 +171,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
 
 You should consult [the official whylogs documentation](https://whylogs.readthedocs.io/en/latest/index.html) for more information on what you can do with the collected profiles.
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerConfig) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerConfig) in the API docs.
 
 You can also check out our examples pages for working examples that use the whylogs standard step:
 
@@ -231,7 +231,7 @@ def data_profiler(
     return profile
 ```
 
-Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.data\_validators.whylogs\_data\_validator.WhylogsDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.data\_validators.whylogs\_data\_validator.WhylogsDataValidator) in the API docs.
 
 #### Call whylogs directly
 

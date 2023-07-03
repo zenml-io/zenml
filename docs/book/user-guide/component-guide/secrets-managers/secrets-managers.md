@@ -85,7 +85,7 @@ zenml secrets-manager flavor list
 #### In the CLI
 
 A full guide on using the CLI interface to register, access, update and delete secrets is
-available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
+available [here](https://sdkdocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
 
 {% hint style="info" %}
 A ZenML secret is a grouping of key-value pairs that are defined by a schema. An AWS SecretSchema, for example, has
