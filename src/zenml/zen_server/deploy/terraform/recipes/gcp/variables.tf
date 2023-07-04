@@ -125,10 +125,13 @@ variable "database_ssl_verify_server_cert" {
   type        = bool
 }
 
-variable "ingress_path" {
-  description = "The path on the Ingress URL to expose ZenML at"
-  default     = "zenml"
-  type        = string
+
+# Enable secrets manager API. Listing services might need elevated permissions.
+# Disable this if you don't have the ListServices permission.
+variable "enable_secrets_manager_api" {
+  description = "Enable the secrets manager API"
+  default     = true
+  type        = bool
 }
 
 # set to true if you don't already have an nginx ingress
@@ -140,7 +143,7 @@ variable "create_ingress_controller" {
 }
 
 # if you already have an ingress controller, supply it's URL
-variable "ingress_controller_hostname" {
+variable "ingress_controller_ip" {
   description = "The hostname for the ingress controller on your cluster"
   default     = ""
   type        = string

@@ -117,6 +117,7 @@ def main() -> None:
             args=step_args,
             env=env,
             settings=settings,
+            service_account_name=settings.service_account_name,
             mount_local_stores=mount_local_stores,
         )
 

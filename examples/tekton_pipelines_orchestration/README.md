@@ -99,7 +99,7 @@ to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/cor
 this example, we will use GCP, but any other cloud provider of choice can be used instead. We require the following infrastructure set up:
 
 * A remote ZenML server deployed to the cloud. See the 
-[deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) for
+[deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for
 more information.
 * An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
 * An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
@@ -114,7 +114,7 @@ Note that you can deploy the GCP container
 registry, the artifact store and the Tekton orchestrator using the ZenML CLI as
 well, using the `zenml <STACK_COMPONENT> deploy` command. For more information
 on this `deploy` subcommand, please refer to the
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 ### 🥞 Create a Tekton Pipelines Stack
 
@@ -222,8 +222,8 @@ zenml artifact-store destroy gcp_artifact_store
 # 📜 Learn more
 
 Our docs regarding the Tekton orchestrator integration can be found 
-[here](https://docs.zenml.io/component-gallery/orchestrators/tekton).
+[here](https://docs.zenml.io/user-guide/component-guide/orchestrators/tekton).
 
 If you want to learn more about orchestrators in general or about how to build 
 your own orchestrators in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/orchestrators/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/orchestrators/custom).

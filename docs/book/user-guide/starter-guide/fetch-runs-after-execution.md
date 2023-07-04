@@ -51,7 +51,7 @@ version = pipeline_model.version
 
 Alternatively, if you don't have the pipeline definition loaded anymore, you 
 can also fetch the pipeline model via the
-[Client.get_pipeline()](https://apidocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
+[Client.get_pipeline()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
 method.
 
 ```python
@@ -73,7 +73,7 @@ either via the Client or the CLI.
 #### List Pipelines via Client
 
 You can use the 
-[Client.list_pipelines()](https://apidocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
+[Client.list_pipelines()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
 method to get a list of all pipelines registered in ZenML:
 
 ```python
@@ -109,7 +109,7 @@ from newest to oldest.
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
 allows you to specify detailed parameters for filtering or pagination. See the 
-[Client.list_pipeline_runs()](https://apidocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
+[Client.list_pipeline_runs()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
 method for a comprehensive list of available parameters.
 {% endhint %}
 
@@ -131,7 +131,7 @@ succeeded, you can use the `last_successful_run` property instead.
 
 If you already know the exact run that you want to fetch (e.g., from looking at
 the dashboard), you can use the 
-[Client.get_pipeline_run](https://apidocs.zenml.io/0.40.2/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
+[Client.get_pipeline_run](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
 method to fetch the model of the run directly without having to query the
 pipeline first:
 
@@ -144,7 +144,7 @@ pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274
 {% hint style="info" %}
 Similar to pipelines, you can query runs by either ID, name, or name prefix, and
 you can also discover runs through the Client or CLI via the 
-[Client.list_pipeline_runs()](https://apidocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
+[Client.list_pipeline_runs()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
 or `zenml pipeline runs list` commands.
 
 {% endhint %}
@@ -245,18 +245,8 @@ Similarly, you can use the `inputs` and `input` properties to get the input
 artifacts of a step instead.
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps and
-the names of the inputs are the corresponding argument names in the step 
-function definition:
-
-```python
-from zenml import step
-from zenml.steps import Output
-
-@step
-def some_step(input_name: int) -> Output(output_name=int):
-    ...
-```
+Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names) to see what
+the output names of your steps are and how to customize them.
 {% endhint %}
 
 ### Artifact Information
@@ -330,13 +320,13 @@ For example, this is how we can fetch the last pipeline run of the same pipeline
 from within a ZenML step:
 
 ```python
+from zenml import get_step_context
 from zenml.client import Client
-from zenml.environment import Environment
 
 @step
 def my_step():
     # Get the name of the current pipeline run
-    current_run_name = Environment().step_environment.run_name
+    current_run_name = get_step_context().pipeline_run.name
 
     # Fetch the current pipeline run
     current_run = Client().get_pipeline_run(current_run_name)
@@ -347,7 +337,7 @@ def my_step():
 
 {% hint style="info" %}
 As shown in the example, we can get additional information about the current
-run using the `StepEnvironment`, which is explained in more detail in the 
+run using the `StepContext`, which is explained in more detail in the 
 [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
 {% endhint %}
 

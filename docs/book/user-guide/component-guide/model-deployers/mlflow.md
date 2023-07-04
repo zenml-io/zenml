@@ -79,7 +79,6 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)
@@ -126,7 +125,7 @@ def prediction_service_loader(
 def predictor(
     service: MLFlowDeploymentService,
     data: np.ndarray,
-) -> Output(predictions=np.ndarray):
+) -> Annotated[np.ndarray, "predictions"]:
     """Run a inference request against a prediction service"""
 
     service.start(timeout=10)  # should be a NOP if already started
@@ -152,7 +151,7 @@ You can check the MLflow deployment example for more details.
 * [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_deployment)
 
 For more information and a full list of configurable attributes of the MLflow Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
 .
 
 <!-- For scarf -->

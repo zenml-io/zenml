@@ -1170,7 +1170,7 @@ def test_logs_are_recorded_properly(clean_client):
         assert step2_logs_content == ""
 
 
-def test_logs_are_recorded_properly_when_disabled():
+def test_logs_are_recorded_properly_when_disabled(clean_client):
     """Tests no logs are stored in the artifact store when disabled"""
     client = Client()
     store = client.zen_store
