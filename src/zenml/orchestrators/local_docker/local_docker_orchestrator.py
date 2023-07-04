@@ -200,7 +200,7 @@ class LocalDockerOrchestratorSettings(BaseSettings):
 
     Attributes:
         run_args: Arguments to pass to the `docker run` call. (See
-            https://docs.docker.com/engine/reference/commandline/run/ for a list
+            https://docker-py.readthedocs.io/en/stable/containers.html for a list
             of what can be passed.)
     """
 
