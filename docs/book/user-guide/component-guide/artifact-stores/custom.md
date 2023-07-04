@@ -218,12 +218,11 @@ store. This means that your custom artifact store needs to be configured in a wa
 back-end without relying on the local environment, e.g., by embedding the authentication credentials in the stack
 component configuration or by referencing a secret.
 
-Furthermore, for deployed ZenML instances, you need to install the package dependencies of your artifact store
-implementation in the environment where you have deployed ZenML.
-
-You can do so either by building a custom Dockerfile based on
-the [ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile) and using that to
-redeploy your ZenML instance or by installing the respective packages in the deployed environment manually.
+Furthermore, for deployed ZenML instances, you need to install the package 
+dependencies of your artifact store implementation in the environment where you 
+have deployed ZenML. See the
+[Docs on deploying ZenML with custom Docker images](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
+for more information on how to do that.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
