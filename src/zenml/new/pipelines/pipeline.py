@@ -666,9 +666,10 @@ class Pipeline:
                         f"step has started executing on the remote "
                         f"infrastructure.",
                     )
+
     @staticmethod
     def log_pipeline_deployment_metadata(
-        deployment_model: PipelineDeploymentResponseModel
+        deployment_model: PipelineDeploymentResponseModel,
     ) -> None:
         """Displays logs based on the deployment model upon running a pipeline.
 
@@ -726,7 +727,9 @@ class Pipeline:
                 component_type,
                 component_models,
             ) in deployment_model.stack.components.items():
-                logger.info(f"  {component_type.value}: `{component_models[0].name}`")
+                logger.info(
+                    f"  {component_type.value}: `{component_models[0].name}`"
+                )
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
