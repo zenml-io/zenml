@@ -42,7 +42,8 @@ For additional configuration of the Local Docker orchestrator, you can pass `Loc
 defining or running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
-more information on how to specify settings.
+more information on how to specify settings. A full list of what can be passed
+in via the `run_args` can be found [in the Docker documentation](https://docs.docker.com/engine/reference/commandline/run/).
 
 For more information and a full list of configurable attributes of the local Docker orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator)
