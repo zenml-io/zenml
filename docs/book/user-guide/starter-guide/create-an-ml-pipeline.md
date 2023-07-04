@@ -190,7 +190,6 @@ from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml import pipeline, step
-from zenml.steps import Output
 
 
 @step

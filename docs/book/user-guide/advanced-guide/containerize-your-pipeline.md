@@ -71,7 +71,7 @@ When a [pipeline is run with a remote orchestrator](../starter-guide/create-an-m
 
 The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
+For a full list of configuration options, check out [our API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
 
 ### How to configure Docker builds for your pipelines
 

@@ -278,7 +278,7 @@ zenml stack register custom_stack -a az_store ... --set
 {% endtabs %}
 
 For more, up-to-date information on the Azure Artifact Store implementation and its configuration, you can have a look
-at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.artifact\_stores)
+at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.artifact\_stores)
 .
 
 ### How do you use it?

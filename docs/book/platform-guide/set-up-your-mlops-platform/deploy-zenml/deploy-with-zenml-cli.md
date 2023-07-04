@@ -142,8 +142,7 @@ ingress_tls_generate_certs: true
 # The name of the Kubernetes secret to use for the ingress.
 ingress_tls_secret_name: zenml-tls-certs
 
-# The ingress controller hostname to use for the ingress self-signed 
-# certificate and compute the ZenML server URL.
+# The ingress controller's IP address. The ZenML server will be exposed on a subdomain of this IP. For AWS, if you have a hostname instead, use the following command to get the IP address: `dig +short <hostname>`.
 ingress_controller_ip:
 
 # Whether to create a SQL database service as part of the recipe.
@@ -226,6 +225,10 @@ db_instance_tier: db-n1-standard-1
 
 # Allocated storage of CloudSQL database, in GB, to create.
 db_disk_size: 10
+
+# Whether or not to enable the Secrets Manager API. Disable this if you
+# don't have ListServices permissions on the project.
+enable_secrets_manager_api: true
 </code></pre>
 
 * The `project_id` is required to be set.

@@ -302,7 +302,7 @@ class ServiceConnectorTypeModel(BaseModel):
     sdk_docs_url: Optional[str] = Field(
         default=None,
         title="Optionally, a URL pointing to SDK docs,"
-        "within apidocs.zenml.io.",
+        "within sdkdocs.zenml.io.",
     )
     local: bool = Field(
         default=True,

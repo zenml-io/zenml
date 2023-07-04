@@ -72,7 +72,7 @@ A concrete example of using the GCP secrets manager can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
 
 For more information and a full list of configurable attributes of the GCP secrets manager, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.secrets\_manager.gcp\_secrets\_manager.GCPSecretsManager)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.secrets\_manager.gcp\_secrets\_manager.GCPSecretsManager)
 .
 
 <!-- For scarf -->

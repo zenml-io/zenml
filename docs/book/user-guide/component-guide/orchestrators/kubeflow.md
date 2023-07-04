@@ -342,7 +342,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 ```
 
 Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for more
 information on how to specify settings.
 
@@ -452,7 +452,7 @@ A concrete example of using the Kubeflow orchestrator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow\_pipelines\_orchestration).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow\_orchestrator.KubeflowOrchestrator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow\_orchestrator.KubeflowOrchestrator)
 .
 
 <!-- For scarf -->
