@@ -78,7 +78,7 @@ def get_step_logging_handler(logs_uri: str) -> ArtifactStoreLoggingHandler:
     Returns:
         The logging handler.
     """
-    log_format = "%(asctime)s - %(message)s"
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
     date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
     formatter = logging.Formatter(log_format, datefmt=date_format)
 
