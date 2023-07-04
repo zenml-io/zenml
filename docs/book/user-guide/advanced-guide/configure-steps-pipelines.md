@@ -270,7 +270,7 @@ from zenml import step
 @step 
 def my_step() -> None:
     logging.warning("`Hello`")  # You can use the regular `logging` module.
-    print("World.")  # You can print statements as well. 
+    print("World.")  # You can utilize `print` statements as well. 
 ```
 
 You can display the logs in the dashboard as follows:
