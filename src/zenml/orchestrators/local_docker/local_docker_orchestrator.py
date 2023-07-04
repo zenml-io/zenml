@@ -199,7 +199,9 @@ class LocalDockerOrchestratorSettings(BaseSettings):
     """Local Docker orchestrator settings.
 
     Attributes:
-        run_args: Arguments to pass to the `docker run` call.
+        run_args: Arguments to pass to the `docker run` call. (See
+            https://docs.docker.com/engine/reference/commandline/run/ for a list
+            of what can be passed.)
     """
 
     run_args: Dict[str, Any] = {}
