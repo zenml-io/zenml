@@ -72,8 +72,8 @@ def print_run_url(run_name: str, pipeline_id: Optional[UUID] = None) -> None:
 
     if client.zen_store.type == StoreType.REST:
         url = get_run_url(
-            run_name,
-            pipeline_id,
+            run_name=run_name,
+            pipeline_id=pipeline_id,
         )
         if url:
             logger.info(f"Dashboard URL: {url}")
