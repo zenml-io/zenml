@@ -28,7 +28,6 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     pass
 
-
 # How many seconds to wait before uploading logs to the artifact store
 LOGS_HANDLER_INTERVAL_SECONDS: int = 5
 # How many messages to buffer before uploading logs to the artifact store
@@ -50,6 +49,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.message_count = 0
         self.last_upload_time = time.time()
         self.local_temp_file: Optional[str] = None
+        self.disabled = False
 
         # set local_logging_file to self.logs_uri if self.logs_uri is a
         # local path otherwise, set local_logging_file to a temporary file
@@ -90,14 +90,18 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     def flush(self) -> None:
         """Flushes the buffer to the artifact store."""
         try:
-            with fileio.open(self.logs_uri, mode="wb") as log_file:
-                log_file.write(self.buffer.getvalue().encode("utf-8"))
+            if not self.disabled:
+                self.disabled = True
+                with fileio.open(self.logs_uri, mode="wb") as log_file:
+                    log_file.write(self.buffer.getvalue().encode("utf-8"))
         except (OSError, IOError) as e:
             # This exception can be raised if there are issues with the
             # underlying system calls, such as reaching the maximum number of
             # open files, permission issues, file corruption, or other
             # I/O errors.
             logger.error(f"Error while trying to write logs: {e}")
+        finally:
+            self.disabled = False
 
         self.message_count = 0
         self.last_upload_time = time.time()
@@ -111,5 +115,19 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         """Tidy up any resources used by the handler."""
         self.flush()
         super().close()
-        if self.local_temp_file and fileio.exists(self.local_temp_file):
-            fileio.remove(self.local_temp_file)
+
+        try:
+            if not self.disabled:
+                self.disabled = True
+                if self.local_temp_file and fileio.exists(
+                    self.local_temp_file
+                ):
+                    fileio.remove(self.local_temp_file)
+        except (OSError, IOError) as e:
+            # This exception can be raised if there are issues with the
+            # underlying system calls, such as reaching the maximum number of
+            # open files, permission issues, file corruption, or other
+            # I/O errors.
+            logger.error(f"Error while close the logger: {e}")
+        finally:
+            self.disabled = False
