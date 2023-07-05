@@ -11,27 +11,66 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Logging handler for artifact stores."""
-
 import io
+import logging
+import os
 import time
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
+from uuid import uuid4
 
+from zenml.artifact_stores import BaseArtifactStore
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import is_remote
 
+# Get the logger
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    pass
 
 # How many seconds to wait before uploading logs to the artifact store
 LOGS_HANDLER_INTERVAL_SECONDS: int = 5
+
 # How many messages to buffer before uploading logs to the artifact store
 LOGS_HANDLER_MAX_MESSAGES: int = 100
+
+
+def prepare_logs_uri(
+    artifact_store: "BaseArtifactStore",
+    step_name: str,
+    log_key: Optional[str] = None,
+) -> str:
+    """Generates and prepares a URI for the log file for a step.
+
+    Args:
+        artifact_store: The artifact store on which the artifact will be stored.
+        step_name: Name of the step.
+        log_key: The unique identification key of the log file.
+
+    Returns:
+        The URI of the logs file.
+    """
+    if log_key is None:
+        log_key = str(uuid4())
+
+    logs_base_uri = os.path.join(
+        artifact_store.path,
+        step_name,
+        "logs",
+    )
+
+    # Create the dir
+    if not fileio.exists(logs_base_uri):
+        fileio.makedirs(logs_base_uri)
+
+    # Delete the file if it already exists
+    logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
+    if fileio.exists(logs_uri):
+        logger.warning(
+            f"Logs file {logs_uri} already exists! Removing old log file..."
+        )
+        fileio.remove(logs_uri)
+    return logs_uri
 
 
 class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
@@ -131,3 +170,21 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             logger.error(f"Error while close the logger: {e}")
         finally:
             self.disabled = False
+
+
+def get_step_logging_handler(logs_uri: str) -> ArtifactStoreLoggingHandler:
+    """Sets up a logging handler for the artifact store.
+
+    Args:
+        logs_uri: The URI of the output artifact.
+
+    Returns:
+        The logging handler.
+    """
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    handler = ArtifactStoreLoggingHandler(logs_uri)
+    handler.setFormatter(formatter)
+    return handler
