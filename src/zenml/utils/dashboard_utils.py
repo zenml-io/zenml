@@ -62,7 +62,6 @@ def print_run_url(run: PipelineRunResponseModel) -> None:
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
-
         url = get_run_url(run)
         if url:
             logger.info(f"Dashboard URL: {url}")
