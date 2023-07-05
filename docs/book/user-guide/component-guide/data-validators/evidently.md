@@ -51,7 +51,7 @@ One of Evidently's notable characteristics is that it only requires datasets as 
 
 There are three ways you can use Evidently to generate data reports in your ZenML pipelines that allow different levels of flexibility:
 
-* instantiate, configure and insert [the standard Evidently report step](evidently.md) shipped with ZenML into your pipelines. This is the easiest way and the recommended approach.
+* instantiate, configure and insert the standard Evidently report step shipped with ZenML into your pipelines. This is the easiest way and the recommended approach.
 * call the data validation methods provided by [the Evidently Data Validator](evidently.md#the-evidently-data-validator) in your custom step implementation. This method allows for more flexibility concerning what can happen in the pipeline step.
 * [use the Evidently library directly](evidently.md#call-evidently-directly) in your custom step implementation. This gives you complete freedom in how you are using Evidently's features.
 
@@ -59,19 +59,17 @@ You can [visualize Evidently reports](evidently.md#visualizing-evidently-reports
 
 **The Evidently Report step**
 
-ZenML wraps the Evidently data profiling functionality in the form of a standard Evidently report pipeline step that you can simply instantiate and insert in your pipeline. Here you can see how instantiating and configuring the standard Evidently report step can be done using our included `evidently_report_step` utility function:
+ZenML wraps the Evidently data profiling functionality in the form of a standard Evidently report pipeline step that you can simply instantiate and insert in your pipeline. Here you can see how instantiating and configuring the standard Evidently report step can be done:
 
 ```python
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyReportParameters,
     evidently_report_step,
 )
 
-text_data_report = evidently_report_step(
-    step_name="text_data_report",
-    params=EvidentlyReportParameters(
+text_data_report = evidently_report_step.with_options(
+    parameters=dict(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
             numerical_features=["Age", "Positive_Feedback_Count"],
@@ -147,7 +145,7 @@ report.run(
 
 Let's break this down...
 
-The `EvidentlyReportParameters` class is used to configure the report step and contains all the parameters that you would normally pass to the Evidently `Report` object to [configure and run an Evidently report](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-report). It consists of the following fields:
+We configure the `evidently_report_step` using parameters that you would normally pass to the Evidently `Report` object to [configure and run an Evidently report](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-report). It consists of the following fields:
 
 * `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/user-guide/input-data/column-mapping). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
 * `metrics`: This is a list of `EvidentlyMetricConfig` objects that are used to configure the metrics that should be used to generate the report in a declarative way. This is the same as configuring the `metrics` that go in the Evidently `Report`.
@@ -164,8 +162,10 @@ There are several ways you can reference the Evidently metrics when configuring 
 
     ...
 
-    step_params = EvidentlyReportParameters(
-        metrics = [EvidentlyMetricConfig.metric(DatasetDriftMetric)]
+    evidently_report_step.with_options(
+        parameters=dict(
+            metrics=[EvidentlyMetricConfig.metric(DatasetDriftMetric)]
+        ),
     )
     ```
 
@@ -178,68 +178,57 @@ The ZenML Evidently report step can then be inserted into your pipeline where it
 
 ```python
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def text_data_report_pipeline(
-        data_loader,
-        data_splitter,
-        text_report,
-):
+def text_data_report_test_pipeline():
     """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    json_report, html_report = text_report(
+    report, _ = text_data_report(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
+    test_report, _ = text_data_test(
+        reference_dataset=reference_dataset,
+        comparison_dataset=comparison_dataset,
+    )
+    text_analyzer(report)
 
 
-pipeline_instance = text_data_report_pipeline(
-    data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    text_report=text_data_report,
-)
-
-pipeline_instance.run()
+text_data_report_test_pipeline()
 ```
 
-For a version of the same step that takes in a single dataset, pass in the `single_dataset` flag to the `evidently_report_step` function:
+For a version of the same step that works with a single dataset, simply don't pass any comparison dataset:
 
 ```python
-text_data_report = evidently_report_step(
-    step_name="text_data_report",
-    params=EvidentlyReportParameters(
-        ...
-    ),
-    single_dataset=True,
-)
+text_data_report(reference_dataset=reference_dataset)
 ```
 
 You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reference/all-metrics) for more information on what each metric is useful for and what data columns it requires as input.
 
-The `EvidentlyReportParameters` step configuration also allows for additional Report [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `Report` constructor e.g.:
+The `evidently_report_step` step also allows for additional Report [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `Report` constructor e.g.:
 
 ```python
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyReportParameters,
 )
 
-config = EvidentlyReportParameters(
-    ...
-report_options = [
-                     (
-                         "evidently.options.ColorOptions", {
-                             "primary_color": "#5a86ad",
-                             "fill_color": "#fff4f2",
-                             "zero_line_color": "#016795",
-                             "current_data_color": "#c292a1",
-                             "reference_data_color": "#017b92",
-                         }
-                     ),
-                 ],
+text_data_report = evidently_report_step.with_options(
+    parameters=dict(
+        report_options = [
+            (
+                "evidently.options.ColorOptions", {
+                    "primary_color": "#5a86ad",
+                    "fill_color": "#fff4f2",
+                    "zero_line_color": "#016795",
+                    "current_data_color": "#c292a1",
+                    "reference_data_color": "#017b92",
+                }
+            ),
+        ],
+    )
 )
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_report.EvidentlyReportParameters) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_report.evidently_report_step) in the SDK docs.
 
 You can also check out our examples pages for working examples that use the Evidently standard step:
 
@@ -264,14 +253,13 @@ ZenML wraps the Evidently data validation functionality in the form of a standar
 ```python
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyTestParameters,
     evidently_test_step,
 )
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
-text_data_test = evidently_test_step(
-    step_name="text_data_test",
-    params=EvidentlyTestParameters(
+
+text_data_test = evidently_test_step.with_options(
+    parameters=dict(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
             numerical_features=["Age", "Positive_Feedback_Count"],
@@ -343,7 +331,8 @@ test_suite.run(
 
 Let's break this down...
 
-The `EvidentlyTestParameters` class is used to configure the test step and contains all the parameters that you would normally pass to the Evidently `TestSuite` object to [configure and run an Evidently test suite](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-test-suite) . It consists of the following fields:
+
+We configure the `evidently_test_step` using parameters that you would normally pass to the Evidently `TestSuite` object to [configure and run an Evidently test suite](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-test-suite) . It consists of the following fields:
 
 * `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/user-guide/input-data/column-mapping). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
 * `tests`: This is a list of `EvidentlyTestConfig` objects that are used to configure the tests that will be run as part of your test suite in a declarative way. This is the same as configuring the `tests` that go in the Evidently `TestSuite`.
@@ -360,8 +349,10 @@ There are several ways you can reference the Evidently tests when configuring `E
 
     ...
 
-    step_params = EvidentlyTestParameters(
-        tests = [EvidentlyTestConfig.test(TestColumnRegExp)]
+    evidently_test_step.with_options(
+        parameters=dict(
+            tests=[EvidentlyTestConfig.test(TestColumnRegExp)]
+        ),
     )
     ```
 
@@ -374,68 +365,52 @@ The ZenML Evidently test step can then be inserted into your pipeline where it c
 
 ```python
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def text_data_test_pipeline(
-        data_loader,
-        data_splitter,
-        text_test,
-):
+def text_data_test_pipeline():
     """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    json_report, html_report = text_test(
+    json_report, html_report = text_data_test(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
 
 
-pipeline_instance = text_data_test_pipeline(
-    data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    text_test=text_data_test,
-)
-
-pipeline_instance.run()
+text_data_test_pipeline()
 ```
 
-For a version of the same step that takes in a single dataset, pass in the `single_dataset` flag to the `evidently_test_step` function:
+For a version of the same step that works with a single dataset, simply don't pass any comparison dataset:
 
 ```python
-text_data_test = evidently_test_step(
-    step_name="text_data_test",
-    params=EvidentlyTestParameters(
-        ...
-    ),
-    single_dataset=True,
-)
+text_data_test(reference_dataset=reference_dataset)
 ```
 
 You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reference/all-tests) for more information on what each test is useful for and what data columns it requires as input.
 
-The `EvidentlyTestParameters` step configuration also allows for additional Test [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `TestSuite` constructor e.g.:
+The `evidently_test_step` step also allows for additional Test [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `TestSuite` constructor e.g.:
 
 ```python
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyTestParameters,
 )
 
-config = EvidentlyTestParameters(
-    ...
-test_options = [
-                   (
-                       "evidently.options.ColorOptions", {
-                           "primary_color": "#5a86ad",
-                           "fill_color": "#fff4f2",
-                           "zero_line_color": "#016795",
-                           "current_data_color": "#c292a1",
-                           "reference_data_color": "#017b92",
-                       }
-                   ),
-               ],
+text_data_test = evidently_test_step.with_options(
+    parameters=dict(
+        test_options = [
+            (
+                "evidently.options.ColorOptions", {
+                    "primary_color": "#5a86ad",
+                    "fill_color": "#fff4f2",
+                    "zero_line_color": "#016795",
+                    "current_data_color": "#c292a1",
+                    "reference_data_color": "#017b92",
+                }
+            ),
+        ],
+    ),
 )
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_test.EvidentlyTestParameters) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_test.evidently_test_step) in the SDK docs.
 
 You can also check out our examples pages for working examples that use the Evidently standard step:
 
@@ -448,22 +423,24 @@ The Evidently Data Validator implements the same interface as do all Data Valida
 All you have to do is call the Evidently Data Validator methods when you need to interact with Evidently to generate data reports or to run test suites, e.g.:
 
 ```python
-
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.pipeline.column_mapping import ColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
-from zenml.steps import Output, step
+from zenml import step
 
 
 @step
 def data_profiling(
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-) -> Output(
-    report_json=str, report_html=str
-):
+    reference_dataset: pd.DataFrame,
+    comparison_dataset: pd.DataFrame,
+) -> Tuple[
+    Annotated[str, "report_json"],
+    Annotated[str, "report_html"]
+]:
     """Custom data profiling step with Evidently
 
     Args:
@@ -512,11 +489,12 @@ def data_profiling(
 
 @step
 def data_validation(
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-) -> Output(
-    test_json=str, test_html=str
-):
+    reference_dataset: pd.DataFrame,
+    comparison_dataset: pd.DataFrame,
+) -> Tuple[
+    Annotated[str, "test_json"],
+    Annotated[str, "test_html"]
+]:
     """Custom data validation step with Evidently
 
     Args:
@@ -560,14 +538,15 @@ def data_validation(
     return test_suite.json(), test_suite.show(mode="inline").data
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.data\_validators.evidently\_data\_validator.EvidentlyDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.data\_validators.evidently\_data\_validator.EvidentlyDataValidator) in the SDK docs.
 
 #### Call Evidently directly
 
 You can use the Evidently library directly in your custom pipeline steps, e.g.:
 
 ```python
-
+from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Tuple
 import pandas as pd
 from evidently.report import Report
 import evidently.metric_preset as metric_preset
@@ -575,15 +554,15 @@ from evidently.test_suite import TestSuite
 import evidently.test_preset as test_preset
 from evidently.pipeline.column_mapping import ColumnMapping
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def data_profiler(
-        dataset: pd.DataFrame,
-) -> Output(
-    report_json=str, report_html=str
-):
+    dataset: pd.DataFrame,
+) -> Tuple[
+    Annotated[str, "report_json"],
+    Annotated[str, "report_html"]
+]:
     """Custom data profiler step with Evidently
 
     Args:
@@ -607,10 +586,11 @@ def data_profiler(
 
 @step
 def data_tester(
-        dataset: pd.DataFrame,
-) -> Output(
-    test_json=str, test_html=str
-):
+    dataset: pd.DataFrame,
+) -> Tuple[
+    Annotated[str, "test_json"],
+    Annotated[str, "test_html"]
+]:
     """Custom data tester step with Evidently
 
     Args:

@@ -160,7 +160,7 @@ A concrete example of using the Sagemaker orchestrator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration).
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
 .
 
 #### S3 data access in ZenML steps

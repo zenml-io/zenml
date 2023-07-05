@@ -27,6 +27,7 @@ from typing import (
 
 from pydantic import BaseConfig, ValidationError, create_model
 
+from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -229,7 +230,8 @@ def validate_entrypoint_function(
             `BaseParameter` arguments.
         StepInterfaceError: If the entrypoint function has multiple
             `StepContext` arguments.
-        StepInterfaceError: If the entrypoint function has no return annotation.
+        RuntimeError: If type annotations should be enforced and a type
+            annotation is missing.
 
     Returns:
         A validated definition of the entrypoint function.
@@ -263,6 +265,12 @@ def validate_entrypoint_function(
 
         annotation = parameter.annotation
         if annotation is parameter.empty:
+            if ENFORCE_TYPE_ANNOTATIONS:
+                raise RuntimeError(
+                    f"Missing type annotation for input '{key}' of step "
+                    f"function '{func.__name__}'."
+                )
+
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
@@ -291,13 +299,8 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    if signature.return_annotation is signature.empty:
-        raise StepInterfaceError(
-            f"Missing return type annotation for function {func.__name__}."
-        )
-
     outputs = parse_return_type_annotations(
-        return_annotation=signature.return_annotation
+        func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
     )
 
     return EntrypointFunctionDefinition(

@@ -181,7 +181,7 @@ class StepRunner:
 
             # Store and publish the output artifacts of the step function.
             output_annotations = parse_return_type_annotations(
-                spec.annotations.get("return")
+                func=step_instance.entrypoint
             )
             output_data = self._validate_outputs(
                 return_values, output_annotations
@@ -499,9 +499,36 @@ class StepRunner:
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
-            materializer_class = materializer_utils.select_materializer(
-                data_type=data_type, materializer_classes=materializer_classes
-            )
+            if materializer_classes:
+                materializer_class = materializer_utils.select_materializer(
+                    data_type=data_type,
+                    materializer_classes=materializer_classes,
+                )
+            else:
+                # If no materializer classes are stored in the IR, that means
+                # there was no/an `Any` type annotation for the output and
+                # we try to find a materializer for it at runtime
+                from zenml.materializers.materializer_registry import (
+                    materializer_registry,
+                )
+
+                default_materializer_source = self._step.config.outputs[
+                    output_name
+                ].default_materializer_source
+
+                if default_materializer_source:
+                    default_materializer_class: Type[
+                        BaseMaterializer
+                    ] = source_utils.load_and_validate_class(
+                        default_materializer_source,
+                        expected_class=BaseMaterializer,
+                    )
+                    materializer_registry.default_materializer = (
+                        default_materializer_class
+                    )
+
+                materializer_class = materializer_registry[data_type]
+
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
 

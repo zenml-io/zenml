@@ -156,7 +156,7 @@ on the collaboration aspect of ZenML. In order to see this in full effect,
 you might require a ZenML server.
 
 In order to deploy a ZenML server, you can follow the instructions
-[here](https://docs.zenml.io/getting-started/deploying-zenml).
+[here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml).
 
 ## ☎️ Talk to us
 

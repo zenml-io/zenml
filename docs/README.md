@@ -13,9 +13,9 @@ The documentation source files can be found in this repository at `docs/book`
 
 ## API Docs
 
-The ZenML API docs are generated from our Python docstrings using [mkdocs](https://www.mkdocs.org/). 
-The API docs will be automatically updated each release using a Github workflow and can be found 
-at[https://apidocs.zenml.io](https://apidocs.zenml.io/).
+The ZenML SDK docs are generated from our Python docstrings using [mkdocs](https://www.mkdocs.org/). 
+The SDK docs will be automatically updated each release using a Github workflow and can be found 
+at[https://sdkdocs.zenml.io](https://sdkdocs.zenml.io/).
 
 ### Building the API Docs locally
 

@@ -2,6 +2,126 @@
 description: Configuring pipelines, steps, and stack components in ZenML.
 ---
 
+# Define steps
+
+To define a step, all you need to do is decorate your Python functions with ZenML's
+`@step` decorator:
+
+```python
+from zenml import step
+
+@step
+def my_function():
+    ...
+```
+
+## Type annotations
+
+Your functions will work as ZenML steps even if you don't provide any type annotations
+for their inputs and outputs.
+However, adding type annotations to your step functions gives you
+lots of additional benefits:
+- **Type validation of your step inputs**: ZenML makes sure that your step functions
+receive an object of the correct type from the upstream steps in your pipeline.
+- **Better serialization**: Without type annotations, ZenML uses
+[Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs.
+When provided with type annotations, ZenML can choose a [materializer](../../getting-started/core-concepts.md#materializers)
+that is best suited for the output. In case none of the builtin materializers work, you can even
+[write a custom materializer](./handle-custom-data-types.md).
+
+```python
+from typing import Tuple
+from zenml import step
+
+@step
+def square_root(number: int) -> float:
+    return number ** 0.5
+
+# To define a step with multiple outputs, use a `Tuple` type annotation
+@step
+def divide(a: int, b: int) -> Tuple[int, int]:
+    return a // b, a % b
+```
+
+{% hint style="info" %}
+It is impossible for ZenML to detect whether you want your step to
+have a singe output artifact of type `Tuple` or multiple output artifacts
+just by looking at the type annotation.
+
+We use the following convention to differentiate between the two: When
+the `return` statement is followed by a tuple literal (e.g. `return 1, 2`
+or `return (value_1, value_2)`) we treat it as a step with multiple outputs.
+All other cases are treated as a step with a single output of type `Tuple`.
+
+```python
+# Single output artifact
+@step
+def my_step() -> Tuple[int, int]:
+    output_value = (0, 1)
+    return output_value
+
+# Single output artifact with variable length
+@step
+def my_step(condition) -> Tuple[int, ...]:
+    if condition:
+        output_value = (0, 1)
+    else:
+        output_value = (0, 1, 2)
+
+    return output_value
+
+# Single output artifact using the `Annotated` annotation
+@step
+def my_step() -> Annotated[Tuple[int, ...], "my_output"]:
+    return 0, 1
+
+
+# Multiple output artifacts
+@step
+def my_step() -> Tuple[int, int]:
+    return 0, 1
+
+
+# Not allowed: Variable length tuple annotation when using
+# multiple output artifacts
+@step
+def my_step() -> Tuple[int, ...]:
+    return 0, 1
+```
+{% endhint %}
+
+If you want to make sure you get all the benefits of type annotating your
+steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
+ZenML will then raise an exception in case one of the steps you're trying to run is
+missing a type annotation.
+
+## Step output names
+
+By default, ZenML uses the output name `output` for single output steps
+and `output_0, output_1, ...` for steps with multiple outputs. These output names
+are used to display your outputs in the dashboard and
+[fetch them after your pipeline finished](../starter-guide/fetch-runs-after-execution.md).
+
+If you want to use custom output names for your steps, use the `Annotated` type
+annotation:
+
+```python
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
+from zenml import step
+
+@step
+def square_root(number: int) -> Annotated[float, "custom_output_name"]:
+    return number ** 0.5
+
+@step
+def divide(a: int, b: int) -> Tuple[
+    Annotated[int, "quotient"],
+    Annotated[int, "remainder"]
+]:
+    return a // b, a % b
+```
+
 # Configure steps/pipelines
 
 ## Parameters for your steps
@@ -60,7 +180,7 @@ def my_pipeline():
     # trainer(data=np.array([1, 2, 3]))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
@@ -110,7 +230,7 @@ By default, ZenML uses the data flowing between steps of your pipeline to determ
 The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def example_pipeline():
@@ -127,7 +247,7 @@ custom one for your steps.
 {% endhint %}
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def example_pipeline():

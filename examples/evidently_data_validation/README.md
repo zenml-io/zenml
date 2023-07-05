@@ -73,7 +73,7 @@ text_data_report = evidently_report_step(
 ```
 
 For more information on what these configuration parameters mean, please refer
-to [the ZenML Evidently Data Validator documentation](https://docs.zenml.io/component-gallery/data-validators/evidently#the-evidently-report-step).
+to [the ZenML Evidently Data Validator documentation](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently#the-evidently-report-step).
 
 The same goes for the test step:
 
@@ -114,7 +114,7 @@ text_data_test = evidently_test_step(
 ```
 
 For more information on what these configuration parameters mean, please refer
-to [the ZenML Evidently Data Validator documentation](https://docs.zenml.io/component-gallery/data-validators/evidently#the-evidently-test-step).
+to [the ZenML Evidently Data Validator documentation](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently#the-evidently-test-step).
 
 These steps are then used in a simple ZenML pipeline that loads the data from
 OpenML, splits it into two slices, and then feeds the slices into these two

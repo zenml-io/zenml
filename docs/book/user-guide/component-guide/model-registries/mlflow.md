@@ -128,7 +128,7 @@ click on the model. The path will be displayed in the URL.
 {% endhint %}
 
 Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_registry.MLFlowModelRegistry)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_registry.MLFlowModelRegistry)
 to see more about the interface and implementation. You can
 also [check out our examples page](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_registry) for a working
 example that uses the MLflow Model Registry.
