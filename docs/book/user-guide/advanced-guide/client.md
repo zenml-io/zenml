@@ -142,8 +142,8 @@ Client and which arguments are required.
 
 For some use cases you might need to know information about the user that you
 are authenticated as or the stack that you have currently set as active. You
-can fetch this information via the `Client.active_user` and 
-`Client.active_stack_model` properties respectively, e.g.:
+can fetch this information via the `client.active_user` and 
+`client.active_stack_model` properties respectively, e.g.:
 
 ```python
 my_runs_on_current_stack = client.list_pipeline_runs(
@@ -156,7 +156,8 @@ my_runs_on_current_stack = client.list_pipeline_runs(
 The methods of the ZenML Client all return **Response Models**, which are
 [Pydantic Models](https://docs.pydantic.dev/1.10/usage/models/) that allow ZenML 
 to validate that the returned data always has the correct attributes and types. 
-E.g., the `list_pipeline_runs` method returns type `Page[PipelineRunResponseModel]`.
+E.g., the `client.list_pipeline_runs` method always returns type 
+`Page[PipelineRunResponseModel]`.
 
 {% hint style="info" %}
 You can think of these models as similar to types in strictly typed languages,
