@@ -683,9 +683,9 @@ class Pipeline:
 
             # Log about the used builds
             if deployment_model.build:
-                logger.info(f"Using a build:")
+                logger.info("Using a build:")
                 logger.info(
-                    f" Image(s): "
+                    " Image(s): "
                     f"{', '.join([i.image for i in deployment_model.build.images.values()])}"
                 )
 

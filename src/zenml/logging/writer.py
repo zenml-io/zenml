@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Replacement for the stdout during step execution."""
+
 import logging
 from io import StringIO
 
@@ -27,7 +29,7 @@ class ZenStdOut(StringIO):
     Right now, this is only used during the execution of a ZenML step.
     """
 
-    def write(self, message: str) -> None:
+    def write(self, message: str) -> int:
         """Write the incoming string as an info log entry.
 
         Args:
@@ -35,3 +37,4 @@ class ZenStdOut(StringIO):
         """
         if message != "\n":
             stdout_logger.info(message)
+        return len(message)

@@ -140,7 +140,6 @@ class StepLauncher:
 
     def launch(self) -> None:
         """Launches the step."""
-
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Set up logging

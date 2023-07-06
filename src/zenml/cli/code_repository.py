@@ -101,7 +101,6 @@ def register_code_repository(
         logo_url: URL of a logo (png, jpg or svg) for the code repository.
         args: Additional arguments to be passed to the code repository
     """
-
     parsed_name, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(args) + [name], expand_args=True
     )
@@ -198,7 +197,6 @@ def delete_code_repository(name_or_id: str, yes: bool = False) -> None:
         name_or_id: The name or ID of the code repository to delete.
         yes: If set, don't ask for confirmation.
     """
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete code repository `{name_or_id}`?"

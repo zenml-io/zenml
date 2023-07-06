@@ -96,7 +96,6 @@ def delete_artifact(
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete artifact '{artifact_id}'?"
@@ -146,7 +145,6 @@ def prune_artifacts(
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
-
     client = Client()
     unused_artifacts = depaginate(
         partial(client.list_artifacts, only_unused=True)

@@ -67,7 +67,6 @@ def register_pipeline(
         source: Importable source resolving to a pipeline instance.
         parameters_path: Path to pipeline parameters file.
     """
-
     if "." not in source:
         cli_utils.error(
             f"The given source path `{source}` is invalid. Make sure it looks "
@@ -170,7 +169,6 @@ def build_pipeline(
             be built.
         output_path: Optional file path to write the output to.
     """
-
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline build` command without a "
@@ -273,7 +271,6 @@ def run_pipeline(
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
     """
-
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline run` command without a "
@@ -356,7 +353,6 @@ def delete_pipeline(
         version: The version of the pipeline to delete.
         yes: If set, don't ask for confirmation.
     """
-
     version_suffix = f" (version {version})" if version else ""
 
     if not yes:
@@ -423,7 +419,6 @@ def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
         schedule_name_or_id: The name or ID of the schedule to delete.
         yes: If set, don't ask for confirmation.
     """
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete schedule "
@@ -454,7 +449,6 @@ def list_pipeline_runs(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipeline runs.
     """
-
     client = Client()
     try:
         with console.status("Listing pipeline runs...\n"):
@@ -488,7 +482,6 @@ def delete_pipeline_run(
         run_name_or_id: The name or ID of the pipeline run to delete.
         yes: If set, don't ask for confirmation.
     """
-
     # Ask for confirmation to delete run.
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -522,7 +515,6 @@ def list_pipeline_builds(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipeline builds.
     """
-
     client = Client()
     try:
         with console.status("Listing pipeline builds...\n"):
@@ -558,7 +550,6 @@ def delete_pipeline_build(
         build_id: The ID of the pipeline build to delete.
         yes: If set, don't ask for confirmation.
     """
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline build `{build_id}`?"

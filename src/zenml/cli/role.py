@@ -70,7 +70,6 @@ def create_role(role_name: str, permissions: List[str]) -> None:
         role_name: Name of the role to create.
         permissions: Permissions to assign
     """
-
     try:
         Client().create_role(name=role_name, permissions_list=permissions)
         cli_utils.declare(f"Created role '{role_name}'.")
@@ -111,7 +110,6 @@ def update_role(
         remove_permission: Name of permission to remove from role
         add_permission: Name of permission to add to role
     """
-
     try:
         Client().update_role(
             name_id_or_prefix=role_name,

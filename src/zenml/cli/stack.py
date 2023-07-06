@@ -1152,7 +1152,6 @@ def register_secrets(
         stack_name_or_id: Name of the stack for which to register secrets.
                           If empty, the active stack will be used.
     """
-
     from zenml.stack.stack import Stack
 
     client = Client()
