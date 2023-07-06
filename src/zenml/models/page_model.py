@@ -96,7 +96,7 @@ class Page(GenericModel, Generic[B]):
     def __iter__(self) -> Generator[B, None, None]:  # type: ignore[override]
         """Return an iterator over the items in the page.
 
-        This enables `for item in page` loops, but break `dict(page)`.
+        This enables `for item in page` loops, but breaks `dict(page)`.
 
         Returns:
             An iterator over the items in the page.
