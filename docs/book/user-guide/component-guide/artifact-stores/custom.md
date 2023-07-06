@@ -221,7 +221,7 @@ component configuration or by referencing a secret.
 Furthermore, for deployed ZenML instances, you need to install the package 
 dependencies of your artifact store implementation in the environment where you 
 have deployed ZenML. See the
-[Docs on deploying ZenML with custom Docker images](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
+[Documentation on deploying ZenML with custom Docker images](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
 for more information on how to do that.
 
 <!-- For scarf -->
