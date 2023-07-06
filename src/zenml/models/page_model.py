@@ -98,7 +98,7 @@ class Page(GenericModel, Generic[B]):
 
         This enables `for item in page` loops, but breaks `dict(page)`.
 
-        Returns:
+        Yields:
             An iterator over the items in the page.
         """
         for item in self.items.__iter__():
