@@ -24,6 +24,7 @@
   * [Manage environments](user-guide/advanced-guide/manage-environments.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
+  * [Use the Client](./user-guide/advanced-guide/client.md)
   * [Leverage community-contributed plugins](user-guide/advanced-guide/leverage-community-contributed-plugins.md)
   * [Use the Sandbox](user-guide/advanced-guide/sandbox.md)
   * [Data versioning and artifacts management](user-guide/advanced-guide/data-versioning-and-artifacts-lineage.md)
