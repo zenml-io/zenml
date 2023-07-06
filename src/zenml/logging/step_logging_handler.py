@@ -25,16 +25,15 @@ from uuid import uuid4
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.logging import (
+    LOGS_HANDLER_INTERVAL_SECONDS,
+    LOGS_HANDLER_MAX_MESSAGES,
+    STEP_LOGGER_NAME,
+)
 from zenml.utils.io_utils import is_remote
 
 # Get the logger
 logger = get_logger(__name__)
-
-# How many seconds to wait before uploading logs to the artifact store
-LOGS_HANDLER_INTERVAL_SECONDS: int = 5
-
-# How many messages to buffer before uploading logs to the artifact store
-LOGS_HANDLER_MAX_MESSAGES: int = 100
 
 
 def prepare_logs_uri(
@@ -75,8 +74,16 @@ def prepare_logs_uri(
     return logs_uri
 
 
-class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
-    """Handler for logging to artifact stores."""
+class StepLoggingFormatter(logging.Formatter):
+    """Specialized formatter changing the level name if step handler is used."""
+    def format(self, record):
+        if record.name == STEP_LOGGER_NAME:
+            record.levelname = "STDOUT"
+        return super().format(record)
+
+
+class StepLoggingHandler(TimedRotatingFileHandler):
+    """Specialized handler that stores ZenML step logs in artifact stores."""
 
     def __init__(self, logs_uri: str):
         """Initializes the handler.
@@ -174,7 +181,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             self.disabled = False
 
 
-def get_step_logging_handler(logs_uri: str) -> ArtifactStoreLoggingHandler:
+def get_step_logging_handler(logs_uri: str) -> StepLoggingHandler:
     """Sets up a logging handler for the artifact store.
 
     Args:
@@ -185,8 +192,6 @@ def get_step_logging_handler(logs_uri: str) -> ArtifactStoreLoggingHandler:
     """
     log_format = "%(asctime)s - %(levelname)s - %(message)s"
     date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
-    formatter = logging.Formatter(log_format, datefmt=date_format)
-
-    handler = ArtifactStoreLoggingHandler(logs_uri)
-    handler.setFormatter(formatter)
+    handler = StepLoggingHandler(logs_uri)
+    handler.setFormatter(StepLoggingFormatter(log_format, datefmt=date_format))
     return handler

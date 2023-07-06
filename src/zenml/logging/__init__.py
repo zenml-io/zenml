@@ -11,3 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+# How many seconds to wait before uploading logs to the artifact store
+LOGS_HANDLER_INTERVAL_SECONDS: int = 5
+
+# How many messages to buffer before uploading logs to the artifact store
+LOGS_HANDLER_MAX_MESSAGES: int = 100
+
+# Name of the ZenML step logger
+STEP_LOGGER_NAME = "_step_logger"

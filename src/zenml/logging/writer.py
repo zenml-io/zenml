@@ -16,7 +16,9 @@
 import logging
 from io import StringIO
 
-stdout_logger = logging.getLogger("ZenStdOutLogger")
+from zenml.logging import STEP_LOGGER_NAME
+
+stdout_logger = logging.getLogger(STEP_LOGGER_NAME)
 
 
 class ZenStdOut(StringIO):

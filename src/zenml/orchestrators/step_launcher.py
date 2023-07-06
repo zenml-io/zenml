@@ -19,13 +19,13 @@ from contextlib import nullcontext, redirect_stdout
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
-import zenml.logging.handler
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
+from zenml.logging import step_logging_handler
 from zenml.logging.writer import ZenStdOut
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
@@ -49,7 +49,6 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.logging.handler import ArtifactStoreLoggingHandler
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -149,14 +148,14 @@ class StepLauncher:
         )
         root_logger = logging.getLogger()
         logs_model: Optional[LogsRequestModel] = None
-        zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
+        zenml_handler: Optional[step_logging_handler.StepLoggingHandler] = None
         if step_logging_enabled:
             try:
-                logs_uri = zenml.logging.handler.prepare_logs_uri(
+                logs_uri = step_logging_handler.prepare_logs_uri(
                     self._stack.artifact_store,
                     self._step.config.name,
                 )
-                zenml_handler = zenml.logging.handler.get_step_logging_handler(
+                zenml_handler = step_logging_handler.get_step_logging_handler(
                     logs_uri
                 )
                 root_logger.addHandler(zenml_handler)
