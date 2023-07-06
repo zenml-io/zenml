@@ -82,11 +82,9 @@ registered in the
 
 ## Client Methods
 
-### CRUD (Create, Read, Update, Delete)
+### Reading and Writing Resources
 
-For most resources, the ZenML Client provides five different CRUD methods:
-
-#### List
+#### List Methods
 
 Get a list of resources, e.g.:
 
@@ -101,17 +99,18 @@ client.list_pipeline_runs(
 
 These methods always return a 
 [Page](https://sdkdocs.zenml.io/0.41.0/core_code_docs/core-models/#zenml.models.page_model)
-of resources that contains, by default, the first 50 results. You can modify the
-page size by passing the `size` argument or fetch a subsequent page by passing 
-the `page` argument to the list method.
+of resources, which behaves like a standard Python list and contains, by 
+default, the first 50 results. You can modify the page size by passing the 
+`size` argument or fetch a subsequent page by passing the `page` argument to the 
+list method.
 
 You can further restrict your search by passing additional arguments that will
 be used to filter the results. E.g., most resources have a `user_id` associated
 with them that can be set to only list resources created by that specific user. 
-The available filter argument options are different for each list method, check 
+The available filter argument options are different for each list method; check 
 out the method declaration in the
 [Client SDK documentation](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/)
-to find out which exact arguments are supported or have a look at the fields
+to find out which exact arguments are supported or have a look at the fields of
 the corresponding [filter model class](#resource-models).
 
 Except for pipeline runs, all other resources will by default be ordered by
@@ -119,7 +118,7 @@ creation time ascending. E.g., `client.list_artifacts()` would return the
 first 50 artifacts ever created. You can change the ordering by specifying the
 `sort_by` argument when calling list methods.
 
-#### Get
+#### Get Methods
 
 Fetch a specific instance of a resource by either resource ID, name, or name 
 prefix, e.g.:
@@ -130,7 +129,7 @@ client.get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274466")  # Name
 client.get_pipeline_run("first_pipeline-2023_06_20-16")  # Name prefix
 ```
 
-#### Create, Update, Delete
+#### Create, Update, and Delete Methods
 
 Methods for creating / updating / deleting resources are only available for some
 of the resources and the required arguments are different for each resource.
@@ -138,7 +137,7 @@ Checkout the [Client SDK Documentation](https://sdkdocs.zenml.io/latest/core_cod
 to find out whether a specific resource supports write operations through the
 Client and which arguments are required.
 
-### Active User and Stack
+### Active User and Active Stack
 
 For some use cases you might need to know information about the user that you
 are authenticated as or the stack that you have currently set as active. You
@@ -154,13 +153,13 @@ my_runs_on_current_stack = client.list_pipeline_runs(
 
 ## Resource Models
 The methods of the ZenML Client all return **Response Models**, which are
-[Pydantic Models](https://docs.pydantic.dev/1.10/usage/models/) that allow ZenML 
-to validate that the returned data always has the correct attributes and types. 
-E.g., the `client.list_pipeline_runs` method always returns type 
+[Pydantic Models](https://docs.pydantic.dev/latest/usage/models/) that allow 
+ZenML to validate that the returned data always has the correct attributes and 
+types. E.g., the `client.list_pipeline_runs` method always returns type 
 `Page[PipelineRunResponseModel]`.
 
 {% hint style="info" %}
-You can think of these models as similar to types in strictly typed languages,
+You can think of these models as similar to types in strictly-typed languages,
 or as the requirements of a single endpoint in an API. In particular, they are 
 **not related to machine learning models** like decision trees, neural networks,
 etc.
@@ -168,7 +167,7 @@ etc.
 
 ZenML also has similar models that define which information is required to
 create, update, or search resources, named **Request Models**, 
-**Update Models**, and **Filter Models** respectively. However, These models are
+**Update Models**, and **Filter Models** respectively. However, these models are
 only used for the server API endpoints, and not for the Client methods.
 
 {% hint style="info" %}

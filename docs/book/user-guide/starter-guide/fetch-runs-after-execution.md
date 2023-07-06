@@ -28,7 +28,7 @@ Let us investigate how to traverse this hierarchy level-by-level:
 
 After you have run a pipeline at least once, you can access all the information
 associated with this pipeline through the corresponding
-[PipelineResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_models.py)
+[`PipelineResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_models.py)
 that you can access via the pipeline's `model` property:
 
 ```python
@@ -50,7 +50,7 @@ version = pipeline_model.version
 {% hint style="info" %}
 These pipeline "models" are not related to machine learning models like decision
 trees or neural networks. Rather, you can think of them as similar to types in 
-strictly typed languages. Checkout the 
+strictly-typed languages. Checkout the 
 [ZenML Client Documentation](../advanced-guide/client.md#resource-models) for
 more details.
 {% endhint %}
@@ -59,7 +59,7 @@ more details.
 
 Alternatively, if you don't have the pipeline definition loaded anymore, you 
 can also fetch the pipeline via the
-[Client.get_pipeline()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
+[`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
 method.
 
 ```python
@@ -82,7 +82,7 @@ either via the Client or the CLI.
 #### List Pipelines via Client
 
 You can use the 
-[Client.list_pipelines()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
+[`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
 method to get a list of all pipelines registered in ZenML:
 
 ```python
@@ -118,7 +118,7 @@ from newest to oldest.
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
 allows you to specify detailed parameters for filtering or pagination. See the
-[ZenML Client Documentation](../advanced-guide/client.md#list) for more
+[ZenML Client Documentation](../advanced-guide/client.md#list-methods) for more
 information.
 {% endhint %}
 
@@ -140,7 +140,7 @@ succeeded, you can use the `last_successful_run` property instead.
 
 If you already know the exact run that you want to fetch (e.g., from looking at
 the dashboard), you can use the 
-[Client.get_pipeline_run](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
+[`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
 method to fetch the run directly without having to query the pipeline first:
 
 ```python
@@ -152,7 +152,7 @@ pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274
 {% hint style="info" %}
 Similar to pipelines, you can query runs by either ID, name, or name prefix, and
 you can also discover runs through the Client or CLI via the 
-[Client.list_pipeline_runs()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
+[`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
 or `zenml pipeline runs list` commands.
 
 {% endhint %}
@@ -162,7 +162,7 @@ or `zenml pipeline runs list` commands.
 Each run has a collection of useful information which can help you reproduce
 your runs. In the following, you can find a list of some of the most useful 
 pipeline run information, but there is much more available. See the 
-[PipelineRunResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_run_models.py)
+[`PipelineRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_run_models.py)
 definition for a comprehensive list.
 
 #### Status
@@ -225,7 +225,7 @@ Similar to the run, you can use the `step` object to access a variety of useful 
 * Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`
 
 See the 
-[StepRunResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step_run_models.py)
+[`StepRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step_run_models.py)
 definition for a comprehensive list of available information.
 
 ## Artifacts
@@ -260,7 +260,7 @@ the output names of your steps are and how to customize them.
 ### Artifact Information
 
 Similar to the other entities, each artifact is represented by a corresponding
-[ArtifactResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
+[`ArtifactResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
 which contains a lot of general information about the artifact as well as
 datatype-specific metadata and visualizations.
 
