@@ -38,7 +38,7 @@ def my_pipeline():
 
 my_pipeline()
 
-# get the model of the pipeline
+# get the Pydantic model representation of the pipeline
 pipeline_model = my_pipeline.model
 
 # find information about the pipeline
@@ -47,10 +47,18 @@ version = pipeline_model.version
 ...
 ```
 
+{% hint style="info" %}
+These pipeline "models" are not related to machine learning models like decision
+trees or neural networks. Rather, you can think of them as similar to types in 
+strictly typed languages. Checkout the 
+[ZenML Client Documentation](../advanced-guide/client.md#resource-models) for
+more details.
+{% endhint %}
+
 ### Get Pipeline via Client
 
 Alternatively, if you don't have the pipeline definition loaded anymore, you 
-can also fetch the pipeline model via the
+can also fetch the pipeline via the
 [Client.get_pipeline()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
 method.
 
@@ -61,7 +69,8 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-You can query a pipeline by either ID, full name, or name prefix.
+Checkout the [ZenML Client Documentation](../advanced-guide/client.md) for more 
+information on the `Client` class and its purpose.
 {% endhint %}
 
 ### Discover and List Pipelines
@@ -97,7 +106,7 @@ Each pipeline can be executed many times, resulting in several **Runs**.
 ### Get Runs of Pipeline
 
 You can get a list of all runs of a pipeline using the `runs` property of the
-pipeline model:
+pipeline:
 
 ```python
 runs = pipeline_model.runs
@@ -108,9 +117,9 @@ from newest to oldest.
 
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
-allows you to specify detailed parameters for filtering or pagination. See the 
-[Client.list_pipeline_runs()](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
-method for a comprehensive list of available parameters.
+allows you to specify detailed parameters for filtering or pagination. See the
+[ZenML Client Documentation](../advanced-guide/client.md#list) for more
+information.
 {% endhint %}
 
 ### Get Last Run of Pipeline
@@ -132,8 +141,7 @@ succeeded, you can use the `last_successful_run` property instead.
 If you already know the exact run that you want to fetch (e.g., from looking at
 the dashboard), you can use the 
 [Client.get_pipeline_run](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
-method to fetch the model of the run directly without having to query the
-pipeline first:
+method to fetch the run directly without having to query the pipeline first:
 
 ```python
 from zenml.client import Client
