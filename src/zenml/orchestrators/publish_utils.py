@@ -90,7 +90,7 @@ def publish_successful_step_run(
         step_run_update=StepRunUpdateModel(
             status=ExecutionStatus.COMPLETED,
             end_time=datetime.utcnow(),
-            output_artifacts=output_artifact_ids,
+            outputs=output_artifact_ids,
         ),
     )
 

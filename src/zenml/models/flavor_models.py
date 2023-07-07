@@ -86,7 +86,7 @@ class FlavorBaseModel(BaseModel):
     sdk_docs_url: Optional[str] = Field(
         default=None,
         title="Optionally, a url pointing to SDK docs,"
-        "within apidocs.zenml.io.",
+        "within sdkdocs.zenml.io.",
     )
     is_custom: bool = Field(
         title="Whether or not this flavor is a custom, user created flavor.",

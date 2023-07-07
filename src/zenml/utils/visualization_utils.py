@@ -14,6 +14,58 @@
 """Utility functions for dashboard visualizations."""
 
 
+from typing import Optional
+
+from IPython.core.display import HTML, Image, Markdown, display
+
+from zenml.enums import VisualizationType
+from zenml.environment import Environment
+from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.utils.artifact_utils import load_artifact_visualization
+
+
+def visualize_artifact(
+    artifact: ArtifactResponseModel, title: Optional[str] = None
+) -> None:
+    """Visualize an artifact in notebook environments.
+
+    Args:
+        artifact: The artifact to visualize.
+        title: Optional title to show before the visualizations.
+
+    Raises:
+        RuntimeError: If not in a notebook environment.
+    """
+    if not Environment.in_notebook():
+        raise RuntimeError(
+            "The `output.visualize()` method is only available in Jupyter "
+            "notebooks. In all other runtime environments, please open "
+            "your ZenML dashboard using `zenml up` and view the "
+            "visualizations by clicking on the respective artifacts in the "
+            "pipeline run DAG instead."
+        )
+
+    if not artifact.visualizations:
+        return
+
+    if title:
+        display(Markdown(f"### {title}"))
+    for i in range(len(artifact.visualizations)):
+        visualization = load_artifact_visualization(artifact, index=i)
+        if visualization.type == VisualizationType.IMAGE:
+            display(Image(visualization.value))
+        elif visualization.type == VisualizationType.HTML:
+            display(HTML(visualization.value))
+        elif visualization.type == VisualizationType.MARKDOWN:
+            display(Markdown(visualization.value))
+        elif visualization.type == VisualizationType.CSV:
+            assert isinstance(visualization.value, str)
+            table = format_csv_visualization_as_html(visualization.value)
+            display(HTML(table))
+        else:
+            display(visualization.value)
+
+
 def format_csv_visualization_as_html(
     csv_visualization: str, max_rows: int = 10, max_cols: int = 10
 ) -> str:

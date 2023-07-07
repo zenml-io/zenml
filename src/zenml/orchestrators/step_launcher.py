@@ -149,22 +149,27 @@ class StepLauncher:
             is_enabled_on_step=self._step.config.enable_step_logs,
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
         )
-        logs_uri = step_logging_utils.prepare_logs_uri(
-            self._stack.artifact_store,
-            self._step.config.name,
-        )
-
+        logs_model: Optional[LogsRequestModel] = None
         zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
         if step_logging_enabled:
             try:
+                logs_uri = step_logging_utils.prepare_logs_uri(
+                    self._stack.artifact_store,
+                    self._step.config.name,
+                )
                 zenml_handler = step_logging_utils.get_step_logging_handler(
                     logs_uri
                 )
                 root_logger = logging.getLogger()
                 root_logger.addHandler(zenml_handler)
+                logs_model = LogsRequestModel(
+                    uri=logs_uri,
+                    artifact_store_id=self._stack.artifact_store.id,
+                )
             except Exception as e:
                 logger.warning(
-                    f"Logging handler creation failed with error: {e}. Skipping recording logs.."
+                    f"Logging handler creation failed with error: {e}. "
+                    "Skipping recording logs.."
                 )
 
         try:
@@ -181,17 +186,15 @@ class StepLauncher:
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
-                step=self._step,
+                config=self._step.config,
+                spec=self._step.spec,
                 status=ExecutionStatus.RUNNING,
                 docstring=docstring,
                 source_code=source_code,
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                logs=LogsRequestModel(
-                    uri=logs_uri,
-                    artifact_store_id=self._stack.artifact_store.id,
-                ),
+                logs=logs_model,
             )
             try:
                 execution_needed, step_run = self._prepare(step_run=step_run)
@@ -294,7 +297,7 @@ class StepLauncher:
             if self._deployment.schedule
             else None,
             status=ExecutionStatus.RUNNING,
-            pipeline_configuration=self._deployment.pipeline_configuration,
+            config=self._deployment.pipeline_configuration,
             num_steps=len(self._deployment.step_configurations),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
@@ -330,7 +333,7 @@ class StepLauncher:
             workspace_id=Client().active_workspace.id,
         )
 
-        step_run.input_artifacts = input_artifact_ids
+        step_run.inputs = input_artifact_ids
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
@@ -347,9 +350,9 @@ class StepLauncher:
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
-                cached_outputs = cached_step_run.output_artifacts
+                cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
-                step_run.output_artifacts = {
+                step_run.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
@@ -393,8 +396,10 @@ class StepLauncher:
                 )
             else:
                 self._run_step_without_step_operator(
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
                     step_run_info=step_run_info,
-                    input_artifacts=step_run.input_artifacts,
+                    input_artifacts=step_run.inputs,
                     output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722
@@ -450,6 +455,8 @@ class StepLauncher:
 
     def _run_step_without_step_operator(
         self,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         step_run_info: StepRunInfo,
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
@@ -457,12 +464,16 @@ class StepLauncher:
         """Runs the current step without a step operator.
 
         Args:
+            pipeline_run: The model of the current pipeline run.
+            step_run: The model of the current step run.
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifacts of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
+            pipeline_run=pipeline_run,
+            step_run=step_run,
             input_artifacts=input_artifacts,
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,

@@ -216,7 +216,7 @@ class Flavor:
         """
         from zenml import __version__
 
-        base = f"https://apidocs.zenml.io/{__version__}"
+        base = f"https://sdkdocs.zenml.io/{__version__}"
 
         component_type = self.type.plural
 
@@ -280,10 +280,10 @@ def validate_flavor_source(
     flavor = flavor_class()
     try:
         impl_class = flavor.implementation_class
-    except (ModuleNotFoundError, ImportError, NotImplementedError):
+    except (ModuleNotFoundError, ImportError, NotImplementedError) as e:
         raise ValueError(
             f"The implementation class defined within the "
-            f"'{flavor_class.__name__}' can not be imported."
+            f"'{flavor_class.__name__}' can not be imported: {e}"
         )
 
     if not issubclass(impl_class, StackComponent):
@@ -300,10 +300,10 @@ def validate_flavor_source(
 
     try:
         conf_class = flavor.config_class
-    except (ModuleNotFoundError, ImportError, NotImplementedError):
+    except (ModuleNotFoundError, ImportError, NotImplementedError) as e:
         raise ValueError(
             f"The config class defined within the "
-            f"'{flavor_class.__name__}' can not be imported."
+            f"'{flavor_class.__name__}' can not be imported: {e}"
         )
 
     if not issubclass(conf_class, StackComponentConfig):

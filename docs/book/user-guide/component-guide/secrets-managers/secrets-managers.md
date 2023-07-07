@@ -85,7 +85,7 @@ zenml secrets-manager flavor list
 #### In the CLI
 
 A full guide on using the CLI interface to register, access, update and delete secrets is
-available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
+available [here](https://sdkdocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
 
 {% hint style="info" %}
 A ZenML secret is a grouping of key-value pairs that are defined by a schema. An AWS SecretSchema, for example, has
@@ -117,23 +117,19 @@ zenml secrets-manager secret register SECRET_NAME --attr_from_literal=value \
 
 #### In a ZenML Step
 
-You can access the secrets manager directly from within your steps through the `StepContext`. This allows you to use
-your secrets for querying APIs from within your step without hard-coding your access keys. Don't forget to make the
-appropriate decision regarding caching as it will be disabled by default when the `StepContext` is passed into the step.
+You can access the secrets manager directly from within your steps, allowing you to use
+your secrets for querying APIs from within your step without hard-coding your access keys.
 
 ```python
-from zenml.steps import  StepContext
-from zenml import step
+from zenml import step, get_step_context
 
 
 @step(enable_cache=True)
-def secret_loader(
-        context: StepContext,
-) -> None:
+def secret_loader() -> None:
     """Load the example secret from the secret manager."""
     # Load Secret from the active secret manager. This will fail if no secret
     # manager is active or if that secret does not exist.
-    retrieved_secret = context.stack.secrets_manager.get_secret( < SECRET_NAME >)
+    retrieved_secret = Client().active_stack.secrets_manager.get_secret( < SECRET_NAME >)
 
     # retrieved_secret.content will contain a dictionary with all Key-Value
     # pairs within your secret.

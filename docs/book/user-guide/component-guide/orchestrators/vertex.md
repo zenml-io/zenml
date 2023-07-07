@@ -236,10 +236,10 @@ Vertex comes with its own UI that you can use to find further details about your
 steps. For any runs executed on Vertex, you can get the URL to the Vertex UI in Python using the following code snippet:
 
 ```python
-from zenml.post_execution import get_run
+from zenml.client import Client
 
-pipeline_run = get_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
 ```
 
 ### Run pipelines on a schedule
@@ -342,7 +342,7 @@ vertex_settings = VertexOrchestratorSettings(
 ```
 
 Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
@@ -350,7 +350,7 @@ A concrete example of using the Vertex orchestrator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex\_ai\_orchestration).
 
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex\_orchestrator.VertexOrchestrator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex\_orchestrator.VertexOrchestrator)
 .
 
 ### Enabling CUDA for GPU-backed hardware

@@ -22,7 +22,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    cast,
 )
 
 import pandas as pd
@@ -40,8 +39,8 @@ from sklearn.base import ClassifierMixin
 from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 
+from zenml import get_step_context
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
-from zenml.environment import Environment
 from zenml.integrations.deepchecks.flavors.deepchecks_data_validator_flavor import (
     DeepchecksDataValidatorFlavor,
 )
@@ -53,7 +52,6 @@ from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksValidationCheck,
 )
 from zenml.logger import get_logger
-from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
@@ -239,11 +237,11 @@ class DeepchecksDataValidator(BaseDataValidator):
         # name
         try:
             # get pipeline name and step name
-            step_env = cast(
-                StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
-            )
-            suite_name = f"{step_env.pipeline_name}_{step_env.step_name}"
-        except KeyError:
+            step_context = get_step_context()
+            pipeline_name = step_context.pipeline.name
+            step_name = step_context.step_run.name
+            suite_name = f"{pipeline_name}_{step_name}"
+        except RuntimeError:
             # if not running inside a pipeline step, use random values
             suite_name = f"suite_{random_str(5)}"
 

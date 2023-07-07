@@ -1,10 +1,19 @@
 ---
-description: Running a hyper-parameter tuning trial with ZenML.
+description: Running a hyperparameter tuning trial with ZenML.
 ---
 
-# Hyper-parameter tuning
+# Hyperparameter Tuning
 
-A basic iteration through a number of hyper-parameters can be achieved with ZenML by using a simple pipeline like this:
+{% hint style="warning" %}
+Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is 
+[(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) 
+and will likely receive first-class ZenML support soon. In the meanwhile, the
+following example shows how hyperparameter tuning can currently be implemented
+within a ZenML run.
+{% endhint %}
+
+A basic iteration through a number of hyperparameters can be achieved with 
+ZenML by using a simple pipeline like this:
 
 ```python
 @pipeline
@@ -17,28 +26,42 @@ def my_pipeline(step_count: int) -> None:
     model = select_model_step(..., after=after)
 ```
 
-This is an implementation of a basic grid search (across a single dimension) that would allow for a different learning rate to be used across the same `train_step`. Once that step has been run for all the different learning rates, the `select_model_step` is a way to decide which of the hyper-parameters gave the best results or performance.
+This is an implementation of a basic grid search (across a single dimension) 
+that would allow for a different learning rate to be used across the same
+`train_step`. Once that step has been run for all the different learning rates, 
+the `select_model_step` finds which hyperparameters gave the best results or 
+performance.
 
-Grid search involves defining a grid of possible values for each hyperparameter and then systematically searching through this grid to find the best combination of hyperparameters that yields the highest performance metric, such as accuracy or F1 score.
-
-The key thing to know here is that the `select_model_step` is a way to decide which step offers the best results (as you have defined them). Internally, such a step would need to access the outputs of the previous steps. For example, you can access the outputs of the current run with the following code:
+The main challenge of this implementation is that it is currently not possible 
+to pass a variable number of artifacts into a step programmatically, so the
+`select_model_step` needs to query all artifacts produced by the previous steps 
+via the ZenML Client instead:
 
 ```python
-from zenml.environment import Environment
-from zenml.post_execution import get_run
+from zenml import step, get_step_context
+from zenml.client import Client
 
-run_name = Environment().step_environment.run_name
-run = get_run(run_name)
+@step
+def select_model_step():
+    run_name = get_step_context().pipeline_run.name
+    run = Client().get_pipeline_run(run_name)
 
-outputs = [
-    {k: v.read() for k, v in s.outputs.items()}
-    for s in run.steps
-]
+    # Fetch all models trained by a 'train_step' before
+    trained_models_by_lr = {}
+    for step_name, step in run.steps.items():
+        if step_name.startswith("train_step"):
+            for output_name, output in step.outputs.items():
+                if output_name == "<NAME_OF_MODEL_OUTPUT_IN_TRAIN_STEP>":
+                    model = output.load()
+                    lr = step.config.parameters["learning_rate"]
+                    trained_models_by_lr[lr] = model
+    
+    # Evaluate the models to find the best one
+    for lr, model in trained_models_by_lr.items():
+        ...
 ```
 
-The outputs of the steps themselves can be accessed from the `.steps` property of the `run` object, and you can filter those in whatever way is appropriate for your use case. For a more sophisticated example of how to implement hyper-parameter tuning, see [our Dynamic Pipelines example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic\_pipelines).
-
-Hyper-parameter tuning is not yet a first-class citizen in ZenML, but it is [(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) that are due for implementation in an integrated way. In the meantime, the above is a way to achieve the same functionality.
+For a more sophisticated example of how to implement hyperparameter tuning, see [our Dynamic Pipelines example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic\_pipelines).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

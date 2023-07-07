@@ -1,8 +1,17 @@
-module "metadata_store" {
-  source = "terraform-aws-modules/rds/aws"
+# random string for the RDS instance name
+resource "random_string" "rds_suffix" {
   count  = var.deploy_db ? 1 : 0
+  length = 4
+  upper  = false
+  special = false
+}
 
-  identifier = "${var.name}${var.rds_name}"
+module "metadata_store" {
+  source  = "terraform-aws-modules/rds/aws"
+  version = "5.9.0"
+  count   = var.deploy_db ? 1 : 0
+
+  identifier = "${var.name}${var.rds_name}${random_string.rds_suffix[0].result}"
 
   engine            = var.db_type
   engine_version    = var.db_version

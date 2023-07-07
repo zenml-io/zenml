@@ -364,8 +364,8 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 Our docs regarding the BentoML deployment integration can be found 
-[here](https://docs.zenml.io/component-gallery/model-deployers/bentoml).
+[here](https://docs.zenml.io/user-guide/component-guide/model-deployers/bentoml).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/model-deployers/custom).

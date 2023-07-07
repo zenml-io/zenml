@@ -56,6 +56,8 @@ zenml data-validator register whylogs_data_validator --flavor=whylogs \
 You'll also need to enable whylabs logging for your custom pipeline steps if you want to upload the whylogs data profiles that they return as artifacts to the WhyLabs platform. This is enabled by default for the standard whylogs step. For custom steps, you can enable WhyLabs logging by setting the `upload_to_whylabs` parameter to `True` in the step configuration, e.g.:
 
 ```python
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Tuple
 import pandas as pd
 import whylogs as why
 from sklearn import datasets
@@ -64,7 +66,7 @@ from whylogs.core import DatasetProfileView
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps import Output, step
+from zenml import step
 
 
 @step(
@@ -74,10 +76,10 @@ from zenml.steps import Output, step
         )
     }
 )
-def data_loader() -> Output(
-    data=pd.DataFrame,
-    profile=DatasetProfileView,
-):
+def data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "data"],
+    Annotated[DatasetProfileView, "profile"]
+]:
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
 
@@ -102,74 +104,46 @@ You can [visualize whylogs profiles](whylogs.md#visualizing-whylogs-profiles) in
 
 #### The whylogs standard step
 
-ZenML wraps the whylogs/WhyLabs functionality in the form of a standard `WhylogsProfilerStep` step. The only field in the step config is a `dataset_timestamp` attribute which is only relevant when you upload the profiles to WhyLabs that uses this field to group and merge together profiles belonging to the same dataset. The helper function `whylogs_profiler_step` used to create an instance of this standard step takes in an optional `dataset_id` parameter that is also used only in the context of WhyLabs upload to identify the model in the context of which the profile is uploaded, e.g.:
+ZenML wraps the whylogs/WhyLabs functionality in the form of a standard `WhylogsProfilerStep` step. The only field in the step config is a `dataset_timestamp` attribute which is only relevant when you upload the profiles to WhyLabs that uses this field to group and merge together profiles belonging to the same dataset. The helper function `get_whylogs_profiler_step` used to create an instance of this standard step takes in an optional `dataset_id` parameter that is also used only in the context of WhyLabs upload to identify the model in the context of which the profile is uploaded, e.g.:
 
 ```python
-from zenml.integrations.whylogs.steps import (
-    WhylogsProfilerParameters,
-    whylogs_profiler_step,
-)
+from zenml.integrations.whylogs.steps import get_whylogs_profiler_step
 
-train_data_profiler = whylogs_profiler_step(
-    step_name="train_data_profiler",
-    params=WhylogsProfilerParameters(),
-    dataset_id="model-2",
-    enable_whylogs=True,
-)
-test_data_profiler = whylogs_profiler_step(
-    step_name="test_data_profiler",
-    params=WhylogsProfilerParameters(),
-    dataset_id="model-3",
-    enable_whylogs=True,
-)
+
+train_data_profiler = get_whylogs_profiler_step(dataset_id="model-2")
+test_data_profiler = get_whylogs_profiler_step(dataset_id="model-3")
 ```
 
 The step can then be inserted into your pipeline where it can take in a `pandas.DataFrame` dataset, e.g.:
 
 ```python
-from zenml.pipelines import pipeline
-
+from zenml import pipeline
 
 @pipeline
-def data_profiling_pipeline(
-        data_loader,
-        data_splitter,
-        train_data_profiler,
-        test_data_profiler,
-):
+def data_profiling_pipeline():
     data, _ = data_loader()
     train, test = data_splitter(data)
     train_data_profiler(train)
     test_data_profiler(test)
+    
 
-
-p = data_profiling_pipeline(
-    data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    train_data_profiler=train_data_profiler,
-    test_data_profiler=test_data_profiler,
-)
-
-p.run()
+data_profiling_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerStep) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
+As can be seen from the [step definition](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.whylogs_profiler_step) , the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
 
 ```python
-class WhylogsProfilerStep(BaseAnalyzerStep):
-    """Generates a whylogs data profile from a given pd.DataFrame."""
-
-    @staticmethod
-    def entrypoint(  # type: ignore[override]
-            dataset: pd.DataFrame,
-            params: WhylogsProfilerParameters,
-    ) -> DatasetProfileView:
-        ...
+@step
+def whylogs_profiler_step(
+    dataset: pd.DataFrame,
+    dataset_timestamp: Optional[datetime.datetime] = None,
+) -> DatasetProfileView:
+    ...
 ```
 
 You should consult [the official whylogs documentation](https://whylogs.readthedocs.io/en/latest/index.html) for more information on what you can do with the collected profiles.
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerConfig) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerConfig) in the SDK docs.
 
 You can also check out our examples pages for working examples that use the whylogs standard step:
 
@@ -229,7 +203,7 @@ def data_profiler(
     return profile
 ```
 
-Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.data\_validators.whylogs\_data\_validator.WhylogsDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.data\_validators.whylogs\_data\_validator.WhylogsDataValidator) in the SDK docs.
 
 #### Call whylogs directly
 
@@ -281,14 +255,17 @@ def data_profiler(
 
 You can view visualizations of the whylogs profiles generated by your pipeline steps directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
-Alternatively, if you are running inside a Jupyter notebook, you can load and render the whylogs profiles using [post-execution artifact visualization](../../starter-guide/fetch-runs-after-execution.md#visualizing-artifacts) , e.g.:
+Alternatively, if you are running inside a Jupyter notebook, you can load and 
+render the whylogs profiles using the 
+[artifact.visualize() method](../../starter-guide/fetch-runs-after-execution.md#artifact-visualizations),
+e.g.:
 
 ```python
-from zenml.post_execution import get_pipeline
+from zenml.client import Client
 
 
 def visualize_statistics(
-        step_name: str, reference_step_name: Optional[str] = None
+    step_name: str, reference_step_name: Optional[str] = None
 ) -> None:
     """Helper function to visualize whylogs statistics from step artifacts.
 
@@ -298,8 +275,8 @@ def visualize_statistics(
             profile to use for data drift visualization where two whylogs
             profiles are required.
     """
-    pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[0].get_step(step=step_name)
+    pipe = Client().get_pipeline(pipeline="data_profiling_pipeline")
+    whylogs_step = pipe.last_run.steps[step_name]
     whylogs_step.visualize()
 
 

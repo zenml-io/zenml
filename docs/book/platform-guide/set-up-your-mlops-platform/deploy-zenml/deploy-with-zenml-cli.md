@@ -126,7 +126,8 @@ namespace: zenmlserver
 # The path to the ZenML server helm chart to use for deployment.
 helm_chart:
 
-# The tag to use for the ZenML server Docker image.
+# The repository and tag to use for the ZenML server Docker image.
+zenmlserver_image_repo: zenmldocker/zenml
 zenmlserver_image_tag: latest
 
 # Whether to deploy an nginx ingress controller as part of the deployment.
@@ -141,18 +142,14 @@ ingress_tls_generate_certs: true
 # The name of the Kubernetes secret to use for the ingress.
 ingress_tls_secret_name: zenml-tls-certs
 
-# The path to use for the ingress.
-ingress_path: ""
-
-# The ingress controller hostname to use for the ingress self-signed 
-# certificate and compute the ZenML server URL.
-ingress_controller_hostname:
+# The ingress controller's IP address. The ZenML server will be exposed on a subdomain of this IP. For AWS, if you have a hostname instead, use the following command to get the IP address: `dig +short <hostname>`.
+ingress_controller_ip:
 
 # Whether to create a SQL database service as part of the recipe.
 deploy_db: true
 
 # The username and password for the database. 
-database_username: admin
+database_username: user
 database_password:
 
 # The URL of the database to use for the ZenML server.
@@ -168,7 +165,7 @@ database_ssl_cert:
 database_ssl_key:
 
 # Whether to verify the database server SSL certificate.
-database_ssl_verify_server_cert:
+database_ssl_verify_server_cert: true
 
 # The log level to set the terraform client. Choose one of TRACE, 
 # DEBUG, INFO, WARN, or ERROR (case insensitive).
@@ -228,6 +225,10 @@ db_instance_tier: db-n1-standard-1
 
 # Allocated storage of CloudSQL database, in GB, to create.
 db_disk_size: 10
+
+# Whether or not to enable the Secrets Manager API. Disable this if you
+# don't have ListServices permissions on the project.
+enable_secrets_manager_api: true
 </code></pre>
 
 * The `project_id` is required to be set.

@@ -17,8 +17,7 @@ from typing import List, Optional, cast
 import bentoml
 from bentoml._internal.bento import bento
 
-from zenml import step
-from zenml.environment import Environment
+from zenml import get_step_context, step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
@@ -28,10 +27,6 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
     SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
-)
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -43,8 +38,8 @@ def bentoml_model_deployer_step(
     model_name: str,
     port: int,
     deploy_decision: bool = True,
-    workers: Optional[int] = None,
-    backlog: Optional[int] = None,
+    workers: Optional[int] = 1,
+    backlog: Optional[int] = 2048,
     production: bool = False,
     working_dir: Optional[str] = None,
     host: Optional[str] = None,
@@ -89,10 +84,10 @@ def bentoml_model_deployer_step(
     )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    run_name = step_context.pipeline_run.name
+    step_name = step_context.step_run.name
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
@@ -122,6 +117,8 @@ def bentoml_model_deployer_step(
         bento_uri=bento.info.labels.get("bento_uri"),
         apis=service_apis(str(bento.tag)),
         workers=workers,
+        host=host,
+        backlog=backlog,
         working_dir=working_dir or source_utils.get_source_root(),
         port=port,
         pipeline_name=pipeline_name,

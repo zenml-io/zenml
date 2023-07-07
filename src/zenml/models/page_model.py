@@ -38,9 +38,7 @@
 The code contained within this file has been inspired by the
 fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
-from __future__ import annotations
-
-from typing import Generic, Sequence, TypeVar
+from typing import Generator, Generic, List, TypeVar
 
 from pydantic import SecretStr
 from pydantic.generics import GenericModel
@@ -59,7 +57,7 @@ class Page(GenericModel, Generic[B]):
     max_size: PositiveInt
     total_pages: NonNegativeInt
     total: NonNegativeInt
-    items: Sequence[B]
+    items: List[B]
 
     __params_type__ = BaseFilterModel
 
@@ -75,6 +73,8 @@ class Page(GenericModel, Generic[B]):
     def __len__(self) -> int:
         """Return the item count of the page.
 
+        This enables `len(page)`.
+
         Returns:
             The amount of items in the page.
         """
@@ -82,6 +82,8 @@ class Page(GenericModel, Generic[B]):
 
     def __getitem__(self, index: int) -> B:
         """Return the item at the given index.
+
+        This enables `page[index]`.
 
         Args:
             index: The index to get the item from.
@@ -91,8 +93,21 @@ class Page(GenericModel, Generic[B]):
         """
         return self.items[index]
 
+    def __iter__(self) -> Generator[B, None, None]:  # type: ignore[override]
+        """Return an iterator over the items in the page.
+
+        This enables `for item in page` loops, but breaks `dict(page)`.
+
+        Yields:
+            An iterator over the items in the page.
+        """
+        for item in self.items.__iter__():
+            yield item
+
     def __contains__(self, item: B) -> bool:
         """Returns whether the page contains a specific item.
+
+        This enables `item in page` checks.
 
         Args:
             item: The item to check for.

@@ -71,16 +71,32 @@ When a [pipeline is run with a remote orchestrator](../starter-guide/create-an-m
 
 The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
+For a full list of configuration options, check out [our API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
 
-For the configuration examples described below, you'll need to import the `DockerSettings` class:
+### How to configure Docker builds for your pipelines
+
+Customizing the Docker builds for your pipelines and steps is done using the `DockerSettings` class
+which you can import like this:
 
 ```python
 from zenml.config import DockerSettings
 ```
 
-Instead of defining the `DockerSettings` on the `@pipeline` decorator like all code snippets below, you can also define them on the `@step` decorator of your steps if you need more control, or by using the `with_options(...)` method on your steps and pipelines:
+There are many ways in which you can supply these settings:
+* Configuring them on a pipeline applies the settings to all steps of that pipeline:
+```python
+docker_settings = DockerSettings()
 
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+* Configuring them on a step gives you more fine-grained control and enables you
+to build separate specialized Docker images for different steps of your pipelines:
 ```python
 docker_settings = DockerSettings()
 
@@ -91,15 +107,12 @@ def my_step() -> None:
 my_step = my_step.with_options(
     settings={"docker": docker_settings}
 )
-
-@pipeline(settings={"docker": docker_settings})
-def my_pipeline() -> None:
-    my_step()
-
-my_pipeline = my_pipeline.with_options(
-    settings={"docker": docker_settings}
-)
 ```
+* Using a YAML configuration file as described
+[here](./configure-steps-pipelines.md/#method-3-configuring-with-yaml).
+
+Check out [this page](./configure-steps-pipelines.md#hierarchy-and-precedence) for more information
+on the hierarchy and precedence of the various ways in which you can supply the settings.
 
 ### Handling source files
 

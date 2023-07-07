@@ -40,8 +40,6 @@ Related concepts:
   using [Materializers](/docs/book/user-guide/advanced-guide/handle-custom-data-types.md). Materializers implement the
   logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents
   to/from the Artifact Store.
-* you can access the artifacts produced by your pipeline runs from the Artifact Store
-  using [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md).
 
 ### When to use it
 
@@ -86,8 +84,7 @@ higher-level APIs that can be used as an alternative to store and access artifac
 
 * return one or more objects from your pipeline steps to have them automatically saved in the active Artifact Store as
   pipeline artifacts.
-* use [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) to retrieve pipeline
-  artifacts from the active Artifact Store after a pipeline run is complete.
+* [retrieve pipeline artifacts](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) from the active Artifact Store after a pipeline run is complete.
 
 You will probably need to interact with the [low-level Artifact Store API](artifact-stores.md#the-artifact-store-api)
 directly:
@@ -106,9 +103,9 @@ Accessing the low-level Artifact Store API can be done through the following Pyt
 
 * `zenml.io.fileio` provides low-level utilities for manipulating Artifact Store objects (e.g. `open`, `copy`, `rename`
   , `remove`, `mkdir`). These functions work seamlessly across Artifact Stores types. They have the same signature as
-  the [Artifact Store abstraction methods](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) (
+  the [Artifact Store abstraction methods](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) (
   in fact, they are one and the same under the hood).
-* [zenml.utils.io\_utils](https://apidocs.zenml.io/latest/core\_code\_docs/core-utils/#zenml.utils.io\_utils) includes
+* [zenml.utils.io\_utils](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-utils/#zenml.utils.io\_utils) includes
   some higher-level helper utilities that make it easier to find and transfer objects between the Artifact Store and the
   local filesystem or memory.
 

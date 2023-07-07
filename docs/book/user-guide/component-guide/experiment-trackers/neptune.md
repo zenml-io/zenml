@@ -102,7 +102,7 @@ the ZenML documentation.
 
 For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a
 look
-at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker)
+at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker)
 .
 
 ### How do you use it?
@@ -121,30 +121,24 @@ from neptune_tensorflow_keras import NeptuneCallback
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
-from zenml.steps import BaseParameters, step
-
-
-class TrainerParameters(BaseParameters):
-    """Trainer params"""
-
-    epochs: int = 5
-    lr: float = 0.001
+from zenml import step
 
 
 @step(experiment_tracker="<NEPTUNE_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
-        params: TrainerParameters,
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_val: np.ndarray,
         y_val: np.ndarray,
+        epochs: int = 5,
+        lr: float = 0.001
 ) -> tf.keras.Model:
     ...
     neptune_run = get_neptune_run()
     model.fit(
         x_train,
         y_train,
-        epochs=params.epochs,
+        epochs=epochs,
         validation_data=(x_val, y_val),
         callbacks=[
             NeptuneCallback(run=neptune_run),
