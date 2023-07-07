@@ -45,7 +45,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
-from zenml.logging.step_logging_handler import prepare_logs_uri
+from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
     ArtifactFilterModel,
     ComponentFilterModel,

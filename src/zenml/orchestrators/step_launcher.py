@@ -25,8 +25,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
-from zenml.logging import step_logging_handler
-from zenml.logging.writer import ZenStdOut
+from zenml.logging import step_logging
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -148,14 +147,14 @@ class StepLauncher:
         )
         root_logger = logging.getLogger()
         logs_model: Optional[LogsRequestModel] = None
-        zenml_handler: Optional[step_logging_handler.StepLoggingHandler] = None
+        zenml_handler: Optional[step_logging.StepLoggingHandler] = None
         if step_logging_enabled:
             try:
-                logs_uri = step_logging_handler.prepare_logs_uri(
+                logs_uri = step_logging.prepare_logs_uri(
                     self._stack.artifact_store,
                     self._step.config.name,
                 )
-                zenml_handler = step_logging_handler.get_step_logging_handler(
+                zenml_handler = step_logging.get_step_logging_handler(
                     logs_uri
                 )
                 root_logger.addHandler(zenml_handler)
@@ -172,7 +171,7 @@ class StepLauncher:
 
         try:
             with redirect_stdout(
-                ZenStdOut()
+                step_logging.StepStdOut()
             ) if step_logging_enabled else nullcontext():
                 if run_was_created:
                     pipeline_run_metadata = (

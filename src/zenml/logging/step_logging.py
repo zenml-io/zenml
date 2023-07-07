@@ -17,6 +17,7 @@ import io
 import logging
 import os
 import time
+from io import StringIO
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
 from typing import Optional
@@ -74,9 +75,41 @@ def prepare_logs_uri(
     return logs_uri
 
 
+class StepStdOut(StringIO):
+    """A replacement for the sys.stdout to turn outputs into logging entries.
+
+    When used in combination with the ZenHandler, this class allows us to
+    capture any print statements or third party outputs as logs and store them
+    in the artifact store.
+
+    Right now, this is only used during the execution of a ZenML step.
+    """
+
+    stdout_logger = logging.getLogger(STEP_LOGGER_NAME)
+
+    def write(self, message: str) -> int:
+        """Write the incoming string as an info log entry.
+
+        Args:
+            message: the incoming message string,
+        """
+        if message != "\n":
+            self.stdout_logger.info(message)
+        return len(message)
+
+
 class StepLoggingFormatter(logging.Formatter):
     """Specialized formatter changing the level name if step handler is used."""
-    def format(self, record):
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Specialized format method to distinguish between logs and stdout.
+
+        Args:
+            record: the incoming log record
+
+        Returns:
+            the formatted string
+        """
         if record.name == STEP_LOGGER_NAME:
             record.levelname = "STDOUT"
         return super().format(record)
