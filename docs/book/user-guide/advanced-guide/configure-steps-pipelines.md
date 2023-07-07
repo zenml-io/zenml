@@ -396,13 +396,11 @@ steps:
   ...
 ```
 
-You can also use the following method to generate a config template for your pipelines:
+You can also use the following method to generate a config template (at path `/local/path/to/config.yaml`) that
+includes all configuration options for this specific pipeline and your active stack:
 ```python
 my_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
-
-This will write a template file at `/local/path/to/config.yaml` with a commented-out YAML file with all possible
-configuration options for the pipeline.
 
 Here is an example of a YAML config file generated from the above method:
 
