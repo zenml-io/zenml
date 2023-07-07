@@ -60,6 +60,8 @@ ZenML integrates seamlessly with many popular open-source tools, so you can also
 
 {% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %}
 
+{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %}
+
 Ready to develop production-ready code with ZenML? Here is a collection of pages you can take a look at next:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <mark style="color:purple;"><strong>Core Concepts</strong></mark></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/starter-guide.md">starter-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <mark style="color:purple;"><strong>Quickstart (in Colab)</strong></mark></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb</a></td></tr></tbody></table>
