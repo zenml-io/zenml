@@ -23,7 +23,20 @@ from zenml.integrations.label_studio.label_config_generators import (
     generate_basic_object_detection_bounding_boxes_label_config,
     generate_basic_ocr_label_config,
     generate_image_classification_label_config,
+    generate_text_classification_label_config,
 )
+
+
+@given(label_list=lists(text(min_size=1), min_size=1))
+def test_text_classification_label_config_generator(label_list: List[str]):
+    (
+        label_config,
+        label_config_type,
+    ) = generate_text_classification_label_config(label_list)
+    first_label = label_list[0]
+    assert f"<Choice value='{first_label}' />\n" in label_config
+    assert label_config_type == AnnotationTasks.TEXT_CLASSIFICATION
+    assert label_config is not None
 
 
 @given(label_list=lists(text(min_size=1), min_size=1))
