@@ -643,7 +643,7 @@ class Pipeline:
 
             runs = Client().list_pipeline_runs(
                 deployment_id=deployment_model.id,
-                sort_by="asc:start_time",
+                sort_by="desc:start_time",
                 size=1,
             )
 
