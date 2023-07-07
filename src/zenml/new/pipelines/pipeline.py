@@ -648,7 +648,15 @@ class Pipeline:
             )
 
             if runs.items:
-                dashboard_utils.print_run_url(runs[0])
+                run_url = dashboard_utils.get_run_url(runs[0])
+                if run_url:
+                    logger.info(f"Dashboard URL: {run_url}")
+                else:
+                    logger.warning(
+                        "You can visualize your pipeline runs in the `ZenML "
+                        "Dashboard`. In order to try it locally, please run "
+                        "`zenml up`."
+                    )
             else:
                 logger.warning(
                     f"Your orchestrator '{stack.orchestrator.name}' is "

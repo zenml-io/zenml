@@ -21,7 +21,6 @@ from zenml.environment import get_environment
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentResponseModel,
-    SecretResponseModel,
     StackResponseModel,
 )
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
@@ -47,88 +46,55 @@ def get_base_url() -> Optional[str]:
     return None
 
 
-def get_stack_url(stack: StackResponseModel) -> None:
+def get_stack_url(stack: StackResponseModel) -> Optional[str]:
     """Function to get the dashboard URL of a given stack model.
 
     Args:
         stack: the response model of the given stack.
+
+    Returns:
+        the URL to the stack if the dashboard is available, else None.
     """
     base_url = get_base_url()
     if base_url:
-        stack_url = base_url + f"{constants.STACKS}/{stack.id}/configuration"
-        logger.info(f"Dashboard URL for the stack: {stack_url}")
-
-    else:
-        logger.warning(
-            "You can display all of your stacks on the `ZenML Dashboard`. "
-            "Run `zenml up` to spin it up locally."
-        )
+        return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+    return None
 
 
-def get_component_url(component: ComponentResponseModel) -> None:
+def get_component_url(component: ComponentResponseModel) -> Optional[str]:
     """Function to get the dashboard URL of a given component model.
 
     Args:
         component: the response model of the given component.
+
+    Returns:
+        the URL to the component if the dashboard is available, else None.
     """
     base_url = get_base_url()
-
     if base_url:
-        component_url = (
+        return (
             base_url
-            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}"
+            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
         )
-        logger.info(f"Dashboard URL for the component: {component_url}")
-
-    else:
-        logger.warning(
-            "You can display all of your components on the `ZenML Dashboard`. "
-            "Dashboard. Run `zenml up` to spin it up locally."
-        )
+    return None
 
 
-def get_run_url(run: PipelineRunResponseModel) -> None:
+def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
     """Function to get the dashboard URL of a given pipeline run.
 
     Args:
         run: the response model of the given pipeline run.
+
+    Returns:
+        the URL to the pipeline run if the dashboard is available, else None.
     """
     base_url = get_base_url()
-
     if base_url:
-        run_url = (
-            base_url
-            + f"{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
-            if run.pipeline
-            else f"/all-runs/{run.id}/dag"
-        )
-        logger.info(f"Dashboard URL for the run: {run_url}")
-
-    else:
-        logger.warning(
-            "You can display all of your uns on the `ZenML Dashboard`. "
-            "Run `zenml up` to spin it up locally."
-        )
-
-
-def get_secret_url(secret: SecretResponseModel) -> None:
-    """Function to get the dashboard URL of a given secret.
-
-    Args:
-        secret: the response model of the given secret.
-    """
-    base_url = get_base_url()
-
-    if base_url:
-        secret_url = base_url + f"{constants.SECRETS}/{secret.id}"
-
-        logger.info(f"Dashboard URL for the secret: {secret_url}")
-
-    else:
-        logger.warning(
-            "You can display all of your secrets on the `ZenML Dashboard`. "
-            "Run `zenml up` to spin it up locally."
-        )
+        if run.pipeline:
+            return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
+        else:
+            return f"{base_url}/all-runs/{run.id}/dag"
+    return None
 
 
 def show_dashboard(url: str) -> None:

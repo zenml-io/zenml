@@ -2434,3 +2434,20 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
             f'the "sort_by" option: {e}'
         )
         return False
+
+
+def print_model_url(url: Optional[str]) -> None:
+    """Pretty prints a given URL on the CLI.
+
+    Args:
+        url: optional str, the URL to display.
+    """
+    if url:
+        declare(f"Dashboard URL: {url}")
+    else:
+        warning(
+            "You can display various ZenML entities including pipelines, "
+            "runs, stacks and much more on the ZenML Dashboard. "
+            "You can try it locally, by running `zenml up`, or remotely, "
+            "by deploying ZenML on the infrastructure of your choice."
+        )

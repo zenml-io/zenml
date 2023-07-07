@@ -154,9 +154,7 @@ class StepLauncher:
                     self._stack.artifact_store,
                     self._step.config.name,
                 )
-                zenml_handler = step_logging.get_step_logging_handler(
-                    logs_uri
-                )
+                zenml_handler = step_logging.get_step_logging_handler(logs_uri)
                 root_logger.addHandler(zenml_handler)
                 logger.addHandler(zenml_handler)
                 logs_model = LogsRequestModel(

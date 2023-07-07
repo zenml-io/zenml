@@ -25,6 +25,7 @@ from zenml.cli.utils import (
     _component_display_name,
     is_sorted_or_filtered,
     list_options,
+    print_model_url,
     print_page_info,
     print_stacks_table,
 )
@@ -38,6 +39,7 @@ from zenml.exceptions import (
 )
 from zenml.models import StackFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -272,6 +274,8 @@ def register_stack(
             f"Active {scope} stack set to:'{created_stack.name}'"
         )
 
+    print_model_url(get_stack_url(created_stack))
+
 
 @stack.command(
     "update",
@@ -465,6 +469,7 @@ def update_stack(
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
         )
+    print_model_url(get_stack_url(updated_stack))
 
 
 @stack.command(
@@ -706,7 +711,7 @@ def rename_stack(
 
     with console.status("Renaming stack...\n"):
         try:
-            client.update_stack(
+            stack_ = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 name=new_stack_name,
             )
@@ -716,6 +721,8 @@ def rename_stack(
             f"Stack `{stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
         )
+
+    print_model_url(get_stack_url(stack_))
 
 
 @stack.command("list")
@@ -769,6 +776,8 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
             stack=stack_,
             active=stack_.id == client.active_stack_model.id,
         )
+
+    print_model_url(get_stack_url(stack_))
 
 
 @stack.command("delete", help="Delete a stack given its name.")
@@ -1078,9 +1087,11 @@ def import_stack(
         )
         component_ids[component_type] = component_id
 
-    Client().create_stack(
+    imported_stack = Client().create_stack(
         name=stack_name, components=component_ids, is_shared=False
     )
+
+    print_model_url(get_stack_url(imported_stack))
 
 
 @stack.command("copy", help="Copy a stack to a new stack name.")
@@ -1120,11 +1131,13 @@ def copy_stack(
             if c_list:
                 component_mapping[c_type] = c_list[0].id
 
-        client.create_stack(
+        copied_stack = client.create_stack(
             name=target_stack,
             components=component_mapping,
             is_shared=share,
         )
+
+    print_model_url(get_stack_url(copied_stack))
 
 
 @stack.command(
