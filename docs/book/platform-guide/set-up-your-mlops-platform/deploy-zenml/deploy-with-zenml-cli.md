@@ -126,7 +126,8 @@ namespace: zenmlserver
 # The path to the ZenML server helm chart to use for deployment.
 helm_chart:
 
-# The tag to use for the ZenML server Docker image.
+# The repository and tag to use for the ZenML server Docker image.
+zenmlserver_image_repo: zenmldocker/zenml
 zenmlserver_image_tag: latest
 
 # Whether to deploy an nginx ingress controller as part of the deployment.
@@ -148,7 +149,7 @@ ingress_controller_ip:
 deploy_db: true
 
 # The username and password for the database. 
-database_username: admin
+database_username: user
 database_password:
 
 # The URL of the database to use for the ZenML server.
@@ -164,7 +165,7 @@ database_ssl_cert:
 database_ssl_key:
 
 # Whether to verify the database server SSL certificate.
-database_ssl_verify_server_cert:
+database_ssl_verify_server_cert: true
 
 # The log level to set the terraform client. Choose one of TRACE, 
 # DEBUG, INFO, WARN, or ERROR (case insensitive).
