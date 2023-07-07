@@ -21,6 +21,7 @@
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-pipelines.md)
   * [Compose pipelines](user-guide/advanced-guide/compose-pipelines.md)
   * [Visualize artifacts](user-guide/advanced-guide/visualize-artifacts.md)
+  * [Use the Client](user-guide/advanced-guide/client.md)
   * [Manage environments](user-guide/advanced-guide/manage-environments.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
