@@ -6,6 +6,8 @@ description: Welcome to ZenML!
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
+{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %}
+
 <div align="center" data-full-width="true">
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
@@ -58,9 +60,9 @@ ZenML integrates seamlessly with many popular open-source tools, so you can also
 
 :rocket: **Learn More**
 
-{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %}
+\{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %\}
 
-{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %}
+\{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py" %\}
 
 Ready to develop production-ready code with ZenML? Here is a collection of pages you can take a look at next:
 
