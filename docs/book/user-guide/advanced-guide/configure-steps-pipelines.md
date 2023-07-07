@@ -396,8 +396,7 @@ steps:
   ...
 ```
 
-ZenML provides a convenient method that takes a pipeline instance and generates a config template for it:
-
+You can also use the following method to generate a config template for your pipelines:
 ```python
 my_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
