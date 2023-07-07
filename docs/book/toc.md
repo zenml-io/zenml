@@ -21,6 +21,7 @@
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-pipelines.md)
   * [Compose pipelines](user-guide/advanced-guide/compose-pipelines.md)
   * [Visualize artifacts](user-guide/advanced-guide/visualize-artifacts.md)
+  * [Use the Client](user-guide/advanced-guide/client.md)
   * [Manage environments](user-guide/advanced-guide/manage-environments.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
@@ -116,6 +117,7 @@
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
     * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
+    * [Deploy with custom images](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
   * [User management](platform-guide/set-up-your-mlops-platform/user-management.md)
   * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
     * [Interact with secrets](platform-guide/set-up-your-mlops-platform/use-the-secret-store/interact-with-secrets.md)
@@ -154,7 +156,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)

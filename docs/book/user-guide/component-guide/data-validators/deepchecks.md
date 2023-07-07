@@ -49,7 +49,7 @@ The ZenML integration restructures the way Deepchecks validation checks are orga
 * **model validation checks** require a single dataset and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html#model-evaluation) and [for computer vision](https://docs.deepchecks.com/stable/checks\_gallery/vision.html#model-evaluation) that expect a single dataset as input.
 * **model drift checks** require two datasets and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html#model-evaluation) and [for computer vision](https://docs.deepchecks.com/stable/checks\_gallery/vision.html#model-evaluation) that expect two datasets as input: target and reference.
 
-This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation\_checks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
+This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation\_checks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
 
 A notable characteristic of Deepchecks is that you don't need to customize the set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks provide sane defaults that will run all available Deepchecks tests in a given category with their default conditions if a custom list of tests and conditions are not provided.
 
@@ -81,7 +81,7 @@ Then, place the following snippet above your pipeline definition. Note that the 
 
 ```python
 import zenml
-from zenml.pipelines import pipeline
+from zenml import pipeline
 from zenml.config import DockerSettings
 from pathlib import Path
 import sys
@@ -108,17 +108,17 @@ From here on, you can continue to use the deepchecks integration as is explained
 
 ZenML wraps the Deepchecks functionality for tabular data in the form of four standard steps:
 
-* [`DeepchecksDataIntegrityCheckStep`](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_drift.DeepchecksDataDriftCheckStep): use it in your pipelines to run data integrity tests on a single dataset
-* [`DeepchecksDataDriftCheckStep`](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStep): use it in your pipelines to run data drift tests on two datasets as input: target and reference.
-* [`DeepchecksModelValidationCheckStep`](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_model\_validation.DeepchecksModelValidationCheckStep): class DeepchecksModelDriftCheckStep(BaseStep): use it in your pipelines to run model performance tests using a single dataset and a mandatory model artifact as input
-* [`DeepchecksModelDriftCheckStep`](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_model\_drift.DeepchecksModelDriftCheckStep): use it in your pipelines to run model comparison/drift tests using a mandatory model artifact and two datasets as input: target and reference.
+* [`DeepchecksDataIntegrityCheckStep`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_drift.DeepchecksDataDriftCheckStep): use it in your pipelines to run data integrity tests on a single dataset
+* [`DeepchecksDataDriftCheckStep`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStep): use it in your pipelines to run data drift tests on two datasets as input: target and reference.
+* [`DeepchecksModelValidationCheckStep`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_model\_validation.DeepchecksModelValidationCheckStep): class DeepchecksModelDriftCheckStep(BaseStep): use it in your pipelines to run model performance tests using a single dataset and a mandatory model artifact as input
+* [`DeepchecksModelDriftCheckStep`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_model\_drift.DeepchecksModelDriftCheckStep): use it in your pipelines to run model comparison/drift tests using a mandatory model artifact and two datasets as input: target and reference.
 
 The integration doesn't yet include standard steps for computer vision, but you can still write your own custom steps that call [the Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) or even [call the Deepchecks library directly](deepchecks.md#call-deepchecks-directly).
 
 All four standard steps behave similarly regarding the configuration parameters and returned artifacts, with the following differences:
 
 * the type and number of input artifacts are different, as mentioned above
-* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation\_checks) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
+* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation\_checks) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
 
 This section will only cover how you can use the data integrity step, with a similar usage to be easily inferred for the other three steps.
 
@@ -126,13 +126,13 @@ To instantiate a data integrity step that will run all available Deepchecks data
 
 ```python
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 
-data_validator = deepchecks_data_integrity_check_step(
-    step_name="data_validator",
-    params=DeepchecksDataIntegrityCheckStepParameters(),
+data_validator = deepchecks_data_integrity_check_step.with_options(
+    parameters=dict(
+        dataset_kwargs=dict(label="target", cat_features=[]),
+    ),
 )
 ```
 
@@ -140,71 +140,63 @@ The step can then be inserted into your pipeline where it can take in a dataset,
 
 ```python
 @pipeline(required_integrations=[DEEPCHECKS, SKLEARN])
-def data_validation_pipeline(
-        data_loader,
-        data_validator,
-):
+def data_validation_pipeline():
     df_train, df_test = data_loader()
     data_validator(dataset=df_train)
 
 
-pipeline = data_validation_pipeline(
-    data_loader=data_loader(),
-    data_validator=data_validator,
-)
-pipeline.run()
+data_validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) , the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
+As can be seen from the [step definition](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.deepchecks_data_integrity_check_step) , the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
 
 ```python
-class DeepchecksDataIntegrityCheckStep(BaseStep):
-    """Deepchecks data integrity validator step."""
-
-    def entrypoint(  # type: ignore[override]
-            self,
-            dataset: pd.DataFrame,
-            params: DeepchecksDataIntegrityCheckStepParameters,
-    ) -> SuiteResult:
-        ...
+@step
+def deepchecks_data_integrity_check_step(
+    dataset: pd.DataFrame,
+    check_list: Optional[Sequence[DeepchecksDataIntegrityCheck]] = None,
+    dataset_kwargs: Optional[Dict[str, Any]] = None,
+    check_kwargs: Optional[Dict[str, Any]] = None,
+    run_kwargs: Optional[Dict[str, Any]] = None,
+) -> SuiteResult:
+    ...
 ```
 
-If needed, you can specify a custom list of data integrity Deepchecks tests to be executed by supplying a `check_list` argument to the step configuration:
+If needed, you can specify a custom list of data integrity Deepchecks tests to be executed by supplying a `check_list` argument:
 
 ```python
 from zenml.integrations.deepchecks.validation_checks import DeepchecksDataIntegrityCheck
-from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepParameters,
-    deepchecks_data_integrity_check_step,
-)
+from zenml.integrations.deepchecks.steps import deepchecks_data_integrity_check_step
 
-data_validator = deepchecks_data_integrity_check_step(
-    step_name="data_validator",
-    params=DeepchecksDataIntegrityCheckStepParameters(
+
+@pipeline
+def validation_pipeline():
+    deepchecks_data_integrity_check_step(
         check_list=[
             DeepchecksDataIntegrityCheck.TABULAR_MIXED_DATA_TYPES,
             DeepchecksDataIntegrityCheck.TABULAR_DATA_DUPLICATES,
             DeepchecksDataIntegrityCheck.TABULAR_CONFLICTING_LABELS,
         ],
-    ),
-)
+        dataset=...
+    )
 ```
 
 You should consult [the official Deepchecks documentation](https://docs.deepchecks.com/en/stable/checks\_gallery/tabular.html) for more information on what each test is useful for.
 
-For more customization, the `DeepchecksDataIntegrityCheckStepParams` step configuration also allows for additional keyword arguments to be supplied to be passed transparently to the Deepchecks library:
+For more customization, the data integrity step also allows for additional keyword arguments to be supplied to be passed transparently to the Deepchecks library:
 
 *   `dataset_kwargs`: Additional keyword arguments to be passed to the Deepchecks `tabular.Dataset` or `vision.VisionData` constructor. This is used to pass additional information about how the data is structured, e.g.:
 
     ```python
-    params=DeepchecksDataIntegrityCheckStepParameters(
+    deepchecks_data_integrity_check_step(
         dataset_kwargs=dict(label='class', cat_features=['country', 'state']),
-    ),
+        ...
+    )
     ```
 *   `check_kwargs`: Additional keyword arguments to be passed to the Deepchecks check object constructors. Arguments are grouped for each check and indexed using the full check class name or check enum value as dictionary keys, e.g.:
 
     ```python
-    params=DeepchecksDataIntegrityCheckStepParameters(
+    deepchecks_data_integrity_check_step(
         check_list=[
             DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
             DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
@@ -220,6 +212,7 @@ For more customization, the `DeepchecksDataIntegrityCheckStepParams` step config
                 min_unique_values=3,
             ),
         },
+        ...
     )
     ```
 * `run_kwargs`: Additional keyword arguments to be passed to the Deepchecks Suite `run` method.
@@ -227,7 +220,7 @@ For more customization, the `DeepchecksDataIntegrityCheckStepParams` step config
 The `check_kwargs` attribute can also be used to customize [the conditions](https://docs.deepchecks.com/en/stable/user-guide/general/deepchecks\_hierarchy.html#condition) configured for each Deepchecks test. ZenML attaches a special meaning to all check arguments that start with `condition_` and have a dictionary as value. This is required because there is no declarative way to specify conditions for Deepchecks checks. For example, the following step configuration:
 
 ```python
-params = DeepchecksDataIntegrityCheckStepParameters(
+deepchecks_data_integrity_check_step(
     check_list=[
         DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
         DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
@@ -253,6 +246,7 @@ params = DeepchecksDataIntegrityCheckStepParameters(
             )
         ),
     },
+    ...
 )
 ```
 
@@ -292,7 +286,7 @@ check.add_condition_number_of_outliers_less_or_equal(
 suite.run(train_dataset=train_dataset)
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) in the API docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) in the SDK docs.
 
 You can also check out our examples pages for working examples that use the Deepchecks standard steps:
 
@@ -344,7 +338,7 @@ def data_integrity_check(
 
 The arguments that the Deepchecks Data Validator methods can take in are the same as those used for [the Deepchecks standard steps](deepchecks.md#the-deepchecks-standard-steps).
 
-Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data\_validators.deepchecks\_data\_validator.DeepchecksDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data\_validators.deepchecks\_data\_validator.DeepchecksDataValidator) in the SDK docs.
 
 #### Call Deepchecks directly
 
@@ -362,7 +356,7 @@ from zenml import step
 
 @step
 def data_integrity_check(
-        dataset: pd.DataFrame,
+    dataset: pd.DataFrame,
 ) -> SuiteResult:
     """Custom data integrity check step with Deepchecks
 

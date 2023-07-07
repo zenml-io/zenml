@@ -1,10 +1,18 @@
+# random string for the CloudSQL instance name
+resource "random_string" "cloudsql_suffix" {
+  count  = var.deploy_db ? 1 : 0
+  length = 4
+  upper  = false
+  special = false
+}
+
 module "metadata_store" {
   source  = "GoogleCloudPlatform/sql-db/google//modules/mysql"
   version = "11.0.0"
   count   = var.deploy_db ? 1 : 0
 
   project_id       = var.project_id
-  name             = "${var.name}-${var.cloudsql_name}"
+  name             = "${var.name}-${var.cloudsql_name}-${random_string.cloudsql_suffix[0].result}"
   db_name          = var.db_name
   database_version = "MYSQL_5_7"
   disk_size        = var.db_disk_size

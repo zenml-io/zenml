@@ -1,5 +1,80 @@
 <!-- markdown-link-check-disable -->
 
+# 0.41.0
+
+ZenML release 0.41.0 comes with a second round of updates to the pipeline and
+step interface with major changes in how step outputs are defined, how 
+information about previous runs can be fetched programmatically, and how
+information about the current run can be obtained.
+
+See [this docs page](https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps)
+for an overview of all pipeline interface changes introduced since release
+0.40.0 and for more information on how to migrate your existing ZenML pipelines 
+to the latest syntax.
+
+## Fetching Runs Programmatically (#1635)
+The entire syntax of fetching previous runs programmatically was majorly
+redesigned. While the overall user flow is still almost identical, the new 
+approach does not contain pipeline-versioning-related inconsistencies, has a 
+more intuitive syntax, and is also easier for users to learn since the new 
+syntax uses the ZenML Client and response models natively instead of requiring 
+the `zenml.post_execution` util functions and corresponding `...View` wrapper 
+classes.
+
+## Accessing Current Run Information (#1648)
+How to fetch information about the current pipeline run from within the run has
+been majorly redesigned:
+- Instead of being an argument of the step function, the `StepContext` is now a 
+singleton that can be accessed via the new `zenml.get_step_context()` function.
+- The `StepContext` is now decoupled from the `StepEnvironment` and the 
+`StepEnvironment` is deprecated.
+- The `StepContext` now contains the full `PipelineRunResponseModel` and 
+`StepRunResponseModel` so all information about the run is accessible, not 
+just the name / id / params.
+
+## Defining Step Outputs (#1653)
+Instead of using the `zenml.steps.Output` class to annotate steps with multiple
+outputs, ZenML can now handle `Tuple` annotations natively and output names can
+now be assigned to any step output using `typing_extensions.Annotated`.
+
+## What's Changed
+* Remove remaining BaseParameters references by @schustmi in https://github.com/zenml-io/zenml/pull/1625
+* Fix the s3 integration dependencies by @stefannica in https://github.com/zenml-io/zenml/pull/1641
+* Don't run whylogs example on windows by @stefannica in https://github.com/zenml-io/zenml/pull/1644
+* Adding the missing pages to our docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1640
+* Connectors startup guide and stack component references by @stefannica in https://github.com/zenml-io/zenml/pull/1632
+* Fixing the listing functionality of several objects in our CLI by @bcdurak in https://github.com/zenml-io/zenml/pull/1616
+* Revamp Post Execution by @fa9r in https://github.com/zenml-io/zenml/pull/1635
+* Fix run configuration parameter merging by @schustmi in https://github.com/zenml-io/zenml/pull/1638
+* Simplify email opt-in telemetry by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1637
+* Fix Step Logs on Windows by @fa9r in https://github.com/zenml-io/zenml/pull/1645
+* Improve config section of containerization docs page by @schustmi in https://github.com/zenml-io/zenml/pull/1649
+* Validating slack alerter by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1609
+* Added some error handling in gcp cloud function scheduling by @htahir1 in https://github.com/zenml-io/zenml/pull/1634
+* CI: Disable Python 3.7 Mac Runners by @fa9r in https://github.com/zenml-io/zenml/pull/1650
+* Redesign `StepContext` by @fa9r in https://github.com/zenml-io/zenml/pull/1648
+* Fix output of dashboard url on pipeline run by @strickvl in https://github.com/zenml-io/zenml/pull/1629
+* fix: use k8s orchestrator service account in step pod's manifest by @francoisserra in https://github.com/zenml-io/zenml/pull/1654
+* Fix Image Builder Warning Message by @fa9r in https://github.com/zenml-io/zenml/pull/1659
+* New step output annotations by @schustmi in https://github.com/zenml-io/zenml/pull/1653
+* Add Python 3.10 to listed versions supported via PyPi by @strickvl in https://github.com/zenml-io/zenml/pull/1662
+* Add DatabricksShell on list of notebooks allowed to show dashboard by @lucasbissaro in https://github.com/zenml-io/zenml/pull/1643
+* Fixing broken links in our examples folder by @bcdurak in https://github.com/zenml-io/zenml/pull/1661
+* Feature/frw 2013 docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1639
+* Update Pipeline Migration Page by @fa9r in https://github.com/zenml-io/zenml/pull/1667
+* Fix/set env variables before installing packages by @lopezco in https://github.com/zenml-io/zenml/pull/1665
+* Fix the `zenml deploy` story by @wjayesh in https://github.com/zenml-io/zenml/pull/1651
+* Always keep link to API docs pointed at the version of the release branch by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1636
+* Fix BentoML deployer by @safoinme in https://github.com/zenml-io/zenml/pull/1647
+* Corrected all mentions in docs from API docs to SDK docs. by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1669
+* Update outdated docs by @schustmi in https://github.com/zenml-io/zenml/pull/1668
+
+## New Contributors
+* @lucasbissaro made their first contribution in https://github.com/zenml-io/zenml/pull/1643
+* @lopezco made their first contribution in https://github.com/zenml-io/zenml/pull/1665
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.3...0.41.0
+
 # 0.40.3
 
 This is a minor ZenML release that introduces a couple of new features:

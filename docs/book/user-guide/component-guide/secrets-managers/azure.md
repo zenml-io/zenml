@@ -76,7 +76,7 @@ A concrete example of using the Azure secrets manager can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
 
 For more information and a full list of configurable attributes of the Azure secrets manager, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.secrets\_managers.azure\_secrets\_manager.AzureSecretsManager)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.secrets\_managers.azure\_secrets\_manager.AzureSecretsManager)
 .
 
 <!-- For scarf -->
