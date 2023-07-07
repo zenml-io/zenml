@@ -116,6 +116,7 @@
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
     * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
+    * [Deploy with custom images](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
   * [User management](platform-guide/set-up-your-mlops-platform/user-management.md)
   * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
     * [Interact with secrets](platform-guide/set-up-your-mlops-platform/use-the-secret-store/interact-with-secrets.md)
