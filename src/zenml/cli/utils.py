@@ -2609,3 +2609,14 @@ def get_recipe_readme(recipe_name: str) -> Optional[str]:
                 raise FileNotFoundError(
                     f"Recipe {recipe_name} is not one of the avaiable options. \n To list all available recipes, type: `zenml stack recipe list`."
                 )
+
+
+def get_recipe_outputs(
+    stack_name: str, output_key: Optional[str] = None
+) -> Dict[str, str]:
+    verify_mlstacks_installation()
+    recipe_path = get_recipe_path(recipe_name)
+    if recipe_path is not None:
+        from mlstacks.utils import terraform_utils  # noqa
+
+        return terraform_utils.get_stack_outputs(stack_name, output_key)

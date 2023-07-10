@@ -28,7 +28,6 @@ from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
 from zenml.recipes.stack_recipe_service import (
     STACK_RECIPES_GITHUB_REPO,
-    LocalStackRecipe,
 )
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -120,100 +119,6 @@ def version() -> None:
         cli_utils.declare(f"Running `mlstacks` version {active_version}.")
     else:
         cli_utils.warning("Unable to detect version.")
-
-
-@stack_recipe.command(
-    help="Pull stack recipes straight into your current working directory."
-)
-@click.argument("stack_recipe_name", required=False, default=None)
-@click.option(
-    "--yes",
-    "-y",
-    "force",
-    is_flag=True,
-    help="Force the redownload of the stack_recipes folder to the ZenML config "
-    "folder.",
-)
-@click.option(
-    "--path",
-    "-p",
-    type=click.STRING,
-    default="zenml_stack_recipes",
-    help="Relative path at which you want to install the stack recipe(s)",
-)
-@pass_git_stack_recipes_handler
-def pull(
-    git_stack_recipes_handler: GitStackRecipesHandler,
-    stack_recipe_name: str,
-    force: bool,
-    path: str,
-) -> None:
-    """Pull stack_recipes straight into your current working directory.
-
-    Add the flag --yes or -y to redownload all the stack_recipes afresh.
-
-    Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
-        stack_recipe_name: The name of the stack_recipe.
-        force: Force the redownload of the stack_recipes folder to the ZenML config
-            folder.
-        path: The path at which you want to install the stack_recipe(s).
-    """
-    cli_utils.warning(ALPHA_MESSAGE)
-
-    from zenml.recipes import (
-        StackRecipeService,
-        StackRecipeServiceConfig,
-    )
-
-    try:
-        stack_recipes = git_stack_recipes_handler.get_stack_recipes(
-            stack_recipe_name
-        )
-    except KeyError as e:
-        cli_utils.error(str(e))
-
-    else:
-        for stack_recipe in stack_recipes:
-            stack_recipe_service = StackRecipeService(
-                stack_recipe_name=stack_recipe.name,
-                config=StackRecipeServiceConfig(
-                    force=force,
-                    directory_path=str(
-                        os.path.join(
-                            Path(os.getcwd()),
-                            path,
-                            stack_recipe.name,
-                        )
-                    ),
-                ),
-            )
-            if stack_recipe_service.local_recipe_exists():
-                if force or cli_utils.confirmation(
-                    f"Stack recipe {stack_recipe.name} is already "
-                    f"pulled at {stack_recipe_service.config.directory_path}.\n"
-                    "Overwriting this directory will delete all terraform "
-                    "state files and the local configuration. We recommend "
-                    "that you do this only once the remote resources have been "
-                    "destroyed. Do you wish to proceed with overwriting?"
-                ):
-                    stack_recipe_service.pull(
-                        force=True,
-                        git_stack_recipes_handler=git_stack_recipes_handler,
-                    )
-                    cli_utils.declare(
-                        f"Stack recipe {stack_recipe.name} successfully "
-                        f"overwritten at {stack_recipe_service.config.directory_path}."
-                    )
-            else:
-                stack_recipe_service.pull(
-                    force=force,
-                    git_stack_recipes_handler=git_stack_recipes_handler,
-                )
-                cli_utils.declare(
-                    f"Stack recipe {stack_recipe.name} successfully "
-                    f"pulled at {stack_recipe_service.config.directory_path}."
-                )
 
 
 @stack_recipe.command(
@@ -814,9 +719,7 @@ def destroy(
     "-f",
     type=click.Choice(["json", "yaml"], case_sensitive=False),
 )
-@pass_git_stack_recipes_handler
 def get_outputs(
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
     output: Optional[str],
@@ -850,72 +753,72 @@ def get_outputs(
         event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
         metadata={"stack_recipe_name": stack_recipe_name},
     ):
-        import python_terraform
+        # import python_terraform
 
-        cli_utils.warning(ALPHA_MESSAGE)
+        # cli_utils.warning(ALPHA_MESSAGE)
 
-        stack_recipes_dir = Path(os.getcwd()) / path
+        # stack_recipes_dir = Path(os.getcwd()) / path
 
-        try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
-        except KeyError as e:
-            cli_utils.error(str(e))
+        # try:
+        #     _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+        #         0
+        #     ]
+        # except KeyError as e:
+        #     cli_utils.error(str(e))
+        # else:
+        #     stack_recipe_dir = stack_recipes_dir / stack_recipe_name
+        #     local_stack_recipe = LocalStackRecipe(
+        #         stack_recipe_dir, stack_recipe_name
+        #     )
+
+        #     if not local_stack_recipe.is_present():
+        #         raise ModuleNotFoundError(
+        #             f"The recipe {stack_recipe_name} "
+        #             "has not been pulled at the specified path. "
+        #             f"Run `zenml stack recipe pull {stack_recipe_name}` "
+        #             f"followed by `zenml stack recipe deploy "
+        #             f"{stack_recipe_name}` first."
+        #         )
+
+        #     try:
+        #         # use the stack recipe directory path to find the service instance
+        #         from zenml.recipes import StackRecipeService
+
+        #         stack_recipe_service = StackRecipeService.get_service(
+        #             str(local_stack_recipe.path)
+        #         )
+        #         if not stack_recipe_service:
+        #             cli_utils.error(
+        #                 "No stack recipe found with the path "
+        #                 f"{local_stack_recipe.path}. You need to first deploy "
+        #                 "the recipe by running \nzenml stack recipe deploy "
+        #                 f"{stack_recipe_name}"
+        #             )
+        outputs = cli_utils.get_recipe_outputs(stack_recipe_name, output)
+        if output:
+            if output in outputs:
+                cli_utils.declare(f"Output {output}: ")
+                return cast(Dict[str, Any], outputs[output])
+            else:
+                cli_utils.error(
+                    f"Output {output} not found in stack recipe "
+                    f"{stack_recipe_name}"
+                )
         else:
-            stack_recipe_dir = stack_recipes_dir / stack_recipe_name
-            local_stack_recipe = LocalStackRecipe(
-                stack_recipe_dir, stack_recipe_name
-            )
+            cli_utils.declare("Outputs: ")
+            # delete all items that have empty values
+            outputs = {k: v for k, v in outputs.items() if v != ""}
 
-            if not local_stack_recipe.is_present():
-                raise ModuleNotFoundError(
-                    f"The recipe {stack_recipe_name} "
-                    "has not been pulled at the specified path. "
-                    f"Run `zenml stack recipe pull {stack_recipe_name}` "
-                    f"followed by `zenml stack recipe deploy "
-                    f"{stack_recipe_name}` first."
-                )
-
-            try:
-                # use the stack recipe directory path to find the service instance
-                from zenml.recipes import StackRecipeService
-
-                stack_recipe_service = StackRecipeService.get_service(
-                    str(local_stack_recipe.path)
-                )
-                if not stack_recipe_service:
-                    cli_utils.error(
-                        "No stack recipe found with the path "
-                        f"{local_stack_recipe.path}. You need to first deploy "
-                        "the recipe by running \nzenml stack recipe deploy "
-                        f"{stack_recipe_name}"
-                    )
-                outputs = stack_recipe_service.get_outputs()
-                if output:
-                    if output in outputs:
-                        cli_utils.declare(f"Output {output}: ")
-                        return cast(Dict[str, Any], outputs[output])
-                    else:
-                        cli_utils.error(
-                            f"Output {output} not found in stack recipe "
-                            f"{stack_recipe_name}"
-                        )
-                else:
-                    cli_utils.declare("Outputs: ")
-                    # delete all items that have empty values
-                    outputs = {k: v for k, v in outputs.items() if v != ""}
-
-                    if format == "json":
-                        outputs_json = json.dumps(outputs, indent=4)
-                        cli_utils.declare(outputs_json)
-                        return outputs_json
-                    elif format == "yaml":
-                        outputs_yaml = yaml.dump(outputs, indent=4)
-                        cli_utils.declare(outputs_yaml)
-                        return outputs_yaml
-                    else:
-                        cli_utils.declare(str(outputs))
-                        return outputs
-            except python_terraform.TerraformCommandError as e:
-                cli_utils.error(str(e))
+            if format == "json":
+                outputs_json = json.dumps(outputs, indent=4)
+                cli_utils.declare(outputs_json)
+                return outputs_json
+            elif format == "yaml":
+                outputs_yaml = yaml.dump(outputs, indent=4)
+                cli_utils.declare(outputs_yaml)
+                return outputs_yaml
+            else:
+                cli_utils.declare(str(outputs))
+                return outputs
+            # except python_terraform.TerraformCommandError as e:
+            #     cli_utils.error(str(e))
