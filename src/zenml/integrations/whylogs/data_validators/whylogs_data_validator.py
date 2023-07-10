@@ -139,7 +139,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
                 pipeline_name = step_context.pipeline.name
                 step_name = step_context.step_run.name
                 dataset_id = f"{pipeline_name}_{step_name}"
-            except KeyError:
+            except RuntimeError:
                 raise ValueError(
                     "A dataset ID was not specified and could not be "
                     "generated from the current pipeline and step name."
