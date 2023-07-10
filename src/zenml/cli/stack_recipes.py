@@ -58,7 +58,6 @@ def list_stack_recipes() -> None:
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
     """
-    cli_utils.verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
         {"stack_recipe_name": stack_recipe_instance}
@@ -146,9 +145,7 @@ def info(
     "created as part of this recipe."
 )
 @click.argument("stack_recipe_name")
-@pass_git_stack_recipes_handler
 def describe(
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
 ) -> None:
     """Describe the stack components and their tools that are created as part of this recipe.
@@ -156,18 +153,17 @@ def describe(
     Outputs the "Description" section of the recipe metadata.
 
     Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack recipe.
     """
-    try:
-        stack_recipe = git_stack_recipes_handler.get_stack_recipes(
-            stack_recipe_name
-        )[0]
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        metadata = stack_recipe.metadata
-        logger.info(metadata["Description"])
+    stack_recipe_path = cli_utils.get_recipe_path(stack_recipe_name)
+    if stack_recipe_path is None:
+        cli_utils.error(
+            f"Unable to find stack recipe {stack_recipe_name}. "
+            "Please check the name and try again."
+        )
+    recipe_metadata_yaml = os.path.join(stack_recipe_path, "metadata.yaml")
+    recipe_metadata = yaml_utils.read_yaml(recipe_metadata_yaml)
+    logger.info(recipe_metadata["Description"])
 
 
 @stack_recipe.command(help="The active version of the mlstacks recipes.")

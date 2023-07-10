@@ -17,7 +17,6 @@ import datetime
 import json
 import os
 import pkgutil
-import pkg_resources
 import re
 import subprocess
 import sys
@@ -2500,7 +2499,12 @@ def verify_mlstacks_installation() -> None:
 
 
 def get_recipe_names() -> List[str]:
-    """Get the recipe names from inside the installed mlstacks package."""
+    """Get the recipe names from inside the installed mlstacks package.
+
+    Returns:
+        A list of recipe names.
+    """
+    verify_mlstacks_installation()
     # Get the package's directory path.
     package_path = os.path.dirname(
         pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
@@ -2514,6 +2518,32 @@ def get_recipe_names() -> List[str]:
         for name in os.listdir(resource_path)
         if os.path.isdir(os.path.join(resource_path, name))
     ]
+
+
+def get_recipe_path(recipe_name: str) -> Optional[str]:
+    """Get the path to the recipe from inside the installed mlstacks package.
+
+    Args:
+        recipe_name: The name of the recipe to get the path for.
+
+    Returns:
+        The path to the recipe.
+    """
+    verify_mlstacks_installation()
+    # Get the package's directory path.
+    package_path = os.path.dirname(
+        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
+    )
+    resource_path = os.path.join(
+        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
+    )
+
+    recipe_path = os.path.join(resource_path, recipe_name)
+
+    if not os.path.exists(recipe_path):
+        return
+
+    return recipe_path
 
 
 def get_mlstacks_version() -> Optional[str]:
