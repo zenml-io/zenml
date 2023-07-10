@@ -116,9 +116,7 @@ def clean(
 
 @stack_recipe.command(help="Find out more about a stack recipe.")
 @click.argument("stack_recipe_name")
-@pass_git_stack_recipes_handler
 def info(
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
 ) -> None:
     """Find out more about a stack recipe.
@@ -126,18 +124,15 @@ def info(
     Outputs a pager view of the stack_recipe's README.md file.
 
     Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack recipe.
     """
-    try:
-        stack_recipe = git_stack_recipes_handler.get_stack_recipes(
-            stack_recipe_name
-        )[0]
-    except KeyError as e:
-        cli_utils.error(str(e))
-
-    else:
-        print(stack_recipe.readme_content)
+    recipe_readme = cli_utils.get_recipe_readme(stack_recipe_name)
+    if recipe_readme is None:
+        cli_utils.error(
+            f"Unable to find stack recipe {stack_recipe_name}. "
+            "Please check the name and try again."
+        )
+    cli_utils.print_markdown_with_pager(recipe_readme)
 
 
 @stack_recipe.command(

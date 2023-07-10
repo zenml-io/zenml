@@ -58,6 +58,7 @@ from zenml.constants import (
     STACK_RECIPE_TERRAFORM_FILES_PATH,
 )
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     ModelVersion,
@@ -178,6 +179,27 @@ def warning(
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style, **kwargs)
+
+
+def print_markdown(text: str) -> None:
+    """Prints a string as markdown.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    console.print(markdown_text)
+
+
+def print_markdown_with_pager(text: str) -> None:
+    """Prints a string as markdown with a pager.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    with console.pager():
+        console.print(markdown_text)
 
 
 def print_table(
@@ -2558,3 +2580,32 @@ def get_mlstacks_version() -> Optional[str]:
         ).version
     except pkg_resources.DistributionNotFound:
         return
+
+
+def get_recipe_readme(recipe_name: str) -> Optional[str]:
+    """Get the readme of the recipe.
+
+    Args:
+        recipe_name: The name of the recipe to get the readme for.
+
+    Returns:
+        The readme of the recipe.
+
+    Raises:
+        FileNotFoundError: If the recipe does not exist.
+        ValueError: If the recipe does not have a readme.
+    """
+    verify_mlstacks_installation()
+    recipe_path = get_recipe_path(recipe_name)
+
+    if recipe_path is not None:
+        try:
+            with open(recipe_path + "/README.md", "r") as f:
+                return f.read()
+        except FileNotFoundError:
+            if fileio.exists(recipe_path) and fileio.isdir(recipe_path):
+                raise ValueError(f"No README.md file found in {recipe_path}.")
+            else:
+                raise FileNotFoundError(
+                    f"Recipe {recipe_name} is not one of the avaiable options. \n To list all available recipes, type: `zenml stack recipe list`."
+                )
