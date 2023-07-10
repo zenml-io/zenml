@@ -89,7 +89,7 @@ zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure huggingface
+zenml integration install label_studio pytorch gcp huggingface
 ```
 
 This setup guide assumes that you have installed and are able to use the
@@ -146,7 +146,7 @@ label-studio start -p 8093
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure huggingface
+zenml integration install label_studio pytorch aws huggingface
 ```
 
 Create your basic S3 bucket via CLI command:
