@@ -12,10 +12,6 @@ NOTE: This example currently only runs with a cloud artifact store. [This guide
 by Label Studio](https://labelstud.io/guide/storage.html) contains more details
 if you have trouble understanding the instructions below.
 
-For a full video walkthrough on how to run this example, please check out [our
-community hour demo](https://www.youtube.com/watch?v=bLFGnoApWeU) in which we
-show how to run the various pipelines, in what order, all using an AWS stack.
-
 # 🖥 Run the example
 
 In order to run this example, you need to install and initialize ZenML and Label
@@ -25,8 +21,8 @@ Studio.
 pip install "zenml[server]"
 
 # pull example
-zenml example pull label_studio_annotation
-cd zenml_examples/label_studio_annotation
+zenml example pull label_studio_text_annotation
+cd zenml_examples/label_studio_text_annotation
 
 # Initialize ZenML repo
 zenml init
@@ -65,14 +61,7 @@ example.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure pillow
-```
-
-For this example we also need to upgrade the `torchvision` dependency, so please
-run:
-
-```shell
-pip install "torchvision==0.13.1"
+zenml integration install label_studio pytorch azure huggingface
 ```
 
 Some setup for your stack is required.
@@ -100,7 +89,7 @@ zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch gcp pillow
+zenml integration install label_studio pytorch azure huggingface
 ```
 
 This setup guide assumes that you have installed and are able to use the
@@ -157,7 +146,7 @@ label-studio start -p 8093
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch s3 pillow
+zenml integration install label_studio pytorch azure huggingface
 ```
 
 Create your basic S3 bucket via CLI command:
@@ -211,7 +200,7 @@ python run.py --train
 ```
 
 On the first time you run this, this will fetch a pretrained model and amend the
-head so that it is able to perform binary image classification. It does not get
+head so that it is able to perform sentiment classification. It does not get
 finetuned at this point, however.
 
 You can use the CLI command to view our newly created dataset:
@@ -220,9 +209,9 @@ You can use the CLI command to view our newly created dataset:
 zenml annotator dataset list
 ```
 
-It will show that we now have an `aria_detector` dataset.
+It will show that we now have an `sentiment_classification` dataset.
 
-Then you can use this model to perform inference on some images (located in
+Then you can use this model to perform inference on some texts (located in
 `data/batch_1`). These 'pre-annotations' will then be synchronized with Label
 Studio.
 
@@ -231,18 +220,18 @@ python run.py --inference
 ```
 
 At this point you should do some annotation using the Label Studio web
-interface, making sure to annotate all the ten images. You can launch the
+interface, making sure to annotate all the ten texts. You can launch the
 annotation interface with the CLI:
 
 ```shell
-zenml annotator dataset launch aria_detector
+zenml annotator dataset launch sentiment_classification
 ```
 
 When you're done, you can get the stats on the annotation work you did by using
 the ZenML CLI:
 
 ```shell
-zenml annotator dataset stats aria_detector
+zenml annotator dataset stats sentiment_classification
 ```
 
 This will tell you how many labeled and unlabeled tasks you have for your Label

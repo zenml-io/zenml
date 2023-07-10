@@ -140,7 +140,7 @@ def pytorch_model_trainer(
 ) -> (
     nn.Module
 ):  # transformers.pipelines.text_classification.TextClassificationPipeline:
-    """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
+    """ZenML step which finetunes or loads a pretrained distilbert model."""
     # Try to load a model from a previous run, otherwise use a pretrained net
     # model = _load_last_model(context=context)
     # if model is None:
