@@ -19,7 +19,7 @@ from transformers import AutoTokenizer
 
 from zenml.post_execution import get_pipeline
 from zenml.steps import BaseParameters, Output, step
-from zenml.steps.step_context import StepContext
+from zenml.new.steps.step_context import StepContext
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"

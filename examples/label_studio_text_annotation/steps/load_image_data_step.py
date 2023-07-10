@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Dict
 
 from zenml.steps import BaseParameters, Output, step
-from zenml.steps.step_context import StepContext
+from zenml.new.steps.step_context import StepContext
 
 
 class LoadTextDataParameters(BaseParameters):
