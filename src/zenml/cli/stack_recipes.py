@@ -14,15 +14,20 @@
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
 import os
+import pkgutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 import click
 from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
+from zenml.constants import (
+    STACK_RECIPE_PACKAGE_NAME,
+    STACK_RECIPE_TERRAFORM_FILES_PATH,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
@@ -69,10 +74,25 @@ def verify_mlstacks_installation() -> None:
         cli_utils.error(NOT_INSTALLED_MESSAGE)
 
 
+def get_recipe_names() -> List[str]:
+    """Get the recipe names from inside the installed mlstacks package."""
+    # Get the package's directory path.
+    package_path = os.path.dirname(
+        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
+    )
+    resource_path = os.path.join(
+        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
+    )
+
+    return [
+        name
+        for name in os.listdir(resource_path)
+        if os.path.isdir(os.path.join(resource_path, name))
+    ]
+
+
 @stack_recipe.command(name="list", help="List the available stack recipes.")
-def list_stack_recipes(
-    git_stack_recipes_handler: GitStackRecipesHandler,
-) -> None:
+def list_stack_recipes() -> None:
     """List all available stack recipes.
 
     Args:
@@ -81,20 +101,10 @@ def list_stack_recipes(
     verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
-        {"stack_recipe_name": stack_recipe_instance.name}
-        for stack_recipe_instance in git_stack_recipes_handler.get_stack_recipes()
+        {"stack_recipe_name": stack_recipe_instance}
+        for stack_recipe_instance in get_recipe_names()
     ]
     cli_utils.print_table(stack_recipes)
-
-    cli_utils.declare("\n" + "To get the latest list of stack recipes, run: ")
-    text = Text("zenml stack recipe pull -y", style="markdown.code_block")
-    cli_utils.declare(text)
-
-    cli_utils.declare("\n" + "To pull any individual stack recipe, type: ")
-    text = Text(
-        "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
-    )
-    cli_utils.declare(text)
 
 
 @stack_recipe.command(help="Deletes the ZenML stack recipes directory.")

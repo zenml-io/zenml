@@ -257,3 +257,7 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
+
+# Stack Recipe constants
+STACK_RECIPE_PACKAGE_NAME = "mlstacks"
+STACK_RECIPE_TERRAFORM_FILES_PATH = "terraform"
