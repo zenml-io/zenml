@@ -37,7 +37,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 logger = get_logger(__name__)
 
 ALPHA_MESSAGE = (
-    "The stack recipes CLI is in alpha and actively being developed. "
+    "The Stack Recipes tool is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
     "through these commands. If you encounter any problems, create an issue "
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
@@ -46,7 +46,7 @@ NOT_INSTALLED_MESSAGE = (
     "The stack recipe commands seem to be unavailable on your machine. This "
     "is probably because ZenML was installed without the optional terraform "
     "dependencies. To install the missing dependencies: \n\n"
-    f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
+    f'`pip install mlstacks`.'
 )
 
 pass_git_stack_recipes_handler = click.make_pass_decorator(
