@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, cast
 import yaml
 
 import zenml
+from zenml.constants import STACK_RECIPES_GITHUB_REPO, STACK_RECIPES_REPO_DIR
 from zenml.exceptions import DoesNotExistException, GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -45,8 +46,6 @@ PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
 EXCLUDED_RECIPE_DIRS = [""]
-STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
-STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 
 
 class LocalStackRecipe:

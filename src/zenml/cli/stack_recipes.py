@@ -14,20 +14,16 @@
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
 import os
-import pkgutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, Optional, Union, cast
 
 import click
 from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
-from zenml.constants import (
-    STACK_RECIPE_PACKAGE_NAME,
-    STACK_RECIPE_TERRAFORM_FILES_PATH,
-)
+from zenml.constants import ALPHA_MESSAGE
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
@@ -40,17 +36,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
-ALPHA_MESSAGE = (
-    "The Stack Recipes tool is in alpha and actively being developed. "
-    "Please avoid running mission-critical workloads on resources deployed "
-    "through these commands. If you encounter any problems, create an issue "
-    f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
-)
-NOT_INSTALLED_MESSAGE = (
-    "The `mlstacks` package seems to be unavailable on your machine. "
-    "To install the missing dependencies: \n\n"
-    f"`pip install mlstacks`."
-)
 
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
@@ -66,31 +51,6 @@ def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
 
-def verify_mlstacks_installation() -> None:
-    """Checks if the `mlstacks` package is installed."""
-    try:
-        import mlstacks  # noqa: F401
-    except ImportError:
-        cli_utils.error(NOT_INSTALLED_MESSAGE)
-
-
-def get_recipe_names() -> List[str]:
-    """Get the recipe names from inside the installed mlstacks package."""
-    # Get the package's directory path.
-    package_path = os.path.dirname(
-        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
-    )
-    resource_path = os.path.join(
-        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
-    )
-
-    return [
-        name
-        for name in os.listdir(resource_path)
-        if os.path.isdir(os.path.join(resource_path, name))
-    ]
-
-
 @stack_recipe.command(name="list", help="List the available stack recipes.")
 def list_stack_recipes() -> None:
     """List all available stack recipes.
@@ -98,7 +58,7 @@ def list_stack_recipes() -> None:
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
     """
-    verify_mlstacks_installation()
+    cli_utils.verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
         {"stack_recipe_name": stack_recipe_instance}
@@ -210,19 +170,12 @@ def describe(
         logger.info(metadata["Description"])
 
 
-@stack_recipe.command(help="The active version of the mlops-stacks repository")
-@pass_git_stack_recipes_handler
-def version(
-    git_stack_recipes_handler: GitStackRecipesHandler,
-) -> None:
-    """The active version of the mlops-stacks repository.
-
-    Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
-    """
-    active_version = git_stack_recipes_handler.get_active_version()
+@stack_recipe.command(help="The active version of the mlstacks recipes.")
+def version() -> None:
+    """The active version of the mlstacks recipes."""
+    active_version = cli_utils.get_mlstacks_version()
     if active_version:
-        cli_utils.declare(active_version)
+        cli_utils.declare(f"Running `mlstacks` version {active_version}.")
     else:
         cli_utils.warning("Unable to detect version.")
 

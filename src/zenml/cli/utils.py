@@ -16,6 +16,7 @@ import contextlib
 import datetime
 import json
 import os
+import pkgutil
 import re
 import subprocess
 import sys
@@ -37,6 +38,7 @@ from typing import (
 )
 
 import click
+import pkg_resources
 import yaml
 from pydantic import SecretStr
 from rich import box, table
@@ -48,7 +50,13 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
+    STACK_RECIPE_PACKAGE_NAME,
+    STACK_RECIPE_TERRAFORM_FILES_PATH,
+)
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -2479,3 +2487,43 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
             f'the "sort_by" option: {e}'
         )
         return False
+
+
+# MLSTACKS UTIL FUNCTIONS
+def verify_mlstacks_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)
+
+
+def get_recipe_names() -> List[str]:
+    """Get the recipe names from inside the installed mlstacks package."""
+    # Get the package's directory path.
+    package_path = os.path.dirname(
+        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
+    )
+    resource_path = os.path.join(
+        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
+    )
+
+    return [
+        name
+        for name in os.listdir(resource_path)
+        if os.path.isdir(os.path.join(resource_path, name))
+    ]
+
+
+def get_mlstacks_version() -> Optional[str]:
+    """Gets the version of mlstacks locally installed.
+
+    Raises:
+        pkg_resources.DistributionNotFound: If mlstacks is not installed.
+    """
+    try:
+        return pkg_resources.get_distribution(
+            STACK_RECIPE_PACKAGE_NAME
+        ).version
+    except pkg_resources.DistributionNotFoundt:
+        return
