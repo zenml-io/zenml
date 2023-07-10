@@ -21,7 +21,6 @@ from typing import Any, Dict, Optional, Union, cast
 import click
 from rich.text import Text
 
-import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.io import fileio
@@ -43,10 +42,9 @@ ALPHA_MESSAGE = (
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
 )
 NOT_INSTALLED_MESSAGE = (
-    "The stack recipe commands seem to be unavailable on your machine. This "
-    "is probably because ZenML was installed without the optional terraform "
-    "dependencies. To install the missing dependencies: \n\n"
-    f'`pip install mlstacks`.'
+    "The `mlstacks` package seems to be unavailable on your machine. "
+    "To install the missing dependencies: \n\n"
+    f"`pip install mlstacks`."
 )
 
 pass_git_stack_recipes_handler = click.make_pass_decorator(
@@ -63,8 +61,15 @@ def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
 
+def verify_mlstacks_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+    except ImportError:
+        cli_utils.error(NOT_INSTALLED_MESSAGE)
+
+
 @stack_recipe.command(name="list", help="List the available stack recipes.")
-@pass_git_stack_recipes_handler
 def list_stack_recipes(
     git_stack_recipes_handler: GitStackRecipesHandler,
 ) -> None:
@@ -73,6 +78,7 @@ def list_stack_recipes(
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
     """
+    verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
         {"stack_recipe_name": stack_recipe_instance.name}
