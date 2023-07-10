@@ -24,7 +24,6 @@ from rich.text import Text
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.constants import ALPHA_MESSAGE
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes import GitStackRecipesHandler
 from zenml.recipes.stack_recipe_service import (
@@ -64,54 +63,6 @@ def list_stack_recipes() -> None:
         for stack_recipe_instance in get_recipe_names()
     ]
     cli_utils.print_table(stack_recipes)
-
-
-@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
-@click.option(
-    "--path",
-    "-p",
-    type=click.STRING,
-    default="zenml_stack_recipes",
-    help="Relative path at which you want to clean the stack_recipe(s)",
-)
-@click.option(
-    "--yes",
-    "-y",
-    is_flag=True,
-    help="Whether to skip the confirmation prompt.",
-)
-@pass_git_stack_recipes_handler
-def clean(
-    git_stack_recipes_handler: GitStackRecipesHandler,
-    path: str,
-    yes: bool,
-) -> None:
-    """Deletes the stack recipes directory from your working directory.
-
-    Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
-        path: The path at which you want to clean the stack_recipe(s).
-        yes: Whether to skip the confirmation prompt.
-    """
-    stack_recipes_directory = os.path.join(os.getcwd(), path)
-    if fileio.isdir(stack_recipes_directory) and (
-        yes
-        or cli_utils.confirmation(
-            "Do you wish to delete the stack recipes directory? \n"
-            f"{stack_recipes_directory}"
-        )
-    ):
-        git_stack_recipes_handler.clean_current_stack_recipes()
-        cli_utils.declare(
-            "Stack recipes directory was deleted from your current working "
-            "directory."
-        )
-    elif not fileio.isdir(stack_recipes_directory):
-        logger.error(
-            f"Unable to delete the stack recipes directory - "
-            f"{stack_recipes_directory} - "
-            "as it was not found in your current working directory."
-        )
 
 
 @stack_recipe.command(help="Find out more about a stack recipe.")
