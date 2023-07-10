@@ -17,6 +17,7 @@ import datetime
 import json
 import os
 import pkgutil
+import pkg_resources
 import re
 import subprocess
 import sys
@@ -2525,5 +2526,5 @@ def get_mlstacks_version() -> Optional[str]:
         return pkg_resources.get_distribution(
             STACK_RECIPE_PACKAGE_NAME
         ).version
-    except pkg_resources.DistributionNotFoundt:
+    except pkg_resources.DistributionNotFound:
         return
