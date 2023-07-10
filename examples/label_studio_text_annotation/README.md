@@ -24,6 +24,9 @@ pip install "zenml[server]"
 zenml example pull label_studio_text_annotation
 cd zenml_examples/label_studio_text_annotation
 
+# install extra pip requirements
+pip install -r requirements.txt
+
 # Initialize ZenML repo
 zenml init
 
