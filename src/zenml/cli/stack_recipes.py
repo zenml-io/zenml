@@ -287,6 +287,7 @@ def deploy(
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.
     """
+    cli_utils.verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
     logger.info(
         "Servers are no longer deployed by default. Please use the "
