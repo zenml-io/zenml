@@ -42,7 +42,7 @@ def upgrade() -> None:
                 "checksum", sqlmodel.sql.sqltypes.AutoString(), nullable=True
             )
         )
-    op.execute("UPDATE pipeline_build SET contains_code = True")
+    op.execute("UPDATE pipeline_build SET contains_code = 1")
     with op.batch_alter_table("pipeline_build", schema=None) as batch_op:
         batch_op.alter_column(
             "contains_code",
