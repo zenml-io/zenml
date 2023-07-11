@@ -358,7 +358,7 @@ my_pipeline.configure(settings=...)
 
 As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
-To use a YAML file, you must pass it in the `run` method of a pipeline instance:
+To use a YAML file, you must pass it to the `with_options(...)` method of a pipeline:
 
 ```python
 @step
@@ -375,7 +375,9 @@ def my_pipeline():
 my_pipeline = my_pipeline.with_options(config_path='/local/path/to/config.yaml')
 ```
 
-The format of a YAML config file is exactly the same as the dictionary you would pass in Python in the above two sections. The step-specific settings are nested in a key called `steps`. Here is a rough skeleton of a valid YAML config. All keys are optional.
+The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the
+[step invocation ID](#using-a-custom-step-invocation-id) inside the `steps` dictionary.
+Here is a rough skeleton of a valid YAML config. All keys are optional.
 
 ```yaml
 enable_cache: True
@@ -387,20 +389,18 @@ run_name: my_run
 schedule: { }
 settings: { }  # same as pipeline settings
 steps:
-  name_of_step_1:
+  step_invocation_id:
     settings: { }  # same as step settings
-  name_of_step_2:
+  other_step_invocation_id:
     settings: { }
   ...
 ```
 
-ZenML provides a convenient method that takes a pipeline instance and generates a config template based on its settings automatically:
-
+You can also use the following method to generate a config template (at path `/local/path/to/config.yaml`) that
+includes all configuration options for this specific pipeline and your active stack:
 ```python
 my_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
-
-This will write a template file at `/local/path/to/config.yaml` with a commented-out YAML file with all possible options that the pipeline instance can take.
 
 Here is an example of a YAML config file generated from the above method:
 
@@ -445,52 +445,51 @@ settings:
     gpu_count: 1
     memory: "1GB"
 steps:
-  # get_first_num:
-  enable_cache: false
-  experiment_tracker: mlflow_tracker
-  # extra: Mapping[str, Any]
-  # outputs:
-  #   first_num:
-  #     artifact_source: Optional[str]
-  #     materializer_source: Optional[str]
-  # parameters: {}
-  # settings:
-  #   resources:
-  #     cpu_count: Optional[PositiveFloat]
-  #     gpu_count: Optional[PositiveInt]
-  #     memory: Optional[ConstrainedStrValue]
-  # step_operator: Optional[str]
-  # get_random_int:
-  #   enable_cache: Optional[bool]
-  #   experiment_tracker: Optional[str]
-  #   extra: Mapping[str, Any]
-  #   outputs:
-  #     random_num:
-  #       artifact_source: Optional[str]
-  #       materializer_source: Optional[str]
-  #   parameters: {}
-  #   settings:
-  #     resources:
-  #       cpu_count: Optional[PositiveFloat]
-  #       gpu_count: Optional[PositiveInt]
-  #       memory: Optional[ConstrainedStrValue]
-  #   step_operator: Optional[str]
-  # subtract_numbers:
-  #   enable_cache: Optional[bool]
-  #   experiment_tracker: Optional[str]
-  #   extra: Mapping[str, Any]
-  #   outputs:
-  #     result:
-  #       artifact_source: Optional[str]
-  #       materializer_source: Optional[str]
-  #   parameters: {}
-  #   settings:
-  #     resources:
-  #       cpu_count: Optional[PositiveFloat]
-  #       gpu_count: Optional[PositiveInt]
-  #       memory: Optional[ConstrainedStrValue]
-  #   step_operator: Optional[str]
-
+  get_first_num:
+    enable_cache: false
+    experiment_tracker: mlflow_tracker
+#     extra: Mapping[str, Any]
+#     outputs:
+#       first_num:
+#         artifact_source: Optional[str]
+#         materializer_source: Optional[str]
+#     parameters: {}
+#     settings:
+#       resources:
+#         cpu_count: Optional[PositiveFloat]
+#         gpu_count: Optional[PositiveInt]
+#         memory: Optional[ConstrainedStrValue]
+#     step_operator: Optional[str]
+#   get_random_int:
+#     enable_cache: Optional[bool]
+#     experiment_tracker: Optional[str]
+#     extra: Mapping[str, Any]
+#     outputs:
+#       random_num:
+#         artifact_source: Optional[str]
+#         materializer_source: Optional[str]
+#     parameters: {}
+#     settings:
+#       resources:
+#         cpu_count: Optional[PositiveFloat]
+#         gpu_count: Optional[PositiveInt]
+#         memory: Optional[ConstrainedStrValue]
+#     step_operator: Optional[str]
+#   subtract_numbers:
+#     enable_cache: Optional[bool]
+#     experiment_tracker: Optional[str]
+#     extra: Mapping[str, Any]
+#     outputs:
+#       result:
+#         artifact_source: Optional[str]
+#         materializer_source: Optional[str]
+#     parameters: {}
+#     settings:
+#       resources:
+#         cpu_count: Optional[PositiveFloat]
+#         gpu_count: Optional[PositiveInt]
+#         memory: Optional[ConstrainedStrValue]
+#     step_operator: Optional[str]
 ```
 
 </details>
