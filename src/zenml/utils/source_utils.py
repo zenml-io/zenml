@@ -343,13 +343,15 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_standard_lib_file(file_path=file_path):
         return SourceType.BUILTIN
 
-    if is_user_file(file_path=file_path):
-        return SourceType.USER
-
     if is_distribution_package_file(
         file_path=file_path, module_name=module.__name__
     ):
         return SourceType.DISTRIBUTION_PACKAGE
+
+    # Make sure to check for distribution packages before this to catch the
+    # case when a virtual environment is inside our source root
+    if is_user_file(file_path=file_path):
+        return SourceType.USER
 
     return SourceType.UNKNOWN
 
