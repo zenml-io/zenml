@@ -147,6 +147,8 @@ def export_requirements(
             "environment, not both."
         )
 
+    all_integrations = set(integration_registry.integrations.keys())
+
     if integrations:
         integrations_to_export = set(integrations)
     elif installed_only:
@@ -154,16 +156,17 @@ def export_requirements(
             integration_registry.get_installed_integrations()
         )
     else:
-        integrations_to_export = set(integration_registry.integrations.keys())
+        integrations_to_export = all_integrations
 
     for i in ignore_integration:
         try:
             integrations_to_export.remove(i)
         except KeyError:
-            error(
-                f"Integration {i} does not exist. Available integrations: "
-                f"{list(integration_registry.integrations.keys())}"
-            )
+            if i not in all_integrations:
+                error(
+                    f"Integration {i} does not exist. Available integrations: "
+                    f"{all_integrations}"
+                )
 
     requirements = []
     for integration_name in integrations_to_export:
