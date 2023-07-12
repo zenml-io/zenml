@@ -141,7 +141,7 @@ class WhylogsMaterializer(BaseMaterializer):
         try:
             step_context = get_step_context()
         except RuntimeError:
-            # we are not in a step environment
+            # we are not running as part of a pipeline
             return
 
         run_info = step_context.step_run_info
