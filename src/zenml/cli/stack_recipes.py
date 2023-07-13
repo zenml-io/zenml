@@ -708,7 +708,7 @@ def deploy(
     )
     cli_utils.generate_and_copy_spec_files(temp_spec_dir, stack_spec_config)
 
-    breakpoint()
+    terraform_utils.deploy_stack(os.path.join(temp_spec_dir, "stack.yaml"))
 
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
