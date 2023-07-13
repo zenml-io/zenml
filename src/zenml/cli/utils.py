@@ -2663,11 +2663,12 @@ def generate_and_copy_spec_files(
     """
     components = []
     for component_flag in MLSTACKS_STACK_COMPONENT_FLAGS:
-        if getattr(stack_config, component_flag) is not None:
-            flavor_value = getattr(stack_config, component_flag)
+        flavor_value = getattr(stack_config, component_flag)
+
+        if flavor_value and flavor_value != "False":
             component_name = (
                 f"{component_flag}-{flavor_value}"
-                if flavor_value != "False"
+                if type(flavor_value) != bool
                 else component_flag
             )
 
