@@ -494,6 +494,7 @@ def version() -> None:
 @click.option(
     "--stack-name",
     "-n",
+    "stack_name",
     type=click.STRING,
     required=True,
     help="Set a name for the ZenML stack that will be imported from the YAML "
@@ -510,6 +511,7 @@ def version() -> None:
 @click.option(
     "--mlops-platform",
     "-m",
+    "mlops_platform",
     type=click.Choice(["zenml"]),
     required=False,
     help="The flavor of MLOps platform to use."
@@ -518,24 +520,30 @@ def version() -> None:
 @click.option(
     "--artifact-store",
     "-a",
+    "artifact_store",
+    required=False,
     is_flag=True,
     help="Whether to deploy an artifact store.",
 )
 @click.option(
     "--orchestrator",
     "-o",
+    required=False,
     help="The flavor of orchestrator to use. "
     "If not specified, the default orchestrator will be used.",
 )
 @click.option(
     "--container-registry",
     "-c",
+    "container_registry",
+    required=False,
     is_flag=True,
     help="Whether to deploy a container registry.",
 )
 @click.option(
     "--model-deployer",
     "-d",
+    "model_deployer",
     required=False,
     type=click.Choice(["kserve", "seldon"]),
     help="The flavor of model deployer to use. ",
@@ -543,6 +551,7 @@ def version() -> None:
 @click.option(
     "--experiment-tracker",
     "-e",
+    "experiment_tracker",
     required=False,
     type=click.Choice(["mlflow"]),
     help="The flavor of experiment tracker to use.",
@@ -550,13 +559,15 @@ def version() -> None:
 @click.option(
     "--secrets-manager",
     "-x",
+    "secrets_manager",
     is_flag=True,
-    requries=False,
+    required=False,
     help="Whether to deploy a secrets manager.",
 )
 @click.option(
     "--step-operator",
     "-s",
+    "step_operator",
     required=False,
     type=click.Choice(["sagemaker"]),
     help="The flavor of step operator to use.",
@@ -568,22 +579,22 @@ def version() -> None:
     required=False,
     type=click.Path(exists=True, dir_okay=False, readable=True),
     help="Use a YAML specification file as the basis of the stack deployment.",
-    required=False,
 )
 @click.option(
-    "--tag",
+    "--tags",
     "-t",
-    "tag",
+    "tags",
     required=False,
     type=click.STRING,
-    multiple=True,
-    help="Tag k:v pairs to be applied to the stack deployment.",
+    help="Pass one or more values using JSON format.",
 )
 @click.pass_context
 def deploy(
     ctx: click.Context,
     provider: str,
     stack_name: str,
+    import_stack_flag: Optional[bool],
+    mlops_platform: Optional[str],
     artifact_store: Optional[str],
     orchestrator: Optional[str],
     container_registry: Optional[str],
@@ -591,8 +602,6 @@ def deploy(
     experiment_tracker: Optional[str],
     secrets_manager: Optional[str],
     step_operator: Optional[str],
-    force: bool,
-    import_stack_flag: bool,
     file: Optional[str],
     tags: Optional[Dict[str, str]],
 ) -> None:
@@ -629,13 +638,24 @@ def deploy(
     cli_utils.verify_mlstacks_installation()
     cli_utils.warning(ALPHA_MESSAGE)
 
-    import mlstacks
+    from mlstacks.utils import terraform_utils
 
     # copy the terraform files to the config directory
-    mlstacks.utils.terraform_utils.populate_tf_definitions(provider)
+    try:
+        terraform_utils.populate_tf_definitions(provider)
+    except FileExistsError:
+        if cli_utils.confirmation(
+            "The terraform files already exist. Would you like to replace them?"
+        ):
+            terraform_utils.populate_tf_definitions(provider, force=True)
+        else:
+            cli_utils.error(
+                "The terraform files already exist. Please delete them and "
+                "run the command again."
+            )
 
     # warn that prerequisites should be met
-    metadata = mlstacks.utils.terraform_utils.get_recipe_metadata(provider)
+    metadata = terraform_utils.get_recipe_metadata(provider)
     if not cli_utils.confirmation(
         "\nPrerequisites for running this recipe are as follows.\n"
         f"{metadata['Prerequisites']}"
