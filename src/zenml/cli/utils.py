@@ -2620,3 +2620,17 @@ def get_recipe_outputs(
         from mlstacks.utils import terraform_utils  # noqa
 
         return terraform_utils.get_stack_outputs(stack_name, output_key)
+
+
+def create_mlspacks_spec(stack_config: Dict[str, Union[str, bool]]) -> None:
+    """Creates MLStacks specification files for ZenML.
+
+    Args:
+        stack_config: A dictionary containing the stack configuration.
+    """
+    # specify the destination for the spec files
+
+    # write a new component file for each component
+
+    # write the stack config to a file
+    return None
