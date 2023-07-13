@@ -47,9 +47,11 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
+from sqlalchemy.sql.functions import count
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.cli import workspace
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -1101,6 +1103,26 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
+    def count_stacks(
+        self, workspace_id: Optional[UUID]
+    ) -> int:
+        """Count all stacks, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting stacks
+
+        Returns:
+            The number of stacks in the workspace.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(StackSchema.id))
+            if workspace_id:
+                query = query.filter(StackSchema.workspace_id == workspace_id)
+
+            count = query.scalar()
+
+        return count
+
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
@@ -1408,6 +1430,28 @@ class SqlZenStore(BaseZenStore):
                 filter_model=component_filter_model,
             )
             return paged_components
+
+    def count_stack_components(
+        self, workspace_id: Optional[UUID]
+    ) -> int:
+        """Count all components, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting components
+
+        Returns:
+            The number of components in the workspace.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(StackComponentSchema.id))
+            if workspace_id:
+                query = query.filter(
+                    StackComponentSchema.workspace_id == workspace_id
+                )
+
+            count = query.scalar()
+
+        return count
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -2827,6 +2871,28 @@ class SqlZenStore(BaseZenStore):
                 filter_model=pipeline_filter_model,
             )
 
+    def count_pipelines(
+        self, workspace_id: Optional[UUID]
+    ) -> int:
+        """Count all pipelines, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipelines
+
+        Returns:
+            The number of pipelines in the workspace.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(PipelineSchema.id))
+            if workspace_id:
+                query = query.filter(
+                    PipelineSchema.workspace_id == workspace_id
+                )
+
+            count = query.scalar()
+
+        return count
+
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self,
@@ -3379,6 +3445,28 @@ class SqlZenStore(BaseZenStore):
                 filter_model=runs_filter_model,
                 custom_schema_to_model_conversion=self._run_schema_to_model,
             )
+
+    def count_runs(
+        self, workspace_id: Optional[UUID]
+    ) -> int:
+        """Count all pipeline runs, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipeline runs
+
+        Returns:
+            The number of pipeline runs in the workspace.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(PipelineRunSchema.id))
+            if workspace_id:
+                query = query.filter(
+                    PipelineRunSchema.workspace_id == workspace_id
+                )
+
+            count = query.scalar()
+
+        return count
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
