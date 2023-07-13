@@ -264,7 +264,7 @@ STACK_RECIPE_TERRAFORM_FILES_PATH = "terraform"
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 ALPHA_MESSAGE = (
-    "The Stack Recipes tool is in alpha and actively being developed. "
+    "The mlstacks tool/package is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
     "through these commands. If you encounter any problems, create an issue "
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
@@ -274,3 +274,4 @@ NOT_INSTALLED_MESSAGE = (
     "To install the missing dependencies: \n\n"
     f"`pip install mlstacks`."
 )
+STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
