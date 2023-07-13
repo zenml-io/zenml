@@ -15,6 +15,9 @@
 import contextlib
 import datetime
 import json
+import datetime
+import random
+import string
 import os
 import pkgutil
 import re
@@ -51,6 +54,7 @@ from rich.style import Style
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
+    APP_NAME,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
     NOT_INSTALLED_MESSAGE,
@@ -2611,10 +2615,59 @@ def get_recipe_readme(recipe_name: str) -> Optional[str]:
                 )
 
 
+def create_temp_spec_dir(unique_path: str) -> str:
+    """Creates a directory at with the config dir as the base path.
+
+    Args:
+        unique_path: The unique path to create the directory at.
+
+    Returns:
+        The path to the created directory.
+    """
+    base_path = click.get_app_dir(APP_NAME)
+    temp_spec_dir = os.path.join(base_path, unique_path)
+    if not os.path.exists(temp_spec_dir):
+        os.makedirs(temp_spec_dir)
+    return temp_spec_dir
+
+
+def generate_unique_recipe_directory_name(recipe_name: str) -> str:
+    """Generates a unique directory name for the recipe.
+
+    Args:
+        recipe_name: The name of the recipe to generate the directory name for.
+
+    Returns:
+        A unique directory name for the recipe.
+    """
+    # Get the current date and time
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Generate a string of 4 random letters
+    random_string = "".join(
+        random.choice(string.ascii_letters) for _ in range(4)
+    )
+
+    return f"{recipe_name}_{timestamp}_{random_string}"
+
+
+def generate_and_copy_spec_files(
+    temp_dir: str, stack_config: Dict[str, Union[str, bool]]
+) -> None:
+    """Generates and copys spec files for mlstacks use.
+
+    Args:
+        temp_dir: The path to the temporary directory to copy the spec files to.
+        stack_config: The stack configuration to use.
+    """
+    pass
+
+
 def get_recipe_outputs(
     stack_name: str, output_key: Optional[str] = None
 ) -> Dict[str, str]:
     verify_mlstacks_installation()
+    # TODO: FIX THIS
     recipe_path = get_recipe_path(recipe_name)
     if recipe_path is not None:
         from mlstacks.utils import terraform_utils  # noqa

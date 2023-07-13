@@ -25,6 +25,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.logger import get_logger
+from zenml.models.mlstacks_models import MlstacksSpec
 from zenml.recipes import GitStackRecipesHandler
 from zenml.recipes.stack_recipe_service import (
     STACK_RECIPES_GITHUB_REPO,
@@ -590,7 +591,6 @@ def version() -> None:
 )
 @click.pass_context
 def deploy(
-    ctx: click.Context,
     provider: str,
     stack_name: str,
     import_stack_flag: Optional[bool],
@@ -645,13 +645,14 @@ def deploy(
         terraform_utils.populate_tf_definitions(provider)
     except FileExistsError:
         if cli_utils.confirmation(
-            "The terraform files already exist. Would you like to replace them?"
+            "The terraform files already exist. Would you like to replace them? "
+            "WARNING: This will overwrite any changes you have made to the terraform "
+            "files."
         ):
             terraform_utils.populate_tf_definitions(provider, force=True)
         else:
             cli_utils.error(
-                "The terraform files already exist. Please delete them and "
-                "run the command again."
+                "Failed since the Terraform definition files already exist and you did not want to overwrite them."
             )
 
     # warn that prerequisites should be met
@@ -668,7 +669,32 @@ def deploy(
 
     stack_recipe_name = f"{provider}_modular"
 
-    breakpoint()
+    # create a directory for the stack recipe
+    unique_dir_name = cli_utils.generate_unique_recipe_directory_name(
+        stack_recipe_name
+    )
+    temp_spec_dir = cli_utils.create_temp_spec_dir(unique_dir_name)
+
+    # convert json-formatted string to dict
+    if tags:
+        tags = yaml.safe_load(tags)
+
+    stack_spec_config = MlstacksSpec(
+        provider=provider,
+        stack_name=stack_name,
+        import_stack_flag=import_stack_flag,
+        mlops_platform=mlops_platform,
+        artifact_store=artifact_store,
+        orchestrator=orchestrator,
+        container_registry=container_registry,
+        model_deployer=model_deployer,
+        experiment_tracker=experiment_tracker,
+        secrets_manager=secrets_manager,
+        step_operator=step_operator,
+        tags=tags,
+    )
+    cli_utils.generate_and_copy_spec_files(temp_spec_dir, stack_spec_config)
+
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
