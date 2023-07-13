@@ -503,6 +503,14 @@ def version() -> None:
     "Defaults to the name of the stack recipe being deployed.",
 )
 @click.option(
+    "--region",
+    "-r",
+    "region",
+    type=click.STRING,
+    required=True,
+    help="The region to deploy the stack to.",
+)
+@click.option(
     "--import",
     "-i",
     "import_stack_flag",
@@ -591,19 +599,21 @@ def version() -> None:
 )
 @click.pass_context
 def deploy(
+    ctx: click.Context,
     provider: str,
     stack_name: str,
-    import_stack_flag: Optional[bool],
-    mlops_platform: Optional[str],
-    artifact_store: Optional[str],
-    orchestrator: Optional[str],
-    container_registry: Optional[str],
-    model_deployer: Optional[str],
-    experiment_tracker: Optional[str],
-    secrets_manager: Optional[str],
-    step_operator: Optional[str],
-    file: Optional[str],
-    tags: Optional[Dict[str, str]],
+    region: str,
+    import_stack_flag: Optional[bool] = None,
+    mlops_platform: Optional[str] = None,
+    artifact_store: Optional[str] = None,
+    orchestrator: Optional[str] = None,
+    container_registry: Optional[str] = None,
+    model_deployer: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    secrets_manager: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    file: Optional[str] = None,
+    tags: Optional[str] = None,
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -677,12 +687,15 @@ def deploy(
 
     # convert json-formatted string to dict
     if tags:
-        tags = yaml.safe_load(tags)
+        import json
+
+        tags = json.loads(tags)
 
     stack_spec_config = MlstacksSpec(
         provider=provider,
         stack_name=stack_name,
         import_stack_flag=import_stack_flag,
+        region=region,
         mlops_platform=mlops_platform,
         artifact_store=artifact_store,
         orchestrator=orchestrator,
@@ -694,6 +707,8 @@ def deploy(
         tags=tags,
     )
     cli_utils.generate_and_copy_spec_files(temp_spec_dir, stack_spec_config)
+
+    breakpoint()
 
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,

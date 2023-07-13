@@ -15,12 +15,11 @@
 import contextlib
 import datetime
 import json
-import datetime
-import random
-import string
 import os
 import pkgutil
+import random
 import re
+import string
 import subprocess
 import sys
 from typing import (
@@ -57,6 +56,7 @@ from zenml.constants import (
     APP_NAME,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
+    MLSTACKS_STACK_COMPONENT_FLAGS,
     NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
     STACK_RECIPE_TERRAFORM_FILES_PATH,
@@ -76,6 +76,7 @@ from zenml.models.filter_models import (
     StrFilter,
     UUIDFilter,
 )
+from zenml.models.mlstacks_models import MlstacksSpec
 from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
@@ -2625,7 +2626,7 @@ def create_temp_spec_dir(unique_path: str) -> str:
         The path to the created directory.
     """
     base_path = click.get_app_dir(APP_NAME)
-    temp_spec_dir = os.path.join(base_path, unique_path)
+    temp_spec_dir = os.path.join(base_path, "mlstacks", unique_path)
     if not os.path.exists(temp_spec_dir):
         os.makedirs(temp_spec_dir)
     return temp_spec_dir
@@ -2652,15 +2653,55 @@ def generate_unique_recipe_directory_name(recipe_name: str) -> str:
 
 
 def generate_and_copy_spec_files(
-    temp_dir: str, stack_config: Dict[str, Union[str, bool]]
+    temp_dir: str, stack_config: MlstacksSpec
 ) -> None:
-    """Generates and copys spec files for mlstacks use.
+    """Generates and copy spec files for mlstacks use.
 
     Args:
         temp_dir: The path to the temporary directory to copy the spec files to.
         stack_config: The stack configuration to use.
     """
-    pass
+    components = []
+    for component_flag in MLSTACKS_STACK_COMPONENT_FLAGS:
+        if getattr(stack_config, component_flag) is not None:
+            flavor_value = getattr(stack_config, component_flag)
+            component_name = (
+                f"{component_flag}-{flavor_value}"
+                if flavor_value != "False"
+                else component_flag
+            )
+
+            component = {
+                "spec_version": 1,
+                "spec_type": "component",
+                "component_type": component_flag,
+                "component_flavor": getattr(stack_config, component_flag),
+                "name": component_name,
+                "provider": stack_config.provider,
+            }
+            components.append(component)
+
+    stack = {
+        "spec_version": 1,
+        "spec_type": "stack",
+        "name": stack_config.stack_name,
+        "provider": stack_config.provider,
+        "default_region": stack_config.region,
+        "default_tags": stack_config.tags,
+        "deployment_method": "kubernetes",
+        "components": [f"{c['name']}.yaml" for c in components],
+    }
+    # write the `stack` dict to a file as YAML
+    with open(os.path.join(temp_dir, "stack.yaml"), "w") as f:
+        yaml.dump(stack, f)
+
+    # write a new component file for each component
+    # breakpoint()
+    for component in components:
+        with open(
+            os.path.join(temp_dir, f"{component['name']}.yaml"), "w"
+        ) as f:
+            yaml.dump(component, f)
 
 
 def get_recipe_outputs(

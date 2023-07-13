@@ -1,5 +1,4 @@
-from typing import Any, Dict, Optional, Union
-from uuid import UUID
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -9,6 +8,7 @@ class MlstacksSpec(BaseModel):
 
     provider: str
     stack_name: str
+    region: str
     import_stack_flag: bool = False
     mlops_platform: Optional[str] = None
     artifact_store: Optional[str] = None
@@ -19,4 +19,3 @@ class MlstacksSpec(BaseModel):
     secrets_manager: Optional[str] = None
     step_operator: Optional[str] = None
     tags: Optional[Dict[str, Any]] = None
-
