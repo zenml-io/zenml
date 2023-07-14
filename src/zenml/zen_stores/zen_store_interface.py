@@ -230,9 +230,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_stacks(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -306,9 +304,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_stack_components(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
         """Count all components, optionally within a workspace scope.
 
         Args:
@@ -918,9 +914,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_pipelines(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
         """Count all pipelines, optionally within a workspace scope.
 
         Args:
@@ -1228,9 +1222,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_runs(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
         """Count all pipeline runs, optionally within a workspace scope.
 
         Args:

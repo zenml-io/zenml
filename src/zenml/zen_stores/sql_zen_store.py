@@ -47,11 +47,9 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlalchemy.sql.functions import count
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-from zenml.cli import workspace
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -1103,9 +1101,7 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
-    def count_stacks(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
         """Count all stacks, optionally within a workspace scope.
 
         Args:
@@ -1119,9 +1115,9 @@ class SqlZenStore(BaseZenStore):
             if workspace_id:
                 query = query.filter(StackSchema.workspace_id == workspace_id)
 
-            count = query.scalar()
+            stack_count = query.scalar()
 
-        return count
+        return stack_count
 
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
@@ -1431,9 +1427,7 @@ class SqlZenStore(BaseZenStore):
             )
             return paged_components
 
-    def count_stack_components(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
         """Count all components, optionally within a workspace scope.
 
         Args:
@@ -1449,9 +1443,9 @@ class SqlZenStore(BaseZenStore):
                     StackComponentSchema.workspace_id == workspace_id
                 )
 
-            count = query.scalar()
+            component_count = query.scalar()
 
-        return count
+        return component_count
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -2871,9 +2865,7 @@ class SqlZenStore(BaseZenStore):
                 filter_model=pipeline_filter_model,
             )
 
-    def count_pipelines(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
         """Count all pipelines, optionally within a workspace scope.
 
         Args:
@@ -2889,9 +2881,9 @@ class SqlZenStore(BaseZenStore):
                     PipelineSchema.workspace_id == workspace_id
                 )
 
-            count = query.scalar()
+            pipelines_count = query.scalar()
 
-        return count
+        return pipelines_count
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
@@ -3446,9 +3438,7 @@ class SqlZenStore(BaseZenStore):
                 custom_schema_to_model_conversion=self._run_schema_to_model,
             )
 
-    def count_runs(
-        self, workspace_id: Optional[UUID]
-    ) -> int:
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
         """Count all pipeline runs, optionally within a workspace scope.
 
         Args:
@@ -3464,9 +3454,9 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.workspace_id == workspace_id
                 )
 
-            count = query.scalar()
+            runs_count = query.scalar()
 
-        return count
+        return runs_count
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel

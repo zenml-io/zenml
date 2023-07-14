@@ -1016,9 +1016,10 @@ def get_workspace_statistics(
     return {
         "stacks": zen_store().count_stacks(workspace_id=workspace.id),
         "components": zen_store().count_stack_components(
-            workspace_id=workspace.id),
+            workspace_id=workspace.id
+        ),
         "pipelines": zen_store().count_pipelines(workspace_id=workspace.id),
-        "runs": zen_store().count_runs(workspace_id=workspace.id)
+        "runs": zen_store().count_runs(workspace_id=workspace.id),
     }
 
 
