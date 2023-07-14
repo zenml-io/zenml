@@ -1117,7 +1117,7 @@ class SqlZenStore(BaseZenStore):
 
             stack_count = query.scalar()
 
-        return stack_count
+        return int(stack_count)
 
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
@@ -1445,7 +1445,7 @@ class SqlZenStore(BaseZenStore):
 
             component_count = query.scalar()
 
-        return component_count
+        return int(component_count)
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -2883,7 +2883,7 @@ class SqlZenStore(BaseZenStore):
 
             pipelines_count = query.scalar()
 
-        return pipelines_count
+        return int(pipelines_count)
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
@@ -3456,7 +3456,7 @@ class SqlZenStore(BaseZenStore):
 
             runs_count = query.scalar()
 
-        return runs_count
+        return int(runs_count)
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
