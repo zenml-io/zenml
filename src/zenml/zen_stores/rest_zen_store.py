@@ -1309,6 +1309,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The number of pipelines in the workspace.
         """
+        raise NotImplementedError
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
