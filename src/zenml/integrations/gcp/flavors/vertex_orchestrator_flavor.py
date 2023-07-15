@@ -87,12 +87,19 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             resource is created.
         workload_service_account: the service account for workload run-as
             account. Users submitting jobs must have act-as permission on this
-            run-as account.
-            If not provided, the default service account will be used.
+            run-as account. If not provided, the Compute Engine default service
+            account for the GCP project in which the pipeline is running is
+            used.
         function_service_account: the service account for cloud function run-as
             account, for scheduled pipelines. This service account must have
             the act-as permission on the workload_service_account.
-            If not provided, the default service account will be used.
+            If not provided, the Compute Engine default service account for the
+            GCP project in which the pipeline is running is used.
+        scheduler_service_account: the service account used by the Google Cloud
+            Scheduler to trigger and authenticate to the pipeline Cloud Function
+            on a schedule. If not provided, the Compute Engine default service
+            account for the GCP project in which the pipeline is running is
+            used.
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
@@ -114,6 +121,7 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     function_service_account: Optional[str] = None
+    scheduler_service_account: Optional[str] = None
     network: Optional[str] = None
 
     cpu_limit: Optional[str] = None

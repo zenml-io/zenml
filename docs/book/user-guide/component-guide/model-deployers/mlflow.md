@@ -28,8 +28,7 @@ You should use the MLflow Model Deployer:
   Kubernetes or advanced infrastructure configuration.
 
 If you are looking to deploy your models in a more complex way, you should use one of the
-other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML (e.g. Seldon Core, KServe,
-etc.)
+other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML.
 
 ### How do you deploy it?
 
