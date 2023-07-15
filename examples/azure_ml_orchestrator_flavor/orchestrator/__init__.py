@@ -1,8 +1,8 @@
-from orchestrator.azure_ml_pipelines_orchestrator_flavor import (  # noqa
+from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator_flavor import (  # noqa
     AzureMLPipelinesOrchestratorFlavor,
 )
 
-from orchestrator.azure_ml_pipelines_orchestrator import (  # noqa
+from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator import (  # noqa
     AzureMLPipelinesOrchestrator,
 )
 

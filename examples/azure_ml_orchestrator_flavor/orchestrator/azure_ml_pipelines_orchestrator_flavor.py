@@ -56,7 +56,7 @@ class AzureMLPipelinesOrchestratorConfig(
     subscription_id: str
     resource_group: str
     workspace_name: str
-    compute_target_name: str
+    compute_target_name: str = "cpu-cluster"
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
@@ -143,6 +143,6 @@ class AzureMLPipelinesOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
-        from orchestrator.azure_ml_pipelines_orchestrator import AzureMLPipelinesOrchestrator
+        from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator import AzureMLPipelinesOrchestrator
 
         return AzureMLPipelinesOrchestrator

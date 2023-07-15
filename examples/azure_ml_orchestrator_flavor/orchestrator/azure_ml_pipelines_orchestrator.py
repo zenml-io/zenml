@@ -18,12 +18,13 @@ from zenml.utils.source_utils import get_source_root
 import webbrowser
 from azure.ai.ml import MLClient, command, dsl
 from azure.ai.ml.entities import Environment
-from azure.identity import AzureCliCredential
+from azure.identity import DefaultAzureCredential
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
 )
-from orchestrator.azure_ml_pipelines_orchestrator_flavor import (
+from azure.ai.ml.entities import AmlCompute
+from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator_flavor import (
     AzureMLPipelinesOrchestratorConfig,
     AzureMLPipelinesOrchestratorSettings,
 )
@@ -41,7 +42,6 @@ if TYPE_CHECKING:
     )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
-
 
 logger = get_logger(__name__)
 
@@ -88,7 +88,8 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_AZUREML_RUN_ID}."
             )
-    #TODO: add validator func
+
+    # TODO: add validator func
 
     # @property
     # def validator(self) -> Optional[StackValidator]:
@@ -219,7 +220,6 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
     #         custom_validation_function=_validate,
     #     )
 
-
     # def prepare_pipeline_deployment(
     #     self, deployment: "PipelineDeployment", stack: "Stack"
     # ) -> None:
@@ -320,6 +320,43 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
     #     environment.environment_variables = environment_variables
     #     return environment
 
+    def setup_compute_target(self, ml_client) -> MLClient:
+
+        try:
+            # let's see if the compute target already exists
+            cpu_cluster = ml_client.compute.get(self.config.compute_target_name)
+            print(
+                f"You already have a cluster named {self.config.compute_target_name}, we'll reuse it as is."
+            )
+
+        except Exception:
+            print("Creating a new cpu compute target...")
+
+            # Let's create the Azure Machine Learning compute object with the intended parameters
+            # if you run into an out of quota error, change the size to a comparable VM that is available.
+            # Learn more on https://azure.microsoft.com/en-us/pricing/details/machine-learning/.
+            cpu_cluster = AmlCompute(
+                name=self.config.compute_target_name,
+                # Azure Machine Learning Compute is the on-demand VM service
+                type="amlcompute",
+                # VM Family
+                size="STANDARD_DS3_V2",
+                # Minimum running nodes when there is no job running
+                min_instances=0,
+                # Nodes in cluster
+                max_instances=4,
+                # How many seconds will the node running after the job termination
+                idle_time_before_scale_down=180,
+                # Dedicated or LowPriority. The latter is cheaper but there is a chance of job termination
+                tier="Dedicated",
+            )
+            print(
+                f"AMLCompute with name {cpu_cluster.name} will be created, with compute size {cpu_cluster.size}"
+            )
+            # Now, we pass the object to MLClient's create_or_update method
+            cpu_cluster = ml_client.compute.begin_create_or_update(cpu_cluster)
+            return ml_client
+
     def prepare_or_run_pipeline(
             self, deployment: "PipelineDeployment", stack: "Stack"
     ) -> None:
@@ -336,11 +373,17 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        credential = AzureCliCredential()
-        ml_client = MLClient.from_config(credential=credential)
+        credential = DefaultAzureCredential()
+        # ml_client = MLClient.from_config(credential=credential)
+        ml_client = MLClient(
+            credential=credential,
+            subscription_id=self.config.subscription_id,
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace_name,
+        )
         # get the compute target to use to run our pipeline
         # can be single node or cluster
-        cpu_compute_target = "cpu-cluster"
+        ml_client = self.setup_compute_target(ml_client)
         # cpu_cluster = ml_client.compute.get(cpu_compute_target)
 
         # get/create the environment that will be used to run each step of the pipeline
@@ -353,8 +396,9 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             pipeline_name=deployment.pipeline.name
         ).replace("_", "-")
         docker_image_builder = PipelineDockerImageBuilder()
-        image_name_or_digest,_,_ = docker_image_builder.build_docker_image(docker_settings=deployment.pipeline_configuration.docker_settings,
-                                                        tag="azureml",stack=stack)
+        image_name_or_digest, _, _ = docker_image_builder.build_docker_image(
+            docker_settings=deployment.pipeline_configuration.docker_settings,
+            tag="azureml", stack=stack)
         pipeline_job_env = Environment(
             name=custom_env_name,
             image=image_name_or_digest,
@@ -378,7 +422,6 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
 
             job = command(
                 environment=pipeline_job_env,
-                compute=cpu_compute_target,
                 command=" ".join(entrypoint),
                 experiment_name=orchestrator_run_name,
                 display_name=orchestrator_run_name,
@@ -387,7 +430,7 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             steps.append(job)
 
         @dsl.pipeline(
-            compute=cpu_compute_target,
+            compute=self.config.compute_target_name,
         )
         def test_pipeline():
             steps[0]()
