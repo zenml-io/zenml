@@ -693,6 +693,16 @@ def parse_name_and_extra_arguments(
     return name, args_dict
 
 
+def validate_keys(key: str) -> None:
+    """Validates key if it is a valid python string.
+
+    Args:
+        key: key to validate
+    """
+    if not key.isidentifier():
+        error("Please provide args with a proper identifier as the key.")
+
+
 def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     """Parse unknown options from the CLI.
 
