@@ -15,7 +15,7 @@
 
 import logging
 import time
-from contextlib import nullcontext, redirect_stdout, redirect_stderr
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
