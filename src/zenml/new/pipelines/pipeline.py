@@ -652,7 +652,7 @@ class Pipeline:
                 if run_url:
                     logger.info(f"Dashboard URL: {run_url}")
                 else:
-                    logger.warning(
+                    logger.info(
                         "You can visualize your pipeline runs in the `ZenML "
                         "Dashboard`. In order to try it locally, please run "
                         "`zenml up`."
@@ -678,7 +678,7 @@ class Pipeline:
         try:
             # Log about the schedule/run
             if deployment_model.schedule:
-                logger.warning(
+                logger.info(
                     "Scheduling a run with the schedule: "
                     f"`{deployment_model.schedule.name}`"
                 )
@@ -687,7 +687,7 @@ class Pipeline:
 
             # Log about the caching status
             if not deployment_model.pipeline_configuration.enable_cache:
-                logger.warning("Caching disabled.")
+                logger.info("Caching disabled.")
 
             # Log about the used builds
             if deployment_model.build:
@@ -701,7 +701,7 @@ class Pipeline:
                 from zenml import __version__
 
                 if deployment_model.build.zenml_version != __version__:
-                    logger.warning(
+                    logger.info(
                         f"ZenML version (different than the local version): "
                         f"{deployment_model.build.zenml_version}"
                     )
@@ -712,7 +712,7 @@ class Pipeline:
                     deployment_model.build.python_version
                     != platform.python_version()
                 ):
-                    logger.warning(
+                    logger.info(
                         f"Python version (different than the local version): "
                         f"{deployment_model.build.python_version}"
                     )
@@ -965,7 +965,7 @@ class Pipeline:
         registered_pipeline = client.zen_store.create_pipeline(
             pipeline=request
         )
-        logger.warning(
+        logger.info(
             "Registered new version: `(version %s)`.",
             registered_pipeline.version,
         )
