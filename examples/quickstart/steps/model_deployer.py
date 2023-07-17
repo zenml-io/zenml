@@ -5,7 +5,7 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
 )
 
 model_versions = Client().active_stack.model_registry.list_model_versions(
-    metadata={}
+    name=model_name, metadata={}
 )
 
 if len(model_versions) > 1:
