@@ -883,8 +883,7 @@ def run(
     """
     # Log deprecation warning
     logger.warning(
-        "The `example` CLI is going to be deprecated soon after 01/08/2023 "
-        "and will be no longer maintained by the ZenML core team after that."
+        "The `example` CLI subcommand has been deprecated and will be removed in a future release."
     )
 
     check_for_version_mismatch(git_examples_handler)
