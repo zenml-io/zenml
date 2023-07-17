@@ -258,7 +258,7 @@ def example_pipeline():
 
 This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
 
-## Enable or disable logging
+## Enable or disable logs storing
 
 By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
 
