@@ -75,7 +75,6 @@ from zenml.models import (
     TeamRoleAssignmentRequestModel,
     TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
-    UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
@@ -230,17 +229,6 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
-        """List all stacks matching the given filter criteria.
-
-        Args:
-            workspace_id: The workspace to use for counting stacks
-
-        Returns:
-            The number of stacks in the workspace.
-        """
-
-    @abstractmethod
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
@@ -301,17 +289,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all stack components matching the filter criteria.
-        """
-
-    @abstractmethod
-    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
-        """Count all components, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting components
-
-        Returns:
-            The number of components in the workspace.
         """
 
     @abstractmethod
@@ -471,19 +448,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> UserAuthModel:
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Returns:
-            The requested user, if it was found.
         """
 
     @abstractmethod
@@ -914,17 +878,6 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipelines, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipelines
-
-        Returns:
-            The number of pipelines in the workspace.
-        """
-
-    @abstractmethod
     def update_pipeline(
         self,
         pipeline_id: UUID,
@@ -1219,17 +1172,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
-        """
-
-    @abstractmethod
-    def count_runs(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipeline runs, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipeline runs
-
-        Returns:
-            The number of pipeline runs in the workspace.
         """
 
     @abstractmethod

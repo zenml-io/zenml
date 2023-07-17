@@ -47,7 +47,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, create_engine, or_, select, SQLModel
+from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
@@ -1110,29 +1110,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The number of stacks in the workspace.
         """
-        return self._count_entity(schema=StackSchema, workspace_id=workspace_id)
-
-    def _count_entity(
-        self,
-        schema: Type[BaseSchema],
-        workspace_id: Optional[UUID]
-    ) -> int:
-        """Return count of a given entity, optionally scoped to workspace.
-
-        Args:
-            schema: Schema of the Entity
-            workspace_id: (Optional) ID of the workspace scope
-
-        Returns:
-            Count of the entity as integer.
-        """
-        with Session(self.engine) as session:
-            query = session.query(func.count(schema.id))
-            if workspace_id and hasattr(schema, "workspace_id"):
-                query = query.filter(schema.workspace_id == workspace_id)
-
-            entity_count = query.scalar()
-        return int(entity_count)
+        return self._count_entity(
+            schema=StackSchema, workspace_id=workspace_id
+        )
 
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
@@ -1452,8 +1432,7 @@ class SqlZenStore(BaseZenStore):
             The number of components in the workspace.
         """
         return self._count_entity(
-            schema=StackComponentSchema,
-            workspace_id=workspace_id
+            schema=StackComponentSchema, workspace_id=workspace_id
         )
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
@@ -2884,8 +2863,7 @@ class SqlZenStore(BaseZenStore):
             The number of pipelines in the workspace.
         """
         return self._count_entity(
-            schema=PipelineSchema,
-            workspace_id=workspace_id
+            schema=PipelineSchema, workspace_id=workspace_id
         )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
@@ -3451,8 +3429,7 @@ class SqlZenStore(BaseZenStore):
             The number of pipeline runs in the workspace.
         """
         return self._count_entity(
-            schema=PipelineRunSchema,
-            workspace_id=workspace_id
+            schema=PipelineRunSchema, workspace_id=workspace_id
         )
 
     def update_run(
@@ -5159,6 +5136,27 @@ class SqlZenStore(BaseZenStore):
     # =======================
     # Internal helper methods
     # =======================
+
+    def _count_entity(
+        self, schema: Type[BaseSchema], workspace_id: Optional[UUID]
+    ) -> int:
+        """Return count of a given entity, optionally scoped to workspace.
+
+        Args:
+            schema: Schema of the Entity
+            workspace_id: (Optional) ID of the workspace scope
+
+        Returns:
+            Count of the entity as integer.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(schema.id))
+            if workspace_id and hasattr(schema, "workspace_id"):
+                query = query.filter(schema.workspace_id == workspace_id)
+
+            entity_count = query.scalar()
+        return int(entity_count)
+
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],

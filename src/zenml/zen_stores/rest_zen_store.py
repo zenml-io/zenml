@@ -16,7 +16,6 @@ import os
 import re
 from pathlib import Path, PurePath
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -173,9 +172,6 @@ from zenml.zen_stores.secrets_stores.rest_secrets_store import (
 )
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -495,17 +491,6 @@ class RestZenStore(BaseZenStore):
             filter_model=stack_filter_model,
         )
 
-    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
-        """List all stacks matching the given filter criteria.
-
-        Args:
-            workspace_id: The workspace to use for counting stacks
-
-        Returns:
-            The number of stacks in the workspace.
-        """
-        raise NotImplementedError
-
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
@@ -595,17 +580,6 @@ class RestZenStore(BaseZenStore):
             response_model=ComponentResponseModel,
             filter_model=component_filter_model,
         )
-
-    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
-        """Count all components, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting components
-
-        Returns:
-            The number of components in the workspace.
-        """
-        raise NotImplementedError
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -773,24 +747,6 @@ class RestZenStore(BaseZenStore):
         else:
             body = self.get(CURRENT_USER)
             return UserResponseModel.parse_obj(body)
-
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> "UserAuthModel":
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Raises:
-            NotImplementedError: This method is only available for the
-                SQLZenStore.
-        """
-        raise NotImplementedError(
-            "This method is only designed for use"
-            " by the server endpoints. It is not designed"
-            " to be called from the client side."
-        )
 
     def list_users(
         self, user_filter_model: UserFilterModel
@@ -1294,17 +1250,6 @@ class RestZenStore(BaseZenStore):
             filter_model=pipeline_filter_model,
         )
 
-    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipelines, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipelines
-
-        Returns:
-            The number of pipelines in the workspace.
-        """
-        raise NotImplementedError
-
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self, pipeline_id: UUID, pipeline_update: PipelineUpdateModel
@@ -1633,17 +1578,6 @@ class RestZenStore(BaseZenStore):
             response_model=PipelineRunResponseModel,
             filter_model=runs_filter_model,
         )
-
-    def count_runs(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipeline runs, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipeline runs
-
-        Returns:
-            The number of pipeline runs in the workspace.
-        """
-        raise NotImplementedError
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
