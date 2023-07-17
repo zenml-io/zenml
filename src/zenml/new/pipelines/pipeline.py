@@ -720,15 +720,16 @@ class Pipeline:
             # Log about the user, stack and components
             logger.info(f"Using user: `{deployment_model.user.name}`")
 
-            logger.info(f"Using stack: `{deployment_model.stack.name}`")
+            if deployment_model.stack is not None:
+                logger.info(f"Using stack: `{deployment_model.stack.name}`")
 
-            for (
-                component_type,
-                component_models,
-            ) in deployment_model.stack.components.items():
-                logger.info(
-                    f"  {component_type.value}: `{component_models[0].name}`"
-                )
+                for (
+                    component_type,
+                    component_models,
+                ) in deployment_model.stack.components.items():
+                    logger.info(
+                        f"  {component_type.value}: `{component_models[0].name}`"
+                    )
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
