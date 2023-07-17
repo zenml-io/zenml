@@ -584,13 +584,12 @@ def track(
     tracking analytics.
 
     Args:
-        func: Function that is decorated.
         event: Event string to stamp with.
         v1: Flag to determine whether analytics v1 is included.
         v2: Flag to determine whether analytics v2 is included.
 
     Returns:
-        Decorated function.
+        A decorator that applies the analytics tracking to a function.
     """
 
     def inner_decorator(func: F) -> F:
