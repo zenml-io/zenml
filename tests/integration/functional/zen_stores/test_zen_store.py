@@ -1052,8 +1052,7 @@ def test_count_runs():
     # At baseline this should be the same
     assert store.count_runs(workspace_id=active_workspace.id) == num_runs
 
-    num_runs = 5
-    with PipelineRunContext(num_runs):
+    with PipelineRunContext(5):
         assert (
             store.count_runs(workspace_id=active_workspace.id)
             == store.list_runs(
