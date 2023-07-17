@@ -29,7 +29,8 @@ from zenml.logger import get_logger
 from zenml.logging import (
     LOGS_HANDLER_INTERVAL_SECONDS,
     LOGS_HANDLER_MAX_MESSAGES,
-    STEP_LOGGER_NAME,
+    STEP_STDERR_LOGGER_NAME,
+    STEP_STDOUT_LOGGER_NAME,
 )
 from zenml.utils.io_utils import is_remote
 
@@ -85,7 +86,7 @@ class StepStdOut(StringIO):
     Right now, this is only used during the execution of a ZenML step.
     """
 
-    stdout_logger = logging.getLogger(STEP_LOGGER_NAME)
+    stdout_logger = logging.getLogger(STEP_STDOUT_LOGGER_NAME)
 
     def write(self, message: str) -> int:
         """Write the incoming string as an info log entry.
@@ -95,6 +96,28 @@ class StepStdOut(StringIO):
         """
         if message != "\n":
             self.stdout_logger.info(message)
+        return len(message)
+
+
+class StepStdErr(StringIO):
+    """A replacement for the sys.stderr to turn outputs into logging entries.
+
+    When used in combination with the ZenHandler, this class allows us to
+    capture any stderr outputs as logs and store them in the artifact store.
+
+    Right now, this is only used during the execution of a ZenML step.
+    """
+
+    stderr_logger = logging.getLogger(STEP_STDERR_LOGGER_NAME)
+
+    def write(self, message: str) -> int:
+        """Write the incoming string as an info log entry.
+
+        Args:
+            message: the incoming message string,
+        """
+        if message != "\n":
+            self.stderr_logger.info(message)
         return len(message)
 
 
@@ -110,8 +133,12 @@ class StepLoggingFormatter(logging.Formatter):
         Returns:
             the formatted string
         """
-        if record.name == STEP_LOGGER_NAME:
+        if record.name == STEP_STDOUT_LOGGER_NAME:
             record.levelname = "STDOUT"
+
+        if record.name == STEP_STDERR_LOGGER_NAME:
+            record.levelname = "STDERR"
+
         return super().format(record)
 
 
