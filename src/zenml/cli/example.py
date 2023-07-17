@@ -31,8 +31,8 @@ from zenml.cli.utils import (
     declare,
     error,
     print_table,
-    warning,
     warn_deprecated_example_subcommand,
+    warning,
 )
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
