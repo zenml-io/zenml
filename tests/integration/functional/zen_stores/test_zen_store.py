@@ -83,6 +83,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_USERNAME,
     DEFAULT_WORKSPACE_NAME,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
 
@@ -667,6 +668,8 @@ def test_count_stack_components():
     """Tests that the count stack_component command returns the correct amount."""
     client = Client()
     store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
 
     count_before = store.list_stack_components(
@@ -685,16 +688,6 @@ def test_count_stack_components():
             store.count_stack_components(workspace_id=active_workspace.id)
             == count_before + 1
         )
-
-
-def test_list_stack_components_works_with_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
-
-
-def test_list_stack_components_lists_nothing_for_nonexistent_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
 
 
 # .-------------------------.
@@ -1043,6 +1036,8 @@ def test_count_runs():
     """Tests that the count runs command returns the correct amount."""
     client = Client()
     store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
 
     num_runs = store.list_runs(
