@@ -1,5 +1,7 @@
 from typing import Annotated
 
+import pandas as pd
+
 from zenml import step
 from zenml.services import BaseService
 
