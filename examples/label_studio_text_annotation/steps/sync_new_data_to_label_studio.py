@@ -11,20 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Label Studio config generators submodule."""
+from steps.get_or_create_dataset import LABELS
 
-from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
-    generate_basic_ocr_label_config,
-    generate_basic_object_detection_bounding_boxes_label_config,
-    generate_image_classification_label_config,
+from zenml.integrations.label_studio.label_config_generators import (
     generate_text_classification_label_config,
-    TASK_TO_FILENAME_REFERENCE_MAPPING,
+)
+from zenml.integrations.label_studio.steps import (
+    LabelStudioDatasetSyncParameters,
+    sync_new_data_to_label_studio,
 )
 
-__all__ = [
-    "generate_basic_ocr_label_config"
-    "generate_basic_object_detection_bounding_boxes_label_config",
-    "generate_image_classification_label_config",
-    "generate_text_classification_label_config",
-    "TASK_TO_FILENAME_REFERENCE_MAPPING",
-]
+TEXT_REGEX_FILTER = ".*txt"
+
+
+_, label_config_type = generate_text_classification_label_config(LABELS)
+
+
+zenml_sync_params = LabelStudioDatasetSyncParameters(
+    label_config_type=label_config_type,
+    regex_filter=TEXT_REGEX_FILTER,
+)
+
+data_sync = sync_new_data_to_label_studio(
+    params=zenml_sync_params,
+)

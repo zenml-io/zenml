@@ -11,20 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Label Studio config generators submodule."""
-
-from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
-    generate_basic_ocr_label_config,
-    generate_basic_object_detection_bounding_boxes_label_config,
-    generate_image_classification_label_config,
+from zenml.integrations.label_studio.label_config_generators import (
     generate_text_classification_label_config,
-    TASK_TO_FILENAME_REFERENCE_MAPPING,
+)
+from zenml.integrations.label_studio.steps import (
+    LabelStudioDatasetRegistrationParameters,
+    get_or_create_dataset,
 )
 
-__all__ = [
-    "generate_basic_ocr_label_config"
-    "generate_basic_object_detection_bounding_boxes_label_config",
-    "generate_image_classification_label_config",
-    "generate_text_classification_label_config",
-    "TASK_TO_FILENAME_REFERENCE_MAPPING",
-]
+LABELS = ["positive", "neutral", "negative"]
+
+label_config, _ = generate_text_classification_label_config(LABELS)
+
+label_studio_registration_params = LabelStudioDatasetRegistrationParameters(
+    label_config=label_config,
+    dataset_name="sentiment_classification",
+)
+
+get_or_create_the_dataset = get_or_create_dataset(
+    label_studio_registration_params
+)
