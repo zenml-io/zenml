@@ -16,7 +16,6 @@ import os
 import re
 from pathlib import Path, PurePath
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -173,9 +172,6 @@ from zenml.zen_stores.secrets_stores.rest_secrets_store import (
 )
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -751,24 +747,6 @@ class RestZenStore(BaseZenStore):
         else:
             body = self.get(CURRENT_USER)
             return UserResponseModel.parse_obj(body)
-
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> "UserAuthModel":
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Raises:
-            NotImplementedError: This method is only available for the
-                SQLZenStore.
-        """
-        raise NotImplementedError(
-            "This method is only designed for use"
-            " by the server endpoints. It is not designed"
-            " to be called from the client side."
-        )
 
     def list_users(
         self, user_filter_model: UserFilterModel
