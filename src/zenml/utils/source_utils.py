@@ -308,7 +308,7 @@ def is_distribution_package_file(file_path: str, module_name: str) -> bool:
         if Path(path).resolve() in absolute_file_path.parents:
             return True
 
-    # TODO: The previous checks does not detect editable installs because
+    # TODO: The previous check does not detect editable installs because
     # the site packages dir only contains a reference to the source files,
     # not the actual files. That means currently editable installs get a
     # source type UNKNOWN which might or might not lead to issues.
