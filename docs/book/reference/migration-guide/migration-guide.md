@@ -2,6 +2,8 @@
 description: How to migrate your ZenML code to the newest version.
 ---
 
+# ♻️ Migration Guide
+
 Migrations are necessary for ZenML releases that include breaking changes, which
 are currently all releases that increment the minor version of the release, 
 e.g., `0.X` -> `0.Y`. Furthermore, all releases that increment the first 

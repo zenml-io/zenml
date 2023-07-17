@@ -107,10 +107,6 @@
   * [Model Registries](user-guide/component-guide/model-registries/model-registries.md)
     * [MLflow Model Registry](user-guide/component-guide/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](user-guide/component-guide/model-registries/custom.md)
-* [♻️ Migration Guide](user-guide/migration-guide/migration-guide.md)
-  * [Migration Guide from 0.13.2 to 0.20.0](user-guide/migration-guide/migration-zero-twenty.md)
-  * [Migration Guide from 0.23.0 to 0.30.0](user-guide/migration-guide/migration-zero-thirty.md)
-  * [Migration Guide from 0.39.1 to 0.41.0](user-guide/migration-guide/migration-zero-forty.md)
 
 ## Platform Guide
 
@@ -161,5 +157,9 @@
 
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
+* [♻️ Migration Guide](reference/migration-guide/migration-guide.md)
+  * [Migration Guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
+  * [Migration Guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
+  * [Migration Guide 0.39.1 → 0.41.0](reference/migration-guide/migration-zero-forty.md)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)
