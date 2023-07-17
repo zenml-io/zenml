@@ -7,7 +7,7 @@ step interface with major changes in how step outputs are defined, how
 information about previous runs can be fetched programmatically, and how
 information about the current run can be obtained.
 
-See [this docs page](https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps)
+See [this docs page](https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.md)
 for an overview of all pipeline interface changes introduced since release
 0.40.0 and for more information on how to migrate your existing ZenML pipelines 
 to the latest syntax.

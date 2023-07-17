@@ -36,7 +36,6 @@
   * [Scale compute to the cloud](user-guide/advanced-guide/scale-compute-to-the-cloud.md)
   * [Debug and solve issues](user-guide/advanced-guide/debug-and-solve-issues.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-settings-of-zenml.md)
-  * [Migrate your old pipelines and steps](user-guide/advanced-guide/migrate-your-old-pipelines-and-steps.md)
 * [📜 Component guide](user-guide/component-guide/component-guide.md)
   * [Integration overview](user-guide/component-guide/integration-overview.md)
   * [Orchestrators](user-guide/component-guide/orchestrators/orchestrators.md)
@@ -108,6 +107,10 @@
   * [Model Registries](user-guide/component-guide/model-registries/model-registries.md)
     * [MLflow Model Registry](user-guide/component-guide/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](user-guide/component-guide/model-registries/custom.md)
+* [♻️ Migration Guide](user-guide/migration-guide/migration-guide.md)
+  * [Migration Guide from 0.13.2 to 0.20.0](user-guide/migration-guide/migration-zero-twenty.md)
+  * [Migration Guide from 0.23.0 to 0.30.0](user-guide/migration-guide/migration-zero-thirty.md)
+  * [Migration Guide from 0.39.1 to 0.41.0](user-guide/migration-guide/migration-zero-forty.md)
 
 ## Platform Guide
 
