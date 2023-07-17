@@ -2,7 +2,7 @@
 description: How to migrate your ZenML pipelines and steps from version <=0.39.1 to 0.41.0.
 ---
 
-# Migration Guide 0.39.1 → 0.41.0
+# Migration guide 0.39.1 → 0.41.0
 
 ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to define ZenML steps and pipelines. This page contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
 
@@ -10,7 +10,7 @@ ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to def
 Newer versions of ZenML still work with pipelines and steps defined using the old syntax, but the old syntax is deprecated and will be removed in the future.
 {% endhint %}
 
-### Overview
+## Overview
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -90,7 +90,7 @@ int_output = last_run.steps["my_step"].outputs["int_output"].load()
 {% endtab %}
 {% endtabs %}
 
-### Defining steps
+## Defining steps
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -137,7 +137,7 @@ def my_pipeline():
 
 Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#parameters-for-your-steps) for more information on how to parameterize your steps.
 
-### Calling a step outside of a pipeline
+## Calling a step outside of a pipeline
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -165,7 +165,7 @@ my_step()  # New: Call the step directly `step(...)`
 {% endtab %}
 {% endtabs %}
 
-### Defining pipelines
+## Defining pipelines
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -193,7 +193,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-### Configuring pipelines
+## Configuring pipelines
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -233,7 +233,7 @@ my_pipeline = my_pipeline.with_options(enable_cache=False)
 {% endtab %}
 {% endtabs %}
 
-### Running pipelines
+## Running pipelines
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -272,7 +272,7 @@ my_pipeline()  # New: Call the pipeline
 {% endtab %}
 {% endtabs %}
 
-### Scheduling pipelines
+## Scheduling pipelines
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -318,7 +318,7 @@ my_pipeline()
 
 Check out [this page](../../user-guide/migration-guide/schedule-pipeline-runs.md) for more information on how to schedule your pipelines.
 
-### Fetching pipelines after execution
+## Fetching pipelines after execution
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -355,7 +355,7 @@ loaded_model = model.load()
 
 Check out [this page](../../user-guide/migration-guide/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
 
-### Controlling the step execution order
+## Controlling the step execution order
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -387,7 +387,7 @@ def my_pipeline():
 
 Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#control-the-execution-order) for more information on how to control the step execution order.
 
-### Defining steps with multiple outputs
+## Defining steps with multiple outputs
 
 {% tabs %}
 {% tab title="Old Syntax" %}
@@ -426,7 +426,7 @@ def my_step() -> Tuple[
 
 Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#type-annotations) for more information on how to annotate your step outputs.
 
-### Accessing run information inside steps
+## Accessing run information inside steps
 
 {% tabs %}
 {% tab title="Old Syntax" %}

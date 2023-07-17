@@ -2,7 +2,7 @@
 description: How to migrate from ZenML <=0.13.2 to 0.20.0.
 ---
 
-# Migration Guide 0.13.2 → 0.20.0
+# Migration guide 0.13.2 → 0.20.0
 
 The ZenML 0.20.0 release brings a number of big changes to its architecture and its features, some of which are not backwards compatible with previous versions. This guide walks you through these changes and offers instructions on how to migrate your existing ZenML stacks and pipelines to the new version with minimal effort and disruption to your existing workloads.
 
@@ -20,7 +20,7 @@ High-level overview of the changes:
 * the [configuration of Stack Components is now decoupled from their implementation](migration-zero-twenty.md#decoupling-stack-component-configuration-from-implementation). If you extended ZenML with custom stack component implementations, you may need to update the way they are registered in ZenML.
 * the updated ZenML server provides a new and improved collaborative experience. When connected to a ZenML server, you can now [share your ZenML Stacks and Stack Components](migration-zero-twenty.md#shared-zenml-stacks-and-stack-components) with other users. If you were previously using the ZenML Profiles or the ZenML server to share your ZenML Stacks, you should switch to the new ZenML server and Dashboard and update your existing workflows to reflect the new features.
 
-### ZenML takes over the Metadata Store role
+## ZenML takes over the Metadata Store role
 
 ZenML can now run [as a server](../../user-guide/getting-started/core-concepts.md#zenml-server-and-dashboard) that can be accessed via a REST API and also comes with a visual user interface (called the ZenML Dashboard). This server can be deployed in arbitrary environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports user management, workspace scoping, and more.
 
@@ -58,7 +58,7 @@ The ZenML Server inherits the same limitations that the Metadata Store had prior
 It is therefore recommended that you always use a ZenML deployment that is located as close as possible to and reachable from where your pipelines and step operators are running. This will ensure the best possible performance and usability.
 {% endhint %}
 
-#### 👣 How to migrate pipeline runs from your old metadata stores
+### 👣 How to migrate pipeline runs from your old metadata stores
 
 {% hint style="info" %}
 The `zenml pipeline runs migrate` CLI command is only available under ZenML versions \[0.21.0, 0.21.1, 0.22.0]. If you want to migrate your existing ZenML runs from `zenml<0.20.0` to `zenml>0.22.0`, please first upgrade to `zenml==0.22.0` and migrate your runs as shown below, then upgrade to the newer version.
@@ -86,7 +86,7 @@ zenml pipeline runs migrate DATABASE_NAME \
   --mysql_password=MYSQL_PASSWORD
 ```
 
-#### 💾 The New Way (CLI Command Cheat Sheet)
+### 💾 The New Way (CLI Command Cheat Sheet)
 
 **Deploy the server**
 
@@ -104,7 +104,7 @@ zenml pipeline runs migrate DATABASE_NAME \
 
 `zenml status`
 
-### The ZenML Dashboard is now available
+## The ZenML Dashboard is now available
 
 The new ZenML Dashboard is now bundled into the ZenML Python package and can be launched directly from Python. The source code lives in the [ZenML Dashboard repository](https://github.com/zenml-io/zenml-dashboard).
 
@@ -126,7 +126,7 @@ The Dashboard will be available at `http://localhost:8237` by default:
 
 For more details on other possible deployment options, see the [ZenML deployment documentation](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md), and/or follow the [starter guide](../../user-guide/starter-guide/pipelines/pipelines.md) to learn more.
 
-### Removal of Profiles and the local YAML database
+## Removal of Profiles and the local YAML database
 
 Prior to 0.20.0, ZenML used used a set of local YAML files to store information about the Stacks and Stack Components that were registered on your machine. In addition to that, these Stacks could be grouped together and organized under individual Profiles.
 
@@ -136,7 +136,7 @@ Profiles and the local YAML database have both been deprecated and removed in Ze
 Since the local YAML database is no longer used by ZenML 0.20.0, you will lose all the Stacks and Stack Components that you currently have configured when you update to ZenML 0.20.0. If you still want to use these Stacks, you will need to [manually migrate](migration-zero-twenty.md#how-to-migrate-your-profiles) them after the update.
 {% endhint %}
 
-#### 👣 How to migrate your Profiles
+### 👣 How to migrate your Profiles
 
 If you're already using ZenML, you can migrate your existing Profiles to the new ZenML 0.20.0 paradigm by following these steps:
 
@@ -275,13 +275,13 @@ You are running with a non-default project 'zenprojects'. Any stacks, components
 
 The `zenml profile migrate` CLI command also provides command line flags for cases in which the user wants to overwrite existing components or stacks, or ignore errors.
 
-### Decoupling Stack Component configuration from implementation
+## Decoupling Stack Component configuration from implementation
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
 If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../user-guide/advanced-guide/stacks/custom-flavors.md) for updated information on how to do this.
 
-### Shared ZenML Stacks and Stack Components
+## Shared ZenML Stacks and Stack Components
 
 With collaboration being the key part of ZenML, the 0.20.0 release puts the concepts of Users in the front and center and introduces the possibility to share stacks and stack components with other users by means of the ZenML server.
 
@@ -298,15 +298,15 @@ We also introduce the notion of `local` vs `non-local` stack components. Local s
 
 Read more about shared stacks in the new [starter guide](../../user-guide/starter-guide/stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server).
 
-### Other changes
+## Other changes
 
-#### The `Repository` class is now called `Client`
+### The `Repository` class is now called `Client`
 
 The `Repository` object has been renamed to `Client` to better capture its functionality. You can continue to use the `Repository` object for backwards compatibility, but it will be removed in a future release.
 
 **How to migrate**: Rename all references to `Repository` in your code to `Client`.
 
-#### The `BaseStepConfig` class is now called `BaseParameters`
+### The `BaseStepConfig` class is now called `BaseParameters`
 
 The `BaseStepConfig` object has been renamed to `BaseParameters` to better capture its functionality. You can NOT continue to use the `BaseStepConfig`.
 
@@ -314,7 +314,7 @@ This is part of a broader configuration rehaul which is discussed next.
 
 **How to migrate**: Rename all references to `BaseStepConfig` in your code to `BaseParameters`.
 
-#### Configuration Rework
+### Configuration Rework
 
 Alongside the architectural shift, Pipeline configuration has been completely rethought. This video gives an overview of how configuration has changed with ZenML in the post ZenML 0.20.0 world.
 
@@ -425,7 +425,7 @@ All the aforementioned configurations as well as additional information required
 
 **How to migrate**: If you have written a [custom orchestrator](../../user-guide/component-gallery/orchestrators/custom.md) or [step operator](../../user-guide/component-gallery/step-operators/custom.md), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
 
-#### `PipelineSpec` now uniquely defines pipelines
+### `PipelineSpec` now uniquely defines pipelines
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that uniquely identifies it. Therefore, users are no longer able to edit a pipeline once it has been run once. There are now three options to get around this:
 
@@ -435,7 +435,7 @@ Once a pipeline has been executed, it is represented by a `PipelineSpec` that un
 
 **How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](../../user-guide/starter-guide/pipelines/parameters-and-caching.md).
 
-#### New post-execution workflow
+### New post-execution workflow
 
 The Post-execution workflow has changed as follows:
 
