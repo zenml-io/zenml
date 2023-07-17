@@ -1,7 +1,8 @@
-from typing import Annotated, Tuple
+from typing import Tuple
 
 import pandas as pd
 from sklearn.base import ClassifierMixin
+from typing_extensions import Annotated
 
 from zenml import step
 
