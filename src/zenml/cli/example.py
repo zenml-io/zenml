@@ -881,6 +881,12 @@ def run(
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
     """
+    # Log deprecation warning
+    logger.warning(
+        "The `example` CLI is going to be deprecated soon after 01/08/2023 "
+        "and will be no longer maintained by the ZenML core team after that."
+    )
+
     check_for_version_mismatch(git_examples_handler)
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
