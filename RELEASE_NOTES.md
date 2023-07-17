@@ -1,5 +1,38 @@
 <!-- markdown-link-check-disable -->
 
+# 0.41.1
+
+This release is a minor maintenance release containing mostly documentation
+improvements and bug fixes.
+
+## What's Changed
+* Add missing quote in docs by @schustmi in https://github.com/zenml-io/zenml/pull/1674
+* Update Local Docker orchestrator docs by @strickvl in https://github.com/zenml-io/zenml/pull/1676
+* Relax `fastapi` dependency version by @fa9r in https://github.com/zenml-io/zenml/pull/1675
+* Improve flavor registration error message by @schustmi in https://github.com/zenml-io/zenml/pull/1671
+* Simplified Page Iteration by @fa9r in https://github.com/zenml-io/zenml/pull/1679
+* Document how to deploy ZenML with custom Docker image by @fa9r in https://github.com/zenml-io/zenml/pull/1672
+* Document the ZenML Client and Models by @fa9r in https://github.com/zenml-io/zenml/pull/1678
+* Add Label Studio text classification integration and example by @adamwawrzynski in https://github.com/zenml-io/zenml/pull/1658
+* Improve yaml config docs page by @schustmi in https://github.com/zenml-io/zenml/pull/1680
+* Catch correct exception when trying to access step context by @schustmi in https://github.com/zenml-io/zenml/pull/1681
+* Add option to only export requirements for installed integrations by @schustmi in https://github.com/zenml-io/zenml/pull/1682
+* Fix copy-paste error (Seldon / KServe docstring) by @strickvl in https://github.com/zenml-io/zenml/pull/1687
+* Add avishniakov to `teams.yaml` by @avishniakov in https://github.com/zenml-io/zenml/pull/1688
+* [NEW PR] Set contains_code to 1 instead of True by @kobiche in https://github.com/zenml-io/zenml/pull/1685
+* Misc slack fixes by @schustmi in https://github.com/zenml-io/zenml/pull/1686
+* Docs: Migration Guide by @fa9r in https://github.com/zenml-io/zenml/pull/1691
+* fix: :card_file_box: Extend pipeline spec storage length by @francoisserra in https://github.com/zenml-io/zenml/pull/1694
+* Make the workspace statistics endpoint more performant by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1689
+
+## New Contributors
+* @adamwawrzynski made their first contribution in https://github.com/zenml-io/zenml/pull/1658
+* @avishniakov made their first contribution in https://github.com/zenml-io/zenml/pull/1688
+* @kobiche made their first contribution in https://github.com/zenml-io/zenml/pull/1685
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.41.0...0.41.1
+
+
 # 0.41.0
 
 ZenML release 0.41.0 comes with a second round of updates to the pipeline and
