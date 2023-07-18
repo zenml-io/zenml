@@ -10,9 +10,9 @@ setup_stack () {
   zenml stack register quickstart \
       -a default \
       -o default \
-      -d mlflow_deployer \
-      -r mlflow_registry \
-      -e mlflow_tracker || \
+      -d mlflow_quickstart \
+      -r mlflow_quickstart \
+      -e mlflow_quickstart || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart"
 
   zenml stack set quickstart
