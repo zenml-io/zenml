@@ -36,7 +36,6 @@
   * [Scale compute to the cloud](user-guide/advanced-guide/scale-compute-to-the-cloud.md)
   * [Debug and solve issues](user-guide/advanced-guide/debug-and-solve-issues.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-settings-of-zenml.md)
-  * [Migrate your old pipelines and steps](user-guide/advanced-guide/migrate-your-old-pipelines-and-steps.md)
 * [📜 Component guide](user-guide/component-guide/component-guide.md)
   * [Integration overview](user-guide/component-guide/integration-overview.md)
   * [Orchestrators](user-guide/component-guide/orchestrators/orchestrators.md)
@@ -158,5 +157,9 @@
 
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
+* [♻ Migration guide](reference/migration-guide/migration-guide.md)
+  * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
+  * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
+  * [Migration guide 0.39.1 → 0.41.0](reference/migration-guide/migration-zero-forty.md)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)
