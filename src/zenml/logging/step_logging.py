@@ -92,7 +92,10 @@ class StepStdOut(StringIO):
         """Write the incoming string as an info log entry.
 
         Args:
-            message: the incoming message string,
+            message: the incoming message string
+
+        Returns:
+            the length of the message string
         """
         if message != "\n":
             self.stdout_logger.info(message)
@@ -114,7 +117,10 @@ class StepStdErr(StringIO):
         """Write the incoming string as an info log entry.
 
         Args:
-            message: the incoming message string,
+            message: the incoming message string
+
+        Returns:
+            the length of the message string
         """
         if message != "\n":
             self.stderr_logger.info(message)
