@@ -83,6 +83,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_USERNAME,
     DEFAULT_WORKSPACE_NAME,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
 
@@ -663,14 +664,30 @@ def test_delete_default_stack_component_fails():
         store.delete_stack_component(default_orchestrator.id)
 
 
-def test_list_stack_components_works_with_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
+def test_count_stack_components():
+    """Tests that the count stack_component command returns the correct amount."""
+    client = Client()
+    store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
+    active_workspace = client.active_workspace
 
+    count_before = store.list_stack_components(
+        ComponentFilterModel(scope_workspace=active_workspace.id)
+    ).total
 
-def test_list_stack_components_lists_nothing_for_nonexistent_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
+    assert (
+        store.count_stack_components(workspace_id=active_workspace.id)
+        == count_before
+    )
+
+    with ComponentContext(
+        StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
+    ):
+        assert (
+            store.count_stack_components(workspace_id=active_workspace.id)
+            == count_before + 1
+        )
 
 
 # .-------------------------.
@@ -1012,6 +1029,33 @@ def test_list_runs_is_ordered():
         assert all(
             pipelines[i].created <= pipelines[i + 1].created
             for i in range(len(pipelines) - 1)
+        )
+
+
+def test_count_runs():
+    """Tests that the count runs command returns the correct amount."""
+    client = Client()
+    store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
+    active_workspace = client.active_workspace
+
+    num_runs = store.list_runs(
+        PipelineRunFilterModel(scope_workspace=active_workspace.id)
+    ).total
+
+    # At baseline this should be the same
+    assert store.count_runs(workspace_id=active_workspace.id) == num_runs
+
+    with PipelineRunContext(5):
+        assert (
+            store.count_runs(workspace_id=active_workspace.id)
+            == store.list_runs(
+                PipelineRunFilterModel(scope_workspace=active_workspace.id)
+            ).total
+        )
+        assert (
+            store.count_runs(workspace_id=active_workspace.id) == num_runs + 5
         )
 
 

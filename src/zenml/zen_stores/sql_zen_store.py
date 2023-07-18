@@ -1101,6 +1101,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
+        """Count all stacks, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting stacks
+
+        Returns:
+            The number of stacks in the workspace.
+        """
+        return self._count_entity(
+            schema=StackSchema, workspace_id=workspace_id
+        )
+
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
@@ -1408,6 +1421,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=component_filter_model,
             )
             return paged_components
+
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
+        """Count all components, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting components
+
+        Returns:
+            The number of components in the workspace.
+        """
+        return self._count_entity(
+            schema=StackComponentSchema, workspace_id=workspace_id
+        )
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -2827,6 +2853,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=pipeline_filter_model,
             )
 
+    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipelines, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipelines
+
+        Returns:
+            The number of pipelines in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineSchema, workspace_id=workspace_id
+        )
+
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self,
@@ -3379,6 +3418,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=runs_filter_model,
                 custom_schema_to_model_conversion=self._run_schema_to_model,
             )
+
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipeline runs, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipeline runs
+
+        Returns:
+            The number of pipeline runs in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineRunSchema, workspace_id=workspace_id
+        )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
@@ -5084,6 +5136,27 @@ class SqlZenStore(BaseZenStore):
     # =======================
     # Internal helper methods
     # =======================
+
+    def _count_entity(
+        self, schema: Type[BaseSchema], workspace_id: Optional[UUID]
+    ) -> int:
+        """Return count of a given entity, optionally scoped to workspace.
+
+        Args:
+            schema: Schema of the Entity
+            workspace_id: (Optional) ID of the workspace scope
+
+        Returns:
+            Count of the entity as integer.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(schema.id))
+            if workspace_id and hasattr(schema, "workspace_id"):
+                query = query.filter(schema.workspace_id == workspace_id)
+
+            entity_count = query.scalar()
+        return int(entity_count)
+
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],

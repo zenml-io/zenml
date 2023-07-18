@@ -2451,3 +2451,11 @@ def print_model_url(url: Optional[str]) -> None:
             "You can try it locally, by running `zenml up`, or remotely, "
             "by deploying ZenML on the infrastructure of your choice."
         )
+
+
+def warn_deprecated_example_subcommand() -> None:
+    """Warning for deprecating example subcommand."""
+    warning(
+        "The `example` CLI subcommand has been deprecated and will be removed "
+        "in a future release."
+    )
