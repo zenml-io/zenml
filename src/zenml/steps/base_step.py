@@ -880,7 +880,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
             elif not self.entrypoint_definition.legacy_params:
                 raise StepInterfaceError(
-                    "Can't set parameter without param class."
+                    f"Unable to find parameter '{key}' in step function "
+                    "signature."
                 )
 
     def _validate_outputs(

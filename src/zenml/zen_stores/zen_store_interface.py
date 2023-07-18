@@ -75,7 +75,6 @@ from zenml.models import (
     TeamRoleAssignmentRequestModel,
     TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
-    UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
@@ -449,19 +448,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> UserAuthModel:
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Returns:
-            The requested user, if it was found.
         """
 
     @abstractmethod
