@@ -137,7 +137,11 @@ class StepLauncher:
         self._step_name = step.spec.pipeline_parameter_name
 
     def launch(self) -> None:
-        """Launches the step."""
+        """Launches the step.
+
+        Raises:
+            Exception: If the step failed to launch, run, or publish.
+        """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Set up logging
