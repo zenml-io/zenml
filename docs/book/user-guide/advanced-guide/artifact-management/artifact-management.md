@@ -2,7 +2,7 @@
 description: Managing your data with ZenML.
 ---
 
-# Data versioning and artifacts management
+# Artifact Management
 
 ZenML seamlessly integrates data versioning and lineage into its core functionality. When a pipeline is executed, each run generates automatically tracked and managed artifacts. One can easily [view the entire lineage](../starter-guide/fetch-runs-after-execution.md) of how artifacts are created and interact with them. The dashboard is also a way to interact with the artifacts produced by different pipeline runs. ZenML's artifact management, caching, lineage tracking, and visualization capabilities can help gain valuable insights, streamline the experimentation process, and ensure the reproducibility and reliability of machine learning workflows.
 
