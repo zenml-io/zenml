@@ -475,7 +475,7 @@ class BaseZenStore(
                 user_name_or_id=self.get_user().id,
             )
         except KeyError:
-            return self._create_default_stack(  # type: ignore[no-any-return]
+            return self._create_default_stack(
                 workspace_name_or_id=workspace.id,
                 user_name_or_id=self.get_user().id,
             )
@@ -484,7 +484,7 @@ class BaseZenStore(
         try:
             return self._default_workspace
         except KeyError:
-            return self._create_default_workspace()  # type: ignore[no-any-return]
+            return self._create_default_workspace()
 
     # --------------
     # Event Handlers

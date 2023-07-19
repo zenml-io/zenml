@@ -2479,3 +2479,10 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
             f'the "sort_by" option: {e}'
         )
         return False
+
+
+def warn_deprecated_example_subcommand() -> None:
+    """Warning for deprecating example subcommand."""
+    warning(
+        "The `example` CLI subcommand has been deprecated and will be removed in a future release."
+    )
