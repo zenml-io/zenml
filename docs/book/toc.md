@@ -29,7 +29,7 @@
     * [Handle custom data types](user-guide/advanced-guide/artifact-management/handle-custom-data-types.md)
     * [Visualize artifacts](user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
   * [Environment Management](user-guide/advanced-guide/environment-management/environment-management.md)
-  * * [Use the Client](user-guide/advanced-guide/environment-management/client.md)
+    * [Use the Client](user-guide/advanced-guide/environment-management/client.md)
     * [Use the Hub](user-guide/advanced-guide/environment-management/hub.md)
     * [Containerize your pipeline](user-guide/advanced-guide/environment-management/containerize-your-pipeline.md)
     * [Connect your git repository](user-guide/advanced-guide/environment-management/connect-your-git-repository.md)
