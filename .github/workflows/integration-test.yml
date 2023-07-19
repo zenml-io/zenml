@@ -41,7 +41,6 @@ on:
         description: 'Python version'
         type: choice
         options:
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
@@ -176,6 +175,10 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
+
+      - name: Install docker-compose for non-default environments
+        if: inputs.test_environment != 'default'
+        run: pip install docker-compose
 
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
