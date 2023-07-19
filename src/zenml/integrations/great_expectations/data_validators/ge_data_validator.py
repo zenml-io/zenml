@@ -378,7 +378,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 pipeline_name = step_context.pipeline.name
                 step_name = step_context.step_run.name
                 expectation_suite_name = f"{pipeline_name}_{step_name}"
-            except KeyError:
+            except RuntimeError:
                 raise ValueError(
                     "A expectation suite name is required when not running in "
                     "the context of a pipeline step."
@@ -481,7 +481,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             step_context = get_step_context()
             run_name = step_context.pipeline_run.name
             step_name = step_context.step_run.name
-        except KeyError:
+        except RuntimeError:
             # if not running inside a pipeline step, use random values
             run_name = f"pipeline_{random_str(5)}"
             step_name = f"step_{random_str(5)}"

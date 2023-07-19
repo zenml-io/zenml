@@ -98,7 +98,7 @@ client.list_pipeline_runs(
 ```
 
 These methods always return a 
-[Page](https://sdkdocs.zenml.io/0.41.0/core_code_docs/core-models/#zenml.models.page_model)
+[Page](https://sdkdocs.zenml.io/latest/core_code_docs/core-models/#zenml.models.page_model)
 of resources, which behaves like a standard Python list and contains, by 
 default, the first 50 results. You can modify the page size by passing the 
 `size` argument or fetch a subsequent page by passing the `page` argument to the 

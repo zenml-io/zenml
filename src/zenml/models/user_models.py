@@ -380,6 +380,8 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         Returns:
             The user that generated the token if valid, None otherwise.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         try:
             access_token = JWTToken.decode(
                 token_type=JWTTokenType.ACCESS_TOKEN, token=token
@@ -388,6 +390,8 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
             return None
 
         zen_store = GlobalConfiguration().zen_store
+        if not isinstance(zen_store, SqlZenStore):
+            return None
         try:
             user = zen_store.get_auth_user(
                 user_name_or_id=access_token.user_id
