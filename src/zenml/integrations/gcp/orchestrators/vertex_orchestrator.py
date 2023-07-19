@@ -33,12 +33,11 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
-import kfp
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from kfp import dsl
-from kfp.v2 import dsl as dslv2
-from kfp.v2.compiler import Compiler as KFPV2Compiler
+from kfp.compiler import Compiler
+from kfp.components import load_component_from_text
 
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
@@ -261,14 +260,14 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def _configure_container_resources(
         self,
-        container_op: dsl.ContainerOp,
+        pipeline_task: dsl.PipelineTask,
         resource_settings: "ResourceSettings",
         node_selector_constraint: Optional[Tuple[str, str]] = None,
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
-            container_op: The kubeflow container operation to configure.
+            pipeline_task: The kubeflow pipeline task to configure.
             resource_settings: The resource settings to use for this
                 container.
             node_selector_constraint: Node selector constraint to apply to
@@ -279,7 +278,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         cpu_limit = resource_settings.cpu_count or self.config.cpu_limit
 
         if cpu_limit is not None:
-            container_op = container_op.set_cpu_limit(str(cpu_limit))
+            pipeline_task = pipeline_task.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
             resource_settings.memory[:-1]
@@ -287,7 +286,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             else self.config.memory_limit
         )
         if memory_limit is not None:
-            container_op = container_op.set_memory_limit(memory_limit)
+            pipeline_task = pipeline_task.set_memory_limit(memory_limit)
 
         gpu_limit = (
             resource_settings.gpu_count
@@ -295,7 +294,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             else self.config.gpu_limit
         )
         if gpu_limit is not None and gpu_limit > 0:
-            container_op = container_op.set_gpu_limit(gpu_limit)
+            pipeline_task = pipeline_task.set_gpu_limit(gpu_limit)
 
         if node_selector_constraint:
             constraint_label, value = node_selector_constraint
@@ -304,7 +303,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                 and gpu_limit == 0
             ):
-                container_op.add_node_selector_constraint(
+                pipeline_task.add_node_selector_constraint(
                     constraint_label, value
                 )
 
@@ -314,7 +313,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
-        """Creates a KFP JSON pipeline.
+        """Creates a KFP YAML pipeline.
 
         # noqa: DAR402
 
@@ -328,14 +327,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         the context around these files.
 
         Based on this Docker image a callable is created which builds
-        container_ops for each step (`_construct_kfp_pipeline`). The function
-        `kfp.components.load_component_from_text` is used to create the
-        `ContainerOp`, because using the `dsl.ContainerOp` class directly is
-        deprecated when using the Kubeflow SDK v2. The step entrypoint command
-        with the entrypoint arguments is the command that will be executed by
-        the container created using the previously created Docker image.
+        pipeline tasks for each step (`_construct_kfp_pipeline`).
 
-        This callable is then compiled into a JSON file that is used as the
+        The step entrypoint command with the entrypoint arguments is the command
+        that will be executed by the container created using the previously
+        created Docker image.
+
+        This callable is then compiled into a YAML file that is used as the
         intermediary representation of the Kubeflow pipeline.
 
         This file then is submitted to the Vertex AI Pipelines service for
@@ -377,20 +375,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             self._pipeline_root = self.config.pipeline_root
 
         def _construct_kfp_pipeline() -> None:
-            """Create a `ContainerOp` for each step.
+            """Create a `PipelineTask` for each step.
 
             This should contain the name of the Docker image and configures the
             entrypoint of the Docker image to run the step.
 
-            Additionally, this gives each `ContainerOp` information about its
+            Additionally, this gives each `PipelineTask` information about its
             direct downstream steps.
 
             If this callable is passed to the `compile()` method of
-            `KFPV2Compiler` all `dsl.ContainerOp` instances will be
+            `Compiler` all `PipelineTask` instances will be
             automatically added to a singular `dsl.Pipeline` instance.
             """
             command = StepEntrypointConfiguration.get_entrypoint_command()
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+            step_name_to_pipeline_task: Dict[str, dsl.PipelineTask] = {}
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
@@ -402,10 +400,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     )
                 )
 
-                # Create the `ContainerOp` for the step. Using the
-                # `dsl.ContainerOp`
-                # class directly is deprecated when using the Kubeflow SDK v2.
-                container_op = kfp.components.load_component_from_text(
+                # Create the `PipelineTask` for the step.
+                # @dsl.container_component
+                # def step_component() -> dsl.ContainerSpec:
+                #     return dsl.ContainerSpec(
+                #         image=image,
+                #         command=command,
+                #         args=arguments,
+                #     )
+                # pipeline_task = step_component()  # TODO: where to set name?
+
+                pipeline_task = load_component_from_text(
                     f"""
                     name: {step_name}
                     implementation:
@@ -414,20 +419,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             command: {command + arguments}"""
                 )()
 
-                container_op.set_env_variable(
+                pipeline_task.set_env_variable(
                     name=ENV_ZENML_VERTEX_RUN_ID,
-                    value=dslv2.PIPELINE_JOB_NAME_PLACEHOLDER,
+                    value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
                 )
 
                 for key, value in environment.items():
-                    container_op.set_env_variable(name=key, value=value)
+                    pipeline_task.set_env_variable(name=key, value=value)
 
                 # Set upstream tasks as a dependency of the current step
                 for upstream_step_name in step.spec.upstream_steps:
-                    upstream_container_op = step_name_to_container_op[
+                    upstream_pipeline_tasks = step_name_to_pipeline_task[
                         upstream_step_name
                     ]
-                    container_op.after(upstream_container_op)
+                    pipeline_task.after(upstream_pipeline_tasks)
 
                 settings = cast(
                     VertexOrchestratorSettings,
@@ -435,30 +440,30 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
                 if settings.pod_settings:
                     apply_pod_settings(
-                        container_op=container_op,
+                        pipeline_task=pipeline_task,
                         settings=settings.pod_settings,
                     )
 
                 self._configure_container_resources(
-                    container_op=container_op,
+                    pipeline_task=pipeline_task,
                     resource_settings=step.config.resource_settings,
                     node_selector_constraint=settings.node_selector_constraint,
                 )
-                container_op.set_caching_options(enable_caching=False)
+                pipeline_task.set_caching_options(enable_caching=False)
 
-                step_name_to_container_op[step_name] = container_op
+                step_name_to_pipeline_task[step_name] = pipeline_task
 
         # Save the generated pipeline to a file.
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory,
-            f"{orchestrator_run_name}.json",
+            f"{orchestrator_run_name}.yaml",
         )
 
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
-        # to generate a JSON representation of the pipeline that can be later
+        # to generate a YAML representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        KFPV2Compiler().compile(
+        Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(
@@ -514,7 +519,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             run_name: Orchestrator run name.
             stack: The stack the pipeline will run on.
             schedule: The schedule the pipeline will run on.
-            pipeline_file_path: Path of the JSON file containing the compiled
+            pipeline_file_path: Path of the YAML file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
             settings: Pipeline level settings for this orchestrator.
 
@@ -565,7 +570,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # Copy over the scheduled pipeline to the artifact store
         artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
         artifact_store_pipeline_uri = (
-            f"{artifact_store_base_uri}/vertex_pipeline.json"
+            f"{artifact_store_base_uri}/vertex_pipeline.yaml"
         )
         fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
         logger.info(
@@ -621,7 +626,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         Args:
             pipeline_name: Name of the pipeline.
-            pipeline_file_path: Path of the JSON file containing the compiled
+            pipeline_file_path: Path of the YAML file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.

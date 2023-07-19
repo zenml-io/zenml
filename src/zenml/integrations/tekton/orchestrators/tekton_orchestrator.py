@@ -421,7 +421,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
                 if settings.pod_settings:
                     apply_pod_settings(
-                        container_op=container_op,
+                        pipeline_task=container_op,
                         settings=settings.pod_settings,
                     )
 

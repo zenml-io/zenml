@@ -429,7 +429,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         if settings.pod_settings:
             apply_pod_settings(
-                container_op=container_op, settings=settings.pod_settings
+                pipeline_task=container_op, settings=settings.pod_settings
             )
 
         # Disable caching in KFP v1 only works like this, replace by the second
