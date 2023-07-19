@@ -177,6 +177,10 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
 
+      - name: Install docker-compose for non-default environments
+        if: inputs.test_environment != 'default'
+        run: pip install docker-compose
+
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
         run: sudo apt install graphviz
