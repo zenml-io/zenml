@@ -103,19 +103,9 @@ If you want to learn more about ZenML as a tool, then the
 [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place 
 to get started.
 
-If you are new to MLOps, you might want to take a look at our 
-[**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead 
-where we cover each MLOps concept in much more detail.
-
 Already have an MLOps stack in mind? ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/user-guide/component-guide/integrations) 
-for whatever tools you plan to use. Check out the
-[**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
-to see how to use a specific tool with ZenML.
-
-If you would like to learn more about the various MLOps concepts, check out
-[**:teacher: ZenBytes**](https://github.com/zenml-io/zenbytes),
-our series of short practical MLOps lessons.
+[**:link: Integrations**](https://docs.zenml.io/user-guide/component-guide) 
+for whatever tools you plan to use.
 
 Also, make sure to join our <a href="https://zenml.io/slack-invite" target="_blank">
     <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
