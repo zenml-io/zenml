@@ -10,7 +10,6 @@ from zenml import pipeline
 def deploy_and_predict() -> None:
     """Deploy the best model and run some predictions."""
     prediction_service_loader.after(model_deployer)
-    predictor.after(prediction_service_loader)
 
     model_deployer()
     _, inference_data, _, _ = training_data_loader()
