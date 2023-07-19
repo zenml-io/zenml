@@ -30,7 +30,7 @@ class KubeflowIntegration(Integration):
     """Definition of Kubeflow Integration for ZenML."""
 
     NAME = KUBEFLOW
-    REQUIREMENTS = ["kfp==1.8.16"]
+    REQUIREMENTS = ["kfp==1.8.22"]  # Only 1.x version that supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
