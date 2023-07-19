@@ -24,87 +24,120 @@ from typing import (
     Type,
 )
 
-from zenml.client import Client
-from zenml.environment import Environment
 from zenml.exceptions import StepContextError
+from zenml.logger import get_logger
+from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.stack import Stack
+    from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
+    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.stack.stack import Stack
+
+logger = get_logger(__name__)
 
 
-class StepContextOutput(NamedTuple):
-    """Tuple containing materializer class and URI for a step output."""
+def get_step_context() -> "StepContext":
+    """Get the context of the currently running step.
 
-    materializer_classes: Sequence[Type["BaseMaterializer"]]
-    artifact_uri: str
+    Returns:
+        The context of the currently running step.
+
+    Raises:
+        RuntimeError: If no step is currently running.
+    """
+    if StepContext._exists():
+        return StepContext()  # type: ignore
+    raise RuntimeError(
+        "The step context is only available inside a step function."
+    )
 
 
-class StepContext:
+class StepContext(metaclass=SingletonMetaClass):
     """Provides additional context inside a step function.
 
-    This class is used to access pipelines, materializers, and artifacts
-    inside a step function. To use it, add a `StepContext` object
-    to the signature of your step function like this:
+    This singleton class is used to access information about the current run,
+    step run, or its outputs inside a step function.
+
+    Usage example:
 
     ```python
+    from zenml.steps import get_step_context
+
     @step
-    def my_step(context: StepContext, ...)
-        context.get_output_materializer(...)
+    def my_trainer_step() -> Any:
+        context = get_step_context()
+
+        # get info about the current pipeline run
+        current_pipeline_run = context.pipeline_run
+
+        # get info about the current step run
+        current_step_run = context.step_run
+
+        # get info about the future output artifacts of this step
+        output_artifact_uri = context.get_output_artifact_uri()
+
+        ...
     ```
-
-    You do not need to create a `StepContext` object yourself and pass it
-    when creating the step, as long as you specify it in the signature ZenML
-    will create the `StepContext` and automatically pass it when executing your
-    step.
-
-    **Note**: When using a `StepContext` inside a step, ZenML disables caching
-    for this step by default as the context provides access to external
-    resources which might influence the result of your step execution. To
-    enable caching anyway, explicitly enable it in the `@step` decorator or when
-    initializing your custom step class.
     """
 
     def __init__(
         self,
-        step_name: str,
+        pipeline_run: "PipelineRunResponseModel",
+        step_run: "StepRunResponseModel",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
-    ):
-        """Initializes a StepContext instance.
+        step_run_info: "StepRunInfo",
+        cache_enabled: bool,
+    ) -> None:
+        """Initialize the context of the currently running step.
 
         Args:
-            step_name: The name of the step that this context is used in.
+            pipeline_run: The model of the current pipeline run.
+            step_run: The model of the current step run.
             output_materializers: The output materializers of the step that
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
                 context is used in.
+            step_run_info: (Deprecated) info about the currently running step.
+            cache_enabled: (Deprecated) Whether caching is enabled for the step.
 
         Raises:
             StepContextError: If the keys of the output materializers and
                 output artifacts do not match.
         """
+        from zenml.client import Client
+
+        self.pipeline_run = pipeline_run
+        self.step_run = step_run
+        self._step_run_info = step_run_info
+        self._cache_enabled = cache_enabled
+
+        # Get the stack that we are running in
+        self._stack = Client().active_stack
+
+        self.step_name = self.step_run.name
+
+        # set outputs
         if output_materializers.keys() != output_artifact_uris.keys():
             raise StepContextError(
-                f"Mismatched keys in output materializers and output "
-                f"artifacts URIs for step '{step_name}'. Output materializer "
+                f"Mismatched keys in output materializers and output artifact "
+                f"URIs for step '{self.step_name}'. Output materializer "
                 f"keys: {set(output_materializers)}, output artifact URI "
                 f"keys: {set(output_artifact_uris)}"
             )
-
-        self.step_name = step_name
         self._outputs = {
             key: StepContextOutput(
                 output_materializers[key], output_artifact_uris[key]
             )
             for key in output_materializers.keys()
         }
-        self._stack = Client().active_stack
 
     def _get_output(
         self, output_name: Optional[str] = None
-    ) -> StepContextOutput:
+    ) -> "StepContextOutput":
         """Returns the materializer and artifact URI for a given step output.
 
         Args:
@@ -147,62 +180,113 @@ class StepContext:
             return next(iter(self._outputs.values()))
 
     @property
+    def pipeline(self) -> "PipelineResponseModel":
+        """Returns the current pipeline.
+
+        Returns:
+            The current pipeline or None.
+
+        Raises:
+            StepContextError: If the pipeline run does not have a pipeline.
+        """
+        if self.pipeline_run.pipeline:
+            return self.pipeline_run.pipeline
+        raise StepContextError(
+            f"Unable to get pipeline in step '{self.step_name}' of pipeline "
+            f"run '{self.pipeline_run.id}': This pipeline run does not have "
+            f"a pipeline associated with it."
+        )
+
+    @property
     def stack(self) -> Optional["Stack"]:
-        """Returns the current active stack.
+        """(Deprecated) Returns the current active stack.
 
         Returns:
             The current active stack or None.
         """
+        logger.warning(
+            "`StepContext.stack` is deprecated and will be removed in a "
+            "future release. Please use `Client().active_stack` instead."
+        )
         return self._stack
 
     @property
-    def pipeline_name(self) -> Optional[str]:
-        """Returns the current pipeline name.
+    def pipeline_name(self) -> str:
+        """(Deprecated) Returns the current pipeline name.
 
         Returns:
             The current pipeline name or None.
+
+        Raises:
+            StepContextError: If the pipeline run does not have a pipeline.
         """
-        env = Environment().step_environment
-        return env.pipeline_name
+        logger.warning(
+            "`StepContext.pipeline_name` is deprecated and will be removed in "
+            "a future release. Please use `StepContext.pipeline.name` instead."
+        )
+        if not self.pipeline:
+            raise StepContextError(
+                f"Unable to get pipeline name in step '{self.step_name}' of "
+                f"pipeline run '{self.pipeline_run.name}': The pipeline run "
+                f"does not have a pipeline associated with it."
+            )
+        return self.pipeline.name
 
     @property
     def run_name(self) -> Optional[str]:
-        """Returns the current run name.
+        """(Deprecated) Returns the current run name.
 
         Returns:
             The current run name or None.
         """
-        env = Environment().step_environment
-        return env.run_name
+        logger.warning(
+            "`StepContext.run_name` is deprecated and will be removed in a "
+            "future release. Please use `StepContext.pipeline_run.name` "
+            "instead."
+        )
+        return self.pipeline_run.name
 
     @property
     def parameters(self) -> Dict[str, Any]:
-        """The step parameters.
+        """(Deprecated) The step parameters.
 
         Returns:
             The step parameters.
         """
-        return self.step_run_info.config.parameters
+        logger.warning(
+            "`StepContext.parameters` is deprecated and will be removed in "
+            "a future release. Please use "
+            "`StepContext.step_run.config.parameters` instead."
+        )
+        return self.step_run.config.parameters
 
     @property
     def step_run_info(self) -> "StepRunInfo":
-        """Info about the currently running step.
+        """(Deprecated) Info about the currently running step.
 
         Returns:
             Info about the currently running step.
         """
-        env = Environment().step_environment
-        return env.step_run_info
+        logger.warning(
+            "`StepContext.step_run_info` is deprecated and will be removed in "
+            "a future release. Please use `StepContext.step_run` or "
+            "`StepContext.pipeline_run` to access information about the "
+            "current run instead."
+        )
+        return self._step_run_info
 
     @property
     def cache_enabled(self) -> bool:
-        """Returns whether cache is enabled for the step.
+        """(Deprecated) Returns whether cache is enabled for the step.
 
         Returns:
             True if cache is enabled for the step, otherwise False.
         """
-        env = Environment().step_environment
-        return env.cache_enabled
+        logger.warning(
+            "`StepContext.cache_enabled` is deprecated and will be removed in "
+            "a future release."
+        )
+        return self._cache_enabled
 
     def get_output_materializer(
         self,
@@ -261,3 +345,10 @@ class StepContext:
             Artifact URI for the given output.
         """
         return self._get_output(output_name).artifact_uri
+
+
+class StepContextOutput(NamedTuple):
+    """Tuple containing materializer class and URI for a step output."""
+
+    materializer_classes: Sequence[Type["BaseMaterializer"]]
+    artifact_uri: str

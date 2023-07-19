@@ -25,6 +25,7 @@ TASK_TO_FILENAME_REFERENCE_MAPPING = {
     AnnotationTasks.IMAGE_CLASSIFICATION.value: "image",
     AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES.value: "image",
     AnnotationTasks.OCR.value: "image",
+    AnnotationTasks.TEXT_CLASSIFICATION.value: "image",
 }
 
 
@@ -32,6 +33,45 @@ def _generate_label_config() -> str:
     # TODO [HIGH] Implement label config generator
     # refactoring out duplicated code from the various functions below
     raise NotImplementedError()
+
+
+def generate_text_classification_label_config(
+    labels: List[str],
+) -> Tuple[str, str]:
+    """Generates a Label Studio label config for text classification.
+
+    This is based on the basic config example shown at
+    https://labelstud.io/templates/sentiment_analysis.html.
+
+    Args:
+        labels: A list of labels to be used in the label config.
+
+    Returns:
+        A tuple of the generated label config and the label config type.
+
+    Raises:
+        ValueError: If no labels are provided.
+    """
+    if not labels:
+        raise ValueError("No labels provided")
+
+    label_config_type = AnnotationTasks.TEXT_CLASSIFICATION
+
+    label_config_start = """<View>
+    <Header value="Choose text class:"/>
+    <Text name="text" value="$text"/>
+    <Choices name="class" toName="text" choice="single" showInline="true">
+    """
+    label_config_choices = "".join(
+        f"<Choice value='{label}' />\n" for label in labels
+    )
+    label_config_end = "</Choices>\n</View>"
+
+    label_config = label_config_start + label_config_choices + label_config_end
+    return (
+        label_config,
+        label_config_type,
+    )
 
 
 def generate_image_classification_label_config(

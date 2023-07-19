@@ -62,6 +62,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
+    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -2544,6 +2545,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             component_type: The type of the component.
             configuration: The component configuration to validate.
+
+        Raises:
+            StackComponentValidationError: in case the stack component configuration is invalid.
         """
         from zenml.enums import StoreType
 
@@ -2563,6 +2567,11 @@ class Client(metaclass=ClientMetaClass):
                 "stack component may not be usable from other hosts or by "
                 "other users. You should consider using a non-local stack "
                 "component alternative instead."
+            )
+        if not configuration.is_valid:
+            raise StackComponentValidationError(
+                f"Invalid stack component configuration. please verify "
+                f"the configurations set for {component_type}."
             )
 
     # .---------.

@@ -134,13 +134,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -303,13 +301,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -653,27 +649,22 @@ class Pipeline:
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            if deployment_model:
-                runs = Client().list_pipeline_runs(
-                    deployment_id=deployment_model.id,
-                    sort_by="asc:start_time",
-                    size=1,
-                )
+            runs = Client().list_pipeline_runs(
+                deployment_id=deployment_model.id,
+                sort_by="desc:start_time",
+                size=1,
+            )
 
-                if runs.items:
-                    # Log the dashboard URL
-                    dashboard_utils.print_run_url(
-                        run_name=deployment.run_name_template,
-                        pipeline_id=runs[0].id,
-                    )
-                else:
-                    logger.warning(
-                        f"Your orchestrator '{stack.orchestrator.name}' is "
-                        f"running remotely. Note that the pipeline run will "
-                        f"only show up on the ZenML dashboard once the first "
-                        f"step has started executing on the remote "
-                        f"infrastructure.",
-                    )
+            if runs.items:
+                dashboard_utils.print_run_url(runs[0])
+            else:
+                logger.warning(
+                    f"Your orchestrator '{stack.orchestrator.name}' is "
+                    f"running remotely. Note that the pipeline run will "
+                    f"only show up on the ZenML dashboard once the first "
+                    f"step has started executing on the remote "
+                    f"infrastructure.",
+                )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.

@@ -13,7 +13,7 @@ ZenML to provide your own custom Artifact Store implementation.
 
 The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the
 fundamentals behind its abstraction,
-namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore):
+namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore):
 
 1. As ZenML only supports filesystem-based artifact stores, it features a configuration parameter called `path`, which
    will indicate the root path of the artifact store. When registering an artifact store, users will have to define this
@@ -136,7 +136,7 @@ class BaseArtifactStoreFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see
 the full implementation and get the complete docstrings, please check
-the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
 .
 {% endhint %}
 
@@ -154,7 +154,7 @@ defined within your artifact store.
 If you want to implement your own custom Artifact Store, you can follow the following steps:
 
 1. Create a class that inherits
-   from [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
+   from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore)
    and implements the abstract methods.
 2. Create a class that inherits from [the `BaseArtifactStoreConfig` class](custom.md) and fill in
    the `SUPPORTED_SCHEMES` based on your file system.
@@ -218,12 +218,11 @@ store. This means that your custom artifact store needs to be configured in a wa
 back-end without relying on the local environment, e.g., by embedding the authentication credentials in the stack
 component configuration or by referencing a secret.
 
-Furthermore, for deployed ZenML instances, you need to install the package dependencies of your artifact store
-implementation in the environment where you have deployed ZenML.
-
-You can do so either by building a custom Dockerfile based on
-the [ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile) and using that to
-redeploy your ZenML instance or by installing the respective packages in the deployed environment manually.
+Furthermore, for deployed ZenML instances, you need to install the package 
+dependencies of your artifact store implementation in the environment where you 
+have deployed ZenML. See the
+[Documentation on deploying ZenML with custom Docker images](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
+for more information on how to do that.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

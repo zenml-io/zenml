@@ -16,6 +16,7 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.integrations.evidently.column_mapping import (
@@ -23,7 +24,6 @@ from zenml.integrations.evidently.column_mapping import (
 )
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
-from zenml.steps import Output
 from zenml.types import HTMLString
 
 
@@ -36,9 +36,7 @@ def evidently_test_step(
     tests: Optional[List[EvidentlyTestConfig]] = None,
     test_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     download_nltk_data: bool = False,
-) -> Output(  # type:ignore[valid-type]
-    test_json=str, test_html=HTMLString
-):
+) -> Tuple[Annotated[str, "test_json"], Annotated[HTMLString, "test_html"]]:
     """Run an Evidently test suite on one or two pandas datasets.
 
     Args:
@@ -104,7 +102,7 @@ def evidently_test_step(
         test_options=test_options or [],
         download_nltk_data=download_nltk_data,
     )
-    return [
+    return (
         test_suite.json(),
         HTMLString(test_suite.show(mode="inline").data),
-    ]
+    )

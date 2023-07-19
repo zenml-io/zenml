@@ -72,7 +72,7 @@ A concrete example of using the AWS secrets manager can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
 
 For more information and a full list of configurable attributes of the AWS secrets manager, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.secrets\_managers.aws\_secrets\_manager.AWSSecretsManager)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.secrets\_managers.aws\_secrets\_manager.AWSSecretsManager)
 .
 
 <!-- For scarf -->

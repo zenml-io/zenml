@@ -22,8 +22,7 @@ from PIL import Image
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     DEFAULT_IMAGE_FILENAME,
 )
-from zenml.steps import BaseParameters, Output, step
-from zenml.steps.step_context import StepContext
+from zenml.steps import BaseParameters, Output, StepContext, step
 
 
 class LoadImageDataParameters(BaseParameters):

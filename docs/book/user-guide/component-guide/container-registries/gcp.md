@@ -280,7 +280,7 @@ zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 {% endtabs %}
 
 For more information and a full list of configurable attributes of the GCP container registry, check out
-the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.gcp\_container\_registry.GCPContainerRegistry)
+the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.gcp\_container\_registry.GCPContainerRegistry)
 .
 
 <!-- For scarf -->

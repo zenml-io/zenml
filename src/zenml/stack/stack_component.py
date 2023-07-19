@@ -142,6 +142,18 @@ class StackComponentConfig(BaseModel, ABC):
         return False
 
     @property
+    def is_valid(self) -> bool:
+        """Checks if the stack component configurations are valid.
+
+        Concrete stack component configuration classes should override this
+        method to return False if the stack component configurations are invalid.
+
+        Returns:
+            True if the stack component config is valid, False otherwise.
+        """
+        return True
+
+    @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
 

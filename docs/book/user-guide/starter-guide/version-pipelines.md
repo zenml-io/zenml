@@ -32,12 +32,12 @@ However, now let's change the pipeline configuration itself. You can do this by 
 
 ```python
 @step
-def digits_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
-):
+def digits_data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
     """Loads the digits dataset and splits it into train and test data."""
     # Load data from the digits dataset
     digits = load_digits(as_frame=True)

@@ -183,7 +183,7 @@ The 'dockerhub' Docker Service Connector connector was used to successfully conf
 {% endtabs %}
 
 For more information and a full list of configurable attributes of the Default container registry, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry)
 .
 
 <!-- For scarf -->

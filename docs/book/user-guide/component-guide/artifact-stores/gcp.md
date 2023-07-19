@@ -245,7 +245,7 @@ zenml stack register custom_stack -a gs_store ... --set
 {% endtabs %}
 
 For more, up-to-date information on the GCS Artifact Store implementation and its configuration, you can have a look
-at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.artifact\_stores.gcp\_artifact\_store)
+at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.artifact\_stores.gcp\_artifact\_store)
 .
 
 ### How do you use it?

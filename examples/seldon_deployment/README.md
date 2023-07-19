@@ -240,7 +240,7 @@ prerequisites are met.
 The Seldon model deployer and the AWS S3 artifact store can be deployed using the ZenML CLI as well, using the `zenml
 <STACK_COMPONENT> deploy` command. For more information on this `deploy`
 subcommand, please refer to the
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 #### Local and remote authentication
 
@@ -373,7 +373,7 @@ This stack has all components running in the AWS cloud:
 
 In order to run this example with a remote orchestrator such as Kubeflow, the 
 first thing that you would require is a remote ZenML server deployed to the 
-cloud. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
+cloud. See the [deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) 
 for more information.
 
 In addition to the stack components, Seldon Core must be installed in *the same*
@@ -634,7 +634,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/seldon).
+Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/user-guide/component-guide/model-deployers/seldon).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/user-guide/component-guide/model-deployers/custom).

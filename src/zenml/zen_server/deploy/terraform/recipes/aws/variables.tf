@@ -129,11 +129,6 @@ variable "database_ssl_verify_server_cert" {
   type        = bool
 }
 
-variable "ingress_path" {
-  description = "The path on the Ingress URL to expose ZenML at"
-  default     = "zenmlhihi"
-  type        = string
-}
 
 # set to true if you don't already have an nginx ingress
 # controller in your cluster
@@ -144,7 +139,7 @@ variable "create_ingress_controller" {
 }
 
 # if you already have an ingress controller, supply it's URL
-variable "ingress_controller_hostname" {
+variable "ingress_controller_ip" {
   description = "The URL for the ingress controller on your cluster"
   default     = ""
   type        = string

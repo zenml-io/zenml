@@ -337,9 +337,9 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 # 📜 Learn more
 
 Our docs regarding the MLflow model registry integration can be found 
-[here](https://docs.zenml.io/component-gallery/model-registries/mlflow).
+[here](https://docs.zenml.io/user-guide/component-guide/model-registries/mlflow).
 
 
 If you want to learn more about model registries in general or about how to 
 build your own model registry in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/model-registries/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/model-registries/custom).

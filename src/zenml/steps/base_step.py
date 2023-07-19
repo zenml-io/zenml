@@ -156,13 +156,11 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set["BaseStep"] = set()
@@ -669,13 +667,11 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -791,13 +787,11 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseException`, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with one parameter of type `StepContext`, or a
-                source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -886,7 +880,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
             elif not self.entrypoint_definition.legacy_params:
                 raise StepInterfaceError(
-                    "Can't set parameter without param class."
+                    f"Unable to find parameter '{key}' in step function "
+                    "signature."
                 )
 
     def _validate_outputs(
@@ -969,7 +964,9 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The finalized step configuration.
         """
-        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
+        outputs: Dict[
+            str, Dict[str, Union[Source, Tuple[Source, ...]]]
+        ] = defaultdict(dict)
 
         for (
             output_name,
@@ -985,24 +982,17 @@ class BaseStep(metaclass=BaseStepMeta):
                 is_union,
             )
 
-            from zenml.materializers import CloudpickleMaterializer
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
                 if output_annotation is Any:
-                    logger.warning(
-                        f"No materializer specified for output with `Any` type "
-                        f"annotation (output {output_name} of step {self.name} "
-                        "). The Cloudpickle materializer will be used for the "
-                        "artifact but the artifact won't be readable in "
-                        "different Python versions. Please consider specifying "
-                        "an explicit materializer for this output by following "
-                        "this guide: https://docs.zenml.io/advanced-guide/pipelines/materializers."
+                    outputs[output_name]["materializer_source"] = ()
+                    outputs[output_name][
+                        "default_materializer_source"
+                    ] = source_utils.resolve(
+                        materializer_registry.get_default_materializer()
                     )
-
-                    outputs[output_name]["materializer_source"] = (
-                        source_utils.resolve(CloudpickleMaterializer),
-                    )
+                    continue
 
                 if is_union(
                     get_origin(output_annotation) or output_annotation

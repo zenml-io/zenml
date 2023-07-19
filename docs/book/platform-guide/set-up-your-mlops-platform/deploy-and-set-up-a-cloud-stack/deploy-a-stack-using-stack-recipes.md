@@ -95,7 +95,7 @@ This is what you see and where you can make any changes you want to the recipe f
     zenml stack recipe clean
     ```
 
-Check out the [API docs](https://apidocs.zenml.io/) to learn more about each of these commands and the options that are available.
+Check out the [SDK docs](https://sdkdocs.zenml.io/) to learn more about each of these commands and the options that are available.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

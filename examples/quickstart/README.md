@@ -88,9 +88,9 @@ depending on their type, these components serve different purposes.
 If you look at some examples of different flavors of stack components, you 
 will see examples such as:
 
-- [Airflow**Orchestrator**](https://docs.zenml.io/component-gallery/orchestrators/airflow) which orchestrates your ML workflows on Airflow
-- [MLflow**ExperimentTracker**](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow) which can track your experiments with MLFlow
-- [Evidently**DataValidator**](https://docs.zenml.io/component-gallery/data-validators/evidently) which can help you validate your data
+- [Airflow**Orchestrator**](https://docs.zenml.io/user-guide/component-guide/orchestrators/airflow) which orchestrates your ML workflows on Airflow
+- [MLflow**ExperimentTracker**](https://docs.zenml.io/user-guide/component-guide/experiment-trackers/mlflow) which can track your experiments with MLFlow
+- [Evidently**DataValidator**](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently) which can help you validate your data
 
 Any such combination of tools and infrastructure can be registered as a 
 separate stack in ZenML. Since ZenML code is tooling-independent, you can 
@@ -197,7 +197,7 @@ If you are new to MLOps, you might want to take a look at our
 where we cover each MLOps concept in much more detail.
 
 Already have an MLOps stack in mind? ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/component-gallery/integrations) 
+[**:link: Integrations**](https://docs.zenml.io/user-guide/component-guide/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
 to see how to use a specific tool with ZenML.

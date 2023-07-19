@@ -305,7 +305,7 @@ You can check the BentoML deployment example for more details.
 * [Model Deployer with BentoML](https://github.com/zenml-io/zenml/tree/main/examples/bentoml\_deployment)
 
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
+the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
 .
 
 <!-- For scarf -->

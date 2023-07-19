@@ -139,7 +139,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the Neptune integration can be found [here](https://docs.zenml.io/component-gallery/experiment-trackers/neptune).
+Our docs regarding the Neptune integration can be found [here](https://docs.zenml.io/user-guide/component-guide/experiment-trackers/neptune).
 
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).
+check out our [docs](https://docs.zenml.io/user-guide/component-guide/experiment-trackers/custom).

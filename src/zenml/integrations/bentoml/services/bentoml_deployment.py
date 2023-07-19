@@ -121,9 +121,9 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     bento: str
     bento_uri: Optional[str] = None
     apis: List[str] = []
-    workers: Optional[int] = None
+    workers: Optional[int] = 1
     port: Optional[int] = None
-    backlog: Optional[int] = None
+    backlog: Optional[int] = 2048
     production: bool = False
     working_dir: str
     host: Optional[str] = None
@@ -196,52 +196,27 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         self.endpoint.prepare_for_start()
         ssl_params = self.config.ssl_parameters or SSLBentoMLParametersConfig()
         # verify if to deploy in production mode or development mode
-        if self.config.production:
-            logger.info("Running in production mode.")
-            from bentoml.serve import serve_http_production
+        logger.info("Running in production mode.")
+        from bentoml.serve import serve_http_production
 
-            try:
-                serve_http_production(
-                    self.config.bento,
-                    port=self.endpoint.status.port,
-                    api_workers=self.config.workers,
-                    backlog=self.config.backlog,
-                    host=self.endpoint.status.hostname,
-                    working_dir=self.config.working_dir,
-                    ssl_certfile=ssl_params.ssl_certfile,
-                    ssl_keyfile=ssl_params.ssl_keyfile,
-                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
-                    ssl_version=ssl_params.ssl_version,
-                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
-                    ssl_ca_certs=ssl_params.ssl_ca_certs,
-                    ssl_ciphers=ssl_params.ssl_ciphers,
-                )
-            except KeyboardInterrupt:
-                logger.info(
-                    "BentoML prediction service stopped. Resuming normal execution."
-                )
-        else:
-            logger.info("Running in development mode.")
-            from bentoml.serve import serve_http_development
-
-            try:
-                serve_http_development(
-                    self.config.bento,
-                    port=self.endpoint.status.port,
-                    working_dir=self.config.working_dir,
-                    host=self.endpoint.status.hostname,
-                    ssl_certfile=ssl_params.ssl_certfile,
-                    ssl_keyfile=ssl_params.ssl_keyfile,
-                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
-                    ssl_version=ssl_params.ssl_version,
-                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
-                    ssl_ca_certs=ssl_params.ssl_ca_certs,
-                    ssl_ciphers=ssl_params.ssl_ciphers,
-                )
-            except KeyboardInterrupt:
-                logger.info(
-                    "BentoML prediction service stopped. Resuming normal execution."
-                )
+        try:
+            serve_http_production(
+                self.config.bento,
+                working_dir=self.config.working_dir,
+                port=self.endpoint.status.port,
+                api_workers=self.config.workers,
+                host=self.endpoint.status.hostname,
+                backlog=self.config.backlog,
+                ssl_certfile=ssl_params.ssl_certfile,
+                ssl_keyfile=ssl_params.ssl_keyfile,
+                ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                ssl_version=ssl_params.ssl_version,
+                ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                ssl_ca_certs=ssl_params.ssl_ca_certs,
+                ssl_ciphers=ssl_params.ssl_ciphers,
+            )
+        except KeyboardInterrupt:
+            logger.info("Stopping BentoML prediction service...")
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -293,7 +268,9 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
                 "Please start the service before making predictions."
             )
         if self.endpoint.prediction_url is not None:
-            client = Client.from_url(self.endpoint.prediction_url)
+            client = Client.from_url(
+                self.endpoint.prediction_url.replace("http://", "").rstrip("/")
+            )
             result = client.call(api_endpoint, data)
         else:
             raise ValueError("No endpoint known for prediction.")

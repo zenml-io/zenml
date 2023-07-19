@@ -44,6 +44,9 @@ class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
     materializer_source: Optional[Tuple[Source, ...]] = None
+    # TODO: This could be moved to the `PipelineDeployment` as it's the same
+    # for all steps/outputs
+    default_materializer_source: Optional[Source] = None
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(

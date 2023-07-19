@@ -102,7 +102,7 @@ the ZenML documentation.
 
 For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a
 look
-at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker)
+at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker)
 .
 
 ### How do you use it?

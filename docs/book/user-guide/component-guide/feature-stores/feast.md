@@ -57,7 +57,7 @@ context of a deployed model or as part of model deployment. We will update this 
 feature.
 
 ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. (
-See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
+See [here](https://sdkdocs.zenml.io/latest/cli/) for details on how to do that.)
 
 Getting features from a registered and active feature store is possible by creating your own step that interfaces into
 the feature store:
@@ -67,43 +67,35 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 import pandas as pd
 
-from zenml.steps import StepContext
 from zenml import step
+from zenml.client import Client
 
 
 @step
 def get_historical_features(
-    context: StepContext,
     entity_dict: Union[Dict[str, Any], str],
     features: List[str],
     full_feature_names: bool = False
 ) -> pd.DataFrame:
     """Feast Feature Store historical data step
 
-    Args:
-        context: The step context.
-
     Returns:
         The historical features as a DataFrame.
     """
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. Please make sure that you have registered and set a stack."
-        )
-    elif not context.stack.feature_store:
+    feature_store = Client().active_stack.feature_store
+    if not feature_store:
         raise DoesNotExistException(
             "The Feast feature store component is not available. "
             "Please make sure that the Feast stack component is registered as part of your current active stack."
         )
 
-    feature_store_component = context.stack.feature_store
     params.entity_dict["event_timestamp"] = [
         datetime.fromisoformat(val)
         for val in entity_dict["event_timestamp"]
     ]
     entity_df = pd.DataFrame.from_dict(entity_dict)
 
-    return feature_store_component.get_historical_features(
+    return feature_store.get_historical_features(
         entity_df=entity_df,
         features=features,
         full_feature_names=full_feature_names,
@@ -120,7 +112,7 @@ A concrete example of using the Feast feature store can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/feast\_feature\_store).
 
 For more information and a full list of configurable attributes of the Feast feature store, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-feast/#zenml.integrations.feast.feature\_stores.feast\_feature\_store.FeastFeatureStore)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-feast/#zenml.integrations.feast.feature\_stores.feast\_feature\_store.FeastFeatureStore)
 .
 
 <!-- For scarf -->

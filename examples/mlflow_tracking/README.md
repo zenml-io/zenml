@@ -216,9 +216,9 @@ You can execute this example in the sandbox by following a few simple commands. 
 # 📜 Learn more
 
 Our docs regarding the MLflow experiment tracker integration can be found 
-[here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
+[here](https://docs.zenml.io/user-guide/component-guide/experiment-trackers/mlflow).
 
 
 If you want to learn more about experiment trackers in general or about how to 
 build your own experiment trackers in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/experiment-trackers/custom).

@@ -8,9 +8,9 @@ The `SlackAlerter` enables you to send messages to a dedicated Slack channel dir
 
 The `slack` integration also contains the following two standard steps:
 
-* [slack\_alerter\_post\_step](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
+* [slack\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
   takes a string, posts it to Slack, and returns `True` if the operation succeeded, else `False`.
-* [slack\_alerter\_ask\_step](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
+* [slack\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
   does the same as `slack_alerter_post_step`, but after sending the message, it waits until someone approves or rejects
   the operation from within Slack (e.g., by sending "approve" / "reject" to the bot in response)
   . `slack_alerter_ask_step` then only returns `True` if the operation succeeded and was approved, else `False`.
@@ -78,8 +78,8 @@ zenml stack register ... -al slack_alerter
 ### How to Use the Slack Alerter
 
 After you have a `SlackAlerter` configured in your stack, you can directly import
-the [slack\_alerter\_post\_step](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
-and [slack\_alerter\_ask\_step](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
+the [slack\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
+and [slack\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
 steps and use them in your pipelines.
 
 Since these steps expect a string message as input (which needs to be the output of another step), you typically also
@@ -115,7 +115,7 @@ the [slack alerter example](https://github.com/zenml-io/zenml/tree/main/examples
 test accuracy of a model to Slack and then wait with model deployment until a user approves it in Slack.
 
 For more information and a full list of configurable attributes of the Slack alerter, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.alerters.slack\_alerter.SlackAlerter)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.alerters.slack\_alerter.SlackAlerter)
 .
 
 <!-- For scarf -->

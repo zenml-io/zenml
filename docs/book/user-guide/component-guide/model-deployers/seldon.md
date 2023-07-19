@@ -358,56 +358,7 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-The following code snippet shows how to use the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline
-step:
-
-```python
-from zenml.artifacts import ModelArtifact
-from zenml.environment import Environment
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import (
-    SeldonDeploymentConfig,
-    SeldonDeploymentService,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepContext,
-    step,
-)
-
-
-@step(enable_cache=True)
-def seldon_model_deployer_step(
-        context: StepContext,
-        model: ModelArtifact,
-) -> SeldonDeploymentService:
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    # get pipeline name, step name and run id
-    step_env = Environment()[STEP_ENVIRONMENT_NAME]
-
-    service_config = SeldonDeploymentConfig(
-        model_uri=model.uri,
-        model_name="my-model",
-        replicas=1,
-        implementation="TENSORFLOW_SERVER",
-        secret_name="seldon-secret",
-        pipeline_name=step_env.pipeline_name,
-        run_name=step_env.run_name,
-        pipeline_step_name=step_env.step_name,
-    )
-
-    service = model_deployer.deploy_model(
-        service_config, replace=True, timeout=300
-    )
-
-    print(
-        f"Seldon deployment service started and reachable at:\n"
-        f"    {service.prediction_url}\n"
-    )
-
-    return service
-```
+See the [seldon_model_deployer_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 Within the `SeldonDeploymentConfig` you can configure:
 
@@ -429,7 +380,7 @@ A concrete example of using the Seldon Core Model Deployer can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/seldon\_deployment).
 
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
 .
 
 ### Custom Model Deployment
@@ -514,12 +465,12 @@ The built-in Seldon Core custom deployment step is a good starting point for dep
 you want to deploy more than the trained model, you can create your own Custom Class and a custom step to achieve this.
 
 Example of
-the [custom class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
+the [custom class](https://sdkdocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
 .
 
 The built-in Seldon Core custom deployment step responsible for packaging, preparing, and deploying to Seldon Core can
 be
-found [here](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
+found [here](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
 .
 
 <!-- For scarf -->

@@ -203,7 +203,7 @@ steps:
         materializer_source: run.MyMaterializer
 ```
 
-The name of the output can be found in the function declaration, e.g. `my_step() -> Output(a: int, b: float)` has `a` and `b` as available output names.
+Check out [this page](./configure-steps-pipelines.md#step-output-names) for information on your step output names and how to customize them.
 
 ## Basic example
 
@@ -400,20 +400,26 @@ s2 -> s4
 `s1` and `s2` produce identical artifacts, however `s3` consumes materialized artifacts while `s4` consumes unmaterialized artifacts. `s4` can now use the `dict_.uri` and `list_.uri` paths directly rather than their materialized counterparts.
 
 ```python
-from typing import Dict, List
+from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Dict, List, Tuple
 
 from zenml.materializers import UnmaterializedArtifact
 from zenml import pipeline, step
-from zenml.steps import Output
 
 
 @step
-def step_1() -> Output(dict_=Dict, list_=List):
+def step_1() -> Tuple[
+    Annotated[Dict[str, str], "dict_"],
+    Annotated[List[str], "list_"],
+]:
     return {"some": "data"}, []
 
 
 @step
-def step_2() -> Output(dict_=Dict, list_=List):
+def step_2() -> Tuple[
+    Annotated[Dict[str, str], "dict_"],
+    Annotated[List[str], "list_"],
+]:
     return {"some": "data"}, []
 
 

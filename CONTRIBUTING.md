@@ -14,10 +14,10 @@ you finalize your pull requests.
 ## ⚡️ Quicklinks
 
 - [🧑‍💻 Contributing to ZenML](#-contributing-to-zenml)
-  - [⚡️ Quicklinks](#️-quicklinks)
-  - [🧑‍⚖️ Code of Conduct](#️-code-of-conduct)
+  - [⚡️ Quicklinks](#-quicklinks)
+  - [🧑‍⚖️ Code of Conduct](#-code-of-conduct)
   - [🛫 Getting Started](#-getting-started)
-    - [⁉️ Issues](#️-issues)
+    - [⁉️ Issues](#-issues)
     - [🏷 Pull Requests: When to make one](#-pull-requests-when-to-make-one)
     - [💯 Pull Requests: Workflow to Contribute](#-pull-requests-workflow-to-contribute)
     - [🧐 Linting, formatting, and tests](#-linting-formatting-and-tests)
@@ -120,7 +120,7 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧐 Linting, formatting, and tests
 
-To install ZenML from your local checked out files includin all core dev-dependencies, run:
+To install ZenML from your local checked out files including all core dev-dependencies, run:
 
 ```
 pip install -e ".[server,dev]"
@@ -135,7 +135,7 @@ pip install click~=8.0.3
 mypy --install-types
 ```
 
-Warning: This might take a while for both (~ 15 mins each, depending on your machine), however if you have
+Warning: This might take a while for both (~ 15 minutes each, depending on your machine), however if you have
 time, please run it as it will make the
 next commands error-free.
 
@@ -217,8 +217,8 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](https://docs.zenml.io/component-gallery/integrations)
-in the docs and add the integration. 
+[Component Guide](https://docs.zenml.io/user-guide/component-guide)
+in the docs and add your implementations. 
 
 ## 🆘 Getting Help
 

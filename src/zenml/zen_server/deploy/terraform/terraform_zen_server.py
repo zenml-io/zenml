@@ -96,10 +96,9 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             certificates for the ingress.
         ingress_tls_secret_name: The name of the Kubernetes secret to use for
             the ingress.
-        ingress_path: The path to use for the ingress.
         create_ingress_controller: Whether to deploy an nginx ingress
             controller as part of the deployment.
-        ingress_controller_hostname: The ingress controller hostname to use for
+        ingress_controller_ip: The ingress controller IP to use for
             the ingress self-signed certificate and to compute the ZenML server
             URL.
         deploy_db: Whether to create a SQL database service as part of the recipe.
@@ -128,12 +127,11 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     kubectl_config_path: str = os.path.join(
         str(Path.home()), ".kube", "config"
     )
-    ingress_tls: bool = True
+    ingress_tls: bool = False
     ingress_tls_generate_certs: bool = True
     ingress_tls_secret_name: str = "zenml-tls-certs"
-    ingress_path: str = ""
     create_ingress_controller: bool = True
-    ingress_controller_hostname: str = ""
+    ingress_controller_ip: str = ""
     deploy_db: bool = True
     database_username: str = "user"
     database_password: str = ""

@@ -781,7 +781,7 @@ class Stack:
                 "`zenml image-builder register <NAME> ...\n"
                 "zenml stack update %s -i <NAME>`",
                 self.name,
-                id,
+                self.id,
             )
 
             self._image_builder = image_builder

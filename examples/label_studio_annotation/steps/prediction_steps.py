@@ -17,8 +17,7 @@ import torch
 from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
 
 from zenml.post_execution import get_pipeline
-from zenml.steps import BaseParameters, Output, step
-from zenml.steps.step_context import StepContext
+from zenml.steps import BaseParameters, Output, StepContext, step
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"

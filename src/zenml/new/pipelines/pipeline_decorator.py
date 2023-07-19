@@ -70,13 +70,11 @@ def pipeline(
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be
-            a function with two possible parameters `StepContext` and
-            `BaseException`, or a source path to a function of the same
-            specifications (e.g. `module.my_function`).
-        on_success: Callback function in event of failure of the step. Can be
-            a function with one parameter of type `StepContext`, or a source
-            path to a function of the same specifications
+        on_failure: Callback function in event of failure of the step. Can be a
+            function with a single argument of type `BaseException`, or a source
+            path to such a function (e.g. `module.my_function`).
+        on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
 
     Returns:
