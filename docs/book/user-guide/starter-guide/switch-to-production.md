@@ -18,7 +18,7 @@ This is where ZenML comes in. By providing seamless integration with various [ML
 
 #### Alternative: Build your own infrastructure
 
-For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines parts of the deployment process. With the [deploy CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md), you can quickly set up a full-fledged MLOps stack with just a few commands. You have the option to deploy individual stack components through the [stack-component CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md) or [deploy a stack with multiple components](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md) together using Terraform stack recipes. For more information on how to do this, see our [post-sandbox platform guide](../advanced-guide/sandbox.md).
+For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines parts of the deployment process. With the [deploy CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md), you can quickly set up a full-fledged MLOps stack with just a few commands. You have the option to deploy individual stack components through the [stack-component CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md) or [deploy a stack with multiple components](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md) together using Terraform stack recipes. For more information on how to do this, see our [post-sandbox platform guide](../advanced-guide/client-hub-sandbox/sandbox).
 
 ## MLOps Platform Sandbox: a simple and easy starting point
 
@@ -68,9 +68,9 @@ python run.py
 ```
 
 {% hint style="warning" %}
-To ensure a seamless sandbox experience, we have included a [code repository](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository) in each sandbox. This repository will track the changes made to the pipelines you run. Therefore, we recommend that you don't change the pipelines you intend to execute, as doing so will render the use of the pre-built docker images invalid. If the pipeline triggers the creation of a new docker image, it indicates that you have local changes that conflict with the pre-built images. You can use the `git status` command to check for any local changes.
+To ensure a seamless sandbox experience, we have included a [code repository](../advanced-guide/environment-management/connect-your-git-repository) in each sandbox. This repository will track the changes made to the pipelines you run. Therefore, we recommend that you don't change the pipelines you intend to execute, as doing so will render the use of the pre-built docker images invalid. If the pipeline triggers the creation of a new docker image, it indicates that you have local changes that conflict with the pre-built images. You can use the `git status` command to check for any local changes.
 
-If you want to make changes to the pipelines, please follow the advanced instructions for sandbox use [here](https://docs.zenml.io/user-guide/advanced-guide/sandbox#run-pipelines-with-custom-dependencies).
+If you want to make changes to the pipelines, please follow the advanced instructions for sandbox use [here](https://docs.zenml.io/user-guide/advanced-guide/client-hub-sandbox/sandbox#run-pipelines-with-custom-dependencies).
 {% endhint %}
 
 After you have run the pipelines, you can open the ZenML dashboard to see their status:
@@ -108,7 +108,7 @@ watch our costs!
 
 **Q: Is it possible to extend the duration of the sandbox?**
 
-**A:** The MLOps Platform Sandbox has a 4-hour limit. You can [create your own sandbox using ZenML stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes) or integrate ZenML into your existing infrastructure for similar functionality.
+**A:** The MLOps Platform Sandbox has a 4-hour limit. You can [create your own sandbox using ZenML stack recipes](SANDBOX TODO DELETE) or integrate ZenML into your existing infrastructure for similar functionality.
 If you'd like us to host the MLOps Platform Sandbox for you for longer, [fill out this form](https://zenml.io/extend-sandbox).
 
 **Q: Why use ZenML with MLflow, Kubeflow and Minio?**
@@ -125,7 +125,7 @@ plane.
 
 **Q: How can I move from the MLOps Platform Sandbox to deploying my own MLOps Stack?**
 
-**A:** After experimenting with the Sandbox, you can deploy your own MLOps stack tailored to your requirements using [ZenML Stack Recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes). These recipes give you a starting point for deploying various MLOps stacks on different cloud providers and with different components. Follow the instructions provided for your desired stack configuration to build a robust, production-ready MLOps platform.
+**A:** After experimenting with the Sandbox, you can deploy your own MLOps stack tailored to your requirements using [ZenML Stack Recipes](SANDBOX TODO DELETE). These recipes give you a starting point for deploying various MLOps stacks on different cloud providers and with different components. Follow the instructions provided for your desired stack configuration to build a robust, production-ready MLOps platform.
 
 **Q: What kind of support is available for users of the MLOps Platform Sandbox?**
 
@@ -137,7 +137,7 @@ plane.
 
 **Q:** **Can I use my own pipelines in the MLOps Platform Sandbox?**
 
-**A:** The MLOps Platform Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every user is provided with limited resources. (See [this guide](../advanced-guide/sandbox.md) to learn more about running your own pipelines in the sandbox.)
+**A:** The MLOps Platform Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every user is provided with limited resources. (See [this guide](../advanced-guide/client-hub-sandbox/sandbox.md) to learn more about running your own pipelines in the sandbox.)
 
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
 

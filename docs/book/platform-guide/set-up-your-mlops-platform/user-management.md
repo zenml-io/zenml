@@ -23,7 +23,7 @@ results.
   own code, and collaborate with fellow community members.
 
 This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while
-the [ZenML Hub](../../user-guide/advanced-guide/leverage-community-contributed-plugins.md)
+the [ZenML Hub](../../user-guide/advanced-guide/client-hub-sandbox/hub.md)
 
 ## Team administration and user management
 

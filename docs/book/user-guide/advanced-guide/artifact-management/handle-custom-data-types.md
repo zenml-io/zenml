@@ -244,7 +244,7 @@ first_pipeline()
 
 Running the above without a custom materializer will work but print the following warning:
 
-`No materializer is registered for type MyObj, so the default Pickle materializer was used. Pickle is not production ready and should only be used for prototyping as the artifacts cannot be loaded when running with a different Python version. Please consider implementing a custom materializer for type MyObj according to the instructions at https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types`
+`No materializer is registered for type MyObj, so the default Pickle materializer was used. Pickle is not production ready and should only be used for prototyping as the artifacts cannot be loaded when running with a different Python version. Please consider implementing a custom materializer for type MyObj according to the instructions at https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types`
 
 To get rid of this warning and make our pipeline more robust, we will subclass the `BaseMaterializer` class, listing `MyObj` in `ASSOCIATED_TYPES`, and overwriting `load()` and `save()`:
 

@@ -117,7 +117,7 @@ For container registries, you can pass the repository name using `repo_name`:
 zenml container-registry deploy aws_registry --flavor=aws --repo_name=my_repo
 ```
 
-This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the `DockerSettings` object](../../../user-guide/advanced-guide/containerize-your-pipeline.md).
+This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the `DockerSettings` object](../../../user-guide/advanced-guide/environment-management/containerize-your-pipeline.md).
 
 #### Other configuration
 

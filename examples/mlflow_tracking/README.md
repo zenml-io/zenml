@@ -210,7 +210,7 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 ZenML offers a sandbox environment where you can effortlessly run your pipelines on a Kubernetes cluster. This complimentary service is an excellent way to try out a production deployment.
 
-You can execute this example in the sandbox by following a few simple commands. Learn more about the sandbox in the [official documentation](https://docs.zenml.io/user-guide/advanced-guide/sandbox), or visit the [sandbox homepage](https://sandbox.zenml.io/).
+You can execute this example in the sandbox by following a few simple commands. Learn more about the sandbox in the [official documentation](https://docs.zenml.io/user-guide/advanced-guide/client-hub-sandbox/sandbox), or visit the [sandbox homepage](https://sandbox.zenml.io/).
 
 
 # 📜 Learn more
