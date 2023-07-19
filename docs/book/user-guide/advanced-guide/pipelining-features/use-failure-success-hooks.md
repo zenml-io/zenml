@@ -65,7 +65,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 ## Accessing step information inside a hook
 
 Similar as for regular ZenML steps, you can use the 
-[StepContext](./fetch-metadata-within-steps.md) to access information about the 
+[StepContext](fetch-metadata-within-steps.md) to access information about the 
 current pipeline run or step inside your hook function:
 
 ```python
@@ -86,7 +86,7 @@ def my_step(some_parameter: int = 1)
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](../component-guide/alerters/alerters.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](../../component-guide/alerters/alerters.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 from zenml import get_step_context
