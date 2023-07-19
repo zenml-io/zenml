@@ -17,14 +17,6 @@ With ZenML, you can effortlessly work together with others, sharing resources an
 Removing barriers to collaboration enables teams to iterate on ideas and problems more efficiently, leading to faster
 results.
 
-* With a deployed ZenML instance, users can create their own teams and project structures. They can easily share
-  pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
-* On the other hand, there's the ZenML Hub. Here, you can browse a collection of community-driven solutions, share your
-  own code, and collaborate with fellow community members.
-
-This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while
-the [ZenML Hub](../../user-guide/advanced-guide/client-hub-sandbox/hub.md)
-
 ## Team administration and user management
 
 After you have [deployed ZenML and connected your local client with the deployment](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md), 
