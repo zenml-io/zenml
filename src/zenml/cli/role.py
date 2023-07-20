@@ -40,7 +40,6 @@ def list_roles(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter the list of roles.
     """
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
         roles = client.list_roles(**kwargs)
@@ -71,8 +70,6 @@ def create_role(role_name: str, permissions: List[str]) -> None:
         role_name: Name of the role to create.
         permissions: Permissions to assign
     """
-    cli_utils.print_active_config()
-
     try:
         Client().create_role(name=role_name, permissions_list=permissions)
         cli_utils.declare(f"Created role '{role_name}'.")
@@ -113,8 +110,6 @@ def update_role(
         remove_permission: Name of permission to remove from role
         add_permission: Name of permission to add to role
     """
-    cli_utils.print_active_config()
-
     try:
         Client().update_role(
             name_id_or_prefix=role_name,
@@ -140,7 +135,6 @@ def delete_role(role_name_or_id: str) -> None:
     Args:
         role_name_or_id: Name or ID of the role to delete.
     """
-    cli_utils.print_active_config()
     try:
         Client().delete_role(name_id_or_prefix=role_name_or_id)
     except (KeyError, IllegalOperationError) as err:
@@ -172,8 +166,6 @@ def assign_role(
         workspace_name_or_id: Name or IDs of a workspace in which to assign the
             role. If this is not provided, the role will be assigned globally.
     """
-    cli_utils.print_active_config()
-
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
@@ -233,7 +225,6 @@ def revoke_role(
         workspace_name_or_id: Name or IDs of a workspace in which to revoke the
             role. If this is not provided, the role will be revoked globally.
     """
-    cli_utils.print_active_config()
     client = Client()
 
     role = client.get_role(name_id_or_prefix=role_name_or_id)
@@ -295,7 +286,6 @@ def list_role_assignments(**kwargs: Any) -> None:
     Args:
         kwargs: Keyword arguments.
     """
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
         role_assignments = client.list_user_role_assignment(**kwargs)
@@ -317,7 +307,6 @@ def permission() -> None:
 @permission.command("list")
 def list_permissions() -> None:
     """List all role assignments."""
-    cli_utils.print_active_config()
     permissions = [i.value for i in PermissionType]
     cli_utils.declare(
         f"The following permissions are currently supported: " f"{permissions}"

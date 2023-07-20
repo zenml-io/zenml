@@ -258,7 +258,41 @@ def example_pipeline():
 
 This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
 
-## Settings in ZenML
+## Enable or disable logs storing
+
+By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
+
+```python
+import logging
+
+from zenml import step
+
+@step 
+def my_step() -> None:
+    logging.warning("`Hello`")  # You can use the regular `logging` module.
+    print("World.")  # You can utilize `print` statements as well. 
+```
+
+You can display the logs in the dashboard as follows:
+
+![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
+
+If you do not want to store the logs in your artifact store, you can disable this behavior by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
+```python
+from zenml import pipeline, step
+
+@step(enable_step_logs=False)  # disables logging for this step
+def my_step() -> None:
+    ...
+
+@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
+def my_pipeline():
+    ...
+```
+
+
+# Settings in ZenML
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
@@ -268,7 +302,7 @@ Settings in ZenML allow you to configure runtime configurations for stack compon
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
-### Types of settings
+## Types of settings
 
 Settings are categorized into two types:
 
@@ -309,9 +343,9 @@ Or like this:
 settings = {'docker': {'requirements': ['pandas']}}
 ```
 
-### Utilizing the settings
+## Utilizing the settings
 
-#### Method 1: Directly on the decorator
+### Method 1: Directly on the decorator
 
 The most basic way to set settings is through the `settings` variable that exists in both `@step` and `@pipeline` decorators:
 
@@ -332,7 +366,7 @@ The most basic way to set settings is through the `settings` variable that exist
 Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
-#### Method 2: On the step/pipeline instance
+### Method 2: On the step/pipeline instance
 
 This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
 
@@ -354,7 +388,7 @@ my_step.configure(settings=...)
 my_pipeline.configure(settings=...)
 ```
 
-#### Method 3: Configuring with YAML
+### Method 3: Configuring with YAML
 
 As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
