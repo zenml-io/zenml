@@ -12,20 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
+
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def importer_mnist() -> (
-    Output(
-        train_dataloader=DataLoader,
-        test_dataloader=DataLoader,
-    )
+    Tuple[
+        Annotated[DataLoader, "train_dataloader"],
+        Annotated[DataLoader, "test_dataloader"],
+    ]
 ):
     """Download the Fashion MNIST dataset."""
     # Download training data from open datasets.
