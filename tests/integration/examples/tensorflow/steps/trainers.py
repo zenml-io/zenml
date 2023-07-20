@@ -17,15 +17,13 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from zenml import step
-from zenml.steps import StepContext
+from zenml import get_step_context, step
 
 
 @step(enable_cache=True)
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-    context: StepContext,
     epochs: int = 5,
     lr: float = 0.001,
 ) -> tf.keras.Model:
@@ -39,6 +37,7 @@ def trainer(
         ]
     )
 
+    context = get_step_context()
     log_dir = os.path.join(context.get_output_artifact_uri(), "logs")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir, histogram_freq=1

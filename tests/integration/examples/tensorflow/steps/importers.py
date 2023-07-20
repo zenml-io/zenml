@@ -13,25 +13,25 @@
 #  permissions and limitations under the License.
 
 
+from typing import Tuple
+
 import numpy as np
 import tensorflow as tf
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def importer() -> (
-    Output(
-        X_train=np.ndarray,
-        X_test=np.ndarray,
-        y_train=np.ndarray,
-        y_test=np.ndarray,
-    )
+    Tuple[
+        Annotated[np.ndarray, "X_train"],
+        Annotated[np.ndarray, "X_test"],
+        Annotated[np.ndarray, "y_train"],
+        Annotated[np.ndarray, "y_test"],
+    ]
 ):
     """Download the MNIST data store it as an artifact."""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
+    train, test = tf.keras.datasets.mnist.load_data()
+    (X_train, y_train), (X_test, y_test) = train, test
     return X_train, X_test, y_train, y_test

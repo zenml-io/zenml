@@ -47,20 +47,6 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
         step_name="trainer",
     )
 
-    # In case you want to run this on a schedule run it in the following way:
-    # from datetime import datetime, timedelta
-
-    # from zenml.pipelines import Schedule
-
-    # scheduled_pipeline = mnist_pipeline.with_options(
-    #     schedule=Schedule(
-    #         start_time=datetime.now(),
-    #         end_time=datetime.now() + timedelta(minutes=10),
-    #         interval_second=60,
-    #     )
-    # )
-    # scheduled_pipeline()
-
 
 if __name__ == "__main__":
     main()

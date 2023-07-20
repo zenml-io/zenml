@@ -13,17 +13,23 @@
 #  permissions and limitations under the License.
 
 
-import numpy as np
+import pytest
 
-from zenml import step
-from zenml.steps import Output
+from tests.integration.examples.utils import run_example
 
 
-@step
-def normalizer(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize digits dataset with mean and standard deviation."""
-    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
-    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
-    return X_train_normed, X_test_normed
+def test_example(request: pytest.FixtureRequest) -> None:
+    """Runs the kubeflow_pipelines_orchestration example.
+
+    Args:
+        tmp_path_factory: Factory to generate temporary test paths.
+    """
+    name = "tensorflow"
+    with run_example(
+        request=request,
+        name=name,
+        pipelines={"mnist_pipeline": (1, 4)},
+        example_code_lives_in_tests_subdir=True,
+    ) as (example, _):
+        # Cleanup the tensorboard daemon
+        example.run_example_directly("--stop-tensorboard")

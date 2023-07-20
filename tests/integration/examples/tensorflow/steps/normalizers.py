@@ -12,21 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 
-from tests.integration.examples.utils import run_example
+from typing import Tuple
+
+import numpy as np
+from typing_extensions import Annotated
+
+from zenml import step
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the kubeflow_pipelines_orchestration example.
-
-    Args:
-        tmp_path_factory: Factory to generate temporary test paths.
-    """
-    with run_example(
-        request=request,
-        name="kubeflow_pipelines_orchestration",
-        pipelines={"mnist_pipeline": (1, 4)},
-    ) as (example, _):
-        # Cleanup the tensorboard daemon
-        example.run_example_directly("--stop-tensorboard")
+@step
+def normalizer(
+    X_train: np.ndarray, X_test: np.ndarray
+) -> Tuple[
+    Annotated[np.ndarray, "X_train_normed"],
+    Annotated[np.ndarray, "X_test_normed"],
+]:
+    """Normalize digits dataset with mean and standard deviation."""
+    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
+    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
+    return X_train_normed, X_test_normed

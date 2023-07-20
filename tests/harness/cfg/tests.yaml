@@ -78,7 +78,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_kubeflow_pipelines_orchestration
+  - module: tests.integration.examples.test_tensorflow
     requirements:
       - integrations:
           - tensorflow
