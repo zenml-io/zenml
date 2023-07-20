@@ -8,8 +8,65 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
+## Built-In Materializers
+
+ZenML already includes built-in materializers for many common data types. These
+are always enabled and are used in the background without requiring any user
+interaction / activation:
+
+<table>
+    <thead>
+        <tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>[BuiltInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInMaterializer)</td>
+            <td>`bool`, `float`, `int`, `str`, `None`</td>
+            <td>`.json`</td>
+        </tr>
+        <tr>
+            <td>[BytesInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BytesMaterializer)</td>
+            <td>`bytes`</td>
+            <td>`.txt`</td>
+        </tr>
+        <tr>
+            <td>[BuiltInContainerMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer)</td>
+            <td>`dict`, `list`, `set`, `tuple`</td>
+            <td>Directory of files depending on subtypes</td>
+        </tr>
+        <tr>
+            <td>[NumpyMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.numpy_materializer.NumpyMaterializer)</td>
+            <td>`np.ndarray`</td>
+            <td>`.npy`</td>
+        </tr>
+        <tr>
+            <td>[PandasMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pandas_materializer.PandasMaterializer)</td>
+            <td>`pd.DataFrame`, `pd.Series`</td>
+            <td>`.csv` (or `.gzip` if `parquet` is installed)</td>
+        </tr>
+        <tr>
+            <td>[PydanticMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pydantic_materializer.PydanticMaterializer)</td>
+            <td>`pydantic.BaseModel`</td>
+            <td>`.json`</td>
+        </tr>
+        <tr>
+            <td>[ServiceMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.service_materializer.ServiceMaterializer)</td>
+            <td>`zenml.services.service.BaseService`</td>
+            <td>`.json`</td>
+        </tr>
+        <tr>
+            <td>[StructuredStringMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.structured_string_materializer.StructuredStringMaterializer)</td>
+            <td>`zenml.types.CSVString`, `zenml.types.HTMLString`, `zenml.types.MarkdownString`</td>
+            <td>`.csv` / `.html` / `.md` (depending on type)</td>
+        </tr>
+    </tbody>
+</table>
+
 {% hint style="info" %}
-ZenML already includes built-in materializers for many common data types. However, if you want to pass custom objects between pipeline steps, these objects are by default saved using [cloudpickle](https://github.com/cloudpipe/cloudpickle) , which is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a custom Materializer to save your objects in a more robust and efficient format.
+ZenML also provides a built-in [CloudpickleMaterializer]()
+that can handle any object by saving it with 
+[cloudpickle](https://github.com/cloudpipe/cloudpickle).
+However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](#custom-materializers) to save your objects in a more robust and efficient format.
 {% endhint %}
 
 ## Custom materializers
