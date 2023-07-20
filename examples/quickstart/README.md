@@ -32,9 +32,9 @@ To run locally, install ZenML and pull this quickstart:
 # Install ZenML
 pip install "zenml[server]"
 
-# Pull this quickstart to zenml_examples/quickstart
-zenml example pull quickstart
-cd zenml_examples/quickstart
+# clone the ZenML repository
+git clone https://github.com/zenml-io/zenml.git
+cd zenml/examples/quickstart
 ```
 
 ### :arrow_forward: Run Locally
@@ -87,13 +87,10 @@ zenml show
 
 ## :sponge: Clean up
 
-To clean up, simply spin down the ZenML server and delete the examples folder 
-we downloaded earlier:
+To clean up, simply spin down the ZenML server.
 
 ```shell
 zenml down
-
-rm -rf zenml_examples
 ```
 
 ## :bulb: Learn More
