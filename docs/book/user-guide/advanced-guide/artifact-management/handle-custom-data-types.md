@@ -18,7 +18,7 @@ interaction / activation:
 | ------------ | ------------------ |--------------- |
 | [BuiltInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInMaterializer) | `bool`, `float`, `int`, `str`, `None` | `.json` |
 | [BytesInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BytesMaterializer) | `bytes` | `.txt` |
-| [BuiltInContainerMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer) | `dict`, `list`, `set`, `tuple` | Directory of files depending on subtypes |
+| [BuiltInContainerMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer) | `dict`, `list`, `set`, `tuple` | Directory |
 | [NumpyMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.numpy_materializer.NumpyMaterializer) | `np.ndarray` | `.npy` |
 | [PandasMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pandas_materializer.PandasMaterializer) | `pd.DataFrame`, `pd.Series` | `.csv` (or `.gzip` if `parquet` is installed) |
 | [PydanticMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pydantic_materializer.PydanticMaterializer) | `pydantic.BaseModel` | `.json` |
@@ -31,6 +31,50 @@ that can handle any object by saving it with
 [cloudpickle](https://github.com/cloudpipe/cloudpickle).
 However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](#custom-materializers) to save your objects in a more robust and efficient format.
 {% endhint %}
+
+## Integration Materializers
+
+In addition to the built-in materializers, ZenML also provides several
+integration-specific materializers that can be activated by installing the
+respective [integration](../../component-guide/integration-overview.md):
+
+| Integration | Materializer | Handled Data Types | Storage Format |
+| ----------- | ------------ | ------------------ | -------------- |
+| bentoml | [BentoMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-bentoml/#zenml.integrations.bentoml.materializers.bentoml_bento_materializer.BentoMaterializer) | `bentoml.Bento` | `.bento` |
+| deepchecks | [DeepchecksResultMateriailzer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.materializers.deepchecks_results_materializer.DeepchecksResultMaterializer) | `deepchecks.CheckResult`, `deepchecks.SuiteResult` | `.json` |
+| evidently | [EvidentlyProfileMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.materializers.evidently_profile_materializer.EvidentlyProfileMaterializer) | `evidently.Profile` | `.json` |
+| great_expectations | [GreatExpectationsMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.materializers.ge_materializer.GreatExpectationsMaterializer) | `great_expectations.ExpectationSuite`, `great_expectations.CheckpointResult` | `.json` |
+| huggingface | [HFDatasetMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.materializers.huggingface_datasets_materializer.HFDatasetMaterializer) | `datasets.Dataset`, `datasets.DatasetDict` | Directory |
+| huggingface | [HFPTModelMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer.HFPTModelMaterializer) | `transformers.PreTrainedModel` | Directory |
+| huggingface | [HFTFModelMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer.HFTFModelMaterializer) | `transformers.TFPreTrainedModel` | Directory |
+| huggingface | [HFTokenizerMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer.HFTokenizerMaterializer) | `transformers.PreTrainedTokenizerBase` | Directory |
+| lightgbm | [LightGBMBoosterMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-lightgbm/#zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer.LightGBMBoosterMaterializer) | `lgbm.Booster` | `.txt` |
+| lightgbm | [LightGBMDatasetMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-lightgbm/#zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer.LightGBMDatasetMaterializer) | `lgbm.Dataset` | `.binary` |
+| llama_index | [LlamaIndexGPTFaissIndexMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-llama_index/#zenml.integrations.llama_index.materializers.gpt_index_materializer.LlamaIndexGPTFaissIndexMaterializer) | `llama_index.GPTFaissIndex` | `.json` |
+| neural_prophet | [NeuralProphetMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-neural_prophet/#zenml.integrations.neural_prophet.materializers.neural_prophet_materializer.NeuralProphetMaterializer) | `NeuralProphet` | `.pt` |
+| pillow | [PillowImageMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-pillow/#zenml.integrations.pillow.materializers.pillow_image_materializer.PillowImageMaterializer) | `Pillow.Image` | `.PNG` |
+| pycaret | [PyCaretMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-pycaret/#zenml.integrations.pycaret.materializers.model_materializer.PyCaretMaterializer) | Any `sklearn`, `xgboost`, `lightgbm` or `catboost` model | `.pkl` |
+| pytorch | [PyTorchDataLoaderMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-pytorch/#zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer.PyTorchDataLoaderMaterializer) | `torch.Dataset`, `torch.DataLoader` | `.pt` |
+| pytorch | [PyTorchModuleMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-pytorch/#zenml.integrations.pytorch.materializers.pytorch_module_materializer.PyTorchModuleMaterializer) | `torch.Module` | `.pt` |
+| scipy | [SparseMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-scipy/#zenml.integrations.scipy.materializers.sparse_materializer.SparseMaterializer) | `scipy.spmatrix` | `.npz` |
+| spark | [SparkDataFrameMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-spark/#zenml.integrations.spark.materializers.spark_dataframe_materializer.SparkDataFrameMaterializer) | `pyspark.DataFrame` | `.parquet` |
+| spark | [SparkModelMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-spark/#zenml.integrations.spark.materializers.spark_model_materializer.SparkModelMaterializer) | `pyspark.Transformer` | `pyspark.Estimator` | `pyspark.Model` | `.parquet` |
+| tensorflow | [KerasMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-tensorflow/#zenml.integrations.tensorflow.materializers.keras_materializer.KerasMaterializer) | `tf.keras.Model` | Directory |
+| tensorflow | [TensorflowDatasetMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-tensorflow/#zenml.integrations.tensorflow.materializers.tf_dataset_materializer.TensorflowDatasetMaterializer) | `tf.Dataset` | Directory |
+| whylogs | [WhylogsMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.materializers.whylogs_materializer.WhylogsMaterializer) | `whylogs.DatasetProfileView` | `.pb` |
+| xgboost | [XgboostBoosterMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-xgboost/#zenml.integrations.xgboost.materializers.xgboost_booster_materializer.XgboostBoosterMaterializer) | `xgb.Booster` | `.json` |
+| xgboost | [XgboostDMatrixMaterializer](https://sdkdocs.zenml.io/LATEST/integration_code_docs/integrations-xgboost/#zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer.XgboostDMatrixMaterializer) | `xgb.DMatrix` | `.binary` |
+
+{% hint style="warning" %}
+If you are running pipelines with a Docker-based 
+[orchestrator](../../component-guide/orchestrators/orchestrators.md), you need
+to specify the corresponding integration as `required_integrations` in the 
+`DockerSettings` of your pipeline in order to have the integration materializer
+available inside your Docker container. See the 
+[pipeline configuration documentation](../../advanced-guide/pipelining-features/configure-steps-pipelines.md)
+for more information.
+{% endhint %}
+
 
 ## Custom materializers
 
