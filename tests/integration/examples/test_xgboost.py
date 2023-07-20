@@ -20,6 +20,9 @@ from tests.integration.examples.utils import run_example
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the xgboost example."""
     with run_example(
-        request=request, name="xgboost", pipelines={"xgboost_pipeline": (1, 3)}
+        request=request,
+        name="xgboost",
+        pipelines={"xgboost_pipeline": (1, 3)},
+        example_code_lives_in_tests_subdir=True,
     ):
         pass

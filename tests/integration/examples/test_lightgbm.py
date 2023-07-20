@@ -21,6 +21,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the lightgbm example."""
 
     with run_example(
-        request=request, name="lightgbm", pipelines={"lgbm_pipeline": (1, 3)}
+        request=request,
+        name="lightgbm",
+        pipelines={"lgbm_pipeline": (1, 3)},
+        example_code_lives_in_tests_subdir=True,
     ):
         pass

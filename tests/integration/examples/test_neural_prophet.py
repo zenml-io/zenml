@@ -23,5 +23,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="neural_prophet",
         pipelines={"neural_prophet_pipeline": (1, 3)},
+        example_code_lives_in_tests_subdir=True,
     ):
         pass
