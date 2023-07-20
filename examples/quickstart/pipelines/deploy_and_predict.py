@@ -4,9 +4,13 @@ from steps.predictor import predictor
 from steps.training_data_loader import training_data_loader
 
 from zenml import pipeline
+from zenml.config import DockerSettings
+from zenml.integrations.constants import MLFLOW, SKLEARN
+
+docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings})
 def deploy_and_predict() -> None:
     """Deploy the best model and run some predictions."""
     prediction_service_loader.after(model_deployer)

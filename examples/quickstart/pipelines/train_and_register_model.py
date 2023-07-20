@@ -4,9 +4,13 @@ from steps.trainers import random_forest_trainer_mlflow, sgd_trainer_mlflow
 from steps.training_data_loader import training_data_loader
 
 from zenml import pipeline
+from zenml.config import DockerSettings
+from zenml.integrations.constants import MLFLOW, SKLEARN
+
+docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
 
 
-@pipeline(enable_cache=True)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def train_and_register_model_pipeline() -> None:
     """Train a model."""
     X_train, X_test, y_train, y_test = training_data_loader()
