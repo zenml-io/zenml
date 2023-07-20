@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
-from zenml.integrations.evidently.steps import (
-    evidently_report_step,
-)
+# How many seconds to wait before uploading logs to the artifact store
+LOGS_HANDLER_INTERVAL_SECONDS: int = 5
 
-drift_detector = evidently_report_step.with_options(
-    parameters=dict(metrics=[EvidentlyMetricConfig.metric("DataDriftPreset")])
-)
+# How many messages to buffer before uploading logs to the artifact store
+LOGS_HANDLER_MAX_MESSAGES: int = 100
+
+# Name of the ZenML step logger
+STEP_STDOUT_LOGGER_NAME = "_step_stdout_logger"
+STEP_STDERR_LOGGER_NAME = "_step_stderr_logger"

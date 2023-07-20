@@ -475,7 +475,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         if deployment.schedule:
             logger.info(
-                "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
+                "Scheduling job using Google Cloud Scheduler and Google "
+                "Cloud Functions..."
             )
             self._upload_and_schedule_pipeline(
                 pipeline_name=deployment.pipeline_configuration.name,
@@ -519,20 +520,21 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             settings: Pipeline level settings for this orchestrator.
 
         Raises:
-            ValueError: If the attribute `pipeline_root` is not set and it
+            ValueError: If the attribute `pipeline_root` is not set, and it
                 can be not generated using the path of the artifact store in the
                 stack because it is not a
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
-                raised if attempting to schedule pipeline run without using the
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also
+                gets raised if attempting to schedule pipeline run without using
+                the `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
         # First, do some validation
         artifact_store = stack.artifact_store
         if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
             raise ValueError(
-                "Currently, the Vertex AI orchestrator only supports scheduled runs "
-                f"in combination with an artifact store of flavor: {GCP_ARTIFACT_STORE_FLAVOR}. "
-                f"The current stacks artifact store is of flavor: {artifact_store.flavor}. "
+                "Currently, the Vertex AI orchestrator only supports "
+                "scheduled runs in combination with an artifact store of "
+                f"flavor: {GCP_ARTIFACT_STORE_FLAVOR}. The current stacks "
+                f"artifact store is of flavor: {artifact_store.flavor}. "
                 "Please update your stack accordingly."
             )
 

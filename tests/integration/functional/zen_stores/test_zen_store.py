@@ -37,7 +37,6 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml.artifact_stores import step_logging_utils
 from zenml.client import Client
 from zenml.enums import SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -46,6 +45,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
+from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
     ArtifactFilterModel,
     ComponentFilterModel,
@@ -1211,7 +1211,7 @@ def test_logs_are_recorded_properly(clean_client):
         assert "log" in step1_logs_content
 
         # Step 2 does not have logs!
-        assert step2_logs_content == ""
+        assert "Step `step_2` has started." in step2_logs_content
 
 
 def test_logs_are_recorded_properly_when_disabled(clean_client):
@@ -1231,17 +1231,17 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
 
         artifact_store = _load_artifact_store(artifact_store_id, store)
 
-        logs_uri_1 = step_logging_utils.prepare_logs_uri(
+        logs_uri_1 = prepare_logs_uri(
             artifact_store=artifact_store,
             step_name=steps[0].name,
         )
 
-        logs_uri_2 = step_logging_utils.prepare_logs_uri(
+        logs_uri_2 = prepare_logs_uri(
             artifact_store=artifact_store,
             step_name=steps[1].name,
         )
 
-        step_logging_utils.prepare_logs_uri(
+        prepare_logs_uri(
             artifact_store=artifact_store,
             step_name=steps[1].name,
         )
