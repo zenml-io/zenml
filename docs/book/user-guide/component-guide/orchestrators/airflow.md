@@ -152,7 +152,7 @@ of your Airflow deployment.
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Airflow. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -174,13 +174,13 @@ orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 
@@ -257,7 +257,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your
-pipelines [here](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md).
+pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
 
 A concrete example of using the Airflow orchestrator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow\_orchestration).

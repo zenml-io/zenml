@@ -55,7 +55,7 @@ For concrete options, check out the section on the [`GitHubCodeRepository`](conn
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](advanced-guide.md) is computed
+* First, the [source root](../advanced-guide.md) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code version for pipeline runs
@@ -96,15 +96,15 @@ After registering the GitHub code repository, ZenML will automatically detect if
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
+    ![](../../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](../../.gitbook/assets/github-token-set-permissions.png)
+    ![](../../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](../../.gitbook/assets/github-token-permissions-overview.png)
+    ![](../../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
+    ![](../../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
@@ -137,10 +137,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](../../.gitbook/assets/gitlab-generate-access-token.png)
+    ![](../../../.gitbook/assets/gitlab-generate-access-token.png)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](../../.gitbook/assets/gitlab-copy-access-token.png)
+    ![](../../../.gitbook/assets/gitlab-copy-access-token.png)
 
 </details>
 

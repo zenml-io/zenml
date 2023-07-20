@@ -279,7 +279,7 @@ class StepRunner:
                     "is deprecated and will be removed in a future release. "
                     f"Please adjust your '{step_name}' step to instead import "
                     "the `StepContext` inside your step, as shown here: "
-                    "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
+                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
                 )
                 function_params[arg] = get_step_context()
             elif arg in input_artifacts:
@@ -340,7 +340,7 @@ class StepRunner:
                     "is deprecated and will be removed in a future release. "
                     f"Please adjust your '{step_name}' hook to instead import "
                     "the `StepContext` inside your hook, as shown here: "
-                    "https://docs.zenml.io/user-guide/advanced-guide/fetch-metadata-within-steps"
+                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
                 )
                 function_params[arg] = get_step_context()
 
