@@ -14,53 +14,16 @@ ZenML already includes built-in materializers for many common data types. These
 are always enabled and are used in the background without requiring any user
 interaction / activation:
 
-<table>
-    <thead>
-        <tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>[BuiltInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInMaterializer)</td>
-            <td>`bool`, `float`, `int`, `str`, `None`</td>
-            <td>`.json`</td>
-        </tr>
-        <tr>
-            <td>[BytesInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BytesMaterializer)</td>
-            <td>`bytes`</td>
-            <td>`.txt`</td>
-        </tr>
-        <tr>
-            <td>[BuiltInContainerMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer)</td>
-            <td>`dict`, `list`, `set`, `tuple`</td>
-            <td>Directory of files depending on subtypes</td>
-        </tr>
-        <tr>
-            <td>[NumpyMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.numpy_materializer.NumpyMaterializer)</td>
-            <td>`np.ndarray`</td>
-            <td>`.npy`</td>
-        </tr>
-        <tr>
-            <td>[PandasMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pandas_materializer.PandasMaterializer)</td>
-            <td>`pd.DataFrame`, `pd.Series`</td>
-            <td>`.csv` (or `.gzip` if `parquet` is installed)</td>
-        </tr>
-        <tr>
-            <td>[PydanticMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pydantic_materializer.PydanticMaterializer)</td>
-            <td>`pydantic.BaseModel`</td>
-            <td>`.json`</td>
-        </tr>
-        <tr>
-            <td>[ServiceMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.service_materializer.ServiceMaterializer)</td>
-            <td>`zenml.services.service.BaseService`</td>
-            <td>`.json`</td>
-        </tr>
-        <tr>
-            <td>[StructuredStringMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.structured_string_materializer.StructuredStringMaterializer)</td>
-            <td>`zenml.types.CSVString`, `zenml.types.HTMLString`, `zenml.types.MarkdownString`</td>
-            <td>`.csv` / `.html` / `.md` (depending on type)</td>
-        </tr>
-    </tbody>
-</table>
+| Materializer | Handled Data Types | Storage Format |
+| ------------ | ------------------ |--------------- |
+| [BuiltInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInMaterializer) | `bool`, `float`, `int`, `str`, `None` | `.json` |
+| [BytesInMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BytesMaterializer) | `bytes` | `.txt` |
+| [BuiltInContainerMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.built_in_materializer.BuiltInContainerMaterializer) | `dict`, `list`, `set`, `tuple` | Directory of files depending on subtypes |
+| [NumpyMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.numpy_materializer.NumpyMaterializer) | `np.ndarray` | `.npy` |
+| [PandasMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pandas_materializer.PandasMaterializer) | `pd.DataFrame`, `pd.Series` | `.csv` (or `.gzip` if `parquet` is installed) |
+| [PydanticMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.pydantic_materializer.PydanticMaterializer) | `pydantic.BaseModel` | `.json` |
+| [ServiceMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.service_materializer.ServiceMaterializer) | `zenml.services.service.BaseService` | `.json` |
+| [StructuredStringMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.structured_string_materializer.StructuredStringMaterializer) | `zenml.types.CSVString`, `zenml.types.HTMLString`, `zenml.types.MarkdownString` | `.csv` / `.html` / `.md` (depending on type) |
 
 {% hint style="info" %}
 ZenML also provides a built-in [CloudpickleMaterializer]()
