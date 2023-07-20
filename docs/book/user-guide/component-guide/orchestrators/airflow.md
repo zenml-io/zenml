@@ -4,8 +4,10 @@ description: Orchestrating your pipelines to run on Airflow.
 
 # Airflow Orchestrator
 
-The Airflow orchestrator is an [orchestrator](orchestrators.md) flavor provided by the ZenML `airflow` integration that
-uses [Airflow](https://airflow.apache.org/) to run your pipelines.
+ZenML pipelines can be executed natively as [Airflow](https://airflow.apache.org/) 
+DAGs. This brings together the power of the Airflow orchestration with the 
+ML-specific benefits of ZenML pipelines. Each ZenML step runs in a separate 
+Docker container which is scheduled and started using Airflow.
 
 {% hint style="warning" %}
 If you're going to use a remote deployment of Airflow, you'll also need
@@ -56,7 +58,7 @@ To use the Airflow orchestrator, we need:
   ```shell
   zenml integration install airflow
   ```
-* [Docker](https://www.docker.com) installed and running.
+* [Docker](https://docs.docker.com/get-docker/) installed and running.
 * The orchestrator registered and part of our active stack:
 
 ```shell
@@ -156,6 +158,28 @@ out [this page](/docs/book/user-guide/advanced-guide/environment-management/cont
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+#### Scheduling
+
+You can [schedule pipeline runs](../../advanced-guide/pipelining-features/schedule-pipeline-runs.md)
+on Airflow similarly to other orchestrators. However, note that 
+**Airflow schedules always need to be set in the past**, e.g.,:
+
+```python
+from datetime import datetime, timedelta
+
+from zenml.pipelines import Schedule
+
+scheduled_pipeline = fashion_mnist_pipeline.with_options(
+    schedule=Schedule(
+        start_time=datetime.now() - timedelta(hours=1),  # start in the past
+        end_time=datetime.now() + timedelta(hours=1),
+        interval_second=timedelta(minutes=15),  # run every 15 minutes
+        catchup=False,
+    )
+)
+scheduled_pipeline()
+```
+
 #### Airflow UI
 
 Airflow comes with its own UI that you can use to find further details about your pipeline runs, such as the logs of
@@ -168,6 +192,19 @@ from zenml.client import Client
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
 ```
+
+{% hint style="info" %}
+If you cannot see the Airflow UI credentials in the console, you can find the
+password in
+`<GLOBAL_CONFIG_DIR>/airflow/<ORCHESTRATOR_UUID>/standalone_admin_password.txt`.
+- `GLOBAL_CONFIG_DIR` depends on your OS.
+  Run `python -c "from zenml.config.global_config import GlobalConfiguration; print(GlobalConfiguration().config_directory)"`
+  to get the path for your machine.
+- `ORCHESTRATOR_UUID` is the unique ID of the Airflow orchestrator, but there
+  should be only one folder here, so you can just navigate into that one.
+
+The username will always be `admin`.
+{% endhint %}
 
 #### Additional configuration
 
