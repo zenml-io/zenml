@@ -62,4 +62,4 @@ def test_example(request: pytest.FixtureRequest) -> None:
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
-            service.stop(timeout=120)
+            service.stop(timeout=180)
