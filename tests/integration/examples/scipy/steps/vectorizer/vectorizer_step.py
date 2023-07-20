@@ -11,19 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Tuple
+
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import CountVectorizer
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def vectorizer(
     train: np.ndarray, test: np.ndarray
-) -> Output(count_vec=BaseEstimator, X_train=csr_matrix, X_test=csr_matrix):
+) -> Tuple[
+    Annotated[BaseEstimator, "count_vec"],
+    Annotated[csr_matrix, "X_train"],
+    Annotated[csr_matrix, "X_test"],
+]:
     count_vec = CountVectorizer(ngram_range=(1, 4), min_df=3)
     train = count_vec.fit_transform(train)
     test = count_vec.transform(test)

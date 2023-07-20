@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 import os
 import re
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../../data", "train.csv")
 TEST_PATH = os.path.join(os.path.dirname(__file__), "../../data", "test.csv")
@@ -30,12 +31,12 @@ def clean_text(text: str):
 
 @step
 def importer() -> (
-    Output(
-        X_train=np.ndarray,
-        X_test=np.ndarray,
-        y_train=np.ndarray,
-        y_test=np.ndarray,
-    )
+    Tuple[
+        Annotated[np.ndarray, "X_train"],
+        Annotated[np.ndarray, "X_test"],
+        Annotated[np.ndarray, "y_train"],
+        Annotated[np.ndarray, "y_test"],
+    ]
 ):
     train = pd.read_csv(TRAIN_PATH)
     test = pd.read_csv(TEST_PATH)

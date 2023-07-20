@@ -156,7 +156,6 @@ __pycache__
 scratchpad/
 
 # zen
-*.csv
 temp/*
 local_test/
 .zen/
