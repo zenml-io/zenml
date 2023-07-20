@@ -4,18 +4,22 @@ set -Eeo pipefail
 
 setup_stack () {
 
-  zenml model-deployer register mlflow_quickstart --flavor=mlflow
-  zenml experiment-tracker register mlflow_quickstart --flavor=mlflow
-  zenml model-registry register mlflow_quickstart --flavor=mlflow
-  zenml stack register quickstart \
+  zenml model-deployer register mlflow_deployer --flavor=mlflow || \
+    msg "${WARNING}Reusing preexisting model deployer ${NOFORMAT}mlflow_deployer"
+  zenml experiment-tracker register mlflow_tracker  --flavor=mlflow || \
+    msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
+  zenml model-registry register mlflow_registry --flavor=mlflow || \
+    msg "${WARNING}Reusing preexisting model registry ${NOFORMAT}mlflow_registry"
+
+  zenml stack register quickstart_stack \
       -a default \
       -o default \
-      -d mlflow_quickstart \
-      -r mlflow_quickstart \
-      -e mlflow_quickstart || \
+      -d mlflow_deployer \
+      -r mlflow_registry \
+      -e mlflow_tracker || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart"
 
-  zenml stack set quickstart
+  zenml stack set quickstart_stack
 }
 
 pre_run () {
