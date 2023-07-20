@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import tempfile
+from typing import Tuple
 
 import requests
 import xgboost as xgb
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 TRAIN_SET_RAW = (
     "https://raw.githubusercontent.com/dmlc/xgboost/master/demo"
@@ -31,7 +32,11 @@ TEST_SET_RAW = (
 
 
 @step
-def data_loader() -> Output(mat_train=xgb.DMatrix, mat_test=xgb.DMatrix):
+def data_loader() -> (
+    Tuple[
+        Annotated[xgb.DMatrix, "mat_train"], Annotated[xgb.DMatrix, "mat_test"]
+    ]
+):
     """Retrieves the data from the demo directory of the XGBoost repo."""
     # Write data to temporary files to load it with `xgb.DMatrix`.
     with tempfile.NamedTemporaryFile(
