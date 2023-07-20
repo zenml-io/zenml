@@ -617,10 +617,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     )
                 )
             except (AttributeError, OSError):
-                # In rare cases, for example due to failed version register or
-                # by missuse, state of Model Registry in MlFlow might get
-                # into poor state and it is better to suppress those versions,
-                # since they are not usable.
+                # Sometimes, the Model Registry in MlFlow can become unusable
+                # due to failed version registration or misuse. In such rare
+                # cases, it's best to suppress those versions that are not usable.
                 pass
 
         # Filter the model versions by stage.
