@@ -26,7 +26,6 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :computer: Run Locally
 
-### :page_facing_up: Prerequisites
 To run locally, install ZenML and pull this quickstart:
 
 ```shell
