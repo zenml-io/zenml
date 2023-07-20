@@ -43,6 +43,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[["F"], "Pipeline"]:
@@ -55,6 +56,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -68,6 +70,7 @@ def pipeline(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_step_logs: If step logs should be enabled for this pipeline.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be a
@@ -88,6 +91,7 @@ def pipeline(
             name=name or func.__name__,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_step_logs=enable_step_logs,
             settings=settings,
             extra=extra,
             on_failure=on_failure,

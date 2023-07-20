@@ -8,7 +8,7 @@ use for your pipeline runs. Additionally, running a pipeline which is tracked in
 repository eliminates the need to rebuild Docker images for containerized stack components each
 time you change one of your source code files.
 
-Check out [this diagram](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository)
+Check out [this diagram](https://docs.zenml.io/user-guide/advanced-guide/environment-management/connect-your-git-repository)
 for a visual representation how the code repository fits into the general ZenML architecture.
 
 ## 📄 Prerequisites
@@ -102,4 +102,4 @@ or if one of your colleagues tries to run the pipeline!
 # 📜 Learn more
 
 If you want to learn more about code repositories, check out our
-[docs](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository).
+[docs](https://docs.zenml.io/user-guide/advanced-guide/environment-management/connect-your-git-repository).

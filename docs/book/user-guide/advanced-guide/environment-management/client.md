@@ -41,7 +41,7 @@ These are the main ZenML resources that you can interact with via the ZenML
 Client:
 
 ### Pipelines, Runs, Artifacts
-- **Pipelines**: The [pipeline versions](../starter-guide/version-pipelines)
+- **Pipelines**: The [pipeline versions](../../starter-guide/version-pipelines)
 that were implicitly tracked when running ZenML pipelines.
 - **Pipeline Runs**: Information about all pipeline runs that were executed on
 your ZenML instance.
@@ -57,7 +57,7 @@ artifact stores as part of pipeline runs.
 your ZenML instance. See [here](connect-your-git-repository) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../starter-guide/fetch-runs-after-execution.md)
+Checkout the [documentation on fetching runs](../../starter-guide/fetch-runs-after-execution.md)
 for more information on the various ways how you can fetch and use the
 pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
@@ -66,19 +66,19 @@ pipeline, pipeline run, step run, and artifact resources in code.
 - **Stack**: The stacks registered in your ZenML instance.
 - **Stack Components**: The stack components registered in your ZenML instance,
 e.g., all orchestrators, artifact stores, model deployers, ...
-- **Flavors**: The [stack component flavors](../../getting-started/core-concepts.md#flavor)
+- **Flavors**: The [stack component flavors](../../../getting-started/core-concepts.md#flavor)
 available to you, including:
-    - Built-in flavors like the [local orchestrator](../component-guide/orchestrators/local.md),
-    - Integration-enabled flavors like the [Kubeflow orchestrator](../component-guide/orchestrators/kubeflow.md),
-    - Custom flavors that you have [created yourself](../../platform-guide/set-up-your-mlops-platform/implement-a-custom-integration#step-2-create-individual-stack-component-flavors). 
+    - Built-in flavors like the [local orchestrator](../../component-guide/orchestrators/local.md),
+    - Integration-enabled flavors like the [Kubeflow orchestrator](../../component-guide/orchestrators/kubeflow.md),
+    - Custom flavors that you have [created yourself](../../../platform-guide/set-up-your-mlops-platform/implement-a-custom-integration#step-2-create-individual-stack-component-flavors). 
 - **User**: The users registered in your ZenML instance. If you are running
 locally, there will only be a single `default` user. For more information on
-user management see [here](../../platform-guide/set-up-your-mlops-platform/user-management.md).
+user management see [here](../../../platform-guide/set-up-your-mlops-platform/user-management.md).
 - **Secrets**: The infrastructure authentication secrets that you have 
 registered in the 
-[ZenML Secret Store](../../platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md).
+[ZenML Secret Store](../../../platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md).
 - **Service Connectors**: The service connectors that that you have set up to
-[connect ZenML to your infrastructure](../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md).
+[connect ZenML to your infrastructure](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md).
 
 ## Client Methods
 

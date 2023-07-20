@@ -42,11 +42,10 @@ def list_artifacts(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter artifacts.
     """
-    cli_utils.print_active_config()
     artifacts = Client().list_artifacts(**kwargs)
 
     if not artifacts:
-        logger.info("No artifacts found.")
+        cli_utils.declare("No artifacts found.")
         return
 
     cli_utils.print_pydantic_models(
@@ -97,8 +96,6 @@ def delete_artifact(
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete artifact '{artifact_id}'?"
@@ -148,8 +145,6 @@ def prune_artifacts(
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     client = Client()
     unused_artifacts = depaginate(
         partial(client.list_artifacts, only_unused=True)

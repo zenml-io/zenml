@@ -251,7 +251,7 @@ If you need to pass additional arguments to the entrypoint, there are two method
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use your custom orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

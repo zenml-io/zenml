@@ -46,7 +46,6 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter the list of workspaces.
     """
     warn_unsupported_non_default_workspace()
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing workspaces...\n"):
         workspaces = client.list_workspaces(**kwargs)

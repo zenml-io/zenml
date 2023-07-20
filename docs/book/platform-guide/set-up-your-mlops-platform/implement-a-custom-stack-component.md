@@ -225,7 +225,7 @@ zenml stack register <STACK_NAME> \
 ```
 
 {% hint style="info" %}
-If you would like to automatically track some metadata about your custom stack component with each pipeline run, check out the [Tracking Custom Stack Component Metadata](../../user-guide/advanced-guide/fetch-metadata-within-steps.md) section.
+If you would like to automatically track some metadata about your custom stack component with each pipeline run, check out the [Tracking Custom Stack Component Metadata](../../user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md) section.
 {% endhint %}
 
 Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more information about the registered flavors available to you:

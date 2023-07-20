@@ -14,63 +14,87 @@
 """Utility class to help with interacting with the dashboard."""
 from typing import Optional
 
+from zenml import constants
 from zenml.client import Client
-from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
+from zenml.models import (
+    ComponentResponseModel,
+    StackResponseModel,
+)
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 logger = get_logger(__name__)
 
 
-def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
-    """Computes a dashboard url to directly view the run.
-
-    Args:
-        run: Pipeline run to be viewed.
+def get_base_url() -> Optional[str]:
+    """Function to get the base workspace-scoped url.
 
     Returns:
-        A direct url link to the pipeline run details page. If run does not exist,
-        returns None.
-    """
-    client = Client()
-
-    if client.zen_store.type != StoreType.REST:
-        return ""
-
-    url = client.zen_store.url + f"/workspaces/{client.active_workspace.name}"
-    run_id = str(run.id)
-
-    if run.pipeline:
-        pipeline_id = str(run.pipeline.id)
-        url += f"/pipelines/{pipeline_id}/runs"
-    else:
-        url += "/all-runs"
-
-    url += f"/{run_id}/dag"
-
-    return url
-
-
-def print_run_url(run: PipelineRunResponseModel) -> None:
-    """Logs a dashboard url to directly view the run.
-
-    Args:
-        run: Pipeline run to be viewed.
+        the base url if the client is using a rest zen store, else None
     """
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
-        url = get_run_url(run)
-        if url:
-            logger.info(f"Dashboard URL: {url}")
-    elif client.zen_store.type == StoreType.SQL:
-        # Connected to SQL Store Type, we're local
-        logger.info(
-            "Pipeline visualization can be seen in the ZenML Dashboard. "
-            "Run `zenml up` to see your pipeline!"
+        url = (
+            client.zen_store.url
+            + f"{constants.WORKSPACES}/{client.active_workspace.name}"
         )
+        return url
+
+    return None
+
+
+def get_stack_url(stack: StackResponseModel) -> Optional[str]:
+    """Function to get the dashboard URL of a given stack model.
+
+    Args:
+        stack: the response model of the given stack.
+
+    Returns:
+        the URL to the stack if the dashboard is available, else None.
+    """
+    base_url = get_base_url()
+    if base_url:
+        return base_url + f"{constants.STACKS}/{stack.id}/configuration"
+    return None
+
+
+def get_component_url(component: ComponentResponseModel) -> Optional[str]:
+    """Function to get the dashboard URL of a given component model.
+
+    Args:
+        component: the response model of the given component.
+
+    Returns:
+        the URL to the component if the dashboard is available, else None.
+    """
+    base_url = get_base_url()
+    if base_url:
+        return (
+            base_url
+            + f"{constants.STACK_COMPONENTS}/{component.type.value}/{component.id}/configuration"
+        )
+    return None
+
+
+def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
+    """Function to get the dashboard URL of a given pipeline run.
+
+    Args:
+        run: the response model of the given pipeline run.
+
+    Returns:
+        the URL to the pipeline run if the dashboard is available, else None.
+    """
+    base_url = get_base_url()
+    if base_url:
+        if run.pipeline:
+            return f"{base_url}{constants.PIPELINES}/{run.pipeline.id}{constants.RUNS}/{run.id}/dag"
+        else:
+            return f"{base_url}/all-runs/{run.id}/dag"
+    return None
 
 
 def show_dashboard(url: str) -> None:
@@ -90,7 +114,9 @@ def show_dashboard(url: str) -> None:
         display(IFrame(src=url, width="100%", height=720))
 
     elif environment in (EnvironmentType.NATIVE, EnvironmentType.WSL):
-        if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
+        if constants.handle_bool_env_var(
+            constants.ENV_AUTO_OPEN_DASHBOARD, default=True
+        ):
             try:
                 import webbrowser
 

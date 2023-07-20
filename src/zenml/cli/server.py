@@ -519,28 +519,36 @@ def status() -> None:
 
     store_cfg = gc.store
 
-    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
-    cli_utils.declare(
-        f"Local store files are located at: '{gc.local_stores_path}'"
-    )
-    if client.root:
-        cli_utils.declare(f"Active repository root: {client.root}")
+    # Write about the current ZenML server
+    cli_utils.declare("-----ZenML Server Status-----")
     if store_cfg is not None:
         if gc.uses_default_store():
-            cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
+            cli_utils.declare(
+                f"Connected to a local ZenML database: ('{store_cfg.url}')"
+            )
         else:
             cli_utils.declare(
                 f"Connected to a ZenML server: '{store_cfg.url}'"
             )
 
+    # Write about the active entities
     scope = "repository" if client.uses_local_configuration else "global"
-    cli_utils.declare(f"The current user is: '{client.active_user.name}'")
+    cli_utils.declare(f"  The active user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active workspace is: '{client.active_workspace.name}' "
+        f"  The active workspace is: '{client.active_workspace.name}' "
         f"({scope})"
     )
     cli_utils.declare(
-        f"The active stack is: '{client.active_stack_model.name}' ({scope})"
+        f"  The active stack is: '{client.active_stack_model.name}' ({scope})"
+    )
+
+    if client.root:
+        cli_utils.declare(f"Active repository root: {client.root}")
+
+    # Write about the configuration files
+    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
+    cli_utils.declare(
+        f"Local store files are located at: '{gc.local_stores_path}'"
     )
 
     server = get_active_deployment(local=True)
