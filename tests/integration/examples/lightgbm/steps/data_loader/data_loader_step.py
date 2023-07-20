@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import tempfile
+from typing import Tuple
 
 import lightgbm as lgb
 import pandas as pd
 import requests
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 TRAIN_SET_RAW = "https://raw.githubusercontent.com/microsoft/LightGBM/master/examples/regression/regression.train"
 
@@ -26,7 +27,11 @@ TEST_SET_RAW = "https://raw.githubusercontent.com/microsoft/LightGBM/master/exam
 
 
 @step
-def data_loader() -> Output(mat_train=lgb.Dataset, mat_test=lgb.Dataset):
+def data_loader() -> (
+    Tuple[
+        Annotated[lgb.Dataset, "mat_train"], Annotated[lgb.Dataset, "mat_test"]
+    ]
+):
     """Retrieves the data from the demo directory of the LightGBM repo."""
     # Write data to temporary files to load it with `lgb.Dataset`.
     with tempfile.NamedTemporaryFile(
