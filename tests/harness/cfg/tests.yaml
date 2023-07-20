@@ -86,7 +86,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_kubernetes_orchestration
+  - module: tests.integration.examples.test_sklearn
     requirements:
       - integrations:
           - sklearn

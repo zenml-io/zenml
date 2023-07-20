@@ -12,17 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.kubernetes_example_pipeline import kubernetes_example_pipeline
-
-if __name__ == "__main__":
-    kubernetes_example_pipeline()
-
-    # In case you want to run this on a schedule uncomment the following lines.
-
-    # from zenml.pipelines import Schedule
-
-    # schedule = Schedule(cron_expression="*/5 * * * *")  # every 5 minutes
-    # scheduled_pipeline = kubernetes_example_pipeline.with_options(
-    #     schedule=schedule
-    # )
-    # scheduled_pipeline()
+from steps.evaluator import evaluator
+from steps.importer import digits_data_loader
+from steps.sklearn_trainer import svc_trainer

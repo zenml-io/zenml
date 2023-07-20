@@ -12,20 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import numpy as np
-import pandas as pd
+from pipelines.sklearn_digits_pipeline import sklearn_digits_pipeline
 
-from zenml import step
-from zenml.steps import Output
-
-
-@step
-def skew_comparison(
-    reference_input: np.ndarray,
-    comparison_input: np.ndarray,
-) -> Output(reference=pd.DataFrame, comparison=pd.DataFrame):
-    """Convert data from numpy to pandas for skew comparison."""
-    columns = [str(x) for x in list(range(reference_input.shape[1]))]
-    return pd.DataFrame(reference_input, columns=columns), pd.DataFrame(
-        comparison_input, columns=columns
-    )
+if __name__ == "__main__":
+    sklearn_digits_pipeline()

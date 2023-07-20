@@ -12,7 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from steps import digits_data_loader, evaluator, skew_comparison, svc_trainer
+from steps import (
+    digits_data_loader,
+    evaluator,
+    svc_trainer,
+)
 
 from zenml import pipeline
 from zenml.config import DockerSettings
@@ -22,9 +26,8 @@ docker_settings = DockerSettings(required_integrations=[SKLEARN, FACETS])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def kubernetes_example_pipeline():
+def sklearn_digits_pipeline():
     """data loading -> train -> test with skew comparison in parallel."""
     X_train, X_test, y_train, y_test = digits_data_loader()
     model = svc_trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
-    skew_comparison(X_train, X_test)

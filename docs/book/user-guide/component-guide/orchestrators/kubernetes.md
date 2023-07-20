@@ -4,8 +4,31 @@ description: Orchestrating your pipelines to run on Kubernetes clusters.
 
 # Kubernetes Orchestrator
 
-The Kubernetes orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `kubernetes`
-integration that runs your pipelines on a [Kubernetes](https://kubernetes.io/) cluster.
+Using the ZenML `kubernetes` integration, you can orchestrate and scale your
+ML pipelines on a [Kubernetes](https://kubernetes.io/) cluster without writing 
+a single line of Kubernetes code.
+
+This Kubernetes-native orchestrator is a minimalist, lightweight alternative 
+to other distributed orchestrators like Airflow or Kubeflow.
+
+Overall, the Kubernetes orchestrator is quite similar to the Kubeflow
+orchestrator in that it runs each pipeline step in a separate Kubernetes pod. 
+However, the orchestration of the different pods is not done by Kubeflow but 
+by a separate master pod that orchestrates the step execution via topological 
+sort.
+
+Compared to Kubeflow, this means that the Kubernetes-native orchestrator is
+faster and much simpler to start with since you do not need to install 
+and maintain Kubeflow on your cluster. The Kubernetes-native orchestrator is 
+an ideal choice for teams new to distributed orchestration that do not want 
+to go with a fully-managed offering.
+
+However, since Kubeflow is much more mature, you should, in most cases, aim to
+move your pipelines to Kubeflow in the long run. A smooth way to 
+production-grade orchestration could be to set up a Kubernetes cluster first 
+and get started with the Kubernetes-native orchestrator. If needed, you can 
+then install and set up Kubeflow later and simply switch out the orchestrator 
+of your stack as soon as your full setup is ready.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of
@@ -137,6 +160,25 @@ You can now run any ZenML pipeline using the Kubernetes orchestrator:
 
 ```shell
 python file_that_runs_a_zenml_pipeline.py
+```
+
+If all went well, you should now see the logs of all Kubernetes pods in your
+terminal, and when running `kubectl get pods -n zenml`, you should also see
+that a pod was created in your cluster for each pipeline step.
+
+#### Interacting with pods via kubectl
+
+For debugging, it can sometimes be handy to interact with the Kubernetes pods
+directly via kubectl. 
+To make this easier, we have added the following labels to all pods:
+- `run`: the name of the ZenML run.
+- `pipeline`: the name of the ZenML pipeline associated with this run.
+
+E.g., you can use these labels to manually delete all pods related to a specific
+pipeline:
+
+```shell
+kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
 #### Additional configuration
