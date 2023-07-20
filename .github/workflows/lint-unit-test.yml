@@ -35,6 +35,7 @@ on:
           - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
         required: false
         default: '3.8'
       enable_tmate:
@@ -76,16 +77,6 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
-
-      # ADD BACK IN IF TESTING KSERVE
-      # - name: Install kserve
-      #   run: |
-      #     # install kserve on python < 3.10
-      #     # kserve is not compatible with Python 3.10 yet
-      #     zenml integration export-requirements --output-file requirements.txt kserve
-      #     pip install -r requirements.txt
-      #     rm requirements.txt
-      #   if: ${{ inputs.python-version != '3.10' }}
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}

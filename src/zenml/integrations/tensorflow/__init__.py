@@ -55,8 +55,8 @@ class TensorflowIntegration(Integration):
             ]
         else:
             requirements = [
-                "tensorflow==2.8.0",
-                "tensorflow_io==0.24.0",
+                "tensorflow>=2.8.0,<3",
+                "tensorflow_io>=0.24.0",
                 "protobuf>=3.6.0,<4.0.0",
             ]
         return requirements
