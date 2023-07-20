@@ -1,5 +1,67 @@
 <!-- markdown-link-check-disable -->
 
+# 0.42.0
+
+This release brings major user experience improvements to how ZenML logs are
+managed and displayed, removes Python 3.7 support, and fixes the Python 3.10 
+PyYAML issues caused by the Cython 3.0 release.
+
+## Improved Logging UX
+
+The log messages written by ZenML when running pipelines or executing ZenML CLI
+commands are now more concise and easier to digest and the log message colors
+were adjusted to be more intuitive. Additionally, all log messages, including 
+custom prints to stdout, now show up as step logs in the dashboard.
+
+## Breaking Changes
+
+### Python 3.7 Support Dropped
+Python 3.7 reached its end of life on on June 27th, 2023. Since then, several 
+MLOps tools have stopped supporting Python 3.7. To prevent dependency issues 
+with our integrations and other open-source packages, ZenML will also no longer
+support Python 3.7 starting from this release.
+
+### Dependency and Integration Version Updates
+ZenML now requires PyYAML 6 since older versions are broken under Python 3.10. 
+Subsequently, the following integrations now require a higher package version:
+- Kubeflow now requires `kfp==1.8.22`
+- Tekton now requires `kfk-tekton==1.7.1`
+- Evidently now requires `evidently==0.2.7` or `evidently==0.2.8`
+
+## What's Changed
+* Add missing quote in docs by @schustmi in https://github.com/zenml-io/zenml/pull/1674
+* Update Local Docker orchestrator docs by @strickvl in https://github.com/zenml-io/zenml/pull/1676
+* Relax `fastapi` dependency version by @fa9r in https://github.com/zenml-io/zenml/pull/1675
+* Improve flavor registration error message by @schustmi in https://github.com/zenml-io/zenml/pull/1671
+* Simplified Page Iteration by @fa9r in https://github.com/zenml-io/zenml/pull/1679
+* Document how to deploy ZenML with custom Docker image by @fa9r in https://github.com/zenml-io/zenml/pull/1672
+* Document the ZenML Client and Models by @fa9r in https://github.com/zenml-io/zenml/pull/1678
+* Add Label Studio text classification integration and example by @adamwawrzynski in https://github.com/zenml-io/zenml/pull/1658
+* Improve yaml config docs page by @schustmi in https://github.com/zenml-io/zenml/pull/1680
+* Catch correct exception when trying to access step context by @schustmi in https://github.com/zenml-io/zenml/pull/1681
+* Add option to only export requirements for installed integrations by @schustmi in https://github.com/zenml-io/zenml/pull/1682
+* Fix copy-paste error (Seldon / KServe docstring) by @strickvl in https://github.com/zenml-io/zenml/pull/1687
+* Add avishniakov to `teams.yaml` by @avishniakov in https://github.com/zenml-io/zenml/pull/1688
+* [NEW PR] Set contains_code to 1 instead of True by @kobiche in https://github.com/zenml-io/zenml/pull/1685
+* Misc slack fixes by @schustmi in https://github.com/zenml-io/zenml/pull/1686
+* Docs: Migration Guide by @fa9r in https://github.com/zenml-io/zenml/pull/1691
+* fix: :card_file_box: Extend pipeline spec storage length by @francoisserra in https://github.com/zenml-io/zenml/pull/1694
+* Make the workspace statistics endpoint more performant by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1689
+* Deprecate examples CLI by @avishniakov in https://github.com/zenml-io/zenml/pull/1693
+* Add cloud server deployment type by @schustmi in https://github.com/zenml-io/zenml/pull/1699
+* Fix Python 3.10 PyYAML Installation Issues by @fa9r in https://github.com/zenml-io/zenml/pull/1695
+* Remove Python 3.7 Support by @fa9r in https://github.com/zenml-io/zenml/pull/1652
+* Improved logs for pipeline execution and CLI usage by @bcdurak in https://github.com/zenml-io/zenml/pull/1664
+* Docs: Restructure Advanced Guide by @fa9r in https://github.com/zenml-io/zenml/pull/1698
+
+## New Contributors
+* @adamwawrzynski made their first contribution in https://github.com/zenml-io/zenml/pull/1658
+* @avishniakov made their first contribution in https://github.com/zenml-io/zenml/pull/1688
+* @kobiche made their first contribution in https://github.com/zenml-io/zenml/pull/1685
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.41.0...0.42.0
+
+
 # 0.41.0
 
 ZenML release 0.41.0 comes with a second round of updates to the pipeline and
@@ -7,7 +69,7 @@ step interface with major changes in how step outputs are defined, how
 information about previous runs can be fetched programmatically, and how
 information about the current run can be obtained.
 
-See [this docs page](https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps)
+See [this docs page](https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty)
 for an overview of all pipeline interface changes introduced since release
 0.40.0 and for more information on how to migrate your existing ZenML pipelines 
 to the latest syntax.

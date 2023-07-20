@@ -6,7 +6,7 @@ In most cases, deploying ZenML with the default `zenmlhub/zenml-server` Docker
 image should work just fine. However, there are some scenarios when you 
 might need to deploy ZenML with a custom Docker image:
 - You have implemented a custom artifact store for which you want to enable
-[artifact visualizations](../../../user-guide/advanced-guide/visualize-artifacts.md)
+[artifact visualizations](../../../user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
 or [step logs](../../../user-guide/starter-guide/follow-best-practices.md#logging)
 in your dashboard.
 - You have forked the ZenML repository and want to deploy a ZenML server based

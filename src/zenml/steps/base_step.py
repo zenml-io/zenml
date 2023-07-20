@@ -880,7 +880,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
             elif not self.entrypoint_definition.legacy_params:
                 raise StepInterfaceError(
-                    "Can't set parameter without param class."
+                    f"Unable to find parameter '{key}' in step function "
+                    "signature."
                 )
 
     def _validate_outputs(
@@ -1093,7 +1094,7 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.warning(
             "The `BaseParameters` class to define step parameters is "
             "deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines "
+            "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines "
             "for information on how to parameterize your steps. As a quick "
             "fix to get rid of this warning, make sure your parameter class "
             "inherits from `pydantic.BaseModel` instead of the "

@@ -1,16 +1,13 @@
 ---
-description: Migrating your pipelines and steps to the new syntax.
+description: How to migrate your ZenML pipelines and steps from version <=0.39.1 to 0.41.0.
 ---
 
-# Migrate your old pipelines and steps
+# Migration guide 0.39.1 → 0.41.0
 
-ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to 
-define ZenML steps and pipelines. This page contains code samples that show you 
-how to upgrade your steps and pipelines to the new syntax.
+ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to define ZenML steps and pipelines. This page contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
 
 {% hint style="warning" %}
-Newer versions of ZenML still work with pipelines and steps defined using the 
-old syntax, but the old syntax is deprecated and will be removed in the future.
+Newer versions of ZenML still work with pipelines and steps defined using the old syntax, but the old syntax is deprecated and will be removed in the future.
 {% endhint %}
 
 ## Overview
@@ -57,6 +54,7 @@ last_run = pipeline_instance.get_runs()[0]
 int_output = last_run.get_step["my_step"].outputs["int_output"].read()
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from typing import Annotated, Optional, Tuple
@@ -117,6 +115,7 @@ step_instance = my_step(params=MyStepParameters(param_1=17))
 pipeline_instance = my_pipeline(my_step=step_instance)
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 # New: Directly define the parameters as arguments of your step function.
@@ -136,8 +135,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./configure-steps-pipelines.md#parameters-for-your-steps)
-for more information on how to parameterize your steps.
+Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#parameters-for-your-steps) for more information on how to parameterize your steps.
 
 ## Calling a step outside of a pipeline
 
@@ -153,6 +151,7 @@ def my_step() -> None:
 my_step.entrypoint()  # Old: Call `step.entrypoint(...)`
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import step
@@ -178,6 +177,7 @@ def my_pipeline(my_step):  # Old: steps are arguments of the pipeline function
     my_step()
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import pipeline, step
@@ -214,6 +214,7 @@ pipeline_instance = my_pipeline(my_step=my_step())
 pipeline_instance.configure(enable_cache=False)
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import pipeline, step
@@ -253,6 +254,7 @@ pipeline_instance = my_pipeline(my_step=my_step())
 pipeline_instance.run(...)
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import pipeline, step
@@ -292,6 +294,7 @@ pipeline_instance = my_pipeline(my_step=my_step())
 pipeline_instance.run(schedule=schedule)
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml.pipelines import Schedule
@@ -313,8 +316,7 @@ my_pipeline()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./schedule-pipeline-runs.md)
-for more information on how to schedule your pipelines.
+Check out [this page](../../user-guide/migration-guide/schedule-pipeline-runs.md) for more information on how to schedule your pipelines.
 
 ## Fetching pipelines after execution
 
@@ -332,6 +334,7 @@ model: ArtifactView = model_trainer_step.output
 loaded_model = model.read()
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 pipeline: PipelineResponseModel = zenml.client.Client().get_pipeline("first_pipeline")
@@ -350,8 +353,7 @@ loaded_model = model.load()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./fetch-metadata-within-steps.md) for more information on
-how to programmatically fetch information about previous pipeline runs.
+Check out [this page](../../user-guide/migration-guide/fetch-metadata-within-steps.md) for more information on how to programmatically fetch information about previous pipeline runs.
 
 ## Controlling the step execution order
 
@@ -369,6 +371,7 @@ def my_pipeline(step_1, step_2, step_3):
     step_3.after(step_2)
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import pipeline
@@ -382,8 +385,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./configure-steps-pipelines.md#control-the-execution-order)
-for more information on how to control the step execution order.
+Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#control-the-execution-order) for more information on how to control the step execution order.
 
 ## Defining steps with multiple outputs
 
@@ -398,6 +400,7 @@ def my_step() -> Output(int_output=int, str_output=str):
     ...
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 # New: Use a `Tuple` annotation and optionally assign custom output names
@@ -421,8 +424,7 @@ def my_step() -> Tuple[
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./configure-steps-pipelines.md#type-annotations)
-for more information on how to annotate your step outputs.
+Check out [this page](../../user-guide/migration-guide/configure-steps-pipelines.md#type-annotations) for more information on how to annotate your step outputs.
 
 ## Accessing run information inside steps
 
@@ -440,6 +442,7 @@ def my_step(context: StepContext) -> Any:  # Old: `StepContext` class defined as
     ...
 ```
 {% endtab %}
+
 {% tab title="New Syntax" %}
 ```python
 from zenml import get_step_context, step
@@ -454,8 +457,6 @@ def my_step() -> Any:  # New: StepContext is no longer an argument of the step
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](./fetch-metadata-within-steps.md) for more information 
-on how to fetch run information inside your steps using `get_step_context()`.
+Check out [this page](../../user-guide/migration-guide/fetch-metadata-within-steps.md) for more information on how to fetch run information inside your steps using `get_step_context()`.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

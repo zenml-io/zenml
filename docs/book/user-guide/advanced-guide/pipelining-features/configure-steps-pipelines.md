@@ -25,9 +25,9 @@ lots of additional benefits:
 receive an object of the correct type from the upstream steps in your pipeline.
 - **Better serialization**: Without type annotations, ZenML uses
 [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs.
-When provided with type annotations, ZenML can choose a [materializer](../../getting-started/core-concepts.md#materializers)
+When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers)
 that is best suited for the output. In case none of the builtin materializers work, you can even
-[write a custom materializer](./handle-custom-data-types.md).
+[write a custom materializer](../artifact-management/handle-custom-data-types.md).
 
 ```python
 from typing import Tuple
@@ -100,7 +100,7 @@ missing a type annotation.
 By default, ZenML uses the output name `output` for single output steps
 and `output_0, output_1, ...` for steps with multiple outputs. These output names
 are used to display your outputs in the dashboard and
-[fetch them after your pipeline finished](../starter-guide/fetch-runs-after-execution.md).
+[fetch them after your pipeline finished](../../starter-guide/fetch-runs-after-execution.md).
 
 If you want to use custom output names for your steps, use the `Annotated` type
 annotation:
@@ -198,7 +198,7 @@ artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 
 When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID**
 that you can use to reference this step invocation when [defining the execution order](#control-the-execution-order)
-of your pipeline steps or use it to [fetch information](../starter-guide/fetch-runs-after-execution.md#steps)
+of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps)
 about the invocation after the pipeline finished running.
 
 ```python
@@ -258,7 +258,41 @@ def example_pipeline():
 
 This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
 
-## Settings in ZenML
+## Enable or disable logs storing
+
+By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
+
+```python
+import logging
+
+from zenml import step
+
+@step 
+def my_step() -> None:
+    logging.warning("`Hello`")  # You can use the regular `logging` module.
+    print("World.")  # You can utilize `print` statements as well. 
+```
+
+You can display the logs in the dashboard as follows:
+
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
+
+If you do not want to store the logs in your artifact store, you can disable this behavior by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
+```python
+from zenml import pipeline, step
+
+@step(enable_step_logs=False)  # disables logging for this step
+def my_step() -> None:
+    ...
+
+@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
+def my_pipeline():
+    ...
+```
+
+
+# Settings in ZenML
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
@@ -268,7 +302,7 @@ Settings in ZenML allow you to configure runtime configurations for stack compon
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
-### Types of settings
+## Types of settings
 
 Settings are categorized into two types:
 
@@ -276,14 +310,14 @@ Settings are categorized into two types:
   * [`DockerSettings`](containerize-your-pipeline.md) to specify docker settings.
   * [`ResourceSettings`](scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
-  * [`KubeflowOrchestratorSettings`](../component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](../component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](../component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](../component-guide/data-validators/whylogs.md) to specify Whylogs settings.
+  * [`KubeflowOrchestratorSettings`](../../component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](../../component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](../../component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](../../component-guide/data-validators/whylogs.md) to specify Whylogs settings.
 
 For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue`, etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [`MLflow Experiment Tracker`](../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [`MLflow Experiment Tracker`](../../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
@@ -309,9 +343,9 @@ Or like this:
 settings = {'docker': {'requirements': ['pandas']}}
 ```
 
-### Utilizing the settings
+## Utilizing the settings
 
-#### Method 1: Directly on the decorator
+### Method 1: Directly on the decorator
 
 The most basic way to set settings is through the `settings` variable that exists in both `@step` and `@pipeline` decorators:
 
@@ -332,7 +366,7 @@ The most basic way to set settings is through the `settings` variable that exist
 Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
-#### Method 2: On the step/pipeline instance
+### Method 2: On the step/pipeline instance
 
 This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
 
@@ -354,7 +388,7 @@ my_step.configure(settings=...)
 my_pipeline.configure(settings=...)
 ```
 
-#### Method 3: Configuring with YAML
+### Method 3: Configuring with YAML
 
 As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
@@ -508,7 +542,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ```
 
 This tag is now associated and tracked with all pipeline runs, and can be 
-[fetched later](../starter-guide/fetch-runs-after-execution.md):
+[fetched later](../../starter-guide/fetch-runs-after-execution.md):
 
 ```python
 from zenml.client import Client

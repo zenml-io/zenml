@@ -116,11 +116,6 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :computer: Run Locally
 
-Note: Please note that the current version of the MLflow quickstart requires
-Python version 3.8 or higher. If you are using a lower version, we recommend
-that you use the python3.7 version of the quickstart instead. Please note that
-the MLflow model registry is not supported in the python3.7 version or lower.
-
 ### :page_facing_up: Prerequisites 
 To run locally, install ZenML and pull this quickstart:
 

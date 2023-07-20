@@ -175,10 +175,10 @@ def step(
         """
         step_name = name or func.__name__
         logger.warning(
-            "The `@step` decorator that you used to define your "
-            f"{step_name} step is deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps "
-            "for information on how to migrate your steps to the new syntax."
+            f"The `@step` decorator that you used to define your {step_name}"
+            "step is deprecated. Check out the 0.40.0 migration guide for more "
+            "information on how to migrate your steps to the new syntax: "
+            "https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.html"
         )
 
         return type(  # noqa
