@@ -275,7 +275,7 @@ def my_step() -> None:
 
 You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
 
 If you do not want to store the logs in your artifact store, you can disable this behavior by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
 
