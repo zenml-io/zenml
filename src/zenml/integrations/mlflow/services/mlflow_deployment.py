@@ -175,7 +175,12 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
-        """Start the service."""
+        """Start the service.
+
+        Raises:
+            ValueError: if the active stack doesn't have an MLflow experiment
+                tracker
+        """
         logger.info(
             "Starting MLflow prediction service as blocking "
             "process... press CTRL+C once to stop it."
