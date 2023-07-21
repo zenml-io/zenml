@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
+MLFLOW_TRACKING_URI = "MLFLOW_TRACKING_URI"
 MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
 MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
@@ -280,6 +280,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             if self.config.tracking_token:
                 os.environ[DATABRICKS_TOKEN] = self.config.tracking_token
         else:
+            os.environ[MLFLOW_TRACKING_URI] = tracking_uri
             if self.config.tracking_username:
                 os.environ[
                     MLFLOW_TRACKING_USERNAME
