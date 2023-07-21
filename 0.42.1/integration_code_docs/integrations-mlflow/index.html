@@ -11689,7 +11689,12 @@ the MLflow deployment service class</p></td>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: if the active stack doesn&#39;t have an MLflow experiment</span>
+<span class="sd">                tracker</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Starting MLflow prediction service as blocking &quot;</span>
             <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
@@ -12055,10 +12060,31 @@ HTTP/REST inference requests, or None, if the service isn't running.</p></td>
 
       <p>Start the service.</p>
 
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>if the active stack doesn't have an MLflow experiment
+tracker</p></td>
+      </tr>
+  </tbody>
+</table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/mlflow/services/mlflow_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if the active stack doesn&#39;t have an MLflow experiment</span>
+<span class="sd">            tracker</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Starting MLflow prediction service as blocking &quot;</span>
         <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
