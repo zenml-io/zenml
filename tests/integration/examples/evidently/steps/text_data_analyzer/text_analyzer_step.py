@@ -10,22 +10,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
+from typing import Tuple
 
-from pipelines.text_report_test_pipeline.text_report_test import (
-    text_data_report_test_pipeline,
-)
+from typing_extensions import Annotated
 
-if __name__ == "__main__":
-    text_data_report_test_pipeline()
+from zenml import step
 
-    last_run = text_data_report_test_pipeline.get_runs()[0]
-    text_analysis_step = last_run.get_step(step="text_analyzer")
 
-    print(
-        "Reference missing values: ",
-        text_analysis_step.outputs["ref_missing_values"].read(),
-    )
-    print(
-        "Comparison missing values: ",
-        text_analysis_step.outputs["comp_missing_values"].read(),
+@step
+def text_analyzer(
+    report: str,
+) -> Tuple[
+    Annotated[int, "ref_missing_values"],
+    Annotated[int, "comp_missing_values"],
+]:
+    """Analyze the Evidently text Report and return the number of missing
+    values in the reference and comparison datasets.
+    """
+    result = json.loads(report)["metrics"][0]["result"]
+    return (
+        result["current"]["number_of_missing_values"],
+        result["reference"]["number_of_missing_values"],
     )

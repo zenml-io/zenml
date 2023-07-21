@@ -56,7 +56,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_evidently_data_validation
+  - module: tests.integration.examples.test_evidently
     requirements:
       - integrations:
           - sklearn
@@ -183,22 +183,6 @@ tests:
           - type: model_deployer
             flavor: mlflow
           - type: model_registry
-            flavor: mlflow
-          - type: data_validator
-            flavor: evidently
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_quickstart_py37
-    requirements:
-      - integrations:
-          - sklearn
-          - mlflow
-          - evidently
-        stacks:
-          - type: experiment_tracker
-            flavor: mlflow
-          - type: model_deployer
             flavor: mlflow
           - type: data_validator
             flavor: evidently

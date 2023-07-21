@@ -10,21 +10,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 
-from zenml import step
-from zenml.steps import Output
+from pipelines.text_report_test_pipeline.text_report_test import (
+    text_data_report_test_pipeline,
+)
 
+if __name__ == "__main__":
+    text_data_report_test_pipeline()
 
-@step
-def text_analyzer(
-    report: str,
-) -> Output(ref_missing_values=int, comp_missing_values=int):
-    """Analyze the Evidently text Report and return the number of missing
-    values in the reference and comparison datasets.
-    """
-    result = json.loads(report)["metrics"][0]["result"]
-    return (
-        result["current"]["number_of_missing_values"],
-        result["reference"]["number_of_missing_values"],
+    last_run = text_data_report_test_pipeline.model.last_run
+    text_analysis_step = last_run.steps["text_analyzer"]
+
+    print(
+        "Reference missing values: ",
+        text_analysis_step.outputs["ref_missing_values"].load(),
+    )
+    print(
+        "Comparison missing values: ",
+        text_analysis_step.outputs["comp_missing_values"].load(),
     )

@@ -10,16 +10,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Tuple
+
 import pandas as pd
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def data_splitter(
     reviews: pd.DataFrame,
-) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
+) -> Tuple[
+    Annotated[pd.DataFrame, "reference_dataset"],
+    Annotated[pd.DataFrame, "comparison_dataset"],
+]:
     """Splits the dataset into two subsets, the reference dataset and the
     comparison dataset.
     """
