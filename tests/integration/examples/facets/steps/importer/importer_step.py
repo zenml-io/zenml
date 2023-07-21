@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 
 from typing import Tuple
-from typing_extensions import Annotated
+
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step

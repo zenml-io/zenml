@@ -68,7 +68,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_great_expectations_data_validation
+  - module: tests.integration.examples.test_great_expectations
     requirements:
       - integrations:
           - sklearn

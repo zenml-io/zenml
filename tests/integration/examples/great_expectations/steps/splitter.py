@@ -12,16 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 
-from tests.integration.examples.utils import run_example
+from typing import Tuple
+
+import pandas as pd
+from typing_extensions import Annotated
+
+from zenml import step
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the great_expectations_data_validation example."""
-    with run_example(
-        request=request,
-        name="great_expectations_data_validation",
-        pipelines={"validation_pipeline": (1, 5)},
-    ):
-        pass
+@step
+def splitter(
+    df: pd.DataFrame,
+) -> Tuple[Annotated[pd.DataFrame, "train"], Annotated[pd.DataFrame, "test"]]:
+    train, test = df.iloc[: int(len(df) * 0.8)], df.iloc[int(len(df) * 0.8) :]
+    return train, test

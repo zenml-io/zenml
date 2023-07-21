@@ -12,16 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from pipelines.validation import validation_pipeline
 
-import pandas as pd
-
-from zenml import step
-from zenml.steps import Output
-
-
-@step
-def splitter(
-    df: pd.DataFrame,
-) -> Output(train=pd.DataFrame, test=pd.DataFrame):
-    train, test = df.iloc[: int(len(df) * 0.8)], df.iloc[int(len(df) * 0.8) :]
-    return train, test
+if __name__ == "__main__":
+    validation_pipeline()
