@@ -11,16 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Tuple
+
 import pandas as pd
 import whylogs as why
 from sklearn import datasets
+from typing_extensions import Annotated
 from whylogs.core import DatasetProfileView  # type: ignore[import]
 
 from zenml import step
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps import Output
 
 
 @step(
@@ -31,10 +33,10 @@ from zenml.steps import Output
     }
 )
 def data_loader() -> (
-    Output(
-        data=pd.DataFrame,
-        profile=DatasetProfileView,
-    )
+    Tuple[
+        Annotated[pd.DataFrame, "data"],
+        Annotated[DatasetProfileView, "profile"],
+    ]
 ):
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)

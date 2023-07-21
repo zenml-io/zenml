@@ -133,7 +133,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_whylogs_data_profiling
+  - module: tests.integration.examples.test_whylogs
     requirements:
       - integrations:
           - sklearn

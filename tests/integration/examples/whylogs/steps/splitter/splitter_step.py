@@ -11,17 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Tuple
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from typing_extensions import Annotated
 
 from zenml import step
-from zenml.steps import Output
 
 
 @step
 def data_splitter(
     input: pd.DataFrame,
-) -> Output(train=pd.DataFrame, test=pd.DataFrame,):
+) -> Tuple[Annotated[pd.DataFrame, "train"], Annotated[pd.DataFrame, "test"]]:
     """Splits the input dataset into train and test slices."""
     train, test = train_test_split(input, test_size=0.1, random_state=13)
     return train, test
