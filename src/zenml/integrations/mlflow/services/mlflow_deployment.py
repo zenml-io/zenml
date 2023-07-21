@@ -21,6 +21,7 @@ import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
 
+from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.logger import get_logger
 from zenml.services import (
@@ -197,6 +198,8 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 install_mlflow=False,
                 **backend_kwargs,
             )
+            experiment_tracker = Client().active_stack.experiment_tracker
+            experiment_tracker.configure_mlflow()
             backend.serve(
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
