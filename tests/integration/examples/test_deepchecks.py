@@ -18,10 +18,11 @@ from tests.integration.examples.utils import run_example
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the deepchecks_data_validation example."""
+    """Test the deepchecks example."""
     with run_example(
         request=request,
-        name="deepchecks_data_validation",
+        name="deepchecks",
         pipelines={"data_validation_pipeline": (1, 6)},
+        example_code_lives_in_tests_subdir=True,
     ):
         pass

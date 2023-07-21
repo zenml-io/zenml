@@ -46,7 +46,7 @@ tests:
       - capabilities:
           server: true
 
-  - module: tests.integration.examples.test_deepchecks_data_validation
+  - module: tests.integration.examples.test_deepchecks
     requirements:
       - integrations:
           - sklearn
