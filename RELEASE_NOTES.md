@@ -1,5 +1,36 @@
 <!-- markdown-link-check-disable -->
 
+# 0.42.1
+
+This is a minor release that fixes a couple of minor issues and improves the
+quickstart example.
+
+## Breaking Changes
+
+### Disable Implicit Auth Methods for Service Connectors by Default
+
+The implicit authentication methods supported by cloud Service Connectors method
+may constitute a security risk, because they can give users access to the same
+cloud resources and services that the ZenML Server itself is allowed to access.
+
+For this reason, the default behavior of ZenML Service Connectors has been
+changed to disable implicit authentication methods by default. If you try to
+configure any of the AWS, GCP or Azure Service Connectors using the implicit
+authentication method, you will now receive an error message.
+
+To enable implicit authentication methods, you have to set the
+`ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the ZenML helm
+chart `enableImplicitAuthMethods` configuration option to `true`.
+
+## What's Changed
+* Disable implicit auth methods for service connectors by default by @stefannica in https://github.com/zenml-io/zenml/pull/1704
+* New quickstart by @strickvl in https://github.com/zenml-io/zenml/pull/1692
+* Set `MLflow` configuration as environment variables before deployment subprocess by @safoinme in https://github.com/zenml-io/zenml/pull/1705
+* Fix Migration Guide Links by @fa9r in https://github.com/zenml-io/zenml/pull/1706
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.42.0...0.42.1
+
 # 0.42.0
 
 This release brings major user experience improvements to how ZenML logs are
