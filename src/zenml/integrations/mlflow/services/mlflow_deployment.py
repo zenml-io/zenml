@@ -23,6 +23,9 @@ from mlflow.version import VERSION as MLFLOW_VERSION
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
+from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -199,6 +202,12 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 **backend_kwargs,
             )
             experiment_tracker = Client().active_stack.experiment_tracker
+            if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+                raise ValueError(
+                    "MLflow model deployer step requires an MLflow experiment "
+                    "tracker. Please add an MLflow experiment tracker to your "
+                    "stack."
+                )
             experiment_tracker.configure_mlflow()
             backend.serve(
                 model_uri=self.config.model_uri,
