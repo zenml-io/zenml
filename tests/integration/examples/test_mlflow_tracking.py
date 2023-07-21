@@ -32,7 +32,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         name="mlflow_tracking",
         pipelines={"mlflow_example_pipeline": (1, 4)},
         timeout_limit=750,
-    ) as (example, runs):
+    ) as runs:
         client = Client()
         pipeline = client.get_pipeline("mlflow_example_pipeline")
         assert pipeline

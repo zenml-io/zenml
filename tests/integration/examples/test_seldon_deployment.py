@@ -33,15 +33,13 @@ def test_example(request: pytest.FixtureRequest) -> None:
             "continuous_deployment_pipeline": (1, 6),
             "inference_pipeline": (1, 4),
         },
-    ) as run_result:
+    ) as runs:
         from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
             SeldonModelDeployer,
         )
         from zenml.integrations.seldon.services.seldon_deployment import (
             SeldonDeploymentService,
         )
-
-        _, pipeline_runs = run_result
 
         client = Client()
         pipeline = client.get_pipeline("continuous_deployment_pipeline")
@@ -55,7 +53,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         services = model_deployer.find_model_server(
             pipeline_name="continuous_deployment_pipeline",
             pipeline_step_name="model_deployer",
-            pipeline_run_id=pipeline_runs["continuous_deployment_pipeline"][
+            pipeline_run_id=runs["continuous_deployment_pipeline"][
                 0
             ].model.name,
         )

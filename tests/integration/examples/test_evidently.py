@@ -26,7 +26,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         name="evidently",
         pipelines={"text_data_report_test_pipeline": (1, 5)},
         example_code_lives_in_tests_subdir=True,
-    ) as (example, runs):
+    ) as runs:
         pipeline = Client().get_pipeline("text_data_report_test_pipeline")
         assert pipeline
 

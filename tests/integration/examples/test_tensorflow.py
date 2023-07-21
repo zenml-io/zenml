@@ -30,6 +30,5 @@ def test_example(request: pytest.FixtureRequest) -> None:
         name=name,
         pipelines={"mnist_pipeline": (1, 4)},
         example_code_lives_in_tests_subdir=True,
-    ) as (example, _):
-        # Cleanup the tensorboard daemon
-        example("--stop-tensorboard")
+    ):
+        pass

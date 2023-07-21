@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import click
 from pipelines.mnist_pipeline import mnist_pipeline
 
 from zenml.integrations.tensorboard.visualizers import (
@@ -21,28 +20,14 @@ from zenml.integrations.tensorboard.visualizers import (
 )
 
 
-@click.command()
-@click.option("--epochs", default=5, help="Number of epochs for training")
-@click.option("--lr", default=0.001, help="Learning rate for training")
-@click.option(
-    "--stop-tensorboard",
-    is_flag=True,
-    default=False,
-    help="Stop the TensorBoard server",
-)
-def main(epochs: int, lr: float, stop_tensorboard: bool):
+def main():
     """Run the mnist example pipeline."""
-    if stop_tensorboard:
-        stop_tensorboard_server(
-            pipeline_name="mnist_pipeline",
-            step_name="trainer",
-        )
-        return
-
-    # Run the pipeline
-    mnist_pipeline(epochs=epochs, lr=lr)
-
+    mnist_pipeline()
     visualize_tensorboard(
+        pipeline_name="mnist_pipeline",
+        step_name="trainer",
+    )
+    stop_tensorboard_server(
         pipeline_name="mnist_pipeline",
         step_name="trainer",
     )

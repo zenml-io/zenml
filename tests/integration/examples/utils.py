@@ -99,11 +99,7 @@ def run_example(
     pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     example_code_lives_in_tests_subdir: bool = False,
-) -> Generator[
-    Tuple[IntegrationTestExample, Dict[str, List[PipelineRunResponseModel]]],
-    None,
-    None,
-]:
+) -> Generator[Dict[str, List[PipelineRunResponseModel]], None, None]:
     """Runs the given example and validates it ran correctly.
 
     Args:
@@ -145,7 +141,7 @@ def run_example(
         timeout_limit=timeout_limit,
     )
 
-    yield example, runs
+    yield runs
 
     pipeline_names = list(pipelines.keys()) if pipelines else []
     cleanup_pipelines(existing_pipeline_ids, pipeline_names)

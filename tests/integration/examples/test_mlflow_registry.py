@@ -38,7 +38,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
             "mlflow_training_pipeline": (1, 5),
             "deployment_inference_pipeline": (1, 4),
         },
-    ) as (example, runs):
+    ) as runs:
         pipeline = Client().get_pipeline("mlflow_training_pipeline")
         assert pipeline
         first_training_run = runs["mlflow_training_pipeline"][0]
