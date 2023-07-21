@@ -616,11 +616,13 @@ class MLFlowModelRegistry(BaseModelRegistry):
                         mlflow_model_version=mlflow_model_version,
                     )
                 )
-            except (AttributeError, OSError):
-                # Sometimes, the Model Registry in MlFlow can become unusable
+            except (AttributeError, OSError) as e:
+                # Sometimes, the Model Registry in MLflow can become unusable
                 # due to failed version registration or misuse. In such rare
                 # cases, it's best to suppress those versions that are not usable.
-                pass
+                logger.warning(
+                    f"Error encountered while loading MLflow model version: {e}"
+                )
 
         # Filter the model versions by stage.
         if stage:
