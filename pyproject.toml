@@ -192,6 +192,9 @@ log_cli = true
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true
+norecursedirs = [
+    "tests/integration/examples/*",  # ignore example folders
+]
 
 [tool.coverage.run]
 parallel = true
