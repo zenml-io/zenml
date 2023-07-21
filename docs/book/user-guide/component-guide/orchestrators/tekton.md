@@ -4,8 +4,9 @@ description: Orchestrating your pipelines to run on Tekton.
 
 # Tekton Orchestrator
 
-The Tekton orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `tekton` integration that
-uses [Tekton Pipelines](https://tekton.dev/) to run your pipelines.
+[Tekton](https://tekton.dev/) is a powerful and flexible open-source framework 
+for creating CI/CD systems, allowing developers to build, test, and deploy 
+across cloud providers and on-premise systems.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of
@@ -192,13 +193,22 @@ You can now run any ZenML pipeline using the Tekton orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+#### Tekton UI
+
+Tekton comes with its own UI that you can use to find further details about your
+pipeline runs, such as the logs of your steps. To get the Tekton UI endpoint, 
+we can use the following command:
+
+```bash
+kubectl get ingress -n tekton-pipelines  -o jsonpath='{.items[0].spec.rules[0].host}'
+```
+
 #### Additional configuration
 
 For additional configuration of the Tekton orchestrator, you can pass `TektonOrchestratorSettings` which allows you to
-configure (among others) the following attributes:
-
-* `pod_settings`: Node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These
-  can be either specified using the Kubernetes model objects or as dictionaries.
+configure node selectors, affinity, and tolerations to apply to the Kubernetes 
+Pods running your pipeline. These can be either specified using the Kubernetes 
+model objects or as dictionaries.
 
 ```python
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings
@@ -233,16 +243,37 @@ tekton_settings = TektonOrchestratorSettings(
         ]
     }
 )
+```
 
+If some of your pipelines steps have certain hardware requirements, you can
+specify them as `ResourceSettings`:
 
+```python
+resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
+```
+
+These settings can then be specified on either pipeline-level or step-level:
+
+```python
+# Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.tekton": tekton_settings
+        "orchestrator.tekton": tekton_settings,
+        "resources": resource_settings,
     }
 )
+def my_pipeline():
+    ...
 
-
-...
+# OR specify settings on step-level
+@step(
+    settings={
+        "orchestrator.tekton": tekton_settings,
+        "resources": resource_settings,
+    }
+)
+def my_step():
+    ...
 ```
 
 Check out
