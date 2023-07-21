@@ -7,5 +7,6 @@ model_deployer = mlflow_model_registry_deployer_step.with_options(
     parameters=dict(
         registry_model_name=model_name,
         registry_model_version=1,
+        timeout=300,
     )
 )
