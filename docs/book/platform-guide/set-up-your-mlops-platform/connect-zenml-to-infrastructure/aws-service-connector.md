@@ -140,6 +140,10 @@ ECR repository names are region scoped. The connector can only be used to access
 
 [Implicit authentication](best-security-practices.md#implicit-authentication) to AWS services using environment variables, local configuration files or IAM roles.
 
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
+{% endhint %}
+
 This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
 
 * environment variables (AWS\_ACCESS\_KEY\_ID, AWS\_SECRET\_ACCESS\_KEY, AWS\_SESSION\_TOKEN, AWS\_DEFAULT\_REGION)

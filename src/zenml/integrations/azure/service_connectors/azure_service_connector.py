@@ -636,6 +636,8 @@ class AzureServiceConnector(ServiceConnector):
         cfg = self.config
         credential: TokenCredential
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             try:
                 credential = DefaultAzureCredential()
             except AzureError as e:
@@ -1044,6 +1046,8 @@ class AzureServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = AzureBaseConfig(
                 resource_group=resource_group,
                 storage_account=storage_account,
