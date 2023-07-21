@@ -32,4 +32,4 @@ def test_example(request: pytest.FixtureRequest) -> None:
         example_code_lives_in_tests_subdir=True,
     ) as (example, _):
         # Cleanup the tensorboard daemon
-        example.run_example_directly("--stop-tensorboard")
+        example("--stop-tensorboard")

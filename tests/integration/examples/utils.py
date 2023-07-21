@@ -14,6 +14,8 @@
 import logging
 import os
 import shutil
+import subprocess
+import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -22,7 +24,6 @@ from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 
 import pytest
 
-from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
@@ -39,6 +40,43 @@ DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
 DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
 
 
+class IntegrationTestExample:
+    """Class to encapsulate an integration test example."""
+
+    def __init__(self, path: Path, name: str) -> None:
+        """Create a new example instance.
+
+        Args:
+            name: The name to the example
+            path: Path at which the example code lives.
+        """
+        self.name = name
+        self.path = path
+
+        # Make sure the example has a `run.py` file
+        self.run_dot_py_file = os.path.join(self.path, "run.py")
+        if not os.path.exists(self.run_dot_py_file):
+            raise RuntimeError(
+                f"No `run.py` file found in example {self.name}. "
+                f"{self.run_dot_py_file} does not exist."
+            )
+
+    def __call__(self, *args: str) -> None:
+        """Runs the example directly without going through setup/teardown.
+
+        Args:
+            *args: Arguments to pass to the example.
+
+        Raises:
+            RuntimeError: If running the example fails.
+        """
+        subprocess.check_call(
+            [sys.executable, self.run_dot_py_file, *args],
+            cwd=str(self.path),
+            env=os.environ.copy(),
+        )
+
+
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
     for item in os.listdir(example_dir):
         if item == ".zen":
@@ -53,21 +91,6 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
             shutil.copy2(s, d)
 
 
-def example_runner(examples_dir: Path) -> List[str]:
-    """Get the executable that runs examples.
-
-    By default, returns the path to an executable .sh file in the
-    repository, but can also prefix that with the path to a shell
-    / interpreter when the file is not executable on its own. The
-    latter option is needed for Windows compatibility.
-    """
-    return (
-        [os.environ[SHELL_EXECUTABLE]]
-        if SHELL_EXECUTABLE in os.environ
-        else []
-    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
-
-
 @contextmanager
 def run_example(
     request: pytest.FixtureRequest,
@@ -77,7 +100,9 @@ def run_example(
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     example_code_lives_in_tests_subdir: bool = False,
 ) -> Generator[
-    Tuple[LocalExample, Dict[str, List[PipelineRunResponseModel]]], None, None
+    Tuple[IntegrationTestExample, Dict[str, List[PipelineRunResponseModel]]],
+    None,
+    None,
 ]:
     """Runs the given example and validates it ran correctly.
 
@@ -109,9 +134,9 @@ def run_example(
     now = datetime.utcnow()
 
     # Run the example
-    example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
+    example = IntegrationTestExample(name=name, path=dst_dir)
     example_args = example_args or []
-    example.run_example_directly(*example_args)
+    example(*example_args)
 
     # Validate the pipelines
     runs = wait_and_validate_pipeline_runs(
