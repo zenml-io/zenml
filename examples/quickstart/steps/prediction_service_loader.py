@@ -10,6 +10,5 @@ def prediction_service_loader() -> BaseService:
     model_deployer = client.active_stack.model_deployer
     services = model_deployer.find_model_server(
         pipeline_name="train_and_register_model_pipeline",
-        running=True,
     )
     return services[0]
