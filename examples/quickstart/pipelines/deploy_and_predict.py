@@ -7,10 +7,17 @@ from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, SKLEARN
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN],
+    requirements=[
+        "numpy==1.24.3",
+        "scipy==1.10.1",
+        "typing-extensions==4.6.3",
+    ],
+)
 
 
-@pipeline(settings={"docker": docker_settings})
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def deploy_and_predict() -> None:
     """Deploy the best model and run some predictions."""
     prediction_service_loader.after(model_deployer)
