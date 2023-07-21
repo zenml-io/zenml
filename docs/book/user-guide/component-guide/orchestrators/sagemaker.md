@@ -4,9 +4,10 @@ description: Orchestrating your pipelines to run on Amazon Sagemaker.
 
 # AWS Sagemaker Orchestrator
 
-The Sagemaker orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `aws` integration that
-uses [Amazon Sagemaker Pipelines](https://sagemaker-examples.readthedocs.io/en/latest/sagemaker-pipelines/index.html) to
-run your pipelines.
+[Sagemaker Pipelines](https://aws.amazon.com/sagemaker/pipelines)
+is a serverless ML workflow tool running on AWS. It is an easy way to quickly 
+run your code in a production-ready, repeatable cloud orchestrator that 
+requires minimal setup without provisioning and paying for standby compute.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of
@@ -14,7 +15,7 @@ a [remote ZenML deployment scenario](/docs/book/platform-guide/set-up-your-mlops
 Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
-### When to use it
+## When to use it
 
 You should use the Sagemaker orchestrator if:
 
@@ -24,13 +25,13 @@ You should use the Sagemaker orchestrator if:
 * you're looking for a managed solution for running your pipelines.
 * you're looking for a serverless solution for running your pipelines.
 
-### How it works
+## How it works
 
 The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.amazon.com/sagemaker/pipelines), which can
 be used to construct machine learning pipelines. Under the hood, for each ZenML pipeline step, it creates a
 SageMaker `PipelineStep`, which contains a Sagemaker Processing job. Currently, other step types are not supported.
 
-### How to deploy it
+## How to deploy it
 
 In order to use a Sagemaker AI orchestrator, you need to first
 deploy [ZenML to the cloud](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md). It would
@@ -45,7 +46,7 @@ In order to quickly enable APIs, and create other resources necessary for to use
 a Sagemaker stack recipe via [our `mlops-stacks` recipe repository](https://github.com/zenml-io/mlops-stacks), which
 will help you set up the infrastructure with one click.
 
-#### Infrastructure Deployment
+### Infrastructure Deployment
 
 A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
 
@@ -57,7 +58,7 @@ You can pass other configurations specific to the stack components as key-value 
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
 dedicated documentation section.
 
-### How to use it
+## How to use it
 
 To use the Sagemaker orchestrator, we need:
 
@@ -104,14 +105,30 @@ You can now run any ZenML pipeline using the Sagemaker orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
-#### Run pipelines on a schedule
+### Sagemaker UI
+
+Sagemaker comes with its own UI that you can use to find further details about 
+your pipeline runs, such as the logs of your steps. 
+
+To access the Sagemaker Pipelines UI, you will have to launch Sagemaker Studio 
+via the AWS Sagemaker UI. Make sure that you are launching it from within your 
+desired AWS region.
+
+![Sagemaker Studio launch](../../../.gitbook/assets/sagemaker-studio-launch.png)
+
+Once the Studio UI has launched, click on the 'Pipeline' button on the left
+side. From there you can view the pipelines that have been launched via ZenML:
+
+![Sagemaker Studio Pipelines](../../../.gitbook/assets/sagemakerUI.png)
+
+### Run pipelines on a schedule
 
 The ZenML Sagemaker orchestrator doesn't currently support running pipelines on a schedule. We maintain a public roadmap
 for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see
 more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for
 Sagemaker, please [do let us know](https://zenml.io/slack-invite)!
 
-#### Configuration at pipeline or step level
+### Configuration at pipeline or step level
 
 When running your ZenML pipeline with the Sagemaker orchestrator, the configuration set when configuring the
 orchestrator as a ZenML component will be used by default. However, it is possible to provide additional configuration
@@ -241,7 +258,7 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 )
 ```
 
-#### Enabling CUDA for GPU-backed hardware
+### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
 follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
