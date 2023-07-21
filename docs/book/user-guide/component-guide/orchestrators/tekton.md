@@ -196,8 +196,11 @@ python file_that_runs_a_zenml_pipeline.py
 #### Tekton UI
 
 Tekton comes with its own UI that you can use to find further details about your
-pipeline runs, such as the logs of your steps. To get the Tekton UI endpoint, 
-we can use the following command:
+pipeline runs, such as the logs of your steps.
+
+![Tekton UI](../../../.gitbook/assets/TektonUI.png)
+
+To find the Tekton UI endpoint, we can use the following command:
 
 ```bash
 kubectl get ingress -n tekton-pipelines  -o jsonpath='{.items[0].spec.rules[0].host}'

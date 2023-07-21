@@ -235,8 +235,12 @@ python file_that_runs_a_zenml_pipeline.py
 
 ### Vertex UI
 
-Vertex comes with its own UI that you can use to find further details about your pipeline runs, such as the logs of your
-steps. For any runs executed on Vertex, you can get the URL to the Vertex UI in Python using the following code snippet:
+Vertex comes with its own UI that you can use to find further details about 
+your pipeline runs, such as the logs of your steps. 
+
+![Vertex UI](../../../.gitbook/assets/VertexUI.png)
+
+For any runs executed on Vertex, you can get the URL to the Vertex UI in Python using the following code snippet:
 
 ```python
 from zenml.client import Client
