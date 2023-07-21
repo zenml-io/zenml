@@ -211,7 +211,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_facets_visualize_statistics
+  - module: tests.integration.examples.test_facets
     requirements:
       - integrations:
           - facets

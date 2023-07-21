@@ -18,11 +18,12 @@ from tests.integration.examples.utils import run_example
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the facets_visualize_statistics example."""
+    """Runs the facets test example."""
 
     with run_example(
         request=request,
-        name="facets_visualize_statistics",
+        name="facets",
         pipelines={"facets_pipeline": (1, 2)},
+        example_code_lives_in_tests_subdir=True,
     ):
         pass
