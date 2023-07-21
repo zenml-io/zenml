@@ -4,8 +4,11 @@ description: Orchestrating your pipelines to run on Vertex AI.
 
 # Google Cloud VertexAI Orchestrator
 
-The Vertex orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `gcp` integration that
-uses [Vertex AI](https://cloud.google.com/vertex-ai) to run your pipelines.
+[Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+is a serverless ML workflow tool running on the Google Cloud Platform. It is
+an easy way to quickly run your code in a production-ready, repeatable 
+cloud orchestrator that requires minimal setup without provisioning and paying 
+for standby compute.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of
@@ -291,10 +294,9 @@ with the Cloud Scheduler job that schedules it (via the UI or the CLI).
 ### Additional configuration
 
 For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to
-configure (among others) the following attributes:
-
-* `pod_settings`: Node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These
-  can be either specified using the Kubernetes model objects or as dictionaries.
+configure node selectors, affinity, and tolerations to apply to the Kubernetes 
+Pods running your pipeline. These can be either specified using the Kubernetes 
+model objects or as dictionaries.
 
 ```python
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
@@ -329,16 +331,38 @@ vertex_settings = VertexOrchestratorSettings(
         ]
     }
 )
+```
+
+If some of your pipelines steps have certain hardware requirements, you can
+specify them as `ResourceSettings`:
+
+```python
+resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
+```
+
+These settings can then be specified on either pipeline-level or step-level:
 
 
+```python
+# Either specify on pipeline-level
 @pipeline(
     settings={
-        "orchestrator.vertex": vertex_settings
+        "orchestrator.vertex": vertex_settings,
+        "resources": resource_settings,
     }
 )
+def my_pipeline():
+    ...
 
-
-...
+# OR specify settings on step-level
+@step(
+    settings={
+        "orchestrator.vertex": vertex_settings,
+        "resources": resource_settings,
+    }
+)
+def my_step():
+    ...
 ```
 
 Check out
