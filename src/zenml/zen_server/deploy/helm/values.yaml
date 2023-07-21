@@ -72,6 +72,12 @@ zenml:
   # Use your own password here
   defaultPassword: zenml
 
+  # Implicit authentication methods featured by service connectors that support
+  # them are disabled by default, for security reasons. This is because they
+  # allow users to authenticate to the cloud provider where ZenML is running
+  # without having to provide any credentials.
+  enableImplicitAuthMethods: false
+
   # MySQL database configuration. If not set, a local sqlite database will be
   # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and

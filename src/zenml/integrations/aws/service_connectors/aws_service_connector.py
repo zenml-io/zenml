@@ -816,6 +816,8 @@ class AWSServiceConnector(ServiceConnector):
         """
         cfg = self.config
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             assert isinstance(cfg, AWSImplicitConfig)
             # Create a boto3 session and use the default credentials provider
             session = boto3.Session(
@@ -1396,6 +1398,8 @@ class AWSServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             if region_name is None:
                 raise ValueError(
                     "The AWS region name must be specified when using the "
