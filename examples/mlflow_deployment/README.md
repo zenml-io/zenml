@@ -204,7 +204,7 @@ deployer and MLflow experiment tracker components. Configuring a new stack
 could look like this:
 
 ```
-zenml integration install mlflow
+zenml integration install mlflow tensorflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register local_mlflow_stack \

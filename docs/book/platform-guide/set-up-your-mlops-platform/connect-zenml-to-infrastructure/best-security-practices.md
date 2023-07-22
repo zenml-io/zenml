@@ -32,8 +32,10 @@ Even when passwords are mentioned as credentials, some services (e.g. DockerHub)
 
 {% hint style="info" %}
 The key takeaway here is that implicit authentication gives you immediate access to some cloud resources and requires no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
+{% endhint %}
 
-In some cases, this method may also be perceived as a security risk, because it can give access to the same resources and services that the ZenML Server itself uses for its internals, which should be kept separate from the actual users and ML workloads.
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
 {% endhint %}
 
 Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, and basically any form of authentication available in the environment where it is running, either locally or in the cloud.

@@ -460,7 +460,7 @@ class ExamplesRepo:
         Args:
             branch: The name of the branch or tag to check out.
         """
-        logger.info(f"Checking out branch: {branch}")
+        declare(f"Checking out branch: {branch}")
         self.repo.git.checkout(branch)
 
     def checkout_latest_release(self) -> None:

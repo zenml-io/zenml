@@ -17,14 +17,11 @@ import logging
 import os
 import re
 import sys
-from contextlib import contextmanager
-from typing import Any, Dict, Iterator
+from typing import Any, Dict
 
 from rich.traceback import install as rich_tb_install
 
-import zenml
 from zenml.constants import (
-    APP_NAME,
     ENABLE_RICH_TRACEBACK,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
@@ -41,6 +38,7 @@ class CustomFormatter(logging.Formatter):
     green: str = "\x1b[32m"
     yellow: str = "\x1b[33m"
     red: str = "\x1b[31m"
+    cyan: str = "\x1b[1;36m"
     bold_red: str = "\x1b[31;1m"
     purple: str = "\x1b[1;35m"
     reset: str = "\x1b[0m"
@@ -81,14 +79,11 @@ class CustomFormatter(logging.Formatter):
             formatted_message = formatted_message.replace(
                 "`" + quoted + "`",
                 self.reset
-                + self.yellow
+                + self.cyan
                 + quoted
                 + self.COLORS.get(LoggingLevels(record.levelno)),
             )
         return formatted_message
-
-
-LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def get_logging_level() -> LoggingLevels:
@@ -115,7 +110,7 @@ def set_root_verbosity() -> None:
         if ENABLE_RICH_TRACEBACK:
             rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
 
-        logging.basicConfig(level=level.value)
+        logging.root.setLevel(level=level.value)
         get_logger(__name__).debug(
             f"Logging set to level: " f"{logging.getLevelName(level.value)}"
         )
@@ -149,10 +144,6 @@ def get_logger(logger_name: str) -> logging.Logger:
     logger.setLevel(get_logging_level().value)
     logger.addHandler(get_console_handler())
 
-    # TODO [ENG-130]: Add a file handler for persistent handling
-    #  logger.addHandler(get_file_handler())
-    #  with this pattern, it's rarely necessary to propagate the error up to
-    #  parent
     logger.propagate = False
     return logger
 
@@ -162,6 +153,10 @@ def init_logging() -> None:
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(CustomFormatter())
+    logging.root.addHandler(console_handler)
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
@@ -190,51 +185,3 @@ def init_logging() -> None:
         for logger_name in disabled_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
             logging.getLogger(logger_name).disabled = True
-
-
-@contextmanager
-def disable_logging(log_level: int) -> Iterator[None]:
-    """Contextmanager that temporarily disables logs below a threshold level.
-
-    Use it like this:
-    ```python
-    with disable_logging(log_level=logging.INFO):
-        # do something that shouldn't show DEBUG/INFO logs
-        ...
-    ```
-
-    Args:
-        log_level: All logs below this level will be disabled for the duration
-            of this contextmanager.
-
-    Yields:
-        None.
-    """
-    old_level = logging.root.manager.disable
-    try:
-        logging.disable(log_level)
-        yield
-    finally:
-        logging.disable(old_level)
-
-
-def get_apidocs_link(
-    docs_section: str, caller_path: str, core: bool = True
-) -> str:
-    """Get link to api_docs of the caller.
-
-    Args:
-        docs_section: Main section of the API docs, that the caller path is
-            part of.
-        caller_path: Path to the class, method or function to which the api
-            doc-link should point.
-        core: Boolean to toggle which submenu of the apidocs to link to
-
-    Returns:
-        Link to the api docs for the given caller_path
-    """
-    submenu = "core_code_docs" if core else "integration_code_docs"
-    return (
-        f"https://apidocs.zenml.io/{zenml.__version__}/{submenu}/"
-        f"{docs_section}/#{caller_path}"
-    )

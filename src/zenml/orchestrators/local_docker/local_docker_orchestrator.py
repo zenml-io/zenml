@@ -189,7 +189,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
+            "Pipeline run `%s` has finished in `%s`.\n",
             run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )

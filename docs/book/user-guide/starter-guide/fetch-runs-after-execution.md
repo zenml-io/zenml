@@ -51,7 +51,7 @@ version = pipeline_model.version
 These pipeline "models" are not related to machine learning models like decision
 trees or neural networks. Rather, you can think of them as similar to types in 
 strictly-typed languages. Checkout the 
-[ZenML Client Documentation](../advanced-guide/client.md#resource-models) for
+[ZenML Client Documentation](../advanced-guide/environment-management/client.md#resource-models) for
 more details.
 {% endhint %}
 
@@ -69,7 +69,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Checkout the [ZenML Client Documentation](../advanced-guide/client.md) for more 
+Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/client.md) for more 
 information on the `Client` class and its purpose.
 {% endhint %}
 
@@ -118,7 +118,7 @@ from newest to oldest.
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
 allows you to specify detailed parameters for filtering or pagination. See the
-[ZenML Client Documentation](../advanced-guide/client.md#list-methods) for more
+[ZenML Client Documentation](../advanced-guide/environment-management/client.md#list-methods) for more
 information.
 {% endhint %}
 
@@ -177,7 +177,7 @@ status = run.status
 
 The `pipeline_configuration` is an object that contains all configurations of 
 the pipeline and pipeline run, including the 
-[pipeline-level `BaseSettings`](../advanced-guide/configure-steps-pipelines.md), 
+[pipeline-level `BaseSettings`](../advanced-guide/pipelining-features/configure-steps-pipelines.md), 
 which we will learn more about later:
 
 ```python
@@ -212,7 +212,7 @@ step = run.steps["first_step"]
 
 {% hint style="info" %}
 If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex
-pipelines, check out [this page](../advanced-guide/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the
+pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the
 invocation ID.
 {% endhint %}
 
@@ -253,7 +253,7 @@ Similarly, you can use the `inputs` and `input` properties to get the input
 artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../advanced-guide/configure-steps-pipelines.md#step-output-names) to see what
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what
 the output names of your steps are and how to customize them.
 {% endhint %}
 
@@ -289,7 +289,7 @@ output.visualize()
 If you're not in a Jupyter notebook, you can simply view the visualizations in
 the ZenML dashboard by running `zenml up` and clicking on the respective 
 artifact in the pipeline run DAG instead. Checkout the
-[artifact visualization page](../advanced-guide/visualize-artifacts.md) to learn
+[artifact visualization page](../advanced-guide/artifact-management/visualize-artifacts.md) to learn
 more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
 
@@ -346,7 +346,7 @@ def my_step():
 {% hint style="info" %}
 As shown in the example, we can get additional information about the current
 run using the `StepContext`, which is explained in more detail in the 
-[advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
+[advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
 {% endhint %}
 
 <!-- For scarf -->
