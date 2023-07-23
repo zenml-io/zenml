@@ -143,6 +143,6 @@ class AzureMLPipelinesOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
-        from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator import AzureMLPipelinesOrchestrator
+        from azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator import AzureMLPipelinesOrchestrator
 
         return AzureMLPipelinesOrchestrator
