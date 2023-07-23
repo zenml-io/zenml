@@ -19,12 +19,12 @@ import webbrowser
 from azure.ai.ml import MLClient, command, dsl
 from azure.ai.ml.entities import Environment
 from azure.identity import DefaultAzureCredential
-from zenml.utils.pipeline_docker_image_builder import (
-    DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilder,
-)
+# from zenml.utils.pipeline_docker_image_builder import (
+#     DOCKER_IMAGE_ZENML_CONFIG_DIR,
+#     PipelineDockerImageBuilder,
+# )
 from azure.ai.ml.entities import AmlCompute
-from examples.azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator_flavor import (
+from azure_ml_orchestrator_flavor.orchestrator.azure_ml_pipelines_orchestrator_flavor import (
     AzureMLPipelinesOrchestratorConfig,
     AzureMLPipelinesOrchestratorSettings,
 )
@@ -358,7 +358,7 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             return ml_client
 
     def prepare_or_run_pipeline(
-            self, deployment: "PipelineDeployment", stack: "Stack"
+            self, deployment: "PipelineDeployment", stack: "Stack", environment: Dict[str, str]
     ) -> None:
         """Prepares or runs a pipeline on AzureML.
 
@@ -395,23 +395,14 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         ).replace("_", "-")
-        docker_image_builder = PipelineDockerImageBuilder()
-        image_name_or_digest, _, _ = docker_image_builder.build_docker_image(
-            docker_settings=deployment.pipeline_configuration.docker_settings,
-            tag="azureml", stack=stack)
-        pipeline_job_env = Environment(
-            name=custom_env_name,
-            image=image_name_or_digest,
-        )
-        # pipeline_job_env = ml_client.environments.create_or_update(
-        #     pipeline_job_env
-        # )
-        # pipeline_job_env = ml_client.environments.get(
-        #     custom_env_name, version="9"
-        # )
 
         steps = []
         for step_name, _ in deployment.steps.items():
+            image_name_or_digest = self.get_image(deployment, step_name)
+            pipeline_job_env = Environment(
+                name=step_name,
+                image=image_name_or_digest,
+            )
             container_command = (
                 StepEntrypointConfiguration.get_entrypoint_command()
             )
@@ -426,6 +417,7 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
                 experiment_name=orchestrator_run_name,
                 display_name=orchestrator_run_name,
                 code=source_directory,
+                environment_variables=environment
             )
             steps.append(job)
 
