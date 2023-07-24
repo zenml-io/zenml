@@ -17,9 +17,9 @@ from typing import Annotated, Tuple
 
 import mlflow
 import pandas as pd
-from common import TARGET_COLUMN, experiment_tracker, logger
 from sklearn.base import ClassifierMixin
 
+from steps.training.common import TARGET_COLUMN, experiment_tracker, logger
 from zenml import step
 
 
