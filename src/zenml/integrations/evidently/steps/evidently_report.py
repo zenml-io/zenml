@@ -33,6 +33,7 @@ def evidently_report_step(
     metrics: Optional[List[EvidentlyMetricConfig]] = None,
     report_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     download_nltk_data: bool = False,
+    suppress_missing_ignored_cols_error: bool = False,
 ) -> Tuple[
     Annotated[str, "report_json"], Annotated[HTMLString, "report_html"]
 ]:
@@ -50,9 +51,11 @@ def evidently_report_step(
             and a dictionary of options for the report.
         download_nltk_data: whether to download the NLTK data for the report
             step. Defaults to False.
+        suppress_missing_ignored_cols_error: If columns listed in `ignored_cols` are not
+            found in one of datasets `ValueError` is raised if this flag is set
+            to `False`, otherwise it is supressed.
 
     Raises:
-        ValueError: If ignored_cols is an empty list
         ValueError: If column is not found in reference or comparison
             dataset
 
@@ -69,26 +72,30 @@ def evidently_report_step(
     )
 
     if ignored_cols:
+        exception_msg = (
+            "Columns {extra_cols} configured in the `ignored_cols` "
+            "parameter are not found in the {dataset} dataset. "
+            "You can use `suppress_missing_ignored_cols_error=True` "
+            "if this is expected behavior."
+        )
         extra_cols = set(ignored_cols) - set(reference_dataset.columns)
-        if extra_cols:
+        if extra_cols and not suppress_missing_ignored_cols_error:
             raise ValueError(
-                f"Columns {extra_cols} configured in the ignored_cols "
-                "parameter are not found in the reference dataset."
+                exception_msg.format(extra_cols=extra_cols, dataset="reference")
             )
         reference_dataset = reference_dataset.drop(
-            labels=list(ignored_cols), axis=1
+            labels=list(set(ignored_cols) - extra_cols), axis=1
         )
 
         if comparison_dataset is not None:
             extra_cols = set(ignored_cols) - set(comparison_dataset.columns)
-            if extra_cols:
+            if extra_cols and not suppress_missing_ignored_cols_error:
                 raise ValueError(
-                    f"Columns {extra_cols} configured in the ignored_cols "
-                    "parameter are not found in the comparison dataset."
+                    exception_msg.format(extra_cols=extra_cols, dataset="comparison")
                 )
 
             comparison_dataset = comparison_dataset.drop(
-                labels=list(ignored_cols), axis=1
+                labels=list(set(ignored_cols) - extra_cols), axis=1
             )
 
     if column_mapping:
