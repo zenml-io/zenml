@@ -11,14 +11,14 @@ for standby compute.
 In order to run on Sagemaker you will need to do some configuration
 within AWS to create all the required resources and permissions. In total, you will need to have:
 
-- [ECR container registry](https://docs.zenml.io/component-gallery/container-registries/amazon-ecr)
-- [S3 artifact store](https://docs.zenml.io/component-gallery/artifact-stores/amazon-s3)
+- [ECR container registry](https://docs.zenml.io/user-guide/component-guide/container-registries/amazon-ecr)
+- [S3 artifact store](https://docs.zenml.io/user-guide/component-guide/artifact-stores/amazon-s3)
 
 On top of having these resources and setting them up for ZenML, you will also
 need to do some permission tuning.
 
 You will need to
-[authorize](https://docs.zenml.io/component-gallery/container-registries/amazon-ecr#how-to-use-it)
+[authorize](https://docs.zenml.io/user-guide/component-guide/container-registries/amazon-ecr#how-to-use-it)
 your local Docker client to have access the ECR container registry, as explained
 in our docs:
 
@@ -39,7 +39,7 @@ When creating the role, make sure to add Sagemaker-specific permissions:
 ## 🥞 Create a Sagemaker stack
 
 Before registering the stack, you need to deploy a remote ZenML server 
-on AWS. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
+on AWS. See the [deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) 
 for more information.
 
 Once everything is done on the AWS side, we will need to configure a
@@ -105,7 +105,7 @@ zenml artifact-store deploy aws_artifact_store --flavor=s3
 You could also deploy the Sagemaker orchestrator itself as well as the ECR
 container registry. For more information on this `deploy` subcommand, please
 refer to the
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 ### ▶️ Run the pipeline
 
@@ -171,8 +171,8 @@ zenml artifact-store destroy s3_artifact_store
 # 📜 Learn more
 
 Our docs regarding the Sagemaker integration can be found 
-[here](https://docs.zenml.io/component-gallery/orchestrators/sagemaker).
+[here](https://docs.zenml.io/user-guide/component-guide/orchestrators/sagemaker).
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/orchestrators/custom).
+[docs](https://docs.zenml.io/user-guide/component-guide/orchestrators/custom).

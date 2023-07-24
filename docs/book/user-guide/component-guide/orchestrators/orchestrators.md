@@ -12,7 +12,7 @@ steps of your pipeline) are available.
 {% hint style="info" %}
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute
 your pipeline code. If you want to learn more about how Docker images are built by ZenML, check
-out [this guide](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md).
+out [this guide](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md).
 {% endhint %}
 
 ### When to use it
@@ -60,16 +60,16 @@ If your orchestrator comes with a separate user interface (for example Kubeflow,
 to the orchestrator UI of a specific pipeline run using the following code snippet:
 
 ```python
-from zenml.post_execution import get_run
+from zenml.client import Client
 
-pipeline_run = get_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
 ```
 
 #### Specifying per-step resources
 
 If some of your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps
-as described [here](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md).
+as described [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look
 at [step operators](../step-operators/step-operators.md).

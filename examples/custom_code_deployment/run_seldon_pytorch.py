@@ -99,7 +99,7 @@ TENSORFLOW = "tensorflow"
     "--prediction-image-url",
     "-imgurl",
     type=str,
-    default="https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png",
+    default="https://github.com/zenml-io/zenml/blob/main/examples/custom_code_deployment/assets/mnist_example_image.png",
     required=False,
 )
 def main(

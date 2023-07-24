@@ -45,6 +45,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackExistsError,
 )
+from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
     ArtifactFilterModel,
     ComponentFilterModel,
@@ -82,6 +83,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_USERNAME,
     DEFAULT_WORKSPACE_NAME,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
 
@@ -662,14 +664,30 @@ def test_delete_default_stack_component_fails():
         store.delete_stack_component(default_orchestrator.id)
 
 
-def test_list_stack_components_works_with_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
+def test_count_stack_components():
+    """Tests that the count stack_component command returns the correct amount."""
+    client = Client()
+    store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
+    active_workspace = client.active_workspace
 
+    count_before = store.list_stack_components(
+        ComponentFilterModel(scope_workspace=active_workspace.id)
+    ).total
 
-def test_list_stack_components_lists_nothing_for_nonexistent_filters():
-    pytest.skip("Not Implemented yet.")
-    pass
+    assert (
+        store.count_stack_components(workspace_id=active_workspace.id)
+        == count_before
+    )
+
+    with ComponentContext(
+        StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
+    ):
+        assert (
+            store.count_stack_components(workspace_id=active_workspace.id)
+            == count_before + 1
+        )
 
 
 # .-------------------------.
@@ -1014,6 +1032,33 @@ def test_list_runs_is_ordered():
         )
 
 
+def test_count_runs():
+    """Tests that the count runs command returns the correct amount."""
+    client = Client()
+    store = client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
+    active_workspace = client.active_workspace
+
+    num_runs = store.list_runs(
+        PipelineRunFilterModel(scope_workspace=active_workspace.id)
+    ).total
+
+    # At baseline this should be the same
+    assert store.count_runs(workspace_id=active_workspace.id) == num_runs
+
+    with PipelineRunContext(5):
+        assert (
+            store.count_runs(workspace_id=active_workspace.id)
+            == store.list_runs(
+                PipelineRunFilterModel(scope_workspace=active_workspace.id)
+            ).total
+        )
+        assert (
+            store.count_runs(workspace_id=active_workspace.id) == num_runs + 5
+        )
+
+
 def test_filter_runs_by_code_repo(mocker):
     """Tests filtering runs by code repository id."""
     mocker.patch.object(
@@ -1079,7 +1124,7 @@ def test_get_run_step_outputs_succeeds():
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
 
         for step in steps.items:
-            run_step_outputs = store.get_run_step(step.id).output_artifacts
+            run_step_outputs = store.get_run_step(step.id).outputs
             assert len(run_step_outputs) == 1
 
 
@@ -1091,7 +1136,7 @@ def test_get_run_step_inputs_succeeds():
     with PipelineRunContext(1):
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
-            run_step_inputs = store.get_run_step(step.id).input_artifacts
+            run_step_inputs = store.get_run_step(step.id).inputs
             assert len(run_step_inputs) == 1
 
 
@@ -1166,10 +1211,10 @@ def test_logs_are_recorded_properly(clean_client):
         assert "log" in step1_logs_content
 
         # Step 2 does not have logs!
-        assert step2_logs_content == ""
+        assert "Step `step_2` has started." in step2_logs_content
 
 
-def test_logs_are_recorded_properly_when_disabled():
+def test_logs_are_recorded_properly_when_disabled(clean_client):
     """Tests no logs are stored in the artifact store when disabled"""
     client = Client()
     store = client.zen_store
@@ -1178,16 +1223,37 @@ def test_logs_are_recorded_properly_when_disabled():
         steps = store.list_run_steps(StepRunFilterModel())
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        artifact_store = _load_artifact_store(
-            step1_logs.artifact_store_id, store
+        assert not step1_logs
+        assert not step2_logs
+
+        artifact_store_id = steps[0].output.artifact_store_id
+        assert artifact_store_id
+
+        artifact_store = _load_artifact_store(artifact_store_id, store)
+
+        logs_uri_1 = prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[0].name,
+        )
+
+        logs_uri_2 = prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[1].name,
+        )
+
+        prepare_logs_uri(
+            artifact_store=artifact_store,
+            step_name=steps[1].name,
         )
 
         with pytest.raises(DoesNotExistException):
             _load_file_from_artifact_store(
-                step1_logs.uri, artifact_store=artifact_store, mode="r"
+                logs_uri_1, artifact_store=artifact_store, mode="r"
             )
+
+        with pytest.raises(DoesNotExistException):
             _load_file_from_artifact_store(
-                step2_logs.uri, artifact_store=artifact_store, mode="r"
+                logs_uri_2, artifact_store=artifact_store, mode="r"
             )
 
 

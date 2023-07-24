@@ -104,18 +104,28 @@ class StepInvocation:
 
         return upstream_steps
 
-    def finalize(self) -> "StepConfiguration":
+    def finalize(self, parameters_to_ignore: Set[str]) -> "StepConfiguration":
         """Finalizes a step invocation.
 
         The will validate the upstream steps and run final configurations on the
         step that is represented by the invocation.
+
+        Args:
+            parameters_to_ignore: Set of parameters that should not be applied
+                to the step instance.
 
         Returns:
             The finalized step configuration.
         """
         # Validate the upstream steps for legacy .after() calls
         self._get_and_validate_step_upstream_steps()
-        self.step.configure(parameters=self.parameters)
+
+        parameters_to_apply = {
+            key: value
+            for key, value in self.parameters.items()
+            if key not in parameters_to_ignore
+        }
+        self.step.configure(parameters=parameters_to_apply)
 
         external_artifact_ids = {}
         for key, artifact in self.external_artifacts.items():

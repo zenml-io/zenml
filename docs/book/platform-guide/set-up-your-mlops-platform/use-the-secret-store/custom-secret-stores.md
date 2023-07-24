@@ -67,7 +67,7 @@ class SecretsStoreInterface(ABC):
 {% hint style="info" %}
 This is a slimmed-down version of the real interface which aims to highlight the abstraction layer. In order to see the
 full definition and get the complete docstrings, please check
-the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-zen\_stores/#zenml.zen\_stores.secrets\_stores.secrets\_store\_interface.SecretsStoreInterface)
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-zen\_stores/#zenml.zen\_stores.secrets\_stores.secrets\_store\_interface.SecretsStoreInterface)
 .
 {% endhint %}
 

@@ -17,7 +17,6 @@ import pytest
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -39,9 +38,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
         )
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        deployment_run = get_pipeline("continuous_deployment_pipeline").runs[
-            -1
-        ]
+        deployment_run = (
+            Client().get_pipeline("continuous_deployment_pipeline").runs[-1]
+        )
         assert deployment_run.status == ExecutionStatus.COMPLETED
 
         experiment_tracker = Client().active_stack.experiment_tracker
@@ -82,4 +81,4 @@ def test_example(request: pytest.FixtureRequest) -> None:
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
-            service.stop(timeout=60)
+            service.stop(timeout=180)

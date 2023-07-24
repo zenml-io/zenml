@@ -107,7 +107,7 @@ the ZenML documentation.
 
 For more, up-to-date information on the Weights & Biases Experiment Tracker implementation and its configuration, you
 can have a look
-at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.experiment\_trackers.wandb\_experiment\_tracker)
+at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.experiment\_trackers.wandb\_experiment\_tracker)
 .
 
 ### How do you use it?
@@ -182,8 +182,8 @@ def my_step(
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
 Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings)
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the Weights & Biases Experiment Tracker in their

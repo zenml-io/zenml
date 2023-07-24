@@ -31,7 +31,9 @@ from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
     fail_secrets_manager_creation,
+    is_sorted_or_filtered,
     list_options,
+    print_model_url,
     print_page_info,
     warn_deprecated_secrets_manager,
 )
@@ -41,7 +43,9 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
 from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
+from zenml.utils import source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.dashboard_utils import get_component_url
 
 
 def generate_stack_component_get_command(
@@ -72,6 +76,7 @@ def generate_stack_component_get_command(
                 cli_utils.declare(
                     f"Active {display_name}: '{components[0].name}'"
                 )
+                print_model_url(get_component_url(components[0]))
             else:
                 cli_utils.warning(
                     f"No {display_name} set for active stack "
@@ -124,17 +129,19 @@ def generate_stack_component_describe_command(
             if active_components:
                 active_component_id = active_components[0].id
 
-            cli_utils.print_stack_component_configuration(
-                component=component_,
-                active_status=component_.id == active_component_id,
-            )
+                cli_utils.print_stack_component_configuration(
+                    component=component_,
+                    active_status=component_.id == active_component_id,
+                )
+
+                print_model_url(get_component_url(active_components[0]))
 
     return describe_stack_component_command
 
 
 def generate_stack_component_list_command(
     component_type: StackComponentType,
-) -> Callable[[], None]:
+) -> Callable[..., None]:
     """Generates a `list` command for the specific stack component type.
 
     Args:
@@ -145,10 +152,14 @@ def generate_stack_component_list_command(
     """
 
     @list_options(ComponentFilterModel)
-    def list_stack_components_command(**kwargs: Any) -> None:
+    @click.pass_context
+    def list_stack_components_command(
+        ctx: click.Context, **kwargs: Any
+    ) -> None:
         """Prints a table of stack components.
 
         Args:
+            ctx: The click context object
             kwargs: Keyword arguments to filter the components.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
@@ -166,6 +177,7 @@ def generate_stack_component_list_command(
                 client=client,
                 component_type=component_type,
                 components=components.items,
+                show_active=not is_sorted_or_filtered(ctx),
             )
             print_page_info(components)
 
@@ -261,6 +273,7 @@ def generate_stack_component_register_command(
             cli_utils.declare(
                 f"Successfully registered {component.type} `{component.name}`."
             )
+            print_model_url(get_component_url(component))
 
     return register_stack_component_command
 
@@ -337,6 +350,7 @@ def generate_stack_component_update_command(
                 f"Successfully updated {display_name} "
                 f"`{updated_component.name}`."
             )
+            print_model_url(get_component_url(updated_component))
 
     return update_stack_component_command
 
@@ -440,7 +454,7 @@ def generate_stack_component_remove_attribute_command(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.update_stack_component(
+                updated_component = client.update_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     configuration={k: None for k in args},
@@ -452,6 +466,7 @@ def generate_stack_component_remove_attribute_command(
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_id_or_prefix}`."
             )
+            print_model_url(get_component_url(updated_component))
 
     return remove_attribute_stack_component_command
 
@@ -497,7 +512,7 @@ def generate_stack_component_rename_command(
             f"Renaming {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.update_stack_component(
+                updated_component = client.update_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     name=new_name,
@@ -509,6 +524,7 @@ def generate_stack_component_rename_command(
                 f"Successfully renamed {display_name} `{name_id_or_prefix}` to"
                 f" `{new_name}`."
             )
+            print_model_url(get_component_url(updated_component))
 
     return rename_stack_component_command
 
@@ -596,7 +612,7 @@ def generate_stack_component_copy_command(
             except KeyError as err:
                 cli_utils.error(str(err))
 
-            client.create_stack_component(
+            copied_component = client.create_stack_component(
                 name=target_component,
                 flavor=component_to_copy.flavor,
                 component_type=component_to_copy.type,
@@ -604,6 +620,7 @@ def generate_stack_component_copy_command(
                 labels=component_to_copy.labels,
                 is_shared=component_to_copy.is_shared,
             )
+            print_model_url(get_component_url(copied_component))
 
     return copy_stack_component_command
 
@@ -969,11 +986,14 @@ def generate_stack_component_flavor_register_command(
                     component_type=component_type,
                 )
             except ValueError as e:
-                root_path = Client.find_repository()
+                source_root = source_utils.get_source_root()
+
                 cli_utils.error(
-                    f"Flavor registration failed! ZenML tried loading the module `{source}` from path "
-                    f"`{root_path}`. If this is not what you expect, then please ensure you have run "
-                    f"`zenml init` at the root of your repository.\n\nOriginal exception: {str(e)}"
+                    f"Flavor registration failed! ZenML tried loading the"
+                    f"module `{source}` from path `{source_root}`. If this is "
+                    "not what you expect, then please ensure you have run "
+                    "`zenml init` at the root of your repository.\n\n"
+                    f"Original exception: {str(e)}"
                 )
 
             cli_utils.declare(
@@ -1737,8 +1757,6 @@ def register_single_stack_component_cli_commands(
     )
     def command_group() -> None:
         """Group commands for a single stack component type."""
-        cli_utils.print_active_config()
-        cli_utils.print_active_stack()
 
     # zenml stack-component get
     get_command = generate_stack_component_get_command(component_type)

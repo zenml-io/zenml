@@ -70,7 +70,7 @@ class BaseStepOperatorFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see
 the full implementation and get the complete docstrings, please check
-the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-step\_operators/#zenml.step\_operators.base\_step\_operator.BaseStepOperator)
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-step\_operators/#zenml.step\_operators.base\_step\_operator.BaseStepOperator)
 .
 {% endhint %}
 
@@ -145,7 +145,7 @@ different module/path than the actual `CustomStepOperator`).
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use your custom step operator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

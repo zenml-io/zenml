@@ -4,168 +4,170 @@ description: Inspecting a finished pipeline run and its outputs.
 
 # Fetch runs after execution
 
-Once a pipeline run has been completed, we can interact with it from code using the post-execution utilities. The hierarchy is as follows:
+Once a pipeline run has been completed, we can access the corresponding
+information in code, which enables several use cases:
+- Loading artifacts like models or datasets saved by previous runs
+- Accessing metadata or configurations of previous runs
+- Programmatically inspecting the lineage of pipeline runs and their artifacts
 
+The hierarchy of pipelines, runs, steps, and artifacts is as follows:
 ```mermaid
 flowchart LR
-    pipelines -->|1:N| versions
-    versions -->|1:N| runs
+    pipelines -->|1:N| runs
     runs -->|1:N| steps
-    steps -->|1:N| outputs
+    steps -->|1:N| artifacts
 ```
 
-As you can see from the diagram, there are many layers of 1-to-N relationships. To get a specific output you need to know exactly which step in which run of which specific pipeline version to use.
+As you can see from the diagram, there are many layers of 1-to-N relationships. 
 
-Let us investigate how to traverse this hierarchy level by level:
+Let us investigate how to traverse this hierarchy level-by-level:
 
 ## Pipelines
 
-ZenML keeps a collection of all created pipelines. With `get_pipeline()` you can get a specific pipeline.
+### Access Pipeline From Class 
 
-#### List all pipelines
+After you have run a pipeline at least once, you can access all the information
+associated with this pipeline through the corresponding
+[`PipelineResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_models.py)
+that you can access via the pipeline's `model` property:
 
-You can also access a list of all your pipelines through the CLI by executing the following command on the terminal:
+```python
+@pipeline
+def my_pipeline():
+    ...
+
+my_pipeline()
+
+# get the Pydantic model representation of the pipeline
+pipeline_model = my_pipeline.model
+
+# find information about the pipeline
+name = pipeline_model.name
+version = pipeline_model.version
+...
+```
+
+{% hint style="info" %}
+These pipeline "models" are not related to machine learning models like decision
+trees or neural networks. Rather, you can think of them as similar to types in 
+strictly-typed languages. Checkout the 
+[ZenML Client Documentation](../advanced-guide/environment-management/client.md#resource-models) for
+more details.
+{% endhint %}
+
+### Get Pipeline via Client
+
+Alternatively, if you don't have the pipeline definition loaded anymore, you 
+can also fetch the pipeline via the
+[`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
+method.
+
+```python
+from zenml.client import Client
+
+pipeline_model = Client().get_pipeline("first_pipeline")
+```
+
+{% hint style="info" %}
+Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/client.md) for more 
+information on the `Client` class and its purpose.
+{% endhint %}
+
+### Discover and List Pipelines
+
+If you're not sure which pipeline you need to fetch, you can find a list of all
+registered pipelines in the ZenML dashboard, or list them programmatically 
+either via the Client or the CLI.
+
+#### List Pipelines via Client
+
+You can use the 
+[`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
+method to get a list of all pipelines registered in ZenML:
+
+```python
+from zenml.client import Client
+
+pipelines = Client().list_pipelines()
+```
+
+#### List Pipelines via CLI
+
+Alternatively, you can also list pipelines with the following CLI command:
 
 ```shell
-zenml pipeline list
+zenml pipelines list
 ```
-
-Or directly from code
-
-```python
-from zenml.post_execution import get_pipelines
-
-pipelines = get_pipelines()
-```
-
-{% hint style="warning" %}
-Pipelines are sorted from oldest to newest. For this sorting, it matters which pipeline had the first **initial** run.
-{% endhint %}
-
-#### Get a pipeline
-
-```python
-from zenml.post_execution import get_pipeline
-
-# This way you can get a pipeline by name
-pipeline_x = get_pipeline(pipeline="first_pipeline")
-```
-
-{% hint style="info" %}
-Instead of passing the name of the pipeline in, you can also directly use the pipeline instance `get_pipeline(pipeline=first_pipeline)`.
-{% endhint %}
-
-## Versions
-
-Each pipeline can have many versions. Let's print out the contents of the `PipelineView`:
-
-```python
-print(pipeline_x.versions)
-```
-
-This should return the following:
-
-<pre class="language-bash"><code class="lang-bash"><strong>[PipelineVersionView(id=..., name=first_pipeline, version=2),
-</strong> PipelineVersionView(id=..., name=first_pipeline, version=1)]
-</code></pre>
-
-This is how we'll access one specific version:
-
-```python
-latest_version = pipeline_x.versions[0]
-```
-
-{% hint style="info" %}
-The sorting of **versions** on a `PipelineView` is from **newest** to **oldest** with the most recent versions at the beginning of the list.
-{% endhint %}
 
 ## Runs
 
-#### Getting runs from a fetched pipeline version
+Each pipeline can be executed many times, resulting in several **Runs**.
 
-Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a `PipelineVersionView`:
+### Get Runs of Pipeline
+
+You can get a list of all runs of a pipeline using the `runs` property of the
+pipeline:
 
 ```python
-print(latest_version.runs)
+runs = pipeline_model.runs
 ```
 
-This should return the following:
+The result will be a list of the most recent runs of this pipeline, ordered
+from newest to oldest.
 
-<pre class="language-bash"><code class="lang-bash">[PipelineRunView(id=..., name=scipy_example_pipeline-...),
-<strong> PipelineRunView(id=..., name=scipy_example_pipeline-...)] ]
-</strong></code></pre>
+{% hint style="info" %}
+Alternatively, you can also use the `pipeline_model.get_runs()` method which 
+allows you to specify detailed parameters for filtering or pagination. See the
+[ZenML Client Documentation](../advanced-guide/environment-management/client.md#list-methods) for more
+information.
+{% endhint %}
 
-And this is how we access the most recent run
+### Get Last Run of Pipeline
+
+To access the most recent run of a pipeline, you can either use the `last_run`
+property or access it through the `runs` list:
 
 ```
-last_run = latest_version.runs[0]
+last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 ```
 
 {% hint style="info" %}
-The sorting of **runs** on a `PipelineVersionView` is from **newest** to **oldest** with the most recent runs at the beginning of the list.
+If your most recent runs have failed and you want to find the last run that has
+succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 
-#### Getting runs from a pipeline instance:
+### Get Run via Client
 
-Alternatively, you can also access the runs from the pipeline class/instance itself:
-
-```python
-from zenml import pipeline
-
-
-# Definition of pipeline
-@pipeline
-def example_pipeline(...):
-    ...
-
-
-# Run the pipeline
-example_pipeline(...)
-
-# get all runs of the pipeline chronologically ordered
-runs = pipe.get_runs()
-
-# get the last run by index, runs are ordered by execution time in ascending order
-last_run = runs[0]
-```
-
-#### Directly getting a run
-
-Finally, you can also access a run directly with the `get_run(run_name=...)`:
+If you already know the exact run that you want to fetch (e.g., from looking at
+the dashboard), you can use the 
+[`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
+method to fetch the run directly without having to query the pipeline first:
 
 ```python
-from zenml.post_execution import get_run, get_unlisted_runs
+from zenml.client import Client
 
-run = get_run(run_name="my_run_name")
-run = get_unlisted_runs()[0]  # Get last unlisted run
-```
-
-#### Use the CLI
-
-You can also access your runs through the CLI by executing the following command on the terminal:
-
-```shell
-zenml pipeline runs list
-zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
+pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274466")
 ```
 
 {% hint style="info" %}
-**Runs configuration**
+Similar to pipelines, you can query runs by either ID, name, or name prefix, and
+you can also discover runs through the Client or CLI via the 
+[`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
+or `zenml pipeline runs list` commands.
 
-Each run has a collection of useful metadata which you can access to ensure all runs are reproducible.
 {% endhint %}
 
-#### Git SHA
+### Run Information
 
-The [Git commit SHA](https://www.mikestreety.co.uk/blog/the-git-commit-hash/) that the pipeline run was performed on. This will only be set if the pipeline code is in a git repository and there are no uncommitted files when running the pipeline.
-
-```python
-commit = run.git_sha
-```
+Each run has a collection of useful information which can help you reproduce
+your runs. In the following, you can find a list of some of the most useful 
+pipeline run information, but there is much more available. See the 
+[`PipelineRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_run_models.py)
+definition for a comprehensive list.
 
 #### Status
 
-The status of a pipeline run can also be found here. There are four possible states: failed, completed, running, and cached:
+The status of a pipeline run. There are four possible states: failed, completed, running, and cached.
 
 ```python
 status = run.status
@@ -173,24 +175,22 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including [pipeline-level `BaseSettings`](../advanced-guide/configure-steps-pipelines.md), which we will learn more about later. You can also access the settings directly via the `settings` variable.
+The `pipeline_configuration` is an object that contains all configurations of 
+the pipeline and pipeline run, including the 
+[pipeline-level `BaseSettings`](../advanced-guide/pipelining-features/configure-steps-pipelines.md), 
+which we will learn more about later:
 
 ```python
-pipeline_config = run.pipeline_configuration
-pipeline_settings = run.settings
+pipeline_config = run.config
+pipeline_settings = run.config.settings
 ```
 
-#### Docstring
+#### Component-Specific Metadata
 
-If you wrote a docstring into your pipeline function, you can retrieve it here as well:
-
-```python
-pipeline_docstring = run.docstring
-```
-
-#### Component-specific metadata
-
-Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `metadata` attribute:
+Depending on the stack components you use, you might have additional 
+component-specific metadata associated with your run, such as the URL to the UI
+of a remote orchestrator. You can access this component-specific metadata via 
+the `metadata` attribute:
 
 ```python
 run_metadata = run.metadata
@@ -200,70 +200,84 @@ orchestrator_url = run_metadata["orchestrator_url"]
 
 ## Steps
 
-Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute or by querying a specific step using the `get_step(step=...)` method.
+Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute:
 
 ```python
 # get all steps of a pipeline for a given run
 steps = run.steps
 
-# get the step that was executed first
-first_step = steps[0]
-
-# or get a specific step by its name
-step = run.get_step(step="first_step")
+# get a specific step by its invocation ID
+step = run.steps["first_step"]
 ```
 
 {% hint style="info" %}
-The step `name` refers to the pipeline attribute which might differ from the actual step implementation name.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex
+pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the
+invocation ID.
 {% endhint %}
 
-{% hint style="warning" %}
-The steps are ordered by the time of execution. Depending on the [orchestrator](../component-guide/orchestrators/orchestrators.md), steps can be run in parallel. Thus, accessing steps by an index is **unreliable** across different runs. You should access steps by the step class, an instance of the class, or even the name of the step as a string: `get_step(step=...)`instead.
-{% endhint %}
+### Step Information
 
-Similar to the run, for reproducibility, you can use the `step` object to access:
+Similar to the run, you can use the `step` object to access a variety of useful information:
 
-* The parameters used to run the step via `step.parameters`,
-* The step-level settings via `step.step_configuration`,
-* Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`,
-* Input and output artifacts.
+* The parameters used to run the step via `step.config.parameters`,
+* The step-level settings via `step.config.settings`,
+* Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`
 
-## Outputs
+See the 
+[`StepRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step_run_models.py)
+definition for a comprehensive list of available information.
 
-Finally, this is how you can inspect the output of a step:
+## Artifacts
 
-* If there only is a single output, use the `output` attribute
-* If there are multiple outputs, use the `outputs` attribute, which is a dictionary that can be indexed using the name of an output:
+Each step of a pipeline run can have multiple output and input artifacts that
+we can inspect via the `outputs` and `inputs` properties.
+
+To inspect the output artifacts of a step, you can use the `outputs` attribute, 
+which is a dictionary that can be indexed using the name of an output.
+Alternatively, if your step only has a single output, you can use the `output`
+property as a shortcut directly:
 
 ```python
-# The outputs of a step
-# If there are multiple outputs they are accessible by name
+# The outputs of a step are accessible by name
 output = step.outputs["output_name"]
 
-# If there is only one output, use the `.output` property instead 
+# If there is only one output, you can use the `.output` property instead 
 output = step.output
 
-# read the value into memory
-output.read()  
+# use the `.load()` method to load the artifact into memory
+my_pytorch_model = output.load()  
 ```
+
+Similarly, you can use the `inputs` and `input` properties to get the input 
+artifacts of a step instead.
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps:
-
-```python
-from zenml import step
-from zenml.steps import Output
-
-
-@step
-def some_step() -> Output(output_name=int):
-    ...
-```
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what
+the output names of your steps are and how to customize them.
 {% endhint %}
 
-#### Visualizing Artifacts
+### Artifact Information
 
-ZenML automatically saves visualizations for many common data types. For instance, 3D NumPy Arrays with three channels are automatically visualized as images and data validation reports as embedded HTML visualizations. In Jupyter Notebooks, you can view the visualization of an artifact using the `visualize()` method:
+Similar to the other entities, each artifact is represented by a corresponding
+[`ArtifactResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
+which contains a lot of general information about the artifact as well as
+datatype-specific metadata and visualizations.
+
+#### Artifact Metadata
+
+All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
+
+```python
+output_metadata = output.metadata
+storage_size_in_bytes = output_metadata["storage_size"].value
+```
+
+#### Artifact Visualizations
+
+ZenML automatically saves visualizations for many common data types.
+Using the `visualize()` method you can programmatically show these 
+visualizations in Jupyer notebooks:
 
 ```python
 output.visualize()
@@ -271,82 +285,69 @@ output.visualize()
 
 ![output.visualize() Output](/docs/book/.gitbook/assets/artifact_visualization_evidently.png)
 
-If you want to visualize multiple artifacts generated by the same step or pipeline run, you can also call `visualize()` on the step or run directly:
-
-```python
-step.visualize()  # visualizes all outputs of the step
-run.visualize()  # visualizes all artifacts produced by this run
-```
-
-![run.visualize() Output](/docs/book/.gitbook/assets/run_visualization.png)
-
-In all other runtime environments, please open your ZenML dashboard using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
-
-#### Output Artifact Metadata
-
-All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
-
-```python
-output_metadata = output.metadata
-storage_size = output_metadata["storage_size"]
-```
+{% hint style="info" %}
+If you're not in a Jupyter notebook, you can simply view the visualizations in
+the ZenML dashboard by running `zenml up` and clicking on the respective 
+artifact in the pipeline run DAG instead. Checkout the
+[artifact visualization page](../advanced-guide/artifact-management/visualize-artifacts.md) to learn
+more about how to build and view artifact visualizations in ZenML!
+{% endhint %}
 
 ## Code Example
 
-Putting it all together, this is how we can access the output of the last step of our example pipeline from the previous sections:
+Putting it all together, this is how we can load the model trained by the `svc_trainer` step of our example pipeline from the previous sections:
 
 ```python
-from zenml.post_execution import get_pipeline
+from zenml.client import Client
 
-pipeline = get_pipeline(pipeline="first_pipeline")
-last_run = pipeline.runs[0]
-last_step = last_run.steps[-1]
-model = last_step.output.read()
+pipeline = Client().get_pipeline("first_pipeline")
+last_run = pipeline.last_run
+trainer_step = last_run.steps["svc_trainer"]
+model = trainer_step.output.load()
 ```
 
 or alternatively:
 
 ```python
-# Definition of pipeline
 @pipeline
-def example_pipeline(...):
+def first_pipeline(...):
     ...
 
-
-# Run the pipeline
-example_pipeline()
-
-# Get the first step
-step_1 = example_pipeline.get_runs()[0].get_step(step="step_1")
-output = step_1.output.read()
+last_run = first_pipeline.model.last_run
+trainer_step = last_run.steps["svc_trainer"]
+model = trainer_step.output.load()
 ```
 
-## Final note
+## Fetching Runs in Runs
 
-While most of this document has been focusing on the so-called post-execution workflow (i.e. fetching objects after a pipeline has been completed), it can also be used within the context of a running pipeline.
+While most of this document has been focused on fetching objects after a pipeline run has been completed, the same logic can also be used within the context of a running pipeline.
 
 This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
 
-E.g., we can fetch from within a step the last pipeline run for the same pipeline:
+For example, this is how we can fetch the last pipeline run of the same pipeline
+from within a ZenML step:
 
 ```python
-from zenml.post_execution import get_pipeline
-from zenml.environment import Environment
-
+from zenml import get_step_context
+from zenml.client import Client
 
 @step
 def my_step():
-    # Fetch the current pipeline
-    p = get_pipeline('pipeline_name')
+    # Get the name of the current pipeline run
+    current_run_name = get_step_context().pipeline_run.name
 
-    # Fetch an older run
-    older_run = p.runs[-2]  # -1 will be the current run
+    # Fetch the current pipeline run
+    current_run = Client().get_pipeline_run(current_run_name)
 
-    # Use the older run to make a decision
-    ...
+    # Fetch the previous run of the same pipeline 
+    previous_run = current_run.pipeline.runs[1]  # index 0 is the current run
 ```
 
-You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
+{% hint style="info" %}
+As shown in the example, we can get additional information about the current
+run using the `StepContext`, which is explained in more detail in the 
+[advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
+{% endhint %}
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

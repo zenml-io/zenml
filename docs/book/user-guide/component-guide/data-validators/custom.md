@@ -25,7 +25,7 @@ Validator implementation.
 If you want to implement your own custom Data Validator, you can follow the following steps:
 
 1. Create a class which inherits
-   from [the `BaseDataValidator` class](https://apidocs.zenml.io/latest/core\_code\_docs/core-data\_validators/#zenml.data\_validators.base\_data\_validator.BaseDataValidator)
+   from [the `BaseDataValidator` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-data\_validators/#zenml.data\_validators.base\_data\_validator.BaseDataValidator)
    and override one or more of the abstract methods, depending on the capabilities of the underlying library/service
    that you want to integrate.
 2. If you need any configuration, you can create a class which inherits from the `BaseDataValidatorConfig` class.

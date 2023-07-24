@@ -17,9 +17,9 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
+from zenml import get_step_context
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
 from zenml.integrations.kserve.constants import (
     KSERVE_CUSTOM_DEPLOYMENT,
@@ -37,12 +37,10 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
     BaseParameters,
-    StepEnvironment,
+    StepContext,
     step,
 )
-from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
 from zenml.utils.artifact_utils import save_model_metadata
 
@@ -246,10 +244,10 @@ def kserve_model_deployer_step(
     )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    run_name = step_context.pipeline_run.name
+    step_name = step_context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
@@ -364,10 +362,10 @@ def kserve_custom_model_deployer_step(
     )
 
     # get pipeline name, step name, run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    step_name = step_env.step_name
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    run_name = step_context.pipeline_run.name
+    step_name = step_context.step_run.name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
@@ -418,7 +416,9 @@ def kserve_custom_model_deployer_step(
             "Please make sure that you have registered and set a stack."
         )
 
-    image_name = step_env.step_run_info.get_image(key=KSERVE_DOCKER_IMAGE_KEY)
+    image_name = step_context.step_run_info.get_image(
+        key=KSERVE_DOCKER_IMAGE_KEY
+    )
 
     # copy the model files to a new specific directory for the deployment
     served_model_uri = os.path.join(

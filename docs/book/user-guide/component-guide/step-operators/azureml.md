@@ -82,7 +82,7 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your steps in AzureML. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -90,21 +90,21 @@ more about how ZenML builds these images and how you can customize them.
 
 For additional configuration of the AzureML step operator, you can pass `AzureMLStepOperatorSettings` when defining or
 running your pipeline. Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings)
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
 A concrete example of using the AzureML step operator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 
 For more information and a full list of configurable attributes of the AzureML step operator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.step\_operators.azureml\_step\_operator.AzureMLStepOperator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.step\_operators.azureml\_step\_operator.AzureMLStepOperator)
 .
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this step operator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

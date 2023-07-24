@@ -41,11 +41,6 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -821,6 +816,8 @@ class AWSServiceConnector(ServiceConnector):
         """
         cfg = self.config
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             assert isinstance(cfg, AWSImplicitConfig)
             # Create a boto3 session and use the default credentials provider
             session = boto3.Session(
@@ -1401,6 +1398,8 @@ class AWSServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             if region_name is None:
                 raise ValueError(
                     "The AWS region name must be specified when using the "
@@ -1772,6 +1771,8 @@ class AWSServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1960,6 +1961,18 @@ class AWSServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # temporary Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
+                )
             return KubernetesServiceConnector(
                 id=self.id,
                 name=connector_name,

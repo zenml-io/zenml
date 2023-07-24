@@ -32,8 +32,10 @@ Even when passwords are mentioned as credentials, some services (e.g. DockerHub)
 
 {% hint style="info" %}
 The key takeaway here is that implicit authentication gives you immediate access to some cloud resources and requires no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
+{% endhint %}
 
-In some cases, this method may also be perceived as a security risk, because it can give access to the same resources and services that the ZenML Server itself uses for its internals, which should be kept separate from the actual users and ML workloads.
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
 {% endhint %}
 
 Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, and basically any form of authentication available in the environment where it is running, either locally or in the cloud.
@@ -58,49 +60,33 @@ There are a few caveats that you should be aware of when choosing an implicit au
 
 The following is an example of using the GCP Service Connector's implicit authentication method to gain immediate access to all the GCP resources that the ZenML server also has access to. Note that this is only possible because the ZenML server is also deployed in GCP, in a GKE cluster, and the cluster is attached to a GCP service account with permissions to access the project resources:
 
+```sh
+zenml service-connector register gcp-implicit --type gcp --auth-method implicit --project_id=zenml-core
 ```
-$ zenml service-connector register gcp-implicit --type gcp --auth-method implicit --project_id=zenml-core
+
+{% code title="Example Command Output" %}
+```text
 Successfully registered service connector `gcp-implicit` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type gcs-bucket
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
-┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
-┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
-┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
-┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type kubernetes-cluster
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type docker-registry
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://annotation-gcp-store                       ┃
+┃                       │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
-
+{% endcode %}
 </details>
 
 ### Long-lived credentials (API keys, account keys)
@@ -148,16 +134,22 @@ _**Issuing temporary credentials**_: this authentication strategy keeps long-liv
 
 <summary>AWS temporary credentials example</summary>
 
-The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and kept on the ZenML server and the temporary Kubernetes API token credentials that the client receives and uses to access the resource. Note the expiration time on the Kubernetes API token:
+The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and kept on the ZenML server and the temporary Kubernetes API token credentials that the client receives and uses to access the resource.
 
+First, showing the long-lived AWS credentials configured for the AWS Service Connector:
+
+```sh
+zenml service-connector describe eks-zenhacks-cluster
 ```
-$ zenml service-connector describe eks-zenhacks-cluster
-Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 'private'.
+
+{% code title="Example Command Output" %}
+```text
+Service connector 'eks-zenhacks-cluster' of type 'aws' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
    'eks-zenhacks-cluster' aws Service Connector Details    
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PROPERTY         │ VALUE                                ┃
 ┠──────────────────┼──────────────────────────────────────┨
-┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b ┃
+┃ ID               │ be53166a-b39c-4e39-8e31-84658e50eec4 ┃
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ NAME             │ eks-zenhacks-cluster                 ┃
 ┠──────────────────┼──────────────────────────────────────┨
@@ -169,7 +161,7 @@ Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ RESOURCE NAME    │ zenhacks-cluster                     ┃
 ┠──────────────────┼──────────────────────────────────────┨
-┃ SECRET ID        │ 735c0e1a-cf1e-4a43-aed0-144b9a61c903 ┃
+┃ SECRET ID        │ fa42ab38-3c93-4765-a4c6-9ce0b548a86c ┃
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ SESSION DURATION │ 43200s                               ┃
 ┠──────────────────┼──────────────────────────────────────┨
@@ -181,9 +173,9 @@ Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a
 ┠──────────────────┼──────────────────────────────────────┨
 ┃ SHARED           │ ➖                                   ┃
 ┠──────────────────┼──────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-05-17 14:33:06.173039           ┃
+┃ CREATED_AT       │ 2023-06-16 10:15:26.393769           ┃
 ┠──────────────────┼──────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-05-17 14:33:06.173041           ┃
+┃ UPDATED_AT       │ 2023-06-16 10:15:26.393772           ┃
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
             Configuration            
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
@@ -195,16 +187,24 @@ Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a
 ┠───────────────────────┼───────────┨
 ┃ aws_secret_access_key │ [HIDDEN]  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector describe eks-zenhacks-cluster --client
-Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 
-'private'.
+Then, showing the temporary credentials that are issued to clients.  Note the expiration time on the Kubernetes API token:
+
+```sh
+zenml service-connector describe eks-zenhacks-cluster --client
+```
+
+{% code title="Example Command Output" %}
+```text
+Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
  'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' kubernetes Service 
                                     Connector Details                                     
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PROPERTY         │ VALUE                                                               ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b                                ┃
+┃ ID               │ be53166a-b39c-4e39-8e31-84658e50eec4                                ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ NAME             │ eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client) ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
@@ -220,7 +220,7 @@ Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster c
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ SESSION DURATION │ N/A                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ EXPIRES IN       │ 11h59m56s                                                           ┃
+┃ EXPIRES IN       │ 11h59m57s                                                           ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                             ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
@@ -228,9 +228,9 @@ Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster c
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                  ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-05-17 14:33:41.861267                                          ┃
+┃ CREATED_AT       │ 2023-06-16 10:17:46.931091                                          ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-05-17 14:33:41.861269                                          ┃
+┃ UPDATED_AT       │ 2023-06-16 10:17:46.931094                                          ┃
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                            Configuration                                            
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -246,8 +246,8 @@ Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster c
 ┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
 ┃ certificate_authority │ [HIDDEN]                                                                 ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
 ```
+{% endcode %}
 
 </details>
 
@@ -259,79 +259,114 @@ _**Issuing downscoped credentials**_: in addition to the above, some authenticat
 
 It's not easy to showcase this without using some ZenML Python Client code, but here is an example that proves that the AWS client token issued to an S3 client can only access the S3 bucket resource it was issued for, even if the originating AWS Service Connector is able to access multiple S3 buckets with the corresponding long-lived credentials:
 
+```sh
+zenml service-connector register aws-federation-multi --type aws --auth-method=federation-token --auto-configure 
 ```
-$ zenml service-connector register aws-federation-multi --type aws --auth-method=federation-token --auto-configure 
-⠴ Registering service connector 'aws-federation-multi'...
+
+{% code title="Example Command Output" %}
+```text
 Successfully registered service connector `aws-federation-multi` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 88b82bbe-bf35-4fbe-8805-217121c133c9 │ aws-federation-multi │ 🔶 aws         │ 🔶 aws-generic        │ 🤷 none listed ┃
-┃                                      │                      │                │ 📦 s3-bucket          │                ┃
-┃                                      │                      │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                      │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃    🔶 aws-generic     │ us-east-1                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃     📦 s3-bucket      │ s3://aws-ia-mwaa-715803424590                ┃
+┃                       │ s3://zenfiles                                ┃
+┃                       │ s3://zenml-demos                             ┃
+┃                       │ s3://zenml-generative-chat                   ┃
+┃                       │ s3://zenml-public-datasets                   ┃
+┃                       │ s3://zenml-public-swagger-spec               ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenhacks-cluster                             ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector verify aws-federation-multi --resource-type s3-bucket
-Service connector 'aws-federation-multi' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                        ┃
-┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼───────────────────────────────────────┨
-┃ 88b82bbe-bf35-4fbe-8805-217121c133c9 │ aws-federation-multi │ 🔶 aws         │ 📦 s3-bucket  │ s3://public-flavor-logos              ┃
-┃                                      │                      │                │               │ s3://zenbytes-bucket                  ┃
-┃                                      │                      │                │               │ s3://zenfiles                         ┃
-┃                                      │                      │                │               │ s3://zenml-demos                      ┃
-┃                                      │                      │                │               │ s3://zenml-generative-chat            ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+The next part involves running some ZenML Python code to showcase that the downscoped credentials issued to a client are indeed restricted to the S3 bucket that the client asked to access:
 
-# The next part involves running some ZenML Python code
+```python
+from zenml.client import Client
 
-$ python
+client = Client()
+
+# Get a Service Connector client for a particular S3 bucket
+connector_client = client.get_service_connector_client(
+    name_id_or_prefix="aws-federation-multi",
+    resource_type="s3-bucket",
+    resource_id="s3://zenfiles"
+)
+
+# Get the S3 boto3 python client pre-configured and pre-authenticated
+# from the Service Connector client
+s3_client = connector_client.connect()
+
+# Verify access to the chosen S3 bucket using the temporary token that
+# was issued to the client.
+s3_client.head_bucket(Bucket="zenfiles")
+
+# Try to access another S3 bucket that the original AWS long-lived credentials can access.
+# An error will be thrown indicating that the bucket is not accessible.
+s3_client.head_bucket(Bucket="zenml-demos")
+```
+
+{% code title="Example Output" %}
+```text
 >>> from zenml.client import Client
+>>> 
 >>> client = Client()
->>>
+Unable to find ZenML repository in your current working directory (/home/stefan/aspyre/src/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
+Running without an active repository root.
+>>> 
 >>> # Get a Service Connector client for a particular S3 bucket
->>> connector_client = client.get_service_connector_client(name_id_or_prefix="aws-federation-multi", resource_type="s3-bucket", resource_id="s3://zenfiles")
->>>
+>>> connector_client = client.get_service_connector_client(
+...     name_id_or_prefix="aws-federation-multi",
+...     resource_type="s3-bucket",
+...     resource_id="s3://zenfiles"
+... )
+>>> 
 >>> # Get the S3 boto3 python client pre-configured and pre-authenticated
 >>> # from the Service Connector client
 >>> s3_client = connector_client.connect()
->>>
+>>> 
 >>> # Verify access to the chosen S3 bucket using the temporary token that
 >>> # was issued to the client.
 >>> s3_client.head_bucket(Bucket="zenfiles")
-{'ResponseMetadata': {'HTTPStatusCode': 200, ...}}
->>>
+{'ResponseMetadata': {'RequestId': '62YRYW5XJ1VYPCJ0', 'HostId': 'YNBXcGUMSOh90AsTgPW6/Ra89mqzfN/arQq/FMcJzYCK98cFx53+9LLfAKzZaLhwaiJTm+s3mnU=', 'HTTPStatusCode': 200, 'HTTPHeaders': {'x-amz-id-2': 'YNBXcGUMSOh90AsTgPW6/Ra89mqzfN/arQq/FMcJzYCK98cFx53+9LLfAKzZaLhwaiJTm+s3mnU=', 'x-amz-request-id': '62YRYW5XJ1VYPCJ0', 'date': 'Fri, 16 Jun 2023 11:04:20 GMT', 'x-amz-bucket-region': 'us-east-1', 'x-amz-access-point-alias': 'false', 'content-type': 'application/xml', 'server': 'AmazonS3'}, 'RetryAttempts': 0}}
+>>> 
 >>> # Try to access another S3 bucket that the original AWS long-lived credentials can access.
 >>> # An error will be thrown indicating that the bucket is not accessible.
 >>> s3_client.head_bucket(Bucket="zenml-demos")
 ╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
 │ <stdin>:1 in <module>                                                                            │
 │                                                                                                  │
-│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:530 in        │
+│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:508 in        │
 │ _api_call                                                                                        │
 │                                                                                                  │
-│    527 │   │   │   │   │   f"{py_operation_name}() only accepts keyword arguments."              │
-│    528 │   │   │   │   )                                                                         │
-│    529 │   │   │   # The "self" in this scope is referring to the BaseClient.                    │
-│ ❱  530 │   │   │   return self._make_api_call(operation_name, kwargs)                            │
-│    531 │   │                                                                                     │
-│    532 │   │   _api_call.__name__ = str(py_operation_name)                                       │
-│    533                                                                                           │
+│    505 │   │   │   │   │   f"{py_operation_name}() only accepts keyword arguments."              │
+│    506 │   │   │   │   )                                                                         │
+│    507 │   │   │   # The "self" in this scope is referring to the BaseClient.                    │
+│ ❱  508 │   │   │   return self._make_api_call(operation_name, kwargs)                            │
+│    509 │   │                                                                                     │
+│    510 │   │   _api_call.__name__ = str(py_operation_name)                                       │
+│    511                                                                                           │
 │                                                                                                  │
-│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:964 in        │
+│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:915 in        │
 │ _make_api_call                                                                                   │
 │                                                                                                  │
-│    961 │   │   if http.status_code >= 300:                                                       │
-│    962 │   │   │   error_code = parsed_response.get("Error", {}).get("Code")                     │
-│    963 │   │   │   error_class = self.exceptions.from_code(error_code)                           │
-│ ❱  964 │   │   │   raise error_class(parsed_response, operation_name)                            │
-│    965 │   │   else:                                                                             │
-│    966 │   │   │   return parsed_response                                                        │
-│    967                                                                                           │
+│    912 │   │   if http.status_code >= 300:                                                       │
+│    913 │   │   │   error_code = parsed_response.get("Error", {}).get("Code")                     │
+│    914 │   │   │   error_class = self.exceptions.from_code(error_code)                           │
+│ ❱  915 │   │   │   raise error_class(parsed_response, operation_name)                            │
+│    916 │   │   else:                                                                             │
+│    917 │   │   │   return parsed_response                                                        │
+│    918                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ClientError: An error occurred (403) when calling the HeadBucket operation: Forbidden
 ```
+{% endcode %}
 
 </details>
 
@@ -363,57 +398,52 @@ For this example, we have the following set up in GCP:
 
 First, let's show that the `empty-connectors` service account has no permissions to access any GCS buckets or any other resources for that matter. We'll register a regular GCP Service Connector that uses the service account key (long-lived credentials) directly:
 
+```sh
+zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json --project_id=zenml-core
 ```
-$ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
+
+{% code title="Example Command Output" %}
+```text
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-empty-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ db967769-4cd5-4f07-a3f4-54e3fe534d88 │ gcp-empty-sa   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: Failed to list GKE clusters:
-403 Required "container.clusters.list" permission(s) for "projects/20219041791".
-
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to list GCS buckets:
-403 GET https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:
-empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project.
-Permission 'storage.buckets.list' denied on resource (or it may not exist).
-
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to fetch GCS bucket
-zenml-bucket-sl: 403 GET https://storage.googleapis.com/storage/v1/b/zenml-bucket-sl?projection=noAcl&prettyPrint=false:
-empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.get access to the Google Cloud Storage bucket.
-Permission 'storage.buckets.get' denied on resource (or it may not exist).
-
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                                                               ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                                                                   ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ 💥 error: connector authorization failure: failed to list GCS buckets: 403 GET               ┃
+┃                       │ https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint= ┃
+┃                       │ false: empty-connectors@zenml-core.iam.gserviceaccount.com does not have                     ┃
+┃                       │ storage.buckets.list access to the Google Cloud project. Permission 'storage.buckets.list'   ┃
+┃                       │ denied on resource (or it may not exist).                                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ 💥 error: connector authorization failure: Failed to list GKE clusters: 403 Required         ┃
+┃                       │ "container.clusters.list" permission(s) for "projects/20219041791". [request_id:             ┃
+┃                       │ "0xcb7086235111968a"                                                                         ┃
+┃                       │ ]                                                                                            ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                                                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 Next, we'll register a GCP Service Connector that actually uses account impersonation to access the `zenml-bucket-sl` GCS bucket and verify that it can actually access the bucket:
 
+```sh
+zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
 ```
-$ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
+
+{% code title="Example Command Output" %}
+```text
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-impersonate-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
-Service connector 'gcp-impersonate-sa' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠───────────────┼──────────────────────┨
+┃ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -435,26 +465,45 @@ This may be used as a way to grant an external party temporary access to some re
 
 The following is an example of using Service Connector auto-configuration to automatically generate a short-lived token from long-lived credentials configured for the local cloud provider CLI (AWS in this case):
 
+```sh
+AWS_PROFILE=connectors zenml service-connector register aws-sts-token --type aws --auto-configure --auth-method sts-token
 ```
-$ AWS_PROFILE=connectors zenml service-connector register aws-sts-token --type aws --auto-configure --auth-method sts-token
+
+{% code title="Example Command Output" %}
+```text
 ⠸ Registering service connector 'aws-sts-token'...
 Successfully registered service connector `aws-sts-token` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 63e14350-6719-4255-b3f5-0539c8f7c303 │ aws-sts-token  │ 🔶 aws         │ 🔶 aws-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 s3-bucket          │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃    🔶 aws-generic     │ us-east-1                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃     📦 s3-bucket      │ s3://zenfiles                                ┃
+┃                       │ s3://zenml-demos                             ┃
+┃                       │ s3://zenml-generative-chat                   ┃
+┃                       │ s3://zenml-public-datasets                   ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenhacks-cluster                             ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector describe aws-sts-token 
+The Service Connector is now configured with a short-lived token that will expire after some time. You can verify this by inspecting the Service Connector:
+
+```sh
+zenml service-connector describe aws-sts-token 
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5-0539c8f7c303' is owned by user 'default' and is 'private'.
                         'aws-sts-token' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PROPERTY         │ VALUE                                                                   ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ ID               │ 63e14350-6719-4255-b3f5-0539c8f7c303                                    ┃
+┃ ID               │ e316bcb3-6659-467b-81e5-5ec25bfd36b0                                    ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ NAME             │ aws-sts-token                                                           ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
@@ -466,11 +515,11 @@ Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ RESOURCE NAME    │ <multiple>                                                              ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ SECRET ID        │ ff93e6a0-2ce2-42ce-a540-1b88d26d0988                                    ┃
+┃ SECRET ID        │ 971318c9-8db9-4297-967d-80cda070a121                                    ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SESSION DURATION │ N/A                                                                     ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ EXPIRES IN       │ 11h59m55s                                                               ┃
+┃ EXPIRES IN       │ 11h58m17s                                                               ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ OWNER            │ default                                                                 ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
@@ -478,9 +527,9 @@ Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
 ┃ SHARED           │ ➖                                                                      ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-05-19 08:58:09.755925                                              ┃
+┃ CREATED_AT       │ 2023-06-19 17:58:42.999323                                              ┃
 ┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-05-19 08:58:09.755927                                              ┃
+┃ UPDATED_AT       │ 2023-06-19 17:58:42.999324                                              ┃
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
             Configuration            
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
@@ -495,20 +544,26 @@ Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5
 ┃ aws_session_token     │ [HIDDEN]  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 Note the temporary nature of the Service Connector. It will become unusable in 12 hours:
 
+```sh
+zenml service-connector list --name aws-sts-token 
 ```
-$ zenml service-connector list --name aws-sts-token 
-┏━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
-┃ ACTIVE │ NAME          │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
-┠────────┼───────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
-┃        │ aws-sts-token │ 63e14350-6719-4255-b3f5-0539c8f7c303 │ 🔶 aws │ 🔶 aws-generic        │ <multiple>    │ ➖     │ default │ 11h59m50s  │        ┃
-┃        │               │                                      │        │ 📦 s3-bucket          │               │        │         │            │        ┃
-┃        │               │                                      │        │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
-┃        │               │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+
+{% code title="Example Command Output" %}
+```text
+┏━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
+┃ ACTIVE │ NAME          │ ID                              │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
+┠────────┼───────────────┼─────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ aws-sts-token │ e316bcb3-6659-467b-81e5-5ec25bf │ 🔶 aws │ 🔶 aws-generic        │ <multiple>    │ ➖     │ default │ 11h57m12s  │        ┃
+┃        │               │ d36b0                           │        │ 📦 s3-bucket          │               │        │         │            │        ┃
+┃        │               │                                 │        │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
+┃        │               │                                 │        │ 🐳 docker-registry    │               │        │         │            │        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 

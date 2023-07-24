@@ -21,9 +21,9 @@ import whylogs as why  # type: ignore
 from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
 from whylogs.core import DatasetProfileView  # type: ignore
 
+from zenml import get_step_context
 from zenml.config.base_settings import BaseSettings
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
-from zenml.environment import Environment
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorConfig,
     WhylogsDataValidatorFlavor,
@@ -34,7 +34,6 @@ from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
 )
 from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
 logger = get_logger(__name__)
 
@@ -136,11 +135,11 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             # unique dataset name
             try:
                 # get pipeline name and step name
-                step_env = cast(
-                    StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
-                )
-                dataset_id = f"{step_env.pipeline_name}_{step_env.step_name}"
-            except KeyError:
+                step_context = get_step_context()
+                pipeline_name = step_context.pipeline.name
+                step_name = step_context.step_run.name
+                dataset_id = f"{pipeline_name}_{step_name}"
+            except RuntimeError:
                 raise ValueError(
                     "A dataset ID was not specified and could not be "
                     "generated from the current pipeline and step name."

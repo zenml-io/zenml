@@ -67,3 +67,11 @@ class SingletonMetaClass(type):
     def _clear(cls) -> None:
         """Clear the singleton instance."""
         cls.__singleton_instance = None
+
+    def _exists(cls) -> bool:
+        """Check if the singleton instance exists.
+
+        Returns:
+            `True` if the singleton instance exists, `False` otherwise.
+        """
+        return cls.__singleton_instance is not None

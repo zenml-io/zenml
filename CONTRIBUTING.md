@@ -13,15 +13,18 @@ you finalize your pull requests.
 
 ## ⚡️ Quicklinks
 
-* [Code of Conduct](#%EF%B8%8F-code-of-conduct)
-* [Getting Started](#-getting-started)
-    * [Issues](#%EF%B8%8F-issues)
-    * [Pull Requests](#-pull-requests-when-to-make-one)
-    * [Linting, formatting, and tests](#-linting-formatting-and-tests)
-    * [Reporting a vulnerability](#-reporting-a-vulnerability)
-* [Coding conventions](#coding-conventions)
-* [Creating a new integration](#-creating-a-new-integration)
-* [Getting Help](#-getting-help)
+- [🧑‍💻 Contributing to ZenML](#-contributing-to-zenml)
+  - [⚡️ Quicklinks](#-quicklinks)
+  - [🧑‍⚖️ Code of Conduct](#-code-of-conduct)
+  - [🛫 Getting Started](#-getting-started)
+    - [⁉️ Issues](#-issues)
+    - [🏷 Pull Requests: When to make one](#-pull-requests-when-to-make-one)
+    - [💯 Pull Requests: Workflow to Contribute](#-pull-requests-workflow-to-contribute)
+    - [🧐 Linting, formatting, and tests](#-linting-formatting-and-tests)
+    - [🚨 Reporting a Vulnerability](#-reporting-a-vulnerability)
+  - [Coding Conventions](#coding-conventions)
+  - [👷 Creating a new Integration](#-creating-a-new-integration)
+  - [🆘 Getting Help](#-getting-help)
 
 ## 🧑‍⚖️ Code of Conduct
 
@@ -117,7 +120,7 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧐 Linting, formatting, and tests
 
-To install ZenML from your local checked out files includin all core dev-dependencies, run:
+To install ZenML from your local checked out files including all core dev-dependencies, run:
 
 ```
 pip install -e ".[server,dev]"
@@ -132,7 +135,7 @@ pip install click~=8.0.3
 mypy --install-types
 ```
 
-Warning: This might take a while for both (~ 15 mins each, depending on your machine), however if you have
+Warning: This might take a while for both (~ 15 minutes each, depending on your machine), however if you have
 time, please run it as it will make the
 next commands error-free.
 
@@ -193,7 +196,6 @@ the most relevant places for contributors are highlighted with a `<-` arrow:
 │   ├── io                  -- File operation implementations
 │   ├── materializers       <- Materializers responsible for reading/writing artifacts
 │   ├── pipelines           <- The base pipeline and its decorator
-│   ├── post_execution      <- Code for accessing past pipeline runs
 │   ├── services            -- Code responsible for managing services
 │   ├── stack               <- Stack, Stack Components and the flavor registry
 │   ├── steps               <- Steps and their decorators are defined here
@@ -215,8 +217,8 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](https://docs.zenml.io/component-gallery/integrations)
-in the docs and add the integration. 
+[Component Guide](https://docs.zenml.io/user-guide/component-guide)
+in the docs and add your implementations. 
 
 ## 🆘 Getting Help
 

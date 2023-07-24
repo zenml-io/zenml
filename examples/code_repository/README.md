@@ -8,7 +8,7 @@ use for your pipeline runs. Additionally, running a pipeline which is tracked in
 repository eliminates the need to rebuild Docker images for containerized stack components each
 time you change one of your source code files.
 
-Check out [this diagram](https://docs.zenml.io/getting-started/architecture-diagrams#the-code-repository)
+Check out [this diagram](https://docs.zenml.io/user-guide/advanced-guide/environment-management/connect-your-git-repository)
 for a visual representation how the code repository fits into the general ZenML architecture.
 
 ## 📄 Prerequisites
@@ -57,11 +57,11 @@ print(run.commit)
 
 If you also want to test the increased speed of Docker builds that is unlocked by using a
 code repository, you'll additionally need:
-* A remote ZenML deployment. See [here](https://docs.zenml.io/getting-started/deploying-zenml#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database) 
+* A remote ZenML deployment. See [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) 
 for more information on how to deploy ZenML.
 * A remote stack with a containerized component like the
-[`SagemakerOrchestrator`](https://docs.zenml.io/component-gallery/orchestrators/sagemaker)
-or the [`VertexStepOperator`](https://docs.zenml.io/component-gallery/step-operators/vertex).
+[`SagemakerOrchestrator`](https://docs.zenml.io/user-guide/component-guide/orchestrators/sagemaker)
+or the [`VertexStepOperator`](https://docs.zenml.io/user-guide/component-guide/step-operators/vertex).
 
 
 ```bash
@@ -102,4 +102,4 @@ or if one of your colleagues tries to run the pipeline!
 # 📜 Learn more
 
 If you want to learn more about code repositories, check out our
-[docs](https://docs.zenml.io/starter-guide/production-fundamentals/code-repositories).
+[docs](https://docs.zenml.io/user-guide/advanced-guide/environment-management/connect-your-git-repository).

@@ -40,18 +40,47 @@ python file_that_runs_a_zenml_pipeline.py
 
 For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when
 defining or running your pipeline. Check out
-the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
-more information on how to specify settings.
+the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+more information on how to specify settings. A full list of what can be passed
+in via the `run_args` can be found [in the Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html).
 
 For more information and a full list of configurable attributes of the local Docker orchestrator, check out
-the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator)
+the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator)
 .
+
+For example, if you wanted to specify the CPU count available for the Docker
+image (note: only configurable for Windows), you could write a simple pipeline
+like the following:
+
+```python
+from zenml import step, pipeline
+from zenml.orchestrators.local_docker.local_docker_orchestrator import (
+    LocalDockerOrchestratorSettings,
+)
+
+
+@step
+def return_one() -> int:
+    return 1
+
+
+settings = {
+    "orchestrator.local_docker": LocalDockerOrchestratorSettings(
+        run_args={"cpu_count": 3}
+    )
+}
+
+
+@pipeline(settings=settings)
+def simple_pipeline():
+    return_one()
+```
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

@@ -45,6 +45,18 @@ def test_singleton_instance_clearing():
     assert instance is not SingletonClass()
 
 
+def test_singleton_instance_exist():
+    """Unit test for `SingletonMetaClass._exists()`."""
+    SingletonClass()
+    assert SingletonClass._exists()
+
+    SingletonClass._clear()
+    assert not SingletonClass._exists()
+
+    SingletonClass()
+    assert SingletonClass._exists()
+
+
 def test_singleton_metaclass_can_be_used_for_multiple_classes():
     """Tests that multiple classes can use the `SingletonMetaClass` and their instances don't get mixed up."""
 

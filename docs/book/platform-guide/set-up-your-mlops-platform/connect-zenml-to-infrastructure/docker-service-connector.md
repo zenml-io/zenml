@@ -32,8 +32,12 @@ The resource name identifies a Docker/OCI registry using one of the following fo
 
 Authenticating to Docker/OCI container registries is done with a username and password or access token. It is recommended to use API tokens instead of passwords, wherever this is available, for example in the case of DockerHub:
 
+```sh
+zenml service-connector register dockerhub --type docker -in
 ```
-$ zenml service-connector register dockerhub --type docker -in
+
+{% code title="Example Command Output" %}
+```text
 Please enter a name for the service connector [dockerhub]: 
 Please enter a description for the service connector []: 
 Please select a service connector type (docker) [docker]: 
@@ -44,13 +48,13 @@ Please enter the configuration for the Docker username and password/token authen
 [password] Password {string, secret, required}: 
 [registry] Registry server URL. Omit to use DockerHub. {string, optional}: 
 Successfully registered service connector `dockerhub` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼────────────────┨
-┃ b485626e-7fee-4525-90da-5b26c72331eb │ dockerhub      │ 🐳 docker      │ 🐳 docker-registry │ docker.io      ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
+┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE    │ RESOURCE NAMES ┃
+┠────────────────────┼────────────────┨
+┃ 🐳 docker-registry │ docker.io      ┃
+┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 {% hint style="warning" %}
 This Service Connector does not support generating short-lived credentials from the username and password or token credentials configured in the Service Connector. In effect, this means that the configured credentials will be distributed directly to clients and used to authenticate directly to the target Docker/OCI registry service.
@@ -66,8 +70,12 @@ This Service Connector does not support auto-discovery and extraction of authent
 
 This Service Connector allows configuring the local Docker client with credentials:
 
+```sh
+zenml service-connector login dockerhub
 ```
-$ zenml service-connector login dockerhub
+
+{% code title="Example Command Output" %}
+```text
 Attempting to configure local client using service connector 'dockerhub'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
 Configure a credential helper to remove this warning. See
@@ -75,6 +83,7 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'dockerhub' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
+{% endcode %}
 
 ## Stack Components use
 

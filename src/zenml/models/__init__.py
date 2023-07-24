@@ -221,6 +221,7 @@ PipelineRunResponseModel.update_forward_refs(
     RunMetadataResponseModel=RunMetadataResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
     PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
+    StepRunResponseModel=StepRunResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(

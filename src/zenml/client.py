@@ -62,6 +62,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
+    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -344,7 +345,7 @@ class Client(metaclass=ClientMetaClass):
                 directory.
         """
         enable_warnings = handle_bool_env_var(
-            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
+            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, False
         )
         self._root = self.find_repository(
             root, enable_warnings=enable_warnings
@@ -2544,6 +2545,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             component_type: The type of the component.
             configuration: The component configuration to validate.
+
+        Raises:
+            StackComponentValidationError: in case the stack component configuration is invalid.
         """
         from zenml.enums import StoreType
 
@@ -2563,6 +2567,11 @@ class Client(metaclass=ClientMetaClass):
                 "stack component may not be usable from other hosts or by "
                 "other users. You should consider using a non-local stack "
                 "component alternative instead."
+            )
+        if not configuration.is_valid:
+            raise StackComponentValidationError(
+                f"Invalid stack component configuration. please verify "
+                f"the configurations set for {component_type}."
             )
 
     # .---------.
@@ -2822,8 +2831,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If left empty, will return
-                the latest version.
+            version: The pipeline version. If not specified, the latest
+                version is returned.
 
         Returns:
             The pipeline.
@@ -3254,9 +3263,9 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINE RUNS -
     # -----------------
 
-    def list_runs(
+    def list_pipeline_runs(
         self,
-        sort_by: str = "created",
+        sort_by: str = "desc:created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
@@ -3335,6 +3344,21 @@ class Client(metaclass=ClientMetaClass):
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
+    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponseModel]:
+        """(Deprecated) List all pipeline runs.
+
+        Args:
+            **kwargs: The filter arguments passed to `list_pipeline_runs`.
+
+        Returns:
+            A page with Pipeline Runs fitting the filter description
+        """
+        logger.warning(
+            "`Client.list_runs()` is deprecated and will be removed in a "
+            "future release. Please use `Client.list_pipeline_runs()` instead."
+        )
+        return self.list_pipeline_runs(**kwargs)
+
     def get_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -3351,7 +3375,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_run,
-            list_method=self.list_runs,
+            list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
         )

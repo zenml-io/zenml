@@ -13,7 +13,7 @@ For example, you can orchestrate your ML pipeline workflows using [Airflow](orch
 or [Kubeflow](orchestrators/kubeflow.md), track experiments using [MLflow Tracking](experiment-trackers/mlflow.md)
 or [Weights & Biases](experiment-trackers/wandb.md), and transition seamlessly from a
 local [MLflow deployment](model-deployers/mlflow.md) to a deployed model on Kubernetes
-using [Seldon Core](model-deployers/seldon.md) or [KServe](model-deployers/kserve.md).
+using [Seldon Core](model-deployers/seldon.md).
 
 There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML
 brings them all together and enables you to manage them in one place. This also allows you to delay the decision of

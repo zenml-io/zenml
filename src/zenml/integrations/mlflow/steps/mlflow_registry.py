@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-from typing import Optional, cast
+from typing import Optional
 
 from mlflow.tracking import artifact_utils
 
-from zenml import __version__, step
+from zenml import __version__, get_step_context, step
 from zenml.client import Client
-from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -30,10 +29,6 @@ from zenml.logger import get_logger
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
 )
 
 logger = get_logger(__name__)
@@ -92,10 +87,10 @@ def mlflow_register_model_step(
         )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    pipeline_run_uuid = str(step_env.step_run_info.run_id)
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    run_name = step_context.pipeline_run.name
+    pipeline_run_uuid = str(step_context.pipeline_run.id)
     zenml_workspace = str(model_registry.workspace)
 
     # Get MLflow run ID either from params or from experiment tracker using

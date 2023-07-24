@@ -35,15 +35,12 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.models.artifact_models import (
-    ArtifactResponseModel,
-)
+from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
 )
 from zenml.orchestrators.utils import is_setting_enabled
-from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
     parse_return_type_annotations,
@@ -56,6 +53,9 @@ if TYPE_CHECKING:
 
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
+    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
+    from zenml.models.step_run_models import StepRunResponseModel
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -87,6 +87,8 @@ class StepRunner:
 
     def run(
         self,
+        pipeline_run: "PipelineRunResponseModel",
+        step_run: "StepRunResponseModel",
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
@@ -94,6 +96,8 @@ class StepRunner:
         """Runs the step.
 
         Args:
+            pipeline_run: The model of the current pipeline run.
+            step_run: The model of the current step run.
             input_artifacts: The input artifacts of the step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
@@ -105,16 +109,7 @@ class StepRunner:
         output_materializers = self._load_output_materializers()
         spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
 
-        # Parse the inputs for the entrypoint function.
-        function_params = self._parse_inputs(
-            args=spec.args,
-            annotations=spec.annotations,
-            input_artifacts=input_artifacts,
-            output_artifact_uris=output_artifact_uris,
-            output_materializers=output_materializers,
-        )
-
-        # Wrap the execution of the step function in a step environment
+        # (Deprecated) Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
@@ -127,6 +122,25 @@ class StepRunner:
             cache_enabled=cache_enabled,
         ):
             self._stack.prepare_step_run(info=step_run_info)
+
+            # Initialize the step context singleton
+            StepContext._clear()
+            StepContext(
+                pipeline_run=pipeline_run,
+                step_run=step_run,
+                output_materializers=output_materializers,
+                output_artifact_uris=output_artifact_uris,
+                step_run_info=step_run_info,
+                cache_enabled=cache_enabled,
+            )
+
+            # Parse the inputs for the entrypoint function.
+            function_params = self._parse_inputs(
+                args=spec.args,
+                annotations=spec.annotations,
+                input_artifacts=input_artifacts,
+            )
+
             step_failed = False
             try:
                 return_values = step_instance.call_entrypoint(
@@ -140,8 +154,6 @@ class StepRunner:
                     self.load_and_run_hook(
                         failure_hook_source,
                         step_exception=step_exception,
-                        output_artifact_uris=output_artifact_uris,
-                        output_materializers=output_materializers,
                     )
                 raise
             finally:
@@ -164,13 +176,12 @@ class StepRunner:
                         self.load_and_run_hook(
                             success_hook_source,
                             step_exception=None,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
                         )
+                StepContext._clear()  # Remove the step context singleton
 
             # Store and publish the output artifacts of the step function.
             output_annotations = parse_return_type_annotations(
-                spec.annotations.get("return")
+                func=step_instance.entrypoint
             )
             output_data = self._validate_outputs(
                 return_values, output_annotations
@@ -238,8 +249,6 @@ class StepRunner:
         args: List[str],
         annotations: Dict[str, Any],
         input_artifacts: Dict[str, "ArtifactResponseModel"],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -247,8 +256,6 @@ class StepRunner:
             args: The arguments of the step entrypoint function.
             annotations: The annotations of the step entrypoint function.
             input_artifacts: The input artifacts of the step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
 
         Returns:
             The parsed inputs for the step entrypoint function.
@@ -267,12 +274,14 @@ class StepRunner:
 
             if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
-                context = arg_type(
-                    step_name=step_name,
-                    output_materializers=output_materializers,
-                    output_artifact_uris=output_artifact_uris,
+                logger.warning(
+                    "Passing a `StepContext` as an argument to a step function "
+                    "is deprecated and will be removed in a future release. "
+                    f"Please adjust your '{step_name}' step to instead import "
+                    "the `StepContext` inside your step, as shown here: "
+                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
                 )
-                function_params[arg] = context
+                function_params[arg] = get_step_context()
             elif arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
@@ -291,8 +300,6 @@ class StepRunner:
         args: List[str],
         annotations: Dict[str, Any],
         step_exception: Optional[BaseException],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a hook function.
 
@@ -300,8 +307,6 @@ class StepRunner:
             args: The arguments of the hook function.
             annotations: The annotations of the hook function.
             step_exception: The exception of the original step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
 
         Returns:
             The parsed inputs for the hook function.
@@ -330,12 +335,14 @@ class StepRunner:
             # Parse the step context
             elif issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
-                context = arg_type(
-                    step_name=step_name,
-                    output_materializers=output_materializers,
-                    output_artifact_uris=output_artifact_uris,
+                logger.warning(
+                    "Passing a `StepContext` as an argument to a hook function "
+                    "is deprecated and will be removed in a future release. "
+                    f"Please adjust your '{step_name}' hook to instead import "
+                    "the `StepContext` inside your hook, as shown here: "
+                    "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps"
                 )
-                function_params[arg] = context
+                function_params[arg] = get_step_context()
 
             elif issubclass(arg_type, BaseException):
                 function_params[arg] = step_exception
@@ -343,7 +350,7 @@ class StepRunner:
             else:
                 # It should not be of any other type
                 raise TypeError(
-                    "Hook functions can only take parameters of type `StepContext`,"
+                    "Hook functions can only take arguments of type "
                     f"`BaseParameters`, or `BaseException`, not {arg_type}"
                 )
 
@@ -492,9 +499,36 @@ class StepRunner:
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
-            materializer_class = materializer_utils.select_materializer(
-                data_type=data_type, materializer_classes=materializer_classes
-            )
+            if materializer_classes:
+                materializer_class = materializer_utils.select_materializer(
+                    data_type=data_type,
+                    materializer_classes=materializer_classes,
+                )
+            else:
+                # If no materializer classes are stored in the IR, that means
+                # there was no/an `Any` type annotation for the output and
+                # we try to find a materializer for it at runtime
+                from zenml.materializers.materializer_registry import (
+                    materializer_registry,
+                )
+
+                default_materializer_source = self._step.config.outputs[
+                    output_name
+                ].default_materializer_source
+
+                if default_materializer_source:
+                    default_materializer_class: Type[
+                        BaseMaterializer
+                    ] = source_utils.load_and_validate_class(
+                        default_materializer_source,
+                        expected_class=BaseMaterializer,
+                    )
+                    materializer_registry.default_materializer = (
+                        default_materializer_class
+                    )
+
+                materializer_class = materializer_registry[data_type]
+
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
 
@@ -514,16 +548,12 @@ class StepRunner:
         self,
         hook_source: "Source",
         step_exception: Optional[BaseException],
-        output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> None:
         """Loads hook source and runs the hook.
 
         Args:
             hook_source: The source of the hook function.
             step_exception: The exception of the original step.
-            output_artifact_uris: The URIs of the output artifacts of the step.
-            output_materializers: The output materializers of the step.
         """
         try:
             hook = source_utils.load(hook_source)
@@ -533,8 +563,6 @@ class StepRunner:
                 args=hook_spec.args,
                 annotations=hook_spec.annotations,
                 step_exception=step_exception,
-                output_artifact_uris=output_artifact_uris,
-                output_materializers=output_materializers,
             )
             logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)

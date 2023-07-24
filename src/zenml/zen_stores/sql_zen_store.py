@@ -1101,6 +1101,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
+        """Count all stacks, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting stacks
+
+        Returns:
+            The number of stacks in the workspace.
+        """
+        return self._count_entity(
+            schema=StackSchema, workspace_id=workspace_id
+        )
+
     @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
@@ -1408,6 +1421,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=component_filter_model,
             )
             return paged_components
+
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
+        """Count all components, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting components
+
+        Returns:
+            The number of components in the workspace.
+        """
+        return self._count_entity(
+            schema=StackComponentSchema, workspace_id=workspace_id
+        )
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -2827,6 +2853,19 @@ class SqlZenStore(BaseZenStore):
                 filter_model=pipeline_filter_model,
             )
 
+    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipelines, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipelines
+
+        Returns:
+            The number of pipelines in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineSchema, workspace_id=workspace_id
+        )
+
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self,
@@ -3296,7 +3335,24 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model()
+            return self._run_schema_to_model(new_run)
+
+    def _run_schema_to_model(
+        self, run: PipelineRunSchema
+    ) -> PipelineRunResponseModel:
+        """Converts a pipeline run schema to a pipeline run model incl. steps.
+
+        Args:
+            run: The pipeline run schema to convert.
+
+        Returns:
+            The converted pipeline run model with steps hydrated into it.
+        """
+        steps = {
+            step.name: self._run_step_schema_to_model(step)
+            for step in run.step_runs
+        }
+        return run.to_model(steps=steps)
 
     def get_run(
         self, run_name_or_id: Union[str, UUID]
@@ -3311,7 +3367,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
-            return run.to_model()
+            return self._run_schema_to_model(run)
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
@@ -3360,7 +3416,21 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
+                custom_schema_to_model_conversion=self._run_schema_to_model,
             )
+
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipeline runs, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipeline runs
+
+        Returns:
+            The number of pipeline runs in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineRunSchema, workspace_id=workspace_id
+        )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
@@ -3394,7 +3464,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model()
+            return self._run_schema_to_model(existing_run)
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -3489,7 +3559,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_id in step_run.input_artifacts.items():
+            for input_name, artifact_id in step_run.inputs.items():
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
                     artifact_id=artifact_id,
@@ -3498,7 +3568,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_id in step_run.output_artifacts.items():
+            for output_name, artifact_id in step_run.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_schema.id,
                     artifact_id=artifact_id,
@@ -3802,7 +3872,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the output artifacts.
-            for name, artifact_id in step_run_update.output_artifacts.items():
+            for name, artifact_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_id=artifact_id,
@@ -5066,6 +5136,27 @@ class SqlZenStore(BaseZenStore):
     # =======================
     # Internal helper methods
     # =======================
+
+    def _count_entity(
+        self, schema: Type[BaseSchema], workspace_id: Optional[UUID]
+    ) -> int:
+        """Return count of a given entity, optionally scoped to workspace.
+
+        Args:
+            schema: Schema of the Entity
+            workspace_id: (Optional) ID of the workspace scope
+
+        Returns:
+            Count of the entity as integer.
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(schema.id))
+            if workspace_id and hasattr(schema, "workspace_id"):
+                query = query.filter(schema.workspace_id == workspace_id)
+
+            entity_count = query.scalar()
+        return int(entity_count)
+
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],

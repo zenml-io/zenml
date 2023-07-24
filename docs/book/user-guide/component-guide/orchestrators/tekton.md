@@ -106,29 +106,83 @@ To use the Tekton orchestrator, we need:
   zenml integration install tekton -y
   ```
 * [Docker](https://www.docker.com) installed and running.
-* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * Tekton pipelines deployed on a remote cluster. See the [deployment section](tekton.md#how-to-deploy-it) for more
   information.
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a
   list of available contexts.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration
+  context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts). This is optional (see below).
 
-We can then register the orchestrator and use it in our active stack:
+{% hint style="info" %}
+It is recommended that you set
+up [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)
+and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes
+cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other
+environments and your pipelines are fully reproducible.
+{% endhint %}
 
-```shell
-zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=tekton \
-    --kubernetes_context=<KUBERNETES_CONTEXT>
+We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-# Register and activate a stack with the new orchestrator
-zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
-```
+1. If you
+   have [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)
+   configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a
+   local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You
+   can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#connect-stack-components-to-resources)
+   instead:
+
+    ```
+    $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor tekton
+    Running with active workspace: 'default' (repository)
+    Running with active stack: 'default' (repository)
+    Successfully registered orchestrator `<ORCHESTRATOR_NAME>`.
+    
+    $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
+    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ e33c9fac-5daa-48b2-87bb-0187d3782cde │ aws-iam-multi-eu      │ 🔶 aws         │ 🌀 kubernetes-cluster │ kubeflowmultitenant ┃
+    ┃                                      │                       │                │                       │ zenbox              ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us      │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ 1c54b32a-4889-4417-abbd-42d3ace3d03a │ gcp-sa-multi          │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster  ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
+    
+    $ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-iam-multi-us
+    Running with active workspace: 'default' (repository)
+    Running with active stack: 'default' (repository)
+    Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
+    ┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼──────────────────┨
+    ┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+    
+    # Register and activate a stack with the new orchestrator
+    $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+    ```
+
+2. if you don't have a Service Connector on hand and you don't want
+   to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#register-service-connectors)
+   , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote
+   cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+
+    ```shell
+    zenml orchestrator register <ORCHESTRATOR_NAME> \
+        --flavor=tekton \
+        --kubernetes_context=<KUBERNETES_CONTEXT>
+    
+    # Register and activate a stack with the new orchestrator
+    zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+    ```
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Tekton. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -192,21 +246,21 @@ tekton_settings = TektonOrchestratorSettings(
 ```
 
 Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings)
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
 A concrete example of using the Tekton orchestrator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton\_pipelines\_orchestration).
 
 For more information and a full list of configurable attributes of the Tekton orchestrator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton\_orchestrator.TektonOrchestrator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton\_orchestrator.TektonOrchestrator)
 .
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

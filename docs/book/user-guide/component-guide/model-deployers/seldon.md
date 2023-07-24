@@ -44,9 +44,7 @@ zenml integration install seldon -y
 
 To deploy and make use of the Seldon Core integration we need to have the following prerequisites:
 
-1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context` command line argument. This Kubernetes
-   context needs to point to the Kubernetes cluster where Seldon Core model servers will be deployed. If the context is
-   not explicitly supplied to the example, it defaults to using the locally active context.
+1. access to a Kubernetes cluster. This can be configured using the `kubernetes_context` configuration attribute to point to a local `kubectl` context or an in-cluster configuration, but the recommended approach is to [use a Service Connector](seldon.md#using-a-service-connector) to link the Seldon Deployer Stack Component to a Kubernetes cluster.
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes cluster. Check out
    the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)
    .
@@ -61,8 +59,7 @@ To deploy and make use of the Seldon Core integration we need to have the follow
 Since the Seldon Model Deployer is interacting with the Seldon Core model server deployed on a Kubernetes cluster, you
 need to provide a set of configuration parameters. These parameters are:
 
-* kubernetes\_context: the Kubernetes context to use to contact the remote Seldon Core installation. If not specified,
-  the current configuration is used. Depending on where the Seldon model deployer is being used
+* kubernetes\_context: the Kubernetes context to use to contact the remote Seldon Core installation. If not specified, the active Kubernetes context is used or the in-cluster configuration is used if the model deployer is running in a Kubernetes cluster. The recommended approach is to [use a Service Connector](seldon.md#using-a-service-connector) to link the Seldon Deployer Stack Component to a Kubernetes cluster and to skip this parameter.
 * kubernetes\_namespace: the Kubernetes namespace where the Seldon Core deployment servers are provisioned and managed
   by ZenML. If not specified, the namespace set in the current configuration is used.
 * base\_url: the base URL of the Kubernetes ingress used to expose the Seldon Core deployment servers.
@@ -89,6 +86,105 @@ zenml model-deployer deploy seldon_deployer --flavor=seldon ...
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
 dedicated documentation section.
+
+#### Using a Service Connector
+
+To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+
+Depending on where your target Kubernetes cluster is running, you can use one of the following Service Connectors:
+
+* [the AWS Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md), if you are using an AWS EKS cluster.
+* [the GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md), if you are using a GKE cluster.
+* [the Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md), if you are using an AKS cluster.
+* [the generic Kubernetes Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/kubernetes-service-connector.md) for any other Kubernetes cluster.
+
+If you don't already have a Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a Service Connector that can be used to access more than one Kubernetes cluster or even more than one type of cloud resource:
+
+```sh
+zenml service-connector register -i
+```
+
+A non-interactive CLI example that leverages [the AWS CLI configuration](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) on your local machine to auto-configure an AWS Service Connector targeting a single EKS cluster is:
+
+```sh
+zenml service-connector register <CONNECTOR_NAME> --type aws --resource-type kubernetes-cluster --resource-name <EKS_CLUSTER_NAME> --auto-configure
+```
+
+{% code title="Example Command Output" %}
+```text
+$ zenml service-connector register eks-zenhacks --type aws --resource-type kubernetes-cluster --resource-id zenhacks-cluster --auto-configure
+⠼ Registering service connector 'eks-zenhacks'...
+Successfully registered service connector `eks-zenhacks` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES   ┃
+┠───────────────────────┼──────────────────┨
+┃ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+Alternatively, you can configure a Service Connector through the ZenML dashboard:
+
+![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png)
+![AWS EKS Service Connector Configuration](../../../.gitbook/assets/aws-eks-service-connector-configuration.png)
+
+> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
+
+If you already have one or more Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Kubernetes cluster that you want to use for your Seldon Core Model Deployer by running e.g.:
+
+```sh
+zenml service-connector list-resources --resource-type kubernetes-cluster
+``` 
+
+{% code title="Example Command Output" %}
+```text
+The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨
+┃ bdf1dc76-e36b-4ab4-b5a6-5a9afea4822f │ eks-zenhacks   │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster                              ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨
+┃ b57f5f5c-0378-434c-8d50-34b492486f30 │ gcp-multi      │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster                            ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨
+┃ d6fc6004-eb76-4fd7-8fa1-ec600cced680 │ azure-multi    │ 🇦 azure       │ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+After having set up or decided on a Service Connector to use to connect to the target Kubernetes cluster where Seldon Core is installed, you can register the Seldon Core Model Deployer as follows:
+
+```sh
+# Register the Seldon Core Model Deployer
+zenml model-deployer register <MODEL_DEPLOYER_NAME> --flavor=seldon \
+  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
+  --base_url=http://$INGRESS_HOST
+
+# Connect the Seldon Core Model Deployer to the target cluster via a Service Connector
+zenml model-deployer connect <MODEL_DEPLOYER_NAME> -i
+```
+
+A non-interactive version that connects the Seldon Core Model Deployer to a target Kubernetes cluster through a Service Connector:
+
+```sh
+zenml model-deployer connect <MODEL_DEPLOYER_NAME> --connector <CONNECTOR_ID> --resource-id <CLUSTER_NAME>
+```
+
+{% code title="Example Command Output" %}
+```text
+$ zenml model-deployer connect seldon-test --connector gcp-multi --resource-id zenml-test-cluster
+Successfully connected model deployer `seldon-test` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ b57f5f5c-0378-434c-8d50-34b492486f30 │ gcp-multi      │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+A similar experience is available when you configure the Seldon Core Model Deployer through the ZenML dashboard:
+
+![Seldon Core Model Deployer Configuration](../../../.gitbook/assets/seldon-model-deployer-service-connector.png)
 
 #### Managing Seldon Core Authentication
 
@@ -262,60 +358,11 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-The following code snippet shows how to use the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline
-step:
-
-```python
-from zenml.artifacts import ModelArtifact
-from zenml.environment import Environment
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import (
-    SeldonDeploymentConfig,
-    SeldonDeploymentService,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepContext,
-    step,
-)
-
-
-@step(enable_cache=True)
-def seldon_model_deployer_step(
-        context: StepContext,
-        model: ModelArtifact,
-) -> SeldonDeploymentService:
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    # get pipeline name, step name and run id
-    step_env = Environment()[STEP_ENVIRONMENT_NAME]
-
-    service_config = SeldonDeploymentConfig(
-        model_uri=model.uri,
-        model_name="my-model",
-        replicas=1,
-        implementation="TENSORFLOW_SERVER",
-        secret_name="seldon-secret",
-        pipeline_name=step_env.pipeline_name,
-        run_name=step_env.run_name,
-        pipeline_step_name=step_env.step_name,
-    )
-
-    service = model_deployer.deploy_model(
-        service_config, replace=True, timeout=300
-    )
-
-    print(
-        f"Seldon deployment service started and reachable at:\n"
-        f"    {service.prediction_url}\n"
-    )
-
-    return service
-```
+See the [seldon_model_deployer_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 Within the `SeldonDeploymentConfig` you can configure:
 
-* `model_name`: the name of the model in the KServe cluster and in ZenML.
+* `model_name`: the name of the model in the Seldon cluster and in ZenML.
 * `replicas`: the number of replicas with which to deploy the model
 * `implementation`: the type of Seldon inference server to use for the model. The implementation type can be one of the
   following: `TENSORFLOW_SERVER`, `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
@@ -333,7 +380,7 @@ A concrete example of using the Seldon Core Model Deployer can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/seldon\_deployment).
 
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
 .
 
 ### Custom Model Deployment
@@ -384,23 +431,21 @@ Then this `custom_predict` function `path` can be passed to the custom deploymen
 ```python
 from zenml.integrations.seldon.steps import (
     seldon_custom_model_deployer_step,
-    SeldonDeployerStepParameters,
-    CustomDeployParameters,
 )
 from zenml.integrations.seldon.services import SeldonDeploymentConfig
 
-seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
-    config=SeldonDeployerStepParameters(
+seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step.with_options(
+    parameters=dict(
+        predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict",
         service_config=SeldonDeploymentConfig(
             model_name="seldon-tensorflow-custom-model",
             replicas=1,
             implementation="custom",
-            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+            resources=SeldonResourceRequirements(
+                limits={"cpu": "200m", "memory": "250Mi"}
+            ),
         ),
         timeout=240,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict"
-        ),
     )
 )
 ```
@@ -420,12 +465,12 @@ The built-in Seldon Core custom deployment step is a good starting point for dep
 you want to deploy more than the trained model, you can create your own Custom Class and a custom step to achieve this.
 
 Example of
-the [custom class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
+the [custom class](https://sdkdocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
 .
 
 The built-in Seldon Core custom deployment step responsible for packaging, preparing, and deploying to Seldon Core can
 be
-found [here](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
+found [here](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
 .
 
 <!-- For scarf -->

@@ -39,6 +39,7 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.page_model import Page
+from zenml.utils.analytics_utils import email_opt_int
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -321,6 +322,12 @@ def email_opt_in_response(
             name=user.name,
             email=user_response.email,
             email_opted_in=user_response.email_opted_in,
+        )
+
+        email_opt_int(
+            opted_in=user_response.email is not None,
+            email=user_response.email,
+            source="zenml server",
         )
 
         return zen_store().update_user(

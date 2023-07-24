@@ -16,8 +16,8 @@ from typing import Dict, List
 import numpy as np
 from rich import print as rich_print
 
+from zenml import step
 from zenml.integrations.bentoml.services import BentoMLDeploymentService
-from zenml.steps import step
 
 
 @step
@@ -33,7 +33,11 @@ def predictor(
     """
     service.start(timeout=10)  # should be a NOP if already started
     for img, data in inference_data.items():
-        prediction = service.predict("predict_ndarray", np.array(data))
+        grayscale_image = np.dot(
+            np.array(data)[..., :3], [0.2989, 0.5870, 0.1140]
+        )
+        grayscale_image = grayscale_image.astype(np.uint8)
+        prediction = service.predict("predict_ndarray", grayscale_image)
         result = to_labels(prediction[0])
         rich_print(f"Prediction for {img} is {result}")
 

@@ -42,16 +42,51 @@ To use the Vertex step operator, we need:
   your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the
   artifact store you want to use for more information on how to set that up and configure authentication for it.
 
-We can then register the step operator and use it in our active stack:
+You have three different options to provide GCP credentials to the step operator:
+
+* use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) to authenticate locally with GCP. This only works in combination with the local orchestrator.
+
+    ```shell
+    gcloud auth login
+
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --project=<GCP_PROJECT> \
+        --region=<REGION> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+    ```
+
+* configure the orchestrator to use a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) to authenticate with GCP by setting the `service_account_path` parameter in the orchestrator configuration to point to a service account key file. This also works only in combination with the local orchestrator.
+
+    ```shell
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --project=<GCP_PROJECT> \
+        --region=<REGION> \
+        --service_account_path=<SERVICE_ACCOUNT_PATH> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+    ```
+
+* (recommended) configure [a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+
+    ```shell
+    zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@<SERVICE_ACCOUNT_PATH> --resource-type gcp-generic
+
+    # Or, as an alternative, you could use the GCP user account locally set up with gcloud
+    # zenml service-connector register <CONNECTOR_NAME> --type gcp --resource-type gcp-generic --auto-configure
+
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --region=<REGION> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+
+    zenml step-operator connect <STEP_OPERATOR_NAME> --connector <CONNECTOR_NAME>
+    ```
+
+
+We can then use the registered step operator in our active stack:
 
 ```shell
-zenml step-operator register <NAME> \
-    --flavor=vertex \
-    --project=<GCP_PROJECT> \
-    --region=<REGION> \
-    --service_account_path=<SERVICE_ACCOUNT_PATH> \
-#   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
-
 # Add the step operator to the active stack
 zenml stack update -s <NAME>
 ```
@@ -72,7 +107,7 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your steps in Vertex AI. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -80,21 +115,21 @@ more about how ZenML builds these images and how you can customize them.
 
 For additional configuration of the Vertex step operator, you can pass `VertexStepOperatorSettings` when defining or
 running your pipeline. Check out
-the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings)
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
 A concrete example of using the Vertex step operator can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 
 For more information and a full list of configurable attributes of the Vertex step operator, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.step\_operators.vertex\_step\_operator.VertexStepOperator)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.step\_operators.vertex\_step\_operator.VertexStepOperator)
 .
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this step operator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

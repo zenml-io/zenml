@@ -18,7 +18,6 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
-from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -44,11 +43,12 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
         _, pipeline_runs = run_result
 
-        pipeline = get_pipeline("continuous_deployment_pipeline")
+        client = Client()
+        pipeline = client.get_pipeline("continuous_deployment_pipeline")
         assert pipeline
 
         # get the active model deployer used by the example
-        client = Client()
+
         model_deployer = client.active_stack.model_deployer
         assert isinstance(model_deployer, SeldonModelDeployer)
 

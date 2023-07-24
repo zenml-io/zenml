@@ -7,6 +7,7 @@ resource "kubernetes_namespace" "zen-server" {
 
 # enable secret manager
 resource "google_project_service" "secret_manager" {
+  count = var.enable_secrets_manager_api ? 1 : 0
   project = var.project_id
   service = "secretmanager.googleapis.com"
 
@@ -43,7 +44,7 @@ resource "helm_release" "zen-server" {
 
   set {
     name  = "zenml.secretsStore.type"
-    value = "gcp"
+    value = var.enable_secrets_manager_api? "gcp" : "sql"
   }
   set {
     name  = "zenml.secretsStore.gcp.project_idd"
@@ -58,20 +59,12 @@ resource "helm_release" "zen-server" {
 
   # set up the right path for ZenML
   set {
-    name  = "zenml.rootUrlPath"
-    value = var.ingress_path != "" ? "/${var.ingress_path}" : ""
-  }
-  set {
-    name  = "zenml.ingress.path"
-    value = var.ingress_path != "" ? "/${var.ingress_path}/?(.*)" : "/"
-  }
-  set {
     name  = "zenml.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
-    value = var.ingress_path != "" ? "/$1" : ""
+    value = ""
   }
   set {
     name  = "zenml.ingress.host"
-    value = var.create_ingress_controller ? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : "${var.ingress_controller_hostname}.nip.io"
+    value = var.create_ingress_controller ? "zenml.${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : "zenml.${var.ingress_controller_ip}.nip.io"
   }
   set {
     name  = "zenml.ingress.tls.enabled"

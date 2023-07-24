@@ -14,38 +14,14 @@
 from typing import cast
 
 import click
-from pipeline import (
-    DeploymentTriggerParameters,
-    SeldonDeploymentLoaderStepParameters,
-    SklearnTrainerParameters,
-    TensorflowTrainerParameters,
-    continuous_deployment_pipeline,
-    deployment_trigger,
-    dynamic_importer,
-    importer_mnist,
-    inference_pipeline,
-    normalizer,
-    prediction_service_loader,
-    predictor,
-    sklearn_evaluator,
-    sklearn_predict_preprocessor,
-    sklearn_trainer,
-    tf_evaluator,
-    tf_predict_preprocessor,
-    tf_trainer,
-)
+from pipelines.deployment_pipeline import continuous_deployment_pipeline
+from pipelines.inference_pipeline import inference_pipeline
 from rich import print
 
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.seldon_client import SeldonResourceRequirements
-from zenml.integrations.seldon.services import (
-    SeldonDeploymentConfig,
-    SeldonDeploymentService,
+from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
+    SeldonModelDeployer,
 )
-from zenml.integrations.seldon.steps import (
-    SeldonDeployerStepParameters,
-    seldon_model_deployer_step,
-)
+from zenml.integrations.seldon.services import SeldonDeploymentService
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -134,74 +110,30 @@ def main(
 
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "model_deployer"
-
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    if model_flavor == "tensorflow":
-        seldon_implementation = "TENSORFLOW_SERVER"
-        trainer_params = TensorflowTrainerParameters(epochs=epochs, lr=lr)
-        trainer = tf_trainer(trainer_params)
-        evaluator = tf_evaluator()
-        predict_preprocessor = tf_predict_preprocessor()
-    else:
-        seldon_implementation = "SKLEARN_SERVER"
-        trainer_params = SklearnTrainerParameters(
-            solver=solver,
-            penalty=penalty,
-            C=penalty_strength,
-            tol=toleration,
-        )
-        trainer = sklearn_trainer(trainer_params)
-        evaluator = sklearn_evaluator()
-        predict_preprocessor = sklearn_predict_preprocessor()
+    deployer_step_name = "seldon_model_deployer_step"
 
     if deploy:
-        # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
-            importer=importer_mnist(),
-            normalizer=normalizer(),
-            trainer=trainer,
-            evaluator=evaluator,
-            deployment_trigger=deployment_trigger(
-                params=DeploymentTriggerParameters(
-                    min_accuracy=min_accuracy,
-                )
-            ),
-            model_deployer=seldon_model_deployer_step(
-                params=SeldonDeployerStepParameters(
-                    service_config=SeldonDeploymentConfig(
-                        model_name=model_name,
-                        replicas=1,
-                        implementation=seldon_implementation,
-                        resources=SeldonResourceRequirements(
-                            limits={"cpu": "200m", "memory": "250Mi"}
-                        ),
-                    ),
-                    timeout=120,
-                )
-            ),
+        continuous_deployment_pipeline(
+            model_name=model_name,
+            model_flavor=model_flavor,
+            epochs=epochs,
+            lr=lr,
+            solver=solver,
+            penalty=penalty,
+            penalty_strength=penalty_strength,
+            toleration=toleration,
+            min_accuracy=min_accuracy,
         )
-
-        deployment.run()
 
     if predict:
-        # Initialize an inference pipeline run
-        inference = inference_pipeline(
-            dynamic_importer=dynamic_importer(),
-            predict_preprocessor=predict_preprocessor,
-            prediction_service_loader=prediction_service_loader(
-                SeldonDeploymentLoaderStepParameters(
-                    pipeline_name=deployment_pipeline_name,
-                    step_name=deployer_step_name,
-                    model_name=model_name,
-                )
-            ),
-            predictor=predictor(),
+        inference_pipeline(
+            deployment_pipeline_name=deployment_pipeline_name,
+            deployer_step_name=deployer_step_name,
+            model_name=model_name,
+            model_flavor=model_flavor,
         )
 
-        inference.run()
-
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
     services = model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,
         pipeline_step_name=deployer_step_name,

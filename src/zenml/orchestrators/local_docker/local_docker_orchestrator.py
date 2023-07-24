@@ -189,7 +189,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
+            "Pipeline run `%s` has finished in `%s`.\n",
             run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )
@@ -199,7 +199,9 @@ class LocalDockerOrchestratorSettings(BaseSettings):
     """Local Docker orchestrator settings.
 
     Attributes:
-        run_args: Arguments to pass to the `docker run` call.
+        run_args: Arguments to pass to the `docker run` call. (See
+            https://docker-py.readthedocs.io/en/stable/containers.html for a list
+            of what can be passed.)
     """
 
     run_args: Dict[str, Any] = {}

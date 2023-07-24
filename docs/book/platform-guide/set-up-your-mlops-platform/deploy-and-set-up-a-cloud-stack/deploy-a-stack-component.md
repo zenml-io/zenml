@@ -75,7 +75,7 @@ This variable is then passed as input to the underlying modular recipe. If you c
 
 </details>
 
-<table><thead><tr><th width="374">Component Type</th><th>Flavor</th></tr></thead><tbody><tr><td>Experiment Tracker</td><td>mlflow</td></tr><tr><td>Model Deployer</td><td>seldon</td></tr><tr><td></td><td>kserve</td></tr><tr><td>Artifact Store</td><td>s3</td></tr><tr><td></td><td>gcs</td></tr><tr><td></td><td>minio</td></tr><tr><td>Orchestrator</td><td>kubernetes</td></tr><tr><td></td><td>kubeflow</td></tr><tr><td></td><td>tekton</td></tr><tr><td></td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Step Operator</td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Container Registry</td><td>gcr</td></tr><tr><td></td><td>ecr</td></tr><tr><td></td><td>k3d-registry</td></tr></tbody></table>
+<table><thead><tr><th width="374">Component Type</th><th>Flavor</th></tr></thead><tbody><tr><td>Experiment Tracker</td><td>mlflow</td></tr><tr><td>Model Deployer</td><td>seldon</td></tr><tr><td>Artifact Store</td><td>s3</td></tr><tr><td></td><td>gcs</td></tr><tr><td></td><td>minio</td></tr><tr><td>Orchestrator</td><td>kubernetes</td></tr><tr><td></td><td>kubeflow</td></tr><tr><td></td><td>tekton</td></tr><tr><td></td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Step Operator</td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Container Registry</td><td>gcr</td></tr><tr><td></td><td>ecr</td></tr><tr><td></td><td>k3d-registry</td></tr></tbody></table>
 
 ### ✨ Customizing your stack components
 
@@ -117,7 +117,7 @@ For container registries, you can pass the repository name using `repo_name`:
 zenml container-registry deploy aws_registry --flavor=aws --repo_name=my_repo
 ```
 
-This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the `DockerSettings` object](../../../user-guide/advanced-guide/containerize-your-pipeline.md).
+This is only useful for the AWS case since AWS requires a repository to be created before pushing images to it and the deploy command ensures that a repository with the name you provide is created. In case of GCP and other providers, you can choose the repository name at the same time as you are pushing the image via code. This is achieved through setting the `target_repo` attribute of [the `DockerSettings` object](../../../user-guide/advanced-guide/environment-management/containerize-your-pipeline.md).
 
 #### Other configuration
 
