@@ -1,0 +1,102 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
+
+from typing import Annotated, Tuple
+
+import mlflow
+import pandas as pd
+from common import TARGET_COLUMN, experiment_tracker, logger
+from sklearn.base import ClassifierMixin
+
+from zenml import step
+
+
+@step(experiment_tracker=experiment_tracker.name)
+def model_evaluator(
+    model: ClassifierMixin,
+    dataset_trn: pd.DataFrame,
+    dataset_tst: pd.DataFrame,
+    min_train_accuracy: float = 0.0,
+    min_test_accuracy: float = 0.0,
+    fail_on_accuracy_quality_gates: bool = False,
+) -> Tuple[Annotated[float, "trn_acc"], Annotated[float, "tst_acc"]]:
+    """Evaluate a trained model.
+
+    This is an example of a model evaluation step that takes in a model artifact
+    previously trained by another step in your pipeline, and a training
+    and validation data set pair which it uses to evaluate the model's
+    performance. The model metrics are then returned as step output artifacts
+    (in this case, the model accuracy on the train and test set).
+
+    The suggested step implementation also outputs some warnings if the model
+    performance does not meet some minimum criteria. This is just an example of
+    how you can use steps to monitor your model performance and alert you if
+    something goes wrong. As an alternative, you can raise an exception in the
+    step to force the pipeline run to fail early and all subsequent steps to
+    be skipped.
+
+    This step is parameterized to configure the step independently of the step code,
+    before running it in a pipeline. In this example, the step can be configured
+    to use different values for the acceptable model performance thresholds and
+    to control whether the pipeline run should fail if the model performance
+    does not meet the minimum criteria. See the documentation for more
+    information:
+
+        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+
+    Args:
+        model: The pre-trained model artifact.
+        dataset_trn: The train dataset.
+        dataset_tst: The test dataset.
+        min_train_accuracy: Minimal acceptable training accuracy value.
+        min_test_accuracy: Minimal acceptable testing accuracy value.
+        fail_on_accuracy_quality_gates: If `True` a `RuntimeException` is raised
+            upon not meeting one of the minimal accuracy thresholds.
+
+    Returns:
+        The model accuracy on the train and test set.
+    """
+    ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
+    # Calculate the model accuracy on the train and test set
+    trn_acc = model.score(
+        dataset_trn.drop(columns=[TARGET_COLUMN]), dataset_trn[TARGET_COLUMN]
+    )
+    logger.info(f"Train accuracy: {trn_acc}")
+    tst_acc = model.score(
+        dataset_tst.drop(columns=[TARGET_COLUMN]), dataset_tst[TARGET_COLUMN]
+    )
+    logger.info(f"Test accuracy: {tst_acc}")
+
+    messages = []
+    if trn_acc < min_train_accuracy:
+        messages.append(
+            f"Train accuracy {trn_acc*100:.2f}% is below {min_train_accuracy*100:.2f}% !"
+        )
+    if tst_acc < min_test_accuracy:
+        messages.append(
+            f"Test accuracy {tst_acc*100:.2f}% is below {min_test_accuracy*100:.2f}% !"
+        )
+    if fail_on_accuracy_quality_gates and messages:
+        raise RuntimeError(
+            "Model performance did not meet the minimum criteria:\n"
+            + "\n".join(messages)
+        )
+    else:
+        for message in messages:
+            logger.warning(message)
+
+    mlflow.log_metric("testing_accuracy_score", tst_acc)
+    ### YOUR CODE ENDS HERE ###
+    return trn_acc, tst_acc
