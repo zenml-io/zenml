@@ -248,28 +248,6 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_wandb_tracking
-    requirements:
-      - integrations:
-          - tensorflow
-          - wandb
-        stacks:
-          - type: experiment_tracker
-            flavor: wandb
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_neptune_tracking
-    requirements:
-      - integrations:
-          - tensorflow
-          - neptune
-        stacks:
-          - type: experiment_tracker
-            flavor: neptune
-      - capabilities:
-          synchronized: true
-
   - module: tests.integration.examples.test_seldon_deployment
     requirements:
       - integrations:
