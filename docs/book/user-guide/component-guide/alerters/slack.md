@@ -4,16 +4,18 @@ description: Sending automated alerts to a Slack channel.
 
 # Slack Alerter
 
-The `SlackAlerter` enables you to send messages to a dedicated Slack channel directly from within your pipelines.
+The `SlackAlerter` enables you to send messages to a dedicated Slack channel 
+directly from within your ZenML pipelines.
 
-The `slack` integration also contains the following two standard steps:
+The `slack` integration contains the following two standard steps:
 
 * [slack\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
-  takes a string, posts it to Slack, and returns `True` if the operation succeeded, else `False`.
+  takes a string message, posts it to a Slack channel, and returns whether the 
+  operation was successful.
 * [slack\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
-  does the same as `slack_alerter_post_step`, but after sending the message, it waits until someone approves or rejects
-  the operation from within Slack (e.g., by sending "approve" / "reject" to the bot in response)
-  . `slack_alerter_ask_step` then only returns `True` if the operation succeeded and was approved, else `False`.
+  also posts a message to a Slack channel, but waits for user feedback, and 
+  only returns `True` if a user explicitly approved the operation from within 
+  Slack (e.g., by sending "approve" / "reject" to the bot in response).
 
 Interacting with Slack from within your pipelines can be very useful in practice:
 
@@ -68,6 +70,8 @@ Here is where you can find the required parameters:
 * `<SLACK_TOKEN>`: This is the Slack token of your bot. You can find it in the Slack app settings
   under `OAuth & Permissions`. **IMPORTANT**: Please make sure that the token is the `Bot User OAuth Token` not
   the `User OAuth Token`.
+
+![Slack Token Image](../../../.gitbook/assets/slack-alerter-token.jpg)
 
 After you have registered the `slack_alerter`, you can add it to your stack like this:
 

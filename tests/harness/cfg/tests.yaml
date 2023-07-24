@@ -232,7 +232,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_slack_alert
+  - module: tests.integration.examples.test_slack
     requirements:
       - integrations:
           - sklearn

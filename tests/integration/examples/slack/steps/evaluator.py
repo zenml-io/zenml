@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,19 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
+import numpy as np
+from sklearn.base import ClassifierMixin
 
-from tests.integration.examples.utils import run_example
+from zenml import step
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the slack_alert example."""
-
-    with run_example(
-        request=request,
-        name="slack_alert",
-        pipelines={"slack_post_pipeline": (1, 5)},
-    ) as runs:
-        run = runs["slack_post_pipeline"][0]
-        alert_step = run.get_step("alerter")
-        assert alert_step.output.read() is True
+@step
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: ClassifierMixin,
+) -> float:
+    """Calculate the accuracy on the test set."""
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
+    return test_acc
