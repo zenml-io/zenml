@@ -28,7 +28,10 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="quickstart",
-        pipelines={"training_pipeline": (1, 4), "inference_pipeline": (1, 5)},
+        pipelines={
+            "train_and_register_model_pipeline": (1, 5),
+            "deploy_and_predict": (1, 4),
+        },
     ):
         # activate the stack set up and used by the example
         client = Client()
@@ -51,7 +54,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # Check that the deployment service is running
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        training_run = client.get_pipeline("inference_pipeline").runs[0]
+        training_run = client.get_pipeline("deploy_and_predict").runs[0]
 
         service = training_run.get_step(
             "mlflow_model_registry_deployer_step"
@@ -59,4 +62,4 @@ def test_example(request: pytest.FixtureRequest) -> None:
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
-            service.stop(timeout=60)
+            service.stop(timeout=180)
