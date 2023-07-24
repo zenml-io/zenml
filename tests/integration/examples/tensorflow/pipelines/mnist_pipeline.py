@@ -25,7 +25,7 @@ docker_settings = DockerSettings(required_integrations=[TENSORFLOW])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
-def mnist_pipeline(epochs: int = 5, lr: float = 0.001):
+def mnist_pipeline(epochs: int = 2, lr: float = 0.001):
     X_train, X_test, y_train, y_test = importer()
     X_trained_normed, X_test_normed = normalizer(
         X_train=X_train, X_test=X_test

@@ -8,7 +8,7 @@ The MLflow Experiment Tracker is an [Experiment Tracker](experiment-trackers.md)
 integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize
 information from your pipeline steps (e.g. models, parameters, metrics).
 
-### When would you want to use it?
+## When would you want to use it?
 
 [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a very popular tool that you would normally use
 in the iterative ML experimentation phase to track and visualize experiment results. That doesn't mean that it cannot be
@@ -28,7 +28,7 @@ You should consider one of the other [Experiment Tracker flavors](experiment-tra
 you have never worked with MLflow before and would rather use another experiment tracking tool that you are more
 familiar with.
 
-### How do you deploy it?
+## How do you deploy it?
 
 The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, you need to install it on your local
 machine to be able to register an MLflow Experiment Tracker and add it to your stack:
@@ -70,7 +70,7 @@ MLflow, we recommend using MLflow version 2.2.1 or higher.
   requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow
   Experiment Tracker.
 
-#### Infrastructure Deployment
+### Infrastructure Deployment
 
 The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
 
@@ -83,7 +83,7 @@ You can pass other configurations specific to the stack components as key-value 
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
 dedicated documentation section.
 
-#### Authentication Methods
+### Authentication Methods
 
 You need to configure the following credentials for authentication to a remote MLflow tracking server:
 
@@ -162,7 +162,7 @@ look
 at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment\_trackers.mlflow\_experiment\_tracker)
 .
 
-### How do you use it?
+## How do you use it?
 
 To be able to log information from a ZenML pipeline step using the MLflow Experiment Tracker component in the active
 stack, you need to enable an experiment tracker using the `@step` decorator. Then use MLflow's logging or auto-logging
@@ -174,8 +174,8 @@ import mlflow
 
 @step(experiment_tracker="<MLFLOW_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
-        x_train: np.ndarray,
-        y_train: np.ndarray,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
@@ -195,7 +195,54 @@ def tf_trainer(
     return model
 ```
 
-#### Additional configuration
+{% hint style="info" %}
+Instead of hardcoding an experiment tracker name, you can also use the 
+[Client](../../advanced-guide/environment-management/client.md) to dynamically
+use the experiment tracker of your active stack:
+
+```python
+from zenml.client import Client
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+@step(experiment_tracker=experiment_tracker.name)
+def tf_trainer(...):
+    ...
+```
+{% endhint %}
+
+### MLflow UI
+
+MLflow comes with its own UI that you can use to find further details about 
+your tracked experiments.
+
+you can find the URL of the MLflow experiment linked to a specific ZenML run 
+via the metadata of the step in which the experiment tracker was used:
+
+```python
+from zenml.client import Client
+
+last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
+trainer_step = last_run.get_step("<STEP_NAME>")
+tracking_url = trainer_step.metadata.get("experiment_tracker_url")
+print(tracking_url.value)
+```
+
+This will be the URL of the corresponding experiment in your deployed MLflow
+instance, or a link to the corresponding mlflow experiment file if you are using
+local MLflow.
+
+{% hint style="info" %}
+If you are using local MLflow, you can use the `mlflow ui` command to start
+MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore
+the UI in your browser.
+
+```bash
+mlflow ui --backend-store-uri <TRACKING_URL>
+```
+{% endhint %}
+
+### Additional configuration
 
 For additional configuration of the MLflow experiment tracker, you can pass `MLFlowExperimentTrackerSettings` to create
 nested runs or add additional tags to your MLflow runs:
@@ -217,7 +264,7 @@ mlflow_settings = MLFlowExperimentTrackerSettings(
     }
 )
 def step_one(
-        data: np.ndarray,
+    data: np.ndarray,
 ) -> np.ndarray:
     ...
 ```

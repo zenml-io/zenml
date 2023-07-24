@@ -33,33 +33,12 @@ if not experiment_tracker or not isinstance(
 
 
 @step(experiment_tracker=experiment_tracker.name)
-def tf_trainer(
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-    epochs: int = 1,
-    lr: float = 0.0001,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner."""
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10),
-        ]
-    )
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(lr),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
-    mlflow.tensorflow.autolog()
-    model.fit(
-        x_train,
-        y_train,
-        epochs=epochs,
-    )
-
-    # write model
-    return model
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the accuracy on the test set."""
+    _, test_acc = model.evaluate(X_test, y_test, verbose="2")
+    mlflow.log_metric("val_accuracy", test_acc)
+    return test_acc

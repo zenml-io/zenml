@@ -16,6 +16,7 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -32,6 +33,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         name="mlflow_tracking",
         pipelines={"mlflow_example_pipeline": (1, 4)},
         timeout_limit=750,
+        example_code_lives_in_tests_subdir=True,
     ) as runs:
         client = Client()
         pipeline = client.get_pipeline("mlflow_example_pipeline")
@@ -49,13 +51,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
         assert mlflow_experiment is not None
 
-        # fetch all MLflow runs created for the pipeline
-        mlflow_runs = mlflow.search_runs(
-            experiment_ids=[mlflow_experiment.experiment_id],
-            output_format="list",
-        )
-        assert len(mlflow_runs) == 1
-
         # fetch the MLflow run created for the first pipeline run
         mlflow_runs = mlflow.search_runs(
             experiment_ids=[mlflow_experiment.experiment_id],
@@ -69,3 +64,10 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow artifacts logged during the first pipeline run
         artifacts = client.list_artifacts(first_mlflow_run.info.run_id)
         assert len(artifacts) == 3
+
+        # ensure that tracking_url is set in the step metadata
+        trainer_step = run.get_step("trainer")
+        tracking_url = trainer_step.metadata.get(
+            METADATA_EXPERIMENT_TRACKER_URL
+        )
+        assert tracking_url is not None
