@@ -64,6 +64,64 @@ def list_stack_recipes() -> None:
     ]
     cli_utils.print_table(stack_recipes)
 
+    cli_utils.declare("\n" + "To get the latest list of stack recipes, run: ")
+    text = Text("zenml stack recipe pull -y", style="markdown.code_block")
+    cli_utils.declare(text)
+
+    cli_utils.declare("\n" + "To pull any individual stack recipe, type: ")
+    text = Text(
+        "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
+    )
+    cli_utils.declare(text)
+
+
+@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to clean the stack_recipe(s)",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Whether to skip the confirmation prompt.",
+)
+@pass_git_stack_recipes_handler
+def clean(
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    path: str,
+    yes: bool,
+) -> None:
+    """Deletes the stack recipes directory from your working directory.
+
+    Args:
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        path: The path at which you want to clean the stack_recipe(s).
+        yes: Whether to skip the confirmation prompt.
+    """
+    stack_recipes_directory = os.path.join(os.getcwd(), path)
+    if fileio.isdir(stack_recipes_directory) and (
+        yes
+        or cli_utils.confirmation(
+            "Do you wish to delete the stack recipes directory? \n"
+            f"{stack_recipes_directory}"
+        )
+    ):
+        git_stack_recipes_handler.clean_current_stack_recipes()
+        cli_utils.declare(
+            "Stack recipes directory was deleted from your current working "
+            "directory."
+        )
+    elif not fileio.isdir(stack_recipes_directory):
+        cli_utils.error(
+            f"Unable to delete the stack recipes directory - "
+            f"{stack_recipes_directory} - "
+            "as it was not found in your current working directory."
+        )
+
 
 @stack_recipe.command(help="Find out more about a stack recipe.")
 @click.argument("stack_recipe_name")
@@ -851,21 +909,22 @@ def deploy(
                 )
         # invoke server deploy
         if no_server:
-            logger.warning("The `--no-server` flag has been deprecated. ")
+            cli_utils.warning("The `--no-server` flag has been deprecated.")
+
         # get the stack yaml path
         stack_yaml_file = os.path.join(
             stack_recipe_service.config.directory_path,
             stack_recipe_service.stack_file_path[2:],
         )
 
-        logger.info(
+        cli_utils.declare(
             "\nA stack configuration YAML file has been generated "
             f"as part of the deployment of the {stack_recipe_name} "
             f"recipe. Find it at {stack_yaml_file}."
         )
 
         if import_stack_flag:
-            logger.info(
+            cli_utils.declare(
                 "\nThe flag `--import` is set. Proceeding "
                 "to import a new ZenML stack from the created "
                 "resources."

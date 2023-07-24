@@ -308,13 +308,9 @@ def is_distribution_package_file(file_path: str, module_name: str) -> bool:
         if Path(path).resolve() in absolute_file_path.parents:
             return True
 
-    if _get_package_for_module(module_name=module_name):
-        return True
-
-    # TODO: Both of the previous checks don't detect editable installs because
+    # TODO: The previous check does not detect editable installs because
     # the site packages dir only contains a reference to the source files,
-    # not the actual files, and importlib_metadata doesn't detect it as a valid
-    # distribution package. That means currently editable installs get a
+    # not the actual files. That means currently editable installs get a
     # source type UNKNOWN which might or might not lead to issues.
 
     return False
@@ -343,13 +339,15 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_standard_lib_file(file_path=file_path):
         return SourceType.BUILTIN
 
-    if is_user_file(file_path=file_path):
-        return SourceType.USER
-
     if is_distribution_package_file(
         file_path=file_path, module_name=module.__name__
     ):
         return SourceType.DISTRIBUTION_PACKAGE
+
+    # Make sure to check for distribution packages before this to catch the
+    # case when a virtual environment is inside our source root
+    if is_user_file(file_path=file_path):
+        return SourceType.USER
 
     return SourceType.UNKNOWN
 

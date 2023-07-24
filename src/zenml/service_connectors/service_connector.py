@@ -26,6 +26,10 @@ from pydantic import (
 from pydantic.main import ModelMetaclass
 
 from zenml.client import Client
+from zenml.constants import (
+    ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS,
+    handle_bool_env_var,
+)
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
@@ -519,6 +523,22 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             )
 
         return resource_id
+
+    @classmethod
+    def _check_implicit_auth_method_allowed(cls) -> None:
+        """Check if implicit authentication methods are allowed.
+
+        Raises:
+            AuthorizationException: If implicit authentication methods are
+                not enabled.
+        """
+        if not handle_bool_env_var(ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS):
+            raise AuthorizationException(
+                "Implicit authentication methods for service connectors are "
+                "implicitly disabled for security reasons. To enabled them, "
+                f"the {ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS} environment "
+                "variable must be set for the ZenML deployment."
+            )
 
     @classmethod
     def get_type(cls) -> ServiceConnectorTypeModel:

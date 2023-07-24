@@ -17,10 +17,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_spec import PipelineSpec
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
@@ -49,7 +51,14 @@ class PipelineSchema(NamedSchema, table=True):
     version_hash: str
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(sa_column=Column(TEXT, nullable=False))
+    spec: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

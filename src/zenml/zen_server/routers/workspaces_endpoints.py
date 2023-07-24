@@ -1014,20 +1014,12 @@ def get_workspace_statistics(
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
     return {
-        "stacks": zen_store()
-        .list_stacks(StackFilterModel(scope_workspace=workspace.id))
-        .total,
-        "components": zen_store()
-        .list_stack_components(
-            ComponentFilterModel(scope_workspace=workspace.id)
-        )
-        .total,
-        "pipelines": zen_store()
-        .list_pipelines(PipelineFilterModel(scope_workspace=workspace.id))
-        .total,
-        "runs": zen_store()
-        .list_runs(PipelineRunFilterModel(scope_workspace=workspace.id))
-        .total,
+        "stacks": zen_store().count_stacks(workspace_id=workspace.id),
+        "components": zen_store().count_stack_components(
+            workspace_id=workspace.id
+        ),
+        "pipelines": zen_store().count_pipelines(workspace_id=workspace.id),
+        "runs": zen_store().count_runs(workspace_id=workspace.id),
     }
 
 

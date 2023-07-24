@@ -34,6 +34,7 @@ class ServerDeploymentType(StrEnum):
     OTHER = "other"
     HF_SPACES = "hf_spaces"
     SANDBOX = "sandbox"
+    CLOUD = "cloud"
 
 
 class ServerDatabaseType(StrEnum):

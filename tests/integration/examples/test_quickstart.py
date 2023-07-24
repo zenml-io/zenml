@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 
 import pytest
 
@@ -23,17 +22,16 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
 )
 
 
-@pytest.mark.skipif(
-    sys.version_info.major == 3 and sys.version_info.minor == 7,
-    reason="MLflow model registry is only supported on Python>3.7",
-)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the quickstart example."""
 
     with run_example(
         request=request,
         name="quickstart",
-        pipelines={"training_pipeline": (1, 4), "inference_pipeline": (1, 5)},
+        pipelines={
+            "train_and_register_model_pipeline": (1, 5),
+            "deploy_and_predict": (1, 4),
+        },
     ):
         # activate the stack set up and used by the example
         client = Client()
@@ -56,7 +54,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # Check that the deployment service is running
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        training_run = client.get_pipeline("inference_pipeline").runs[0]
+        training_run = client.get_pipeline("deploy_and_predict").runs[0]
 
         service = training_run.get_step(
             "mlflow_model_registry_deployer_step"
@@ -64,4 +62,4 @@ def test_example(request: pytest.FixtureRequest) -> None:
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
-            service.stop(timeout=60)
+            service.stop(timeout=180)

@@ -37,15 +37,11 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
     LocalArtifactStoreFlavor,
 )
-from zenml.artifact_stores.base_artifact_store_logging_handler import (
-    ArtifactStoreLoggingHandler,
-)
 
 __all__ = [
     "BaseArtifactStore",
     "BaseArtifactStoreConfig",
     "BaseArtifactStoreFlavor",
-    "ArtifactStoreLoggingHandler",
     "LocalArtifactStore",
     "LocalArtifactStoreConfig",
     "LocalArtifactStoreFlavor",

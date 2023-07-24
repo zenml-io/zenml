@@ -213,7 +213,7 @@ authenticated and therefore use other GCP services.
 By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the
 option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is
 useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use
-a [custom base parent image](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md#using-a-custom-parent-image)
+a [custom base parent image](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md#using-a-custom-parent-image)
 with the [`keyrings.google-artifactregistry-auth`](https://pypi.org/project/keyrings.google-artifactregistry-auth/)
 installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
 

@@ -103,7 +103,7 @@ class CloudpickleMaterializer(BaseMaterializer):
                 "the artifacts cannot be loaded when running with a different "
                 "Python version. Please consider implementing a custom "
                 f"materializer for type `{type(data)}` according to the "
-                "instructions at https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types."
+                "instructions at https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types."
             )
 
         # save python version for validation on loading

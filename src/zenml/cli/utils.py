@@ -50,7 +50,6 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
-from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     APP_NAME,
@@ -61,7 +60,7 @@ from zenml.constants import (
     STACK_RECIPE_PACKAGE_NAME,
     STACK_RECIPE_TERRAFORM_FILES_PATH,
 )
-from zenml.enums import GenericFilterOps, StackComponentType, StoreType
+from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -555,50 +554,6 @@ def print_stack_component_configuration(
             rich_table.add_row(label, value)
 
         console.print(rich_table)
-
-
-def print_active_config() -> None:
-    """Print the active configuration."""
-    from zenml.client import Client
-
-    gc = GlobalConfiguration()
-    client = Client()
-
-    # We use gc.store here instead of client.zen_store for two reasons:
-    # 1. to avoid initializing ZenML with the default store just because we want
-    # to print the active config
-    # 2. to avoid connecting to the active store and keep this call lightweight
-    if not gc.store:
-        return
-
-    if gc.uses_default_store():
-        declare("Using the default local database.")
-    elif gc.store.type == StoreType.SQL:
-        declare(f"Using the SQL database: '{gc.store.url}'.")
-    elif gc.store.type == StoreType.REST:
-        declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if client.uses_local_configuration:
-        declare(
-            f"Running with active workspace: '{client.active_workspace.name}' "
-            "(repository)"
-        )
-    else:
-        declare(
-            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
-            "(global)"
-        )
-
-
-def print_active_stack() -> None:
-    """Print active stack."""
-    from zenml.client import Client
-
-    client = Client()
-    scope = "repository" if client.uses_local_configuration else "global"
-    declare(
-        f"Running with active stack: '{client.active_stack_model.name}' "
-        f"({scope})"
-    )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -2729,3 +2684,28 @@ def create_mlspacks_spec(stack_config: Dict[str, Union[str, bool]]) -> None:
 
     # write the stack config to a file
     return None
+
+
+def print_model_url(url: Optional[str]) -> None:
+    """Pretty prints a given URL on the CLI.
+
+    Args:
+        url: optional str, the URL to display.
+    """
+    if url:
+        declare(f"Dashboard URL: {url}")
+    else:
+        warning(
+            "You can display various ZenML entities including pipelines, "
+            "runs, stacks and much more on the ZenML Dashboard. "
+            "You can try it locally, by running `zenml up`, or remotely, "
+            "by deploying ZenML on the infrastructure of your choice."
+        )
+
+
+def warn_deprecated_example_subcommand() -> None:
+    """Warning for deprecating example subcommand."""
+    warning(
+        "The `example` CLI subcommand has been deprecated and will be removed "
+        "in a future release."
+    )

@@ -115,7 +115,13 @@ The resource name associated with this resource type identifies the GCR containe
 
 ### Implicit authentication
 
-[Implicit authentication](best-security-practices.md#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc). This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
+[Implicit authentication](best-security-practices.md#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
+
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
+{% endhint %}
+
+This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
 
 * environment variables (GOOGLE\_APPLICATION\_CREDENTIALS)
 * local ADC credential files set up by running `gcloud auth application-default login` (e.g. `~/.config/gcloud/application_default_credentials.json`).
