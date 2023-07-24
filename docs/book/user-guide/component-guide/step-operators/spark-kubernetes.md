@@ -10,7 +10,7 @@ The `spark` integration brings two different step operators:
 * **Step Operator**: The `KubernetesSparkStepOperator` is responsible for launching ZenML steps as Spark applications
   with Kubernetes as a cluster manager.
 
-### Step Operators: `SparkStepOperator`
+## Step Operators: `SparkStepOperator`
 
 A summarized version of the implementation can be summarized in two parts. First, the configuration:
 
@@ -116,13 +116,13 @@ Once the configuration is completed, `_launch_spark_job` comes into play. This t
 runs a Spark job on the given `master` URL with the specified `deploy_mode`. By default, this is achieved by creating
 and executing a `spark-submit` command.
 
-#### Warning
+### Warning
 
 In its first iteration, the pre-configuration with `_io_configuration` method is only effective when it is paired with
 an `S3ArtifactStore` (which has an authentication secret). When used with other artifact store flavors, you might be
 required to provide additional configuration through the `submit_args`.
 
-### Stack Component: `KubernetesSparkStepOperator`
+## Stack Component: `KubernetesSparkStepOperator`
 
 The `KubernetesSparkStepOperator` is implemented by subclassing the base `SparkStepOperator` and uses
 the `PipelineDockerImageBuilder` class to build and push the required docker images.
@@ -176,27 +176,147 @@ For Kubernetes, there are also some additional important configuration parameter
 
 Additionally, the `_backend_configuration` method is adjusted to handle the Kubernetes-specific configuration.
 
-### When to use it
+## When to use it
 
 You should use the Spark step operator:
 
 * when you are dealing with large amounts of data.
 * when you are designing a step that can benefit from distributed computing paradigms in terms of time and resources.
 
-### How to deploy it
+## How to deploy it
 
-The `KubernetesSparkStepOperator` requires a Kubernetes cluster in order to run. There are many ways to deploy a
-Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of
-them, but you can check out
-the [spark example](https://github.com/zenml-io/zenml/tree/main/examples/spark\_distributed\_programming) to see how it
-is deployed on AWS.
+To use the `KubernetesSparkStepOperator` you will need to setup a few things
+first:
+* **Remote ZenML server:** See the 
+[deployment guide](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md) 
+for more information.
+* **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster 
+using different cloud providers or on your custom infrastructure. For AWS, you 
+can follow the [Spark EKS Setup Guide](#spark-eks-setup-guide) below.
 
-### How to use it
+### Spark EKS Setup Guide
 
-In order to use the `KubernetesSparkStepOperator`, you need:
+The following guide will walk you through how to spin up and configure a
+[Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/) with Spark
+on it:
+
+#### EKS Kubernetes Cluster
+
+- Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role)
+to create an Amazon EKS cluster role. 
+- Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html#create-worker-node-role)
+to create an Amazon EC2 node role. 
+- Go to the [IAM website](https://console.aws.amazon.com/iam), and
+  select `Roles` to edit both roles.
+- Attach the `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies to both
+roles.
+- Go to the [EKS website](https://console.aws.amazon.com/eks).
+- Make sure the correct region is selected on the top right.
+- Click on `Add cluster` and select `Create`.
+- Enter a name and select the **cluster role** for `Cluster service role`.
+- Keep the default values for the networking and logging steps and create the
+  cluster.
+- Note down the cluster name and the API server endpoint:
+
+```bash
+EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
+EKS_API_SERVER_ENDPOINT=<API_SERVER_ENDPOINT>
+```
+
+- After the cluster is created, select it and click on `Add node group` in
+  the `Compute` tab.
+- Enter a name and select the **node role**.
+- For the instance type, we recommend `t3a.xlarge`, as it provides up to 4 
+vCPUs and 16 GB of memory.
+
+#### Docker image for the Spark drivers and executors
+
+When you want to run your steps on a Kubernetes cluster, Spark will require you
+to choose a base image for the driver and executor pods. Normally, for this 
+purpose, you can either use one of the base images
+in [Spark’s dockerhub](https://hub.docker.com/r/apache/spark-py/tags) or create
+an image using
+the [docker-image-tool](https://spark.apache.org/docs/latest/running-on-kubernetes.html#docker-images)
+which will use your own Spark installation and build an image.
+
+When using Spark in EKS, you need to use the latter and utilize the 
+`docker-image-tool`. However, before the build process, you also need to 
+download the following packages
+
+- [`hadoop-aws` = 3.3.1](https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/3.3.1)
+- [`aws-java-sdk-bundle` = 1.12.150](https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-bundle/1.12.150)
+
+and put them in the `jars` folder within your Spark installation. Once that 
+is set up, you can build the image as follows:
+
+```bash
+cd $SPARK_HOME # If this empty for you then you need to set the SPARK_HOME variable which points to your Spark installation
+
+SPARK_IMAGE_TAG=<SPARK_IMAGE_TAG>
+
+./bin/docker-image-tool.sh -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
+
+BASE_IMAGE_NAME=spark-py:$SPARK_IMAGE_TAG
+```
+
+If you are working on an M1 Mac, you will need to build the image for the amd64 architecture, by using the prefix `-X`
+on the previous command. For example:
+
+```bash
+./bin/docker-image-tool.sh -X -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
+```
+
+#### Configuring RBAC
+
+Additionally, you may need to create the several resources in Kubernetes 
+in order to give Spark access to edit/manage your driver executor pods. 
+
+To do so, create a file called  `rbac.yaml` with the following content:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spark-namespace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark-service-account
+  namespace: spark-namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spark-role
+  namespace: spark-namespace
+subjects:
+  - kind: ServiceAccount
+    name: spark-service-account
+    namespace: spark-namespace
+roleRef:
+  kind: ClusterRole
+  name: edit
+  apiGroup: rbac.authorization.k8s.io
+---
+```
+
+And then execute the following command to create the resources:
+
+```bash
+aws eks --region=$REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
+
+kubectl create -f rbac.yaml
+```
+
+Lastly, note down the **namespace** and the name of the **service account** 
+since you will need them when registering the stack component in the next step.
+
+## How to use it
+
+To use the `KubernetesSparkStepOperator`, you need:
 
 * the ZenML `spark` integration. If you haven't installed it already, run
-
   ```shell
   zenml integration install spark
   ```
@@ -207,28 +327,60 @@ In order to use the `KubernetesSparkStepOperator`, you need:
 
 We can then register the step operator and use it in our active stack:
 
-```shell
-zenml step-operator register <NAME> \
+```bash
+zenml step-operator register spark_step_operator \
 	--flavor=spark-kubernetes \
-	--master=k8s://<API_SERVER_ENDPOINT> \
-	--namespace=<KUBERNETES_NAMESPACE> \
-	--service_account=<KUBERNETES_SERVICE_ACCOUNT>
+	--master=k8s://$EKS_API_SERVER_ENDPOINT \
+	--namespace=<SPARK_KUBERNETES_NAMESPACE> \
+	--service_account=<SPARK_KUBERNETES_SERVICE_ACCOUNT>
 ```
 
-Once you added the step operator to your active stack, you can use it to execute individual steps of your pipeline by
-specifying it in the `@step` decorator as follows:
+```bash
+# Register the stack
+zenml stack register spark_stack \
+    -o default \
+    -s spark_step_operator \
+    -a spark_artifact_store \
+    -c spark_container_registry \
+    -i local_builder \
+    --set
+```
+
+Once you added the step operator to your active stack, you can use it to execute 
+individual steps of your pipeline by specifying it in the `@step` decorator 
+as follows:
 
 ```python
 from zenml import step
 
 
-@step(step_operator= <NAME>)
-def preprocess(...) -> ...:
-    """Preprocess your dataset."""
-    # This step will be executed with Spark on Kubernetes.
+@step(step_operator=<STEP_OPERATOR_NAME>)
+def step_on_spark(...) -> ...:
+    """Some step that should run with Spark on Kubernetes."""
+    ...
 ```
 
-#### Additional configuration
+After successfully running any step with a `KubernetesSparkStepOperator`, you
+should be able to see that a Spark driver pod was created in your cluster for 
+each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
+
+{% hint style="info" %}
+Instead of hardcoding a step operator name, you can also use the 
+[Client](../../advanced-guide/environment-management/client.md) to dynamically
+use the step operator of your active stack:
+
+```python
+from zenml.client import Client
+
+step_operator = Client().active_stack.step_operator
+
+@step(step_operator=step_operator.name)
+def step_on_spark(...) -> ...:
+    ...
+```
+{% endhint %}
+
+### Additional configuration
 
 For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or
 running your pipeline. Check out
