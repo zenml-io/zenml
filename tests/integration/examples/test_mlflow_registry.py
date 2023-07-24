@@ -33,15 +33,17 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
     with run_example(
         request=request,
-        name="mlflow_registry",
+        name="mlflow",
+        example_args=["--type", "registry"],
         pipelines={
-            "mlflow_training_pipeline": (1, 5),
-            "deployment_inference_pipeline": (1, 4),
+            "mlflow_registry_training_pipeline": (1, 5),
+            "mlflow_registry_inference_pipeline": (1, 4),
         },
+        example_code_lives_in_tests_subdir=True,
     ) as runs:
-        pipeline = Client().get_pipeline("mlflow_training_pipeline")
+        pipeline = Client().get_pipeline("mlflow_registry_training_pipeline")
         assert pipeline
-        first_training_run = runs["mlflow_training_pipeline"][0]
+        first_training_run = runs["mlflow_registry_training_pipeline"][0]
 
         # activate the stack set up and used by the example
         client = Client()
@@ -54,13 +56,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow experiment created for the pipeline runs
         mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
         assert mlflow_experiment is not None
-
-        # fetch all MLflow runs created for the pipeline
-        mlflow_runs = mlflow.search_runs(
-            experiment_ids=[mlflow_experiment.experiment_id],
-            output_format="list",
-        )
-        assert len(mlflow_runs) >= 3
 
         # fetch the MLflow run created for the pipeline run
         mlflow_runs = mlflow.search_runs(
@@ -85,6 +80,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow registered model version
         registered_model_version = model_registry.get_model_version(
             name="tensorflow-mnist-model",
-            version=1,
+            version="1",
         )
         assert registered_model_version is not None

@@ -30,16 +30,17 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
     with run_example(
         request=request,
-        name="mlflow_tracking",
-        pipelines={"mlflow_example_pipeline": (1, 4)},
+        name="mlflow",
+        example_args=["--type", "tracking"],
+        pipelines={"mlflow_tracking_pipeline": (1, 4)},
         timeout_limit=750,
         example_code_lives_in_tests_subdir=True,
     ) as runs:
         client = Client()
-        pipeline = client.get_pipeline("mlflow_example_pipeline")
+        pipeline = client.get_pipeline("mlflow_tracking_pipeline")
         assert pipeline
 
-        run = runs["mlflow_example_pipeline"][0]
+        run = runs["mlflow_tracking_pipeline"][0]
 
         # activate the stack set up and used by the example
 
