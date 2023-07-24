@@ -94,7 +94,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Sagemaker. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -152,7 +152,7 @@ They can then be applied to a step as follows:
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all
 steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
 
-Check out [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for more information on
+Check out [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more information on
 how to
 specify settings in general.
 
@@ -244,7 +244,7 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

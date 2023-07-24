@@ -132,7 +132,7 @@ def clean(
             "directory."
         )
     elif not fileio.isdir(stack_recipes_directory):
-        logger.error(
+        cli_utils.error(
             f"Unable to delete the stack recipes directory - "
             f"{stack_recipes_directory} - "
             "as it was not found in your current working directory."
@@ -191,7 +191,7 @@ def describe(
         cli_utils.error(str(e))
     else:
         metadata = stack_recipe.metadata
-        logger.info(metadata["Description"])
+        cli_utils.declare(metadata["Description"])
 
 
 @stack_recipe.command(help="The active version of the mlops-stacks repository")
@@ -472,7 +472,7 @@ def deploy(
             variables to the stack recipe.
     """
     cli_utils.warning(ALPHA_MESSAGE)
-    logger.info(
+    cli_utils.declare(
         "Servers are no longer deployed by default. Please use the "
         "`zenml deploy` command to deploy a ZenML server."
     )
@@ -618,21 +618,22 @@ def deploy(
                 )
         # invoke server deploy
         if no_server:
-            logger.warning("The `--no-server` flag has been deprecated. ")
+            cli_utils.warning("The `--no-server` flag has been deprecated.")
+
         # get the stack yaml path
         stack_yaml_file = os.path.join(
             stack_recipe_service.config.directory_path,
             stack_recipe_service.stack_file_path[2:],
         )
 
-        logger.info(
+        cli_utils.declare(
             "\nA stack configuration YAML file has been generated "
             f"as part of the deployment of the {stack_recipe_name} "
             f"recipe. Find it at {stack_yaml_file}."
         )
 
         if import_stack_flag:
-            logger.info(
+            cli_utils.declare(
                 "\nThe flag `--import` is set. Proceeding "
                 "to import a new ZenML stack from the created "
                 "resources."

@@ -124,7 +124,13 @@ If an authentication method other than the Azure service principal is used for a
 
 ### Implicit authentication
 
-[Implicit authentication](../connect-zenml-to-infrastructure/best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities. This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
+[Implicit authentication](../connect-zenml-to-infrastructure/best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
+
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
+{% endhint %}
+
+This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
 
 * [environment variables](https://learn.microsoft.com/en-us/python/api/overview/azure/identity-readme?view=azure-python#environment-variables)
 * workload identity - if the application is deployed to an Azure Kubernetes Service with Managed Identity enabled. This option can only be used when running the ZenML server on an AKS cluster.

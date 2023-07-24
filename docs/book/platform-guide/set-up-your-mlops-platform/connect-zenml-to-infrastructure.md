@@ -346,7 +346,6 @@ Successfully registered service connector `aws-s3` with access to the following 
 ┃               │ s3://zenml-generative-chat            ┃
 ┃               │ s3://zenml-public-datasets            ┃
 ┃               │ s3://zenml-public-swagger-spec        ┃
-┃               │ s3://zenml-sandbox-infra              ┃
 ┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}

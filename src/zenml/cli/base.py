@@ -344,7 +344,7 @@ def go() -> None:
             try:
                 from git.repo.base import Repo
             except ImportError as e:
-                logger.error(
+                cli_utils.error(
                     "At this point we would want to clone our tutorial repo "
                     "onto your machine to let you dive right into our code. "
                     "However, this machine has no installation of Git. Feel "
@@ -370,7 +370,7 @@ def go() -> None:
                 )
                 copy_dir(example_dir, zenml_tutorial_path)
         else:
-            logger.warning(
+            cli_utils.warning(
                 f"{zenml_tutorial_path} already exists! Continuing without "
                 "cloning."
             )

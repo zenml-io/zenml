@@ -31,7 +31,7 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
-[custom output names](../advanced-guide/configure-steps-pipelines.md#step-output-names).
+[custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
@@ -174,7 +174,7 @@ config file from a pipeline.
 first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this page](../advanced-guide/configure-steps-pipelines.md#method-3-configuring-with-yaml)
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml)
 for more details.
 
 ## Code Example

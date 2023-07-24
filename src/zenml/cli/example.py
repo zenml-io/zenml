@@ -26,7 +26,14 @@ from rich.text import Text
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import confirmation, declare, error, print_table, warning
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    print_table,
+    warn_deprecated_example_subcommand,
+    warning,
+)
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
 from zenml.exceptions import GitNotFoundError
@@ -453,7 +460,7 @@ class ExamplesRepo:
         Args:
             branch: The name of the branch or tag to check out.
         """
-        logger.info(f"Checking out branch: {branch}")
+        declare(f"Checking out branch: {branch}")
         self.repo.git.checkout(branch)
 
     def checkout_latest_release(self) -> None:
@@ -647,6 +654,7 @@ def list_examples(git_examples_handler: GitExamplesHandler) -> None:
     Args:
         git_examples_handler: The GitExamplesHandler instance.
     """
+    warn_deprecated_example_subcommand()
     check_for_version_mismatch(git_examples_handler)
     examples = [
         {"example_name": example_.name}
@@ -675,6 +683,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
         git_examples_handler: The GitExamplesHandler instance.
         path: The path at which you want to clean the example(s).
     """
+    warn_deprecated_example_subcommand()
     examples_directory = os.path.join(os.getcwd(), path)
     if (
         fileio.exists(examples_directory)
@@ -711,6 +720,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
         git_examples_handler: The GitExamplesHandler instance.
         example_name: The name of the example.
     """
+    warn_deprecated_example_subcommand()
     check_for_version_mismatch(git_examples_handler)
 
     try:
@@ -786,6 +796,7 @@ def pull(
         branch: The branch of the ZenML repo to use for the force-redownloaded
             examples.
     """
+    warn_deprecated_example_subcommand()
     branch = branch.strip() if branch else f"release/{version}"
     git_examples_handler.pull(branch=branch, force=force)
 
@@ -881,6 +892,8 @@ def run(
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
     """
+    warn_deprecated_example_subcommand()
+
     check_for_version_mismatch(git_examples_handler)
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
