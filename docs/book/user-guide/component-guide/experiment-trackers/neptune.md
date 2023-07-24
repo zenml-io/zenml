@@ -44,8 +44,10 @@ token.
 
 You need to configure the following credentials for authentication to Neptune:
 
-* `api_token`: [API key token](https://docs.neptune.ai/setup/setting\_api\_token) of your Neptune account. If left
-  blank, Neptune will attempt to retrieve it from your environment variables.
+* `api_token`: [API key token](https://docs.neptune.ai/setup/setting\_api\_token) 
+  of your Neptune account. You can create a free Neptune account 
+  [here](https://app.neptune.ai/register). If left blank, Neptune will attempt 
+  to retrieve the token from your environment variables.
 * `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name". If the
   project is not specified, Neptune will attempt to retrieve it from your environment variables.
 
@@ -126,12 +128,12 @@ from zenml import step
 
 @step(experiment_tracker="<NEPTUNE_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        x_val: np.ndarray,
-        y_val: np.ndarray,
-        epochs: int = 5,
-        lr: float = 0.001
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_val: np.ndarray,
+    y_val: np.ndarray,
+    epochs: int = 5,
+    lr: float = 0.001
 ) -> tf.keras.Model:
     ...
     neptune_run = get_neptune_run()
@@ -145,8 +147,49 @@ def tf_trainer(
         ],
     )
 
+    metric = ...
+
+    neptune_run["<METRIC_NAME>"] = metric
+```
+
+{% hint style="info" %}
+Instead of hardcoding an experiment tracker name, you can also use the 
+[Client](../../advanced-guide/environment-management/client.md) to dynamically
+use the experiment tracker of your active stack:
+
+```python
+from zenml.client import Client
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+@step(experiment_tracker=experiment_tracker.name)
+def tf_trainer(...):
     ...
 ```
+{% endhint %}
+
+### Neptune UI
+
+Neptune comes with a web-based UI that you can use to find further details about 
+your tracked experiments. Each pipeline run will be logged as a separate 
+experiment run in Neptune, which you can inspect in the Neptune UI:
+
+![Neptune UI](../../../.gitbook/assets/NeptuneUI.png)
+
+You can find the URL of the Neptune experiment linked to a specific ZenML run 
+via the metadata of the step in which the experiment tracker was used:
+
+```python
+from zenml.client import Client
+
+last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
+trainer_step = last_run.get_step("<STEP_NAME>")
+tracking_url = trainer_step.metadata.get("experiment_tracker_url")
+print(tracking_url.value)
+```
+
+Alternatively, you can see an overview of all experiment runs at 
+https://app.neptune.ai/{ACCOUNT_USERNAME}/{PROJECT_NAME}.
 
 #### Additional configuration
 
@@ -174,9 +217,9 @@ neptune_settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
     }
 )
 def my_step(
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        model: tf.keras.Model,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
 ) -> float:
     """Log metadata to Neptune run"""
     neptune_run = get_neptune_run()
