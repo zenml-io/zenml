@@ -164,8 +164,11 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
 
-            run_environment = settings.run_args.pop("environment", {})
-            run_environment.update(environment)
+            docker_environment = settings.run_args.pop("environment", {})
+            docker_environment.update(environment)
+
+            docker_volumes = settings.run_args.pop("volumes", {})
+            docker_volumes.update(volumes)
 
             extra_hosts = settings.run_args.pop("extra_hosts", {})
             extra_hosts["host.docker.internal"] = "host-gateway"
@@ -176,8 +179,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     entrypoint=entrypoint,
                     command=arguments,
                     user=user,
-                    volumes=volumes,
-                    environment=run_environment,
+                    volumes=docker_volumes,
+                    environment=docker_environment,
                     stream=True,
                     extra_hosts=extra_hosts,
                     **settings.run_args,
