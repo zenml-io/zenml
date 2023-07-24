@@ -12,14 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
-
 import pandas as pd
-from typing_extensions import Annotated
 
 from zenml import step
 from zenml.client import Client
 from zenml.services import BaseService
+from zenml.steps import Output
 
 
 @step(enable_cache=False)
@@ -40,7 +38,7 @@ def prediction_service_loader() -> BaseService:
 def predictor(
     service: BaseService,
     data: pd.DataFrame,
-) -> Annotated[List[int], "predictions"]:
+) -> Output(predictions=list):
     """Run a inference request against a prediction service."""
     service.start(timeout=60)  # should be a NOP if already started
     prediction = service.predict(data.to_numpy())

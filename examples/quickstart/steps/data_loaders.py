@@ -12,25 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Tuple
-
 import numpy as np
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from typing_extensions import Annotated
 
 from zenml import step
+from zenml.steps import Output
 
 
 @step
 def training_data_loader() -> (
-    Tuple[
-        Annotated[pd.DataFrame, "X_train"],
-        Annotated[pd.DataFrame, "X_test"],
-        Annotated[pd.Series, "y_train"],
-        Annotated[pd.Series, "y_test"],
-    ]
+    Output(
+        X_train=pd.DataFrame,
+        X_test=pd.DataFrame,
+        y_train=pd.Series,
+        y_test=pd.Series,
+    )
 ):
     """Load the iris dataset as tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)
