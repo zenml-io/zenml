@@ -52,7 +52,7 @@ def evidently_report_step(
         download_nltk_data: whether to download the NLTK data for the report
             step. Defaults to False.
         suppress_missing_ignored_cols_error: If columns listed in `ignored_cols` are not
-            found in one of datasets `ValueError` is raised if this flag is set
+            found in one of the datasets, a `ValueError` is raised if this flag is set
             to `False`, otherwise it is supressed.
 
     Raises:
