@@ -18,7 +18,6 @@ from config import ModelMetadata
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 from steps import (
-    drift_build_report,
     drift_na_count,
     inference_data_loader,
     inference_data_preprocessor,
@@ -45,6 +44,8 @@ from zenml.integrations.constants import (
     SKLEARN,
     SLACK,
 )
+from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
+from zenml.integrations.evidently.steps import evidently_report_step
 from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
@@ -69,6 +70,7 @@ docker_settings = DockerSettings(
     settings={"docker": docker_settings},
     on_success=notify_on_success,
     on_failure=notify_on_failure,
+    extra={"tag": "production"},
 )
 def e2e_example_pipeline(
     artifact_path_train: Optional[str] = None,
@@ -182,14 +184,21 @@ def e2e_example_pipeline(
         path="/tmp/e2e_example.csv",
     )
     ########## DataQuality stage  ##########
-    report = drift_build_report(
-        dataset_trn=dataset_trn,
-        dataset_inf=dataset_inf,
+    report, _ = evidently_report_step(
+        reference_dataset=dataset_trn,
+        comparison_dataset=dataset_inf,
+        ignored_cols=["target"],
+        suppress_missing_ignored_cols_error=True,
+        metrics=[
+            EvidentlyMetricConfig.metric("DataQualityPreset"),
+        ],
     )
     drift_na_count(report)
     ### YOUR CODE ENDS HERE ###
 
     # TODO:
     # - exchange `preprocess_pipeline` via MlFlow or artifact store
-    # - [?] add HP tunning
+    # - !!! [?] add HP tunning
     # - [?] more real dataset loaded from artifact store or feature store (FS needs deploy and more effort)
+    # - CustomMaterializer - future effort
+    # - extra dict for pipeline config instead of pipeline.py
