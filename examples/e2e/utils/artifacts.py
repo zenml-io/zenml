@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from zenml import step
 from zenml.client import Client
@@ -10,7 +11,7 @@ logger = get_logger(__name__)
 @step
 def find_artifact_id(
     pipeline_name: str, artifact_name: str
-) -> Annotated[str, "artifact_id"]:
+) -> Annotated[UUID, "artifact_id"]:
     pipeline = Client().get_pipeline(pipeline_name)
     latest_run = pipeline.runs[0]
     artifacts = [a for a in latest_run.artifacts if a.name == artifact_name]
