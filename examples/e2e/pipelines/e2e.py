@@ -14,7 +14,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from config import ModelMetadata
+from config import MetaConfig
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 from steps import (
@@ -157,7 +157,7 @@ def e2e_example_pipeline(
     )
     mlflow_register_model_step(
         model,
-        name=ModelMetadata.mlflow_model_name,
+        name=MetaConfig.mlflow_model_name,
     )
 
     ########## Promotion stage ##########

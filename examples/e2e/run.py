@@ -16,7 +16,7 @@
 from datetime import datetime as dt
 
 import click
-from config import ModelMetadata
+from config import MetaConfig
 from pipelines import e2e_example_pipeline
 
 
@@ -181,7 +181,7 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
     # all steps in the pipeline in the correct order using the orchestrator
     # stack component that is configured in your active ZenML stack.
     pipeline_args = {
-        "run_name": f"{ModelMetadata.runs_prefix}{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        "run_name": f"{MetaConfig.runs_prefix}{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     }  # "e2e_example_run_{{date}}_{{time}}"}
     if no_cache:
         pipeline_args["enable_cache"] = False

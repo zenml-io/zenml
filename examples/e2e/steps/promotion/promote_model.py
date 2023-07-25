@@ -15,7 +15,7 @@
 from typing import Annotated
 
 import pandas as pd
-from config import ModelMetadata
+from config import MetaConfig
 from sklearn.metrics import accuracy_score
 from utils.predict import predict_as_dict
 
@@ -53,12 +53,12 @@ def promote_model(
 
     # TODO: change to `get_latest_model_version` after FRW-2163
     target_versions = model_registry.list_model_versions(
-        name=ModelMetadata.mlflow_model_name,
+        name=MetaConfig.mlflow_model_name,
         metadata={},
-        stage=ModelMetadata.target_env,
+        stage=MetaConfig.target_env,
     )
     none_versions = model_registry.list_model_versions(
-        name=ModelMetadata.mlflow_model_name,
+        name=MetaConfig.mlflow_model_name,
         metadata={},
         stage=None,
     )
@@ -77,7 +77,7 @@ def promote_model(
         latest_accuracy = accuracy_score(y, latest_predictions)
 
         logger.info(
-            f"Evaluating `{ModelMetadata.target_env.value}` model metrics..."
+            f"Evaluating `{MetaConfig.target_env.value}` model metrics..."
         )
         current_predictions = predict_as_dict(
             dataset=X,
@@ -103,25 +103,25 @@ def promote_model(
     if should_promote:
         if current_version:
             model_registry.update_model_version(
-                name=ModelMetadata.mlflow_model_name,
+                name=MetaConfig.mlflow_model_name,
                 version=current_version.version,
                 stage=ModelVersionStage.ARCHIVED,
                 metadata={},
             )
         model_registry.update_model_version(
-            name=ModelMetadata.mlflow_model_name,
+            name=MetaConfig.mlflow_model_name,
             version=latest_versions.version,
-            stage=ModelMetadata.target_env,
+            stage=MetaConfig.target_env,
             metadata={},
         )
 
     current_version = model_registry.list_model_versions(
-        name=ModelMetadata.mlflow_model_name,
+        name=MetaConfig.mlflow_model_name,
         metadata={},
-        stage=ModelMetadata.target_env,
+        stage=MetaConfig.target_env,
     )[0].version
     logger.info(
-        f"Current model version in `{ModelMetadata.target_env.value}` is `{current_version}`"
+        f"Current model version in `{MetaConfig.target_env.value}` is `{current_version}`"
     )
 
     return current_version

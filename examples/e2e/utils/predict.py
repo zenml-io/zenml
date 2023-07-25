@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import requests
-from config import ModelMetadata
+from config import MetaConfig
 
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
@@ -11,7 +11,7 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
 
 def predict_as_dict(dataset: pd.DataFrame, model_version: str):
     deployment: MLFlowDeploymentService = mlflow_model_registry_deployer_step(
-        registry_model_name=ModelMetadata.mlflow_model_name,
+        registry_model_name=MetaConfig.mlflow_model_name,
         registry_model_version=model_version,
     )
 
