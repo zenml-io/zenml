@@ -12,4 +12,5 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from .e2e import e2e_example_pipeline
+from .batch_inference import e2e_example_batch_inference
+from .training import e2e_example_training

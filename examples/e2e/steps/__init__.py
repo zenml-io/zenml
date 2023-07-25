@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from .alerts import notify_on_failure, notify_on_success
-from .data_quality import drift_build_report, drift_na_count
+from .data_quality import drift_na_count
 from .etl import (
     inference_data_loader,
     inference_data_preprocessor,

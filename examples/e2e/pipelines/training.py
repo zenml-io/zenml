@@ -14,15 +14,10 @@
 
 from typing import Any, Dict, List, Optional
 
-from config import MetaConfig
+from config import DOCKER_SETTINGS, MetaConfig
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 from steps import (
-    drift_na_count,
-    inference_data_loader,
-    inference_data_preprocessor,
-    inference_predict,
-    inference_save_results,
     model_evaluator,
     model_trainer,
     notify_on_failure,
@@ -34,18 +29,6 @@ from steps import (
 )
 
 from zenml import pipeline
-from zenml.config import DockerSettings
-from zenml.integrations.constants import (
-    AWS,
-    EVIDENTLY,
-    KUBEFLOW,
-    KUBERNETES,
-    MLFLOW,
-    SKLEARN,
-    SLACK,
-)
-from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
-from zenml.integrations.evidently.steps import evidently_report_step
 from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
@@ -53,28 +36,14 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-docker_settings = DockerSettings(
-    required_integrations=[
-        AWS,
-        EVIDENTLY,
-        KUBEFLOW,
-        KUBERNETES,
-        MLFLOW,
-        SKLEARN,
-        SLACK,
-    ],
-)
-
 
 @pipeline(
-    settings={"docker": docker_settings},
+    settings={"docker": DOCKER_SETTINGS},
     on_success=notify_on_success,
     on_failure=notify_on_failure,
-    extra={"tag": "production"},
 )
-def e2e_example_pipeline(
+def e2e_example_training(
     artifact_path_train: Optional[str] = None,
-    artifact_path_inference: Optional[str] = None,
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
@@ -104,7 +73,6 @@ def e2e_example_pipeline(
 
     Args:
         artifact_path_train: Path to train dataset on Artifact Store
-        artifact_path_inference: Path to inference dataset on Artifact Store
         test_size: Size of holdout sewt for training 0.0..1.0
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
@@ -128,11 +96,7 @@ def e2e_example_pipeline(
         dataset=raw_data,
         test_size=test_size,
     )
-    (
-        dataset_trn,
-        dataset_tst,
-        preprocess_pipeline,
-    ) = train_data_preprocessor(
+    dataset_trn, dataset_tst, _ = train_data_preprocessor(
         dataset_trn=dataset_trn,
         dataset_tst=dataset_tst,
         drop_na=drop_na,
@@ -161,44 +125,8 @@ def e2e_example_pipeline(
     )
 
     ########## Promotion stage ##########
-    model_version = promote_model(
+    promote_model(
         dataset_tst=dataset_tst,
         after=["mlflow_register_model_step"],
     )
-
-    ########## Inference stage  ##########
-    dataset_inf = inference_data_loader(
-        artifact_path=artifact_path_inference,
-        after=["promote_model"],
-    )
-    dataset_inf = inference_data_preprocessor(
-        dataset_inf=dataset_inf,
-        preprocess_pipeline=preprocess_pipeline,
-    )
-    predictions = inference_predict(
-        dataset_inf=dataset_inf,
-        model_version=model_version,
-    )
-    inference_save_results(
-        predictions=predictions,
-        path="/tmp/e2e_example.csv",
-    )
-    ########## DataQuality stage  ##########
-    report, _ = evidently_report_step(
-        reference_dataset=dataset_trn,
-        comparison_dataset=dataset_inf,
-        ignored_cols=["target"],
-        suppress_missing_ignored_cols_error=True,
-        metrics=[
-            EvidentlyMetricConfig.metric("DataQualityPreset"),
-        ],
-    )
-    drift_na_count(report)
     ### YOUR CODE ENDS HERE ###
-
-    # TODO:
-    # - exchange `preprocess_pipeline` via MlFlow or artifact store
-    # - !!! [?] add HP tunning
-    # - [?] more real dataset loaded from artifact store or feature store (FS needs deploy and more effort)
-    # - CustomMaterializer - future effort
-    # - extra dict for pipeline config instead of pipeline.py

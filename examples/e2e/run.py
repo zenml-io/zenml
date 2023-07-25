@@ -17,7 +17,7 @@ from datetime import datetime as dt
 
 import click
 from config import MetaConfig
-from pipelines import e2e_example_pipeline
+from pipelines import e2e_example_batch_inference, e2e_example_training
 
 
 @click.command(
@@ -180,15 +180,13 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
     # Run a pipeline with the required parameters. This executes
     # all steps in the pipeline in the correct order using the orchestrator
     # stack component that is configured in your active ZenML stack.
-    pipeline_args = {
-        "run_name": f"{MetaConfig.runs_prefix}{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    }  # "e2e_example_run_{{date}}_{{time}}"}
+    pipeline_args = {}
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    run_args = {}
+    run_args_train = {}
     if hyperparameters:
-        run_args["hyperparameters"] = {}
+        run_args_train["hyperparameters"] = {}
         for hp in hyperparameters.split(","):
             if hp:
                 name, value = hp.split("=")
@@ -196,9 +194,23 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
                     value = int(value)
                 elif value.replace(".", "").isnumeric():
                     value = float(value)
-                run_args["hyperparameters"][name] = value
+                run_args_train["hyperparameters"][name] = value
 
-    e2e_example_pipeline.with_options(**pipeline_args)(**run_args)
+    run_args_inference = {}
+
+    # Execute Training Pipeline
+    pipeline_args[
+        "run_name"
+    ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    e2e_example_training.with_options(**pipeline_args)(**run_args_train)
+
+    # Execute Batch Inference Pipeline
+    pipeline_args[
+        "run_name"
+    ] = f"{MetaConfig.pipeline_name_batch_inference}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    e2e_example_batch_inference.with_options(**pipeline_args)(
+        **run_args_inference
+    )
 
 
 if __name__ == "__main__":

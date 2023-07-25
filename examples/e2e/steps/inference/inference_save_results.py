@@ -16,7 +16,7 @@
 import pandas as pd
 
 from zenml import step
-from zenml.client import Client
+from zenml.io.fileio import open
 
 
 @step
@@ -42,7 +42,7 @@ def inference_save_results(predictions: pd.Series, path: str) -> None:
         None.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    artifact_store = Client().active_stack.artifact_store
-    with artifact_store.open(path, "w") as f:
+    # TODO: might be redundant
+    with open(path, "w") as f:
         predictions.to_csv(f)
     ### YOUR CODE ENDS HERE ###
