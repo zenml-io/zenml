@@ -22,7 +22,10 @@ from zenml import step
 from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
+from zenml.logger import get_logger
 from zenml.types import HTMLString
+
+logger = get_logger(__name__)
 
 
 @step
@@ -34,7 +37,6 @@ def evidently_report_step(
     metrics: Optional[List[EvidentlyMetricConfig]] = None,
     report_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
     download_nltk_data: bool = False,
-    suppress_missing_ignored_cols_error: bool = False,
 ) -> Tuple[
     Annotated[str, "report_json"], Annotated[HTMLString, "report_html"]
 ]:
@@ -52,9 +54,6 @@ def evidently_report_step(
             and a dictionary of options for the report.
         download_nltk_data: whether to download the NLTK data for the report
             step. Defaults to False.
-        suppress_missing_ignored_cols_error: If columns listed in `ignored_cols` are not
-            found in one of the datasets, a `ValueError` is raised if this flag is set
-            to `False`, otherwise it is suppressed.
 
     Raises:
         ValueError: If column is not found in reference or comparison
@@ -75,13 +74,11 @@ def evidently_report_step(
     if ignored_cols:
         exception_msg = (
             "Columns {extra_cols} configured in the `ignored_cols` "
-            "parameter are not found in the {dataset} dataset. "
-            "You can use `suppress_missing_ignored_cols_error=True` "
-            "if this is expected behavior."
+            "parameter are not found in the {dataset} dataset."
         )
         extra_cols = set(ignored_cols) - set(reference_dataset.columns)
-        if extra_cols and not suppress_missing_ignored_cols_error:
-            raise ValueError(
+        if extra_cols:
+            logger.warning(
                 exception_msg.format(
                     extra_cols=extra_cols, dataset="reference"
                 )
@@ -92,8 +89,8 @@ def evidently_report_step(
 
         if comparison_dataset is not None:
             extra_cols = set(ignored_cols) - set(comparison_dataset.columns)
-            if extra_cols and not suppress_missing_ignored_cols_error:
-                raise ValueError(
+            if extra_cols:
+                logger.warning(
                     exception_msg.format(
                         extra_cols=extra_cols, dataset="comparison"
                     )
