@@ -275,19 +275,20 @@ NOT_INSTALLED_MESSAGE = (
 )
 STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
 MLSTACKS_STACK_COMPONENT_FLAGS = [
-    "mlops_platform",
     "artifact_store",
-    "orchestrator",
-    "container_registry",
-    "model_deployer",
-    "experiment_tracker",
     "secrets_manager",
-    "step_operator",
+    "container_registry",
+    "mlops_platform",  # takes flavor
+    "orchestrator",  # takes flavor
+    "model_deployer",  # takes flavor
+    "experiment_tracker",  # takes flavor
+    "step_operator",  # takes flavor
 ]
 ALLOWED_FLAVORS = {
     "experiment_tracker": ["mlflow"],
     "model_deployer": ["seldon", "kserve"],
     "artifact_store": ["s3", "gcp", "minio"],
+    "mlops_platform": ["zenml"],
     "container_registry": ["gcp", "aws"],
     "orchestrator": [
         "kubernetes",
