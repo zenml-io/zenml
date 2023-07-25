@@ -509,7 +509,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model stage.
         if stage:
             try:
-                self.mlflow_client.transition_model_stage(
+                self.mlflow_client.transition_model_version_stage(
                     name=name,
                     version=version,
                     stage=stage.value,
