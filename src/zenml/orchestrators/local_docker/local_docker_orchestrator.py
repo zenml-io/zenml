@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local Docker orchestrator."""
 
+import copy
 import json
 import os
 import sys
@@ -164,13 +165,14 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
 
-            docker_environment = settings.run_args.pop("environment", {})
+            run_args = copy.deepcopy(settings.run_args)
+            docker_environment = run_args.pop("environment", {})
             docker_environment.update(environment)
 
-            docker_volumes = settings.run_args.pop("volumes", {})
+            docker_volumes = run_args.pop("volumes", {})
             docker_volumes.update(volumes)
 
-            extra_hosts = settings.run_args.pop("extra_hosts", {})
+            extra_hosts = run_args.pop("extra_hosts", {})
             extra_hosts["host.docker.internal"] = "host-gateway"
 
             try:
@@ -183,7 +185,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     environment=docker_environment,
                     stream=True,
                     extra_hosts=extra_hosts,
-                    **settings.run_args,
+                    **run_args,
                 )
 
                 for line in logs:
