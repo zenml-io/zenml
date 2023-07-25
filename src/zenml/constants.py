@@ -269,8 +269,8 @@ ALPHA_MESSAGE = (
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
 )
 NOT_INSTALLED_MESSAGE = (
-    "The `mlstacks` package seems to be unavailable on your machine. "
-    "To install the missing dependencies: \n\n"
+    "The `mlstacks` package seems to be unavailable on your machine and/or "
+    "in your environment. To install the missing dependencies: \n\n"
     f"`pip install mlstacks`."
 )
 STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
@@ -284,3 +284,17 @@ MLSTACKS_STACK_COMPONENT_FLAGS = [
     "secrets_manager",
     "step_operator",
 ]
+ALLOWED_FLAVORS = {
+    "experiment_tracker": ["mlflow"],
+    "model_deployer": ["seldon", "kserve"],
+    "artifact_store": ["s3", "gcp", "minio"],
+    "container_registry": ["gcp", "aws"],
+    "orchestrator": [
+        "kubernetes",
+        "kubeflow",
+        "tekton",
+        "sagemaker",
+        "vertex",
+    ],
+    "step_operator": ["sagemaker", "vertex"],
+}
