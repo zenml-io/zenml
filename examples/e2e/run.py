@@ -179,6 +179,10 @@ def main(no_cache: bool = False, no_hp_tunning: bool = False):
       * configuring pipeline with the required parameters
         (some of which may come from command line arguments)
       * launching the pipeline
+
+    Args:
+        no_cache: If `True` cache will be disabled.
+        no_hp_tunning: If `True` HP tunning will be disabled.
     """
 
     # Run a pipeline with the required parameters. This executes

@@ -61,7 +61,6 @@ def e2e_example_training(
     trains and evaluates a model.
 
     Args:
-        artifact_path_train: Path to train dataset on Artifact Store
         test_size: Size of holdout set for training 0.0..1.0
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler

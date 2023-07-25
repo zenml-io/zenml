@@ -69,8 +69,9 @@ def model_trainer(
 
     Args:
         dataset_trn: The preprocessed train dataset.
-        model_class: Name of a model architecture class to train with.
-        hyperparameters: Dictionary of initialization parameters to pass to the model class.
+        best_model_config: Dictionary describing best model from Hyperparameter tunning step.
+            It has `class` - a pointer to model class and `params` - dictionary of best possible
+            parameters.
         random_seed: Fixed seed of random generator.
 
     Returns:

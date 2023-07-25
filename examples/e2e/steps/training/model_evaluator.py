@@ -71,6 +71,9 @@ def model_evaluator(
         fail_on_accuracy_quality_gates: If `True` a `RuntimeException` is raised
             upon not meeting one of the minimal accuracy thresholds.
 
+    Raises:
+        RuntimeError: if any of accuracies is lower than respective threshold
+
     Returns:
         The model accuracy on the train and test set.
     """

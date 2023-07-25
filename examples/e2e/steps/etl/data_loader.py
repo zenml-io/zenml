@@ -44,6 +44,7 @@ def data_loader(
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
+        n_samples: number of records to generate.
         drop_target: If `True` `target` column will be removed from dataset.
 
     Returns:
