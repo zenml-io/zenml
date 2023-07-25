@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 from typing import List, Optional
 
 from config import MetaConfig, PipelinesConfig
@@ -53,20 +54,11 @@ def e2e_example_training(
     fail_on_accuracy_quality_gates: bool = False,
 ):
     """
-    Model training pipeline recipe.
+    Model training pipeline.
 
-    This is a recipe for a pipeline that loads the data, processes it and
-    splits it into train and test sets, then trains and evaluates a model
-    on it. It is agnostic of the actual step implementations and just defines
-    how the artifacts are circulated through the steps by calling them in the
-    right order and passing the output of one step as the input of the next
-    step.
-
-    The arguments that this function takes are instances of the steps that
-    are defined in the steps folder. Also note that the arguments passed to
-    the steps are step artifacts. If you use step parameters to configure the
-    steps, they must not be used here, but instead be used when the steps are
-    instantiated, before this function is called.
+    This is a pipeline that loads the data, processes it and splits
+    it into train and test sets, then search for best hyperparameters,
+    trains and evaluates a model.
 
     Args:
         artifact_path_train: Path to train dataset on Artifact Store
@@ -85,7 +77,6 @@ def e2e_example_training(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
-
     ########## ETL stage ##########
     raw_data = data_loader(
         n_samples=100_000,
@@ -103,7 +94,7 @@ def e2e_example_training(
         drop_columns=drop_columns,
     )
 
-    # HP #
+    ########## Hyperparameter tunning stage ##########
     best_model_config = model_hp_tunning(
         hp_tunning_enabled=hp_tunning_enabled,
         dataset_trn=dataset_trn,
