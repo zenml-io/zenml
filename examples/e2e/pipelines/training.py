@@ -18,12 +18,12 @@ from config import DOCKER_SETTINGS, MetaConfig
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 from steps import (
+    data_loader,
     model_evaluator,
     model_trainer,
     notify_on_failure,
     notify_on_success,
     promote_model,
-    train_data_loader,
     train_data_preprocessor,
     train_data_splitter,
 )
@@ -43,7 +43,6 @@ logger = get_logger(__name__)
     on_failure=notify_on_failure,
 )
 def e2e_example_training(
-    artifact_path_train: Optional[str] = None,
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
@@ -73,13 +72,13 @@ def e2e_example_training(
 
     Args:
         artifact_path_train: Path to train dataset on Artifact Store
-        test_size: Size of holdout sewt for training 0.0..1.0
+        test_size: Size of holdout set for training 0.0..1.0
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
         drop_columns: List of columns to drop from dataset
         model_class: Class of model architecture to use on training
-        hyperparameters: Dictonary of Hyperparameters passed to model init
-        random_seed: Seed of randomizer
+        hyperparameters: Dictionary of Hyperparameters passed to model init
+        random_seed: Seed of random generator,
         min_train_accuracy: Threshold to stop execution if train set accuracy is lower
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
         fail_on_accuracy_quality_gates: If `True` and `min_train_accuracy` or `min_test_accuracy`
@@ -91,7 +90,10 @@ def e2e_example_training(
     # of one step as the input of the next step.
 
     ########## ETL stage ##########
-    raw_data = train_data_loader(artifact_path=artifact_path_train)
+    raw_data = data_loader(
+        n_samples=100_000,
+        drop_target=False,
+    )
     dataset_trn, dataset_tst = train_data_splitter(
         dataset=raw_data,
         test_size=test_size,

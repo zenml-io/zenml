@@ -15,9 +15,8 @@
 from .alerts import notify_on_failure, notify_on_success
 from .data_quality import drift_na_count
 from .etl import (
-    inference_data_loader,
+    data_loader,
     inference_data_preprocessor,
-    train_data_loader,
     train_data_preprocessor,
     train_data_splitter,
 )

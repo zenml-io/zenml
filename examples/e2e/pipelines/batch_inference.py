@@ -16,8 +16,8 @@ from typing import Optional
 
 from config import DOCKER_SETTINGS, MetaConfig
 from steps import (
+    data_loader,
     drift_na_count,
-    inference_data_loader,
     inference_data_preprocessor,
     inference_predict,
     notify_on_failure,
@@ -66,8 +66,9 @@ def e2e_example_batch_inference(
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## ETL stage  ##########
-    dataset_inf = inference_data_loader(
-        artifact_path=artifact_path_inference,
+    dataset_inf = data_loader(
+        n_samples=10_000,
+        drop_target=True,
     )
     preprocess_pipeline_id = find_artifact_id(
         pipeline_name=MetaConfig.pipeline_name_training,
