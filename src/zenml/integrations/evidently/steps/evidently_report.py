@@ -55,10 +55,6 @@ def evidently_report_step(
         download_nltk_data: whether to download the NLTK data for the report
             step. Defaults to False.
 
-    Raises:
-        ValueError: If column is not found in reference or comparison
-            dataset
-
     Returns:
         A tuple containing the Evidently report in JSON and HTML
         formats.
@@ -74,7 +70,7 @@ def evidently_report_step(
     if ignored_cols:
         exception_msg = (
             "Columns {extra_cols} configured in the `ignored_cols` "
-            "parameter are not found in the {dataset} dataset."
+            "parameter are not found in the {dataset} dataset. "
         )
         extra_cols = set(ignored_cols) - set(reference_dataset.columns)
         if extra_cols:
