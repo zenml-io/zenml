@@ -18,6 +18,11 @@ from datetime import datetime as dt
 import click
 from config import MetaConfig
 from pipelines import e2e_example_batch_inference, e2e_example_training
+from utils.artifacts import find_artifact_id
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @click.command(
@@ -203,6 +208,7 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
         "run_name"
     ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_example_training.with_options(**pipeline_args)(**run_args_train)
+    logger.info(f"Training pipeline finished successfully!")
 
     # Execute Batch Inference Pipeline
     pipeline_args[
@@ -210,6 +216,12 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
     ] = f"{MetaConfig.pipeline_name_batch_inference}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_example_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
+    )
+
+    logger.info(
+        "Batch inference pipeline finished successfully! "
+        "You can find predictions in Artifact Store using ID: "
+        f"{str(find_artifact_id(pipeline_name=MetaConfig.pipeline_name_batch_inference,artifact_name='predictions'))}."
     )
 
 

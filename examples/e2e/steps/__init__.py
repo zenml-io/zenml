@@ -21,6 +21,6 @@ from .etl import (
     train_data_preprocessor,
     train_data_splitter,
 )
-from .inference import inference_predict, inference_save_results
+from .inference import inference_predict
 from .promotion import promote_model
 from .training import model_evaluator, model_trainer

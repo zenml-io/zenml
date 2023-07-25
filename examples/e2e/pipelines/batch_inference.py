@@ -20,7 +20,6 @@ from steps import (
     inference_data_loader,
     inference_data_preprocessor,
     inference_predict,
-    inference_save_results,
     notify_on_failure,
     notify_on_success,
 )
@@ -99,13 +98,9 @@ def e2e_example_batch_inference(
         pipeline_name=MetaConfig.pipeline_name_training,
         artifact_name="model_version",
     )
-    predictions = inference_predict(
+    inference_predict(
         dataset_inf=dataset_inf,
         model_version=ExternalArtifact(id=model_version_id),
         after=["drift_na_count"],
-    )
-    inference_save_results(
-        predictions=predictions,
-        path="/tmp/e2e_example.csv",
     )
     ### YOUR CODE ENDS HERE ###
