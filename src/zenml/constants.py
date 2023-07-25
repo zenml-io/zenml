@@ -274,29 +274,3 @@ NOT_INSTALLED_MESSAGE = (
     f"`pip install mlstacks`."
 )
 STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
-MLSTACKS_STACK_COMPONENT_FLAGS = [
-    "artifact_store",
-    "container_registry",
-    "secrets_manager",
-    "experiment_tracker",  # takes flavor
-    "orchestrator",  # takes flavor
-    "mlops_platform",  # takes flavor
-    "model_deployer",  # takes flavor
-    "step_operator",  # takes flavor
-]
-ALLOWED_FLAVORS = {
-    "artifact_store": ["s3", "gcp", "minio", True, False],
-    "container_registry": ["gcp", "aws", True, False],
-    "secrets_manager": ["aws", "gcp", True, False],
-    "experiment_tracker": ["mlflow"],
-    "orchestrator": [
-        "kubernetes",
-        "kubeflow",
-        "tekton",
-        "sagemaker",
-        "vertex",
-    ],
-    "mlops_platform": ["zenml"],
-    "model_deployer": ["seldon", "kserve"],
-    "step_operator": ["sagemaker", "vertex"],
-}

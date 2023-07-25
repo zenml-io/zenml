@@ -40,7 +40,6 @@ from typing import (
 )
 
 import click
-import pkg_resources
 import yaml
 from pydantic import SecretStr
 from rich import box, table
@@ -50,19 +49,19 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
+from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     APP_NAME,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
-    MLSTACKS_STACK_COMPONENT_FLAGS,
-    NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
     STACK_RECIPE_TERRAFORM_FILES_PATH,
 )
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.mlstacks.utils import verify_mlstacks_installation
 from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
@@ -2472,12 +2471,6 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
 
 
 # MLSTACKS UTIL FUNCTIONS
-def verify_mlstacks_installation() -> None:
-    """Checks if the `mlstacks` package is installed."""
-    try:
-        import mlstacks  # noqa: F401
-    except ImportError:
-        error(NOT_INSTALLED_MESSAGE)
 
 
 def get_recipe_names() -> List[str]:
@@ -2526,20 +2519,6 @@ def get_recipe_path(recipe_name: str) -> Optional[str]:
         return
 
     return recipe_path
-
-
-def get_mlstacks_version() -> Optional[str]:
-    """Gets the version of mlstacks locally installed.
-
-    Raises:
-        pkg_resources.DistributionNotFound: If mlstacks is not installed.
-    """
-    try:
-        return pkg_resources.get_distribution(
-            STACK_RECIPE_PACKAGE_NAME
-        ).version
-    except pkg_resources.DistributionNotFound:
-        return
 
 
 def get_recipe_readme(recipe_name: str) -> Optional[str]:
@@ -2607,6 +2586,7 @@ def generate_unique_recipe_directory_name(recipe_name: str) -> str:
     return f"{recipe_name}_{timestamp}_{random_string}"
 
 
+# TODO: move this to mlstacks utils
 def generate_and_copy_spec_files(
     temp_dir: str, stack_config: MlstacksSpec
 ) -> None:
@@ -2616,6 +2596,8 @@ def generate_and_copy_spec_files(
         temp_dir: The path to the temporary directory to copy the spec files to.
         stack_config: The stack configuration to use.
     """
+    from mlstacks.constants import MLSTACKS_STACK_COMPONENT_FLAGS
+
     components = []
     for component_flag in MLSTACKS_STACK_COMPONENT_FLAGS:
         flavor_value = getattr(stack_config, component_flag)

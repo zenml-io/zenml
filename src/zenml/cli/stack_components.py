@@ -1131,17 +1131,18 @@ def generate_stack_component_deploy_command(
         type=str,
     )
     @click.option(
-        "--cloud",
-        "-c",
-        "cloud",
+        "--provider",
+        "-p",
+        "provider",
+        required=True,
         type=click.Choice(["aws", "gcp", "k3d"]),
-        help="The cloud provider to use to deploy the stack component.",
+        help="The cloud (or local provider) to use to deploy the stack component.",
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def deploy_stack_component_command(
         name: str,
         flavor: str,
-        cloud: str,
+        provider: str,
         args: List[str],
     ) -> None:
         """Deploy a stack component.
@@ -1151,51 +1152,35 @@ def generate_stack_component_deploy_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            cloud: Cloud provider to use to deploy the stack component.
+            provider: Cloud provider (or local) to use to deploy the stack component.
             args: Additional arguments to pass to the component.
 
         Raises:
             error: If the component type is not supported.
         """
-        # generate a python dict with the above structure
-        # and then use it to check if the flavor is valid
-        # for the given component type
-        allowed_flavors = {
-            "experiment_tracker": ["mlflow"],
-            "model_deployer": ["seldon", "kserve"],
-            "artifact_store": ["s3", "gcp", "minio"],
-            "container_registry": ["gcp", "aws"],
-            "orchestrator": [
-                "kubernetes",
-                "kubeflow",
-                "tekton",
-                "sagemaker",
-                "vertex",
-            ],
-            "step_operator": ["sagemaker", "vertex"],
-        }
+        from mlstacks.constants import ALLOWED_FLAVORS
 
-        # if the flavor is not allowed for the given component type
-        # raise an error
-        if flavor not in allowed_flavors[component_type.value]:
+        if flavor not in ALLOWED_FLAVORS[component_type.value]:
             cli_utils.error(
                 f"Flavor '{flavor}' is not supported for "
                 f"{_component_display_name(component_type, True)}. "
                 "Allowed flavors are: "
-                f"{', '.join(allowed_flavors[component_type.value])}."
+                f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
             )
 
         # for cases like artifact store, secrets manager and container registry
         # the flavor is the same as the cloud
-        if flavor in ["s3", "sagemaker", "aws"]:
-            cloud = "aws"
-        elif flavor in ["vertex", "gcp"]:
-            cloud = "gcp"
-        elif cloud is None:
-            raise cli_utils.error(
-                f"Cloud must be specified while deploying {flavor} "
-                f"{_component_display_name(component_type, True)}."
-                " Allowed clouds are: aws, gcp, k3d."
+        if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
+            cli_utils.error(
+                f"Flavor '{flavor}' is not supported for "
+                f"{_component_display_name(component_type, True)} on "
+                f"{provider}."
+            )
+        elif flavor in {"vertex", "gcp"} and provider != "gcp":
+            cli_utils.error(
+                f"Flavor '{flavor}' is not supported for "
+                f"{_component_display_name(component_type, True)} on "
+                f"{provider}."
             )
 
         client = Client()

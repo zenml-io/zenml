@@ -16,15 +16,19 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 import click
 from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
-from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
+from zenml.constants import (
+    ALPHA_MESSAGE,
+    STACK_RECIPE_MODULAR_RECIPES,
+)
 from zenml.logger import get_logger
+from zenml.mlstacks.utils import stack_exists, verify_mlstacks_installation
 from zenml.models.mlstacks_models import MlstacksSpec
 from zenml.recipes import GitStackRecipesHandler
 from zenml.recipes.stack_recipe_service import (
@@ -542,7 +546,7 @@ def version() -> None:
 #             )
 
 
-@stack_recipe.command(help="Deploy a stack using mlstacks.")
+@stack.command(help="Deploy a stack using mlstacks.")
 @click.option(
     "--provider",
     "-p",
@@ -624,14 +628,6 @@ def version() -> None:
     help="The flavor of experiment tracker to use.",
 )
 @click.option(
-    "--secrets-manager",
-    "-x",
-    "secrets_manager",
-    is_flag=True,
-    required=False,
-    help="Whether to deploy a secrets manager.",
-)
-@click.option(
     "--step-operator",
     "-s",
     "step_operator",
@@ -653,7 +649,15 @@ def version() -> None:
     "tags",
     required=False,
     type=click.STRING,
-    help="Pass one or more values using JSON format.",
+    help="Pass one or more extra configuration values.",
+    multiple=True,
+)
+@click.option(
+    "--extra-config",
+    "-x",
+    "extra_config",
+    multiple=True,
+    help="Extra configurations as key=value pairs. This option can be used multiple times.",
 )
 @click.pass_context
 def deploy(
@@ -661,17 +665,17 @@ def deploy(
     provider: str,
     stack_name: str,
     region: str,
-    import_stack_flag: Optional[bool] = None,
     mlops_platform: Optional[str] = None,
-    artifact_store: Optional[bool] = None,
     orchestrator: Optional[str] = None,
-    container_registry: Optional[bool] = None,
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
-    secrets_manager: Optional[bool] = None,
     step_operator: Optional[str] = None,
+    import_stack_flag: Optional[bool] = None,
+    artifact_store: Optional[bool] = None,
+    container_registry: Optional[bool] = None,
     file: Optional[str] = None,
-    tags: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    extra_config: Optional[List[str]] = None,
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -696,15 +700,50 @@ def deploy(
             there's only one flavor per cloud provider and that will be deployed.
         model_deployer: The flavor of model deployer to deploy.
         experiment_tracker: The flavor of experiment tracker to deploy.
-        secrets_manager: The flavor of secrets manager to deploy. In the case of
-            the secrets manager, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
         step_operator: The flavor of step operator to deploy.
-        config: Use a YAML or JSON configuration or configuration file to pass
-            variables to the stack recipe.
+        extra_config: Extra configurations as key=value pairs.
     """
-    cli_utils.verify_mlstacks_installation()
+    if stack_exists(stack_name):
+        cli_utils.error(
+            f"Stack with name {stack_name} already exists. Please choose a "
+            "different name."
+        )
+    verify_mlstacks_installation()
+
     cli_utils.warning(ALPHA_MESSAGE)
+
+    cli_params: Dict[str, Any] = ctx.params
+
+    stack, components = convert_click_params_to_mlstacks_primitives(cli_params)
+    breakpoint()
+    # components = {
+    #     k: v
+    #     for k, v in {
+    #         "artifact_store": provider if artifact_store else None,
+    #         "container_registry": provider if container_registry else None,
+    #         "experiment_tracker": experiment_tracker,
+    #         "orchestrator": orchestrator,
+    #         "model_deployer": model_deployer,
+    #         "mlops_platform": mlops_platform,
+    #         "step_operator": step_operator,
+    #     }.items()
+    #     if v
+    # }
+    from mlstacks.utils import zenml_utils
+
+    if not zenml_utils.has_valid_flavor_combinations(cli_params):
+        cli_utils.error(
+            "The specified flavors are not compatible with the provider "
+            "or with one another. Please try again."
+        )
+
+    breakpoint()
+
+    # Parse the given args
+    # name is guaranteed to be set by parse_name_and_extra_arguments
+    name, parsed_args = cli_utils.parse_name_and_extra_arguments(
+        list(extra_config) + [name], expand_args=True
+    )
 
     from mlstacks.utils import terraform_utils
 
