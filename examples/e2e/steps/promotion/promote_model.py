@@ -17,10 +17,13 @@ from typing import Annotated
 import pandas as pd
 from config import MetaConfig
 from sklearn.metrics import accuracy_score
-from utils.predict import predict_as_dict
 
 from zenml import step
 from zenml.client import Client
+from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import ModelVersionStage
 
@@ -37,9 +40,9 @@ def promote_model(
 
     This is an example of a model promotion step. It will retrieve 2 model
     versions from Model Registry: latest and currently promoted to target
-    envirnment (Production, Staging, etc) and compare than on recent test
+    environment (Production, Staging, etc) and compare than on recent test
     dataset in order to define if newly trained model is performing better
-    or not. If new model versionb is better by metric - it will get relevant
+    or not. If new model version is better by metric - it will get relevant
     tag, otherwise previously promoted model version will remain.
 
     Args:
@@ -70,19 +73,26 @@ def promote_model(
         X = dataset_tst.drop(columns=["target"])
         y = dataset_tst["target"]
         logger.info("Evaluating latest model metrics...")
-        latest_predictions = predict_as_dict(
-            dataset=X,
-            model_version=latest_versions.version,
+
+        latest_deployment: MLFlowDeploymentService = (
+            mlflow_model_registry_deployer_step(
+                registry_model_name=MetaConfig.mlflow_model_name,
+                registry_model_version=latest_versions.version,
+            )
         )
+        latest_predictions = latest_deployment.predict(request=X)
         latest_accuracy = accuracy_score(y, latest_predictions)
 
         logger.info(
             f"Evaluating `{MetaConfig.target_env.value}` model metrics..."
         )
-        current_predictions = predict_as_dict(
-            dataset=X,
-            model_version=current_version.version,
+        current_deployment: MLFlowDeploymentService = (
+            mlflow_model_registry_deployer_step(
+                registry_model_name=MetaConfig.mlflow_model_name,
+                registry_model_version=current_version.version,
+            )
         )
+        current_predictions = current_deployment.predict(request=X)
         current_accuracy = accuracy_score(y, current_predictions)
         logger.info(
             f"Latest model accuracy is {latest_accuracy*100:.2f}%, current model accuracy is {current_accuracy*100:.2f}%"

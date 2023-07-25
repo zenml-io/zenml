@@ -15,9 +15,15 @@
 from typing import Annotated
 
 import pandas as pd
-from utils.predict import predict_as_dict
+from config import MetaConfig
 
 from zenml import step
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowDeploymentService,
+)
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 
 
 @step
@@ -27,19 +33,21 @@ def inference_predict(
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns
-    preidcted values.
+    predicted values.
 
     Args:
-        dataset_inf: The inferece dataset.
+        dataset_inf: The inference dataset.
         model_version: Model Version in Model Registry.
 
     Returns:
         The processed dataframe: dataset_inf.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    predictions = predict_as_dict(
-        dataset=dataset_inf, model_version=model_version
+    deployment: MLFlowDeploymentService = mlflow_model_registry_deployer_step(
+        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_version=model_version,
     )
+    predictions = deployment.predict(request=dataset_inf)
     predictions = pd.Series(predictions, name="predicted")
     ### YOUR CODE ENDS HERE ###
 
