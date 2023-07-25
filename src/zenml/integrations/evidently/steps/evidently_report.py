@@ -54,7 +54,7 @@ def evidently_report_step(
             step. Defaults to False.
         suppress_missing_ignored_cols_error: If columns listed in `ignored_cols` are not
             found in one of the datasets, a `ValueError` is raised if this flag is set
-            to `False`, otherwise it is supressed.
+            to `False`, otherwise it is suppressed.
 
     Raises:
         ValueError: If column is not found in reference or comparison
