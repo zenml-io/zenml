@@ -509,7 +509,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model stage.
         if stage:
             try:
-                self.mlflow_client.transition_model_stage(
+                self.mlflow_client.transition_model_version_stage(
                     name=name,
                     version=version,
                     stage=stage.value,
@@ -608,12 +608,22 @@ class MLFlowModelRegistry(BaseModelRegistry):
             filter_string=filter_string,
         )
         # Cast the MLflow model versions to the ZenML model version class.
-        model_versions = [
-            self._cast_mlflow_version_to_model_version(
-                mlflow_model_version=mlflow_model_version,
-            )
-            for mlflow_model_version in mlflow_model_versions
-        ]
+        model_versions = []
+        for mlflow_model_version in mlflow_model_versions:
+            try:
+                model_versions.append(
+                    self._cast_mlflow_version_to_model_version(
+                        mlflow_model_version=mlflow_model_version,
+                    )
+                )
+            except (AttributeError, OSError) as e:
+                # Sometimes, the Model Registry in MLflow can become unusable
+                # due to failed version registration or misuse. In such rare
+                # cases, it's best to suppress those versions that are not usable.
+                logger.warning(
+                    f"Error encountered while loading MLflow model version: {e}"
+                )
+
         # Filter the model versions by stage.
         if stage:
             model_versions = [
