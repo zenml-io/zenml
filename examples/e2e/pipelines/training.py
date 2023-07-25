@@ -14,7 +14,7 @@
 
 from typing import List, Optional
 
-from config import DOCKER_SETTINGS, MetaConfig
+from config import MetaConfig, PipelinesConfig
 from steps import (
     data_loader,
     model_evaluator,
@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 
 
 @pipeline(
-    settings={"docker": DOCKER_SETTINGS},
+    settings={"docker": PipelinesConfig.docker_settings},
     on_success=notify_on_success,
     on_failure=notify_on_failure,
 )

@@ -15,8 +15,21 @@ from zenml.integrations.constants import (
 )
 from zenml.model_registries.base_model_registry import ModelVersionStage
 
-NOTIFY_ON_SUCCESS = False
-NOTIFY_ON_FAILURE = False
+
+class PipelinesConfig(BaseConfig):
+    notify_on_success = False
+    notify_on_failure = False
+    docker_settings = DockerSettings(
+        required_integrations=[
+            AWS,
+            EVIDENTLY,
+            KUBEFLOW,
+            KUBERNETES,
+            MLFLOW,
+            SKLEARN,
+            SLACK,
+        ],
+    )
 
 
 class MetaConfig(BaseConfig):
@@ -51,16 +64,3 @@ class MetaConfig(BaseConfig):
             min_samples_leaf=3,
         ),
     }
-
-
-DOCKER_SETTINGS = DockerSettings(
-    required_integrations=[
-        AWS,
-        EVIDENTLY,
-        KUBEFLOW,
-        KUBERNETES,
-        MLFLOW,
-        SKLEARN,
-        SLACK,
-    ],
-)

@@ -1,4 +1,4 @@
-from config import NOTIFY_ON_FAILURE, NOTIFY_ON_SUCCESS
+from config import PipelinesConfig
 
 from zenml import get_step_context
 from zenml.client import Client
@@ -19,10 +19,10 @@ def get_slack_message(status: str) -> str:
 
 
 def notify_on_failure() -> None:
-    if NOTIFY_ON_FAILURE:
+    if PipelinesConfig.notify_on_failure:
         alerter.post(message=get_slack_message(status="failed"))
 
 
 def notify_on_success() -> None:
-    if NOTIFY_ON_SUCCESS:
+    if PipelinesConfig.notify_on_success:
         alerter.post(message=get_slack_message(status="succeeded"))
