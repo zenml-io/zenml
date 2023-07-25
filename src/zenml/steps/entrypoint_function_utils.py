@@ -148,6 +148,8 @@ class EntrypointFunctionDefinition(NamedTuple):
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
                 annotated as an `UnmaterializedArtifact`.
+            RuntimeError: If the input value is not valid for the type
+                annotation provided for the function parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
@@ -173,7 +175,14 @@ class EntrypointFunctionDefinition(NamedTuple):
                 "is not allowed."
             )
 
-        self._validate_input_value(parameter=parameter, value=value)
+        try:
+            self._validate_input_value(parameter=parameter, value=value)
+        except ValidationError as e:
+            raise RuntimeError(
+                f"Input validation failed for input '{parameter.name}': "
+                f"Expected type `{parameter.annotation}` but received type "
+                f"`{type(value)}`."
+            ) from e
 
         if not yaml_utils.is_json_serializable(value):
             raise StepInterfaceError(
@@ -190,10 +199,6 @@ class EntrypointFunctionDefinition(NamedTuple):
         Args:
             parameter: The function parameter for which the value was provided.
             value: The input value.
-
-        Raises:
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
         """
 
         class ModelConfig(BaseConfig):
@@ -207,11 +212,7 @@ class EntrypointFunctionDefinition(NamedTuple):
             __config__=ModelConfig,
             value=(parameter.annotation, ...),
         )
-
-        try:
-            validation_model_class(value=value)
-        except ValidationError as e:
-            raise RuntimeError("Input validation failed.") from e
+        validation_model_class(value=value)
 
 
 def validate_entrypoint_function(
