@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Evidently Report Step."""
+
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
@@ -81,7 +82,9 @@ def evidently_report_step(
         extra_cols = set(ignored_cols) - set(reference_dataset.columns)
         if extra_cols and not suppress_missing_ignored_cols_error:
             raise ValueError(
-                exception_msg.format(extra_cols=extra_cols, dataset="reference")
+                exception_msg.format(
+                    extra_cols=extra_cols, dataset="reference"
+                )
             )
         reference_dataset = reference_dataset.drop(
             labels=list(set(ignored_cols) - extra_cols), axis=1
@@ -91,7 +94,9 @@ def evidently_report_step(
             extra_cols = set(ignored_cols) - set(comparison_dataset.columns)
             if extra_cols and not suppress_missing_ignored_cols_error:
                 raise ValueError(
-                    exception_msg.format(extra_cols=extra_cols, dataset="comparison")
+                    exception_msg.format(
+                        extra_cols=extra_cols, dataset="comparison"
+                    )
                 )
 
             comparison_dataset = comparison_dataset.drop(
