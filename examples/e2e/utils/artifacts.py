@@ -26,6 +26,18 @@ def find_artifact_id(
     pipeline_name: str,
     artifact_name: str,
 ) -> Annotated[UUID, "artifact_id"]:
+    """Find Artifact ID in Artifact Store.
+
+    Args:
+        pipeline_name: Name of a pipeline, which generated Artifact.
+        pipeline_name: Name of an Artifact to search for.
+
+    Raises:
+        ValueError: If Artifact cannot be found.
+
+    Returns:
+        UUID: Found UUID in Artifact Store
+    """
     pipeline = Client().get_pipeline(pipeline_name)
     latest_run = pipeline.runs[0]
     artifacts = [a for a in latest_run.artifacts if a.name == artifact_name]

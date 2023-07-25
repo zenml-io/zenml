@@ -46,6 +46,13 @@ def promote_model(
     or not. If new model version is better by metric - it will get relevant
     tag, otherwise previously promoted model version will remain.
 
+    This step is parameterized, which allows you to configure the step
+    independently of the step code, before running it in a pipeline.
+    In this example, the step can be configured to use different input data.
+    See the documentation for more information:
+
+        https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
+
     Args:
         dataset_tst: The test dataset.
 

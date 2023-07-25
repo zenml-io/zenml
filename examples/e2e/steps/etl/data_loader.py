@@ -16,7 +16,7 @@
 from typing import Annotated
 
 import pandas as pd
-from utils.misc import gen_data
+from utils.misc import generate_random_data
 
 from zenml import step
 from zenml.client import Client
@@ -51,7 +51,7 @@ def data_loader(
         The dataset artifact as Pandas DataFrame.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    dataset = gen_data(n_samples=n_samples)
+    dataset = generate_random_data(n_samples=n_samples)
     if drop_target:
         dataset.drop(columns=["target"], inplace=True)
     logger.info(f"Dataset with {len(dataset)} records generated!")

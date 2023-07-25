@@ -19,7 +19,15 @@ import pandas as pd
 from sklearn.datasets import make_classification
 
 
-def gen_data(n_samples: int):
+def generate_random_data(n_samples: int) -> pd.DataFrame:
+    """Generate random data for model input.
+
+    Args:
+        n_samples: Number of records to generate.
+
+    Returns:
+        pd.DataFrame: Generated dataset for classification task.
+    """
     n_features = 20
     X, y = make_classification(
         n_samples=n_samples,

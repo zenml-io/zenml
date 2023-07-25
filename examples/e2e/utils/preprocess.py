@@ -19,6 +19,8 @@ import pandas as pd
 
 
 class NADropper:
+    """Support class to drop NA values in sklearn Pipeline."""
+
     def fit(self, *args, **kwargs):
         return self
 
@@ -27,6 +29,8 @@ class NADropper:
 
 
 class ColumnsDropper:
+    """Support class to drop specific columns in sklearn Pipeline."""
+
     def __init__(self, columns):
         self.columns = columns
 
