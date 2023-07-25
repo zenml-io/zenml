@@ -17,10 +17,16 @@ from typing import Annotated, Tuple
 
 import mlflow
 import pandas as pd
+from config import MetaConfig
 from sklearn.base import ClassifierMixin
 
-from steps.training.common import TARGET_COLUMN, experiment_tracker, logger
 from zenml import step
+from zenml.client import Client
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+experiment_tracker = Client().active_stack.experiment_tracker
 
 
 @step(experiment_tracker=experiment_tracker.name)
@@ -71,11 +77,13 @@ def model_evaluator(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Calculate the model accuracy on the train and test set
     trn_acc = model.score(
-        dataset_trn.drop(columns=[TARGET_COLUMN]), dataset_trn[TARGET_COLUMN]
+        dataset_trn.drop(columns=[MetaConfig.target_column]),
+        dataset_trn[MetaConfig.target_column],
     )
     logger.info(f"Train accuracy: {trn_acc}")
     tst_acc = model.score(
-        dataset_tst.drop(columns=[TARGET_COLUMN]), dataset_tst[TARGET_COLUMN]
+        dataset_tst.drop(columns=[MetaConfig.target_column]),
+        dataset_tst[MetaConfig.target_column],
     )
     logger.info(f"Test accuracy: {tst_acc}")
 

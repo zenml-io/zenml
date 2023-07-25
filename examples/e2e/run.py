@@ -44,8 +44,8 @@ Examples:
   python run.py --no-cache
 
   \b
-  # Run the pipeline with custom model hyperparameters
-  python run.py --hyperparameters C=0.1,max_iter=1000
+  # Run the pipeline without Hyperparameter tunning
+  python run.py --no-hp-tunning
 """
 )
 @click.option(
@@ -116,11 +116,10 @@ Examples:
 #     "pipeline runs.",
 # )
 @click.option(
-    "--hyperparameters",
-    default=None,
-    type=click.STRING,
-    help="Comma-separated list of hyper-parameters to pass to the model "
-    "trainer (e.g. `C=0.1,max_iter=1000`).",
+    "--no-hp-tunning",
+    is_flag=True,
+    default=False,
+    help="Whether to skip Hyperparameter tunning step and use default model.",
 )
 # @click.option(
 #     "--min-train-accuracy",
@@ -172,7 +171,7 @@ Examples:
 #     fail_on_eval_warnings: bool = False,
 # {%- endif %}
 # ):
-def main(no_cache: bool = False, hyperparameters: str = ""):
+def main(no_cache: bool = False, no_hp_tunning: bool = False):
     """Main entry point for the pipeline execution.
 
     This entrypoint is where everything comes together:
@@ -189,17 +188,7 @@ def main(no_cache: bool = False, hyperparameters: str = ""):
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    run_args_train = {}
-    if hyperparameters:
-        run_args_train["hyperparameters"] = {}
-        for hp in hyperparameters.split(","):
-            if hp:
-                name, value = hp.split("=")
-                if value.isnumeric():
-                    value = int(value)
-                elif value.replace(".", "").isnumeric():
-                    value = float(value)
-                run_args_train["hyperparameters"][name] = value
+    run_args_train = {"hp_tunning_enabled": not no_hp_tunning}
 
     run_args_inference = {}
 

@@ -1,23 +1,34 @@
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any, Dict
 
 import mlflow
 import pandas as pd
+from config import MetaConfig
 from sklearn.base import ClassifierMixin
 
-from steps.training.common import (
-    TARGET_COLUMN,
-    experiment_tracker,
-    logger,
-    supported_models,
-)
 from zenml import step
+from zenml.client import Client
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, MLFlowExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a MLFlow experiment tracker for "
+        "this example to work."
+    )
 
 
 @step(experiment_tracker=experiment_tracker.name)
 def model_trainer(
     dataset_trn: pd.DataFrame,
-    model_class: str = "LogisticRegression",
-    hyperparameters: Optional[Dict[str, Any]] = None,
+    best_model_config: Dict[str, Any],
     random_seed: int = 42,
 ) -> Annotated[ClassifierMixin, "model"]:
     """Configure and train a model on the training dataset.
@@ -45,7 +56,7 @@ def model_trainer(
         dataset_trn: The preprocessed train dataset.
         model_class: Name of a model architecture class to train with.
         hyperparameters: Dictionary of initialization parameters to pass to the model class.
-        random_seed: Fixed seed of randomizer.
+        random_seed: Fixed seed of random generator.
 
     Returns:
         The trained model artifact.
@@ -54,8 +65,8 @@ def model_trainer(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Initialize the model with the hyperparameters indicated in the step
     # parameters and train it on the training set.
-    hyperparameters = hyperparameters or {}
-    model_class = supported_models.get(model_class)
+    hyperparameters = best_model_config["params"]
+    model_class = best_model_config["class"]
     if "random_seed" in model_class.__init__.__code__.co_varnames:
         model = model_class(random_seed=random_seed, **hyperparameters)
     else:
@@ -64,7 +75,8 @@ def model_trainer(
     logger.info(f"Training model {model}...")
     mlflow.sklearn.autolog()
     model.fit(
-        dataset_trn.drop(columns=[TARGET_COLUMN]), dataset_trn[TARGET_COLUMN]
+        dataset_trn.drop(columns=[MetaConfig.target_column]),
+        dataset_trn[MetaConfig.target_column],
     )
     ### YOUR CODE ENDS HERE ###
 

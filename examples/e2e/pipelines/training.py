@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from config import DOCKER_SETTINGS, MetaConfig
-from sklearn.base import ClassifierMixin
-from sklearn.linear_model import LogisticRegression
 from steps import (
     data_loader,
     model_evaluator,
+    model_hp_tunning,
     model_trainer,
     notify_on_failure,
     notify_on_success,
@@ -47,8 +46,7 @@ def e2e_example_training(
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
     drop_columns: Optional[List[str]] = None,
-    model_class: ClassifierMixin = LogisticRegression,
-    hyperparameters: Dict[str, Any] = None,
+    hp_tunning_enabled: bool = True,
     random_seed: int = 42,
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
@@ -76,8 +74,7 @@ def e2e_example_training(
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
         drop_columns: List of columns to drop from dataset
-        model_class: Class of model architecture to use on training
-        hyperparameters: Dictionary of Hyperparameters passed to model init
+        hp_tunning_enabled: If `True` hyperparameter search would happen.
         random_seed: Seed of random generator,
         min_train_accuracy: Threshold to stop execution if train set accuracy is lower
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
@@ -106,11 +103,17 @@ def e2e_example_training(
         drop_columns=drop_columns,
     )
 
+    # HP #
+    best_model_config = model_hp_tunning(
+        hp_tunning_enabled=hp_tunning_enabled,
+        dataset_trn=dataset_trn,
+        dataset_tst=dataset_tst,
+    )
+
     ########## Training stage ##########
     model = model_trainer(
         dataset_trn=dataset_trn,
-        model_class=model_class.__name__,
-        hyperparameters=hyperparameters,
+        best_model_config=best_model_config,
         random_seed=random_seed,
     )
     model_evaluator(
