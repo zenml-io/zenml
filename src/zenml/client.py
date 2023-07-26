@@ -588,9 +588,7 @@ class Client(metaclass=ClientMetaClass):
             The configuration directory of this client, or None, if the
             client doesn't have an active root.
         """
-        if not self.root:
-            return None
-        return self.root / REPOSITORY_DIRECTORY_NAME
+        return self.root / REPOSITORY_DIRECTORY_NAME if self.root else None
 
     def activate_root(self, root: Optional[Path] = None) -> None:
         """Set the active repository root directory.
@@ -663,11 +661,7 @@ class Client(metaclass=ClientMetaClass):
             The model of the created user.
         """
         user = UserRequestModel(name=name, password=password or None)
-        if self.zen_store.type != StoreType.REST:
-            user.active = password != ""
-        else:
-            user.active = True
-
+        user.active = password != "" if self.zen_store.type != StoreType.REST else True
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
@@ -880,10 +874,10 @@ class Client(metaclass=ClientMetaClass):
         """
         user_list = []
         if users:
-            for user_name_or_id in users:
-                user_list.append(
-                    self.get_user(name_id_or_prefix=user_name_or_id).id
-                )
+            user_list.extend(
+                self.get_user(name_id_or_prefix=user_name_or_id).id
+                for user_name_or_id in users
+            )
 
         team = TeamRequestModel(name=name, users=user_list)
 
