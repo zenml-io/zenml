@@ -89,6 +89,7 @@ def model_evaluator(
         dataset_tst[MetaConfig.target_column],
     )
     logger.info(f"Test accuracy: {tst_acc}")
+    mlflow.log_metric("testing_accuracy_score", tst_acc)
 
     messages = []
     if trn_acc < min_train_accuracy:
@@ -108,6 +109,5 @@ def model_evaluator(
         for message in messages:
             logger.warning(message)
 
-    mlflow.log_metric("testing_accuracy_score", tst_acc)
     ### YOUR CODE ENDS HERE ###
     return trn_acc, tst_acc
