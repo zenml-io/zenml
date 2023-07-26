@@ -21,7 +21,6 @@ class BaseNodeDetails(BaseModel):
 
     execution_id: str
     name: str
-    status: str
 
 
 class BaseNode(BaseModel):

@@ -25,6 +25,7 @@ from zenml.lineage_graph.node import (
     StepNode,
     StepNodeDetails,
 )
+from zenml.lineage_graph.node.artifact_node import ArtifactNodeStatus
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -83,12 +84,18 @@ class LineageGraph(BaseModel):
         # Add nodes and edges for all output artifacts
         for artifact_name, artifact in step.outputs.items():
             artifact_id = ARTIFACT_PREFIX + str(artifact.id)
+            if step.status == ExecutionStatus.CACHED:
+                artifact_status = ArtifactNodeStatus.CACHED
+            elif step.status == ExecutionStatus.COMPLETED:
+                artifact_status = ArtifactNodeStatus.CREATED
+            else:
+                artifact_status = ArtifactNodeStatus.UNKNOWN
             self.add_artifact_node(
                 artifact=artifact,
                 id=artifact_id,
                 name=artifact_name,
                 step_id=str(step_id),
-                status=step.status,
+                status=artifact_status,
             )
             self.add_edge(step_id, artifact_id)
 
@@ -113,7 +120,7 @@ class LineageGraph(BaseModel):
                         id=artifact_id,
                         name=artifact_name,
                         step_id=str(artifact.producer_step_run_id),
-                        status="External",
+                        status=ArtifactNodeStatus.EXTERNAL,
                     )
 
     def add_direct_edges(self, run: "PipelineRunResponseModel") -> None:
@@ -194,7 +201,7 @@ class LineageGraph(BaseModel):
         id: str,
         name: str,
         step_id: str,
-        status: str,
+        status: ArtifactNodeStatus,
     ) -> None:
         """Adds an artifact node to the lineage graph.
 
@@ -211,7 +218,7 @@ class LineageGraph(BaseModel):
                 execution_id=str(artifact.id),
                 name=name,
                 status=status,
-                is_cached=status == ExecutionStatus.CACHED,
+                is_cached=status == ArtifactNodeStatus.CACHED,
                 artifact_type=artifact.type,
                 artifact_data_type=artifact.data_type.import_path,
                 parent_step_id=step_id,
