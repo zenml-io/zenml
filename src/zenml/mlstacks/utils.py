@@ -172,19 +172,20 @@ def _add_extra_config_to_components(
     # Process each component
     for component in components:
         component_metadata = ComponentMetadata()
+        component_metadata.config = {}
+
         for config_keys, extra_keys in config_map.items():
             if all(
                 getattr(component, config_key, None) == config_key
                 for config_key in config_keys
             ):
                 _add_config(component_metadata, extra_keys)
-        component.metadata = component_metadata
 
         # always add project_id to gcp components
         if component.provider == "gcp":
             project_id = extra_config.get("project_id")
             if project_id:
-                component.metadata.config["project_id"] = extra_config.get(
+                component_metadata.config["project_id"] = extra_config.get(
                     "project_id"
                 )
             else:
@@ -192,6 +193,9 @@ def _add_extra_config_to_components(
                     "No `project_id` is included. Please try again with "
                     "`--extra-config project_id=<project_id>`"
                 )
+
+        component.metadata = component_metadata
+
     return components
 
 
@@ -258,7 +262,7 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     return Stack(
         spec_version=1,
         spec_type="stack",
-        name=params["name"],
+        name=params["stack_name"],
         provider=params["provider"],
         default_region=params["region"],
         default_tags=tags,
@@ -286,6 +290,6 @@ def convert_click_params_to_mlstacks_primitives(
     # writes the file names to the stack spec
     # using format '<provider>-<component_name>.yaml'
     for component in components:
-        stack.components.append(f"{stack.provider}-{component.name}.yaml")
+        stack.components.append(f"{component.name}.yaml")
 
     return stack, components
