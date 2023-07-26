@@ -21,6 +21,10 @@ from .etl import (
     train_data_preprocessor,
     train_data_splitter,
 )
-from .inference import inference_predict
-from .promotion import promote_model
+from .inference import inference_predict, inference_get_current_version
+from .promotion import (
+    promote_metric_compare_promoter,
+    promote_get_versions,
+    promote_get_metric,
+)
 from .training import model_evaluator, model_trainer, model_hp_tuning

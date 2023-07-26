@@ -16,41 +16,51 @@
 from typing import Annotated
 
 import pandas as pd
+from sklearn.metrics import accuracy_score
 
 from zenml import step
-from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
-    MLFlowDeploymentService,
-)
+from zenml.client import Client
+from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+model_registry = Client().active_stack.model_registry
 
 
 @step
-def inference_predict(
+def promote_get_metric(
+    dataset_tst: pd.DataFrame,
     deployment_service: MLFlowDeploymentService,
-    dataset_inf: pd.DataFrame,
-) -> Annotated[pd.Series, "predictions"]:
-    """Predictions step.
+) -> Annotated[float, "metric"]:
+    """Get metric for comparison for one model deployment.
 
-    This is an example of a predictions step that takes the data in and returns
-    predicted values.
+    This is an example of a metric calculation step. It get a model deployment
+    service and computes metric on recent test dataset.
 
     This step is parameterized, which allows you to configure the step
     independently of the step code, before running it in a pipeline.
-    In this example, the step can be configured to use different input data
-    and model version in registry. See the documentation for more information:
+    In this example, the step can be configured to use different input data.
+    See the documentation for more information:
 
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
-        deployment_service: Deployed model service.
-        dataset_inf: The inference dataset.
+        dataset_tst: The test dataset.
+        deployment_service: Model version deployment.
 
     Returns:
-        The processed dataframe: dataset_inf.
+        Metric value for a given deployment on test set.
+
     """
+
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    predictions = deployment_service.predict(request=dataset_inf)
-    predictions = pd.Series(predictions, name="predicted")
+    X = dataset_tst.drop(columns=["target"])
+    y = dataset_tst["target"]
+    logger.info("Evaluating model metrics...")
+
+    predictions = deployment_service.predict(request=X)
+    metric = accuracy_score(y, predictions)
     deployment_service.deprovision(force=True)
     ### YOUR CODE ENDS HERE ###
-
-    return predictions
+    return metric

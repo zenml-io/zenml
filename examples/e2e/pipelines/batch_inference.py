@@ -18,6 +18,7 @@ from steps import (
     data_loader,
     drift_na_count,
     inference_data_preprocessor,
+    inference_get_current_version,
     inference_predict,
     notify_on_failure,
     notify_on_success,
@@ -77,12 +78,11 @@ def e2e_example_batch_inference():
     drift_na_count(report)
 
     ########## Inference stage  ##########
+    registry_model_version = inference_get_current_version()
     deployment_service = mlflow_model_registry_deployer_step(
         registry_model_name=MetaConfig.mlflow_model_name,
-        registry_model_version=ExternalArtifact(
-            pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="model_version",
-        ),
+        registry_model_version=registry_model_version,
+        replace_existing=False,
     )
     inference_predict(
         deployment_service=deployment_service,

@@ -23,12 +23,17 @@ from steps import (
     model_trainer,
     notify_on_failure,
     notify_on_success,
-    promote_model,
+    promote_get_metric,
+    promote_get_versions,
+    promote_metric_compare_promoter,
     train_data_preprocessor,
     train_data_splitter,
 )
 
 from zenml import pipeline
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
@@ -119,10 +124,40 @@ def e2e_example_training(
     )
 
     ########## Promotion stage ##########
-    promote_model(
-        dataset_tst=dataset_tst,
+    latest_version, current_version = promote_get_versions(
         after=["mlflow_register_model_step"],
     )
+    latest_deployment = mlflow_model_registry_deployer_step(
+        id="deploy_latest_model_version",
+        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_version=latest_version,
+        replace_existing=False,
+    )
+    latest_metric = promote_get_metric(
+        id="get_metrics_latest_model_version",
+        dataset_tst=dataset_tst,
+        deployment_service=latest_deployment,
+    )
 
-    notify_on_success(after=["promote_model"])
+    current_deployment = mlflow_model_registry_deployer_step(
+        id="deploy_current_model_version",
+        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_version=current_version,
+        replace_existing=False,
+        after=["get_metrics_latest_model_version"],
+    )
+    current_metric = promote_get_metric(
+        id="get_metrics_current_model_version",
+        dataset_tst=dataset_tst,
+        deployment_service=current_deployment,
+    )
+
+    promote_metric_compare_promoter(
+        latest_metric=latest_metric,
+        current_metric=current_metric,
+        latest_version=latest_version,
+        current_version=current_version,
+    )
+
+    notify_on_success(after=["promote_metric_compare_promoter"])
     ### YOUR CODE ENDS HERE ###
