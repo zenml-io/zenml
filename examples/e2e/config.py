@@ -32,8 +32,8 @@ from zenml.model_registries.base_model_registry import ModelVersionStage
 
 
 class PipelinesConfig(BaseConfig):
-    notify_on_success = False
-    notify_on_failure = False
+    notify_on_success = True
+    notify_on_failure = True
     docker_settings = DockerSettings(
         required_integrations=[
             AWS,

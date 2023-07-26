@@ -39,7 +39,6 @@ logger = get_logger(__name__)
 
 @pipeline(
     settings={"docker": PipelinesConfig.docker_settings},
-    on_success=notify_on_success,
     on_failure=notify_on_failure,
 )
 def e2e_example_training(
@@ -124,4 +123,6 @@ def e2e_example_training(
         dataset_tst=dataset_tst,
         after=["mlflow_register_model_step"],
     )
+
+    notify_on_success(after=["promote_model"])
     ### YOUR CODE ENDS HERE ###
