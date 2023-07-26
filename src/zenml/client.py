@@ -556,11 +556,10 @@ class Client(metaclass=ClientMetaClass):
             True if the file is inside the active ZenML repository, False
             otherwise.
         """
-        repo_path = Client.find_repository()
-        if not repo_path:
-            return False
-
-        return repo_path in Path(file_path).resolve().parents
+        if repo_path := Client.find_repository():
+            return repo_path in Path(file_path).resolve().parents
+        else:
+             return False
 
     @property
     def zen_store(self) -> "BaseZenStore":
