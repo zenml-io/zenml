@@ -143,29 +143,7 @@ class ExternalArtifact:
         """
         artifact_store_id = Client().active_stack.artifact_store.id
 
-        if self._id:
-            response = Client().get_artifact(artifact_id=self._id)
-            if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError(
-                    f"The artifact {response.name} (ID: {response.id}) "
-                    "referenced by an external artifact is not stored in the "
-                    "artifact store of the active stack. This will lead to "
-                    "issues loading the artifact. Please make sure to only "
-                    "reference artifacts stored in your active artifact store."
-                )
-        elif self._pipeline_name and self._artifact_name:
-            pipeline = Client().get_pipeline(self._pipeline_name)
-            for artifact in pipeline.last_successful_run.artifacts:
-                if artifact.name == self._artifact_name:
-                    self._id = artifact.id
-                    break
-            else:
-                raise ValueError(
-                    f"Artifact with name `{self._artifact_name}` was not found "
-                    f"in last successful run of pipeline `{self._pipeline_name}`. "
-                    "Please check your inputs and try again."
-                )
-        else:
+        if self._value:
             assert self._value is not None
 
             logger.info("Uploading external artifact...")
@@ -200,6 +178,32 @@ class ExternalArtifact:
             logger.info(
                 "Finished uploading external artifact %s.", artifact_id
             )
+        else:
+            if self._id:
+                response = Client().get_artifact(artifact_id=self._id)
+            else:
+                pipeline = Client().get_pipeline(self._pipeline_name)
+                response = None
+                for artifact in pipeline.last_successful_run.artifacts:
+                    if artifact.name == self._artifact_name:
+                        response = artifact
+                        break
+                if response is None:
+                    raise ValueError(
+                        f"Artifact with name `{self._artifact_name}` was not found "
+                        f"in last successful run of pipeline `{self._pipeline_name}`. "
+                        "Please check your inputs and try again."
+                    )
+                self._id = response.id
+
+            if response.artifact_store_id != artifact_store_id:
+                raise RuntimeError(
+                    f"The artifact {response.name} (ID: {response.id}) "
+                    "referenced by an external artifact is not stored in the "
+                    "artifact store of the active stack. This will lead to "
+                    "issues loading the artifact. Please make sure to only "
+                    "reference artifacts stored in your active artifact store."
+                )
 
         return self._id
 
