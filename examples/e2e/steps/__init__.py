@@ -27,4 +27,5 @@ from .promotion import (
     promote_get_versions,
     promote_get_metric,
 )
-from .training import model_evaluator, model_trainer, model_hp_tuning
+from .training import model_evaluator, model_trainer
+from .hp_tuning import hp_tuning_single_search, hp_tuning_select_best_model

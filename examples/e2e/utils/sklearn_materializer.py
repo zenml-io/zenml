@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Type
+from typing import Any, Dict, Type
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -11,8 +11,18 @@ class ClassifierMixinMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (dict,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[dict]) -> dict:
-        """Read from artifact store."""
+    def load(self, data_type: Type[dict]) -> Dict[str, Any]:
+        """Read from artifact store.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Raises:
+            ValueError: on deserialization issue
+
+        Returns:
+            Read artifact.
+        """
         import sklearn.ensemble
         import sklearn.linear_model
         import sklearn.tree
@@ -36,7 +46,11 @@ class ClassifierMixinMaterializer(BaseMaterializer):
         return my_obj
 
     def save(self, my_obj: dict) -> None:
-        """Write to artifact store."""
+        """Write to artifact store.
+
+        Args:
+            my_obj: The data of the artifact to save.
+        """
         with fileio.open(os.path.join(self.uri, "data.json"), "w") as f:
             my_obj["class"] = my_obj["class"].__name__
             f.write(json.dumps(my_obj))

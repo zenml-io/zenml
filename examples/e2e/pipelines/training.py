@@ -18,8 +18,9 @@ from typing import List, Optional
 from config import MetaConfig, PipelinesConfig
 from steps import (
     data_loader,
+    hp_tuning_select_best_model,
+    hp_tuning_single_search,
     model_evaluator,
-    model_hp_tuning,
     model_trainer,
     notify_on_failure,
     notify_on_success,
@@ -98,11 +99,23 @@ def e2e_example_training(
     )
 
     ########## Hyperparameter tuning stage ##########
-    best_model_config = model_hp_tuning(
-        hp_tuning_enabled=hp_tuning_enabled,
-        dataset_trn=dataset_trn,
-        dataset_tst=dataset_tst,
-    )
+    if hp_tuning_enabled:
+        after = []
+        search_steps_prefix = "hp_tuning_search_"
+        for i, config_key in enumerate(MetaConfig.supported_models):
+            step_name = f"{search_steps_prefix}{i}"
+            hp_tuning_single_search(
+                id=step_name,
+                config_key=config_key,
+                dataset_trn=dataset_trn,
+                dataset_tst=dataset_tst,
+            )
+            after.append(step_name)
+        best_model_config = hp_tuning_select_best_model(
+            search_steps_prefix=search_steps_prefix, after=after
+        )
+    else:
+        best_model_config = MetaConfig.default_model_config
 
     ########## Training stage ##########
     model = model_trainer(
