@@ -918,8 +918,7 @@ class Client(metaclass=ClientMetaClass):
 
         team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
-            union_add_rm = set(remove_users) & set(add_users)
-            if union_add_rm:
+            if union_add_rm := set(remove_users) & set(add_users):
                 raise RuntimeError(
                     f"The `remove_user` and `add_user` "
                     f"options both contain the same value(s): "
@@ -930,10 +929,7 @@ class Client(metaclass=ClientMetaClass):
 
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
-        team_users = []
-
-        if remove_users or add_users:
-            team_users = [u.id for u in team.users]
+        team_users = [u.id for u in team.users] if remove_users or add_users else []
         if remove_users:
             for rm_p in remove_users:
                 user = self.get_user(rm_p)
@@ -945,9 +941,7 @@ class Client(metaclass=ClientMetaClass):
                         f"part of the '{team.name}' Team."
                     )
         if add_users:
-            for add_u in add_users:
-                team_users.append(self.get_user(add_u).id)
-
+            team_users.extend(self.get_user(add_u).id for add_u in add_users)
         if team_users:
             team_update.users = team_users
 
