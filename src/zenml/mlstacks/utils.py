@@ -233,7 +233,7 @@ def _construct_components(params: Dict[str, Any]) -> List["Component"]:
     return components
 
 
-def _get_tags(tags: Dict[str, str]) -> Dict[str, str]:
+def _get_stack_tags(tags: Dict[str, str]) -> Dict[str, str]:
     """Gets and parses tags from Click params.
 
     Args:
@@ -257,7 +257,7 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     verify_mlstacks_installation()
     from mlstacks.models import Stack
 
-    tags = _get_tags(params["tags"])
+    tags = _get_stack_tags(params["tags"])
 
     return Stack(
         spec_version=1,
