@@ -190,7 +190,7 @@ def main(
     logger.info(
         "Batch inference pipeline finished successfully! "
         "You can find predictions in Artifact Store using ID: "
-        f"{str(find_artifact_id(pipeline_name=MetaConfig.pipeline_name_batch_inference,artifact_name='predictions'))}."
+        f"`{str(find_artifact_id(pipeline_name=MetaConfig.pipeline_name_batch_inference,artifact_name='predictions'))}`."
     )
 
 

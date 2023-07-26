@@ -18,7 +18,7 @@ from typing import Annotated, List, Optional, Tuple
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
-from utils.preprocess import ColumnsDropper, NADropper
+from utils.preprocess import ColumnsDropper, DataFrameCaster, NADropper
 
 from zenml import step
 
@@ -73,6 +73,9 @@ def train_data_preprocessor(
     if normalize:
         # Normalize the data
         preprocess_pipeline.steps.append(("normalize", MinMaxScaler()))
+    preprocess_pipeline.steps.append(
+        ("cast", DataFrameCaster(dataset_trn.columns))
+    )
     dataset_trn = preprocess_pipeline.fit_transform(dataset_trn)
     dataset_tst = preprocess_pipeline.transform(dataset_tst)
     ### YOUR CODE ENDS HERE ###
