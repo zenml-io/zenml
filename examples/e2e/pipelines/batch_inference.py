@@ -27,6 +27,9 @@ from utils.artifacts import find_artifact_id
 from zenml import pipeline
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import evidently_report_step
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 from zenml.logger import get_logger
 from zenml.steps.external_artifact import ExternalArtifact
 
@@ -35,7 +38,6 @@ logger = get_logger(__name__)
 
 @pipeline(
     settings={"docker": PipelinesConfig.docker_settings},
-    on_success=notify_on_success,
     on_failure=notify_on_failure,
 )
 def e2e_example_batch_inference():
@@ -82,9 +84,15 @@ def e2e_example_batch_inference():
         pipeline_name=MetaConfig.pipeline_name_training,
         artifact_name="model_version",
     )
+    deployment_service = mlflow_model_registry_deployer_step(
+        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_version=ExternalArtifact(id=model_version_id),
+    )
     inference_predict(
+        deployment_service=deployment_service,
         dataset_inf=dataset_inf,
-        model_version=ExternalArtifact(id=model_version_id),
         after=["drift_na_count"],
     )
+
+    notify_on_success(after=["inference_predict"])
     ### YOUR CODE ENDS HERE ###

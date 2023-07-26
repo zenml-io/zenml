@@ -16,20 +16,17 @@
 from typing import Annotated
 
 import pandas as pd
-from config import MetaConfig
 
 from zenml import step
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowDeploymentService,
 )
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
-)
 
 
 @step
 def inference_predict(
-    dataset_inf: pd.DataFrame, model_version: str
+    deployment_service: MLFlowDeploymentService,
+    dataset_inf: pd.DataFrame,
 ) -> Annotated[pd.Series, "predictions"]:
     """Predictions step.
 
@@ -44,18 +41,14 @@ def inference_predict(
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
+        deployment_service: Deployed model service.
         dataset_inf: The inference dataset.
-        model_version: Model Version in Model Registry.
 
     Returns:
         The processed dataframe: dataset_inf.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    deployment: MLFlowDeploymentService = mlflow_model_registry_deployer_step(
-        registry_model_name=MetaConfig.mlflow_model_name,
-        registry_model_version=model_version,
-    )
-    predictions = deployment.predict(request=dataset_inf)
+    predictions = deployment_service.predict(request=dataset_inf)
     predictions = pd.Series(predictions, name="predicted")
     ### YOUR CODE ENDS HERE ###
 
