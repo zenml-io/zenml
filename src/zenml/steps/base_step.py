@@ -341,11 +341,11 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             A dictionary containing the caching parameters
         """
-        parameters = {}
-        parameters[
-            STEP_SOURCE_PARAMETER_NAME
-        ] = source_code_utils.get_hashed_source_code(self.source_object)
-
+        parameters = {
+            STEP_SOURCE_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
+                self.source_object
+            )
+        }
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
