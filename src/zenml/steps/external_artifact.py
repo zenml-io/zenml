@@ -157,7 +157,8 @@ class ExternalArtifact:
             pipeline = Client().get_pipeline(self._pipeline_name)
             for artifact in pipeline.last_successful_run.artifacts:
                 if artifact.name == self._artifact_name:
-                    return artifact.id
+                    self._id = artifact.id
+                    break
             else:
                 raise ValueError(
                     f"Artifact with name `{self._artifact_name}` was not found "
