@@ -28,7 +28,13 @@ from zenml.constants import (
     STACK_RECIPE_MODULAR_RECIPES,
 )
 from zenml.logger import get_logger
-from zenml.mlstacks.utils import stack_exists, verify_mlstacks_installation
+from zenml.mlstacks.utils import (
+    convert_click_params_to_mlstacks_primitives,
+    convert_mlstacks_primitives_to_dicts,
+    stack_exists,
+    stack_spec_exists,
+    verify_mlstacks_installation,
+)
 from zenml.models.mlstacks_models import MlstacksSpec
 from zenml.recipes import GitStackRecipesHandler
 from zenml.recipes.stack_recipe_service import (
@@ -36,6 +42,8 @@ from zenml.recipes.stack_recipe_service import (
 )
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 
@@ -580,6 +588,22 @@ def version() -> None:
     help="Import the stack automatically after the stack is deployed.",
 )
 @click.option(
+    "--artifact-store",
+    "-a",
+    "artifact_store",
+    required=False,
+    is_flag=True,
+    help="Whether to deploy an artifact store.",
+)
+@click.option(
+    "--container-registry",
+    "-c",
+    "container_registry",
+    required=False,
+    is_flag=True,
+    help="Whether to deploy a container registry.",
+)
+@click.option(
     "--mlops-platform",
     "-m",
     "mlops_platform",
@@ -589,27 +613,14 @@ def version() -> None:
     "If not specified, the default MLOps platform will be used.",
 )
 @click.option(
-    "--artifact-store",
-    "-a",
-    "artifact_store",
-    required=False,
-    is_flag=True,
-    help="Whether to deploy an artifact store.",
-)
-@click.option(
     "--orchestrator",
     "-o",
     required=False,
+    type=click.Choice(
+        ["kubernetes", "kubeflow", "tekton", "sagemaker", "vertex"]
+    ),
     help="The flavor of orchestrator to use. "
     "If not specified, the default orchestrator will be used.",
-)
-@click.option(
-    "--container-registry",
-    "-c",
-    "container_registry",
-    required=False,
-    is_flag=True,
-    help="Whether to deploy a container registry.",
 )
 @click.option(
     "--model-deployer",
@@ -705,47 +716,82 @@ def deploy(
     """
     if stack_exists(stack_name):
         cli_utils.error(
-            f"Stack with name {stack_name} already exists. Please choose a "
+            f"Stack with name '{stack_name}' already exists. Please choose a "
             "different name."
         )
+    elif stack_spec_exists(stack_name):
+        cli_utils.error(
+            f"Stack spec with name '{stack_name}' already exists. "
+            "Please choose a different name."
+        )
+
     verify_mlstacks_installation()
+    from mlstacks.utils import zenml_utils
 
     cli_utils.warning(ALPHA_MESSAGE)
 
     cli_params: Dict[str, Any] = ctx.params
-
     stack, components = convert_click_params_to_mlstacks_primitives(cli_params)
-    breakpoint()
-    # components = {
-    #     k: v
-    #     for k, v in {
-    #         "artifact_store": provider if artifact_store else None,
-    #         "container_registry": provider if container_registry else None,
-    #         "experiment_tracker": experiment_tracker,
-    #         "orchestrator": orchestrator,
-    #         "model_deployer": model_deployer,
-    #         "mlops_platform": mlops_platform,
-    #         "step_operator": step_operator,
-    #     }.items()
-    #     if v
-    # }
-    from mlstacks.utils import zenml_utils
 
-    if not zenml_utils.has_valid_flavor_combinations(cli_params):
+    if not zenml_utils.has_valid_flavor_combinations(stack, components):
         cli_utils.error(
-            "The specified flavors are not compatible with the provider "
-            "or with one another. Please try again."
+            "The specified stack and component flavors are not compatible "
+            "with the provider or with one another. Please try again."
         )
 
-    breakpoint()
+    stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+        stack, components
+    )
+
+    # write the stack and component yaml files
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+    spec_dir = (
+        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+    )
+    create_dir_recursive_if_not_exists(spec_dir)
+
+    stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+    write_yaml(file_path=stack_file_path, contents=stack_dict)
+    for component in component_dicts:
+        write_yaml(
+            file_path=f"{spec_dir}/{component['name']}.yaml",
+            contents=component,
+        )
+
+    from mlstacks.utils import terraform_utils
+
+    # TODO: remove debug_mode=True
+    terraform_utils.deploy_stack(stack_file_path, debug_mode=True)
+
+    if import_stack_flag:
+        pass
+        # TODO: get the stack file from the tf directory and import it!
+    #     from zenml.client import Client
+
+    #     client = Client()
+    #     component_mapping = {}
+    #     for component in component_dicts:
+    #         component_metadata = component.get("metadata")
+
+    #         client.create_stack_component(
+    #             name=component["name"],
+    #             component_type=component["component_type"],
+    #             flavor=component["component_flavor"],
+    #             configuration=component_metadata.get("config") or {},
+    #         )
+    #         component_mapping[component["component_type"]] = component["name"]
+    #     client.create_stack(
+    #         name=stack.name,
+    #         components=component_mapping,
+    #     )
+    # return
 
     # Parse the given args
     # name is guaranteed to be set by parse_name_and_extra_arguments
     name, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(extra_config) + [name], expand_args=True
     )
-
-    from mlstacks.utils import terraform_utils
 
     # copy the terraform files to the config directory
     try:

@@ -13,8 +13,13 @@
 #  permissions and limitations under the License.
 """Functionality to handle interaction with the mlstacks package."""
 
+import json
+import uuid
+from functools import wraps
+from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     Optional,
@@ -22,6 +27,7 @@ from typing import (
     Union,
 )
 
+import click
 import pkg_resources
 
 from zenml.cli import utils as cli_utils
@@ -31,6 +37,34 @@ from zenml.constants import (
     NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
 )
+
+
+def verify_mlstacks_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+    except ImportError:
+        cli_utils.error(NOT_INSTALLED_MESSAGE)
+
+
+def verify_installation(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator for verifying mlstacks installation before running a function.
+
+    Args:
+        func: The function to be decorated.
+
+    Returns:
+        The decorated function, which will run verify_mlstacks_installation()
+        before executing the original function.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> Any:
+        verify_mlstacks_installation()
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 def stack_exists(stack_name: str) -> bool:
@@ -51,12 +85,22 @@ def stack_exists(stack_name: str) -> bool:
     return True
 
 
-def verify_mlstacks_installation() -> None:
-    """Checks if the `mlstacks` package is installed."""
-    try:
-        import mlstacks  # noqa: F401
-    except ImportError:
-        cli_utils.error(NOT_INSTALLED_MESSAGE)
+@verify_installation
+def stack_spec_exists(stack_name: str) -> bool:
+    """Checks whether a stack spec with that name exists or not.
+
+    Args:
+        stack_name: The name of the stack spec to check for.
+
+    Returns:
+        A boolean indicating whether the stack spec exists or not.
+    """
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+    spec_dir = (
+        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
+    )
+    return Path(spec_dir).exists()
 
 
 def get_mlstacks_version() -> Optional[str]:
@@ -110,6 +154,7 @@ def _get_component_flavor(
     return flavor
 
 
+@verify_installation
 def _add_extra_config_to_components(
     components: List["Component"], extra_config: Dict[str, str]
 ) -> List["Component"]:
@@ -122,7 +167,6 @@ def _add_extra_config_to_components(
     Returns:
         A list of mlstacks `Component` objects.
     """
-    verify_mlstacks_installation()
     from mlstacks.models.component import ComponentMetadata
 
     # Define configuration map
@@ -199,6 +243,7 @@ def _add_extra_config_to_components(
     return components
 
 
+@verify_installation
 def _construct_components(params: Dict[str, Any]) -> List["Component"]:
     """Constructs mlstacks `Component` objects from raw Click CLI params.
 
@@ -208,7 +253,6 @@ def _construct_components(params: Dict[str, Any]) -> List["Component"]:
     Returns:
         A list of mlstacks `Component` objects.
     """
-    verify_mlstacks_installation()
     from mlstacks.models import Component
 
     provider = params["provider"]
@@ -245,6 +289,7 @@ def _get_stack_tags(tags: Dict[str, str]) -> Dict[str, str]:
     return dict(tag.split("=") for tag in tags) if tags else {}
 
 
+@verify_installation
 def _construct_stack(params: Dict[str, Any]) -> "Stack":
     """Constructs mlstacks `Stack` object from raw Click CLI params.
 
@@ -254,7 +299,6 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     Returns:
         A mlstacks `Stack` object.
     """
-    verify_mlstacks_installation()
     from mlstacks.models import Stack
 
     tags = _get_stack_tags(params["tags"])
@@ -270,6 +314,7 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     )
 
 
+@verify_installation
 def convert_click_params_to_mlstacks_primitives(
     params: Dict[str, Any]
 ) -> Tuple["Stack", List["Component"]]:
@@ -281,7 +326,7 @@ def convert_click_params_to_mlstacks_primitives(
     Returns:
         A tuple of Stack and List[Component] objects.
     """
-    verify_mlstacks_installation()
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.models import Component, Stack
 
     stack: Stack = _construct_stack(params)
@@ -290,6 +335,48 @@ def convert_click_params_to_mlstacks_primitives(
     # writes the file names to the stack spec
     # using format '<provider>-<component_name>.yaml'
     for component in components:
-        stack.components.append(f"{component.name}.yaml")
+        stack.components.append(
+            f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}/{component.name}.yaml"
+        )
 
     return stack, components
+
+
+@verify_installation
+def convert_mlstacks_primitives_to_dicts(
+    stack: "Stack", components: List["Component"]
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """Converts mlstacks Stack and Components to dicts.
+
+    Args:
+        stack: A mlstacks Stack object.
+        components: A list of mlstacks Component objects.
+
+    Returns:
+        A tuple of Stack and List[Component] dicts.
+    """
+    verify_mlstacks_installation()
+
+    # convert to json first to strip out Enums objects
+    stack_dict = json.loads(stack.json())
+    components_dicts = [
+        json.loads(component.json()) for component in components
+    ]
+
+    return stack_dict, components_dicts
+
+
+def generate_unique_filename(base_filename: str) -> str:
+    """
+    Generates a unique filename by appending a UUID to the base filename.
+
+    Args:
+        base_filename: The base filename.
+
+    Returns:
+        The unique filename.
+    """
+    unique_suffix = (
+        uuid.uuid4().hex
+    )  # Generate a random UUID and convert it to a string.
+    return f"{base_filename}_{unique_suffix}"
