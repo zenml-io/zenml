@@ -1343,13 +1343,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        workspace: Optional["WorkspaceResponseModel"] = None
-        if self._config:
-            workspace = self._config.active_workspace
-
-        if not workspace:
-            workspace = GlobalConfiguration().get_active_workspace()
-
+        workspace = (self._config.active_workspace if self._config else None) or GlobalConfiguration().get_active_workspace()
         if not workspace:
             raise RuntimeError(
                 "No active workspace is configured. Run "
