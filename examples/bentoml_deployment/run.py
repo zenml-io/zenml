@@ -36,8 +36,8 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
 def main(
     config: str,
 ):
-    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
-    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
+    deploy = config in [DEPLOY, DEPLOY_AND_PREDICT]
+    predict = config in [PREDICT, DEPLOY_AND_PREDICT]
 
     if deploy:
         training_fashion_mnist()
