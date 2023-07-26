@@ -14,6 +14,7 @@
 
 
 from datetime import datetime as dt
+from typing import Optional
 
 import click
 from config import MetaConfig
@@ -46,6 +47,19 @@ Examples:
   \b
   # Run the pipeline without Hyperparameter tunning
   python run.py --no-hp-tunning
+
+  \b
+  # Run the pipeline without NA drop and normalization, 
+  # but dropping columns [A,B,C] and keeping 10% of dataset 
+  # as test set.
+  python run.py --no-drop-na --no-normalize --drop-columns A,B,C --test-size 0.1
+
+  \b
+  # Run the pipeline with Quality Gate for accuracy set at 90% for train set 
+  # and 85% for test set. If any of accuracies will be lower - pipeline will fail.
+  python run.py --min-train-accuracy 0.9 --min-test-accuracy 0.85 --fail-on-accuracy-quality-gates
+
+
 """
 )
 @click.option(
@@ -54,124 +68,66 @@ Examples:
     default=False,
     help="Disable caching for the pipeline run.",
 )
-# {%- if use_step_params %}
-# {%- if configurable_dataset %}
-# @click.option(
-#     "--dataset",
-#     default="{{ sklearn_dataset_name }}",
-#     type=click.Choice(SklearnDataset.values()),
-#     help="The scikit-learn dataset to load.",
-# )
-# {%- endif %}
-# {%- if configurable_model %}
-# @click.option(
-#     "--model",
-#     default="{{ sklearn_model_name }}",
-#     type=click.Choice(SklearnClassifierModel.values()),
-#     help="The scikit-learn model to train.",
-# )
-# {%- endif %}
-# @click.option(
-#     "--no-drop-na",
-#     is_flag=True,
-#     default=False,
-#     help="Whether to skip dropping rows with missing values in the dataset.",
-# )
-# @click.option(
-#     "--drop-columns",
-#     default=None,
-#     type=click.STRING,
-#     help="Comma-separated list of columns to drop from the dataset.",
-# )
-# @click.option(
-#     "--no-normalize",
-#     is_flag=True,
-#     default=False,
-#     help="Whether to skip normalizing the dataset.",
-# )
-# @click.option(
-#     "--test-size",
-#     default=0.2,
-#     type=click.FloatRange(0.0, 1.0),
-#     help="Proportion of the dataset to include in the test split.",
-# )
-# @click.option(
-#     "--no-shuffle",
-#     is_flag=True,
-#     default=False,
-#     help="Whether to skip shuffling the data before splitting.",
-# )
-# @click.option(
-#     "--no-stratify",
-#     is_flag=True,
-#     default=False,
-#     help="Whether to skip stratifying the data before splitting.",
-# )
-# @click.option(
-#     "--random-state",
-#     default=42,
-#     type=click.INT,
-#     help="Controls the randomness during data shuffling and model training. "
-#     "Pass an int for reproducible and cached output across multiple "
-#     "pipeline runs.",
-# )
 @click.option(
     "--no-hp-tunning",
     is_flag=True,
     default=False,
     help="Whether to skip Hyperparameter tunning step and use default model.",
 )
-# @click.option(
-#     "--min-train-accuracy",
-#     default=0.8,
-#     type=click.FloatRange(0.0, 1.0),
-#     help="Minimum training accuracy to pass to the model evaluator.",
-# )
-# @click.option(
-#     "--min-test-accuracy",
-#     default=0.8,
-#     type=click.FloatRange(0.0, 1.0),
-#     help="Minimum test accuracy to pass to the model evaluator.",
-# )
-# @click.option(
-#     "--max-train-test-diff",
-#     default=0.1,
-#     type=click.FloatRange(0.0, 1.0),
-#     help="Maximum difference between training and test accuracy to pass to "
-#     "the model evaluator.",
-# )
-# @click.option(
-#     "--fail-on-eval-warnings",
-#     is_flag=True,
-#     default=False,
-#     help="Whether to fail the pipeline run if the model evaluation step "
-#     "finds that the model is not accurate enough.",
-# )
-# {%- endif %}
-# def main(
-#     no_cache: bool = False,
-# {%- if use_step_params %}
-# {%- if configurable_dataset %}
-#     dataset: str = "{{ sklearn_dataset_name }}",
-# {%- endif %}
-# {%- if configurable_model %}
-#     model: str = "{{ sklearn_model_name }}",
-# {%- endif %}
-#     no_drop_na: bool = False,
-#     drop_columns: Optional[str] = None,
-#     no_normalize: bool = False,
-#     test_size: float = 0.2,
-#     no_shuffle: bool = False,
-#     no_stratify: bool = False,
-#     random_state: int = 42,
-#     hyperparameters: Optional[str] = None,
-#     min_train_accuracy: float = 0.8,
-#     min_test_accuracy: float = 0.8,
-#     max_train_test_diff: float = 0.1,
-#     fail_on_eval_warnings: bool = False,
-# {%- endif %}
-# ):
-def main(no_cache: bool = False, no_hp_tunning: bool = False):
+@click.option(
+    "--no-drop-na",
+    is_flag=True,
+    default=False,
+    help="Whether to skip dropping rows with missing values in the dataset.",
+)
+@click.option(
+    "--no-normalize",
+    is_flag=True,
+    default=False,
+    help="Whether to skip normalization in the dataset.",
+)
+@click.option(
+    "--drop-columns",
+    default=None,
+    type=click.STRING,
+    help="Comma-separated list of columns to drop from the dataset.",
+)
+@click.option(
+    "--test-size",
+    default=0.2,
+    type=click.FloatRange(0.0, 1.0),
+    help="Proportion of the dataset to include in the test split.",
+)
+@click.option(
+    "--min-train-accuracy",
+    default=0.8,
+    type=click.FloatRange(0.0, 1.0),
+    help="Minimum training accuracy to pass to the model evaluator.",
+)
+@click.option(
+    "--min-test-accuracy",
+    default=0.8,
+    type=click.FloatRange(0.0, 1.0),
+    help="Minimum test accuracy to pass to the model evaluator.",
+)
+@click.option(
+    "--fail-on-accuracy-quality-gates",
+    is_flag=True,
+    default=False,
+    help="Whether to fail the pipeline run if the model evaluation step "
+    "finds that the model is not accurate enough.",
+)
+def main(
+    no_cache: bool = False,
+    no_hp_tunning: bool = False,
+    no_drop_na: bool = False,
+    no_normalize: bool = False,
+    drop_columns: Optional[str] = None,
+    test_size: float = 0.2,
+    min_train_accuracy: float = 0.8,
+    min_test_accuracy: float = 0.8,
+    fail_on_accuracy_quality_gates: bool = False,
+):
     """Main entry point for the pipeline execution.
 
     This entrypoint is where everything comes together:
@@ -183,6 +139,15 @@ def main(no_cache: bool = False, no_hp_tunning: bool = False):
     Args:
         no_cache: If `True` cache will be disabled.
         no_hp_tunning: If `True` HP tunning will be disabled.
+        no_drop_na: If `True` NA values will not be dropped from the dataset.
+        no_normalize: If `True` normalization will not be done for the dataset.
+        drop_columns: List of comma-separated names of columns to drop from the dataset.
+        test_size: Percentage of records from the training dataset to go into the test dataset.
+        min_train_accuracy: Minimum acceptable accuracy on the train set.
+        min_test_accuracy: Minimum acceptable accuracy on the test set.
+        fail_on_accuracy_quality_gates: If `True` and any of minimal accuracy
+            thresholds are violated - the pipeline will fail. If `False` thresholds will
+            not affect the pipeline.
     """
 
     # Run a pipeline with the required parameters. This executes
@@ -192,7 +157,18 @@ def main(no_cache: bool = False, no_hp_tunning: bool = False):
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    run_args_train = {"hp_tunning_enabled": not no_hp_tunning}
+    run_args_train = {
+        "hp_tunning_enabled": not no_hp_tunning,
+        "drop_na": not no_drop_na,
+        "normalize": not no_normalize,
+        "random_seed": 42,
+        "test_size": test_size,
+        "min_train_accuracy": min_train_accuracy,
+        "min_test_accuracy": min_test_accuracy,
+        "fail_on_accuracy_quality_gates": fail_on_accuracy_quality_gates,
+    }
+    if drop_columns:
+        run_args_train["drop_columns"] = drop_columns.split(",")
 
     run_args_inference = {}
 
