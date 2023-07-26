@@ -113,7 +113,7 @@ class LineageGraph(BaseModel):
                         id=artifact_id,
                         name=artifact_name,
                         step_id=str(artifact.producer_step_run_id),
-                        status=ExecutionStatus.CACHED,  # TODO: special type?
+                        status="External",
                     )
 
     def add_direct_edges(self, run: "PipelineRunResponseModel") -> None:
@@ -196,7 +196,7 @@ class LineageGraph(BaseModel):
         id: str,
         name: str,
         step_id: str,
-        status: ExecutionStatus,
+        status: str,
     ) -> None:
         """Adds an artifact node to the lineage graph.
 

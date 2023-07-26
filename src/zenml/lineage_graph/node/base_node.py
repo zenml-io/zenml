@@ -15,15 +15,13 @@
 
 from pydantic import BaseModel
 
-from zenml.enums import ExecutionStatus
-
 
 class BaseNodeDetails(BaseModel):
     """Captures all details for the node."""
 
     execution_id: str
     name: str
-    status: ExecutionStatus
+    status: str
 
 
 class BaseNode(BaseModel):
