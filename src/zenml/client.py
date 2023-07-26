@@ -4534,9 +4534,8 @@ class Client(metaclass=ClientMetaClass):
                 "Python packages and ZenML integrations and try again."
             )
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_type = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_type = connector.resource_types[0].resource_type
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
