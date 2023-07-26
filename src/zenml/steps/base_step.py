@@ -1032,10 +1032,7 @@ class BaseStep(metaclass=BaseStepMeta):
             }
         )
 
-        complete_configuration = StepConfiguration.parse_obj(
-            self._configuration
-        )
-        return complete_configuration
+        return StepConfiguration.parse_obj(self._configuration)
 
     def _finalize_parameters(self) -> Dict[str, Any]:
         """Finalizes the config parameters for running this step.
