@@ -40,10 +40,10 @@ def find_artifact_id(
     """
     pipeline = Client().get_pipeline(pipeline_name)
     latest_run = pipeline.runs[0]
-    artifacts = [a for a in latest_run.artifacts if a.name == artifact_name]
-    if artifacts:
-        return artifacts[0].id
+    for artifact in latest_run.artifacts:
+        if artifact.name == artifact_name:
+            return artifact.id
     else:
         raise ValueError(
-            f"`{artifact_name}` not found in last run of `{pipeline_name}`"
+            f"`{artifact_name}` not found in last run of pipeline `{pipeline_name}`"
         )
