@@ -45,7 +45,7 @@ def train_data_splitter(
         test_size: 0.0..1.0 defining portion of test set.
 
     Returns:
-        The splitted dataset: dataset_trn, dataset_tst.
+        The split dataset: dataset_trn, dataset_tst.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     dataset_trn, dataset_tst = train_test_split(

@@ -19,7 +19,7 @@ from config import MetaConfig, PipelinesConfig
 from steps import (
     data_loader,
     model_evaluator,
-    model_hp_tunning,
+    model_hp_tuning,
     model_trainer,
     notify_on_failure,
     notify_on_success,
@@ -47,7 +47,7 @@ def e2e_example_training(
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
     drop_columns: Optional[List[str]] = None,
-    hp_tunning_enabled: bool = True,
+    hp_tuning_enabled: bool = True,
     random_seed: int = 42,
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
@@ -65,7 +65,7 @@ def e2e_example_training(
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
         drop_columns: List of columns to drop from dataset
-        hp_tunning_enabled: If `True` hyperparameter search would happen.
+        hp_tuning_enabled: If `True` hyperparameter search would happen.
         random_seed: Seed of random generator,
         min_train_accuracy: Threshold to stop execution if train set accuracy is lower
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
@@ -93,9 +93,9 @@ def e2e_example_training(
         drop_columns=drop_columns,
     )
 
-    ########## Hyperparameter tunning stage ##########
-    best_model_config = model_hp_tunning(
-        hp_tunning_enabled=hp_tunning_enabled,
+    ########## Hyperparameter tuning stage ##########
+    best_model_config = model_hp_tuning(
+        hp_tuning_enabled=hp_tuning_enabled,
         dataset_trn=dataset_trn,
         dataset_tst=dataset_tst,
     )

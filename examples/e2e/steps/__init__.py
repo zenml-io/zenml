@@ -23,4 +23,4 @@ from .etl import (
 )
 from .inference import inference_predict
 from .promotion import promote_model
-from .training import model_evaluator, model_trainer, model_hp_tunning
+from .training import model_evaluator, model_trainer, model_hp_tuning

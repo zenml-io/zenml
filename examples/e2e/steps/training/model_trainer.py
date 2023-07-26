@@ -69,7 +69,7 @@ def model_trainer(
 
     Args:
         dataset_trn: The preprocessed train dataset.
-        best_model_config: Dictionary describing best model from Hyperparameter tunning step.
+        best_model_config: Dictionary describing best model from Hyperparameter tuning step.
             It has `class` - a pointer to model class and `params` - dictionary of best possible
             parameters.
         random_seed: Fixed seed of random generator.

@@ -27,15 +27,15 @@ logger = get_logger(__name__)
 
 
 @step
-def model_hp_tunning(
-    hp_tunning_enabled: bool,
+def model_hp_tuning(
+    hp_tuning_enabled: bool,
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
 ) -> Annotated[Dict[str, Any], "best_model"]:
     """Evaluate a trained model.
 
-    This is an example of a model hyperparameter tunning step that takes
-    in train and test datatsets to perform a randomized search for best model
+    This is an example of a model hyperparameter tuning step that takes
+    in train and test datasets to perform a randomized search for best model
     in configured space.
 
     This step is parameterized to configure the step independently of the step code,
@@ -46,7 +46,7 @@ def model_hp_tunning(
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
-        hp_tunning_enabled: If `False` default model will be used, otherwise search
+        hp_tuning_enabled: If `False` default model will be used, otherwise search
             will happen.
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
@@ -55,8 +55,8 @@ def model_hp_tunning(
         The best possible model class and its' parameters.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    if hp_tunning_enabled:
-        logger.info("Running Hyperparameter tunning...")
+    if hp_tuning_enabled:
+        logger.info("Running Hyperparameter tuning...")
         best_model = {"class": None, "params": None}
         best_score_overall = -1
         for (
