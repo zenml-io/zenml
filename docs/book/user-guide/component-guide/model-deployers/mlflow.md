@@ -14,7 +14,7 @@ The MLflow Model Deployer is not yet available for use in production. This is a 
 soon. At the moment it is only available for use in a local development environment.
 {% endhint %}
 
-### When to use it?
+## When to use it?
 
 MLflow is a popular open-source platform for machine learning. It's a great tool for managing the entire lifecycle of
 your machine learning. One of the most important features of MLflow is the ability to package your model and its
@@ -30,7 +30,7 @@ You should use the MLflow Model Deployer:
 If you are looking to deploy your models in a more complex way, you should use one of the
 other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML.
 
-### How do you deploy it?
+## How do you deploy it?
 
 The MLflow Model Deployer flavor is provided by the MLflow ZenML integration, so you need to install it on your local
 machine to be able to deploy your models. You can do this by running the following command:
@@ -48,30 +48,128 @@ zenml model-deployer register mlflow_deployer --flavor=mlflow
 The ZenML integration will provision a local MLflow deployment server as a daemon process that will continue to run in
 the background to serve the latest MLflow model.
 
-### How do you use it?
+## How do you use it?
 
-The first step to being able to deploy and use your MLflow model is to create Service deployment from code, this is done
-by setting the different parameters that the MLflow deployment step requires.
+### Deploy a logged model
+
+ZenML provides a predefined `mlflow_model_deployer_step` that you can use to 
+deploy an MLflfow prediction service based on a model that you have 
+previously logged in your 
+[MLflow experiment tracker](../experiment-trackers/mlflow.md):
 
 ```python
-from zenml.integrations.mlflow.steps import mlflow_deployer_step
-from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
+from zenml import pipeline
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
-...
-
-model_deployer = mlflow_deployer_step(name="model_deployer")
-
-...
-
-# Initialize a continuous deployment pipeline run
-deployment = continuous_deployment_pipeline(
-    ...,
-    # as a last step to our pipeline the model deployer step is run with it config in place
-    model_deployer=model_deployer(params=MLFlowDeployerParameters(workers=3)),
-)
+@pipeline
+def mlflow_train_deploy_pipeline():
+    model = ...
+    deployed_model = mlflow_model_deployer_step(model=model)
 ```
 
-You can run predictions on the deployed model with something like:
+{% hint style="warning" %}
+The `mlflow_model_deployer_step` expects that the `model` it receives has 
+already been logged to MLflow in a previous step. E.g., for a scikit-learn 
+model, you would need to have used `mlflow.sklearn.autolog()` or 
+`mlflow.sklearn.log_model(model)` in a previous step. See the
+[MLflow experiment tracker documentation](../experiment-trackers/mlflow.md) for
+more information on how to log models to MLflow from your ZenML steps.
+{% endhint %}
+
+### Deploy from model registry
+
+Alternatively, if you are already using the 
+[MLflow model registry](../model-registries/mlflow.md), you can use the
+`mlflow_model_registry_deployer_step` to directly deploy an MLflow prediction
+service based on a model in your model registry:
+
+```python
+from zenml import pipeline
+from zenml.integrations.mlflow.steps import mlflow_model_registry_deployer_step
+
+@pipeline
+def mlflow_registry_deploy_pipeline():
+    deployed_model = mlflow_model_registry_deployer_step(
+        registry_model_name="tensorflow-mnist-model",
+        registry_model_version="1",  # Either specify a model version
+        # or use the model stage if you have set it in the MLflow registry:
+        # registered_model_stage="Staging"
+    )
+```
+
+See the [MLflow model registry documentation](../model-registries/mlflow.md)
+for more information on how to register models in the MLflow registry.
+
+### Interact with deployed models
+
+The `zenml model-deployer models list` CLI command can be used to list all 
+active model servers:
+
+```
+$ zenml model-deployer models list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         │ MODEL_NAME ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┼────────────┨
+┃   ✅   │ 87980237-843f-414f-bf06-931f4da69e56 │ continuous_deployment_pipeline │ mlflow_model_deployer_step │ model      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
+```
+
+To get more information about a specific model server, such as the prediction 
+URL, the `zenml model-deployer models describe <uuid>` CLI command can be used:
+
+```
+$ zenml model-deployer models describe 87980237-843f-414f-bf06-931f4da69e56
+        Properties of Served Model 87980237-843f-414f-bf06-931f4da69e56        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                              ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ DAEMON_PID             │ 105590                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ model                                              ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ file:///home/stefan/.config/zenml/local_stores/fd… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ continuous_deployment_pipeline                     ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ RUN_NAME               │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ mlflow_model_deployer_step                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://localhost:8001/invocations                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ SERVICE_PATH           │ /home/stefan/.config/zenml/local_stores/3b114be0-… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                 ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │ service daemon is not running                      ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ UUID                   │ 87980237-843f-414f-bf06-931f4da69e56               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The prediction URL can sometimes be a bit difficult to find in the detailed
+output, so there is a separate CLI command available to retrieve it:
+
+```shell
+$ zenml model-deployer models get-url 87980237-843f-414f-bf06-931f4da69e56
+  Prediction URL of Served Model 87980237-843f-414f-bf06-931f4da69e56 is:
+  http://localhost:8001/invocations
+```
+
+Finally, a model server can be deleted with the 
+`zenml model-deployer models delete <uuid>` CLI command:
+
+```shell
+$ zenml model-deployer models delete 87980237-843f-414f-bf06-931f4da69e56
+Model server MLFlowDeploymentService[87980237-843f-414f-bf06-931f4da69e56] 
+(type: model-serving, flavor: mlflow) was deleted.
+```
+
+### Run inference on a deployed model
+
+The following code example shows how you can load a deployed model in Python
+and run inference against it:
+
 
 ```python
 from zenml import step
@@ -81,6 +179,7 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
 
+# Load a prediction service deployed in another pipeline
 @step(enable_cache=False)
 def prediction_service_loader(
     pipeline_name: str,
@@ -111,10 +210,9 @@ def prediction_service_loader(
 
     if not existing_services:
         raise RuntimeError(
-            f"No MLflow prediction service deployed by the "
-            f"{pipeline_step_name} step in the {pipeline_name} "
-            f"pipeline for the '{model_name}' model is currently "
-            f"running."
+            f"No MLflow prediction service deployed by step "
+            f"'{pipeline_step_name}' in pipeline '{pipeline_name}' with name "
+            f"'{model_name}' is currently running."
         )
 
     return existing_services[0]
@@ -135,23 +233,20 @@ def predictor(
     return prediction
 
 
-# Initialize an inference pipeline run
-inference = inference_pipeline(
-    ...,
-    prediction_service_loader=prediction_service_loader(
-        pipeline_name="continuous_deployment_pipeline",
-        step_name="model_deployer",
-    ),
-    predictor=predictor(),
-)
+@pipeline
+def mlflow_deployment_inference_pipeline(
+    pipeline_name: str, pipeline_step_name: str = "mlflow_model_deployer_step",
+):
+    inference_data = ...
+    model_deployment_service = prediction_service_loader(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=pipeline_step_name,
+    )
+    predictions = predictor(model_deployment_service, inference_data)
 ```
 
-You can check the MLflow deployment example for more details.
-
-* [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_deployment)
-
 For more information and a full list of configurable attributes of the MLflow Model Deployer, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
+the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
 .
 
 <!-- For scarf -->
