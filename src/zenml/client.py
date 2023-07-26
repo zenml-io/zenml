@@ -1062,8 +1062,7 @@ class Client(metaclass=ClientMetaClass):
         role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
-            union_add_rm = set(remove_permission) & set(add_permission)
-            if union_add_rm:
+            if union_add_rm := set(remove_permission) & set(add_permission):
                 raise RuntimeError(
                     f"The `remove_permission` and `add_permission` "
                     f"options both contain the same value(s): "
