@@ -2713,24 +2713,23 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        flavors = self.list_flavors(
-            type=component_type,
-            name=name,
-        ).items
-
-        if flavors:
-            if len(flavors) > 1:
-                raise KeyError(
-                    f"More than one flavor with name {name} and type "
-                    f"{component_type} exists."
-                )
-
-            return flavors[0]
-        else:
+        if not (
+            flavors := self.list_flavors(
+                type=component_type,
+                name=name,
+            ).items
+        ):
+             raise KeyError(
+                 f"No flavor with name '{name}' and type '{component_type}' "
+                 "exists."
+             )
+        if len(flavors) > 1:
             raise KeyError(
-                f"No flavor with name '{name}' and type '{component_type}' "
-                "exists."
+                f"More than one flavor with name {name} and type "
+                f"{component_type} exists."
             )
+
+        return flavors[0]
 
     # -------------
     # - PIPELINES -
