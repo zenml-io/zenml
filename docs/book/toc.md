@@ -6,6 +6,10 @@
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 
+
+  * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
+  * [Implement a custom integration](platform-guide/set-up-your-mlops-platform/implement-a-custom-integration.md)
+
 ## User Guide
 
 * [🐣 Starter guide](user-guide/starter-guide/starter-guide.md)
@@ -18,7 +22,7 @@
   * [Switch to production](user-guide/starter-guide/switch-to-production.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
-  * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
+  * [Pipeline management](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
     * [Configure steps/pipelines](user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md)
     * [Compose pipelines](user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
     * [Schedule pipeline runs](user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
@@ -36,6 +40,37 @@
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
     * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
+  * [Secret Management](platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
+    * [Interact with secrets](platform-guide/set-up-your-mlops-platform/use-the-secret-store/interact-with-secrets.md)
+    * [Custom secret stores](platform-guide/set-up-your-mlops-platform/use-the-secret-store/custom-secret-stores.md)
+
+## Deploying ZenML
+
+* [🐔 ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+* [🐔 ZenML Self-Hosted](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md)
+  * [Deploy with ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli.md)
+  * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
+  * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
+  * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
+  * [Deploy with custom images](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
+  * [Manage the deployed services](platform-guide/manage-the-deployed-services/manage-the-deployed-services.md)
+    * [Upgrade the version of the ZenML server](platform-guide/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
+    * [Troubleshoot the deployed server](platform-guide/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
+    * [Troubleshoot stack components](platform-guide/manage-the-deployed-services/troubleshoot-stack-components.md)
+
+## Stacks & Components
+* [Deploy & set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md)
+  * [Deploy a stack component](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
+  * [Deploy a stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
+  * [Contribute flavors or components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/contribute-flavors-or-components.md)
+* [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md)
+  * [Service Connectors guide](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)
+  * [Security best practices](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/best-security-practices.md)
+  * [Docker Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/docker-service-connector.md)
+  * [Kubernetes Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/kubernetes-service-connector.md)
+  * [AWS Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md)
+  * [GCP Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md)
+  * [Azure Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md)
 * [📜 Component guide](user-guide/component-guide/component-guide.md)
   * [Integration overview](user-guide/component-guide/integration-overview.md)
   * [Orchestrators](user-guide/component-guide/orchestrators/orchestrators.md)
@@ -107,39 +142,6 @@
   * [Model Registries](user-guide/component-guide/model-registries/model-registries.md)
     * [MLflow Model Registry](user-guide/component-guide/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](user-guide/component-guide/model-registries/custom.md)
-
-## Platform Guide
-
-* [🏗 Set up your MLOps platform](platform-guide/set-up-your-mlops-platform/set-up-your-mlops-platform.md)
-  * [Deploy ZenML](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md)
-    * [Deploy with ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli.md)
-    * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
-    * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
-    * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
-    * [Deploy with custom images](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-custom-image.md)
-  * [User management](platform-guide/set-up-your-mlops-platform/user-management.md)
-  * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
-    * [Interact with secrets](platform-guide/set-up-your-mlops-platform/use-the-secret-store/interact-with-secrets.md)
-    * [Custom secret stores](platform-guide/set-up-your-mlops-platform/use-the-secret-store/custom-secret-stores.md)
-  * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md)
-    * [Service Connectors guide](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)
-    * [Security best practices](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/best-security-practices.md)
-    * [Docker Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/docker-service-connector.md)
-    * [Kubernetes Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/kubernetes-service-connector.md)
-    * [AWS Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md)
-    * [GCP Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md)
-    * [Azure Service Connector](platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md)
-  * [Deploy & set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md)
-    * [Deploy a stack component](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
-    * [Deploy a stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
-    * [Contribute flavors or components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/contribute-flavors-or-components.md)
-  * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
-  * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
-  * [Implement a custom integration](platform-guide/set-up-your-mlops-platform/implement-a-custom-integration.md)
-* [🔧 Manage the deployed services](platform-guide/manage-the-deployed-services/manage-the-deployed-services.md)
-  * [Upgrade the version of the ZenML server](platform-guide/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md)
-  * [Troubleshoot the deployed server](platform-guide/manage-the-deployed-services/troubleshoot-your-deployed-server.md)
-  * [Troubleshoot stack components](platform-guide/manage-the-deployed-services/troubleshoot-stack-components.md)
 
 ## Learning
 
