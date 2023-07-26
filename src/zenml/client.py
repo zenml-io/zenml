@@ -2394,8 +2394,7 @@ class Client(metaclass=ClientMetaClass):
                 component_type == StackComponentType.EXPERIMENT_TRACKER
                 and flavor == "mlflow"
             ):
-                mlflow_bucket = outputs.get("mlflow-bucket")
-                if mlflow_bucket:
+                if mlflow_bucket := outputs.get("mlflow-bucket"):
                     logger.info(
                         "The bucket used for MLflow is: %s "
                         "You can use this bucket as an artifact store to "
@@ -2403,15 +2402,12 @@ class Client(metaclass=ClientMetaClass):
                         mlflow_bucket,
                     )
 
-            # if the cloud is k3d, then check the container registry
-            # outputs. If they are set, then create one.
-            if cloud == "k3d":
-                container_registry_outputs = {
+            if container_registry_outputs := {
                     k: v
                     for k, v in outputs.items()
                     if k.startswith("container_registry")
-                }
-                if container_registry_outputs:
+                }:
+                if cloud == "k3d":
                     self.create_stack_component(
                         name=container_registry_outputs[
                             "container_registry_name"
