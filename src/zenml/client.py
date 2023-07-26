@@ -1585,7 +1585,7 @@ class Client(metaclass=ClientMetaClass):
             ValueError: If the stack contains private components and is
                 attempted to be registered as shared.
         """
-        stack_components = dict()
+        stack_components = {}
 
         for c_type, c_identifier in components.items():
             # Skip non-existent components.
@@ -1665,10 +1665,8 @@ class Client(metaclass=ClientMetaClass):
         if name:
             shared_status = is_shared or stack.is_shared
 
-            existing_stacks = self.list_stacks(
-                name=name, is_shared=shared_status
-            )
-            if existing_stacks:
+            if existing_stacks := self.list_stacks(
+                 name=name, is_shared=shared_status):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
@@ -1678,10 +1676,8 @@ class Client(metaclass=ClientMetaClass):
 
         if is_shared:
             current_name = update_model.name or stack.name
-            existing_stacks = self.list_stacks(
-                name=current_name, is_shared=True
-            )
-            if existing_stacks:
+            if existing_stacks := self.list_stacks(
+                 name=current_name, is_shared=True):
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{current_name}'."
