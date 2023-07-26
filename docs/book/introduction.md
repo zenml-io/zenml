@@ -8,10 +8,11 @@ description: Welcome to ZenML!
 
 <div align="center" data-full-width="true">
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
-<figure><img src=".gitbook/assets/intro-zenml-overview.png" alt="ZenML overview"></figure>
+ 
+
+<figure><img src=".gitbook/assets/intro-zenml-overview.png" alt="ZenML overview"><figcaption></figcaption></figure>
 
 </div>
 
@@ -133,6 +134,6 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Platform Guide</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/set-up-your-mlops-platform.md">set-up-your-mlops-platform.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component Guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Platform Guide</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="broken-reference">Broken link</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component Guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 {% endtabs %}

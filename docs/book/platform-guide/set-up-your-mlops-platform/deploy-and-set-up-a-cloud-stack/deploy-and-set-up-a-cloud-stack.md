@@ -2,7 +2,7 @@
 description: Deploying your stack components directly from the ZenML CLI
 ---
 
-# Deploy & set up a cloud stack
+# ⚒ Stack deployment
 
 The first step in running your pipelines on remote infrastructure is to deploy all the components that you would need, like an MLflow tracking server, a Seldon Core model deployer, and more to your cloud.
 
@@ -25,5 +25,4 @@ Thus to make even this process easier for our users, we have created the `deploy
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy stack components individually</strong></mark></td><td>Individually deploying different stack components.</td><td></td><td><a href="deploy-a-stack-component.md">deploy-a-stack-component.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a stack with multiple components using Stack Recipes</strong></mark></td><td>Deploying an entire stack with the ZenML Stack Recipes.</td><td></td><td><a href="deploy-a-stack-using-stack-recipes.md">deploy-a-stack-using-stack-recipes.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Contribute new components or flavors</strong></mark></td><td>Creating your custom stack component solutions.</td><td></td><td><a href="contribute-flavors-or-components.md">contribute-flavors-or-components.md</a></td></tr></tbody></table>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

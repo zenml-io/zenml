@@ -279,7 +279,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 

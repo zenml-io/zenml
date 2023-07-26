@@ -1,12 +1,15 @@
 ---
-description: Configuring Azure Service Connectors to connect ZenML to Azure resources such as Blob storage buckets, AKS Kubernetes clusters, and ACR container registries.
+description: >-
+  Configuring Azure Service Connectors to connect ZenML to Azure resources such
+  as Blob storage buckets, AKS Kubernetes clusters, and ACR container
+  registries.
 ---
 
 # Azure Service Connector
 
 The ZenML Azure Service Connector facilitates the authentication and access to managed Azure services and resources. These encompass a range of resources, including blob storage containers, ACR repositories, and AKS clusters.
 
-This connector also supports [automatic configuration and detection of credentials](../connect-zenml-to-infrastructure/service-connectors-guide.md#auto-configuration) locally configured through the Azure CLI.
+This connector also supports [automatic configuration and detection of credentials](service-connectors-guide.md#auto-configuration) locally configured through the Azure CLI.
 
 This connector serves as a general means of accessing any Azure service by issuing credentials to clients. Additionally, the connector can handle specialized authentication for Azure blob storage, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
@@ -68,55 +71,36 @@ The only Azure authentication method that works with Azure blob storage resource
 
 ### AKS Kubernetes cluster
 
-Allows Stack Components to access an AKS cluster as a standard Kubernetes
-cluster resource. When used by Stack Components, they are provided a
-pre-authenticated python-kubernetes client instance.
+Allows Stack Components to access an AKS cluster as a standard Kubernetes cluster resource. When used by Stack Components, they are provided a pre-authenticated python-kubernetes client instance.
 
-The configured credentials must have at least the following
-Azure IAM permissions associated with the AKS clusters
-that the connector will be allowed to access:
+The configured credentials must have at least the following Azure IAM permissions associated with the AKS clusters that the connector will be allowed to access:
 
-- allow listing the AKS clusters and fetching their credentials (e.g. the
-`Azure Kubernetes Service Cluster Admin Role` role)
+* allow listing the AKS clusters and fetching their credentials (e.g. the `Azure Kubernetes Service Cluster Admin Role` role)
 
-If set, the resource name must identify an EKS cluster using one of the
-following formats:
+If set, the resource name must identify an EKS cluster using one of the following formats:
 
-- resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
-- AKS cluster name: `{cluster-name}`
+* resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
+* AKS cluster name: `{cluster-name}`
 
-Given that the AKS cluster name is unique within a resource group, the
-resource group name may be included in the resource name to avoid ambiguity. If
-a resource group is configured in the connector, the resource group name
-in the resource name must match the configured resource group. If no resource
-group is configured in the connector and a resource group name is not included
-in the resource name, the connector will attempt to find the AKS cluster in
-any resource group.
+Given that the AKS cluster name is unique within a resource group, the resource group name may be included in the resource name to avoid ambiguity. If a resource group is configured in the connector, the resource group name in the resource name must match the configured resource group. If no resource group is configured in the connector and a resource group name is not included in the resource name, the connector will attempt to find the AKS cluster in any resource group.
 
-If a resource group is configured in the connector, only AKS clusters in that
-resource group will be accessible.
+If a resource group is configured in the connector, only AKS clusters in that resource group will be accessible.
 
 ### ACR container registry
 
-Allows Stack Components to access one or more ACR registries as a standard
-Docker registry resource. When used by Stack Components, they are provided a
-pre-authenticated python-docker client instance.
+Allows Stack Components to access one or more ACR registries as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated python-docker client instance.
 
-The configured credentials must have at least the following
-Azure IAM permissions associated with the ACR registries
-that the connector will be allowed to access:
+The configured credentials must have at least the following Azure IAM permissions associated with the ACR registries that the connector will be allowed to access:
 
-- allow access to pull and push images (e.g. the `AcrPull` and `AcrPush` roles)
-- allow access to list registries (e.g. the `Contributor` role)
+* allow access to pull and push images (e.g. the `AcrPull` and `AcrPush` roles)
+* allow access to list registries (e.g. the `Contributor` role)
 
-If set, the resource name must identify an ACR registry using one of the
-following formats:
+If set, the resource name must identify an ACR registry using one of the following formats:
 
-- ACR registry URI (canonical resource name): `[https://]{registry-name}.azurecr.io`
-- ACR registry name: `{registry-name}`
+* ACR registry URI (canonical resource name): `[https://]{registry-name}.azurecr.io`
+* ACR registry name: `{registry-name}`
 
-If a resource group is configured in the connector, only ACR registries in that
-resource group will be accessible.
+If a resource group is configured in the connector, only ACR registries in that resource group will be accessible.
 
 If an authentication method other than the Azure service principal is used for authentication, the admin account must be enabled for the registry, otherwise, clients will not be able to authenticate to the registry. See the official Azure [documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
 
@@ -124,7 +108,7 @@ If an authentication method other than the Azure service principal is used for a
 
 ### Implicit authentication
 
-[Implicit authentication](../connect-zenml-to-infrastructure/best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
+[Implicit authentication](best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
 
 {% hint style="warning" %}
 This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
@@ -155,7 +139,7 @@ zenml service-connector register azure-implicit --type azure --auth-method impli
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠙ Registering service connector 'azure-implicit'...
 Successfully registered service connector `azure-implicit` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -179,7 +163,7 @@ zenml service-connector describe azure-implicit
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-ae20-499ce888a00a' is owned by user 'default' and is 'private'.
                           'azure-implicit' azure Service Connector Details                           
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -216,109 +200,19 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 ```
 {% endcode %}
 
-### Azure Service Principal
+#### Azure Service Principal
 
-Azure service principal credentials consists of an Azure client ID and
-client secret. These credentials are used to authenticate clients to Azure
-services.
+Azure service principal credentials consists of an Azure client ID and client secret. These credentials are used to authenticate clients to Azure services.
 
-For this authentication method, the Azure Service Connector requires
-[an Azure service principal to be created](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal)
-and a client secret to be generated.
+For this authentication method, the Azure Service Connector requires [an Azure service principal to be created](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal) and a client secret to be generated.
 
-<details>
-
-<summary>Example configuration</summary>
-
-The following assumes an Azure service principal was configured with a client secret and has permissions to access an Azure blob storage container, an AKS Kubernetes cluster and an ACR container registry. The service principal client ID, tenant ID and client secret are then used to configure the Azure Service Connector.
-
-```sh
-zenml service-connector register azure-service-principal --type azure --auth-method service-principal --tenant_id=a79f3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234d491e --client_secret=AzureSuperSecret
-```
-
-{% code title="Example Command Output" %}
-```text
-⠙ Registering service connector 'azure-service-principal'...
-Successfully registered service connector `azure-service-principal` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃     RESOURCE TYPE     │ RESOURCE NAMES                                ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃   🇦 azure-generic    │ ZenML Subscription                            ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃   📦 blob-container   │ az://demo-zenmlartifactstore                  ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-{% endcode %}
-
-The Service Connector configuration shows that the connector is configured with service principal credentials:
-
-```sh
-zenml service-connector describe azure-service-principal
-```
-
-{% code title="Example Command Output" %}
-```text
-┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY         │ VALUE                                                                          ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ ID               │ 273d2812-2643-4446-82e6-6098b8ccdaa4                                           ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ NAME             │ azure-service-principal                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ TYPE             │ 🇦  azure                                                                       ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ AUTH METHOD      │ service-principal                                                              ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ RESOURCE TYPES   │ 🇦  azure-generic, 📦 blob-container, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ RESOURCE NAME    │ <multiple>                                                                     ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ SECRET ID        │ 50d9f230-c4ea-400e-b2d7-6b52ba2a6f90                                           ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ SESSION DURATION │ N/A                                                                            ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ EXPIRES IN       │ N/A                                                                            ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ OWNER            │ default                                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                                        ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ SHARED           │ ➖                                                                             ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-06-20 19:16:26.802374                                                     ┃
-┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-06-20 19:16:26.802378                                                     ┃
-┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                     Configuration                      
-┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY      │ VALUE                                ┃
-┠───────────────┼──────────────────────────────────────┨
-┃ tenant_id     │ a79ff333-8f45-4a74-a42e-68871c17b7fb ┃
-┠───────────────┼──────────────────────────────────────┨
-┃ client_id     │ 8926254a-8c3f-430a-a2fd-bdab234d491e ┃
-┠───────────────┼──────────────────────────────────────┨
-┃ client_secret │ [HIDDEN]                             ┃
-┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-{% endcode %}
-
-</details>
-
-### Azure Access Token
+#### Azure Access Token
 
 Uses [temporary Azure access tokens](best-security-practices.md#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
 
-This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as API tokens expire. On the other hand, this method is ideal in
-cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
+This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as API tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
-This is the authentication method used during auto-configuration, if you have
-[the local Azure CLI set up with credentials](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
-The connector will generate an access token from the Azure CLI credentials and
-store it in the connector configuration.
+This is the authentication method used during auto-configuration, if you have [the local Azure CLI set up with credentials](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli). The connector will generate an access token from the Azure CLI credentials and store it in the connector configuration.
 
 </details>
 
@@ -337,7 +231,7 @@ zenml service-connector register azure-session-token --type azure --auto-configu
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠙ Registering service connector 'azure-session-token'...
 connector authorization failure: the 'access-token' authentication method is not supported for blob storage resources
 Successfully registered service connector `azure-session-token` with access to the following resources:
@@ -360,7 +254,7 @@ zenml service-connector describe azure-session-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'azure-session-token' of type 'azure' with id '94d64103-9902-4aa5-8ce4-877061af89af' is owned by user 'default' and is 'private'.
                         'azure-session-token' azure Service Connector Details                        
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -410,7 +304,7 @@ zenml service-connector list --name azure-session-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Could not import GCP service connector: No module named 'google.api_core'.
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME                │ ID                                   │ TYPE     │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
@@ -427,7 +321,7 @@ Could not import GCP service connector: No module named 'google.api_core'.
 
 ## Auto-configuration
 
-The Azure Service Connector allows [auto-discovering and fetching credentials](../connect-zenml-to-infrastructure/service-connectors-guide.md#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
+The Azure Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
 
 {% hint style="warning" %}
 The Azure service connector auto-configuration comes with two limitations:
@@ -440,7 +334,7 @@ For an auto-configuration example, please refer to the [section about Azure acce
 
 ## Local client provisioning
 
-The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](../connect-zenml-to-infrastructure/service-connectors-guide.md#configure-local-clients).
+The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](service-connectors-guide.md#configure-local-clients).
 
 <details>
 
@@ -453,7 +347,7 @@ zenml service-connector list --name azure-service-principal
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME                    │ ID                                   │ TYPE     │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼─────────────────────────┼──────────────────────────────────────┼──────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -472,7 +366,7 @@ zenml service-connector verify azure-service-principal --resource-type kubernete
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠙ Verifying service connector 'azure-service-principal'...
 Service connector 'azure-service-principal' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -490,7 +384,7 @@ zenml service-connector login azure-service-principal --resource-type kubernetes
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠙ Attempting to configure local client using service connector 'azure-service-principal'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'demo-zenml-terraform-cluster'.
 The 'azure-service-principal' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
@@ -504,7 +398,7 @@ kubectl cluster-info
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Kubernetes control plane is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443
 CoreDNS is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 Metrics-server is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
@@ -518,7 +412,7 @@ zenml service-connector verify azure-service-principal --resource-type docker-re
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠦ Verifying service connector 'azure-service-principal'...
 Service connector 'azure-service-principal' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -534,7 +428,7 @@ zenml service-connector login azure-service-principal --resource-type docker-reg
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠹ Attempting to configure local client using service connector 'azure-service-principal'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
 Configure a credential helper to remove this warning. See
@@ -551,7 +445,7 @@ docker push demozenmlcontainerregistry.azurecr.io/zenml:example_pipeline
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The push refers to repository [demozenmlcontainerregistry.azurecr.io/zenml]
 d4aef4f5ed86: Pushed 
 2d69a4ce1784: Pushed 
@@ -615,7 +509,7 @@ zenml service-connector list-types --type azure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -634,7 +528,7 @@ zenml service-connector register azure-service-principal --type azure --auth-met
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'azure-service-principal'...
 Successfully registered service connector `azure-service-principal` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -658,7 +552,7 @@ zenml artifact-store register azure-demo --flavor azure --path=az://demo-zenmlar
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered artifact_store `azure-demo`.
 ```
 {% endcode %}
@@ -668,7 +562,7 @@ zenml artifact-store connect azure-demo --connector azure-service-principal
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully connected artifact store `azure-demo` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE     │ RESOURCE NAMES               ┃
@@ -685,7 +579,7 @@ zenml orchestrator register aks-demo-cluster --flavor kubernetes --synchronous=t
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered orchestrator `aks-demo-cluster`.
 ```
 {% endcode %}
@@ -695,7 +589,7 @@ zenml orchestrator connect aks-demo-cluster --connector azure-service-principal
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully connected orchestrator `aks-demo-cluster` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
@@ -712,7 +606,7 @@ zenml container-registry register acr-demo-registry --flavor azure --uri=demozen
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered container_registry `acr-demo-registry`.
 ```
 {% endcode %}
@@ -722,7 +616,7 @@ zenml container-registry connect acr-demo-registry --connector azure-service-pri
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully connected container registry `acr-demo-registry` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                        ┃
@@ -739,7 +633,7 @@ zenml image-builder register local --flavor local
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
 Successfully registered image_builder `local`.
@@ -751,7 +645,7 @@ zenml stack register gcp-demo -a azure-demo -o aks-demo-cluster -c acr-demo-regi
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Stack 'gcp-demo' successfully registered!
 Active repository stack set to:'gcp-demo'
 ```
@@ -789,7 +683,7 @@ if __name__ == "__main__":
 Saving that to a `run.py` file and running it gives us:
 
 {% code title="Example Command Output" %}
-```text
+```
 $ python run.py 
 Registered pipeline simple_pipeline (version 1).
 Building Docker image(s) for pipeline simple_pipeline.
@@ -835,5 +729,4 @@ Dashboard URL: https://zenml.stefan.20.23.46.143.nip.io/workspaces/default/pipel
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
