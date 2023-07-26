@@ -4776,9 +4776,8 @@ class Client(metaclass=ClientMetaClass):
         else:
             resource_types = resource_type
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_types = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_types = connector.resource_types[0].resource_type
 
         if resource_id == "":
             resource_id = None
