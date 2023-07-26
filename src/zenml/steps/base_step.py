@@ -559,11 +559,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 pipeline=Pipeline.ACTIVE_PIPELINE,
             )
             outputs.append(output)
-
-        if len(outputs) == 1:
-            return outputs[0]
-        else:
-            return outputs
+        return outputs[0] if len(outputs) == 1 else outputs
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
