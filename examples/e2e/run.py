@@ -19,9 +19,9 @@ from typing import Optional
 import click
 from config import MetaConfig
 from pipelines import e2e_example_batch_inference, e2e_example_training
-from utils.artifacts import find_artifact_id
 
 from zenml.logger import get_logger
+from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 
@@ -187,10 +187,14 @@ def main(
         **run_args_inference
     )
 
+    artifact = ExternalArtifact(
+        pipeline_name=MetaConfig.pipeline_name_batch_inference,
+        artifact_name="predictions",
+    )
     logger.info(
         "Batch inference pipeline finished successfully! "
         "You can find predictions in Artifact Store using ID: "
-        f"`{str(find_artifact_id(pipeline_name=MetaConfig.pipeline_name_batch_inference,artifact_name='predictions'))}`."
+        f"`{str(artifact.upload_if_necessary())}`."
     )
 
 
