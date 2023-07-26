@@ -2401,13 +2401,14 @@ class Client(metaclass=ClientMetaClass):
                         "avoid having to create a new one.",
                         mlflow_bucket,
                     )
-
-            if container_registry_outputs := {
-                    k: v
-                    for k, v in outputs.items()
-                    if k.startswith("container_registry")
-                }:
-                if cloud == "k3d":
+            # if the cloud is k3d, then check the container registry
+            # outputs. If they are set, then create one.
+            if cloud == "k3d":
+                if container_registry_outputs := {
+                        k: v
+                        for k, v in outputs.items()
+                        if k.startswith("container_registry")
+                    }:
                     self.create_stack_component(
                         name=container_registry_outputs[
                             "container_registry_name"
@@ -2422,7 +2423,6 @@ class Client(metaclass=ClientMetaClass):
                             ]
                         ),
                     )
-
         return stack_comp
 
     def destroy_stack_component(

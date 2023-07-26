@@ -395,10 +395,8 @@ class Pipeline:
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        custom_configurations = self.configuration.dict(
-            exclude_defaults=True, exclude={"name"}
-        )
-        if custom_configurations:
+        if custom_configurations := self.configuration.dict(
+            exclude_defaults=True, exclude={"name"}):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "
@@ -1006,13 +1004,12 @@ class Pipeline:
         all_pipelines = Client().list_pipelines(
             name=self.name, sort_by="desc:created", size=1
         )
-        if all_pipelines.total:
-            pipeline = all_pipelines.items[0]
-            if pipeline.version == "UNVERSIONED":
-                return None
-            return int(all_pipelines.items[0].version)
-        else:
+        if not all_pipelines.total:
+             return None
+        pipeline = all_pipelines.items[0]
+        if pipeline.version == "UNVERSIONED":
             return None
+        return int(all_pipelines.items[0].version)
 
     def add_step_invocation(
         self,
