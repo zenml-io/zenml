@@ -1025,11 +1025,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly created role.
         """
-        permissions: Set[PermissionType] = set()
-        for permission in permissions_list:
-            if permission in PermissionType.values():
-                permissions.add(PermissionType(permission))
-
+        permissions: Set[PermissionType] = {
+            PermissionType(permission)
+            for permission in permissions_list
+            if permission in PermissionType.values()
+        }
         new_role = RoleRequestModel(name=name, permissions=permissions)
         return self.zen_store.create_role(new_role)
 
