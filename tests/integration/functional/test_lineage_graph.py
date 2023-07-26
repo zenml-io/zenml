@@ -112,7 +112,7 @@ def test_generate_run_nodes_and_edges(
         for input_artifact in step_.inputs.values():
             artifact_id = ARTIFACT_PREFIX + str(input_artifact.id)
             assert artifact_id in node_id_to_model_mapping
-            edge_id = step_id + "_" + artifact_id
+            edge_id = artifact_id + "_" + step_id
             assert edge_id in edge_id_to_model_mapping
             edge = edge_id_to_model_mapping[edge_id]
             assert edge.source == artifact_id

@@ -74,8 +74,8 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
 
         # Set a root step if it doesn't exist yet
-        # if self.root_step_id is None:
-        #     self.root_step_id = step_id
+        if self.root_step_id is None:
+            self.root_step_id = step_id
 
         # Add the step node
         self.add_step_node(step, step_id)
