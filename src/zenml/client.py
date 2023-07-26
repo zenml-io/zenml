@@ -1774,11 +1774,10 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 # Check if the stack component is part of another stack
-                if len(stacks) == 1:
-                    if stack.id == stacks[0].id:
-                        stack_components_free_for_deletion.append(
-                            (component_type, component_model)
-                        )
+                if len(stacks) == 1 and stack.id == stacks[0].id:
+                    stack_components_free_for_deletion.append(
+                        (component_type, component_model)
+                    )
 
             self.delete_stack(stack.id)
 
