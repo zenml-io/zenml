@@ -2277,8 +2277,8 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         cloud: str,
         component_type: StackComponentType,
-        configuration: Optional[Dict[str, Any]] = {},
-        labels: Optional[Dict[str, Any]] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        labels: Optional[Dict[str, Any]] = None
     ) -> Optional["ComponentResponseModel"]:
         """Deploys a stack component.
 
