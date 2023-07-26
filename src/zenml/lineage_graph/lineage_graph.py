@@ -124,33 +124,31 @@ class LineageGraph(BaseModel):
         """
         for step in run.steps.values():
             step_id = STEP_PREFIX + str(step.id)
-            for parent_step in step.parent_steps:
-                if not self.has_artifact_link(step, parent_step):
-                    parent_step_id = STEP_PREFIX + str(parent_step.id)
+            for parent_step_id_uuid in step.parent_step_ids:
+                parent_step_id = STEP_PREFIX + str(parent_step_id_uuid)
+                if not self.has_artifact_link(step_id, parent_step_id):
                     self.add_edge(parent_step_id, step_id)
 
-    def has_artifact_link(
-        self,
-        step: "StepRunResponseModel",
-        parent_step: "StepRunResponseModel",
-    ) -> bool:
+    def has_artifact_link(self, step_id: str, parent_step_id: str) -> bool:
         """Checks if a step has an artifact link to a parent step.
 
         This is the case for all parent steps that were not specified via
         `after=...`.
 
         Args:
-            step: The step to check.
-            parent_step: The parent step to check.
+            step_id: The node ID of the step to check.
+            parent_step_id: T node ID of the parent step to check.
 
         Returns:
             True if the steps are linked via an artifact, False otherwise.
         """
-        for input_artifact in step.inputs.values():
-            for output_artifact in parent_step.outputs.values():
-                if input_artifact.id == output_artifact.id:
-                    return True
-        return False
+        parent_outputs, child_inputs = set(), set()
+        for edge in self.edges:
+            if edge.source == parent_step_id:
+                parent_outputs.add(edge.target)
+            if edge.target == step_id:
+                child_inputs.add(edge.source)
+        return bool(parent_outputs.intersection(child_inputs))
 
     def add_step_node(
         self,
