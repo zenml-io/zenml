@@ -201,7 +201,7 @@ def main(no_cache: bool = False, no_hp_tunning: bool = False):
         "run_name"
     ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_example_training.with_options(**pipeline_args)(**run_args_train)
-    logger.info(f"Training pipeline finished successfully!")
+    logger.info("Training pipeline finished successfully!")
 
     # Execute Batch Inference Pipeline
     pipeline_args[
