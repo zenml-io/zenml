@@ -1705,11 +1705,10 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components_dict = {}
-            for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [
-                    c.id for c in component_list
-                ]
+            components_dict = {
+                component_type: [c.id for c in component_list]
+                for component_type, component_list in stack.components.items()
+            }
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
