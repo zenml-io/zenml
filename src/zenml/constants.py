@@ -274,3 +274,13 @@ NOT_INSTALLED_MESSAGE = (
     f"`pip install mlstacks`."
 )
 STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
+MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
+    "artifact_store",
+    "container_registry",
+    "experiment_tracker",
+    "orchestrator",
+    "model_deployer",
+    "model_registry",
+    "mlops_platform",
+    "step_operator",
+]
