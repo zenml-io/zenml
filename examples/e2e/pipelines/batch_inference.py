@@ -22,7 +22,6 @@ from steps import (
     notify_on_failure,
     notify_on_success,
 )
-from utils.artifacts import find_artifact_id
 
 from zenml import pipeline
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
@@ -55,22 +54,20 @@ def e2e_example_batch_inference():
         n_samples=10_000,
         drop_target=True,
     )
-    preprocess_pipeline_id = find_artifact_id(
-        pipeline_name=MetaConfig.pipeline_name_training,
-        artifact_name="preprocess_pipeline",
-    )
     dataset_inf = inference_data_preprocessor(
         dataset_inf=dataset_inf,
-        preprocess_pipeline=ExternalArtifact(id=preprocess_pipeline_id),
+        preprocess_pipeline=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="preprocess_pipeline",
+        ),
     )
 
     ########## DataQuality stage  ##########
-    dataset_trn_id = find_artifact_id(
-        pipeline_name=MetaConfig.pipeline_name_training,
-        artifact_name="dataset_trn",
-    )
     report, _ = evidently_report_step(
-        reference_dataset=ExternalArtifact(id=dataset_trn_id),
+        reference_dataset=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="dataset_trn",
+        ),
         comparison_dataset=dataset_inf,
         ignored_cols=["target"],
         metrics=[
@@ -80,13 +77,12 @@ def e2e_example_batch_inference():
     drift_na_count(report)
 
     ########## Inference stage  ##########
-    model_version_id = find_artifact_id(
-        pipeline_name=MetaConfig.pipeline_name_training,
-        artifact_name="model_version",
-    )
     deployment_service = mlflow_model_registry_deployer_step(
         registry_model_name=MetaConfig.mlflow_model_name,
-        registry_model_version=ExternalArtifact(id=model_version_id),
+        registry_model_version=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="model_version",
+        ),
     )
     inference_predict(
         deployment_service=deployment_service,
