@@ -1900,12 +1900,12 @@ class Client(metaclass=ClientMetaClass):
                         name_id_or_prefix=component_id,
                         component_type=component_type,
                     )
-                except KeyError:
+                except KeyError as e:
                     raise KeyError(
                         f"Cannot register stack '{stack.name}' since it has an "
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
-                    )
+                    ) from e
             # Get the flavor model
             flavor_model = self.get_flavor_by_name_and_type(
                 name=component.flavor, component_type=component.type
@@ -2195,7 +2195,7 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=is_shared, type=component_type
             )
-            if any([e.id != component.id for e in existing_components.items]):
+            if any(e.id != component.id for e in existing_components.items):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
