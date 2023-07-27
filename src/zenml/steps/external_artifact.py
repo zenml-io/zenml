@@ -111,7 +111,7 @@ class ExternalArtifact:
                 "Either a value, an ID or pipeline/artifact name pair can be "
                 "provided when creating an external artifact."
             )
-        elif pipeline_name is None or artifact_name is None:
+        elif pipeline_name is None != artifact_name is None:
             raise ValueError(
                 "`pipeline_name` and `artifact_name` can be only provided "
                 "together when creating an external artifact."
