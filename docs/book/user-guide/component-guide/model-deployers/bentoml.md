@@ -21,7 +21,7 @@ and [`bentoctl`](https://github.com/bentoml/bentoctl) are the tools responsible 
 Kubernetes cluster and Cloud Platforms. Full support for these advanced tools is in progress and will be available soon.
 {% endhint %}
 
-### When to use it?
+## When to use it?
 
 You should use the BentoML Model Deployer to:
 
@@ -43,7 +43,7 @@ The `bentoctl` integration implementation is still in progress and will be avail
 you to deploy your models to a specific cloud provider with just a few lines of code using ZenML built-in steps.
 {% endhint %}
 
-### How do you deploy it?
+## How do you deploy it?
 
 Within ZenML you can quickly get started with BentoML by simply creating Model Deployer Stack Component with the BentoML
 flavor. To do so you'll need to install the required Python packages on your local machine to be able to deploy your
@@ -62,11 +62,11 @@ zenml model-deployer register bentoml_deployer --flavor=bentoml
 The ZenML integration will provision a local HTTP deployment server as a daemon process that will continue to run in the
 background to serve the latest models and Bentos.
 
-### How do you use it?
+## How do you use it?
 
-In order to use the BentoML Model Deployer, We need to understand these three main concepts:
+In order to use the BentoML Model Deployer, we need to understand three main concepts:
 
-#### BentoML Service and Runner
+### BentoML Service and Runner
 
 The first step to being able to deploy your models and use BentoML is to create
 a [bento service](https://docs.bentoml.org/en/latest/concepts/service.html) which is the main logic that defines how
@@ -93,23 +93,22 @@ def classify(input_series: np.ndarray) -> np.ndarray:
 
 ```
 
-#### ZenML Bento Builder step
+### ZenML Bento Builder step
 
 Once you have your bento service and runner defined, we can use the built-in bento builder step to build the bento
 bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step
 within a ZenML pipeline.
 
 ```python
-# Import the step
+from zenml import pipeline, step
 from zenml.integrations.bentoml.steps import bento_builder_step
 
-# The name we gave to our deployed model
-MODEL_NAME = "pytorch_mnist"
-
-# Call the step with the parameters
-bento_builder = bento_builder_step.with_options(
-    parameters=dict(
-        model_name=MODEL_NAME,  # Name of the model
+@pipeline
+def bento_builder_pipeline():
+    model = ...
+    bento = bento_builder_step(
+        model=model,
+        model_name="pytorch_mnist",  # Name of the model
         model_type="pytorch",  # Type of the model (pytorch, tensorflow, sklearn, xgboost..)
         service="service.py:svc",  # Path to the service file within zenml repo
         labels={  # Labels to be added to the bento bundle
@@ -122,7 +121,6 @@ bento_builder = bento_builder_step.with_options(
             "packages": ["zenml", "torch", "torchvision"],
         },  # Python package requirements of the model
     )
-)
 ```
 
 The Bento Builder step can be used in any orchestration pipeline that you create with ZenML. The step will build the
@@ -130,31 +128,28 @@ bento bundle and save it to the used artifact store. Which can be used to serve 
 BentoML Model Deployer Step, or in a remote setting using the `bentoctl` or Yatai. This gives you the flexibility to
 package your model in a way that is ready for different deployment scenarios.
 
-#### ZenML BentoML Deployer step
+### ZenML BentoML Deployer step
 
-We have now built our bento bundle, and we can use the built-in bento deployer step to deploy the bento bundle to our
+We have now built our bento bundle, and we can use the built-in `bentoml_model_deployer_step` to deploy the bento bundle to our
 local HTTP server. The following example shows how to call the built-in bento deployer step within a ZenML pipeline.
 
-Note: the bentoml deployer step can only be used in a local environment.
+Note: the `bentoml_model_deployer_step` can only be used in a local environment.
 
 ```python
-# Import the step and parameters class
-from zenml.integrations.bentoml.steps import bentoml_model_deployer_step,
+from zenml import pipeline, step
+from zenml.integrations.bentoml.steps import bentoml_model_deployer_step
 
-# The name we gave to our deployed model
-MODEL_NAME = "pytorch_mnist"
-
-# Call the step with the parameters
-bentoml_model_deployer = bentoml_model_deployer_step.with_options(
-    parameters=dict(
-        model_name=MODEL_NAME,  # Name of the model
+@pipeline
+def bento_deployer_pipeline():
+    bento = ...
+    deployed_model = bentoml_model_deployer_step(
+        bento=bento
+        model_name="pytorch_mnist",  # Name of the model
         port=3001,  # Port to be used by the http server
-        production=False,  # Deploy the model in production mode
     )
-)
 ```
 
-#### ZenML BentoML Pipeline examples
+### ZenML BentoML Pipeline examples
 
 Once all the steps have been defined, we can create a ZenML pipeline and run it. The bento builder step expects to get
 the trained model as an input, so we need to make sure either we have a previous step that trains the model and outputs
@@ -225,7 +220,80 @@ def local_deploy_pipeline(
 
 ```
 
-#### Predicting with the local deployed model
+### Listing deployed models
+
+The `zenml model-deployer models list` CLI command can be run to list the 
+active model servers:
+
+```
+$ zenml model-deployer models list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME          │ MODEL_NAME    ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┼───────────────┨
+┃   ✅   │ cd38d6e6-467b-46e0-be13-3112c6e65d0e │ bentoml_fashion_mnist_pipeline │ bentoml_model_deployer_step │ pytorch_mnist ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┛
+```
+
+To get more information about a specific model server, such as the prediction 
+URL, the `zenml model-deployer models describe <uuid>` CLI command can be run:
+
+```
+$ zenml model-deployer models describe cd38d6e6-467b-46e0-be13-3112c6e65d0e
+        Properties of Served Model cd38d6e6-467b-46e0-be13-3112c6e65d0e       
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                                                          ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ BENTO_TAG              │ pytorch_mnist_service:kq25r5c6fgidomup                                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ BENTO_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/bento_builder_────┃
+┃                        │ step/output/10/zenml_exported.bento                                            ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ DAEMON_PID             │ 98699                                                                          ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ pytorch_mnist                                                                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/trainer/output/2  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ bentoml_fashion_mnist_pipeline                                                 ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ RUN_NAME               │ bentoml_fashion_mnist_pipeline-2022_11_07-00_18_30_882755                      ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ bentoml_model_deployer_step                                                    ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ PREDICTION_APIS_URLS   │ http://127.0.0.1:3001/predict_ndarray  http://127.0.0.1:3001/predict_image     ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://127.0.0.1:3001/                                                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ SERVICE_PATH           │ /Users/.../local_stores/86c7fc93-f4c0-460b-b430-7d8f5143ba88/cd38d6e6-467b-46e0┃
+┃                        │ -be13-3112c6e65d0e                                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │                                                                                ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ UUID                   │ cd38d6e6-467b-46e0-be13-3112c6e65d0e                                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The prediction URL can sometimes be more difficult to make out in the detailed
+output, so there is a separate CLI command available to retrieve it:
+
+```shell
+$ zenml model-deployer models get-url cd38d6e6-467b-46e0-be13-3112c6e65d0e
+  Prediction URL of Served Model cd38d6e6-467b-46e0-be13-3112c6e65d0e is:
+  http://localhost:3001/
+```
+
+Finally, a model server can be deleted with the 
+`zenml model-deployer models delete <uuid>` CLI command:
+
+```shell
+$ zenml model-deployer models delete cd38d6e6-467b-46e0-be13-3112c6e65d0e
+Model server BentoMLDeploymentService[cd38d6e6-467b-46e0-be13-3112c6e65d0e] 
+(type: model-serving, flavor: bentoml) was deleted.
+```
+
+### Predicting with the local deployed model
 
 Once the model has been deployed we can use the BentoML client to send requests to the deployed model. ZenML will
 automatically create a BentoML client for you and you can use it to send requests to the deployed model by simply
@@ -257,7 +325,7 @@ Deploying and testing locally is a great way to get started and test your model.
 most likely require you to deploy your model to a remote environment. The next section will show you how to deploy the
 Bento you built with ZenML pipelines to a cloud environment using the `bentoctl` CLI.
 
-#### From Local to Cloud with `bentoctl`
+### From Local to Cloud with `bentoctl`
 
 Bentoctl helps deploy any machine learning models as production-ready API endpoints into the cloud. It is a command line
 tool that provides a simple interface to manage your BentoML bundles.
