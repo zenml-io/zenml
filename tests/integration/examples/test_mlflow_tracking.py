@@ -34,7 +34,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         example_args=["--type", "tracking"],
         pipelines={"mlflow_tracking_pipeline": (1, 4)},
         timeout_limit=750,
-        example_code_lives_in_tests_subdir=True,
     ) as runs:
         client = Client()
         pipeline = client.get_pipeline("mlflow_tracking_pipeline")

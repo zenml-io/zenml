@@ -25,7 +25,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="whylogs",
         pipelines={"data_profiling_pipeline": (1, 4)},
-        example_code_lives_in_tests_subdir=True,
     ) as runs:
         steps = runs["data_profiling_pipeline"][0].steps
         profiles = [

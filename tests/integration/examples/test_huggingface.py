@@ -25,7 +25,6 @@ def test_token_classification(request: pytest.FixtureRequest) -> None:
         name="huggingface",
         example_args=["--nlp_task", "token-classification"],
         pipelines={"token_classifier_train_eval_pipeline": (1, 5)},
-        example_code_lives_in_tests_subdir=True,
     ):
         pass
 
@@ -38,6 +37,5 @@ def test_sequence_classification(request: pytest.FixtureRequest) -> None:
         name="huggingface",
         example_args=["--nlp_task", "sequence-classification"],
         pipelines={"seq_classifier_train_eval_pipeline": (1, 5)},
-        example_code_lives_in_tests_subdir=True,
     ):
         pass

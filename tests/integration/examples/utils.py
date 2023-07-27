@@ -98,7 +98,7 @@ def run_example(
     example_args: Optional[List[str]] = None,
     pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
-    example_code_lives_in_tests_subdir: bool = False,
+    is_public_example: bool = False,
 ) -> Generator[Dict[str, List[PipelineRunResponseModel]], None, None]:
     """Runs the given example and validates it ran correctly.
 
@@ -110,17 +110,18 @@ def run_example(
             run. Maps pipeline names to a Tuple (run_count, step_count) that
             specifies the expected number of runs (and their steps) to validate.
         timeout_limit: The maximum time to wait for the pipeline run to finish.
-        example_code_lives_in_tests_subdir: Whether the example lives in
-            `tests/integration/examples/` (True) or in `examples/` (False).
+        is_public_example: Whether the example is a public example that lives
+            in `examples/` (True) or a test-only example that lives in
+            `tests/integration/examples/` (False).
 
     Yields:
         The example and the pipeline runs that were executed and validated.
     """
     # Copy all example files into the repository directory
-    if example_code_lives_in_tests_subdir:
-        examples_directory = str(Path(__file__).parents[0] / name)
-    else:
+    if is_public_example:  # examples/<name>
         examples_directory = str(Path(__file__).parents[3] / "examples" / name)
+    else:  # tests/integration/examples/<name>
+        examples_directory = str(Path(__file__).parents[0] / name)
     dst_dir = Path(os.getcwd())
     copy_example_files(examples_directory, str(dst_dir))
 

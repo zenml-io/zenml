@@ -39,7 +39,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
             "mlflow_registry_training_pipeline": (1, 5),
             "mlflow_registry_inference_pipeline": (1, 4),
         },
-        example_code_lives_in_tests_subdir=True,
     ) as runs:
         pipeline = Client().get_pipeline("mlflow_registry_training_pipeline")
         assert pipeline

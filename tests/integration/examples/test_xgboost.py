@@ -23,6 +23,5 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="xgboost",
         pipelines={"xgboost_pipeline": (1, 3)},
-        example_code_lives_in_tests_subdir=True,
     ):
         pass

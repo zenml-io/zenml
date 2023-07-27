@@ -23,6 +23,5 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="deepchecks",
         pipelines={"data_validation_pipeline": (1, 6)},
-        example_code_lives_in_tests_subdir=True,
     ):
         pass

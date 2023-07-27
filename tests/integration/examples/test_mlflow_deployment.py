@@ -30,7 +30,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
             "mlflow_train_deploy_pipeline": (1, 5),
             "mlflow_deployment_inference_pipeline": (1, 4),
         },
-        example_code_lives_in_tests_subdir=True,
     ):
         import mlflow
         from mlflow.tracking import MlflowClient

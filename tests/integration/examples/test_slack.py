@@ -24,7 +24,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="slack",
         pipelines={"slack_post_pipeline": (1, 5)},
-        example_code_lives_in_tests_subdir=True,
     ) as runs:
         run = runs["slack_post_pipeline"][0]
         alert_step = run.steps["alerter"]

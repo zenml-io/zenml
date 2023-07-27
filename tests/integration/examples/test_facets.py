@@ -24,6 +24,5 @@ def test_example(request: pytest.FixtureRequest) -> None:
         request=request,
         name="facets",
         pipelines={"facets_pipeline": (1, 2)},
-        example_code_lives_in_tests_subdir=True,
     ):
         pass
