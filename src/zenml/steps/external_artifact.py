@@ -179,11 +179,11 @@ class ExternalArtifact:
                 "Finished uploading external artifact %s.", artifact_id
             )
         else:
+            response = None
             if self._id:
                 response = Client().get_artifact(artifact_id=self._id)
-            else:
+            elif self._pipeline_name and self._artifact_name:
                 pipeline = Client().get_pipeline(self._pipeline_name)
-                response = None
                 for artifact in pipeline.last_successful_run.artifacts:
                     if artifact.name == self._artifact_name:
                         response = artifact
