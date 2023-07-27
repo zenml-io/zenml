@@ -8,6 +8,23 @@ While [extensive documentation of ZenML](https://docs.zenml.io/getting-started/i
 
 It demonstrates how the most important steps of the ML Production Lifecycle can be implemented in a reusable way remaining agnostic to the underlying infrastructure, and how to integrate them together into pipelines serving Training and Batch Inference purposes.
 
+## Table of Contents
+
+1. [Overview](#🗺-overview)
+2. [How the example is implemented](#🧰-how-the-example-is-implemented)
+
+    a. [[Continuous Training] Training Pipeline](#continuous-training-training-pipeline-etl-steps)
+    * [ETL steps](#continuous-training-training-pipeline-etl-steps)
+    * [Model architecture search and hyperparameter tuning](#continuous-training-training-pipeline-model-architecture-search-and-hyperparameter-tuning)
+    * [Model training and evaluation](#continuous-training-training-pipeline-model-training-and-evaluation)
+    * [Model promotion](#continuous-training-training-pipeline-model-promotion)
+
+    b. [[Continuous Deployment] Batch Inference](#continuous-deployment-batch-inference)
+    * [ETL Steps](#continuous-deployment-batch-inference-etl-steps)
+    * [Drift reporting](#continuous-deployment-batch-inference-drift-reporting)
+    * [Inference](#continuous-deployment-batch-inference-inference)
+3. [Run it locally](#🖥-run-it-locally)
+
 ## 🗺 Overview
 
 This example uses [the Breast Cancer Dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html) to demonstrate how to perform major critical steps for Continuous Training (CT) and Continuous Delivery (CD).
@@ -53,10 +70,9 @@ For better readability, we need to describe the folder structure used in this ex
 
 We will be going section by section diving into implementation details and sharing tips and best practices along this journey.
 
-### [Continuous Training] Training Pipeline
-#### ETL steps
+### [Continuous Training] Training Pipeline: ETL steps
 
-[Code folder](steps/etl/)
+[📂 Code folder](steps/etl/)
 
 ![The overview of ETL steps](assets/01_etl.png)
 
@@ -66,26 +82,9 @@ The first `data_loader` step is downloading data, which is passed to the `train_
 
 We also output `preprocess_pipeline` as an output artifact from `train_data_preprocess` - it will be passed into the inference pipeline later on, to prepare the inference data using the same fitted pipeline from training. Sklearn `Pipeline` comes really handy to perform consistent repeatable data manipulations on top of pandas `DataFrame` or similar structures.
 
-```python
-preprocess_pipeline = Pipeline([("passthrough", "passthrough")])
-if drop_na:
-    preprocess_pipeline.steps.append(("drop_na", NADropper()))
-if drop_columns:
-    # Drop columns
-    preprocess_pipeline.steps.append(
-        ("drop_columns", ColumnsDropper(drop_columns))
-    )
-if normalize:
-    # Normalize the data
-    preprocess_pipeline.steps.append(("normalize", MinMaxScaler()))
-preprocess_pipeline.steps.append(
-    ("cast", DataFrameCaster(dataset_trn.columns))
-)
-```
+### [Continuous Training] Training Pipeline: Model architecture search and hyperparameter tuning
 
-#### Model architecture search and hyperparameter tuning
-
-[Code folder](steps/hp_tuning/)
+[📂 Code folder](steps/hp_tuning/)
 
 ![The overview of model architecture search and hyperparameter tuning steps](assets/02_hp.png)
 
@@ -93,60 +92,9 @@ To ensure the high quality of ML models many ML Engineers go for automated hyper
 
 To create parallel processing of computationally expensive operations we use a loop over predefined potential architectures and respective parameters search grid and create one step for each candidate. After the steps are created we need to collect results (one best model per each search step) in a `hp_tuning_select_best_model` step to define the final winner and pass it to training. To ensure that collection goes smoothly and in full we use an `after` statement populated with all search steps names, so the selector job will wait for the completion of all searches.
 
-```python
-if hp_tuning_enabled:
-    after = []
-    search_steps_prefix = "hp_tuning_search_"
-    for i, config_key in enumerate(MetaConfig.supported_models):
-        step_name = f"{search_steps_prefix}{i}"
-        hp_tuning_single_search(
-            id=step_name,
-            config_key=config_key,
-            dataset_trn=dataset_trn,
-            dataset_tst=dataset_tst,
-            target=target,
-        )
-        after.append(step_name)
-    best_model_config = hp_tuning_select_best_model(
-        search_steps_prefix=search_steps_prefix, after=after
-    )
-else:
-    best_model_config = MetaConfig.default_model_config
-```
-
 You can find more information about the current state of [Hyperparameter Tuning using ZenML in documentation](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning).
 
-Another important concept introduced at this stage is [Custom Materializers](https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types#custom-materializers): `hp_tuning_single_search` produce an output containing best parameters as a normal python dictionary and model architecture as a sklearn model class. Sklearn models are not JSON serializable for good reasons and using `pickle` or similar tools is not consistent in the long run, since they heavily rely on exact match of pickle/unpickle environments. To mitigate this we define the `ModelInfoMaterializer` in the `utils` folder, which is dumping and loading sklearn models by saving them as a string and reconstructing them back to class using `getattr` on load:
-```python
-class ModelInfoMaterializer(BaseMaterializer):
-  ASSOCIATED_TYPES = (dict,)
-  ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-
-  def load(self, data_type: Type[dict]) -> Dict[str, Any]:
-      import sklearn.ensemble
-      import sklearn.linear_model
-      import sklearn.tree
-
-      modules = [sklearn.ensemble, sklearn.linear_model, sklearn.tree]
-
-      with fileio.open(os.path.join(self.uri, "data.json"), "r") as f:
-          data = json.loads(f.read())
-      class_name = data["class"]
-      cls = None
-      for module in modules:
-          if cls := getattr(module, class_name, None):
-              break
-      if cls is None:
-          raise ValueError(...)
-      data["class"] = cls
-
-      return data
-
-  def save(self, data: dict) -> None:
-      with fileio.open(os.path.join(self.uri, "data.json"), "w") as f:
-          data["class"] = data["class"].__name__
-          f.write(json.dumps(data))
-```
+Another important concept introduced at this stage is [Custom Materializers](https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types#custom-materializers): `hp_tuning_single_search` produce an output containing best parameters as a normal python dictionary and model architecture as a sklearn model class. Implementation of `ModelInfoMaterializer` is [here](utils/sklearn_materializer.py).
 
 Later on, this materializer class is passed into steps to create such an output explicitly:
 ```python
@@ -157,9 +105,9 @@ def hp_tuning_select_best_model(
   ...
 ```
 
-#### Model training and evaluation
+### [Continuous Training] Training Pipeline: Model training and evaluation
 
-[Code folder](steps/training/)
+[📂 Code folder](steps/training/)
 
 ![The overview of model training and evaluation steps](assets/03_train.png)
 
@@ -168,22 +116,9 @@ Having the best model architecture and its' hyperparameters defined in the previ
 experiment_tracker = Client().active_stack.experiment_tracker
 @step(experiment_tracker=experiment_tracker.name)
 def model_trainer(
-    dataset_trn: pd.DataFrame,
-    best_model_config: Dict[str, Any],
     ...
 ) -> Annotated[ClassifierMixin, "model"]:
-  hyperparameters = best_model_config["params"]
-  model_class = best_model_config["class"]
-  if "random_seed" in model_class.__init__.__code__.co_varnames:
-        model = model_class(random_seed=random_seed, **hyperparameters)
-    else:
-        model = model_class(**hyperparameters)
-  mlflow.sklearn.autolog()
-    model.fit(
-        dataset_trn.drop(columns=[target]),
-        dataset_trn[target],
-    )
-  return model
+  ...
 ```
 
 Even knowing that the hyperparameter tuning step happened we would like to ensure that our model meets at least minimal quality standards - this quality gate is on the evaluation step. In case the model is of low-quality metric-wise an Exception will be raised and the pipeline will stop.
@@ -206,9 +141,9 @@ def e2e_example_training(...):
   notify_on_success(after=["promote_metric_compare_promoter"])
 ```
 
-#### Model promotion
+### [Continuous Training] Training Pipeline: Model promotion
 
-[Code folder](steps/promotion/)
+[📂 Code folder](steps/promotion/)
 
 ![The overview of model promotion](assets/04_promotion.png)
 Once the model is trained and evaluated on meeting basic quality standards, we would like to understand whether it is good enough to beat the existing model used in production. This is a very important step, as promoting a weak model in production might result in huge losses at the end of the day.
@@ -221,9 +156,9 @@ To achieve this we would retrieve the model version from [Model Registry](https:
 
 ![The overview of Batch Inference](assets/05_batch_inference.png)
 
-#### ETL Steps
+### [Continuous Deployment] Batch Inference: ETL Steps
 
-[Code folder](steps/etl)
+[📂 Code folder](steps/etl)
 
 The process of loading data is similar to training, even the same step function is used, but with the `is_inference` flag.
 
@@ -242,9 +177,9 @@ df_inference = inference_data_preprocessor(
 )
 ```
 
-#### Drift reporting
+### [Continuous Deployment] Batch Inference: Drift reporting
 
-[Code folder](steps/data_quality/)
+[📂 Code folder](steps/data_quality/)
 
 On the drift reporting stage we will use [standard step](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently#how-do-you-use-it) `evidently_report_step` to build Evidently report to assess certain data quality metrics. `evidently_report_step` has reach set of options, but for this example, we will build only `DataQualityPreset` metrics preset to get a number of NA values in reference and current datasets.
 
@@ -252,9 +187,9 @@ After the report is built we execute another quality gate using the `drift_na_co
 
 You can follow [Data Validators docs](https://docs.zenml.io/user-guide/component-guide/data-validators) to get more inspiration on how and when to use drift detection in your pipelines.
 
-#### Inference
+### [Continuous Deployment] Batch Inference: Inference
 
-[Code folder](steps/inference)
+[📂 Code folder](steps/inference)
 
 As a last step concluding all work done so far, we will calculate predictions on the inference dataset and persist them in [Artifact Store](https://docs.zenml.io/user-guide/component-guide/artifact-stores) for reuse.
 
@@ -274,9 +209,7 @@ def inference_predict(
 ```
 
 
-# 🖥 Run it locally
-
-## 👣 Step-by-Step
+## 🖥 Run it locally
 
 ### 📄 Prerequisites
 
