@@ -577,11 +577,11 @@ def version() -> None:
     help="The region to deploy the stack to.",
 )
 @click.option(
-    "--import",
-    "-i",
-    "import_stack_flag",
+    "--no-import",
+    "-n",
+    "no_import_stack_flag",
     is_flag=True,
-    help="Import the stack automatically after the stack is deployed.",
+    help="If you don't want the stack to be imported automatically.",
 )
 @click.option(
     "--artifact-store",
@@ -692,7 +692,7 @@ def deploy(
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    import_stack_flag: Optional[bool] = None,
+    no_import_stack_flag: Optional[bool] = None,
     artifact_store: Optional[bool] = None,
     container_registry: Optional[bool] = None,
     file: Optional[str] = None,
@@ -711,9 +711,8 @@ def deploy(
         force: Force pull the stack recipe, overwriting any existing files.
         stack_name: A name for the ZenML stack that gets imported as a result
             of the recipe deployment.
-        import_stack_flag: Import the stack automatically after the recipe is
-            deployed. The stack configuration file is always generated and
-            can be imported manually otherwise.
+        no_import_stack_flag: If you don't want the stack to be imported into
+            ZenML after deployment.
         artifact_store: The flavor of artifact store to deploy. In the case of
             the artifact store, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be deployed.
@@ -777,7 +776,7 @@ def deploy(
 
     terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
 
-    if import_stack_flag:
+    if not no_import_stack_flag:
         import_new_stack(
             stack_name=stack_name,
             provider=stack.provider,
