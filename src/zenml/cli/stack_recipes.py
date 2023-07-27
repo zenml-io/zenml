@@ -22,17 +22,16 @@ import click
 from rich.text import Text
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.stack import _import_stack_component, stack
-from zenml.client import Client
+from zenml.cli.stack import stack
 from zenml.constants import (
     ALPHA_MESSAGE,
     STACK_RECIPE_MODULAR_RECIPES,
 )
-from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.mlstacks.utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
+    import_new_stack,
     stack_exists,
     stack_spec_exists,
     verify_mlstacks_installation,
@@ -43,9 +42,8 @@ from zenml.recipes.stack_recipe_service import (
 )
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
-from zenml.utils.yaml_utils import read_yaml, write_yaml
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 
@@ -768,30 +766,10 @@ def deploy(
     # TODO: remove debug_mode=True
     terraform_utils.deploy_stack(stack_file_path, debug_mode=True)
 
-    # TODO: refactor this code (into a function perhaps)
     if import_stack_flag:
-        tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{stack.provider}-modular"
-        stack_filename = terraform_utils.get_stack_outputs(
-            stack_file_path, output_key="stack-yaml-path"
-        ).get("stack-yaml-path")[2:]
-        import_stack_path = f"{tf_dir}/{stack_filename}"
-        data = read_yaml(import_stack_path)
-        # import stack components
-        component_ids = {}
-        for component_type_str, component_config in data["components"].items():
-            component_type = StackComponentType(component_type_str)
-
-            component_id = _import_stack_component(
-                component_type=component_type,
-                component_dict=component_config,
-            )
-            component_ids[component_type] = component_id
-
-        imported_stack = Client().create_stack(
-            name=stack_name, components=component_ids, is_shared=False
+        import_new_stack(
+            provider=stack.provider, stack_file_path=stack_file_path
         )
-
-        cli_utils.print_model_url(get_stack_url(imported_stack))
 
     # # Parse the given args
     # # name is guaranteed to be set by parse_name_and_extra_arguments

@@ -31,12 +31,16 @@ import click
 import pkg_resources
 
 from zenml.cli import utils as cli_utils
+from zenml.cli.stack import _import_stack_component
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
     NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
 )
+from zenml.enums import StackComponentType
+from zenml.utils.dashboard_utils import get_stack_url
+from zenml.utils.yaml_utils import read_yaml
 
 
 def verify_mlstacks_installation() -> None:
@@ -388,3 +392,38 @@ def generate_unique_filename(base_filename: str) -> str:
         uuid.uuid4().hex
     )  # Generate a random UUID and convert it to a string.
     return f"{base_filename}_{unique_suffix}"
+
+
+@verify_installation
+def import_new_stack(provider: str, stack_file_path: str) -> None:
+    """Import a new stack deployed for a particular cloud provider.
+
+    Args:
+        provider: The cloud provider for which the stack is deployed.
+    """
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+    from mlstacks.utils import terraform_utils
+
+    tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+    # strip out the `./` from the stack_file_path
+    stack_filename = terraform_utils.get_stack_outputs(
+        stack_file_path, output_key="stack-yaml-path"
+    ).get("stack-yaml-path")[2:]
+    import_stack_path = f"{tf_dir}/{stack_filename}"
+    data = read_yaml(import_stack_path)
+    # import stack components
+    component_ids = {}
+    for component_type_str, component_config in data["components"].items():
+        component_type = StackComponentType(component_type_str)
+
+        component_id = _import_stack_component(
+            component_type=component_type,
+            component_dict=component_config,
+        )
+        component_ids[component_type] = component_id
+    stack_name = data["name"]
+    imported_stack = Client().create_stack(
+        name=stack_name, components=component_ids, is_shared=False
+    )
+
+    cli_utils.print_model_url(get_stack_url(imported_stack))
