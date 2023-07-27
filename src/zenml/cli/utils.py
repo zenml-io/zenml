@@ -55,13 +55,13 @@ from zenml.constants import (
     APP_NAME,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
     STACK_RECIPE_TERRAFORM_FILES_PATH,
 )
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.mlstacks.utils import verify_mlstacks_installation
 from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
@@ -2691,3 +2691,11 @@ def warn_deprecated_example_subcommand() -> None:
         "The `example` CLI subcommand has been deprecated and will be removed "
         "in a future release."
     )
+
+
+def verify_mlstacks_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)

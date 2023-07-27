@@ -33,7 +33,6 @@ from zenml.mlstacks.utils import (
     import_new_stack,
     stack_exists,
     stack_spec_exists,
-    verify_mlstacks_installation,
     verify_spec_and_tf_files_exist,
 )
 from zenml.recipes import GitStackRecipesHandler
@@ -741,7 +740,7 @@ def deploy(
             "Please choose a different name."
         )
 
-    verify_mlstacks_installation()
+    cli_utils.verify_mlstacks_installation()
     from mlstacks.utils import zenml_utils
 
     cli_utils.warning(ALPHA_MESSAGE)
@@ -780,7 +779,9 @@ def deploy(
 
     if import_stack_flag:
         import_new_stack(
-            provider=stack.provider, stack_file_path=stack_file_path
+            stack_name=stack_name,
+            provider=stack.provider,
+            stack_file_path=stack_file_path,
         )
 
     # # Parse the given args
@@ -1065,7 +1066,7 @@ def destroy(
     debug_mode: bool = False,
 ) -> None:
     """Destroy all resources previously created with `zenml stack deploy`."""
-    verify_mlstacks_installation()
+    cli_utils.verify_mlstacks_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
     # check the stack actually exists
@@ -1074,9 +1075,7 @@ def destroy(
             f"Stack with name '{stack_name}' does not exist. Please check and "
             "try again."
         )
-    spec_file_path: str = (
-        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
-    )
+    spec_file_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}/stack-{stack_name}.yaml"
     tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
 
     verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
@@ -1095,10 +1094,12 @@ def destroy(
         from zenml.client import Client
 
         c = Client()
-        c.delete_stack(stack_name=stack_name, recursive=True)
+        c.delete_stack(name_id_or_prefix=stack_name, recursive=True)
+
+    spec_dir = os.path.dirname(spec_file_path)
     if cli_utils.confirmation(
-        f"Would you like to delete the `mlstacks` spec file for this stack, "
-        f"located at {spec_file_path}?"
+        f"Would you like to delete the `mlstacks` spec directory for "
+        f"this stack, located at {spec_dir}?"
     ):
         remove(spec_file_path)
     cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
