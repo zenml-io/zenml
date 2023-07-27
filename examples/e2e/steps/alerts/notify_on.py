@@ -20,8 +20,8 @@ from zenml.utils.dashboard_utils import get_run_url
 alerter = Client().active_stack.alerter
 
 
-def build_slack_message(status: str) -> str:
-    """Builds a message for Slack post.
+def build_message(status: str) -> str:
+    """Builds a message to post.
 
     Args:
         status: Status to be set in text.
@@ -43,7 +43,7 @@ def notify_on_failure() -> None:
     """Notifies user on step failure. Used in Hook."""
     step_context = get_step_context()
     if step_context.pipeline_run.config.extra["notify_on_failure"]:
-        alerter.post(message=build_slack_message(status="failed"))
+        alerter.post(message=build_message(status="failed"))
 
 
 @step(enable_cache=False)
@@ -51,4 +51,4 @@ def notify_on_success() -> None:
     """Notifies user on step success."""
     step_context = get_step_context()
     if step_context.pipeline_run.config.extra["notify_on_success"]:
-        alerter.post(message=build_slack_message(status="succeeded"))
+        alerter.post(message=build_message(status="succeeded"))

@@ -13,4 +13,4 @@
 #  permissions and limitations under the License.
 
 
-from .slack_notifications import notify_on_failure, notify_on_success
+from .notify_on import notify_on_failure, notify_on_success
