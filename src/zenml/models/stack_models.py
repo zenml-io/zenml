@@ -46,6 +46,11 @@ class StackBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    stack_spec_path: Optional[str] = Field(
+        default=None,
+        title="The path to the stack spec.",
+    )
+
 
 # -------- #
 # RESPONSE #

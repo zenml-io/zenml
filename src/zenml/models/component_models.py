@@ -81,6 +81,11 @@ class ComponentBaseModel(BaseModel):
         title="The stack component labels.",
     )
 
+    component_spec_path: Optional[str] = Field(
+        default=None,
+        title="The path to the component spec.",
+    )
+
 
 # -------- #
 # RESPONSE #
