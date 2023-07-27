@@ -34,11 +34,8 @@ class ModelInfoMaterializer(BaseMaterializer):
         class_name = data["class"]
         cls = None
         for module in modules:
-            try:
-                cls = getattr(module, class_name)
+            if cls := getattr(module, class_name, None):
                 break
-            except:
-                pass
         if cls is None:
             raise ValueError(
                 f"Cannot deserialize `{class_name}` using {self.__class__.__name__}. "
