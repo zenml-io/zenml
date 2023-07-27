@@ -1,7 +1,7 @@
 <!-- Remove these comments -->
 <!-- markdown-link-check-disable -->
 
-# 🚀 Bringing all components together to build a Data Product using ZenML
+# 💫 Bringing all MLOps stack components together to build an end-to-end data product with ZenML
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
 While [extensive documentation of ZenML](https://docs.zenml.io/getting-started/introduction) is a great support for exploring specific components and integrations, seeing the big picture of all components integrated and working together is not usually covered by any documentation. This example comes in handy to fill this gap!
@@ -83,11 +83,11 @@ preprocess_pipeline.steps.append(
 )
 ```
 
-#### Model architecture search and hyperparameter tunning
+#### Model architecture search and hyperparameter tuning
 
 [Code folder](steps/hp_tuning/)
 
-![The overview of model architecture search and hyperparameter tunning steps](assets/02_hp.png)
+![The overview of model architecture search and hyperparameter tuning steps](assets/02_hp.png)
 
 To ensure the high quality of ML models many ML Engineers go for automated hyperparameter tuning or even automated model architecture search. In this example, we are using prepared data from ETL to spin up a search of the best model parameters for different architectures in parallel.
 
