@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 
 
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, List
 
 import mlflow
 import pandas as pd
-from config import MetaConfig
 from sklearn.base import ClassifierMixin
 
 from zenml import step
@@ -44,6 +43,7 @@ if not experiment_tracker or not isinstance(
 def model_trainer(
     dataset_trn: pd.DataFrame,
     best_model_config: Dict[str, Any],
+    target: List[str],
     random_seed: int = 42,
 ) -> Annotated[ClassifierMixin, "model"]:
     """Configure and train a model on the training dataset.
@@ -72,6 +72,7 @@ def model_trainer(
         best_model_config: Dictionary describing best model from Hyperparameter tuning step.
             It has `class` - a pointer to model class and `params` - dictionary of best possible
             parameters.
+        target: List of target columns in dataset.
         random_seed: Fixed seed of random generator.
 
     Returns:
@@ -91,8 +92,8 @@ def model_trainer(
     logger.info(f"Training model {model}...")
     mlflow.sklearn.autolog()
     model.fit(
-        dataset_trn.drop(columns=[MetaConfig.target_column]),
-        dataset_trn[MetaConfig.target_column],
+        dataset_trn.drop(columns=target),
+        dataset_trn[target],
     )
     ### YOUR CODE ENDS HERE ###
 

@@ -15,7 +15,7 @@
 
 from typing import List, Optional
 
-from config import MetaConfig, PipelinesConfig
+from config import DEFAULT_PIPELINE_EXTRAS, PIPELINE_SETTINGS, MetaConfig
 from steps import (
     data_loader,
     hp_tuning_select_best_model,
@@ -44,8 +44,9 @@ logger = get_logger(__name__)
 
 
 @pipeline(
-    settings={"docker": PipelinesConfig.docker_settings},
+    settings=PIPELINE_SETTINGS,
     on_failure=notify_on_failure,
+    extra=DEFAULT_PIPELINE_EXTRAS,
 )
 def e2e_example_training(
     test_size: float = 0.2,
@@ -82,8 +83,7 @@ def e2e_example_training(
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## ETL stage ##########
-    raw_data = data_loader(
-        n_samples=100_000,
+    raw_data, target = data_loader(
         drop_target=False,
     )
     dataset_trn, dataset_tst = train_data_splitter(
@@ -109,6 +109,7 @@ def e2e_example_training(
                 config_key=config_key,
                 dataset_trn=dataset_trn,
                 dataset_tst=dataset_tst,
+                target=target,
             )
             after.append(step_name)
         best_model_config = hp_tuning_select_best_model(
@@ -122,6 +123,7 @@ def e2e_example_training(
         dataset_trn=dataset_trn,
         best_model_config=best_model_config,
         random_seed=random_seed,
+        target=target,
     )
     model_evaluator(
         model=model,
@@ -130,6 +132,7 @@ def e2e_example_training(
         min_train_accuracy=min_train_accuracy,
         min_test_accuracy=min_test_accuracy,
         fail_on_accuracy_quality_gates=fail_on_accuracy_quality_gates,
+        target=target,
     )
     mlflow_register_model_step(
         model,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from config import MetaConfig, PipelinesConfig
+from config import DEFAULT_PIPELINE_EXTRAS, PIPELINE_SETTINGS, MetaConfig
 from steps import (
     data_loader,
     drift_na_count,
@@ -37,8 +37,9 @@ logger = get_logger(__name__)
 
 
 @pipeline(
-    settings={"docker": PipelinesConfig.docker_settings},
+    settings=PIPELINE_SETTINGS,
     on_failure=notify_on_failure,
+    extra=DEFAULT_PIPELINE_EXTRAS,
 )
 def e2e_example_batch_inference():
     """

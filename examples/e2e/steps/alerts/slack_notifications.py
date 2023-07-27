@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 
 
-from config import PipelinesConfig
-
 from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.utils.dashboard_utils import get_run_url
@@ -43,12 +41,14 @@ def build_slack_message(status: str) -> str:
 
 def notify_on_failure() -> None:
     """Notifies user on step failure. Used in Hook."""
-    if PipelinesConfig.notify_on_failure:
+    step_context = get_step_context()
+    if step_context.pipeline_run.config.extra["notify_on_failure"]:
         alerter.post(message=build_slack_message(status="failed"))
 
 
 @step(enable_cache=False)
 def notify_on_success() -> None:
     """Notifies user on step success."""
-    if PipelinesConfig.notify_on_success:
+    step_context = get_step_context()
+    if step_context.pipeline_run.config.extra["notify_on_success"]:
         alerter.post(message=build_slack_message(status="succeeded"))

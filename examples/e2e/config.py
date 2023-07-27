@@ -30,11 +30,8 @@ from zenml.integrations.constants import (
 )
 from zenml.model_registries.base_model_registry import ModelVersionStage
 
-
-class PipelinesConfig(BaseConfig):
-    notify_on_success = True
-    notify_on_failure = True
-    docker_settings = DockerSettings(
+PIPELINE_SETTINGS = dict(
+    docker=DockerSettings(
         required_integrations=[
             AWS,
             EVIDENTLY,
@@ -45,6 +42,9 @@ class PipelinesConfig(BaseConfig):
             SLACK,
         ],
     )
+)
+
+DEFAULT_PIPELINE_EXTRAS = dict(notify_on_success=True, notify_on_failure=True)
 
 
 class MetaConfig(BaseConfig):
@@ -52,7 +52,6 @@ class MetaConfig(BaseConfig):
     pipeline_name_batch_inference = "e2e_example_batch_inference"
     mlflow_model_name = "e2e_example_model"
     target_env = ModelVersionStage.STAGING
-    target_column = "target"
     supported_models = {
         "LogisticRegression": {
             "class": LogisticRegression,

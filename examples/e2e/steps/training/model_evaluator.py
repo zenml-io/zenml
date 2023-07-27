@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 
 
-from typing import Annotated, Tuple
+from typing import Annotated, List, Tuple
 
 import mlflow
 import pandas as pd
-from config import MetaConfig
 from sklearn.base import ClassifierMixin
 
 from zenml import step
@@ -34,6 +33,7 @@ def model_evaluator(
     model: ClassifierMixin,
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
+    target: List[str],
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
@@ -66,6 +66,7 @@ def model_evaluator(
         model: The pre-trained model artifact.
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
+        target: List of target columns in dataset.
         min_train_accuracy: Minimal acceptable training accuracy value.
         min_test_accuracy: Minimal acceptable testing accuracy value.
         fail_on_accuracy_quality_gates: If `True` a `RuntimeException` is raised
@@ -80,13 +81,13 @@ def model_evaluator(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Calculate the model accuracy on the train and test set
     trn_acc = model.score(
-        dataset_trn.drop(columns=[MetaConfig.target_column]),
-        dataset_trn[MetaConfig.target_column],
+        dataset_trn.drop(columns=target),
+        dataset_trn[target],
     )
     logger.info(f"Train accuracy: {trn_acc}")
     tst_acc = model.score(
-        dataset_tst.drop(columns=[MetaConfig.target_column]),
-        dataset_tst[MetaConfig.target_column],
+        dataset_tst.drop(columns=target),
+        dataset_tst[target],
     )
     logger.info(f"Test accuracy: {tst_acc}")
     mlflow.log_metric("testing_accuracy_score", tst_acc)
