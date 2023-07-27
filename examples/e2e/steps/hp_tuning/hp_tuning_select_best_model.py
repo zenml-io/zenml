@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 def hp_tuning_select_best_model(
     search_steps_prefix: str,
 ) -> Annotated[Dict[str, Any], "best_model"]:
-    """Find best model across all HP tunning attempts.
+    """Find best model across all HP tuning attempts.
 
     This is an example of a model hyperparameter tuning step that takes
     in prefix of steps called previously to search for best hyperparameters.
