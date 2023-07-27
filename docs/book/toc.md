@@ -142,6 +142,11 @@
   * [Model Registries](stacks-and-components/component-guide/model-registries/model-registries.md)
     * [MLflow Model Registry](stacks-and-components/component-guide/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](stacks-and-components/component-guide/model-registries/custom.md)
+* [Cloud Stacks](stacks-and-components/cloud-stacks/README.md)
+  * [AWS](stacks-and-components/cloud-stacks/aws/README.md)
+    * [Connect remote storage](stacks-and-components/cloud-stacks/aws/connect-remote-storage.md)
+  * [GCP](stacks-and-components/cloud-stacks/gcp.md)
+  * [Azure](stacks-and-components/cloud-stacks/azure.md)
 
 ## Learning
 
