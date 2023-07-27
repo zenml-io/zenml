@@ -12,29 +12,30 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceParameters
 from transformers import PreTrainedTokenizerBase
 
-from zenml.steps import step
+from zenml import step
 
 
 @step
 def token_classification_tokenization(
-    params: HuggingfaceParameters,
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
+    text_column: str = "tokens",
+    label_column: str = "ner_tags",
+    label_all_tokens: bool = True,
 ) -> DatasetDict:
     """Tokenizer dataset into tokens and then convert into encoded ids."""
 
     def tokenize_and_align_labels(examples):
         tokenized_inputs = tokenizer(
-            examples[params.text_column],
+            examples[text_column],
             truncation=True,
             is_split_into_words=True,
         )
 
         labels = []
-        for i, label in enumerate(examples[params.label_column]):
+        for i, label in enumerate(examples[label_column]):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
             previous_word_idx = None
             label_ids = []
@@ -52,7 +53,7 @@ def token_classification_tokenization(
                 #  flag.
                 else:
                     label_ids.append(
-                        label[word_idx] if params.label_all_tokens else -100
+                        label[word_idx] if label_all_tokens else -100
                     )
                 previous_word_idx = word_idx
 

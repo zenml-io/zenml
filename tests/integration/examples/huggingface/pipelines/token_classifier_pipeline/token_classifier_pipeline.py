@@ -11,9 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps import (
+    data_importer,
+    load_tokenizer,
+    token_classification_tokenization,
+    token_evaluator,
+    token_trainer,
+)
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import HUGGINGFACE, TENSORFLOW
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[HUGGINGFACE, TENSORFLOW],
@@ -22,14 +30,16 @@ docker_settings = DockerSettings(
 
 
 @pipeline(settings={"docker": docker_settings})
-def seq_classifier_train_eval_pipeline(
-    importer, load_tokenizer, tokenization, trainer, evaluator
-):
+def token_classifier_train_eval_pipeline():
     """Train and Evaluation pipeline."""
-    datasets = importer()
+    datasets = data_importer("conll2003")
     tokenizer = load_tokenizer()
-    tokenized_datasets = tokenization(tokenizer=tokenizer, datasets=datasets)
-    model = trainer(tokenized_datasets=tokenized_datasets, tokenizer=tokenizer)
-    evaluator(
+    tokenized_datasets = token_classification_tokenization(
+        tokenizer=tokenizer, datasets=datasets
+    )
+    model = token_trainer(
+        tokenized_datasets=tokenized_datasets, tokenizer=tokenizer
+    )
+    token_evaluator(
         model=model, tokenized_datasets=tokenized_datasets, tokenizer=tokenizer
     )

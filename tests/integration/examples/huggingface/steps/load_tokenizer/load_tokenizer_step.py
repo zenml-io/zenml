@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from steps.configuration import HuggingfaceParameters
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-from zenml.steps import step
+from zenml import step
 
 
 @step
-def load_tokenizer(params: HuggingfaceParameters) -> PreTrainedTokenizerBase:
+def load_tokenizer(
+    pretrained_model: str = "distilbert-base-uncased",
+) -> PreTrainedTokenizerBase:
     """Load pretrained tokenizer."""
-    tokenizer = AutoTokenizer.from_pretrained(params.pretrained_model)
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
     return tokenizer

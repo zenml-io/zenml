@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 import tensorflow as tf
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceParameters
 from transformers import (
     DataCollatorWithPadding,
     PreTrainedTokenizerBase,
@@ -22,14 +21,19 @@ from transformers import (
     create_optimizer,
 )
 
-from zenml.steps import step
+from zenml import step
 
 
 @step
 def sequence_trainer(
-    params: HuggingfaceParameters,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
+    pretrained_model="distilbert-base-uncased",
+    epochs: int = 1,
+    batch_size: int = 8,
+    init_lr: float = 2e-5,
+    weight_decay_rate: float = 0.01,
+    dummy_run: bool = True,
 ) -> TFPreTrainedModel:
     """Build and Train token classification model."""
     # Get label list
@@ -37,19 +41,17 @@ def sequence_trainer(
 
     # Load pre-trained model from huggingface hub
     model = TFAutoModelForSequenceClassification.from_pretrained(
-        params.pretrained_model, num_labels=len(label_list)
+        pretrained_model, num_labels=len(label_list)
     )
 
-    num_train_steps = (
-        len(tokenized_datasets["train"]) // params.batch_size
-    ) * params.epochs
+    num_train_steps = (len(tokenized_datasets["train"]) // batch_size) * epochs
 
     # Prepare optimizer
     optimizer, _ = create_optimizer(
-        init_lr=params.init_lr,
+        init_lr=init_lr,
         num_train_steps=num_train_steps,
-        weight_decay_rate=params.weight_decay_rate,
-        num_warmup_steps=num_train_steps * 0.1,
+        weight_decay_rate=weight_decay_rate,
+        num_warmup_steps=int(num_train_steps * 0.1),
     )
 
     # Compile model
@@ -61,12 +63,12 @@ def sequence_trainer(
     train_set = tokenized_datasets["train"].to_tf_dataset(
         columns=["attention_mask", "input_ids", "labels"],
         shuffle=True,
-        batch_size=params.batch_size,
+        batch_size=batch_size,
         collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
     )
 
-    if params.dummy_run:
-        model.fit(train_set.take(10), epochs=params.epochs)
+    if dummy_run:
+        model.fit(train_set.take(10), epochs=epochs)
     else:
-        model.fit(train_set, epochs=params.epochs)
+        model.fit(train_set, epochs=epochs)
     return model
