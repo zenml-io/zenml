@@ -10,8 +10,8 @@ It demonstrates how the most important steps of the ML Production Lifecycle can 
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [How the example is implemented](#how-the-example-is-implemented)
+1. [Overview](#-overview)
+2. [How the example is implemented](#-how-the-example-is-implemented)
 
     a. [[Continuous Training] Training Pipeline](#continuous-training-training-pipeline-etl-steps)
     * [ETL steps](#continuous-training-training-pipeline-etl-steps)
@@ -23,7 +23,7 @@ It demonstrates how the most important steps of the ML Production Lifecycle can 
     * [ETL Steps](#continuous-deployment-batch-inference-etl-steps)
     * [Drift reporting](#continuous-deployment-batch-inference-drift-reporting)
     * [Inference](#continuous-deployment-batch-inference-inference)
-3. [Run it locally](#🖥-run-it-locally)
+3. [Run it locally](#-run-it-locally)
 
 ## 🗺 Overview
 
