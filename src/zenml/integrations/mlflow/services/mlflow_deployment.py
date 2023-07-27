@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022-2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
+import pandas as pd
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
@@ -238,11 +239,13 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             return None
         return self.endpoint.prediction_url
 
-    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+    def predict(
+        self, request: Union["NDArray[Any]", pd.DataFrame]
+    ) -> "NDArray[Any]":
         """Make a prediction using the service.
 
         Args:
-            request: a numpy array representing the request
+            request: a Numpy Array or Pandas DataFrame representing the request
 
         Returns:
             A numpy array representing the prediction returned by the service.
@@ -258,10 +261,16 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             )
 
         if self.endpoint.prediction_url is not None:
-            response = requests.post(
-                self.endpoint.prediction_url,
-                json={"instances": request.tolist()},
-            )
+            if type(request) == pd.DataFrame:
+                response = requests.post(
+                    self.endpoint.prediction_url,
+                    json={"instances": request.to_dict("records")},
+                )
+            else:
+                response = requests.post(
+                    self.endpoint.prediction_url,
+                    json={"instances": request.tolist()},
+                )
         else:
             raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()
