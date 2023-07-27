@@ -67,7 +67,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         assert len(artifacts) == 3
 
         # ensure that tracking_url is set in the step metadata
-        trainer_step = run.get_step("trainer")
+        trainer_step = run.steps["trainer"]
         tracking_url = trainer_step.metadata.get(
             METADATA_EXPERIMENT_TRACKER_URL
         )
