@@ -7,7 +7,7 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class ClassifierMixinMaterializer(BaseMaterializer):
+class ModelInfoMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (dict,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
@@ -27,11 +27,13 @@ class ClassifierMixinMaterializer(BaseMaterializer):
         import sklearn.linear_model
         import sklearn.tree
 
+        modules = [sklearn.ensemble, sklearn.linear_model, sklearn.tree]
+
         with fileio.open(os.path.join(self.uri, "data.json"), "r") as f:
-            my_obj = json.loads(f.read())
-        class_name = my_obj["class"]
+            data = json.loads(f.read())
+        class_name = data["class"]
         cls = None
-        for module in [sklearn.ensemble, sklearn.linear_model, sklearn.tree]:
+        for module in modules:
             try:
                 cls = getattr(module, class_name)
                 break
@@ -39,18 +41,20 @@ class ClassifierMixinMaterializer(BaseMaterializer):
                 pass
         if cls is None:
             raise ValueError(
-                f"Cannot deserialize {class_name} using {self.__class__.__name__}."
+                f"Cannot deserialize `{class_name}` using {self.__class__.__name__}. "
+                f"Only classes from modules {[m.__name__ for m in modules]} "
+                "are supported"
             )
-        my_obj["class"] = cls
+        data["class"] = cls
 
-        return my_obj
+        return data
 
-    def save(self, my_obj: dict) -> None:
+    def save(self, data: dict) -> None:
         """Write to artifact store.
 
         Args:
-            my_obj: The data of the artifact to save.
+            data: The data of the artifact to save.
         """
         with fileio.open(os.path.join(self.uri, "data.json"), "w") as f:
-            my_obj["class"] = my_obj["class"].__name__
-            f.write(json.dumps(my_obj))
+            data["class"] = data["class"].__name__
+            f.write(json.dumps(data))

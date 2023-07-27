@@ -19,7 +19,7 @@ import pandas as pd
 from config import MetaConfig
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RandomizedSearchCV
-from utils.sklearn_materializer import ClassifierMixinMaterializer
+from utils.sklearn_materializer import ModelInfoMaterializer
 
 from zenml import step
 from zenml.logger import get_logger
@@ -27,7 +27,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(output_materializers=ClassifierMixinMaterializer)
+@step(output_materializers=ModelInfoMaterializer)
 def hp_tuning_single_search(
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,

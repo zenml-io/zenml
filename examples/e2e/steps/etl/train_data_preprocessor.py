@@ -59,7 +59,7 @@ def train_data_preprocessor(
         drop_columns: List of column names to drop.
 
     Returns:
-        The processed dataframes (dataset_trn, dataset_tst) and fitted `Pipeline` object.
+        The processed datasets (dataset_trn, dataset_tst) and fitted `Pipeline` object.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     preprocess_pipeline = Pipeline([("passthrough", "passthrough")])
