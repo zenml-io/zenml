@@ -83,14 +83,7 @@ def _dirmatch(path: str, matchwith: str) -> bool:
     False
     """
     matchlen = len(matchwith)
-    return bool(
-        path.startswith(matchwith)
-        and path[matchlen : matchlen + 1]
-        in [
-            os.sep,
-            "",
-        ]
-    )
+    return bool(path.startswith(matchwith) and path[matchlen: matchlen + 1] in [os.sep, "",])
 
 
 def _virtualenv_sys(venv_path: str) -> Tuple[str, list]:
@@ -303,26 +296,26 @@ def fixup_script_(
     # This takes care of the scheme in which shebang is of type
     # '#!/venv/bin/python3' while the version of system python
     # is of type 3.x e.g. 3.5.
-    short_version = bang[len(old_shebang) :]
+    short_version = bang[len(old_shebang):]
 
     if not bang.startswith("#!"):
         return
     elif bang == old_shebang:
         rewrite_shebang()
     elif (
-        bang.startswith(old_shebang) and bang[len(old_shebang) :] == py_version
+        bang.startswith(old_shebang) and bang[len(old_shebang):] == py_version
     ):
         rewrite_shebang(py_version)
     elif (
         bang.startswith(old_shebang)
         and short_version
-        and bang[len(old_shebang) :] == short_version
+        and bang[len(old_shebang):] == short_version
     ):
         rewrite_shebang(short_version)
     elif rewrite_env_python and bang.startswith(env_shebang):
         if bang == env_shebang:
             rewrite_shebang()
-        elif bang[len(env_shebang) :] == py_version:
+        elif bang[len(env_shebang):] == py_version:
             rewrite_shebang(py_version)
     else:
         # Nothing to do here
@@ -377,7 +370,7 @@ def fixup_link(
             # keep relative links, but don't keep original in case it
             # traversed up out of, then back into the venv.
             # so, recreate a relative link from absolute.
-            target = target[len(origdir) :].lstrip(os.sep)
+            target = target[len(origdir):].lstrip(os.sep)
         else:
             target = target.replace(old_dir, new_dir, 1)
 
