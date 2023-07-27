@@ -781,7 +781,7 @@ def deploy(
         import_new_stack(
             stack_name=stack_name,
             provider=stack.provider,
-            stack_file_path=stack_file_path,
+            stack_spec_dir=spec_dir,
         )
 
     # # Parse the given args
