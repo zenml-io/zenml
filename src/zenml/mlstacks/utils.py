@@ -213,15 +213,24 @@ def _add_extra_config_to_components(
             if value is not None:
                 component_metadata.config[key] = value
 
-    # Process each component
+    # Define a list of component attributes that need checking
+    component_attributes = ["component_type", "component_flavor", "provider"]
+
     for component in components:
         component_metadata = ComponentMetadata()
         component_metadata.config = {}
 
+        # Create a dictionary that maps attribute names to their values
+        component_values = {
+            attr: getattr(component, attr, None)
+            for attr in component_attributes
+        }
+
         for config_keys, extra_keys in config_map.items():
+            # If all attributes in config_keys match their values in the component
             if all(
-                getattr(component, config_key, None) == config_key
-                for config_key in config_keys
+                component_values.get(key) == value
+                for key, value in zip(component_attributes, config_keys)
             ):
                 _add_config(component_metadata, extra_keys)
 
@@ -261,7 +270,6 @@ def _construct_components(params: Dict[str, Any]) -> List["Component"]:
         if params["extra_config"]
         else {}
     )
-
     components = [
         Component(
             name=f"{provider}-{key}",

@@ -716,6 +716,9 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
     """
+    # TODO make these checks after the stack spec is created
+    # handle at stack level as well as component level
+    # delete stack spec if we error out
     if stack_exists(stack_name):
         cli_utils.error(
             f"Stack with name '{stack_name}' already exists. Please choose a "
@@ -744,7 +747,6 @@ def deploy(
     stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
         stack, components
     )
-
     # write the stack and component yaml files
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
