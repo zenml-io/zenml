@@ -1,5 +1,7 @@
 ---
-description: The complete guide to managing Service Connectors and connecting ZenML to external resources.
+description: >-
+  The complete guide to managing Service Connectors and connecting ZenML to
+  external resources.
 ---
 
 # Service Connectors guide
@@ -11,7 +13,7 @@ This documentation section contains everything that you need to use Service Conn
 * jumping straight to the sections on [Registering Service Connectors](service-connectors-guide.md#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.
 * if all you need to do is connect a ZenML Stack Component to an external resource or service like a Kubernetes cluster, a Docker container registry, or an object storage bucket and you already have some Service Connectors available, the section on [connecting Stack Components to resources](service-connectors-guide.md#connect-stack-components-to-resources) is all you need.
 
-In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](best-security-practices.md) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge of infrastructure, but it should be accessible to larger audiences.
+In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](broken-reference) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge of infrastructure, but it should be accessible to larger audiences.
 
 ## Terminology
 
@@ -30,8 +32,9 @@ The `zenml service-connector list-types` and `zenml service-connector describe-t
 ```sh
 zenml service-connector list-types
 ```
+
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠──────────────────────────────┼───────────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -66,7 +69,7 @@ zenml service-connector describe-type aws
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                🔶 AWS Service Connector (connector type: aws)                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -132,7 +135,7 @@ zenml service-connector describe-type aws --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║      🌀 AWS EKS Kubernetes cluster (resource type: kubernetes-cluster)       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -189,7 +192,7 @@ zenml service-connector describe-type aws --auth-method secret-key
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                 🔒 AWS Secret Key (auth method: secret-key)                  ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -241,7 +244,7 @@ zenml service-connector list-types --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠──────────────────────────────┼───────────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -269,7 +272,7 @@ zenml service-connector list-types --resource-type kubernetes-cluster
 ```
 {% endcode %}
 
-From the above, you can see that there are not one but four Service Connector Types that can connect ZenML to Kubernetes clusters. The first one is a generic implementation that can be used with any standard Kubernetes cluster, including those that run on-premise. The other three deal exclusively with Kubernetes services managed by the AWS, GCP and Azure cloud providers. 
+From the above, you can see that there are not one but four Service Connector Types that can connect ZenML to Kubernetes clusters. The first one is a generic implementation that can be used with any standard Kubernetes cluster, including those that run on-premise. The other three deal exclusively with Kubernetes services managed by the AWS, GCP and Azure cloud providers.
 
 Conversely, to list all currently registered Service Connector instances that provide access to Kubernetes clusters, one might run:
 
@@ -278,7 +281,7 @@ zenml service-connector list --resource_type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ NAME                  │ ID                           │ TYPE          │ RESOURCE TYPES        │ RESOURCE NAME                │ SHARED │ OWNER   │ EXPIRES IN │ LABELS              ┃
 ┠────────┼───────────────────────┼──────────────────────────────┼───────────────┼───────────────────────┼──────────────────────────────┼────────┼─────────┼────────────┼─────────────────────┨
@@ -314,7 +317,7 @@ zenml service-connector list-resources
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following resources can be accessed by service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                   ┃
@@ -346,7 +349,7 @@ zenml service-connector describe-type aws --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║        🐳 AWS ECR container registry (resource type: docker-registry)        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -429,7 +432,7 @@ zenml service-connector register aws-multi-type --type aws --auto-configure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠋ Registering service connector 'aws-multi-type'...
 Successfully registered service connector `aws-multi-type` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -458,7 +461,7 @@ zenml service-connector register aws-s3-multi-instance --type aws --auto-configu
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-s3-multi-instance'...
 Successfully registered service connector `aws-s3-multi-instance` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -481,7 +484,7 @@ zenml service-connector register aws-s3-zenfiles --type aws --auto-configure --r
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠼ Registering service connector 'aws-s3-zenfiles'...
 Successfully registered service connector `aws-s3-zenfiles` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
@@ -507,7 +510,7 @@ zenml service-connector list-types
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
 ┠──────────────────────────────┼───────────────┼───────────────────────┼───────────────────┼───────┼────────┨
@@ -548,9 +551,9 @@ Showing information about the `gcp` Service Connector Type:
 ```sh
 zenml service-connector describe-type gcp
 ```
-  
+
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                🔵 GCP Service Connector (connector type: gcp)                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -617,7 +620,7 @@ zenml service-connector describe-type gcp --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║      🌀 GCP GKE Kubernetes cluster (resource type: kubernetes-cluster)       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -668,7 +671,7 @@ zenml service-connector describe-type gcp --auth-method service-account
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║            🔒 GCP Service Account (auth method: service-account)             ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -793,7 +796,7 @@ One interesting and useful byproduct of the way cloud provider Service Connector
 
 ## Register Service Connectors
 
-When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](service-connectors-guide.md#explore-service-connector-types), and you probably carefully weighed your [choices of authentication methods and best security practices](best-security-practices.md). Either that or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](service-connectors-guide.md#connect-stack-components-to-resources).
+When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](service-connectors-guide.md#explore-service-connector-types), and you probably carefully weighed your [choices of authentication methods and best security practices](broken-reference). Either that or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](service-connectors-guide.md#connect-stack-components-to-resources).
 
 If you are looking for a quick, assisted tour, we recommend using the interactive CLI mode to configure Service Connectors, especially if this is your first time doing it:
 
@@ -810,7 +813,7 @@ zenml service-connector register -i
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Please enter a name for the service connector: gcp-interactive
 Please enter a description for the service connector []: Interactive GCP connector example
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1062,7 +1065,7 @@ zenml service-connector register kubernetes-auto --type kubernetes --auto-config
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `kubernetes-auto` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES ┃
@@ -1077,7 +1080,7 @@ zenml service-connector register aws-auto --type aws --auto-configure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠼ Registering service connector 'aws-auto'...
 Successfully registered service connector `aws-auto` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1102,7 +1105,7 @@ zenml service-connector register gcp-auto --type gcp --auto-configure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `gcp-auto` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
@@ -1147,7 +1150,7 @@ zenml service-connector register aws-multi-type --type aws --auto-configure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠋ Registering service connector 'aws-multi-type'...
 Successfully registered service connector `aws-multi-type` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1174,7 +1177,7 @@ zenml service-connector register aws-s3-multi-instance --type aws --auto-configu
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-s3-multi-instance'...
 Successfully registered service connector `aws-s3-multi-instance` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1195,7 +1198,7 @@ zenml service-connector register aws-s3-zenfiles --type aws --auto-configure --r
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠼ Registering service connector 'aws-s3-zenfiles'...
 Successfully registered service connector `aws-s3-zenfiles` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
@@ -1236,7 +1239,7 @@ zenml service-connector list
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME                  │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼───────────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -1259,7 +1262,7 @@ zenml service-connector verify aws-multi-type
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-multi-type' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
@@ -1285,7 +1288,7 @@ zenml service-connector verify aws-multi-type --resource-type s3-bucket
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-multi-type' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ RESOURCE TYPE │ RESOURCE NAMES                        ┃
@@ -1303,7 +1306,7 @@ zenml service-connector verify aws-multi-type --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-multi-type' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES   ┃
@@ -1320,7 +1323,7 @@ zenml service-connector verify aws-s3-multi-instance
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-s3-multi-instance' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ RESOURCE TYPE │ RESOURCE NAMES                        ┃
@@ -1338,7 +1341,7 @@ zenml service-connector verify aws-s3-multi-instance --resource-id s3://zenml-de
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-s3-multi-instance' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
 ┃ RESOURCE TYPE │ RESOURCE NAMES   ┃
@@ -1355,7 +1358,7 @@ zenml service-connector verify aws-s3-zenfiles
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-s3-zenfiles' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ RESOURCE TYPE │ RESOURCE NAMES ┃
@@ -1388,7 +1391,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                      ┃
@@ -1405,7 +1408,7 @@ zenml service-connector login gcp-user-multi --resource-type kubernetes-cluster 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector login gcp-user-multi --resource-type kubernetes-cluster --resource-id zenml-test-cluster
 ⠇ Attempting to configure local client using service connector 'gcp-user-multi'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
@@ -1425,7 +1428,7 @@ zenml service-connector login aws-multi-type --resource-type kubernetes-cluster 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector login aws-multi-type --resource-type kubernetes-cluster --resource-id zenhacks-cluster
 ⠏ Attempting to configure local client using service connector 'aws-multi-type'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster'.
@@ -1438,14 +1441,14 @@ CoreDNS is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks
 ```
 {% endcode %}
 
-The same is possible with the local  Docker client:
+The same is possible with the local Docker client:
 
 ```sh
 zenml service-connector verify aws-session-token --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME    │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
@@ -1460,7 +1463,7 @@ zenml service-connector login aws-session-token --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $zenml service-connector login aws-session-token --resource-type docker-registry
 ⠏ Attempting to configure local client using service connector 'aws-session-token'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
@@ -1514,7 +1517,7 @@ zenml service-connector list-resources
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Fetching all service connector resources can take a long time, depending on the number of connectors configured in your workspace. Consider using the '--connector-type', '--resource-type' and '--resource-id' 
 options to narrow down the list of resources to fetch.
 The following resources can be accessed by service connectors configured in your workspace:
@@ -1575,7 +1578,7 @@ zenml service-connector list-resources --resource-type kubernetes-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME  │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                                                ┃
@@ -1599,7 +1602,6 @@ The following 'kubernetes-cluster' resources can be accessed by service connecto
 ```
 {% endcode %}
 
-
 Finally, you can ask for a particular resource, if you know its Resource Name beforehand:
 
 ```sh
@@ -1607,7 +1609,7 @@ zenml service-connector list-resources --resource-type s3-bucket --resource-id z
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
@@ -1671,7 +1673,7 @@ zenml artifact-store connect s3-zenfiles --connector aws-multi-type
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
 Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
@@ -1708,7 +1710,7 @@ zenml artifact-store connect s3-zenfiles -i
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following connectors have compatible resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
@@ -1729,14 +1731,12 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 ```
 {% endcode %}
 
-
 ## End-to-end examples
 
 To get an idea of what a complete end-to-end journey looks like, from registering Service Connector all the way to configuring Stacks and Stack Components and running pipelines that access remote resources through Service Connectors, take a look at the following full-fledged examples:
 
-* [the AWS Service Connector end-to-end examples](aws-service-connector.md#end-to-end-examples)
-* [the GCP Service Connector end-to-end examples](gcp-service-connector.md#end-to-end-examples)
-* [the Azure Service Connector end-to-end examples](azure-service-connector.md#end-to-end-examples)
+* [the AWS Service Connector end-to-end examples](broken-reference)
+* [the GCP Service Connector end-to-end examples](broken-reference)
+* [the Azure Service Connector end-to-end examples](broken-reference)
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -80,7 +80,7 @@ This is what you see and where you can make any changes you want to the recipe f
 
 </details>
 
-![Workflow behind using the stack recipe CLI](../../../.gitbook/assets/zenml\_stack\_recipe\_deploy.png)
+![Workflow behind using the stack recipe CLI](../../.gitbook/assets/zenml\_stack\_recipe\_deploy.png)
 
 ### Deleting resources
 
@@ -97,5 +97,4 @@ This is what you see and where you can make any changes you want to the recipe f
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/) to learn more about each of these commands and the options that are available.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

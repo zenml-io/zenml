@@ -103,7 +103,11 @@ Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection o
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
-*   **Built-in Deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
+*   <mark style="color:purple;">**ZenML Cloud**</mark>**:** ZenML provides a control plane which allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Tower and RBAC.\
+
+
+    <figure><img src=".gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+*   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
 
     ```bash
     # Deploy ZenML to any cloud
@@ -113,7 +117,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     zenml orchestrator deploy kfp --flavor kubeflow --cloud gcp
 
     # Deploy entire MLOps stacks at once
-    zenml stack recipe deploy gcp-vertexai
+    zenml stack recipe deploy gcp-vertexai  
     ```
 *   **Standardization:** With ZenML, you can standardize MLOps infrastructure and tooling across your organization. Simply register your staging and production environments as ZenML stacks and invite your colleagues to run ML workflows on them.
 
@@ -144,6 +148,6 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Platform Guide</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="broken-reference">Broken link</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component Guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Platform Guide</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="broken-reference/">broken-reference</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component Guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-guide/component-guide.md">component-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 {% endtabs %}
