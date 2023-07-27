@@ -240,15 +240,15 @@ If you would like to learn more about how to build a custom stack component flav
 
 | **Type of Stack Component**                                                | **Description**                                                   |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Orchestrator](../../component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](../../component-guide/container-registries/custom.md) | Store for your containers                                         |
-| [Step Operator](../../component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
-| [Annotator](../../component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
-| [Data Validator](../../component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
+| [Orchestrator](../../../stacks-and-components/component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](../../../stacks-and-components/component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](../../../stacks-and-components/component-guide/container-registries/custom.md) | Store for your containers                                         |
+| [Step Operator](../../../stacks-and-components/component-guide/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../../../stacks-and-components/component-guide/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](../../../stacks-and-components/component-guide/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](../../../stacks-and-components/component-guide/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](../../../stacks-and-components/component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Annotator](../../../stacks-and-components/component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
+| [Data Validator](../../../stacks-and-components/component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

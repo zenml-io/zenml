@@ -10,7 +10,7 @@ We built it because we scratched our own itch while deploying multiple machine-l
 
 #### Is ZenML just another orchestrator like Airflow, Kubeflow, Flyte, etc?
 
-Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../user-guide/component-guide/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../user-guide/component-guide/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
+Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../stacks-and-components/component-guide/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../stacks-and-components/component-guide/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
 
 #### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 

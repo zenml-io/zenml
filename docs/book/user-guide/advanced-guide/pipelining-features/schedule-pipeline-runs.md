@@ -10,7 +10,7 @@ ZenML pipelines can also be used for scheduling orchestration jobs, but there ar
 
 ## Scheduling a pipeline run
 
-ZenML's scheduling functionality rests on the use of a `Schedule` object that you pass in when calling `pipeline.run()`. There are two ways to create a schedule with the `Schedule` object, though whether one or both of these are supported depends on the specific orchestrator you're using. For example, our [Vertex Orchestrator](../../component-guide/orchestrators/vertex.md) only supports the cron expression method (see below).
+ZenML's scheduling functionality rests on the use of a `Schedule` object that you pass in when calling `pipeline.run()`. There are two ways to create a schedule with the `Schedule` object, though whether one or both of these are supported depends on the specific orchestrator you're using. For example, our [Vertex Orchestrator](../../../stacks-and-components/component-guide/orchestrators/vertex.md) only supports the cron expression method (see below).
 
 You could write a cron expression to describe the pipeline schedule in terms that would be comprehensible as [a cron job](https://en.wikipedia.org/wiki/Cron). For example, if you wanted your pipeline to run at 14:05 on Wednesdays, you could use the following:
 
@@ -54,13 +54,13 @@ Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill
 
 | Orchestrator                                                                | Scheduling Support |
 | --------------------------------------------------------------------------- | ------------------ |
-| [LocalOrchestrator](../../component-guide/orchestrators/local.md)              | ⛔️                 |
-| [LocalDockerOrchestrator](../../component-guide/orchestrators/local-docker.md) | ⛔️                 |
-| [KubernetesOrchestrator](../../component-guide/orchestrators/kubernetes.md)    | ✅                  |
-| [KubeflowOrchestrator](../../component-guide/orchestrators/kubeflow.md)        | ✅                  |
-| [VertexOrchestrator](../../component-guide/orchestrators/vertex.md)            | ✅                  |
-| [TektonOrchestrator](../../component-guide/orchestrators/tekton.md)            | ⛔️                 |
-| [AirflowOrchestrator](../../component-guide/orchestrators/airflow.md)          | ✅                  |
+| [LocalOrchestrator](../../../stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
+| [LocalDockerOrchestrator](../../../stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
+| [KubernetesOrchestrator](../../../stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
+| [KubeflowOrchestrator](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md)        | ✅                  |
+| [VertexOrchestrator](../../../stacks-and-components/component-guide/orchestrators/vertex.md)            | ✅                  |
+| [TektonOrchestrator](../../../stacks-and-components/component-guide/orchestrators/tekton.md)            | ⛔️                 |
+| [AirflowOrchestrator](../../../stacks-and-components/component-guide/orchestrators/airflow.md)          | ✅                  |
 
 {% hint style="info" %}
 We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for an unsupported orchestrator, please [do let us know](https://zenml.io/slack-invite)!

@@ -53,7 +53,7 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
 {% hint style="info" %}
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](user-guide/component-guide/experiment-trackers/wandb.md), [MLflow](user-guide/component-guide/experiment-trackers/mlflow.md), or [Neptune](user-guide/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](stacks-and-components/component-guide/experiment-trackers/wandb.md), [MLflow](stacks-and-components/component-guide/experiment-trackers/mlflow.md), or [Neptune](stacks-and-components/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**
@@ -80,7 +80,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
-*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](user-guide/component-guide/model-deployers/seldon.md).
+*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](stacks-and-components/component-guide/model-deployers/seldon.md).
 
     ```python
     from zenml.integrations.seldon.steps import seldon_model_deployer_step

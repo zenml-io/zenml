@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
-ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../component-guide/orchestrators/orchestrators.md) or [step operators](../../component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md) or [step operators](../../../stacks-and-components/component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 There are three ways to control this containerization process:
 
@@ -14,7 +14,7 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../../component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](manage-environments.md#image-builder-environment).
+[Image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](manage-environments.md#image-builder-environment).
 
 ## Reuse Docker image builds from previous runs
 
@@ -193,7 +193,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../component-guide/component-guide.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../../stacks-and-components/component-guide/component-guide.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
