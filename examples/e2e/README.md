@@ -10,8 +10,8 @@ It demonstrates how the most important steps of the ML Production Lifecycle can 
 
 ## Table of Contents
 
-1. [Overview](#🗺-overview)
-2. [How the example is implemented](#🧰-how-the-example-is-implemented)
+1. [Overview](#overview)
+2. [How the example is implemented](#how-the-example-is-implemented)
 
     a. [[Continuous Training] Training Pipeline](#continuous-training-training-pipeline-etl-steps)
     * [ETL steps](#continuous-training-training-pipeline-etl-steps)
