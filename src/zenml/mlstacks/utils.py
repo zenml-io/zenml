@@ -427,3 +427,23 @@ def import_new_stack(provider: str, stack_file_path: str) -> None:
     )
 
     cli_utils.print_model_url(get_stack_url(imported_stack))
+
+
+def verify_spec_and_tf_files_exist(
+    spec_file_path: str, tf_file_path: str
+) -> None:
+    """Checks whether both the spec and tf files exist.
+
+    Args:
+        spec_file_path: The path to the spec file.
+        tf_file_path: The path to the tf file.
+    """
+    if not Path(spec_file_path).exists():
+        cli_utils.error(
+            f"Could not find the Stack spec file at {spec_file_path}."
+        )
+    elif not Path(tf_file_path).exists():
+        cli_utils.error(
+            f"Could not find the Terraform files for the stack "
+            f"at {tf_file_path}."
+        )

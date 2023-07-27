@@ -14,8 +14,6 @@
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
 import os
-import subprocess
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
 import click
@@ -27,6 +25,7 @@ from zenml.constants import (
     ALPHA_MESSAGE,
     STACK_RECIPE_MODULAR_RECIPES,
 )
+from zenml.io.fileio import remove
 from zenml.logger import get_logger
 from zenml.mlstacks.utils import (
     convert_click_params_to_mlstacks_primitives,
@@ -35,11 +34,9 @@ from zenml.mlstacks.utils import (
     stack_exists,
     stack_spec_exists,
     verify_mlstacks_installation,
+    verify_spec_and_tf_files_exist,
 )
 from zenml.recipes import GitStackRecipesHandler
-from zenml.recipes.stack_recipe_service import (
-    STACK_RECIPES_GITHUB_REPO,
-)
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -646,13 +643,28 @@ def version() -> None:
     type=click.Choice(["sagemaker"]),
     help="The flavor of step operator to use.",
 )
-@click.option(
+@click.option(  # TODO: handle this case
     "--file",
     "-f",
     "file",
     required=False,
     type=click.Path(exists=True, dir_okay=False, readable=True),
     help="Use a YAML specification file as the basis of the stack deployment.",
+)
+@click.option(
+    "--debug-mode",
+    "-b",  # TODO: decide whether this is the best flag to use
+    "debug_mode",
+    is_flag=True,
+    default=False,
+    help="Whether to run the stack deployment in debug mode.",
+)
+@click.option(
+    "--extra-config",
+    "-x",
+    "extra_config",
+    multiple=True,
+    help="Extra configurations as key=value pairs. This option can be used multiple times.",
 )
 @click.option(
     "--tags",
@@ -685,6 +697,7 @@ def deploy(
     artifact_store: Optional[bool] = None,
     container_registry: Optional[bool] = None,
     file: Optional[str] = None,
+    debug_mode: Optional[bool] = None,
     tags: Optional[List[str]] = None,
     extra_config: Optional[List[str]] = None,
 ) -> None:
@@ -763,8 +776,7 @@ def deploy(
 
     from mlstacks.utils import terraform_utils
 
-    # TODO: remove debug_mode=True
-    terraform_utils.deploy_stack(stack_file_path, debug_mode=True)
+    terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
 
     if import_stack_flag:
         import_new_stack(
@@ -1027,215 +1039,280 @@ def deploy(
     #         )
 
 
-@stack_recipe.command(
-    help="Destroy the stack components created previously with "
-    "`zenml stack recipe deploy <name>`"
+@stack.command(
+    help="Destroy stack components created previously with "
+    "`zenml stack deploy`"
 )
-@click.argument("stack_recipe_name", required=True)
+@click.argument("stack_name", required=True)
 @click.option(
-    "--path",
+    "--provider",
     "-p",
-    type=click.STRING,
-    default="zenml_stack_recipes",
-    help="Relative path at which you want to install the stack_recipe(s)",
+    "provider",
+    type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
+    help="The cloud provider on which the stack is deployed.",
 )
 @click.option(
-    "--artifact-store",
-    "-a",
-    help="The flavor of artifact store to destroy. "
-    "If not specified, the default artifact store will be assumed.",
-)
-@click.option(
-    "--orchestrator",
-    "-o",
-    help="The flavor of orchestrator to destroy. "
-    "If not specified, the default orchestrator will be used.",
-)
-@click.option(
-    "--container-registry",
-    "-c",
-    help="The flavor of container registry to destroy. "
-    "If not specified, no container registry will be destroyed.",
-)
-@click.option(
-    "--model-deployer",
+    "--debug",
     "-d",
-    help="The flavor of model deployer to destroy. "
-    "If not specified, no model deployer will be destroyed.",
+    "debug_mode",
+    is_flag=True,
+    default=False,
+    help="Whether to run Terraform in debug mode.",
 )
-@click.option(
-    "--experiment-tracker",
-    "-e",
-    help="The flavor of experiment tracker to destroy. "
-    "If not specified, no experiment tracker will be destroyed.",
-)
-@click.option(
-    "--step-operator",
-    "-s",
-    help="The flavor of step operator to destroy. "
-    "If not specified, no step operator will be destroyed.",
-)
-@pass_git_stack_recipes_handler
 def destroy(
-    git_stack_recipes_handler: GitStackRecipesHandler,
-    stack_recipe_name: str,
-    path: str,
-    artifact_store: Optional[str],
-    orchestrator: Optional[str],
-    container_registry: Optional[str],
-    model_deployer: Optional[str],
-    experiment_tracker: Optional[str],
-    step_operator: Optional[str],
+    stack_name: str,
+    provider: str,
+    debug_mode: bool = False,
 ) -> None:
-    """Destroy all resources from the stack_recipe at the specified relative path.
+    """Destroy all resources previously created with `zenml stack deploy`."""
+    verify_mlstacks_installation()
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-    `zenml stack_recipe deploy stack_recipe_name` has to be called with the
-    same relative path before the destroy command. If you want to destroy
-    specific components of the stack, you can specify the component names
-    with the corresponding options. If no component is specified, all
-    components will be destroyed.
+    # check the stack actually exists
+    if not stack_exists(stack_name):
+        cli_utils.error(
+            f"Stack with name '{stack_name}' does not exist. Please check and "
+            "try again."
+        )
+    spec_file_path: str = (
+        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
+    )
+    tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
 
-    Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
-        stack_recipe_name: The name of the stack_recipe.
-        path: The path of the stack recipe you want to destroy.
-        artifact_store: The flavor of the artifact store to destroy. In the case of
-            the artifact store, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be destroyed.
-        orchestrator: The flavor of the orchestrator to destroy.
-        container_registry: The flavor of the container registry to destroy. In the
-            case of the container registry, it doesn't matter what you specify
-            here, as there's only one flavor per cloud provider and that will be
-            destroyed.
-        model_deployer: The flavor of the model deployer to destroy.
-        experiment_tracker: The flavor of the experiment tracker to destroy.
-        step_operator: The flavor of the step operator to destroy.
+    verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
 
-    Raises:
-        ModuleNotFoundError: If the recipe is found at the given path.
-    """
-    cli_utils.warning(ALPHA_MESSAGE)
+    from mlstacks.utils import terraform_utils
 
-    with event_handler(
-        event=AnalyticsEvent.DESTROY_STACK_RECIPE,
-        metadata={"stack_recipe_name": stack_recipe_name},
-    ) as handler:
-        # build a dict of all stack component options that have non-null values
-        stack_component_options = {
-            "artifact_store": artifact_store,
-            "orchestrator": orchestrator,
-            "container_registry": container_registry,
-            "model_deployer": model_deployer,
-            "experiment_tracker": experiment_tracker,
-            "step_operator": step_operator,
-        }
+    terraform_utils.destroy_stack(
+        stack_path=spec_file_path, debug_mode=debug_mode
+    )
 
-        # filter out null values
-        stack_component_options = {
-            k: v for k, v in stack_component_options.items() if v is not None
-        }
+    if cli_utils.confirmation(
+        f"Would you like to recursively delete the associated ZenML "
+        f"stack '{stack_name}'?\nThis will delete the stack and any "
+        "underlying stack components."
+    ):
+        from zenml.client import Client
 
-        handler.metadata.update(stack_component_options)
+        c = Client()
+        c.delete_stack(stack_name=stack_name, recursive=True)
+    if cli_utils.confirmation(
+        f"Would you like to delete the `mlstacks` spec file for this stack, "
+        f"located at {spec_file_path}?"
+    ):
+        remove(spec_file_path)
+    cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
 
-        # add all values that are not None to the disabled services list
-        disabled_services = [
-            f"{name}_{value}"
-            for name, value in stack_component_options.items()
-            if name
-            not in [
-                "artifact_store",
-                "container_registry",
-            ]
-        ]
-        # if artifact store, container registry or secrets manager
-        # are not none, add them as strings to the list of disabled services
-        disabled_services = disabled_services + [
-            f"{name}"
-            for name, _ in stack_component_options.items()
-            if name
-            in [
-                "artifact_store",
-                "container_registry",
-            ]
-        ]
 
-        try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            import python_terraform
+# @stack_recipe.command(
+#     help="Destroy the stack components created previously with "
+#     "`zenml stack recipe deploy <name>`"
+# )
+# @click.argument("stack_recipe_name", required=True)
+# @click.option(
+#     "--path",
+#     "-p",
+#     type=click.STRING,
+#     default="zenml_stack_recipes",
+#     help="Relative path at which you want to install the stack_recipe(s)",
+# )
+# @click.option(
+#     "--artifact-store",
+#     "-a",
+#     help="The flavor of artifact store to destroy. "
+#     "If not specified, the default artifact store will be assumed.",
+# )
+# @click.option(
+#     "--orchestrator",
+#     "-o",
+#     help="The flavor of orchestrator to destroy. "
+#     "If not specified, the default orchestrator will be used.",
+# )
+# @click.option(
+#     "--container-registry",
+#     "-c",
+#     help="The flavor of container registry to destroy. "
+#     "If not specified, no container registry will be destroyed.",
+# )
+# @click.option(
+#     "--model-deployer",
+#     "-d",
+#     help="The flavor of model deployer to destroy. "
+#     "If not specified, no model deployer will be destroyed.",
+# )
+# @click.option(
+#     "--experiment-tracker",
+#     "-e",
+#     help="The flavor of experiment tracker to destroy. "
+#     "If not specified, no experiment tracker will be destroyed.",
+# )
+# @click.option(
+#     "--step-operator",
+#     "-s",
+#     help="The flavor of step operator to destroy. "
+#     "If not specified, no step operator will be destroyed.",
+# )
+# @pass_git_stack_recipes_handler
+# def destroy(
+#     git_stack_recipes_handler: GitStackRecipesHandler,
+#     stack_recipe_name: str,
+#     path: str,
+#     artifact_store: Optional[str],
+#     orchestrator: Optional[str],
+#     container_registry: Optional[str],
+#     model_deployer: Optional[str],
+#     experiment_tracker: Optional[str],
+#     step_operator: Optional[str],
+# ) -> None:
+#     """Destroy all resources from the stack_recipe at the specified relative path.
 
-            from zenml.recipes import (
-                StackRecipeService,
-            )
+#     `zenml stack_recipe deploy stack_recipe_name` has to be called with the
+#     same relative path before the destroy command. If you want to destroy
+#     specific components of the stack, you can specify the component names
+#     with the corresponding options. If no component is specified, all
+#     components will be destroyed.
 
-            local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
+#     Args:
+#         git_stack_recipes_handler: The GitStackRecipesHandler instance.
+#         stack_recipe_name: The name of the stack_recipe.
+#         path: The path of the stack recipe you want to destroy.
+#         artifact_store: The flavor of the artifact store to destroy. In the case of
+#             the artifact store, it doesn't matter what you specify here, as
+#             there's only one flavor per cloud provider and that will be destroyed.
+#         orchestrator: The flavor of the orchestrator to destroy.
+#         container_registry: The flavor of the container registry to destroy. In the
+#             case of the container registry, it doesn't matter what you specify
+#             here, as there's only one flavor per cloud provider and that will be
+#             destroyed.
+#         model_deployer: The flavor of the model deployer to destroy.
+#         experiment_tracker: The flavor of the experiment tracker to destroy.
+#         step_operator: The flavor of the step operator to destroy.
 
-            stack_recipe_service = StackRecipeService.get_service(
-                str(local_recipe_dir)
-            )
+#     Raises:
+#         ModuleNotFoundError: If the recipe is found at the given path.
+#     """
+#     cli_utils.warning(ALPHA_MESSAGE)
 
-            if not stack_recipe_service:
-                cli_utils.error(
-                    "No stack recipe found with the path "
-                    f"{local_recipe_dir}. You need to first deploy "
-                    "the recipe by running \nzenml stack recipe deploy "
-                    f"{stack_recipe_name}"
-                )
+#     with event_handler(
+#         event=AnalyticsEvent.DESTROY_STACK_RECIPE,
+#         metadata={"stack_recipe_name": stack_recipe_name},
+#     ) as handler:
+#         # build a dict of all stack component options that have non-null values
+#         stack_component_options = {
+#             "artifact_store": artifact_store,
+#             "orchestrator": orchestrator,
+#             "container_registry": container_registry,
+#             "model_deployer": model_deployer,
+#             "experiment_tracker": experiment_tracker,
+#             "step_operator": step_operator,
+#         }
 
-            if not stack_recipe_service.local_recipe_exists():
-                raise ModuleNotFoundError(
-                    f"The recipe {stack_recipe_name} "
-                    "has not been pulled at the path  "
-                    f"{local_recipe_dir}. Please check  "
-                    "if you've deleted the recipe from the path."
-                )
+#         # filter out null values
+#         stack_component_options = {
+#             k: v for k, v in stack_component_options.items() if v is not None
+#         }
 
-            stack_recipe_service.config.disabled_services = disabled_services
+#         handler.metadata.update(stack_component_options)
 
-            try:
-                # stop the service to destroy resources created by recipe
-                stack_recipe_service.stop()
-            except python_terraform.TerraformCommandError as e:
-                force_message = ""
-                if stack_recipe_name == "aws_minimal":
-                    force_message = (
-                        "If there are Kubernetes resources that aren't"
-                        "getting deleted, run 'kubectl delete node -all' to "
-                        "delete the nodes and consequently all Kubernetes "
-                        "resources. Run the destroy again after that, to "
-                        "remove any other remaining resources."
-                    )
-                cli_utils.error(
-                    f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                    "\nMost commonly, the error occurs if there's some "
-                    "resource that can't be deleted instantly, for example, "
-                    "MySQL stores with backups. In such cases, please try "
-                    "again after around 30 minutes. If the issue persists, "
-                    f"kindly raise an issue at {STACK_RECIPES_GITHUB_REPO}. "
-                    f"\n{force_message}"
-                )
-            except subprocess.CalledProcessError as e:
-                cli_utils.warning(
-                    f"Error destroying recipe {stack_recipe_name}: {str(e)}"
-                    "\nThe kubernetes cluster couldn't be removed due to the "
-                    "error above. Please verify if the cluster has already "
-                    "been deleted by running kubectl get nodes to check if "
-                    "there's any active nodes.Ignore this warning if there "
-                    "are no active nodes."
-                )
+#         # add all values that are not None to the disabled services list
+#         disabled_services = [
+#             f"{name}_{value}"
+#             for name, value in stack_component_options.items()
+#             if name
+#             not in [
+#                 "artifact_store",
+#                 "container_registry",
+#             ]
+#         ]
+#         # if artifact store, container registry or secrets manager
+#         # are not none, add them as strings to the list of disabled services
+#         disabled_services = disabled_services + [
+#             f"{name}"
+#             for name, _ in stack_component_options.items()
+#             if name
+#             in [
+#                 "artifact_store",
+#                 "container_registry",
+#             ]
+#         ]
 
-            cli_utils.declare(
-                "\n" + "Your active stack might now be invalid. Please run:"
-            )
-            text = Text("zenml stack describe", style="markdown.code_block")
-            cli_utils.declare(text)
-            cli_utils.declare(
-                "\n" + "to investigate and switch to a new stack if needed."
-            )
+#         try:
+#             _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+#                 0
+#             ]
+#         except KeyError as e:
+#             cli_utils.error(str(e))
+#         else:
+#             import python_terraform
+
+#             from zenml.recipes import (
+#                 StackRecipeService,
+#             )
+
+#             local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
+
+#             stack_recipe_service = StackRecipeService.get_service(
+#                 str(local_recipe_dir)
+#             )
+
+#             if not stack_recipe_service:
+#                 cli_utils.error(
+#                     "No stack recipe found with the path "
+#                     f"{local_recipe_dir}. You need to first deploy "
+#                     "the recipe by running \nzenml stack recipe deploy "
+#                     f"{stack_recipe_name}"
+#                 )
+
+#             if not stack_recipe_service.local_recipe_exists():
+#                 raise ModuleNotFoundError(
+#                     f"The recipe {stack_recipe_name} "
+#                     "has not been pulled at the path  "
+#                     f"{local_recipe_dir}. Please check  "
+#                     "if you've deleted the recipe from the path."
+#                 )
+
+#             stack_recipe_service.config.disabled_services = disabled_services
+
+#             try:
+#                 # stop the service to destroy resources created by recipe
+#                 stack_recipe_service.stop()
+#             except python_terraform.TerraformCommandError as e:
+#                 force_message = ""
+#                 if stack_recipe_name == "aws_minimal":
+#                     force_message = (
+#                         "If there are Kubernetes resources that aren't"
+#                         "getting deleted, run 'kubectl delete node -all' to "
+#                         "delete the nodes and consequently all Kubernetes "
+#                         "resources. Run the destroy again after that, to "
+#                         "remove any other remaining resources."
+#                     )
+#                 cli_utils.error(
+#                     f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
+#                     "\nMost commonly, the error occurs if there's some "
+#                     "resource that can't be deleted instantly, for example, "
+#                     "MySQL stores with backups. In such cases, please try "
+#                     "again after around 30 minutes. If the issue persists, "
+#                     f"kindly raise an issue at {STACK_RECIPES_GITHUB_REPO}. "
+#                     f"\n{force_message}"
+#                 )
+#             except subprocess.CalledProcessError as e:
+#                 cli_utils.warning(
+#                     f"Error destroying recipe {stack_recipe_name}: {str(e)}"
+#                     "\nThe kubernetes cluster couldn't be removed due to the "
+#                     "error above. Please verify if the cluster has already "
+#                     "been deleted by running kubectl get nodes to check if "
+#                     "there's any active nodes.Ignore this warning if there "
+#                     "are no active nodes."
+#                 )
+
+#             cli_utils.declare(
+#                 "\n" + "Your active stack might now be invalid. Please run:"
+#             )
+#             text = Text("zenml stack describe", style="markdown.code_block")
+#             cli_utils.declare(text)
+#             cli_utils.declare(
+#                 "\n" + "to investigate and switch to a new stack if needed."
+#             )
 
 
 # a function to get the value of outputs passed as input, from a stack recipe
