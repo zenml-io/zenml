@@ -736,7 +736,7 @@ def deploy(
         )
     elif stack_spec_exists(stack_name):
         cli_utils.error(
-            f"Stack spec with name '{stack_name}' already exists. "
+            f"Stack spec for stack named '{stack_name}' already exists. "
             "Please choose a different name."
         )
 
