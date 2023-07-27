@@ -52,16 +52,14 @@ def e2e_example_batch_inference():
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## ETL stage  ##########
-    dataset_inf = data_loader(
-        n_samples=10_000,
-        drop_target=True,
-    )
-    dataset_inf = inference_data_preprocessor(
-        dataset_inf=dataset_inf,
+    df_inference, target = data_loader(is_inference=True)
+    df_inference = inference_data_preprocessor(
+        dataset_inf=df_inference,
         preprocess_pipeline=ExternalArtifact(
             pipeline_name=MetaConfig.pipeline_name_training,
             artifact_name="preprocess_pipeline",
         ),
+        target=target,
     )
 
     ########## DataQuality stage  ##########
@@ -70,7 +68,7 @@ def e2e_example_batch_inference():
             pipeline_name=MetaConfig.pipeline_name_training,
             artifact_name="dataset_trn",
         ),
-        comparison_dataset=dataset_inf,
+        comparison_dataset=df_inference,
         ignored_cols=["target"],
         metrics=[
             EvidentlyMetricConfig.metric("DataQualityPreset"),
@@ -87,7 +85,7 @@ def e2e_example_batch_inference():
     )
     inference_predict(
         deployment_service=deployment_service,
-        dataset_inf=dataset_inf,
+        dataset_inf=df_inference,
         after=["drift_na_count"],
     )
 

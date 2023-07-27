@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from typing import Annotated, List, Tuple
+from typing import Annotated, Tuple
 
 import mlflow
 import pandas as pd
@@ -33,7 +33,7 @@ def model_evaluator(
     model: ClassifierMixin,
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
-    target: List[str],
+    target: str,
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
@@ -66,7 +66,7 @@ def model_evaluator(
         model: The pre-trained model artifact.
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
-        target: List of target columns in dataset.
+        target: Name of target columns in dataset.
         min_train_accuracy: Minimal acceptable training accuracy value.
         min_test_accuracy: Minimal acceptable testing accuracy value.
         fail_on_accuracy_quality_gates: If `True` a `RuntimeException` is raised
@@ -81,15 +81,15 @@ def model_evaluator(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Calculate the model accuracy on the train and test set
     trn_acc = model.score(
-        dataset_trn.drop(columns=target),
+        dataset_trn.drop(columns=[target]),
         dataset_trn[target],
     )
-    logger.info(f"Train accuracy: {trn_acc}")
+    logger.info(f"Train accuracy={trn_acc*100:.2f}%")
     tst_acc = model.score(
-        dataset_tst.drop(columns=target),
+        dataset_tst.drop(columns=[target]),
         dataset_tst[target],
     )
-    logger.info(f"Test accuracy: {tst_acc}")
+    logger.info(f"Test accuracy={tst_acc*100:.2f}%")
     mlflow.log_metric("testing_accuracy_score", tst_acc)
 
     messages = []

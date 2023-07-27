@@ -83,9 +83,7 @@ def e2e_example_training(
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## ETL stage ##########
-    raw_data, target = data_loader(
-        drop_target=False,
-    )
+    raw_data, target = data_loader()
     dataset_trn, dataset_tst = train_data_splitter(
         dataset=raw_data,
         test_size=test_size,

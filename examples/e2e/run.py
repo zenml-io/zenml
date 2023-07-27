@@ -117,6 +117,12 @@ Examples:
     help="Whether to fail the pipeline run if the model evaluation step "
     "finds that the model is not accurate enough.",
 )
+@click.option(
+    "--only-inference",
+    is_flag=True,
+    default=False,
+    help="Whether to run only inference pipeline.",
+)
 def main(
     no_cache: bool = False,
     no_hp_tuning: bool = False,
@@ -127,6 +133,7 @@ def main(
     min_train_accuracy: float = 0.8,
     min_test_accuracy: float = 0.8,
     fail_on_accuracy_quality_gates: bool = False,
+    only_inference: bool = False,
 ):
     """Main entry point for the pipeline execution.
 
@@ -148,6 +155,7 @@ def main(
         fail_on_accuracy_quality_gates: If `True` and any of minimal accuracy
             thresholds are violated - the pipeline will fail. If `False` thresholds will
             not affect the pipeline.
+        only_inference: If `True` only inference pipeline will be triggered.
     """
 
     # Run a pipeline with the required parameters. This executes
@@ -157,29 +165,29 @@ def main(
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    run_args_train = {
-        "hp_tuning_enabled": not no_hp_tuning,
-        "drop_na": not no_drop_na,
-        "normalize": not no_normalize,
-        "random_seed": 42,
-        "test_size": test_size,
-        "min_train_accuracy": min_train_accuracy,
-        "min_test_accuracy": min_test_accuracy,
-        "fail_on_accuracy_quality_gates": fail_on_accuracy_quality_gates,
-    }
-    if drop_columns:
-        run_args_train["drop_columns"] = drop_columns.split(",")
+    if not only_inference:
+        # Execute Training Pipeline
+        run_args_train = {
+            "hp_tuning_enabled": not no_hp_tuning,
+            "drop_na": not no_drop_na,
+            "normalize": not no_normalize,
+            "random_seed": 42,
+            "test_size": test_size,
+            "min_train_accuracy": min_train_accuracy,
+            "min_test_accuracy": min_test_accuracy,
+            "fail_on_accuracy_quality_gates": fail_on_accuracy_quality_gates,
+        }
+        if drop_columns:
+            run_args_train["drop_columns"] = drop_columns.split(",")
 
-    run_args_inference = {}
-
-    # Execute Training Pipeline
-    pipeline_args[
-        "run_name"
-    ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    e2e_example_training.with_options(**pipeline_args)(**run_args_train)
-    logger.info("Training pipeline finished successfully!")
+        pipeline_args[
+            "run_name"
+        ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        e2e_example_training.with_options(**pipeline_args)(**run_args_train)
+        logger.info("Training pipeline finished successfully!")
 
     # Execute Batch Inference Pipeline
+    run_args_inference = {}
     pipeline_args[
         "run_name"
     ] = f"{MetaConfig.pipeline_name_batch_inference}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"

@@ -23,7 +23,9 @@ from zenml import step
 
 @step
 def inference_data_preprocessor(
-    dataset_inf: pd.DataFrame, preprocess_pipeline: Pipeline
+    dataset_inf: pd.DataFrame,
+    preprocess_pipeline: Pipeline,
+    target: str,
 ) -> Annotated[pd.DataFrame, "dataset_inf"]:
     """Data preprocessor step.
 
@@ -35,13 +37,14 @@ def inference_data_preprocessor(
     Args:
         dataset_inf: The inference dataset.
         preprocess_pipeline: Pretrained `Pipeline` to process dataset.
+        target: Name of target columns in dataset.
 
     Returns:
         The processed dataframe: dataset_inf.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # artificially adding `target` column to avoid Pipeline issues
-    dataset_inf["target"] = pd.Series([1] * dataset_inf.shape[0])
+    dataset_inf[target] = pd.Series([1] * dataset_inf.shape[0])
     dataset_inf = preprocess_pipeline.transform(dataset_inf)
     dataset_inf.drop(columns=["target"], inplace=True)
     ### YOUR CODE ENDS HERE ###

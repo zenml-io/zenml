@@ -14,8 +14,7 @@
 
 
 from pydantic import BaseConfig
-from scipy.stats import uniform
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from zenml.config import DockerSettings
@@ -54,11 +53,12 @@ class MetaConfig(BaseConfig):
     target_env = ModelVersionStage.STAGING
     supported_models = {
         "LogisticRegression": {
-            "class": LogisticRegression,
+            "class": RandomForestClassifier,
             "search_grid": dict(
-                C=uniform(loc=0, scale=4),
-                penalty=["l2", "none"],
-                max_iter=range(10, 1000),
+                criterion=["gini", "entropy"],
+                max_depth=[2, 4, 6, 8, 10, 12],
+                min_samples_leaf=range(1, 10),
+                n_estimators=range(50, 500, 25),
             ),
         },
         "DecisionTreeClassifier": {

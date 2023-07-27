@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Dict
 
 import pandas as pd
 from config import MetaConfig
@@ -32,7 +32,7 @@ def hp_tuning_single_search(
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
     config_key: str,
-    target: List[str],
+    target: str,
 ) -> Annotated[Dict[str, Any], "best_model"]:
     """Evaluate a trained model.
 
@@ -51,7 +51,7 @@ def hp_tuning_single_search(
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
         config_key: Key of tuning config in MetaConfig class.
-        target: List of target columns in dataset.
+        target: Name of target columns in dataset.
 
     Returns:
         The best possible model parameters for given config.
@@ -61,9 +61,9 @@ def hp_tuning_single_search(
     model_class = model_config["class"]
     search_grid = model_config["search_grid"]
 
-    X_trn = dataset_trn.drop(columns=target)
+    X_trn = dataset_trn.drop(columns=[target])
     y_trn = dataset_trn[target]
-    X_tst = dataset_tst.drop(columns=target)
+    X_tst = dataset_tst.drop(columns=[target])
     y_tst = dataset_tst[target]
     logger.info("Running Hyperparameter tuning...")
     best_model = {"class": None, "params": None, "metric": -1}
