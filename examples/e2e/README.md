@@ -27,6 +27,8 @@ It demonstrates how the most important steps of the ML Production Lifecycle can 
 
 ## 🗺 Overview
 
+[Back to Table of Contents](#table-of-contents)
+
 This example uses [the Breast Cancer Dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html) to demonstrate how to perform major critical steps for Continuous Training (CT) and Continuous Delivery (CD).
 
 It consists of two pipelines with the following high-level steps:
@@ -68,11 +70,13 @@ For better readability, we need to describe the folder structure used in this ex
 
 ## 🧰 How the example is implemented
 
+[Back to Table of Contents](#table-of-contents)
+
 We will be going section by section diving into implementation details and sharing tips and best practices along this journey.
 
 ### [Continuous Training] Training Pipeline: ETL steps
 
-[📂 Code folder](steps/etl/)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/etl/)
 
 ![The overview of ETL steps](assets/01_etl.png)
 
@@ -84,7 +88,7 @@ We also output `preprocess_pipeline` as an output artifact from `train_data_prep
 
 ### [Continuous Training] Training Pipeline: Model architecture search and hyperparameter tuning
 
-[📂 Code folder](steps/hp_tuning/)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/hp_tuning/)
 
 ![The overview of model architecture search and hyperparameter tuning steps](assets/02_hp.png)
 
@@ -107,7 +111,7 @@ def hp_tuning_select_best_model(
 
 ### [Continuous Training] Training Pipeline: Model training and evaluation
 
-[📂 Code folder](steps/training/)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/training/)
 
 ![The overview of model training and evaluation steps](assets/03_train.png)
 
@@ -143,7 +147,7 @@ def e2e_example_training(...):
 
 ### [Continuous Training] Training Pipeline: Model promotion
 
-[📂 Code folder](steps/promotion/)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/promotion/)
 
 ![The overview of model promotion](assets/04_promotion.png)
 Once the model is trained and evaluated on meeting basic quality standards, we would like to understand whether it is good enough to beat the existing model used in production. This is a very important step, as promoting a weak model in production might result in huge losses at the end of the day.
@@ -154,11 +158,13 @@ To achieve this we would retrieve the model version from [Model Registry](https:
 
 ### [Continuous Deployment] Batch Inference
 
+[Back to Table of Contents](#table-of-contents)
+
 ![The overview of Batch Inference](assets/05_batch_inference.png)
 
 ### [Continuous Deployment] Batch Inference: ETL Steps
 
-[📂 Code folder](steps/etl)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/etl)
 
 The process of loading data is similar to training, even the same step function is used, but with the `is_inference` flag.
 
@@ -179,7 +185,7 @@ df_inference = inference_data_preprocessor(
 
 ### [Continuous Deployment] Batch Inference: Drift reporting
 
-[📂 Code folder](steps/data_quality/)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/data_quality/)
 
 On the drift reporting stage we will use [standard step](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently#how-do-you-use-it) `evidently_report_step` to build Evidently report to assess certain data quality metrics. `evidently_report_step` has reach set of options, but for this example, we will build only `DataQualityPreset` metrics preset to get a number of NA values in reference and current datasets.
 
@@ -189,7 +195,7 @@ You can follow [Data Validators docs](https://docs.zenml.io/user-guide/component
 
 ### [Continuous Deployment] Batch Inference: Inference
 
-[📂 Code folder](steps/inference)
+[Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/inference)
 
 As a last step concluding all work done so far, we will calculate predictions on the inference dataset and persist them in [Artifact Store](https://docs.zenml.io/user-guide/component-guide/artifact-stores) for reuse.
 
@@ -210,6 +216,8 @@ def inference_predict(
 
 
 ## 🖥 Run it locally
+
+[Back to Table of Contents](#table-of-contents)
 
 ### 📄 Prerequisites
 
