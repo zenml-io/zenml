@@ -1637,7 +1637,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             is_shared=is_shared,
-            stack_spec_file=stack_spec_file,
+            stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )

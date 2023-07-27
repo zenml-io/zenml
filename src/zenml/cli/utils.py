@@ -434,8 +434,9 @@ def print_stack_configuration(
         f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
+
     if stack.stack_spec_path:
-        declare(f"Stack spec path: {stack.stack_spec_path}")
+        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
@@ -558,7 +559,9 @@ def print_stack_component_configuration(
         console.print(rich_table)
 
     if component.component_spec_path:
-        declare(f"Component spec path: {component.component_spec_path}")
+        declare(
+            f"Component spec path for `mlstacks`: {component.component_spec_path}"
+        )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -2640,7 +2643,6 @@ def generate_and_copy_spec_files(
         yaml.dump(stack, f)
 
     # write a new component file for each component
-    # breakpoint()
     for component in components:
         with open(
             os.path.join(temp_dir, f"{component['name']}.yaml"), "w"
