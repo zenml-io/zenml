@@ -740,7 +740,7 @@ def deploy(
             "Please choose a different name."
         )
 
-    cli_utils.verify_mlstacks_installation()
+    cli_utils.verify_mlstacks_prerequisites_installation()
     from mlstacks.utils import zenml_utils
 
     cli_utils.warning(ALPHA_MESSAGE)
@@ -1066,7 +1066,7 @@ def destroy(
     debug_mode: bool = False,
 ) -> None:
     """Destroy all resources previously created with `zenml stack deploy`."""
-    cli_utils.verify_mlstacks_installation()
+    cli_utils.verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
     # check the stack actually exists

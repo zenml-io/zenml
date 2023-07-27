@@ -269,9 +269,14 @@ ALPHA_MESSAGE = (
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
 )
 NOT_INSTALLED_MESSAGE = (
-    "The `mlstacks` package seems to be unavailable on your machine and/or "
-    "in your environment. To install the missing dependencies: \n\n"
-    f"`pip install mlstacks`."
+    "The prerequisites for using `mlstacks` (the `mlstacks` and "
+    "`python-terraform` packages seem to be unavailable on your machine "
+    "and/or in your environment. To install the missing dependencies: \n\n"
+    "`pip install mlstacks`"
+)
+TERRAFORM_NOT_INSTALLED_MESSAGE = (
+    "Terraform appears not to be installed on your machine and/or in your "
+    "environment. Please install Terraform and try again."
 )
 STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
 MLSTACKS_SUPPORTED_STACK_COMPONENTS = [

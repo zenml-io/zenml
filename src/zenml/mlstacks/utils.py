@@ -34,7 +34,7 @@ from zenml.cli.stack import _import_stack_component
 from zenml.cli.utils import (
     error,
     print_model_url,
-    verify_mlstacks_installation,
+    verify_mlstacks_prerequisites_installation,
 )
 from zenml.client import Client
 from zenml.constants import (
@@ -60,7 +60,7 @@ def verify_installation(func: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> Any:
-        verify_mlstacks_installation()
+        verify_mlstacks_prerequisites_installation()
         return func(*args, **kwargs)
 
     return wrapper
@@ -362,7 +362,7 @@ def convert_mlstacks_primitives_to_dicts(
     Returns:
         A tuple of Stack and List[Component] dicts.
     """
-    verify_mlstacks_installation()
+    verify_mlstacks_prerequisites_installation()
 
     # convert to json first to strip out Enums objects
     stack_dict = json.loads(stack.json())

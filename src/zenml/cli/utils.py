@@ -58,6 +58,7 @@ from zenml.constants import (
     NOT_INSTALLED_MESSAGE,
     STACK_RECIPE_PACKAGE_NAME,
     STACK_RECIPE_TERRAFORM_FILES_PATH,
+    TERRAFORM_NOT_INSTALLED_MESSAGE,
 )
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.io import fileio
@@ -2479,7 +2480,7 @@ def get_recipe_names() -> List[str]:
     Returns:
         A list of recipe names.
     """
-    verify_mlstacks_installation()
+    verify_mlstacks_prerequisites_installation()
     # Get the package's directory path.
     package_path = os.path.dirname(
         pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
@@ -2504,7 +2505,7 @@ def get_recipe_path(recipe_name: str) -> Optional[str]:
     Returns:
         The path to the recipe.
     """
-    verify_mlstacks_installation()
+    verify_mlstacks_prerequisites_installation()
     # Get the package's directory path.
     package_path = os.path.dirname(
         pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
@@ -2534,7 +2535,7 @@ def get_recipe_readme(recipe_name: str) -> Optional[str]:
         FileNotFoundError: If the recipe does not exist.
         ValueError: If the recipe does not have a readme.
     """
-    verify_mlstacks_installation()
+    verify_mlstacks_prerequisites_installation()
     recipe_path = get_recipe_path(recipe_name)
 
     if recipe_path is not None:
@@ -2645,7 +2646,7 @@ def generate_and_copy_spec_files(
 def get_recipe_outputs(
     stack_name: str, output_key: Optional[str] = None
 ) -> Dict[str, str]:
-    verify_mlstacks_installation()
+    verify_mlstacks_prerequisites_installation()
     # TODO: FIX THIS
     recipe_path = get_recipe_path(recipe_name)
     if recipe_path is not None:
@@ -2693,9 +2694,16 @@ def warn_deprecated_example_subcommand() -> None:
     )
 
 
-def verify_mlstacks_installation() -> None:
+def verify_mlstacks_prerequisites_installation() -> None:
     """Checks if the `mlstacks` package is installed."""
     try:
         import mlstacks  # noqa: F401
+        import python_terraform  # noqa: F401
+
+        subprocess.check_output(
+            ["terraform", "--version"], universal_newlines=True
+        )
     except ImportError:
         error(NOT_INSTALLED_MESSAGE)
+    except subprocess.CalledProcessError:
+        error(TERRAFORM_NOT_INSTALLED_MESSAGE)
