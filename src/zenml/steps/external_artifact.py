@@ -95,7 +95,7 @@ class ExternalArtifact:
 
         Raises:
             ValueError: If no/multiple values are provided for the `value`,
-            `id` or (`pipeline_name`,`artifact_name`) arguments.
+                `id` or (`pipeline_name`,`artifact_name`) arguments.
         """
         if (value is not None) + (id is not None) + (
             pipeline_name is not None and artifact_name is not None
@@ -190,7 +190,7 @@ class ExternalArtifact:
                         break
 
             if response is None:
-                raise ValueError(
+                raise RuntimeError(
                     f"Artifact with name `{self._artifact_name}` was not found "
                     f"in last successful run of pipeline `{self._pipeline_name}`. "
                     "Please check your inputs and try again."
