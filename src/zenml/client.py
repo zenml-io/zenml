@@ -1590,6 +1590,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
+        stack_spec_file: Optional[str] = None,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
 
@@ -1597,6 +1598,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
             is_shared: boolean to decide whether the stack is shared
+            stack_spec_file: path to the stack spec file
 
         Returns:
             The model of the registered stack.
@@ -1635,6 +1637,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             is_shared=is_shared,
+            stack_spec_file=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1648,6 +1651,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
@@ -1659,6 +1663,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
             is_shared: the new shared status of the stack.
+            stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
@@ -1680,6 +1685,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            stack_spec_path=stack_spec_file,
         )
 
         if name:
@@ -2105,6 +2111,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         flavor: str,
+        component_spec_path: Optional[str],
         component_type: StackComponentType,
         configuration: Dict[str, str],
         labels: Optional[Dict[str, Any]] = None,
@@ -2115,6 +2122,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack component.
             flavor: The flavor of the stack component.
+            component_spec_path: The path to the stack spec file.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
@@ -2145,6 +2153,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
+            component_spec_path=component_spec_path,
             configuration=configuration,
             is_shared=is_shared,
             user=self.active_user.id,
@@ -2162,6 +2171,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
+        component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
@@ -2175,6 +2185,7 @@ class Client(metaclass=ClientMetaClass):
                 update.
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
+            component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
@@ -2198,6 +2209,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            component_spec_path=component_spec_path,
         )
 
         if name is not None:
