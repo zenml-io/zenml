@@ -434,6 +434,8 @@ def print_stack_configuration(
         f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
+    if stack.stack_spec_path:
+        declare(f"Stack spec path: {stack.stack_spec_path}")
 
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
@@ -554,6 +556,9 @@ def print_stack_component_configuration(
             rich_table.add_row(label, value)
 
         console.print(rich_table)
+
+    if component.component_spec_path:
+        declare(f"Component spec path: {component.component_spec_path}")
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
