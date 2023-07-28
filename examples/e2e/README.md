@@ -10,7 +10,7 @@ It demonstrates how the most important steps of the ML Production Lifecycle can 
 
 Follow along this example and you would get a functionally rich pipeline bringing your ML models to production today!
 <p align="center">
-  <img src="assets/00_pipeline_run.gif">
+  <img height=300 src="assets/00_pipeline_run.gif">
 </p>
 
 ## Table of Contents
@@ -38,7 +38,7 @@ This example uses [the Breast Cancer Dataset](https://scikit-learn.org/stable/mo
 
 It consists of two pipelines with the following high-level steps:
 <p align="center">
-  <img src="assets/00_pipelines_composition.png">
+  <img height=300 src="assets/00_pipelines_composition.png">
 </p>
 
 * [CT] Training
@@ -88,9 +88,7 @@ We will be going section by section diving into implementation details and shari
 ### [Continuous Training] Training Pipeline: ETL steps
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/etl/)
-<p align="center">
-  <img src="assets/01_etl.png">
-</p>
+<img style="float: right;" height=400 src="assets/01_etl.png">
 
 Usually at the very beginning of every training pipeline developers are acquiring data to work with in later stages. In this example, we are using [the Breast Cancer Dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html) to showcase steps but avoid high computational costs.
 
@@ -101,9 +99,7 @@ We also output `preprocess_pipeline` as an output artifact from `train_data_prep
 ### [Continuous Training] Training Pipeline: Model architecture search and hyperparameter tuning
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/hp_tuning/)
-<p align="center">
-  <img src="assets/02_hp.png">
-</p>
+<img style="float: right;" height=400 src="assets/02_hp.png">
 
 To ensure the high quality of ML models many ML Engineers go for automated hyperparameter tuning or even automated model architecture search. In this example, we are using prepared data from ETL to spin up a search of the best model parameters for different architectures in parallel.
 
@@ -130,9 +126,7 @@ def hp_tuning_select_best_model(
 ### [Continuous Training] Training Pipeline: Model training and evaluation
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/training/)
-<p align="center">
-  <img src="assets/03_train.png">
-</p>
+<img style="float: right;" height=500 src="assets/03_train.png">
 
 Having the best model architecture and its' hyperparameters defined in the previous stage makes it possible to train a quality model. Also, model training is the right place to bring an[Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers) into the picture - we will log all metrics and model itself into the [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers), so we can register our model in a [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries) and pass it down to a [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers) easily and traceable. We will use information from Active Stack to make implementation agnostic of the underlying infrastructure.
 <details>
@@ -175,9 +169,7 @@ def e2e_example_training(...):
 ### [Continuous Training] Training Pipeline: Model promotion
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/promotion/)
-<p align="center">
-  <img src="assets/04_promotion.png">
-</p>
+<img style="float: right;" height=500 src="assets/04_promotion.png">
 
 Once the model is trained and evaluated on meeting basic quality standards, we would like to understand whether it is good enough to beat the existing model used in production. This is a very important step, as promoting a weak model in production might result in huge losses at the end of the day.
 
@@ -187,14 +179,11 @@ To achieve this we would retrieve the model version from [Model Registry](https:
 
 ### [Continuous Deployment] Batch Inference
 
-[Back to Table of Contents](#table-of-contents)
-<p align="center">
-  <img src="assets/05_batch_inference.png">
-</p>
-
 ### [Continuous Deployment] Batch Inference: ETL Steps
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/etl)
+
+<img style="float: right;" height=600 src="assets/05_batch_inference.png">
 
 The process of loading data is similar to training, even the same step function is used, but with the `is_inference` flag.
 
