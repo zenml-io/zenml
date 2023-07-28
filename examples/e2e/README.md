@@ -8,7 +8,7 @@ While [extensive documentation of ZenML](https://docs.zenml.io/getting-started/i
 
 It demonstrates how the most important steps of the ML Production Lifecycle can be implemented in a reusable way remaining agnostic to the underlying infrastructure, and how to integrate them together into pipelines serving Training and Batch Inference purposes.
 
-Follow along this example and you would get a functionally rich pipeline bringing your ML models to production today!
+Follow along with this example and you would get a functionally rich pipeline bringing your ML models to production today!
 <p align="center">
   <img height=300 src="assets/00_pipeline_run.gif">
 </p>
@@ -134,7 +134,7 @@ def hp_tuning_select_best_model(
   <img height=500 src="assets/03_train.png">
 </p>
 
-Having the best model architecture and its' hyperparameters defined in the previous stage makes it possible to train a quality model. Also, model training is the right place to bring an[Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers) into the picture - we will log all metrics and model itself into the [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers), so we can register our model in a [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries) and pass it down to a [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers) easily and traceable. We will use information from Active Stack to make implementation agnostic of the underlying infrastructure.
+Having the best model architecture and its' hyperparameters defined in the previous stage makes it possible to train a quality model. Also, model training is the right place to bring an [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers) into the picture - we will log all metrics and model itself into the [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers), so we can register our model in a [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries) and pass it down to a [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers) easily and traceable. We will use information from Active Stack to make implementation agnostic of the underlying infrastructure.
 <details>
   <summary>Code snippet 💻</summary>
 
