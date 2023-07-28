@@ -558,8 +558,7 @@ class Client(metaclass=ClientMetaClass):
         """
         if repo_path := Client.find_repository():
             return repo_path in Path(file_path).resolve().parents
-        else:
-             return False
+        return False
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -661,7 +660,9 @@ class Client(metaclass=ClientMetaClass):
             The model of the created user.
         """
         user = UserRequestModel(name=name, password=password or None)
-        user.active = password != "" if self.zen_store.type != StoreType.REST else True
+        user.active = (
+            password != "" if self.zen_store.type != StoreType.REST else True
+        )
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
@@ -872,7 +873,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created team.
         """
-        user_list = []
+        user_list: List[UUID] = []
         if users:
             user_list.extend(
                 self.get_user(name_id_or_prefix=user_name_or_id).id
@@ -929,7 +930,9 @@ class Client(metaclass=ClientMetaClass):
 
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
-        team_users = [u.id for u in team.users] if remove_users or add_users else []
+        team_users = (
+            [u.id for u in team.users] if remove_users or add_users else []
+        )
         if remove_users:
             for rm_p in remove_users:
                 user = self.get_user(rm_p)
@@ -1343,7 +1346,9 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        workspace = (self._config.active_workspace if self._config else None) or GlobalConfiguration().get_active_workspace()
+        workspace = (
+            self._config.active_workspace if self._config else None
+        ) or GlobalConfiguration().get_active_workspace()
         if not workspace:
             raise RuntimeError(
                 "No active workspace is configured. Run "
@@ -1665,8 +1670,7 @@ class Client(metaclass=ClientMetaClass):
         if name:
             shared_status = is_shared or stack.is_shared
 
-            if existing_stacks := self.list_stacks(
-                 name=name, is_shared=shared_status):
+            if self.list_stacks(name=name, is_shared=shared_status):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
@@ -1676,8 +1680,7 @@ class Client(metaclass=ClientMetaClass):
 
         if is_shared:
             current_name = update_model.name or stack.name
-            if existing_stacks := self.list_stacks(
-                 name=current_name, is_shared=True):
+            if self.list_stacks(name=current_name, is_shared=True):
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{current_name}'."
@@ -2278,7 +2281,7 @@ class Client(metaclass=ClientMetaClass):
         cloud: str,
         component_type: StackComponentType,
         configuration: Optional[Dict[str, Any]] = None,
-        labels: Optional[Dict[str, Any]] = None
+        labels: Optional[Dict[str, Any]] = None,
     ) -> Optional["ComponentResponseModel"]:
         """Deploys a stack component.
 
@@ -2405,10 +2408,10 @@ class Client(metaclass=ClientMetaClass):
             # outputs. If they are set, then create one.
             if cloud == "k3d":
                 if container_registry_outputs := {
-                        k: v
-                        for k, v in outputs.items()
-                        if k.startswith("container_registry")
-                    }:
+                    k: v
+                    for k, v in outputs.items()
+                    if k.startswith("container_registry")
+                }:
                     self.create_stack_component(
                         name=container_registry_outputs[
                             "container_registry_name"
@@ -2719,10 +2722,10 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
             ).items
         ):
-             raise KeyError(
-                 f"No flavor with name '{name}' and type '{component_type}' "
-                 "exists."
-             )
+            raise KeyError(
+                f"No flavor with name '{name}' and type '{component_type}' "
+                "exists."
+            )
         if len(flavors) > 1:
             raise KeyError(
                 f"More than one flavor with name {name} and type "

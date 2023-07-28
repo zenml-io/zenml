@@ -137,4 +137,5 @@ def pipeline(
                 "__doc__": func.__doc__,
             },
         )
+
     return inner_decorator if _func is None else inner_decorator(_func)
