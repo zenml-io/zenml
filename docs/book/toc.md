@@ -59,18 +59,6 @@
 
 ## Stacks & Components
 
-* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
-  * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
-  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
-  * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
-* [🔐 Auth management](stacks-and-components/auth-management/auth-management.md)
-  * [Service Connectors guide](stacks-and-components/auth-management/service-connectors-guide.md)
-  * [Security best practices](stacks-and-components/auth-management/best-security-practices.md)
-  * [Docker Service Connector](stacks-and-components/auth-management/docker-service-connector.md)
-  * [Kubernetes Service Connector](stacks-and-components/auth-management/kubernetes-service-connector.md)
-  * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
-  * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
-  * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
 * [📜 Component guide](stacks-and-components/component-guide/component-guide.md)
   * [Integration overview](stacks-and-components/component-guide/integration-overview.md)
   * [Orchestrators](stacks-and-components/component-guide/orchestrators/orchestrators.md)
@@ -142,11 +130,18 @@
   * [Model Registries](stacks-and-components/component-guide/model-registries/model-registries.md)
     * [MLflow Model Registry](stacks-and-components/component-guide/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](stacks-and-components/component-guide/model-registries/custom.md)
-* [Cloud Stacks](stacks-and-components/cloud-stacks/README.md)
-  * [AWS](stacks-and-components/cloud-stacks/aws/README.md)
-    * [Connect remote storage](stacks-and-components/cloud-stacks/aws/connect-remote-storage.md)
-  * [GCP](stacks-and-components/cloud-stacks/gcp.md)
-  * [Azure](stacks-and-components/cloud-stacks/azure.md)
+* [🔐 Auth management](stacks-and-components/auth-management/auth-management.md)
+  * [Service Connectors guide](stacks-and-components/auth-management/service-connectors-guide.md)
+  * [Security best practices](stacks-and-components/auth-management/best-security-practices.md)
+  * [Docker Service Connector](stacks-and-components/auth-management/docker-service-connector.md)
+  * [Kubernetes Service Connector](stacks-and-components/auth-management/kubernetes-service-connector.md)
+  * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
+  * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
+  * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
+* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+  * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
+  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
+  * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
 ## Learning
 
