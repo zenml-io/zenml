@@ -144,7 +144,6 @@ class ExternalArtifact:
         artifact_store_id = Client().active_stack.artifact_store.id
 
         if self._value:
-            assert self._value is not None
 
             logger.info("Uploading external artifact...")
             artifact_name = f"external_{uuid4()}"
