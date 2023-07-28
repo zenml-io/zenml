@@ -465,3 +465,5 @@ While we have tried our best to document everything that has changed, we realize
 For bug reports, please also consider submitting a [GitHub Issue](https://github.com/zenml-io/zenml/issues/new/choose).
 
 Lastly, if the new changes have left you desiring a feature, then consider adding it to our [public feature voting board](https://zenml.io/discussion). Before doing so, do check what is already on there and consider upvoting the features you desire the most.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

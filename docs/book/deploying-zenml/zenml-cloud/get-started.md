@@ -37,3 +37,5 @@ Once your tenant is ready, you will be provided with a set of instructions. Foll
 Congratulations! You are now a part of the ZenML Cloud and have successfully set up your managed ZenML instance. Whether you're a Google or GitHub user, ZenML Cloud makes it easy to access advanced features and take your machine learning projects to new heights.
 
 We appreciate your participation in the beta phase and value your feedback to improve the ZenML Cloud experience further. If you have any questions or need assistance, please don't hesitate to reach out to our dedicated support team.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

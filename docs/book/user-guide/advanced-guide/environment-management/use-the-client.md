@@ -121,3 +121,5 @@ ZenML also has similar models that define which information is required to creat
 {% hint style="info" %}
 To find out which fields a specific resource model contains, checkout the [ZenML Models SDK Documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models) and expand the source code to see a list of all fields of the respective model. Note that all resources have **Base Models** that define fields that response, request, update, and filter models have in common, so you need to take a look at the base model source code as well.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
