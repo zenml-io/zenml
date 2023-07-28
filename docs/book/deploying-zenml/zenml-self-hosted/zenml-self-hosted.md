@@ -1,5 +1,5 @@
 ---
-description: A guide on how to deploy ZenML.
+description: A guide on how to deploy ZenML in a self-hosted environment.
 ---
 
 # 🔧 ZenML Self-Hosted

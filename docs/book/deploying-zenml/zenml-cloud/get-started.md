@@ -10,7 +10,7 @@ This page will walk you through the simple steps to sign up for ZenML Cloud and 
 
 <figure><img src="../../.gitbook/assets/Screenshot 2023-07-28 at 15.45.04.png" alt=""><figcaption></figcaption></figure>
 
-### Step 1: Sign-Up
+## Step 1: Sign-Up
 
 Visit the ZenML website and navigate to the ZenML Cloud sign-up page. You can find the sign-up link in the top-right corner of the website.
 
@@ -20,7 +20,7 @@ After successfully signing in with your Google or GitHub account, you will be as
 
 <figure><img src="../../.gitbook/assets/Screenshot 2023-07-28 at 15.45.55.png" alt=""><figcaption></figcaption></figure>
 
-### Step 2: Automatic tenant creation
+## Step 2: Automatic tenant creation
 
 Upon completing the sign-up process, you will gain access to a free trial period lasting for 30 days. During this trial, a ZenML tenant will be automatically created for you. This setup process typically takes a few minutes to complete, and once it's ready, you will receive an email notification. This will mark the beginning of your 30-day trial, allowing you to explore and experience the benefits of ZenML's features firsthand.
 
