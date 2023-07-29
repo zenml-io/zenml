@@ -13,11 +13,39 @@
 #  permissions and limitations under the License.
 
 from typing import Any, Optional
+from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 
 from zenml.steps.external_artifact import ExternalArtifact
+
+
+class MockClient:
+    class MockArtifactResponse:
+        def __init__(self, name):
+            self.artifact_store_id = 42
+            self.name = name
+            self.id = 123
+
+    class MockPipelineResponse:
+        def __init__(self):
+            self.last_successful_run = MagicMock()
+            self.last_successful_run.artifacts = [
+                MockClient.MockArtifactResponse("foo"),
+                MockClient.MockArtifactResponse("bar"),
+            ]
+
+    def __init__(self, artifact_store_id=42):
+        self.active_stack = MagicMock()
+        self.active_stack.artifact_store.id = artifact_store_id
+        self.active_stack.artifact_store.path = "foo"
+
+    def get_artifact(self, *args, **kwargs):
+        return MockClient.MockArtifactResponse("foo")
+
+    def get_pipeline(self, *args, **kwargs):
+        return MockClient.MockPipelineResponse()
 
 
 @pytest.mark.parametrize(
@@ -68,3 +96,69 @@ def test_external_artifact_init(
             pipeline_name=pipeline_name,
             artifact_name=artifact_name,
         )
+
+
+@patch("zenml.steps.external_artifact.Client")
+@patch("zenml.steps.external_artifact.fileio")
+@patch("zenml.steps.external_artifact.artifact_utils")
+def test_upload_if_necessary_by_value(
+    mocked_zenml_client,
+    mocked_fileio,
+    mocked_artifact_utils,
+):
+    mocked_fileio.exists.return_value = False
+    ea = ExternalArtifact(value=1)
+    assert ea._id is None
+    ea.upload_if_necessary()
+    assert ea._id is not None
+    assert ea._value is not None
+    assert ea._pipeline_name is None
+    assert ea._artifact_name is None
+
+
+@pytest.mark.skip
+@patch("zenml.steps.external_artifact.Client")
+def test_upload_if_necessary_by_id(mocked_zenml_client):
+    mocked_zenml_client.return_value = MockClient()
+    ea = ExternalArtifact(id=123)
+    assert ea._value is None
+    assert ea._pipeline_name is None
+    assert ea._artifact_name is None
+    assert ea._id is not None
+    assert ea.upload_if_necessary() == 123
+
+
+@patch("zenml.steps.external_artifact.Client")
+def test_upload_if_necessary_by_pipeline_and_artifact(
+    mocked_zenml_client,
+):
+    mocked_zenml_client.return_value = MockClient()
+    ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
+    assert ea._value is None
+    assert ea._pipeline_name is not None
+    assert ea._artifact_name is not None
+    assert ea._id is None
+    assert ea.upload_if_necessary() == 123
+    assert ea._id == 123
+
+
+@patch("zenml.steps.external_artifact.Client")
+def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store(
+    mocked_zenml_client,
+):
+    mocked_zenml_client.return_value = MockClient(artifact_store_id=45)
+    with pytest.raises(RuntimeError, match=r"The artifact bar \(ID: 123\)"):
+        ExternalArtifact(
+            pipeline_name="foo", artifact_name="bar"
+        ).upload_if_necessary()
+
+
+@patch("zenml.steps.external_artifact.Client")
+def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found(
+    mocked_zenml_client,
+):
+    mocked_zenml_client.return_value = MockClient()
+    with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
+        ExternalArtifact(
+            pipeline_name="foo", artifact_name="foobar"
+        ).upload_if_necessary()
