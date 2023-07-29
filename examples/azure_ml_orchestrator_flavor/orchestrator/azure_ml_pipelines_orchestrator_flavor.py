@@ -57,7 +57,6 @@ class AzureMLPipelinesOrchestratorConfig(
     resource_group: str
     workspace_name: str
     compute_target_name: str = "cpu-cluster"
-    kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
 

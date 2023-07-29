@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 """Implementation of the AzureMLPipelines orchestrator."""
 import os
+import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.utils.source_utils import get_source_root
@@ -381,23 +382,25 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             resource_group_name=self.config.resource_group,
             workspace_name=self.config.workspace_name,
         )
+        environment[ENV_ZENML_AZUREML_RUN_ID] = str(uuid.uuid4())
         # get the compute target to use to run our pipeline
         # can be single node or cluster
-        ml_client = self.setup_compute_target(ml_client)
+        #ml_client = self.setup_compute_target(ml_client)
+        #ml_client.compute.get(self.config.compute_target_name)
         # cpu_cluster = ml_client.compute.get(cpu_compute_target)
 
         # get/create the environment that will be used to run each step of the pipeline
         # each step can have its own environment, or they can all use the same one
         # Here you specify your dependencies etc.
         # This can be a Docker image.
-        custom_env_name = "zenml-test-env"
+        #custom_env_name = "zenml-test-env"
         source_directory = get_source_root()
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         ).replace("_", "-")
 
         steps = []
-        for step_name, _ in deployment.steps.items():
+        for step_name, _ in deployment.step_configurations.items():
             image_name_or_digest = self.get_image(deployment, step_name)
             pipeline_job_env = Environment(
                 name=step_name,
@@ -407,10 +410,9 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
                 StepEntrypointConfiguration.get_entrypoint_command()
             )
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
             entrypoint = container_command + arguments
-
             job = command(
                 environment=pipeline_job_env,
                 command=" ".join(entrypoint),

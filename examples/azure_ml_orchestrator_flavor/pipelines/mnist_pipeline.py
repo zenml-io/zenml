@@ -21,7 +21,7 @@ from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import TENSORFLOW
 
-docker_settings = DockerSettings(required_integrations=[TENSORFLOW])
+docker_settings = DockerSettings(requirements=["azure-ai-ml==1.2.0"], required_integrations=[TENSORFLOW])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
