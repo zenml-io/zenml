@@ -92,10 +92,44 @@ class ExternalArtifact:
                 be stored. Only used when `value` is provided.
             store_artifact_visualizations: Whether visualizations for the
                 artifact should be stored. Only used when `value` is provided.
+        """
+        self._validate_init_params(
+            value=value,
+            id=id,
+            pipeline_name=pipeline_name,
+            artifact_name=artifact_name,
+        )
+
+        self._value = value
+        self._id = id
+        self._pipeline_name = pipeline_name
+        self._artifact_name = artifact_name
+        self._materializer = materializer
+        self._store_artifact_metadata = store_artifact_metadata
+        self._store_artifact_visualizations = store_artifact_visualizations
+
+    def _validate_init_params(
+        self,
+        value: Any = None,
+        id: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        artifact_name: Optional[str] = None,
+    ) -> None:
+        """Validate input parameters and raise on bad input.
+
+        Args:
+            value: The artifact value. Either this or an artifact ID must be
+                provided.
+            id: The ID of an artifact that should be referenced by this external
+                artifact. Either this or an artifact value must be provided.
+            pipeline_name: Name of a pipeline to search for artifact in latest run.
+            artifact_name: Name of an artifact to be searched in latest pipeline run.
 
         Raises:
-            ValueError: If no/multiple values are provided for the `value`,
-                `id` or (`pipeline_name`,`artifact_name`) arguments.
+            ValueError: If all inputs are `None`.
+            ValueError: If more than one of `[value,id,(pipeline_name,artifact_name)]`
+                is not `None`.
+            ValueError: If `pipeline_name` and `artifact_name` are used separately.
         """
         if (value is not None) + (id is not None) + (
             pipeline_name is not None and artifact_name is not None
@@ -111,19 +145,11 @@ class ExternalArtifact:
                 "Either a value, an ID or pipeline/artifact name pair can be "
                 "provided when creating an external artifact."
             )
-        elif pipeline_name is None != artifact_name is None:
+        elif (pipeline_name is None) != (artifact_name is None):
             raise ValueError(
                 "`pipeline_name` and `artifact_name` can be only provided "
                 "together when creating an external artifact."
             )
-
-        self._value = value
-        self._id = id
-        self._pipeline_name = pipeline_name
-        self._artifact_name = artifact_name
-        self._materializer = materializer
-        self._store_artifact_metadata = store_artifact_metadata
-        self._store_artifact_visualizations = store_artifact_visualizations
 
     def upload_if_necessary(self) -> UUID:
         """Uploads the artifact if necessary.
@@ -144,7 +170,6 @@ class ExternalArtifact:
         artifact_store_id = Client().active_stack.artifact_store.id
 
         if self._value:
-
             logger.info("Uploading external artifact...")
             artifact_name = f"external_{uuid4()}"
             materializer_class = self._get_materializer_class(
