@@ -320,6 +320,7 @@ class SeldonDeployment(BaseModel):
         annotations: Optional[Dict[str, str]] = None,
         is_custom_deployment: Optional[bool] = False,
         spec: Optional[Dict[Any, Any]] = None,
+        serviceAccountName: Optional[str] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -360,6 +361,7 @@ class SeldonDeployment(BaseModel):
                         name="classifier",
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
                         parameters=parameters,
+                        serviceAccountName=serviceAccountName,
                     ),
                     engineResources=engineResources,
                     componentSpecs=[
@@ -381,6 +383,7 @@ class SeldonDeployment(BaseModel):
                         implementation=implementation or "",
                         envSecretRefName=secret_name,
                         parameters=parameters,
+                        serviceAccountName=serviceAccountName,
                     ),
                     engineResources=engineResources,
                 )
