@@ -20,11 +20,22 @@ from zenml.lineage_graph.node.base_node import (
     BaseNode,
     BaseNodeDetails,
 )
+from zenml.utils.enum_utils import StrEnum
+
+
+class ArtifactNodeStatus(StrEnum):
+    """Enum that represents the status of an artifact."""
+
+    CACHED = "cached"
+    CREATED = "created"
+    EXTERNAL = "external"
+    UNKNOWN = "unknown"
 
 
 class ArtifactNodeDetails(BaseNodeDetails):
     """Captures all artifact details for the node."""
 
+    status: ArtifactNodeStatus
     is_cached: bool
     artifact_type: str
     artifact_data_type: str
