@@ -4,11 +4,22 @@ description: Deploying models to Kubernetes with Seldon Core.
 
 # Seldon
 
-The Seldon Core Model Deployer is one of the available flavors of the [Model Deployer](model-deployers.md) stack
-component. Provided with the MLflow integration it can be used to deploy and manage models on an inference server
-running on top of a Kubernetes cluster.
+[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
+open source model serving platform. It packs a wide range of features built
+around deploying models to REST/GRPC microservices that include monitoring and
+logging, model explainers, outlier detectors and various continuous deployment
+strategies such as A/B testing, canary deployments and more.
 
-### When to use it?
+Seldon Core also comes equipped with a set of built-in model server
+implementations designed to work with standard formats for packaging ML models
+that greatly simplify the process of serving models for real-time inference.
+
+{% hint style="warning" %}
+The Seldon Core model deployer integration is currently not supported under 
+**MacOS**.
+{% endhint %}
+
+## When to use it?
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production-grade open-source model serving platform. It
 packs a wide range of features built around deploying models to REST/GRPC microservices that include monitoring and
@@ -32,7 +43,7 @@ You should use the Seldon Core Model Deployer:
 If you are looking for a more easy way to deploy your models locally, you can use the [MLflow Model Deployer](mlflow.md)
 flavor.
 
-### How to deploy it?
+## How to deploy it?
 
 ZenML provides a Seldon Core flavor build on top of the Seldon Core Integration to allow you to deploy and use your
 models in a production-grade environment. In order to use the integration you need to install it on your local machine
@@ -47,7 +58,7 @@ To deploy and make use of the Seldon Core integration we need to have the follow
 1. access to a Kubernetes cluster. This can be configured using the `kubernetes_context` configuration attribute to point to a local `kubectl` context or an in-cluster configuration, but the recommended approach is to [use a Service Connector](seldon.md#using-a-service-connector) to link the Seldon Deployer Stack Component to a Kubernetes cluster.
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes cluster. Check out
    the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)
-   .
+   or the [EKS installation example below](#installing-seldon-core-eg-in-an-eks-cluster).
 3. models deployed with Seldon Core need to be stored in some form of persistent shared storage that is accessible from
    the Kubernetes cluster where Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.). You can use one
    of the supported [remote artifact store flavors](../artifact-stores/artifact-stores.md) to store your models as part
@@ -75,7 +86,7 @@ Terraform-based recipes to quickly provision popular combinations of MLOps tools
 can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 {% endhint %}
 
-#### Infrastructure Deployment
+### Infrastructure Deployment
 
 The Seldon Model Deployer can be deployed directly from the ZenML CLI:
 
@@ -87,7 +98,84 @@ You can pass other configurations specific to the stack components as key-value 
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
 dedicated documentation section.
 
-#### Using a Service Connector
+### Seldon Core Installation Example
+
+The following example briefly shows how you can install Seldon in an EKS
+Kubernetes cluster. It assumes that the EKS cluster itself is already set up 
+and configured with IAM access. For more information or tutorials for other 
+clouds, check out the 
+[official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup).
+
+1. Configure EKS cluster access locally, e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+2. Install Istio 1.5.0 (required for the latest Seldon Core version):
+
+```bash
+curl -L [https://istio.io/downloadIstio](https://istio.io/downloadIstio) | ISTIO_VERSION=1.5.0 sh -
+cd istio-1.5.0/
+bin/istioctl manifest apply --set profile=demo
+```
+
+3. Set up an Istio gateway for Seldon Core:
+
+```bash
+curl https://raw.githubusercontent.com/SeldonIO/seldon-core/master/notebooks/resources/seldon-gateway.yaml | kubectl apply -f -
+```
+
+4. Install Seldon Core:
+
+```bash
+helm install seldon-core seldon-core-operator \
+    --repo https://storage.googleapis.com/seldon-charts \
+    --set usageMetrics.enabled=true \
+    --set istio.enabled=true \
+    --namespace seldon-system
+```
+
+5. Test that the installation is functional 
+
+```bash
+kubectl apply -f iris.yaml
+```
+
+with `iris.yaml` defined as follows:
+
+```yaml
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: iris-model
+  namespace: default
+spec:
+  name: iris
+  predictors:
+  - graph:
+      implementation: SKLEARN_SERVER
+      modelUri: gs://seldon-models/v1.14.0-dev/sklearn/iris
+      name: classifier
+    name: default
+    replicas: 1
+```
+
+Then extract the URL where the model server exposes its prediction API:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+And use curl to send a test prediction API request to the server:
+
+```bash
+curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions \
+         -H 'Content-Type: application/json' \
+         -d '{ "data": { "ndarray": [[1,2,3,4]] } }'
+```
+
+### Using a Service Connector
 
 To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure.md) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
@@ -186,7 +274,7 @@ A similar experience is available when you configure the Seldon Core Model Deplo
 
 ![Seldon Core Model Deployer Configuration](../../../.gitbook/assets/seldon-model-deployer-service-connector.png)
 
-#### Managing Seldon Core Authentication
+### Managing Seldon Core Authentication
 
 The Seldon Core Model Deployer requires access to the persistent storage where models are located. In most cases, you
 will use the Seldon Core model deployer to serve models that are trained through ZenML pipelines and stored in the ZenML
@@ -316,7 +404,17 @@ zenml secret create az-seldon-secret \
 
 </details>
 
-### How do you use it?
+## How do you use it?
+
+### Requirements
+
+To run pipelines that deploy models to Seldon, you need the following tools
+installed locally:
+  * [Docker](https://www.docker.com)
+  * [K3D](https://k3d.io/v5.2.1/#installation) (can be installed by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`).
+
+
+### Stack Component Registration
 
 For registering the model deployer, we need the URL of the Istio Ingress Gateway deployed on the Kubernetes cluster. We
 can get this URL by running the following command (assuming that the service name is `istio-ingressgateway`, deployed in
@@ -360,6 +458,8 @@ zenml stack update seldon_stack --model-deployer=seldon_deployer
 
 See the [seldon_model_deployer_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
+### Configuration
+
 Within the `SeldonDeploymentConfig` you can configure:
 
 * `model_name`: the name of the model in the Seldon cluster and in ZenML.
@@ -376,38 +476,21 @@ Within the `SeldonDeploymentConfig` you can configure:
   be a dictionary with the `cpu` and `memory` keys. The values for these keys can be a string with the amount of CPU and
   memory to be allocated to the model.
 
-A concrete example of using the Seldon Core Model Deployer can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/seldon\_deployment).
-
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
 .
 
-### Custom Model Deployment
+### Custom Code Deployment
 
-When you have a custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can
-leverage the language wrappers to containerize your machine learning model(s) and logic. With ZenML's Seldon Core
-Integration, you can create your own custom model deployment code by creating a custom predict function that will be
-passed to a custom deployment step responsible for preparing a Docker image for the model server.
-
-This `custom_predict` function should be getting the model and the input data as arguments and returning the output
-data. ZenML will take care of loading the model into memory, starting the `seldon-core-microservice` that will be
-responsible for serving the model and running the predict function.
+ZenML enables you to deploy your pre- and post-processing code into the 
+deployment environment together with the model by defining a custom predict
+function that will be wrapped in a Docker container and executed on the model 
+deployment server, e.g.:
 
 ```python
-def pre_process(input: np.ndarray) -> np.ndarray:
-    """Pre process the data to be used for prediction."""
-    pass
-
-
-def post_process(prediction: np.ndarray) -> str:
-    """Pre process the data"""
-    pass
-
-
 def custom_predict(
-        model: Any,
-        request: Array_Like,
+    model: Any,
+    request: Array_Like,
 ) -> Array_Like:
     """Custom Prediction function.
 
@@ -417,41 +500,70 @@ def custom_predict(
     loaded in the memory and a request with the data to predict.
 
     Args:
-        model (Any): The model to use for prediction.
+        model: The model to use for prediction.
         request: The prediction response of the model is an array-like format.
     Returns:
-        The prediction in an array-like format. (e.g: np.ndarray, 
-        List[Any], str, bytes, Dict[str, Any])
+        The prediction in an array-like format.
     """
-    pass
+    inputs = []
+    for instance in request:
+        input = np.array(instance)
+        if not isinstance(input, np.ndarray):
+            raise Exception("The request must be a NumPy array")
+        processed_input = pre_process(input)
+        prediction = model.predict(processed_input)
+        postprocessed_prediction = post_process(prediction)
+        inputs.append(postprocessed_prediction)
+    return inputs
+
+
+def pre_process(input: np.ndarray) -> np.ndarray:
+    """Pre process the data to be used for prediction."""
+    input = input / 255.0
+    return input[None, :, :]
+
+
+def post_process(prediction: np.ndarray) -> str:
+    """Pre process the data"""
+    classes = [str(i) for i in range(10)]
+    prediction = tf.nn.softmax(prediction, axis=-1)
+    maxindex = np.argmax(prediction.numpy())
+    return classes[maxindex]
 ```
 
-Then this `custom_predict` function `path` can be passed to the custom deployment parameters.
+{% hint style="info" %}
+The custom predict function should get the model and the input data as 
+arguments and return the model predictions. ZenML will automatically take care 
+of loading the model into memory and starting the `seldon-core-microservice` 
+that will be responsible for serving the model and running the predict function.
+{% endhint %}
+
+After defining your custom predict function in code, you can use the
+`seldon_custom_model_deployer_step` to automatically build your function into 
+a Docker image and deploy it as a model server by setting the `predict_function`
+argument to the path of your `custom_predict` function:
 
 ```python
-from zenml.integrations.seldon.steps import (
-    seldon_custom_model_deployer_step,
-)
+from zenml.integrations.seldon.steps import seldon_custom_model_deployer_step
 from zenml.integrations.seldon.services import SeldonDeploymentConfig
+from zenml import pipeline
 
-seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step.with_options(
-    parameters=dict(
-        predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict",
+@pipeline
+def seldon_deployment_pipeline():
+    model = ...
+    seldon_custom_model_deployer_step(
+        model=model,
+        predict_function="<PATH.TO.custom_predict>",  # TODO: path to custom code
         service_config=SeldonDeploymentConfig(
-            model_name="seldon-tensorflow-custom-model",
+            model_name="<MODEL_NAME>",  # TODO: name of the deployed model
             replicas=1,
             implementation="custom",
             resources=SeldonResourceRequirements(
                 limits={"cpu": "200m", "memory": "250Mi"}
             ),
         ),
-        timeout=240,
     )
-)
 ```
-
-The full code example can be
-found [here](https://github.com/zenml-io/zenml/blob/main/examples/custom\_code\_deployment/).
 
 #### Advanced Custom Code Deployment with Seldon Core Integration
 
@@ -462,16 +574,11 @@ section of the Seldon Core documentation.
 {% endhint %}
 
 The built-in Seldon Core custom deployment step is a good starting point for deploying your custom models. However, if
-you want to deploy more than the trained model, you can create your own Custom Class and a custom step to achieve this.
+you want to deploy more than the trained model, you can create your own custom class and a custom step to achieve this.
 
-Example of
-the [custom class](https://sdkdocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
-.
-
-The built-in Seldon Core custom deployment step responsible for packaging, preparing, and deploying to Seldon Core can
-be
-found [here](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
-.
+See the
+[ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
+as a reference.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
