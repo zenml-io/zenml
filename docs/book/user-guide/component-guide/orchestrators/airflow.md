@@ -296,9 +296,6 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 Check out our docs on how to apply settings to your
 pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
 
-A concrete example of using the Airflow orchestrator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow\_orchestration).
-
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)
 .

@@ -74,9 +74,6 @@ or [fetch secret values inside your steps](secrets-managers.md#in-a-zenml-step).
 You can use [secret scoping](secrets-managers.md#secret-scopes) with the Vault Secrets Manager to manage multiple
 Secrets Manager namespaces on top of a single Vault service instance.
 
-A concrete example of using the HashiCorp Vault secrets manager can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
-
 For more information and a full list of configurable attributes of the HashiCorp Vault secrets manager, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-vault/#zenml.integrations.vault.secrets\_manager.vault\_secrets\_manager.VaultSecretsManager)
 .

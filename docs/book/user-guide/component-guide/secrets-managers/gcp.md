@@ -68,9 +68,6 @@ or [fetch secret values inside your steps](secrets-managers.md#in-a-zenml-step).
 You can use [secret scoping](secrets-managers.md#secret-scopes) with the GCP Secrets Manager to emulate multiple Secrets
 Manager namespaces on top of a single GCP project.
 
-A concrete example of using the GCP secrets manager can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
-
 For more information and a full list of configurable attributes of the GCP secrets manager, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.secrets\_manager.gcp\_secrets\_manager.GCPSecretsManager)
 .

@@ -145,10 +145,6 @@ You should consult [the official whylogs documentation](https://whylogs.readthed
 
 You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs\_profiler.WhylogsProfilerConfig) in the SDK docs.
 
-You can also check out our examples pages for working examples that use the whylogs standard step:
-
-* [Data Profiling with whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs\_data\_profiling)
-
 #### The whylogs Data Validator
 
 The whylogs Data Validator implements the same interface as do all Data Validators, so this method forces you to maintain some level of compatibility with the overall Data Validator abstraction, which guarantees an easier migration in case you decide to switch to another Data Validator.

@@ -106,9 +106,6 @@ the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrati
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
-A concrete example of using the SageMaker step operator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
-
 For more information and a full list of configurable attributes of the SageMaker step operator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.step\_operators.sagemaker\_step\_operator.SagemakerStepOperator)
 .

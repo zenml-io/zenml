@@ -288,10 +288,6 @@ suite.run(train_dataset=train_dataset)
 
 You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks\_data\_integrity.DeepchecksDataIntegrityCheckStepParameters) in the SDK docs.
 
-You can also check out our examples pages for working examples that use the Deepchecks standard steps:
-
-* [Data and model validation with Deepchecks](https://github.com/zenml-io/zenml/tree/main/examples/deepchecks\_data\_validation)
-
 #### The Deepchecks Data Validator
 
 The Deepchecks Data Validator implements the same interface as do all Data Validators, so this method forces you to maintain some level of compatibility with the overall Data Validator abstraction, which guarantees an easier migration in case you decide to switch to another Data Validator.

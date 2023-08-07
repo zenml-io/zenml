@@ -220,79 +220,6 @@ def local_deploy_pipeline(
 
 ```
 
-### Listing deployed models
-
-The `zenml model-deployer models list` CLI command can be run to list the 
-active model servers:
-
-```
-$ zenml model-deployer models list
-┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┓
-┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME          │ MODEL_NAME    ┃
-┠────────┼──────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┼───────────────┨
-┃   ✅   │ cd38d6e6-467b-46e0-be13-3112c6e65d0e │ bentoml_fashion_mnist_pipeline │ bentoml_model_deployer_step │ pytorch_mnist ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┛
-```
-
-To get more information about a specific model server, such as the prediction 
-URL, the `zenml model-deployer models describe <uuid>` CLI command can be run:
-
-```
-$ zenml model-deployer models describe cd38d6e6-467b-46e0-be13-3112c6e65d0e
-        Properties of Served Model cd38d6e6-467b-46e0-be13-3112c6e65d0e       
-┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ MODEL SERVICE PROPERTY │ VALUE                                                                          ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ BENTO_TAG              │ pytorch_mnist_service:kq25r5c6fgidomup                                         ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ BENTO_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/bento_builder_────┃
-┃                        │ step/output/10/zenml_exported.bento                                            ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ DAEMON_PID             │ 98699                                                                          ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_NAME             │ pytorch_mnist                                                                  ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/trainer/output/2  ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_NAME          │ bentoml_fashion_mnist_pipeline                                                 ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ RUN_NAME               │ bentoml_fashion_mnist_pipeline-2022_11_07-00_18_30_882755                      ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_STEP_NAME     │ bentoml_model_deployer_step                                                    ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ PREDICTION_APIS_URLS   │ http://127.0.0.1:3001/predict_ndarray  http://127.0.0.1:3001/predict_image     ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ PREDICTION_URL         │ http://127.0.0.1:3001/                                                         ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ SERVICE_PATH           │ /Users/.../local_stores/86c7fc93-f4c0-460b-b430-7d8f5143ba88/cd38d6e6-467b-46e0┃
-┃                        │ -be13-3112c6e65d0e                                                             ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ STATUS                 │ ✅                                                                             ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ STATUS_MESSAGE         │                                                                                ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ UUID                   │ cd38d6e6-467b-46e0-be13-3112c6e65d0e                                           ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
-The prediction URL can sometimes be more difficult to make out in the detailed
-output, so there is a separate CLI command available to retrieve it:
-
-```shell
-$ zenml model-deployer models get-url cd38d6e6-467b-46e0-be13-3112c6e65d0e
-  Prediction URL of Served Model cd38d6e6-467b-46e0-be13-3112c6e65d0e is:
-  http://localhost:3001/
-```
-
-Finally, a model server can be deleted with the 
-`zenml model-deployer models delete <uuid>` CLI command:
-
-```shell
-$ zenml model-deployer models delete cd38d6e6-467b-46e0-be13-3112c6e65d0e
-Model server BentoMLDeploymentService[cd38d6e6-467b-46e0-be13-3112c6e65d0e] 
-(type: model-serving, flavor: bentoml) was deleted.
-```
-
 ### Predicting with the local deployed model
 
 Once the model has been deployed we can use the BentoML client to send requests to the deployed model. ZenML will
@@ -367,10 +294,6 @@ bentoctl build -b $BENTO_TAG -f deployment_config.yaml
 # Deploy to the cloud
 bentoctl apply -f deployment_config.yaml
 ```
-
-You can check the BentoML deployment example for more details.
-
-* [Model Deployer with BentoML](https://github.com/zenml-io/zenml/tree/main/examples/bentoml\_deployment)
 
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)

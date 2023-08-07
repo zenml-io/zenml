@@ -76,9 +76,7 @@ zenml integration install aws s3
   with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html)
   applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can
   be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when
-  available) which will set up the necessary permissions for you. The creation of this role is described in more
-  detail [in the instructions](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration) for using
-  our `sagemaker_orchestration` example.
+  available) which will set up the necessary permissions for you.
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be
   able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
@@ -172,9 +170,6 @@ steps will use it except for the step above, which will use `ml.t3.medium` with 
 Check out [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more information on
 how to
 specify settings in general.
-
-A concrete example of using the Sagemaker orchestrator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration).
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)

@@ -374,9 +374,6 @@ the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrati
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
 
-A concrete example of using the Vertex orchestrator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex\_ai\_orchestration).
-
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex\_orchestrator.VertexOrchestrator)
 .

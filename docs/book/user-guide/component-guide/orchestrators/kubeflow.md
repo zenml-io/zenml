@@ -446,9 +446,6 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 See full documentation of using ZenML
 secrets [here](/docs/book/platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md).
 
-A concrete example of using the Kubeflow orchestrator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow\_pipelines\_orchestration).
-
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow\_orchestrator.KubeflowOrchestrator)
 .

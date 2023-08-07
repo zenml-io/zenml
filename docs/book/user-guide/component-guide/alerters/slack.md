@@ -114,10 +114,6 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-For complete code examples of both Slack alerter steps, see
-the [slack alerter example](https://github.com/zenml-io/zenml/tree/main/examples/slack\_alert), where we first send the
-test accuracy of a model to Slack and then wait with model deployment until a user approves it in Slack.
-
 For more information and a full list of configurable attributes of the Slack alerter, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.alerters.slack\_alerter.SlackAlerter)
 .
