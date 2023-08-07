@@ -25,7 +25,7 @@ from zenml.constants import (
     ALPHA_MESSAGE,
     STACK_RECIPE_MODULAR_RECIPES,
 )
-from zenml.io.fileio import remove
+from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.mlstacks.utils import (
     convert_click_params_to_mlstacks_primitives,
@@ -1074,7 +1074,10 @@ def destroy(
             f"Stack with name '{stack_name}' does not exist. Please check and "
             "try again."
         )
-    spec_file_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}/stack-{stack_name}.yaml"
+    spec_files_dir: str = (
+        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
+    )
+    spec_file_path: str = f"{spec_files_dir}/stack-{stack_name}.yaml"
     tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
 
     verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
@@ -1100,7 +1103,7 @@ def destroy(
         f"Would you like to delete the `mlstacks` spec directory for "
         f"this stack, located at {spec_dir}?"
     ):
-        remove(spec_file_path)
+        rmtree(spec_files_dir)
     cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
 
 
@@ -1193,19 +1196,19 @@ def destroy(
 #     """
 #     cli_utils.warning(ALPHA_MESSAGE)
 
-    # with event_handler(
-    #     event=AnalyticsEvent.DESTROY_STACK_RECIPE,
-    #     metadata={"stack_recipe_name": stack_recipe_name},
-    # ) as handler:
-    #     # build a dict of all stack component options that have non-null values
-    #     stack_component_options = {
-    #         "artifact_store": artifact_store,
-    #         "orchestrator": orchestrator,
-    #         "container_registry": container_registry,
-    #         "model_deployer": model_deployer,
-    #         "experiment_tracker": experiment_tracker,
-    #         "step_operator": step_operator,
-    #     }
+# with event_handler(
+#     event=AnalyticsEvent.DESTROY_STACK_RECIPE,
+#     metadata={"stack_recipe_name": stack_recipe_name},
+# ) as handler:
+#     # build a dict of all stack component options that have non-null values
+#     stack_component_options = {
+#         "artifact_store": artifact_store,
+#         "orchestrator": orchestrator,
+#         "container_registry": container_registry,
+#         "model_deployer": model_deployer,
+#         "experiment_tracker": experiment_tracker,
+#         "step_operator": step_operator,
+#     }
 
 #         # filter out null values
 #         stack_component_options = {
