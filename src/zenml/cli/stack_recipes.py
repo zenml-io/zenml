@@ -568,47 +568,6 @@ def get_outputs(
         event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
         metadata={"stack_recipe_name": stack_recipe_name},
     ):
-        # import python_terraform
-
-        # cli_utils.warning(ALPHA_MESSAGE)
-
-        # stack_recipes_dir = Path(os.getcwd()) / path
-
-        # try:
-        #     _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-        #         0
-        #     ]
-        # except KeyError as e:
-        #     cli_utils.error(str(e))
-        # else:
-        #     stack_recipe_dir = stack_recipes_dir / stack_recipe_name
-        #     local_stack_recipe = LocalStackRecipe(
-        #         stack_recipe_dir, stack_recipe_name
-        #     )
-
-        #     if not local_stack_recipe.is_present():
-        #         raise ModuleNotFoundError(
-        #             f"The recipe {stack_recipe_name} "
-        #             "has not been pulled at the specified path. "
-        #             f"Run `zenml stack recipe pull {stack_recipe_name}` "
-        #             f"followed by `zenml stack recipe deploy "
-        #             f"{stack_recipe_name}` first."
-        #         )
-
-        #     try:
-        #         # use the stack recipe directory path to find the service instance
-        #         from zenml.recipes import StackRecipeService
-
-        #         stack_recipe_service = StackRecipeService.get_service(
-        #             str(local_stack_recipe.path)
-        #         )
-        #         if not stack_recipe_service:
-        #             cli_utils.error(
-        #                 "No stack recipe found with the path "
-        #                 f"{local_stack_recipe.path}. You need to first deploy "
-        #                 "the recipe by running \nzenml stack recipe deploy "
-        #                 f"{stack_recipe_name}"
-        #             )
         outputs = cli_utils.get_recipe_outputs(stack_recipe_name, output)
         if output:
             if output in outputs:
