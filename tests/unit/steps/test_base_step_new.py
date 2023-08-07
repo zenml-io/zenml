@@ -19,6 +19,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml import pipeline, step
+from zenml.exceptions import StepInterfaceError
 
 
 @step
@@ -71,7 +72,7 @@ def test_passing_invalid_parameters():
     def test_pipeline():
         s(a=UnsupportedClass())
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(StepInterfaceError):
         test_pipeline()
 
 
