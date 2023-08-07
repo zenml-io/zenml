@@ -470,13 +470,18 @@ def destroy(
     spec_file_path: str = f"{spec_files_dir}/stack-{stack_name}.yaml"
     tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
 
+    cli_utils.declare(
+        "Checking Terraform definitions and spec files are present..."
+    )
     verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
 
     from mlstacks.utils import terraform_utils
 
+    cli_utils.declare(f"Destroying stack '{stack_name}' using Terraform...")
     terraform_utils.destroy_stack(
         stack_path=spec_file_path, debug_mode=debug_mode
     )
+    cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
 
     if cli_utils.confirmation(
         f"Would you like to recursively delete the associated ZenML "
@@ -487,6 +492,9 @@ def destroy(
 
         c = Client()
         c.delete_stack(name_id_or_prefix=stack_name, recursive=True)
+        cli_utils.declare(
+            f"Stack '{stack_name}' successfully deleted from ZenML."
+        )
 
     spec_dir = os.path.dirname(spec_file_path)
     if cli_utils.confirmation(
@@ -494,6 +502,9 @@ def destroy(
         f"this stack, located at {spec_dir}?"
     ):
         rmtree(spec_files_dir)
+        cli_utils.declare(
+            f"Spec directory for stack '{stack_name}' successfully deleted."
+        )
     cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
 
 
