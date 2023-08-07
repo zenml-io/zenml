@@ -577,8 +577,8 @@ def version() -> None:
     help="The region to deploy the stack to.",
 )
 @click.option(
-    "--no-import",
-    "-n",
+    "--import",
+    "-i",
     "no_import_stack_flag",
     is_flag=True,
     help="If you don't want the stack to be imported automatically.",
@@ -1193,19 +1193,19 @@ def destroy(
 #     """
 #     cli_utils.warning(ALPHA_MESSAGE)
 
-#     with event_handler(
-#         event=AnalyticsEvent.DESTROY_STACK_RECIPE,
-#         metadata={"stack_recipe_name": stack_recipe_name},
-#     ) as handler:
-#         # build a dict of all stack component options that have non-null values
-#         stack_component_options = {
-#             "artifact_store": artifact_store,
-#             "orchestrator": orchestrator,
-#             "container_registry": container_registry,
-#             "model_deployer": model_deployer,
-#             "experiment_tracker": experiment_tracker,
-#             "step_operator": step_operator,
-#         }
+    # with event_handler(
+    #     event=AnalyticsEvent.DESTROY_STACK_RECIPE,
+    #     metadata={"stack_recipe_name": stack_recipe_name},
+    # ) as handler:
+    #     # build a dict of all stack component options that have non-null values
+    #     stack_component_options = {
+    #         "artifact_store": artifact_store,
+    #         "orchestrator": orchestrator,
+    #         "container_registry": container_registry,
+    #         "model_deployer": model_deployer,
+    #         "experiment_tracker": experiment_tracker,
+    #         "step_operator": step_operator,
+    #     }
 
 #         # filter out null values
 #         stack_component_options = {
