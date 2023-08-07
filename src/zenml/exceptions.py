@@ -37,9 +37,8 @@ class ZenMLBaseException(Exception):
             url: URL to point to in exception message. If `None`, then no url
                  is appended.
         """
-        if message:
-            if url:
-                message += f" For more information, visit {url}."
+        if message and url:
+            message += f" For more information, visit {url}."
         super().__init__(message)
 
 

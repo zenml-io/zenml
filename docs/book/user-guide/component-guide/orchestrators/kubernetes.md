@@ -183,6 +183,21 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 #### Additional configuration
 
+The Kubernetes orchestrator will by default use a Kubernetes namespace called
+`zenml` to run pipelines. In that namespace, it will automatically create a
+Kubernetes service account called `zenml-service-account` and grant it
+`edit` RBAC role in that namespace. To customize these settings, you can
+configure the following additional attributes in the Kubernetes orchestrator:
+
+* `kubernetes_namespace`: The Kubernetes namespace to use for running the
+pipelines. The namespace must already exist in the Kubernetes cluster.
+* `service_account_name`: The name of a Kubernetes service account to use for
+running the pipelines. If configured, it must point to an existing service
+account in the default or configured `namespace` that has associated RBAC roles
+granting permissions to create and manage pods in that namespace. This can also
+be configured as an individual pipeline setting in addition to the global
+orchestrator setting.
+
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows
 you to configure (among others) the following attributes:
 

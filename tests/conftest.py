@@ -297,9 +297,7 @@ def virtualenv(
             dst_dir=str(tmp_path),
         )
 
-        env_bin_dir = "bin"
-        if sys.platform == "win32":
-            env_bin_dir = "Scripts"
+        env_bin_dir = "Scripts" if sys.platform == "win32" else "bin"
 
         # Activate venv
         activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
