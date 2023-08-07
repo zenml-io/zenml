@@ -4345,7 +4345,7 @@ class SqlZenStore(BaseZenStore):
         # Generate unique names using a random suffix until we find a name
         # that is not already in use
         while True:
-            secret_name = f"connector-{connector_name}-{random_str(4)}"
+            secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
             existing_secrets = self.secrets_store.list_secrets(
                 SecretFilterModel(
                     name=secret_name,
