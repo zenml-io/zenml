@@ -148,7 +148,7 @@ converting the pipeline into a format that your orchestration tool understands
 and running it. To do so, you should:
     - Loop over all steps of the pipeline and configure your orchestration tool to run the correct command and arguments in the correct Docker image
     - Make sure the passed environment variables are set when the container is run
-    - Make sure the containers are running in the correct oder 
+    - Make sure the containers are running in the correct order 
 
     Check out the [code sample](#code-sample) below for more details on how to fetch the Docker image, command, arguments and step order.
 
