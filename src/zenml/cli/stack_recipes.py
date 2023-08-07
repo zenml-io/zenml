@@ -739,6 +739,7 @@ def deploy(
             "Please choose a different name."
         )
 
+    cli_utils.declare("Checking prerequisites are installed...")
     cli_utils.verify_mlstacks_prerequisites_installation()
     from mlstacks.utils import zenml_utils
 
@@ -747,6 +748,7 @@ def deploy(
     cli_params: Dict[str, Any] = ctx.params
     stack, components = convert_click_params_to_mlstacks_primitives(cli_params)
 
+    cli_utils.declare("Checking flavor compatibility...")
     if not zenml_utils.has_valid_flavor_combinations(stack, components):
         cli_utils.error(
             "The specified stack and component flavors are not compatible "
@@ -762,6 +764,7 @@ def deploy(
     spec_dir = (
         f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
     )
+    cli_utils.declare(f"Writing spec files to {spec_dir}...")
     create_dir_recursive_if_not_exists(spec_dir)
 
     stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
@@ -774,269 +777,18 @@ def deploy(
 
     from mlstacks.utils import terraform_utils
 
+    cli_utils.declare("Deploying stack using Terraform...")
     terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
+    cli_utils.declare("Stack successfully deployed.")
 
     if not no_import_stack_flag:
+        cli_utils.declare(f"Importing stack '{stack_name}' into ZenML...")
         import_new_stack(
             stack_name=stack_name,
             provider=stack.provider,
             stack_spec_dir=spec_dir,
         )
-
-    # # Parse the given args
-    # # name is guaranteed to be set by parse_name_and_extra_arguments
-    # name, parsed_args = cli_utils.parse_name_and_extra_arguments(
-    #     list(extra_config) + [name], expand_args=True
-    # )
-
-    # # copy the terraform files to the config directory
-    # try:
-    #     terraform_utils.populate_tf_definitions(provider)
-    # except FileExistsError:
-    #     if cli_utils.confirmation(
-    #         "The terraform files already exist. Would you like to replace them? "
-    #         "WARNING: This will overwrite any changes you have made to the terraform "
-    #         "files."
-    #     ):
-    #         terraform_utils.populate_tf_definitions(provider, force=True)
-    #     else:
-    #         cli_utils.error(
-    #             "Failed since the Terraform definition files already exist and you did not want to overwrite them."
-    #         )
-
-    # # warn that prerequisites should be met
-    # metadata = terraform_utils.get_recipe_metadata(provider)
-    # if not cli_utils.confirmation(
-    #     "\nPrerequisites for running this recipe are as follows.\n"
-    #     f"{metadata['Prerequisites']}"
-    #     "\n\n Are all of these conditions met?"
-    # ):
-    #     cli_utils.error(
-    #         "Prerequisites are not installed. Please make sure "
-    #         "they are met and run deploy again."
-    #     )
-
-    # stack_recipe_name = f"{provider}_modular"
-
-    # # create a directory for the stack recipe
-    # unique_dir_name = cli_utils.generate_unique_recipe_directory_name(
-    #     stack_recipe_name
-    # )
-    # temp_spec_dir = cli_utils.create_temp_spec_dir(unique_dir_name)
-
-    # # convert json-formatted string to dict
-    # if tags:
-    #     import json
-
-    #     tags = json.loads(tags)
-
-    # stack_spec_config = MlstacksSpec(
-    #     provider=provider,
-    #     stack_name=stack_name,
-    #     import_stack_flag=import_stack_flag,
-    #     region=region,
-    #     mlops_platform=mlops_platform,
-    #     artifact_store=artifact_store,
-    #     orchestrator=orchestrator,
-    #     container_registry=container_registry,
-    #     model_deployer=model_deployer,
-    #     experiment_tracker=experiment_tracker,
-    #     secrets_manager=secrets_manager,
-    #     step_operator=step_operator,
-    #     tags=tags,
-    # )
-    # cli_utils.generate_and_copy_spec_files(temp_spec_dir, stack_spec_config)
-
-    # terraform_utils.deploy_stack(os.path.join(temp_spec_dir, "stack.yaml"))
-
-    # with event_handler(
-    #     event=AnalyticsEvent.RUN_STACK_RECIPE,
-    #     metadata={"stack_recipe_name": stack_recipe_name},
-    #     v2=True,
-    # ) as handler:
-    #     # build a dict of all stack component options that have non-null values
-    #     stack_component_options = {
-    #         "artifact_store": artifact_store,
-    #         "orchestrator": orchestrator,
-    #         "container_registry": container_registry,
-    #         "model_deployer": model_deployer,
-    #         "experiment_tracker": experiment_tracker,
-    #         "secrets_manager": secrets_manager,
-    #         "step_operator": step_operator,
-    #     }
-
-    #     # filter out null values
-    #     stack_component_options = {
-    #         k: v for k, v in stack_component_options.items() if v is not None
-    #     }
-
-    #     handler.metadata.update(stack_component_options)
-
-    #     import python_terraform
-    #     import yaml
-
-    #     # get input variables
-    #     variables_dict: Dict[str, Any] = {}
-
-    #     if config:
-    #         if os.path.isfile(config):
-    #             variables_dict = yaml_utils.read_yaml(config)
-    #         else:
-    #             variables_dict = yaml.safe_load(config)
-    #         if not isinstance(variables_dict, dict):
-    #             cli_utils.error(
-    #                 "The configuration argument must be JSON/YAML content or "
-    #                 "point to a valid configuration file."
-    #             )
-
-    #     enabled_services = [
-    #         f"{name}_{value}"
-    #         for name, value in stack_component_options.items()
-    #         if name
-    #         not in [
-    #             "artifact_store",
-    #             "container_registry",
-    #             "secrets_manager",
-    #         ]
-    #     ]
-    #     enabled_services = enabled_services + [
-    #         f"{name}"
-    #         for name, _ in stack_component_options.items()
-    #         if name
-    #         in [
-    #             "artifact_store",
-    #             "container_registry",
-    #             "secrets_manager",
-    #         ]
-    #     ]
-
-    #     try:
-    #         stack_recipe = git_stack_recipes_handler.get_stack_recipes(
-    #             stack_recipe_name
-    #         )[0]
-    #     except KeyError as e:
-    #         cli_utils.error(str(e))
-    #     else:
-    #         from zenml.recipes import (
-    #             StackRecipeService,
-    #             StackRecipeServiceConfig,
-    #         )
-
-    #         # warn that prerequisites should be met
-    #         metadata = stack_recipe.metadata
-    #         if not cli_utils.confirmation(
-    #             "\nPrerequisites for running this recipe are as follows.\n"
-    #             f"{metadata['Prerequisites']}"
-    #             "\n\n Are all of these conditions met?"
-    #         ):
-    #             cli_utils.error(
-    #                 "Prerequisites are not installed. Please make sure "
-    #                 "they are met and run deploy again."
-    #             )
-
-    #         local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
-
-    #         # create the stack recipe service.
-    #         stack_recipe_service_config = StackRecipeServiceConfig(
-    #             directory_path=str(local_recipe_dir),
-    #             skip_pull=skip_pull,
-    #             force=force,
-    #             log_level=log_level,
-    #             enabled_services=enabled_services,
-    #             input_variables=variables_dict,
-    #         )
-
-    #         stack_recipe_service = StackRecipeService.get_service(
-    #             str(local_recipe_dir)
-    #         )
-
-    #         if stack_recipe_service:
-    #             cli_utils.declare(
-    #                 "An existing deployment of the recipe found. "
-    #                 f"with path {local_recipe_dir}. "
-    #                 "Proceeding to update or create resources. "
-    #             )
-    #         else:
-    #             stack_recipe_service = StackRecipeService(
-    #                 config=stack_recipe_service_config,
-    #                 stack_recipe_name=stack_recipe_name,
-    #             )
-
-    #         try:
-    #             # start the service (the init and apply operation)
-    #             stack_recipe_service.start()
-
-    #         except RuntimeError as e:
-    #             cli_utils.error(
-    #                 f"Running recipe {stack_recipe_name} failed: {str(e)} "
-    #                 "\nPlease look at the error message to figure out "
-    #                 "why the command failed. If the error is due some wrong "
-    #                 "configuration, please consider checking the locals.tf "
-    #                 "file to verify if the inputs are correct. Most commonly, "
-    #                 "the command can fail due to a timeout error. In that "
-    #                 "case, please run zenml stack recipe deploy "
-    #                 f"{stack_recipe_name} again."
-    #             )
-    #         except python_terraform.TerraformCommandError:
-    #             cli_utils.error(
-    #                 f"Running recipe {stack_recipe_name} failed."
-    #                 "\nPlease look at the error message to figure out why the "
-    #                 "command failed. If the error is due some wrong "
-    #                 "configuration, please consider checking the locals.tf "
-    #                 "file to verify if the inputs are correct. Most commonly, "
-    #                 "the command can fail due to a timeout error. In that "
-    #                 "case, please run zenml stack recipe deploy "
-    #                 f"{stack_recipe_name} again."
-    #             )
-    #     # invoke server deploy
-    #     if no_server:
-    #         cli_utils.warning("The `--no-server` flag has been deprecated.")
-
-    #     # get the stack yaml path
-    #     stack_yaml_file = os.path.join(
-    #         stack_recipe_service.config.directory_path,
-    #         stack_recipe_service.stack_file_path[2:],
-    #     )
-
-    #     cli_utils.declare(
-    #         "\nA stack configuration YAML file has been generated "
-    #         f"as part of the deployment of the {stack_recipe_name} "
-    #         f"recipe. Find it at {stack_yaml_file}."
-    #     )
-
-    #     if import_stack_flag:
-    #         cli_utils.declare(
-    #             "\nThe flag `--import` is set. Proceeding "
-    #             "to import a new ZenML stack from the created "
-    #             "resources."
-    #         )
-    #         import_stack_name = stack_name if stack_name else stack_recipe_name
-    #         cli_utils.declare(
-    #             "Importing a new stack with the name " f"{import_stack_name}."
-    #         )
-
-    #         # import deployed resources as ZenML stack
-    #         ctx.invoke(
-    #             import_stack,
-    #             stack_name=import_stack_name,
-    #             filename=stack_yaml_file,
-    #             ignore_version_mismatch=True,
-    #         )
-
-    #         cli_utils.declare(
-    #             "Please consider creating any secrets that your "
-    #             "stack components like the metadata store might "
-    #             "need. You can inspect the fields of a stack "
-    #             "component by running a describe command on them."
-    #         )
-    #         cli_utils.declare(
-    #             "\n Run 'terraform output' in the recipe's "
-    #             f"directory at {stack_recipe_service.config.directory_path} "
-    #             "to get a list of outputs. To now retrieve sensitive "
-    #             f"outputs, for example, the metadata-db-password "
-    #             "use the command 'terraform output metadata-db-password' "
-    #             "to get the value in the command-line."
-    #         )
+        cli_utils.declare("Stack successfully imported into ZenML.")
 
 
 @stack.command(
