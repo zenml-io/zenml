@@ -56,7 +56,8 @@ def mlflow_register_model_step(
         version: The version of the model.
         trained_model_name: Name of the model artifact in MLflow.
         model_source_uri: The path to the model. If not provided, the model will
-        be fetched from the MLflow tracking server via the `trained_model_name`.
+            be fetched from the MLflow tracking server via the
+            `trained_model_name`.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
