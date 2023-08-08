@@ -89,7 +89,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    <b>ZenML Cloud</b> has entered its beta phase. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
+    <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
     🎉 Version 0.42.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
