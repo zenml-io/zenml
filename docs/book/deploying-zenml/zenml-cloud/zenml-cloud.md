@@ -4,7 +4,7 @@ description: Your one-stop MLOps control plane.
 
 # ☁ ZenML Cloud
 
-ZenML Cloud is a Software-as-a-Service (SaaS) platform that extends the capabilities of the open-source ZenML product. It provides users with a centralized control plane to effortlessly launch and manage their ZenML instances. The core foundation of ZenML Cloud remains the powerful open-source offering, but with ZenML Cloud, users gain access to a host of additional features designed to streamline the machine learning workflow.
+ZenML Cloud is a Software-as-a-Service (SaaS) platform that extends the capabilities of the open-source ZenML product. It provides users with a centralized control plane to effortlessly launch and manage their ZenML server instances. The core foundation of ZenML Cloud remains the powerful open-source offering, but with ZenML Cloud, users gain access to a host of additional features designed to streamline the machine learning workflow.
 
 <div data-full-width="true">
 
@@ -14,13 +14,13 @@ ZenML Cloud is a Software-as-a-Service (SaaS) platform that extends the capabili
 
 ## Key features
 
-ZenML Cloud brings convenience to your machine learning workflows by allowing you to deploy a managed instance of ZenML with a single click. This means you can set up and manage your machine learning pipelines effortlessly without the hassle of dealing with infrastructure complexities. We take care of all the necessary upgrades and backups, ensuring that your system remains up-to-date and resilient while you focus on your core MLOps tasks. As a valued cloud customer, you'll also benefit from priority support, ensuring that you receive the assistance you need to make the most of our platform.
+ZenML Cloud brings convenience to your machine learning workflows by allowing you to deploy a managed instance of ZenML servers with a single click. This means you can set up and manage your machine learning pipelines effortlessly without the hassle of dealing with infrastructure complexities. We take care of all the necessary upgrades and backups, ensuring that your system remains up-to-date and resilient while you focus on your core MLOps tasks. As a valued cloud customer, you'll also benefit from priority support, ensuring that you receive the assistance you need to make the most of our platform.
 
-Data security and privacy are of utmost importance at ZenML Cloud. You can connect your infrastructure safely and securely and we track only metadata through an encrypted connection, ensuring that your sensitive information remains confidential. Our platform offers seamless integration with your cloud services through service connectors, making it easy to connect and utilize various cloud resources without compromising data security. Additionally, we store your secrets in a safe and secure isolated tenant, providing an extra layer of protection for your valuable data.
+Data security and privacy are of utmost importance at ZenML Cloud. You can connect your infrastructure safely and securely and we track only metadata through an encrypted connection, ensuring that your sensitive information remains confidential. Our platform offers seamless integration with your cloud services through service connectors, making it easy to connect and utilize various cloud resources without compromising data security. Additionally, we store your secrets in a safe and secure isolated environment, providing an extra layer of protection for your valuable data.
 
-As a ZenML Cloud user, you also gain early access to a powerful control plane that centralizes user management and streamlines your workflows. With centralized management of users, handling access and permissions becomes efficient and organized. Moreover, ZenML Cloud users enjoy exclusive access to a range of cloud-only features, providing you with a competitive edge and the opportunity to stay ahead in the rapidly evolving field of machine learning.&#x20;
+As a ZenML Cloud user, you also gain early access to a powerful control plane that centralizes user management and streamlines your workflows. With centralized management of users, handling access and permissions becomes efficient and organized. Moreover, ZenML Cloud users enjoy exclusive access to a range of cloud-only features, providing you with a competitive edge and the opportunity to stay ahead in the rapidly evolving field of machine learning.
 
-{% hint style="success" %}
+{% hint style="info" %}
 ZenML Cloud is currently in the beta phase, offering users the opportunity to host a managed ZenML instance and gain early access to the exciting new features mentioned above. Beta users will receive priority access to the enhanced functionalities and dedicated support to ensure a smooth onboarding experience.
 {% endhint %}
 

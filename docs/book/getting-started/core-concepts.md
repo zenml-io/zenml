@@ -88,7 +88,7 @@ First, in order to utilize _stack components_ that are running remotely on a clo
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use ZenML Cloud which provides a control plane for you to create managed instances of ZenML, or deploy it in your self-hosted environment.
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the **ZenML Cloud** which provides a control plane for you to create managed instances of ZenML servers, or deploy it in your self-hosted environment.
 
 #### Metadata Tracking
 
