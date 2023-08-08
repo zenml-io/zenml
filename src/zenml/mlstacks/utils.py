@@ -30,7 +30,6 @@ from typing import (
 import click
 import pkg_resources
 
-from zenml.cli.stack import _import_stack_component
 from zenml.cli.utils import (
     error,
     print_model_url,
@@ -416,6 +415,8 @@ def import_new_stack(
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
         component_spec_path = f"{stack_spec_dir}/{component_config['flavor']}-{component_type_str}.yaml"
+
+        from zenml.cli.stack import _import_stack_component
 
         component_id = _import_stack_component(
             component_type=component_type,
