@@ -121,6 +121,6 @@ The Integration itself must be imported within [`src/zenml/integrations/__init__
 
 ### Step 4: Create a PR and celebrate :tada:
 
-You can now [create a PR](https://github.com/zenml-io/zenml/compare) to ZenML and wait for the core maintainers to take a look. Thank you so much for your contribution to the code-base, rock on! 💜
+You can now [create a PR](https://github.com/zenml-io/zenml/compare) to ZenML and wait for the core maintainers to take a look. Thank you so much for your contribution to the codebase, rock on! 💜
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
