@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to generate stack component CLI commands."""
 
+import os
 import random
 import string
 import time
@@ -49,6 +50,7 @@ from zenml.mlstacks.utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
     import_new_mlstacks_component,
+    verify_spec_and_tf_files_exist,
 )
 from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
 from zenml.utils import source_utils
@@ -1346,19 +1348,37 @@ def generate_stack_component_destroy_command(
         type=str,
         required=True,
     )
+    @click.option(
+        "--provider",
+        "-p",
+        "provider",
+        type=click.Choice(["aws", "k3d", "gcp"]),
+        required=True,
+    )
+    @click.option(
+        "--debug-mode",
+        "-d",
+        "debug_mode",
+        is_flag=True,
+        default=False,
+        help="Whether to destroy the stack component in debug mode.",
+    )
     def destroy_stack_component_command(
         name_id_or_prefix: str,
+        provider: str,
+        debug_mode: bool = False,
     ) -> None:
         """Destroy a stack component.
 
         Args:
             name_id_or_prefix: Name, ID or prefix of the component to destroy.
+            provider: Cloud provider (or local) where the stack was deployed.
+            debug_mode: Whether to destroy the stack component in debug mode.
         """
-        client = Client()
-        from zenml.recipes import GitStackRecipesHandler
+        c = Client()
 
         try:
-            component = client.get_stack_component(
+            component = c.get_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
                 component_type=component_type,
                 allow_name_prefix_match=False,
@@ -1369,34 +1389,69 @@ def generate_stack_component_destroy_command(
                 f"'{name_id_or_prefix}'.",
             )
 
-        # if the component's labels don't have a key created_by
-        # equal to 'recipe', then destroy cannot be called on it
-        if (
-            not component.labels
-            or "created_by" not in component.labels
-            or component.labels["created_by"] != "recipe"
-        ):
+        # Check if the component was created by a recipe
+        if not component.component_spec_path:
             cli_utils.error(
                 f"Cannot destroy stack component {component.name}. It "
                 "was not created by a recipe.",
             )
 
-        try:
-            GitStackRecipesHandler().get_stack_recipes(
-                f"{component.labels['cloud']}-modular"
-            )[0]
-        except KeyError:
-            cli_utils.error(
-                "The backing recipe for this component is missing. "
-                "Please run `zenml stack recipe pull` to fix this."
+        cli_utils.verify_mlstacks_prerequisites_installation()
+        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+        # spec_files_dir: str = component.component_spec_path
+        component_spec_path: str = component.component_spec_path
+        stack_name: str = os.path.basename(
+            os.path.dirname(component_spec_path)
+        )
+        stack_spec_path: str = (
+            f"{os.path.dirname(component_spec_path)}/stack-{stack_name}.yaml"
+        )
+        tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+
+        cli_utils.declare(
+            "Checking Terraform definitions and spec files are present..."
+        )
+        verify_spec_and_tf_files_exist(stack_spec_path, tf_definitions_path)
+
+        from mlstacks.utils import terraform_utils
+
+        cli_utils.declare(
+            f"Destroying component '{component.name}' using Terraform..."
+        )
+        terraform_utils.destroy_stack(
+            stack_path=stack_spec_path, debug_mode=debug_mode
+        )
+        cli_utils.declare(
+            f"Component '{component.name}' successfully destroyed."
+        )
+
+        if cli_utils.confirmation(
+            f"Would you like to delete the associated ZenML "
+            f"component '{component.name}'?\nThis will delete the stack "
+            "component registered with ZenML."
+        ):
+            c.delete_stack_component(
+                name_id_or_prefix=component.id,
+                component_type=component.type,
+            )
+            cli_utils.declare(
+                f"Component '{component.name}' successfully deleted from ZenML."
             )
 
-        try:
-            client.destroy_stack_component(
-                component=component,
+        spec_dir = os.path.dirname(stack_spec_path)
+        if cli_utils.confirmation(
+            f"Would you like to delete the `mlstacks` spec directory for "
+            f"this component, located at {spec_dir}?"
+        ):
+            fileio.rmtree(spec_dir)
+            cli_utils.declare(
+                f"Spec directory for component '{component.name}' successfully "
+                "deleted."
             )
-        except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+        cli_utils.declare(
+            f"Component '{component.name}' successfully destroyed."
+        )
 
     return destroy_stack_component_command
 
