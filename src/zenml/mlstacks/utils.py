@@ -41,7 +41,7 @@ from zenml.constants import (
     STACK_RECIPE_PACKAGE_NAME,
 )
 from zenml.enums import StackComponentType
-from zenml.utils.dashboard_utils import get_stack_url
+from zenml.utils.dashboard_utils import get_component_url, get_stack_url
 from zenml.utils.yaml_utils import read_yaml
 
 
@@ -389,7 +389,7 @@ def generate_unique_filename(base_filename: str) -> str:
 
 
 @verify_installation
-def import_new_stack(
+def import_new_mlstacks_stack(
     stack_name: str, provider: str, stack_spec_dir: str
 ) -> None:
     """Import a new stack deployed for a particular cloud provider.
@@ -433,6 +433,47 @@ def import_new_stack(
     )
 
     print_model_url(get_stack_url(imported_stack))
+
+
+@verify_installation
+def import_new_mlstacks_component(
+    stack_name: str, provider: str, stack_spec_dir: str
+) -> None:
+    """Import a new compenent deployed for a particular cloud provider.
+
+    Args:
+        stack_name: The name of the stack to import.
+        provider: The cloud provider for which the stack is deployed.
+        stack_spec_dir: The path to the directory containing the stack spec.
+    """
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+    from mlstacks.utils import terraform_utils
+
+    tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+    stack_spec_file = f"{stack_spec_dir}/stack-{stack_name}.yaml"
+    # strip out the `./` from the stack_file_path
+    stack_filename = terraform_utils.get_stack_outputs(
+        stack_spec_file, output_key="stack-yaml-path"
+    ).get("stack-yaml-path")[2:]
+    import_stack_path = f"{tf_dir}/{stack_filename}"
+    data = read_yaml(import_stack_path)
+    # import stack components
+    component_ids = {}
+    for component_type_str, component_config in data["components"].items():
+        component_type = StackComponentType(component_type_str)
+        component_spec_path = f"{stack_spec_dir}/{component_config['flavor']}-{component_type_str}.yaml"
+
+        from zenml.cli.stack import _import_stack_component
+
+        component_id = _import_stack_component(
+            component_type=component_type,
+            component_dict=component_config,
+            component_spec_path=component_spec_path,
+        )
+        component_ids[component_type] = component_id
+        component = Client().get_stack_component(component_type, component_id)
+
+    print_model_url(get_component_url(component))
 
 
 def verify_spec_and_tf_files_exist(

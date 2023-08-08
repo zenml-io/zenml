@@ -47,7 +47,7 @@ from zenml.logger import get_logger
 from zenml.mlstacks.utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
-    import_new_stack,
+    import_new_mlstacks_stack,
     stack_exists,
     stack_spec_exists,
     verify_spec_and_tf_files_exist,
@@ -1404,13 +1404,6 @@ def register_secrets(
     help="Pass one or more extra configuration values.",
     multiple=True,
 )
-@click.option(
-    "--extra-config",
-    "-x",
-    "extra_config",
-    multiple=True,
-    help="Extra configurations as key=value pairs. This option can be used multiple times.",
-)
 @click.pass_context
 def deploy(
     ctx: click.Context,
@@ -1513,7 +1506,7 @@ def deploy(
 
     if not no_import_stack_flag:
         cli_utils.declare(f"Importing stack '{stack_name}' into ZenML...")
-        import_new_stack(
+        import_new_mlstacks_stack(
             stack_name=stack_name,
             provider=stack.provider,
             stack_spec_dir=spec_dir,

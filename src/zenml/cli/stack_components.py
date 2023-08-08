@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality to generate stack component CLI commands."""
 
+import random
+import string
 import time
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
@@ -39,13 +41,21 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
+from zenml.constants import ALPHA_MESSAGE
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
+from zenml.mlstacks.utils import (
+    convert_click_params_to_mlstacks_primitives,
+    convert_mlstacks_primitives_to_dicts,
+    import_new_mlstacks_component,
+)
 from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
 from zenml.utils import source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.dashboard_utils import get_component_url
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
+from zenml.utils.yaml_utils import write_yaml
 
 
 def generate_stack_component_get_command(
@@ -1138,12 +1148,46 @@ def generate_stack_component_deploy_command(
         type=click.Choice(["aws", "gcp", "k3d"]),
         help="The cloud (or local provider) to use to deploy the stack component.",
     )
-    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    @click.option(
+        "--region",
+        "-r",
+        "region",
+        required=True,
+        type=str,
+        help="The region to deploy the stack component to.",
+    )
+    @click.option(
+        "--debug-mode",
+        "-d",
+        "debug_mode",
+        is_flag=True,
+        default=False,
+        help="Whether to deploy the stack component in debug mode.",
+    )
+    @click.option(
+        "--extra-config",
+        "-x",
+        "extra_config",
+        multiple=True,
+        help="Extra configurations as key=value pairs. This option can be used multiple times.",
+    )
+    @click.option(
+        "--tags",
+        "-t",
+        "tags",
+        required=False,
+        type=click.STRING,
+        help="Pass one or more extra configuration values.",
+        multiple=True,
+    )
     def deploy_stack_component_command(
         name: str,
         flavor: str,
         provider: str,
-        args: List[str],
+        region: str,
+        debug_mode: bool = False,
+        tags: Optional[List[str]] = None,
+        extra_config: Optional[List[str]] = None,
     ) -> None:
         """Deploy a stack component.
 
@@ -1152,12 +1196,31 @@ def generate_stack_component_deploy_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            provider: Cloud provider (or local) to use to deploy the stack component.
-            args: Additional arguments to pass to the component.
+            provider: Cloud provider (or local) to use to deploy the stack
+            component.
+            region: Region to deploy the stack component to.
+            debug_mode: Whether to deploy the stack component in debug mode.
+            tags: Tags to be added to the component.
+            extra_config: Extra configuration values to be added to the
 
         Raises:
             error: If the component type is not supported.
         """
+        client = Client()
+        try:
+            # raise error if user already has a component with the same name
+            client.get_stack_component(
+                component_type=component_type,
+                name_id_or_prefix=name,
+                allow_name_prefix_match=False,
+            )
+            cli_utils.error(
+                f"A stack component of type '{component_type.value}' with "
+                f"the name '{name}' already exists. Please try again with "
+                f"a different component name."
+            )
+        except KeyError:
+            pass
         from mlstacks.constants import ALLOWED_FLAVORS
 
         if flavor not in ALLOWED_FLAVORS[component_type.value]:
@@ -1183,53 +1246,84 @@ def generate_stack_component_deploy_command(
                 f"{provider}."
             )
 
-        client = Client()
+        # if the cloud is gcp, project_id is required
+        extra_config_dict = (
+            dict(config.split("=") for config in extra_config)
+            if extra_config
+            else ()
+        )
+        if provider == "gcp" and "project_id" not in extra_config_dict:
+            cli_utils.error(
+                "Missing Project ID. You must pass your GCP project ID to "
+                "the deploy command as part of the `--extra_config` option."
+            )
+        cli_utils.declare("Checking prerequisites are installed...")
+        cli_utils.verify_mlstacks_prerequisites_installation()
+        from mlstacks.utils import zenml_utils
 
-        # Parse the given args
-        # name is guaranteed to be set by parse_name_and_extra_arguments
-        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
-            list(args) + [name], expand_args=True
+        cli_utils.warning(ALPHA_MESSAGE)
+        cli_params = {
+            "provider": provider,
+            "region": region,
+            "stack_name": "".join(
+                random.choice(string.ascii_letters + string.digits)
+                for _ in range(5)
+            ),
+            "tags": tags,
+            "extra_config": extra_config,
+            "file": None,
+            "debug_mode": debug_mode,
+            component_type.value: True,
+        }
+        if component_type == StackComponentType.ARTIFACT_STORE:
+            cli_params["extra_config"] = cli_params["extra_config"] + (
+                f"bucket_name={name}",
+            )
+        stack, components = convert_click_params_to_mlstacks_primitives(
+            cli_params
         )
 
-        # if the cloud is gcp, project_id is required for the first time
-        if cloud == "gcp":
-            if "project_id" not in parsed_args:
-                cli_utils.warning(
-                    "You should pass your GCP project ID to the deploy command, "
-                    "using the `--project_id` flag, if this is the first time that "
-                    "you are deploying a component to GCP. Ignore if you "
-                    "have already done so."
-                )
-
-        from zenml.recipes import GitStackRecipesHandler
-
-        try:
-            stack_recipe = GitStackRecipesHandler().get_stack_recipes(
-                f"{cloud}-modular"
-            )[0]
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            # warn that prerequisites should be met
-            metadata = stack_recipe.metadata
-            if not cli_utils.confirmation(
-                "\nPrerequisites for running this recipe are as follows.\n"
-                f"{metadata['Prerequisites']}"
-                "\n\n Are all of these conditions met?"
-            ):
-                cli_utils.error(
-                    "Prerequisites are not installed. Please make sure "
-                    "they are met and run deploy again."
-                )
-
-            client.deploy_stack_component(
-                name=name,
-                flavor=flavor,
-                cloud=cloud,
-                configuration=parsed_args,
-                component_type=component_type,
-                labels={"cloud": cloud, "created_by": "recipe"},
+        cli_utils.declare("Checking flavor compatibility...")
+        if not zenml_utils.has_valid_flavor_combinations(stack, components):
+            cli_utils.error(
+                "The specified stack and component flavors are not compatible "
+                "with the provider or with one another. Please try again."
             )
+
+        stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+            stack, components
+        )
+        # write the stack and component yaml files
+        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+        spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+        cli_utils.declare(f"Writing spec files to {spec_dir}...")
+        create_dir_recursive_if_not_exists(spec_dir)
+
+        stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+        write_yaml(file_path=stack_file_path, contents=stack_dict)
+        for component in component_dicts:
+            write_yaml(
+                file_path=f"{spec_dir}/{component['name']}.yaml",
+                contents=component,
+            )
+
+        from mlstacks.utils import terraform_utils
+
+        cli_utils.declare("Deploying stack using Terraform...")
+        terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
+        cli_utils.declare("Stack successfully deployed.")
+
+        stack_name = cli_params["stack_name"]
+        cli_utils.declare(
+            f"Importing {component_type.value} component '{name}' into ZenML..."
+        )
+        import_new_mlstacks_component(
+            stack_name=stack_name,
+            provider=stack.provider,
+            stack_spec_dir=spec_dir,
+        )
+        cli_utils.declare("Component successfully imported into ZenML.")
 
     return deploy_stack_component_command
 
