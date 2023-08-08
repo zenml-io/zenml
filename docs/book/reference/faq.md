@@ -26,7 +26,7 @@ This depends on the tool and its respective MLOps category. We have a full guide
 
 #### How can I contribute?
 
-We would love to develop ZenML together with our community! The best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you would like to contribute, please review our [Contributing Guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for all relevant details.
+We develop ZenML together with our community! To get involved, the best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you would like to contribute, please review our [Contributing Guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for all relevant details.
 
 #### How can I learn more about MLOps?
 
