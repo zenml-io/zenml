@@ -238,8 +238,8 @@ Describe MLOps Stack Component Flavors
 
 If you would like to learn more about how to build a custom stack component flavor for a specific stack component, please check the links below:
 
-| **Type of Stack Component**                                                | **Description**                                                   |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Type of Stack Component**                                                                         | **Description**                                                   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | [Orchestrator](../../../stacks-and-components/component-guide/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
 | [Artifact Store](../../../stacks-and-components/component-guide/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
 | [Container Registry](../../../stacks-and-components/component-guide/container-registries/custom.md) | Store for your containers                                         |

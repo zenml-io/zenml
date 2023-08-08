@@ -11,7 +11,7 @@ ZenML tackles this problem by introducing the concept of [Stacks and Stack Compo
 Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
 
 | **Type of Stack Component**                                          | **Description**                                                   |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+|----------------------------------------------------------------------|-------------------------------------------------------------------|
 | [Orchestrator](orchestrators/orchestrators.md)                       | Orchestrating the runs of your pipeline                           |
 | [Artifact Store](artifact-stores/artifact-stores.md)                 | Storage for the artifacts created by your pipelines               |
 | [Container Registry](container-registries/container-registries.md)   | Store for your containers                                         |

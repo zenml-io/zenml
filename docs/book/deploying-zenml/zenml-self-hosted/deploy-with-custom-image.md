@@ -27,31 +27,31 @@ set up a free Docker Hub repository.
 
 2. Clone ZenML (or your ZenML fork) and checkout the branch that you want to
 deploy, e.g., if you want to deploy ZenML version 0.41.0, run 
-```bash
-git checkout release/0.41.0
-```
+    ```bash
+    git checkout release/0.41.0
+    ```
 
 3. Copy the [ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile),
 e.g.: 
-```bash
-cp docker/base.Dockerfile docker/custom.Dockerfile
-```
+    ```bash
+    cp docker/base.Dockerfile docker/custom.Dockerfile
+    ```
 
 4. Modify the copied Dockerfile:
-- Add additional dependencies: 
-```bash 
-RUN pip install <my_package>
-```
-- (Forks only) install local files instead of official ZenML:
-```bash
-RUN pip install -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
-```
+   - Add additional dependencies: 
+    ```bash 
+    RUN pip install <my_package>
+    ```
+    - (Forks only) install local files instead of official ZenML:
+    ```bash
+    RUN pip install -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
+    ```
 
 5. Build and push an image based on your Dockerfile: 
-```bash
-docker build -f docker/custom.Dockerfile . -t <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG> --platform linux/amd64
-docker push <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>
-```
+    ```bash
+    docker build -f docker/custom.Dockerfile . -t <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG> --platform linux/amd64
+    docker push <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>:<IMAGE_TAG>
+    ```
 
 {% hint style="info" %}
 If you want to verify your custom image locally, you can follow the
@@ -74,16 +74,16 @@ the `--config` argument to a custom configuration file that has both
 and set `zenmlserver_image_repo` and `zenmlserver_image_tag` according to the
 custom image you built:
 
-```yaml
-zenmlserver_image_repo: <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>
-zenmlserver_image_tag: <IMAGE_TAG>
-```
+   ```yaml
+   zenmlserver_image_repo: <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>
+   zenmlserver_image_tag: <IMAGE_TAG>
+   ```
 
 2. Run `zenml deploy` with the custom config file:
 
-```shell
-zenml deploy --config=/PATH/TO/FILE
-```
+   ```shell
+   zenml deploy --config=/PATH/TO/FILE
+   ```
 
 See the general [ZenML CLI Deployment Guide](deploy-with-zenml-cli.md) for more
 information on how to use the `zenml deploy` CLI command and what other options
