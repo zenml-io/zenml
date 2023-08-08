@@ -70,7 +70,7 @@ class Compiler:
             The compiled pipeline deployment and spec
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
-        # Copy the pipeline before we apply any run-level configurations so
+        # Copy the pipeline before we apply any run-level configurations, so
         # we don't mess with the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
         self._apply_run_configuration(
@@ -146,7 +146,7 @@ class Compiler:
         logger.debug(
             "Compiling pipeline spec for pipeline `%s`.", pipeline.name
         )
-        # Copy the pipeline before we connect the steps so we don't mess with
+        # Copy the pipeline before we connect the steps, so we don't mess with
         # the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
 

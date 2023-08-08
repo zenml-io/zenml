@@ -175,9 +175,7 @@ zenml stack set <STACK_NAME>
 kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
 ```
 
-You can read more about the recipes
-in [Stack Recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deleting-resources). or check the
-recipe code in the [ZenML Stack Recipe Repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+You can read more about the recipes in the [ZenML Stack Recipe Repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 4 GB of RAM, and 30 GB of disk space, so if you are using
@@ -261,7 +259,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Kubeflow. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -343,13 +341,13 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for more
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
 information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 

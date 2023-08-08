@@ -341,11 +341,11 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             A dictionary containing the caching parameters
         """
-        parameters = {}
-        parameters[
-            STEP_SOURCE_PARAMETER_NAME
-        ] = source_code_utils.get_hashed_source_code(self.source_object)
-
+        parameters = {
+            STEP_SOURCE_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
+                self.source_object
+            )
+        }
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
@@ -559,11 +559,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 pipeline=Pipeline.ACTIVE_PIPELINE,
             )
             outputs.append(output)
-
-        if len(outputs) == 1:
-            return outputs[0]
-        else:
-            return outputs
+        return outputs[0] if len(outputs) == 1 else outputs
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
@@ -1036,10 +1032,7 @@ class BaseStep(metaclass=BaseStepMeta):
             }
         )
 
-        complete_configuration = StepConfiguration.parse_obj(
-            self._configuration
-        )
-        return complete_configuration
+        return StepConfiguration.parse_obj(self._configuration)
 
     def _finalize_parameters(self) -> Dict[str, Any]:
         """Finalizes the config parameters for running this step.
@@ -1094,7 +1087,7 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.warning(
             "The `BaseParameters` class to define step parameters is "
             "deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines "
+            "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines "
             "for information on how to parameterize your steps. As a quick "
             "fix to get rid of this warning, make sure your parameter class "
             "inherits from `pydantic.BaseModel` instead of the "

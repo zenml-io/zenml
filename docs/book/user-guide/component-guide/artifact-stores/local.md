@@ -18,7 +18,7 @@ etc.) with others.
 {% hint style="warning" %}
 The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your 
 team and the artifacts stored in it cannot be accessed from other machines. This also means that
-[artifact visualizations](/docs/book/user-guide/advanced-guide/visualize-artifacts.md)
+[artifact visualizations](/docs/book/user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
 will not be available when using a local Artifact Store through a
 [ZenML instance deployed in the cloud](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md).
 

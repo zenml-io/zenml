@@ -42,10 +42,6 @@ Further down in the Platform Guide, you can find a guide on the different
 [deployment strategies](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md). 
 This will help you deploy a ZenML Server on the backend of your choice.
 
-Alternatively, if you do not yet want to deploy ZenML yourself, you can use
-the [MLOps Sandbox](https://sandbox.zenml.io/) offering to try ZenML with a 
-production stack. You can find a more in-depth guide on this in [the next chapter](switch-to-production.md).
-
 #### Connect your client to the server
 
 When ZenML is deployed, the client can be explicitly connected. This is how you
@@ -68,11 +64,6 @@ ZenML server. If you are the person who is setting up it for your organization
 and looking for detailed documentation regarding the deployment, head on over to
 the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/set-up-your-mlops-platform.md)
 to set it up on your infrastructure of choice.
-
-Alternatively, if you are just getting started and want to try things out along
-with this starter guide, take a look at
-the [MLOps Platform Sandbox](switch-to-production.md), which allows you to spin
-up a remote sandbox ZenML deployment.
 {% endhint %}
 
 And just like that, your client should be connected to the server.

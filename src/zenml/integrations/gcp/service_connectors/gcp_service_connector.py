@@ -665,6 +665,8 @@ class GCPServiceConnector(ServiceConnector):
         scopes = self._get_scopes(resource_type, resource_id)
         expires_at: Optional[datetime.datetime] = None
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             # Determine the credentials from the environment
             # Override the project ID if specified in the config
             credentials, project_id = google.auth.default(
@@ -1073,6 +1075,8 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = GCPBaseConfig(
                 project_id=project_id,
             )

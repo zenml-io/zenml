@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local Docker orchestrator."""
 
+import copy
 import json
 import os
 import sys
@@ -164,17 +165,27 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
 
+            run_args = copy.deepcopy(settings.run_args)
+            docker_environment = run_args.pop("environment", {})
+            docker_environment.update(environment)
+
+            docker_volumes = run_args.pop("volumes", {})
+            docker_volumes.update(volumes)
+
+            extra_hosts = run_args.pop("extra_hosts", {})
+            extra_hosts["host.docker.internal"] = "host-gateway"
+
             try:
                 logs = docker_client.containers.run(
                     image=image,
                     entrypoint=entrypoint,
                     command=arguments,
                     user=user,
-                    volumes=volumes,
-                    environment=environment,
+                    volumes=docker_volumes,
+                    environment=docker_environment,
                     stream=True,
-                    extra_hosts={"host.docker.internal": "host-gateway"},
-                    **settings.run_args,
+                    extra_hosts=extra_hosts,
+                    **run_args,
                 )
 
                 for line in logs:
@@ -189,7 +200,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
+            "Pipeline run `%s` has finished in `%s`.\n",
             run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )

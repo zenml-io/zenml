@@ -279,7 +279,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../user-guide/advanced-guide/stacks/custom-flavors.md) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 
@@ -322,7 +322,7 @@ Alongside the architectural shift, Pipeline configuration has been completely re
 Configuring pipelines, steps, and stack components in ZenML
 {% endembed %}
 
-If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../../user-guide/advanced-guide/pipelines/settings.md) in the docs describing the new ways to configure objects in ZenML.
+If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) in the docs describing the new ways to configure objects in ZenML.
 
 **What changed?**
 
@@ -339,7 +339,7 @@ With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that ser
 
 Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file.
 
-Read more about this paradigm in the [new docs section about settings](../../user-guide/advanced-guide/pipelines/settings.md).
+Read more about this paradigm in the [new docs section about settings](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
 
 Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack-invite).
 
@@ -363,7 +363,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 **Deprecating `pipeline.with_config(...)`**
 
-**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../../user-guide/advanced-guide/pipelines/settings.md).
+**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
 
 **Deprecating `step.with_return_materializer(...)`**
 

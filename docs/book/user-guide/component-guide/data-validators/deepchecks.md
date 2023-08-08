@@ -77,7 +77,7 @@ RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 ```
 
-Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](../../advanced-guide/containerize-your-pipeline.md) for more details:
+Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](../../advanced-guide/environment-management/containerize-your-pipeline.md) for more details:
 
 ```python
 import zenml

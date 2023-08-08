@@ -129,7 +129,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Kubernetes. Check
-out [this page](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -140,6 +140,21 @@ python file_that_runs_a_zenml_pipeline.py
 ```
 
 #### Additional configuration
+
+The Kubernetes orchestrator will by default use a Kubernetes namespace called
+`zenml` to run pipelines. In that namespace, it will automatically create a
+Kubernetes service account called `zenml-service-account` and grant it
+`edit` RBAC role in that namespace. To customize these settings, you can
+configure the following additional attributes in the Kubernetes orchestrator:
+
+* `kubernetes_namespace`: The Kubernetes namespace to use for running the
+pipelines. The namespace must already exist in the Kubernetes cluster.
+* `service_account_name`: The name of a Kubernetes service account to use for
+running the pipelines. If configured, it must point to an existing service
+account in the default or configured `namespace` that has associated RBAC roles
+granting permissions to create and manage pods in that namespace. This can also
+be configured as an individual pipeline setting in addition to the global
+orchestrator setting.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows
 you to configure (among others) the following attributes:
@@ -194,7 +209,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md) for more
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
 information on how to specify settings.
 
 A concrete example of using the Kubernetes orchestrator can be
@@ -207,7 +222,7 @@ the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrati
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

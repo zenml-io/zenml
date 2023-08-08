@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
-
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import uuid4
@@ -89,7 +88,7 @@ class LocalOrchestrator(BaseOrchestrator):
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
+            "Run `%s` has finished in `%s`.",
             run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )
@@ -141,7 +140,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -150,7 +149,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
+        """A URL to point at SDK docs explaining this flavor.
 
         Returns:
             A flavor SDK docs url.
@@ -159,7 +158,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.
