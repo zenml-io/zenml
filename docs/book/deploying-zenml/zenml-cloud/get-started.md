@@ -20,7 +20,7 @@ After successfully signing in with your Google or GitHub account, you will be as
 
 ## Step 2: Automatic tenant creation
 
-Upon completing the sign-up process, you will gain access to a free trial period lasting for 30 days. During this trial, a ZenML tenant will be automatically created for you. This setup process typically takes a few minutes to complete, and once it's ready, you will receive an email notification. This will mark the beginning of your 30-day trial, allowing you to explore and experience the benefits of ZenML's features firsthand.
+Upon completing the sign-up process, you will gain access to a free trial period lasting for 30 days. You will have access to a ZenML tenant (automatically created for you behind the scenes) for the duration of this trial period. This setup process typically takes a few minutes to complete, and once it's ready you will receive an email notification. This will mark the beginning of your 30-day trial, allowing you to explore and experience the benefits of ZenML's features firsthand.
 
 <figure><img src="../../.gitbook/assets/Screenshot 2023-07-28 at 15.46.34.png" alt=""><figcaption></figcaption></figure>
 
