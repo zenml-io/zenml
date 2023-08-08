@@ -1275,14 +1275,14 @@ def generate_stack_component_deploy_command(
             "extra_config": extra_config,
             "file": None,
             "debug_mode": debug_mode,
-            component_type.value: True,
+            component_type.value: name,
         }
         if component_type == StackComponentType.ARTIFACT_STORE:
             cli_params["extra_config"] = cli_params["extra_config"] + (
                 f"bucket_name={name}",
             )
         stack, components = convert_click_params_to_mlstacks_primitives(
-            cli_params
+            cli_params, zenml_component_deploy=True
         )
 
         cli_utils.declare("Checking flavor compatibility...")
@@ -1322,6 +1322,7 @@ def generate_stack_component_deploy_command(
         )
         import_new_mlstacks_component(
             stack_name=stack_name,
+            component_name=name,
             provider=stack.provider,
             stack_spec_dir=spec_dir,
         )

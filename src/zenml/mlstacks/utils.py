@@ -18,6 +18,7 @@ import uuid
 from functools import wraps
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -43,6 +44,9 @@ from zenml.constants import (
 from zenml.enums import StackComponentType
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
 from zenml.utils.yaml_utils import read_yaml
+
+if TYPE_CHECKING:
+    from mlstacks.models import Component, Stack
 
 
 def verify_installation(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -128,7 +132,7 @@ def _get_component_flavor(
     Returns:
         The component flavor.
     """
-    if key in {"artifact_store", "container_registry"} and value is True:
+    if key in {"artifact_store", "container_registry"} and bool(value):
         if provider == "aws":
             flavor = "s3"
         elif provider == "azure":
@@ -251,11 +255,16 @@ def _add_extra_config_to_components(
 
 
 @verify_installation
-def _construct_components(params: Dict[str, Any]) -> List["Component"]:
+def _construct_components(
+    params: Dict[str, Any], zenml_component_deploy: bool = False
+) -> List["Component"]:
     """Constructs mlstacks `Component` objects from raw Click CLI params.
 
     Args:
         params: Raw Click CLI params.
+        zenml_component_deploy: A boolean indicating whether the stack
+            contains a single component and is being deployed through `zenml
+            component deploy`
 
     Returns:
         A list of mlstacks `Component` objects.
@@ -268,16 +277,28 @@ def _construct_components(params: Dict[str, Any]) -> List["Component"]:
         if params["extra_config"]
         else {}
     )
-    components = [
-        Component(
-            name=f"{provider}-{key}",
-            component_type=key,
-            component_flavor=_get_component_flavor(key, value, provider),
-            provider=params["provider"],
-        )
-        for key, value in params.items()
-        if (value) and (key in MLSTACKS_SUPPORTED_STACK_COMPONENTS)
-    ]
+    if zenml_component_deploy:
+        components = [
+            Component(
+                name=params[key],
+                component_type=key,
+                component_flavor=_get_component_flavor(key, value, provider),
+                provider=params["provider"],
+            )
+            for key, value in params.items()
+            if (value) and (key in MLSTACKS_SUPPORTED_STACK_COMPONENTS)
+        ]
+    else:
+        components = [
+            Component(
+                name=f"{provider}-{key}",
+                component_type=key,
+                component_flavor=_get_component_flavor(key, value, provider),
+                provider=params["provider"],
+            )
+            for key, value in params.items()
+            if (value) and (key in MLSTACKS_SUPPORTED_STACK_COMPONENTS)
+        ]
 
     components = _add_extra_config_to_components(components, extra_config)
     return components
@@ -322,12 +343,16 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
 
 @verify_installation
 def convert_click_params_to_mlstacks_primitives(
-    params: Dict[str, Any]
+    params: Dict[str, Any],
+    zenml_component_deploy: bool = False,
 ) -> Tuple["Stack", List["Component"]]:
     """Converts raw Click CLI params to mlstacks primitives.
 
     Args:
         params: Raw Click CLI params.
+        zenml_component_deploy: A boolean indicating whether the stack
+            contains a single component and is being deployed through `zenml
+            component deploy`
 
     Returns:
         A tuple of Stack and List[Component] objects.
@@ -336,7 +361,9 @@ def convert_click_params_to_mlstacks_primitives(
     from mlstacks.models import Component, Stack
 
     stack: Stack = _construct_stack(params)
-    components: List[Component] = _construct_components(params)
+    components: List[Component] = _construct_components(
+        params, zenml_component_deploy
+    )
 
     # writes the file names to the stack spec
     # using format '<provider>-<component_name>.yaml'
@@ -437,12 +464,13 @@ def import_new_mlstacks_stack(
 
 @verify_installation
 def import_new_mlstacks_component(
-    stack_name: str, provider: str, stack_spec_dir: str
+    stack_name: str, component_name: str, provider: str, stack_spec_dir: str
 ) -> None:
-    """Import a new compenent deployed for a particular cloud provider.
+    """Import a new component deployed for a particular cloud provider.
 
     Args:
         stack_name: The name of the stack to import.
+        component_name: The name of the component to import.
         provider: The cloud provider for which the stack is deployed.
         stack_spec_dir: The path to the directory containing the stack spec.
     """
@@ -461,7 +489,10 @@ def import_new_mlstacks_component(
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
-        component_spec_path = f"{stack_spec_dir}/{component_config['flavor']}-{component_type_str}.yaml"
+        component_spec_path = f"{stack_spec_dir}/{component_name}.yaml"
+        # TODO: find a nicer way to do this (most likely fix the TF
+        # recipe stack yaml output)
+        component_config["name"] = component_name
 
         from zenml.cli.stack import _import_stack_component
 
