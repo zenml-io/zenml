@@ -29,7 +29,7 @@ provide your own Artifact Store implementation.
 
 In addition to pipeline artifacts, the Artifact Store may also be used as storage backed by other specialized stack
 components that need to store their data in the form of persistent object storage.
-The [Great Expectations Data Validator](/docs/book/stacks-and-components/component-guideonent-guide/data-validators/great-expectations.md) is
+The [Great Expectations Data Validator](/docs/book/stacks-and-components/component-guide/data-validators/great-expectations.md) is
 such an example.
 
 Related concepts:

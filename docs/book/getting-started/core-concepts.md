@@ -16,7 +16,7 @@ First, let's look at the main concepts which play a role during the development 
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
 
-![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
+![Representation of a pipeline dag.](../.gitbook/assets/01_pipeline.png)
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
@@ -46,7 +46,7 @@ When you want to execute a pipeline run with ZenML, **Stacks** come into play. A
 
 For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
 
-![ZenML running code on the Local Stack.](../.gitbook/assets/02\_pipeline\_local\_stack.png)
+![ZenML running code on the Local Stack.](../.gitbook/assets/02_pipeline_local_stack.png)
 
 {% hint style="info" %}
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
@@ -74,7 +74,7 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
-![Switching between stacks with ZenML.](../.gitbook/assets/03\_multi\_stack.png)
+![Switching between stacks with ZenML.](../.gitbook/assets/03_multi_stack.png)
 
 ## 3. Management
 
@@ -84,7 +84,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a **ZenML Server**, so that it can communicate with these stack components and run your pipelines.
 
-![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
+![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04_architecture.png)
 
 #### Server Deployment
 

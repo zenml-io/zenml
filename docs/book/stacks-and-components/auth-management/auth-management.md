@@ -65,11 +65,11 @@ These drawbacks are addressed by Service Connectors.
 
 Without Service Connectors, credentials are stored directly in the Stack Component configuration or ZenML Secret and are directly used in the runtime environment. The Stack Component implementation is directly responsible for validating credentials, authenticating and connecting to the infrastructure service. This is illustrated in the following diagram:
 
-![Authentication without Service Connectors](../../.gitbook/assets/authentication\_without\_connectors.png)
+![Authentication without Service Connectors](../../.gitbook/assets/authentication_without_connectors.png)
 
 When Service Connectors are involved in the authentication and authorization process, they can act as brokers. The credentials validation and authentication process takes place on the ZenML server. In most cases, the main credentials never have to leave the ZenML server as the Service Connector automatically converts them into short-lived credentials with a reduced set of privileges and issues these credentials to clients. Furthermore, multiple Stack Components of different flavors can use the same Service Connector to access different types or resources with the same credentials:
 
-![Authentication with Service Connectors](../../.gitbook/assets/authentication\_with\_connectors.png)
+![Authentication with Service Connectors](../../.gitbook/assets/authentication_with_connectors.png)
 
 In working with Service Connectors, the first step is usually _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find out whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
 

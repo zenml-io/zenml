@@ -162,7 +162,7 @@ def my_pipeline():
     # trainer(data=np.array([1, 2, 3]))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
@@ -259,7 +259,7 @@ def my_step() -> None:
 
 You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml\_step\_logs.png)
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
 
 If you do not want to store the logs in your artifact store, you can disable this behavior by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
 
@@ -279,8 +279,8 @@ def my_pipeline():
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](../environment-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](../environment-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -290,8 +290,8 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](containerize-your-pipeline.md) to specify docker settings.
-  * [`ResourceSettings`](scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`DockerSettings`](../environment-management/containerize-your-pipeline.md) to specify docker settings.
+  * [`ResourceSettings`](../environment-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`KubeflowOrchestratorSettings`](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
   * [`MLflowExperimentTrackerSettings`](../../../stacks-and-components/component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
