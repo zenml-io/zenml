@@ -186,13 +186,21 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
 {% endhint %}
 
-You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database:
+You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database. Search can be performed using the UUID of an artifact:
 
 ```python
 from uuid import UUID
 
 artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 ```
+
+Another way to search would be by a combination of a pipeline name where the artifact was generated and the artifact name itself. If you search by pipeline/artifact name pair the search will happen using the last successful run of the pipeline:
+
+```python
+artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="model")
+```
+
+
 
 ## Using a custom step invocation ID
 
