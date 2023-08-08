@@ -28,14 +28,6 @@ This depends on the tool and its respective MLOps category. We have a full guide
 
 We develop ZenML together with our community! To get involved, the best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you would like to contribute, please review our [Contributing Guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for all relevant details.
 
-#### How can I learn more about MLOps?
-
-Check out our [ZenBytes](https://github.com/zenml-io/zenbytes) repository and course, where you learn MLOps concepts in a practical manner with the ZenML framework. Other great resources are:
-
-* [MadeWithML](https://madewithml.com/)
-* [Full Stack Deep Learning](https://fullstackdeeplearning.com/)
-* [CS 329S: Machine Learning Systems Design](https://stanford-cs329s.github.io/)
-
 #### How can I speak with the community?
 
 The first point of the call should be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
