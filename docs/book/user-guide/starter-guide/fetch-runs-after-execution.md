@@ -132,7 +132,7 @@ last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 ```
 
 {% hint style="info" %}
-If your most recent runs have failed and you want to find the last run that has
+If your most recent runs have failed, and you want to find the last run that has
 succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 
