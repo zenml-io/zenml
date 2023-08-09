@@ -58,15 +58,13 @@ TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
 
 class ZenMLProjectTemplate(BaseModel):
     github_url: str
-    github_path: str = ""
-    github_tag: Optional[str]
+    github_tag: str
 
 
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplate(
         github_url="gh:zenml-io/template-e2e-batch",
-        github_path="template",
-        github_tag="main",  # TODO: set to fixed release of template and update for breaking changes
+        github_tag="feature/FRW-2173-move-example-here",  # TODO: set to fixed release of template and update for breaking changes
     )
 )
 
