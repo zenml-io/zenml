@@ -30,8 +30,7 @@ You should use the BentoML Model Deployer to:
   production-ready solution when that time comes.
 
 If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the
-other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML (e.g. Seldon Core, KServe,
-etc.)
+other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML.
 
 BentoML also allows you to deploy your models in a more complex production-grade
 setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes
@@ -101,15 +100,15 @@ bundle that will be used to serve the model. The following example shows how can
 within a ZenML pipeline.
 
 ```python
-# Import the step and parameters class
-from zenml.integrations.bentoml.steps import BentoMLBuilderParameters, bento_builder_step,
+# Import the step
+from zenml.integrations.bentoml.steps import bento_builder_step
 
 # The name we gave to our deployed model
 MODEL_NAME = "pytorch_mnist"
 
 # Call the step with the parameters
-bento_builder = bento_builder_step(
-    params=BentoMLBuilderParameters(
+bento_builder = bento_builder_step.with_options(
+    parameters=dict(
         model_name=MODEL_NAME,  # Name of the model
         model_type="pytorch",  # Type of the model (pytorch, tensorflow, sklearn, xgboost..)
         service="service.py:svc",  # Path to the service file within zenml repo
@@ -119,6 +118,9 @@ bento_builder = bento_builder_step(
             "zenml_version": "0.21.1",
         },
         exclude=["data"],  # Exclude files from the bento bundle
+        python={
+            "packages": ["zenml", "torch", "torchvision"],
+        },  # Python package requirements of the model
     )
 )
 ```
@@ -137,14 +139,14 @@ Note: the bentoml deployer step can only be used in a local environment.
 
 ```python
 # Import the step and parameters class
-from zenml.integrations.bentoml.steps import BentoMLDeployerParameters, bentoml_model_deployer_step,
+from zenml.integrations.bentoml.steps import bentoml_model_deployer_step,
 
 # The name we gave to our deployed model
 MODEL_NAME = "pytorch_mnist"
 
 # Call the step with the parameters
-bentoml_model_deployer = bentoml_model_deployer_step(
-    params=BentoMLDeployerParameters(
+bentoml_model_deployer = bentoml_model_deployer_step.with_options(
+    parameters=dict(
         model_name=MODEL_NAME,  # Name of the model
         port=3001,  # Port to be used by the http server
         production=False,  # Deploy the model in production mode
@@ -303,7 +305,7 @@ You can check the BentoML deployment example for more details.
 * [Model Deployer with BentoML](https://github.com/zenml-io/zenml/tree/main/examples/bentoml\_deployment)
 
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
+the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
 .
 
 <!-- For scarf -->

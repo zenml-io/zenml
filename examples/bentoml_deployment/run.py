@@ -15,21 +15,6 @@ import click
 from constants import MODEL_NAME, PIPELINE_NAME, PIPELINE_STEP_NAME
 from pipelines.inference_fashion_mnist import inference_fashion_mnist
 from pipelines.training_fashion_mnist import training_fashion_mnist
-from steps.bento_builder import bento_builder
-from steps.deployer import bentoml_model_deployer
-from steps.deployment_trigger_step import (
-    DeploymentTriggerParameters,
-    deployment_trigger,
-)
-from steps.evaluators import evaluator
-from steps.importers import importer_mnist
-from steps.inference_loader import inference_loader
-from steps.prediction_service_loader import (
-    PredictionServiceLoaderStepParameters,
-    bentoml_prediction_service_loader,
-)
-from steps.predictor import predictor
-from steps.trainers import trainer
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -51,34 +36,17 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
 def main(
     config: str,
 ):
-    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
-    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
+    deploy = config in [DEPLOY, DEPLOY_AND_PREDICT]
+    predict = config in [PREDICT, DEPLOY_AND_PREDICT]
 
     if deploy:
-        training_fashion_mnist(
-            importer=importer_mnist(),
-            trainer=trainer(),
-            evaluator=evaluator(),
-            deployment_trigger=deployment_trigger(
-                params=DeploymentTriggerParameters(
-                    min_accuracy=0.80,
-                )
-            ),
-            bento_builder=bento_builder,
-            deployer=bentoml_model_deployer,
-        ).run()
+        training_fashion_mnist()
     if predict:
         inference_fashion_mnist(
-            inference_loader=inference_loader(),
-            prediction_service_loader=bentoml_prediction_service_loader(
-                params=PredictionServiceLoaderStepParameters(
-                    model_name=MODEL_NAME,
-                    pipeline_name=PIPELINE_NAME,
-                    step_name=PIPELINE_STEP_NAME,
-                )
-            ),
-            predictor=predictor(),
-        ).run()
+            model_name=MODEL_NAME,
+            pipeline_name=PIPELINE_NAME,
+            step_name=PIPELINE_STEP_NAME,
+        )
 
 
 if __name__ == "__main__":

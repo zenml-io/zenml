@@ -29,7 +29,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -59,6 +58,7 @@ from zenml.models import (
     PipelineDeploymentResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunResponseModel,
     ScheduleRequestModel,
 )
 from zenml.models.pipeline_build_models import (
@@ -87,11 +87,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import (
-        PipelineRunView,
-        PipelineVersionView,
-        PipelineView,
-    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -102,46 +97,6 @@ logger = get_logger(__name__)
 
 T = TypeVar("T", bound="Pipeline")
 F = TypeVar("F", bound=Callable[..., None])
-
-
-class GetRunsDescriptor:
-    """Descriptor to define the `BasePipeline.get_runs`.
-
-    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
-    allow us to define different behaviors for pipeline classes and instances.
-    """
-
-    def __get__(
-        self, instance: Optional["Pipeline"], cls: Type["Pipeline"]
-    ) -> Callable[[], List["PipelineRunView"]]:
-        """Get all runs of this pipeline instance or class.
-
-        Args:
-            instance: The pipeline instance if called on an instance else None.
-            cls: The pipeline class.
-
-        Returns:
-            A list of all runs of this pipeline instance or class.
-
-        Raises:
-            RuntimeError: If the method is called on a pipeline instance that
-                has not been run yet.
-        """
-        from zenml.post_execution import get_pipeline
-
-        pipeline_view: Union["PipelineVersionView", "PipelineView"]
-        if instance is None:
-            pipeline_view = get_pipeline(cls)
-        else:
-            instance._prepare_if_possible()
-            pipeline_view = get_pipeline(instance)
-
-        if pipeline_view:
-            return lambda: pipeline_view.runs
-        raise RuntimeError(
-            "The pipeline view for this pipeline was not found. Please check "
-            "that the pipeline has been run already."
-        )
 
 
 class Pipeline:
@@ -179,13 +134,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with three possible parameters, `StepContext`,
-                `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -285,6 +238,35 @@ class Pipeline:
 
         return load_pipeline(model=model)
 
+    @property
+    def model(self) -> "PipelineResponseModel":
+        """Gets the registered pipeline model for this instance.
+
+        Returns:
+            The registered pipeline model.
+
+        Raises:
+            RuntimeError: If the pipeline has not been registered yet.
+        """
+        self._prepare_if_possible()
+
+        pipeline_spec = Compiler().compile_spec(self)
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        pipelines = Client().list_pipelines(
+            name=self.name, version_hash=version_hash
+        )
+        if len(pipelines) == 1:
+            return pipelines.items[0]
+
+        raise RuntimeError(
+            f"Cannot get the model of pipeline '{self.name}' because it has "
+            f"not been registered yet. Please ensure that the pipeline has "
+            f"been run and that at least one step has been executed."
+        )
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -319,13 +301,11 @@ class Pipeline:
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
-                be a function with three possible parameters, `StepContext`,
-                `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`).
-            on_success: Callback function in event of failure of the step. Can
-                be a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -398,7 +378,7 @@ class Pipeline:
         self._invocations = {}
 
         with self:
-            # Enter the context manager so we become the active pipeline. This
+            # Enter the context manager, so we become the active pipeline. This
             # means that all steps that get called while the entrypoint function
             # is executed will be added as invocation to this pipeline instance.
             self._call_entrypoint(*args, **kwargs)
@@ -415,10 +395,7 @@ class Pipeline:
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        custom_configurations = self.configuration.dict(
-            exclude_defaults=True, exclude={"name"}
-        )
-        if custom_configurations:
+        if self.configuration.dict(exclude_defaults=True, exclude={"name"}):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "
@@ -531,6 +508,8 @@ class Pipeline:
             )
             return
 
+        logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
+
         with event_handler(
             event=AnalyticsEvent.RUN_PIPELINE, v2=True
         ) as analytics_handler:
@@ -558,6 +537,9 @@ class Pipeline:
             pipeline_id = None
             if register_pipeline:
                 pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            else:
+                logger.debug(f"Pipeline {self.name} is unlisted.")
 
             # TODO: check whether orchestrator even support scheduling before
             # registering the schedule
@@ -644,22 +626,9 @@ class Pipeline:
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=deployment_model, stack=stack
             )
-            caching_status = (
-                "enabled"
-                if deployment.pipeline_configuration.enable_cache is not False
-                else "disabled"
-            )
-            logger.info(
-                "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if deployment_model.schedule else "Running",
-                f"pipeline `{deployment_model.pipeline_configuration.name}`"
-                if register_pipeline
-                else "unlisted pipeline",
-                stack.name,
-                caching_status,
-            )
-
             stack.prepare_pipeline_deployment(deployment=deployment_model)
+
+            self.log_pipeline_deployment_metadata(deployment_model)
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
@@ -669,29 +638,113 @@ class Pipeline:
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            if deployment_model:
-                runs = Client().list_runs(
-                    deployment_id=deployment_model.id,
-                    sort_by="asc:start_time",
-                    size=1,
+            runs = Client().list_pipeline_runs(
+                deployment_id=deployment_model.id,
+                sort_by="desc:start_time",
+                size=1,
+            )
+
+            if runs.items:
+                run_url = dashboard_utils.get_run_url(runs[0])
+                if run_url:
+                    logger.info(f"Dashboard URL: {run_url}")
+                else:
+                    logger.info(
+                        "You can visualize your pipeline runs in the `ZenML "
+                        "Dashboard`. In order to try it locally, please run "
+                        "`zenml up`."
+                    )
+            else:
+                logger.warning(
+                    f"Your orchestrator '{stack.orchestrator.name}' is "
+                    f"running remotely. Note that the pipeline run will "
+                    f"only show up on the ZenML dashboard once the first "
+                    f"step has started executing on the remote "
+                    f"infrastructure.",
                 )
 
-                if runs.items:
-                    # Log the dashboard URL
-                    dashboard_utils.print_run_url(
-                        run_name=deployment.run_name_template,
-                        pipeline_id=runs[0].id,
-                    )
-                else:
-                    logger.warning(
-                        f"Your orchestrator '{stack.orchestrator.name}' is "
-                        f"running remotely. Note that the pipeline run will "
-                        f"only show up on the ZenML dashboard once the first "
-                        f"step has started executing on the remote "
-                        f"infrastructure.",
+    @staticmethod
+    def log_pipeline_deployment_metadata(
+        deployment_model: PipelineDeploymentResponseModel,
+    ) -> None:
+        """Displays logs based on the deployment model upon running a pipeline.
+
+        Args:
+            deployment_model: The model for the pipeline deployment
+        """
+        try:
+            # Log about the schedule/run
+            if deployment_model.schedule:
+                logger.info(
+                    "Scheduling a run with the schedule: "
+                    f"`{deployment_model.schedule.name}`"
+                )
+            else:
+                logger.info("Executing a new run.")
+
+            # Log about the caching status
+            if not deployment_model.pipeline_configuration.enable_cache:
+                logger.info("Caching disabled.")
+
+            # Log about the used builds
+            if deployment_model.build:
+                logger.info("Using a build:")
+                logger.info(
+                    " Image(s): "
+                    f"{', '.join([i.image for i in deployment_model.build.images.values()])}"
+                )
+
+                # Log about version mismatches between local and build
+                from zenml import __version__
+
+                if deployment_model.build.zenml_version != __version__:
+                    logger.info(
+                        f"ZenML version (different than the local version): "
+                        f"{deployment_model.build.zenml_version}"
                     )
 
-    get_runs = GetRunsDescriptor()
+                import platform
+
+                if (
+                    deployment_model.build.python_version
+                    != platform.python_version()
+                ):
+                    logger.info(
+                        f"Python version (different than the local version): "
+                        f"{deployment_model.build.python_version}"
+                    )
+
+            # Log about the user, stack and components
+            logger.info(f"Using user: `{deployment_model.user.name}`")
+
+            if deployment_model.stack is not None:
+                logger.info(f"Using stack: `{deployment_model.stack.name}`")
+
+                for (
+                    component_type,
+                    component_models,
+                ) in deployment_model.stack.components.items():
+                    logger.info(
+                        f"  {component_type.value}: `{component_models[0].name}`"
+                    )
+        except Exception as e:
+            logger.debug(f"Logging pipeline deployment metadata failed: {e}")
+
+    def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
+        """(Deprecated) Get runs of this pipeline.
+
+        Args:
+            **kwargs: Further arguments for filtering or pagination that are
+                passed to `client.list_pipeline_runs()`.
+
+        Returns:
+            List of runs of this pipeline.
+        """
+        logger.warning(
+            "`Pipeline.get_runs()` is deprecated and will be removed in a "
+            "future version. Please use `Pipeline.model.get_runs()` instead."
+        )
+        return self.model.get_runs(**kwargs)
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
@@ -889,8 +942,7 @@ class Pipeline:
         if matching_pipelines.total:
             registered_pipeline = matching_pipelines.items[0]
             logger.info(
-                "Reusing registered pipeline `%s` (version: %s).",
-                registered_pipeline.name,
+                "Reusing registered version: `(version: %s)`.",
                 registered_pipeline.version,
             )
             return registered_pipeline
@@ -912,8 +964,7 @@ class Pipeline:
             pipeline=request
         )
         logger.info(
-            "Registered pipeline `%s` (version %s).",
-            registered_pipeline.name,
+            "Registered new version: `(version %s)`.",
             registered_pipeline.version,
         )
         return registered_pipeline
@@ -952,34 +1003,12 @@ class Pipeline:
         all_pipelines = Client().list_pipelines(
             name=self.name, sort_by="desc:created", size=1
         )
-        if all_pipelines.total:
-            pipeline = all_pipelines.items[0]
-            if pipeline.version == "UNVERSIONED":
-                return None
-            return int(all_pipelines.items[0].version)
-        else:
+        if not all_pipelines.total:
             return None
-
-    def _get_registered_model(self) -> Optional[PipelineResponseModel]:
-        """Gets the registered pipeline model for this instance.
-
-        Returns:
-            The registered pipeline model or None if no model is registered yet.
-        """
-        self._prepare_if_possible()
-
-        pipeline_spec = Compiler().compile_spec(self)
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        pipelines = Client().list_pipelines(
-            name=self.name, version_hash=version_hash
-        )
-        if len(pipelines) == 1:
-            return pipelines.items[0]
-
-        return None
+        pipeline = all_pipelines.items[0]
+        if pipeline.version == "UNVERSIONED":
+            return None
+        return int(all_pipelines.items[0].version)
 
     def add_step_invocation(
         self,

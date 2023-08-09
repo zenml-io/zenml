@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022-2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
+import pandas as pd
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
 
+from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
+from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -171,7 +176,12 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
-        """Start the service."""
+        """Start the service.
+
+        Raises:
+            ValueError: if the active stack doesn't have an MLflow experiment
+                tracker
+        """
         logger.info(
             "Starting MLflow prediction service as blocking "
             "process... press CTRL+C once to stop it."
@@ -197,6 +207,14 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 install_mlflow=False,
                 **backend_kwargs,
             )
+            experiment_tracker = Client().active_stack.experiment_tracker
+            if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+                raise ValueError(
+                    "MLflow model deployer step requires an MLflow experiment "
+                    "tracker. Please add an MLflow experiment tracker to your "
+                    "stack."
+                )
+            experiment_tracker.configure_mlflow()
             backend.serve(
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
@@ -221,11 +239,13 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             return None
         return self.endpoint.prediction_url
 
-    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+    def predict(
+        self, request: Union["NDArray[Any]", pd.DataFrame]
+    ) -> "NDArray[Any]":
         """Make a prediction using the service.
 
         Args:
-            request: a numpy array representing the request
+            request: a Numpy Array or Pandas DataFrame representing the request
 
         Returns:
             A numpy array representing the prediction returned by the service.
@@ -241,10 +261,16 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             )
 
         if self.endpoint.prediction_url is not None:
-            response = requests.post(
-                self.endpoint.prediction_url,
-                json={"instances": request.tolist()},
-            )
+            if type(request) == pd.DataFrame:
+                response = requests.post(
+                    self.endpoint.prediction_url,
+                    json={"instances": request.to_dict("records")},
+                )
+            else:
+                response = requests.post(
+                    self.endpoint.prediction_url,
+                    json={"instances": request.tolist()},
+                )
         else:
             raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()

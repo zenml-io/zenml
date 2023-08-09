@@ -15,8 +15,20 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -505,50 +517,6 @@ def track_event(
     return success
 
 
-def parametrized(
-    dec: Callable[..., Callable[..., Any]]
-) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
-    """A meta-decorator, that is, a decorator for decorators.
-
-    As a decorator is a function, it actually works as a regular decorator
-    with arguments.
-
-    Args:
-        dec: Decorator to be applied to the function.
-
-    Returns:
-        Decorator that applies the given decorator to the function.
-    """
-
-    def layer(
-        *args: Any, **kwargs: Any
-    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-        """Internal layer.
-
-        Args:
-            *args: Arguments to be passed to the decorator.
-            **kwargs: Keyword arguments to be passed to the decorator.
-
-        Returns:
-            Decorator that applies the given decorator to the function.
-        """
-
-        def repl(f: Callable[..., Any]) -> Callable[..., Any]:
-            """Internal REPL.
-
-            Args:
-                f: Function to be decorated.
-
-            Returns:
-                Decorated function.
-            """
-            return dec(f, *args, **kwargs)
-
-        return repl
-
-    return layer
-
-
 class AnalyticsTrackerMixin(ABC):
     """Abstract base class for analytics trackers.
 
@@ -596,13 +564,14 @@ class AnalyticsTrackedModelMixin(BaseModel):
         return metadata
 
 
-@parametrized
+F = TypeVar("F", bound=Callable[..., Any])
+
+
 def track(
-    func: Callable[..., Any],
     event: AnalyticsEvent,
     v1: Optional[bool] = True,
     v2: Optional[bool] = False,
-) -> Callable[..., Any]:
+) -> Callable[[F], F]:
     """Decorator to track event.
 
     If the decorated function takes in a `AnalyticsTrackedModelMixin` object as
@@ -615,49 +584,62 @@ def track(
     tracking analytics.
 
     Args:
-        func: Function that is decorated.
         event: Event string to stamp with.
         v1: Flag to determine whether analytics v1 is included.
         v2: Flag to determine whether analytics v2 is included.
 
     Returns:
-        Decorated function.
+        A decorator that applies the analytics tracking to a function.
     """
 
-    def inner_func(*args: Any, **kwargs: Any) -> Any:
+    def inner_decorator(func: F) -> F:
         """Inner decorator function.
 
         Args:
-            *args: Arguments to be passed to the function.
-            **kwargs: Keyword arguments to be passed to the function.
+            func: Function to decorate.
 
         Returns:
-            Result of the function.
+            Decorated function.
         """
-        with event_handler(event=event, v1=v1, v2=v2) as handler:
-            try:
-                if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
-                    handler.tracker = args[0]
 
-                for obj in list(args) + list(kwargs.values()):
-                    if isinstance(obj, AnalyticsTrackedModelMixin):
-                        handler.metadata = obj.get_analytics_metadata()
-                        break
-            except Exception as e:
-                logger.debug(f"Analytics tracking failure for {func}: {e}")
+        @wraps(func)
+        def inner_func(*args: Any, **kwargs: Any) -> Any:
+            """Inner function.
 
-            result = func(*args, **kwargs)
+            Args:
+                *args: Arguments to be passed to the function.
+                **kwargs: Keyword arguments to be passed to the function.
 
-            try:
-                if isinstance(result, AnalyticsTrackedModelMixin):
-                    handler.metadata = result.get_analytics_metadata()
-            except Exception as e:
-                logger.debug(f"Analytics tracking failure for {func}: {e}")
+            Returns:
+                Result of the function.
+            """
+            with event_handler(event=event, v1=v1, v2=v2) as handler:
+                try:
+                    if len(args) and isinstance(
+                        args[0], AnalyticsTrackerMixin
+                    ):
+                        handler.tracker = args[0]
 
-            return result
+                    for obj in list(args) + list(kwargs.values()):
+                        if isinstance(obj, AnalyticsTrackedModelMixin):
+                            handler.metadata = obj.get_analytics_metadata()
+                            break
+                except Exception as e:
+                    logger.debug(f"Analytics tracking failure for {func}: {e}")
 
-    inner_func.__doc__ = func.__doc__
-    return inner_func
+                result = func(*args, **kwargs)
+
+                try:
+                    if isinstance(result, AnalyticsTrackedModelMixin):
+                        handler.metadata = result.get_analytics_metadata()
+                except Exception as e:
+                    logger.debug(f"Analytics tracking failure for {func}: {e}")
+
+                return result
+
+        return cast(F, inner_func)
+
+    return inner_decorator
 
 
 class event_handler(object):
@@ -726,3 +708,25 @@ class event_handler(object):
 
         if self.v2:
             track_event(self.event, self.metadata, v1=False, v2=True)
+
+
+def email_opt_int(opted_in: bool, email: Optional[str], source: str) -> None:
+    """Track the event of the users response to the email prompt and identify the user.
+
+    Args:
+        opted_in: Did the user decide to opt in
+        email: The email the user optionally provided
+        source: Location when the user replied ["zenml go", "zenml server"]
+    """
+    # If the user opted in, associate email with the anonymous distinct ID
+    if opted_in:
+        identify_user(
+            user_metadata={"email": email, "source": source},
+            v2=True,
+        )
+    # Track that the user answered the prompt
+    track_event(
+        AnalyticsEvent.OPT_IN_OUT_EMAIL,
+        {"opted_in": opted_in, "source": source},
+        v2=True,
+    )

@@ -43,6 +43,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[["F"], "Pipeline"]:
@@ -55,6 +56,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -68,16 +70,14 @@ def pipeline(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_step_logs: If step logs should be enabled for this pipeline.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be
-            a function with three possible parameters,
-            `StepContext`, `BaseParameters`, and `BaseException`,
-            or a source path to a function of the same specifications
-            (e.g. `module.my_function`).
-        on_success: Callback function in event of failure of the step. Can be
-            a function with two possible parameters, `StepContext` and
-            `BaseParameters, or a source path to a function of the same specifications
+        on_failure: Callback function in event of failure of the step. Can be a
+            function with a single argument of type `BaseException`, or a source
+            path to such a function (e.g. `module.my_function`).
+        on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
 
     Returns:
@@ -91,6 +91,7 @@ def pipeline(
             name=name or func.__name__,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_step_logs=enable_step_logs,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -101,7 +102,4 @@ def pipeline(
         p.__doc__ = func.__doc__
         return p
 
-    if _func is None:
-        return inner_decorator
-    else:
-        return inner_decorator(_func)
+    return inner_decorator if _func is None else inner_decorator(_func)

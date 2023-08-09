@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Tests for the Secret Store CLI."""
+import os
+
 import pytest
 from click.testing import CliRunner
 
@@ -27,6 +29,7 @@ secret_get_command = cli.commands["secret"].commands["get"]
 secret_update_command = cli.commands["secret"].commands["update"]
 secret_delete_command = cli.commands["secret"].commands["delete"]
 secret_rename_command = cli.commands["secret"].commands["rename"]
+secret_export_command = cli.commands["secret"].commands["export"]
 
 
 def test_create_secret():
@@ -345,3 +348,40 @@ def test_update_secret_works():
         final_updated_secret = client.get_secret(secret_name)
         assert final_updated_secret is not None
         assert final_updated_secret.scope == SecretScope.USER
+
+
+def test_export_import_secret():
+    """Test that exporting and importing a secret works."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        # Create a secret
+        result = runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
+        assert result.exit_code == 0
+
+        filename = f"{secret_name}.yaml"
+
+        try:
+            # Export the secret
+            result = runner.invoke(secret_export_command, [secret_name])
+            assert result.exit_code == 0
+            assert os.path.exists(filename)
+
+            # Import the secret
+            new_secret_name = f"{secret_name}_new"
+            result = runner.invoke(
+                secret_create_command, [new_secret_name, "-v", f"@{filename}"]
+            )
+            assert result.exit_code == 0
+
+        finally:
+            if os.path.exists(filename):
+                os.remove(filename)
+
+        # Check that the secret was imported correctly
+        client = Client()
+        created_secret = client.get_secret(secret_name)
+        imported_secret = client.get_secret(new_secret_name)
+        assert created_secret.values == imported_secret.values

@@ -37,18 +37,19 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
     from zenml.models import (
+        ArtifactResponseModel,
         PipelineBuildResponseModel,
         PipelineDeploymentResponseModel,
         PipelineResponseModel,
         RunMetadataResponseModel,
         StackResponseModel,
+        StepRunResponseModel,
     )
 
 # ---- #
@@ -68,13 +69,32 @@ class PipelineRunBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    schedule_id: Optional[UUID]
-    enable_cache: Optional[bool]
-    start_time: Optional[datetime]
-    end_time: Optional[datetime]
-    status: ExecutionStatus
-    pipeline_configuration: PipelineConfiguration
-    num_steps: Optional[int]
+    schedule_id: Optional[UUID] = Field(
+        title="The ID of the schedule that triggered this pipeline run.",
+        default=None,
+    )
+    enable_cache: Optional[bool] = Field(
+        title="Whether to enable caching for this pipeline run.",
+        default=None,
+    )
+    start_time: Optional[datetime] = Field(
+        title="The start time of the pipeline run.",
+        default=None,
+    )
+    end_time: Optional[datetime] = Field(
+        title="The end time of the pipeline run.",
+        default=None,
+    )
+    status: ExecutionStatus = Field(
+        title="The status of the pipeline run.",
+    )
+    config: PipelineConfiguration = Field(
+        title="The pipeline configuration used for this pipeline run.",
+    )
+    num_steps: Optional[int] = Field(
+        title="The number of steps in this pipeline run.",
+        default=None,
+    )
     client_version: Optional[str] = Field(
         title="Client version.",
         default=current_zenml_version,
@@ -98,11 +118,6 @@ class PipelineRunBaseModel(BaseModel):
             "(OS, Python version, etc.)."
         ),
     )
-    git_sha: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "git_sha"
-    )
 
 
 # -------- #
@@ -121,19 +136,59 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         default=None, title="The stack that was used for this run."
     )
-
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
-
     build: Optional["PipelineBuildResponseModel"] = Field(
         default=None, title="The pipeline build that was used for this run."
     )
-
     deployment: Optional["PipelineDeploymentResponseModel"] = Field(
         default=None, title="The deployment that was used for this run."
     )
+    steps: Dict[str, "StepRunResponseModel"] = Field(
+        default={}, title="The steps of this run."
+    )
+
+    @property
+    def artifacts(self) -> List["ArtifactResponseModel"]:
+        """Get all artifacts that are outputs of steps of this pipeline run.
+
+        Returns:
+            All output artifacts of this pipeline run (including cached ones).
+        """
+        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+
+        return get_artifacts_of_pipeline_run(self)
+
+    @property
+    def produced_artifacts(self) -> List["ArtifactResponseModel"]:
+        """Get all artifacts produced during this pipeline run.
+
+        Returns:
+            A list of all artifacts produced during this pipeline run.
+        """
+        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+
+        return get_artifacts_of_pipeline_run(self, only_produced=True)
+
+    def get_step(self, step: str) -> "StepRunResponseModel":
+        """(Deprecated) Get a step by name.
+
+        Args:
+            step: Name of the step to get.
+
+        Returns:
+            The step with the given name.
+        """
+        from zenml.logger import get_logger
+
+        logger = get_logger(__name__)
+        logger.warning(
+            "`run.get_step(<step_name>)` is deprecated and will be removed in "
+            "a future release. Please use `run.steps[<step_name>]` instead."
+        )
+        return self.steps[step]
 
 
 # ------ #

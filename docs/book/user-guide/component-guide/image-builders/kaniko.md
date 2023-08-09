@@ -47,7 +47,7 @@ zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
 For more information and a full list of configurable attributes of the Kaniko image builder, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kaniko/#zenml.integrations.kaniko.image\_builders.kaniko\_image\_builder.KanikoImageBuilder)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kaniko/#zenml.integrations.kaniko.image\_builders.kaniko\_image\_builder.KanikoImageBuilder)
 .
 
 #### Authentication for the container registry and artifact store
@@ -58,7 +58,7 @@ read from the artifact store:
 
 * The pod needs to be authenticated to push to the container registry in your active stack.
 * In case
-  the [parent image](/docs/book/user-guide/advanced-guide/containerize-your-pipeline.md#using-a-custom-parent-image)
+  the [parent image](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md#using-a-custom-parent-image)
   you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from this
   registry.
 * If you configured your image builder to store the build context in the artifact store, the pod needs to be

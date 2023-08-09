@@ -17,13 +17,12 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
 )
 from zenml.integrations.seldon.steps.seldon_deployer import (
-    CustomDeployParameters,
-    SeldonDeployerStepParameters,
     seldon_custom_model_deployer_step,
 )
 
-seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
-    params=SeldonDeployerStepParameters(
+seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step.with_options(
+    parameters=dict(
+        predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict",
         service_config=SeldonDeploymentConfig(
             model_name="seldon-tensorflow-custom-model",
             replicas=1,
@@ -33,8 +32,5 @@ seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
             ),
         ),
         timeout=240,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict"
-        ),
     )
 )

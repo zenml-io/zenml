@@ -30,4 +30,4 @@ def slack_post_pipeline():
     model = svc_trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
     message = test_acc_post_formatter(test_acc)
-    slack_alerter_post_step(message)
+    slack_alerter_post_step(message=message)

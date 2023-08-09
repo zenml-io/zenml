@@ -35,7 +35,7 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource, StoreType
+from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -44,8 +44,6 @@ from zenml.utils.analytics_utils import (
     AnalyticsGroup,
     event_handler,
     identify_group,
-    identify_user,
-    track_event,
 )
 
 if TYPE_CHECKING:
@@ -307,7 +305,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/user-guide/advanced-guide/global-settings-of-zenml#version-mismatch-downgrading`",
+                    "`https://docs.zenml.io/user-guide/advanced-guide/environment-management/global-settings-of-zenml#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -404,17 +402,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         if not skip_default_registrations:
             store._initialize_database()
-
-        # We want to check if the active user has opted in or out for using
-        # an email address for marketing purposes and if so, record it in
-        # the analytics.
-        active_user = store.get_user(include_private=True)
-        if active_user.email_opted_in is not None:
-            self.record_email_opt_in_out(
-                opted_in=active_user.email_opted_in,
-                email=active_user.email,
-                source=AnalyticsEventSource.ZENML_SERVER,
-            )
 
         # Sanitize the global configuration to reflect the new store
         self._sanitize_config()
@@ -768,46 +755,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             assert self.active_stack_id is not None
 
         return self.active_stack_id
-
-    def record_email_opt_in_out(
-        self,
-        opted_in: bool,
-        email: Optional[str],
-        source: AnalyticsEventSource,
-    ) -> None:
-        """Set the email address associated with this client.
-
-        Args:
-            opted_in: Whether the user has opted in to email communication.
-            email: The email address to use for this client, if given.
-            source: The analytics event source.
-        """
-        # Whenever a new email address is associated with the client, we want
-        # to identify the client by that email address. If the email address has
-        # been changed, we also want to update the information.
-        if opted_in and email and self.user_email != email:
-            identify_user(
-                user_metadata={"email": email, "source": source},
-                v2=True,
-            )
-            self.user_email = email
-
-        if (
-            self.user_email_opt_in is None
-            or opted_in
-            and not self.user_email_opt_in
-        ):
-            # When the user opts out giving the email for the first time, or
-            # when the user opts in after opting out (e.g. when connecting to
-            # a new server where the account has opt-in enabled), we want to
-            # record the information as an analytics event.
-            track_event(
-                AnalyticsEvent.OPT_IN_OUT_EMAIL,
-                {"opted_in": opted_in, "source": source},
-                v2=True,
-            )
-
-            self.user_email_opt_in = opted_in
 
     class Config:
         """Pydantic configuration class."""

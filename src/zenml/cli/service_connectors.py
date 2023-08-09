@@ -22,6 +22,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    is_sorted_or_filtered,
     list_options,
     print_page_info,
     seconds_to_human_readable,
@@ -565,9 +566,7 @@ def register_service_connector(
                     footer="",
                     print=False,
                 )
-                console.print(
-                    Markdown(f"{message}---"), justify="left", width=80
-                )
+            console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a resource type
         resource_type = prompt_resource_type(
@@ -693,9 +692,9 @@ def register_service_connector(
                         footer="",
                         print=False,
                     )
-                    console.print(
-                        Markdown(f"{message}---"), justify="left", width=80
-                    )
+                console.print(
+                    Markdown(f"{message}---"), justify="left", width=80
+                )
 
             if len(auth_methods) == 1:
                 # Default to the first auth method if only one method is
@@ -881,12 +880,14 @@ def register_service_connector(
     "can be used multiple times.",
     multiple=True,
 )
+@click.pass_context
 def list_service_connectors(
-    labels: Optional[List[str]] = None, **kwargs: Any
+    ctx: click.Context, labels: Optional[List[str]] = None, **kwargs: Any
 ) -> None:
     """List all service connectors.
 
     Args:
+        ctx: The click context object
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
@@ -905,6 +906,7 @@ def list_service_connectors(
     cli_utils.print_service_connectors_table(
         client=client,
         connectors=connectors.items,
+        show_active=not is_sorted_or_filtered(ctx),
     )
     print_page_info(connectors)
 

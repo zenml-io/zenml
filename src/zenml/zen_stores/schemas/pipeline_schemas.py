@@ -17,10 +17,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_spec import PipelineSpec
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
@@ -49,7 +51,14 @@ class PipelineSchema(NamedSchema, table=True):
     version_hash: str
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(sa_column=Column(TEXT, nullable=False))
+    spec: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -110,50 +119,29 @@ class PipelineSchema(NamedSchema, table=True):
 
     def to_model(
         self,
-        _block_recursion: bool = False,
         last_x_runs: int = 3,
     ) -> "PipelineResponseModel":
         """Convert a `PipelineSchema` to a `PipelineModel`.
 
         Args:
-            _block_recursion: Don't recursively fill attributes
             last_x_runs: How many runs to use for the execution status
 
         Returns:
             The created PipelineModel.
         """
-        x_runs = self.runs[:last_x_runs]
-        status_last_x_runs = []
-        for run in x_runs:
-            status_last_x_runs.append(run.status)
-        if _block_recursion:
-            return PipelineResponseModel(
-                id=self.id,
-                name=self.name,
-                version=self.version,
-                version_hash=self.version_hash,
-                workspace=self.workspace.to_model(),
-                user=self.user.to_model(True) if self.user else None,
-                docstring=self.docstring,
-                spec=PipelineSpec.parse_raw(self.spec),
-                created=self.created,
-                updated=self.updated,
-            )
-        else:
-            return PipelineResponseModel(
-                id=self.id,
-                name=self.name,
-                version=self.version,
-                version_hash=self.version_hash,
-                workspace=self.workspace.to_model(),
-                user=self.user.to_model(True) if self.user else None,
-                runs=[r.to_model(_block_recursion=True) for r in x_runs],
-                docstring=self.docstring,
-                spec=PipelineSpec.parse_raw(self.spec),
-                created=self.created,
-                updated=self.updated,
-                status=status_last_x_runs,
-            )
+        return PipelineResponseModel(
+            id=self.id,
+            name=self.name,
+            version=self.version,
+            version_hash=self.version_hash,
+            workspace=self.workspace.to_model(),
+            user=self.user.to_model(True) if self.user else None,
+            docstring=self.docstring,
+            spec=PipelineSpec.parse_raw(self.spec),
+            created=self.created,
+            updated=self.updated,
+            status=[run.status for run in self.runs[:last_x_runs]],
+        )
 
     def update(
         self, pipeline_update: "PipelineUpdateModel"

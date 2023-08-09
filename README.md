@@ -89,7 +89,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.40.2 is out. Check out the release notes
+    🎉 Version 0.42.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -160,7 +160,7 @@ infrastructures.
 # 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
-[PyPI](https://pypi.org/project/zenml/). Python 3.7 - 3.10 is required:
+[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.10 is required:
 
 ```bash
 pip install "zenml[server]"
@@ -194,13 +194,13 @@ zenml deploy --provider aws  # aws, gcp and azure are supported providers
 
 You can also choose to deploy with docker or helm with full control over
 the configuration and deployment. Check out the
-[docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
+[docs](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)
 to find out how.
 
 ## 👨‍🍳 2. Deploy Stack Components
 
 ZenML boasts a ton of [integrations](https://zenml.io/integrations) into 
-popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) 
+popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/user-guide/starter-guide/understand-stacks) 
 concept ensures that these tools work nicely together, therefore bringing
 structure and standardization into the MLOps workflow.
 
@@ -219,10 +219,7 @@ zenml stack register production_stack --orchestrator kubernetes_orchestrator --a
 When you run a pipeline with this stack set, it will be running on your deployed
 Kubernetes cluster.
 
-You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack)
-or [**create your own MLOps Platform Sandbox**](https://docs.zenml.io/user-guide/advanced-guide/sandbox), 
-a one-click deployment platform for an ephemeral MLOps stack that you can use 
-to run production-ready MLOps pipelines in the cloud.
+You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack).
 
 ## 🏇 3. Create a Pipeline
 

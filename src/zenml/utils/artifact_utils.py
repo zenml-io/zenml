@@ -21,7 +21,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import StackComponentType, VisualizationType
+from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
+    from zenml.models.step_run_models import StepRunResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
@@ -418,3 +420,45 @@ def upload_artifact(
         )
 
     return response.id
+
+
+def get_producer_step_of_artifact(
+    artifact: "ArtifactResponseModel",
+) -> "StepRunResponseModel":
+    """Get the step run that produced a given artifact.
+
+    Args:
+        artifact: The artifact.
+
+    Returns:
+        The step run that produced the artifact.
+
+    Raises:
+        RuntimeError: If the run that created the artifact no longer exists.
+    """
+    if not artifact.producer_step_run_id:
+        raise RuntimeError(
+            f"The run that produced the artifact with id '{artifact.id}' no "
+            "longer exists. This can happen if the run was deleted."
+        )
+    return Client().get_run_step(artifact.producer_step_run_id)
+
+
+def get_artifacts_of_pipeline_run(
+    pipeline_run: "PipelineRunResponseModel", only_produced: bool = False
+) -> List["ArtifactResponseModel"]:
+    """Get all artifacts produced during a pipeline run.
+
+    Args:
+        pipeline_run: The pipeline run.
+        only_produced: If only artifacts produced by the pipeline run should be
+            returned or also cached artifacts.
+
+    Returns:
+        A list of all artifacts produced during the pipeline run.
+    """
+    artifacts: List["ArtifactResponseModel"] = []
+    for step in pipeline_run.steps.values():
+        if not only_produced or step.status == ExecutionStatus.COMPLETED:
+            artifacts.extend(step.outputs.values())
+    return artifacts

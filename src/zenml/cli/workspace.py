@@ -20,6 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    is_sorted_or_filtered,
     list_options,
     warn_unsupported_non_default_workspace,
 )
@@ -36,26 +37,24 @@ def workspace() -> None:
 
 @workspace.command("list", hidden=True)
 @list_options(WorkspaceFilterModel)
-def list_workspaces(**kwargs: Any) -> None:
+@click.pass_context
+def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
     """List all workspaces.
 
     Args:
+        ctx: The click context object
         **kwargs: Keyword arguments to filter the list of workspaces.
     """
     warn_unsupported_non_default_workspace()
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing workspaces...\n"):
         workspaces = client.list_workspaces(**kwargs)
         if workspaces:
-            active_workspace = Client().active_workspace
-            active_workspace_id = (
-                active_workspace.id if active_workspace else None
-            )
             cli_utils.print_pydantic_models(
                 workspaces,
                 exclude_columns=["id", "created", "updated"],
-                is_active=(lambda p: p.id == active_workspace_id),
+                active_models=[Client().active_workspace],
+                show_active=not is_sorted_or_filtered(ctx),
             )
         else:
             cli_utils.declare("No workspaces found for the given filter.")

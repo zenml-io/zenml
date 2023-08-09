@@ -33,7 +33,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
 )
 from zenml.io import fileio
 from zenml.post_execution import get_pipeline
-from zenml.steps.step_context import StepContext
+from zenml.steps import StepContext
 from zenml.utils import io_utils
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}

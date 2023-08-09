@@ -140,6 +140,9 @@ tests:
         stacks:
           - type: data_validator
             flavor: whylogs
+        system_os:
+           - linux
+           - macos
       - capabilities:
           synchronized: true
 

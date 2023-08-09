@@ -134,61 +134,6 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
         self._model_registry = model_registry
-
-        requires_image_builder = (
-            orchestrator.flavor != "local"
-            or step_operator
-            or (model_deployer and model_deployer.flavor != "mlflow")
-        )
-        skip_default_image_builder = handle_bool_env_var(
-            ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
-        )
-        if (
-            requires_image_builder
-            and not skip_default_image_builder
-            and not image_builder
-        ):
-            # This is a temporary fix to include a local image builder in each
-            # stack that needs it. This mirrors the behavior in previous
-            # versions and ensures we don't break all existing stacks
-            from datetime import datetime
-            from uuid import uuid4
-
-            from zenml.image_builders import (
-                LocalImageBuilder,
-                LocalImageBuilderConfig,
-                LocalImageBuilderFlavor,
-            )
-
-            flavor = LocalImageBuilderFlavor()
-
-            image_builder = LocalImageBuilder(
-                id=uuid4(),
-                name="temporary_default",
-                flavor=flavor.name,
-                type=flavor.type,
-                config=LocalImageBuilderConfig(),
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                created=datetime.utcnow(),
-                updated=datetime.utcnow(),
-            )
-
-            logger.warning(
-                "The stack `%s` contains components that require building "
-                "Docker images. Older versions of ZenML always built these "
-                "images locally, but since version 0.32.0 this behavior can be "
-                "configured using the `image_builder` stack component. This "
-                "stack will temporarily default to a local image builder that "
-                "mirrors the previous behavior, but this will be removed in "
-                "future versions of ZenML. Please add an image builder to this "
-                "stack:\n"
-                "`zenml image-builder register <NAME> ...\n"
-                "zenml stack update %s -i <NAME>`",
-                name,
-                id,
-            )
-
         self._image_builder = image_builder
 
     @classmethod
@@ -764,6 +709,7 @@ class Stack:
 
         To check if a stack configuration is valid, the following criteria must
         be met:
+        - the stack must have an image builder if other components require it
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
         - the required secrets of all components need to exist
@@ -773,11 +719,72 @@ class Stack:
                 if a secret for a component is missing. Otherwise, only a
                 warning will be logged.
         """
+        self.validate_image_builder()
         for component in self.components.values():
             if component.validator:
                 component.validator.validate(stack=self)
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
+
+    def validate_image_builder(self) -> None:
+        """Validates that the stack has an image builder if required.
+
+        If the stack requires an image builder, but none is specified, a
+        local image builder will be created and assigned to the stack to
+        ensure backwards compatibility.
+        """
+        requires_image_builder = (
+            self.orchestrator.flavor != "local"
+            or self.step_operator
+            or (self.model_deployer and self.model_deployer.flavor != "mlflow")
+        )
+        skip_default_image_builder = handle_bool_env_var(
+            ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
+        )
+        if (
+            requires_image_builder
+            and not skip_default_image_builder
+            and not self.image_builder
+        ):
+            from datetime import datetime
+            from uuid import uuid4
+
+            from zenml.image_builders import (
+                LocalImageBuilder,
+                LocalImageBuilderConfig,
+                LocalImageBuilderFlavor,
+            )
+
+            flavor = LocalImageBuilderFlavor()
+
+            image_builder = LocalImageBuilder(
+                id=uuid4(),
+                name="temporary_default",
+                flavor=flavor.name,
+                type=flavor.type,
+                config=LocalImageBuilderConfig(),
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+            )
+
+            logger.warning(
+                "The stack `%s` contains components that require building "
+                "Docker images. Older versions of ZenML always built these "
+                "images locally, but since version 0.32.0 this behavior can be "
+                "configured using the `image_builder` stack component. This "
+                "stack will temporarily default to a local image builder that "
+                "mirrors the previous behavior, but this will be removed in "
+                "future versions of ZenML. Please add an image builder to this "
+                "stack:\n"
+                "`zenml image-builder register <NAME> ...\n"
+                "zenml stack update %s -i <NAME>`",
+                self.name,
+                self.id,
+            )
+
+            self._image_builder = image_builder
 
     def prepare_pipeline_deployment(
         self, deployment: "PipelineDeploymentResponseModel"

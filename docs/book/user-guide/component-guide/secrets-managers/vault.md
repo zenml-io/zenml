@@ -78,7 +78,7 @@ A concrete example of using the HashiCorp Vault secrets manager can be
 found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets\_manager).
 
 For more information and a full list of configurable attributes of the HashiCorp Vault secrets manager, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-vault/#zenml.integrations.vault.secrets\_manager.vault\_secrets\_manager.VaultSecretsManager)
+the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-vault/#zenml.integrations.vault.secrets\_manager.vault\_secrets\_manager.VaultSecretsManager)
 .
 
 <!-- For scarf -->

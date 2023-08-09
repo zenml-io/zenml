@@ -475,7 +475,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         if deployment.schedule:
             logger.info(
-                "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
+                "Scheduling job using Google Cloud Scheduler and Google "
+                "Cloud Functions..."
             )
             self._upload_and_schedule_pipeline(
                 pipeline_name=deployment.pipeline_configuration.name,
@@ -519,24 +520,51 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             settings: Pipeline level settings for this orchestrator.
 
         Raises:
-            ValueError: If the attribute `pipeline_root` is not set and it
+            ValueError: If the attribute `pipeline_root` is not set, and it
                 can be not generated using the path of the artifact store in the
                 stack because it is not a
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
-                raised if attempting to schedule pipeline run without using the
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also
+                gets raised if attempting to schedule pipeline run without using
+                the `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
         # First, do some validation
         artifact_store = stack.artifact_store
         if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
             raise ValueError(
-                "Currently, the Vertex AI orchestrator only supports scheduled runs "
-                f"in combination with an artifact store of flavor: {GCP_ARTIFACT_STORE_FLAVOR}. "
-                f"The current stacks artifact store is of flavor: {artifact_store.flavor}. "
+                "Currently, the Vertex AI orchestrator only supports "
+                "scheduled runs in combination with an artifact store of "
+                f"flavor: {GCP_ARTIFACT_STORE_FLAVOR}. The current stacks "
+                f"artifact store is of flavor: {artifact_store.flavor}. "
                 "Please update your stack accordingly."
             )
 
-            # Copy over the scheduled pipeline to the artifact store
+        # Get the credentials that would be used to create resources.
+        credentials, project_id = self._get_authentication()
+
+        scheduler_service_account_email: Optional[str] = None
+        if self.config.scheduler_service_account:
+            scheduler_service_account_email = (
+                self.config.scheduler_service_account
+            )
+        elif hasattr(credentials, "signer_email"):
+            scheduler_service_account_email = credentials.signer_email
+        else:
+            scheduler_service_account_email = (
+                self.config.function_service_account
+                or self.config.workload_service_account
+            )
+
+        if not scheduler_service_account_email:
+            raise ValueError(
+                "A GCP service account is required to schedule a pipeline run. "
+                "The credentials used to authenticate with GCP do not have a "
+                "service account associated with them and a service account "
+                "was not configured in the `scheduler_service_account` field "
+                "of the orchestrator config. Please update your orchestrator "
+                "configuration or credentials accordingly."
+            )
+
+        # Copy over the scheduled pipeline to the artifact store
         artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
         artifact_store_pipeline_uri = (
             f"{artifact_store_base_uri}/vertex_pipeline.json"
@@ -547,9 +575,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             "automatically copied to this path of the `GCPArtifactStore`: "
             f"{artifact_store_pipeline_uri}",
         )
-
-        # Get the credentials that would be used to create resources.
-        credentials, project_id = self._get_authentication()
 
         # Create cloud function
         function_uri = create_cloud_function(
@@ -584,6 +609,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             body=body,
             schedule=str(schedule.cron_expression),
             credentials=credentials,
+            service_account_email=scheduler_service_account_email,
         )
 
     def _upload_and_run_pipeline(

@@ -136,9 +136,7 @@ def step(
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
         enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default unless the step
-            requires a `StepContext` (see
-            `zenml.steps.step_context.StepContext` for more information).
+            value is passed, caching is enabled by default.
         enable_artifact_metadata: Specify whether metadata is enabled for this
             step. If no value is passed, metadata is enabled by default.
         enable_artifact_visualization: Specify whether visualization is enabled
@@ -153,27 +151,17 @@ def step(
             materializer will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
-        on_failure: Callback function in event of failure of the step. Can be
-            a function with three possible parameters,
-            `StepContext`, `BaseParameters`, and `BaseException`,
-            or a source path to a function of the same specifications
-            (e.g. `module.my_function`).
-        on_success: Callback function in event of failure of the step. Can be
-            a function with two possible parameters, `StepContext` and
-            `BaseParameters, or a source path to a function of the same specifications
+        on_failure: Callback function in event of failure of the step. Can be a
+            function with a single argument of type `BaseException`, or a source
+            path to such a function (e.g. `module.my_function`).
+        on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
 
     Returns:
         The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
-    step_name = name or _func.__name__ if _func else ""
-    logger.warning(
-        f"The `@step` decorator that you used to define your {step_name} step "
-        "is deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define steps in a more intuitive and "
-        "flexible way!"
-    )
 
     def inner_decorator(func: F) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step.
@@ -185,6 +173,14 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
+        step_name = name or func.__name__
+        logger.warning(
+            f"The `@step` decorator that you used to define your {step_name}"
+            "step is deprecated. Check out the 0.40.0 migration guide for more "
+            "information on how to migrate your steps to the new syntax: "
+            "https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.html"
+        )
+
         return type(  # noqa
             func.__name__,
             (_DecoratedStep,),

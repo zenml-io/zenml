@@ -167,20 +167,21 @@ class LocalDaemonServiceStatus(ServiceStatus):
                     return None
 
                 config_file = self.config_file
-                if config_file is None:
-                    return pid
                 if (
-                    daemon_entrypoint.__name__ not in cmd_line
-                    or config_file not in cmd_line
-                ) and (
-                    daemon_entrypoint.__name__ not in cmd_line[0]
-                    or config_file not in cmd_line[0]
+                    config_file is not None
+                    and (
+                        daemon_entrypoint.__name__ not in cmd_line
+                        or config_file not in cmd_line
+                    )
+                    and (
+                        daemon_entrypoint.__name__ not in cmd_line[0]
+                        or config_file not in cmd_line[0]
+                    )
                 ):
-                    logger.debug(
+                    logger.warning(
                         f"Process with PID {pid} is not a ZenML local daemon "
                         f"service."
                     )
-                    return None
                 return pid
             except NoSuchProcess:
                 return None

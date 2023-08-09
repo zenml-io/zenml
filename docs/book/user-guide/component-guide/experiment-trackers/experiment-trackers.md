@@ -69,10 +69,10 @@ steps, but it generally works as follows:
   a certain step of your pipeline run:
 
 ```python
-from zenml.post_execution import get_run
+from zenml.client import Client
 
-pipeline_run = get_run("<PIPELINE_RUN_NAME>")
-step = pipeline_run.get_step("<STEP_NAME>")
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+step = pipeline_run.steps["<STEP_NAME>"]
 experiment_tracker_url = step.metadata["experiment_tracker_url"].value
 ```
 

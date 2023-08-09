@@ -12,20 +12,30 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.inference_loader import inference_loader
+from steps.prediction_service_loader import bentoml_prediction_service_loader
+from steps.predictor import predictor
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import BENTOML, PYTORCH
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])
 
 
 @pipeline(settings={"docker": docker_settings})
 def inference_fashion_mnist(
-    inference_loader,
-    prediction_service_loader,
-    predictor,
+    model_name: str, pipeline_name: str, step_name: str
 ):
-    """Link all the steps and artifacts together."""
+    """Perform inference with a model deployed through BentoML.
+
+    Args:
+        pipeline_name: The name of the pipeline that deployed the model.
+        step_name: The name of the step that deployed the model.
+        model_name: The name of the model that was deployed.
+    """
     inference_data = inference_loader()
-    prediction_service = prediction_service_loader()
+    prediction_service = bentoml_prediction_service_loader(
+        model_name=model_name, pipeline_name=pipeline_name, step_name=step_name
+    )
     predictor(inference_data=inference_data, service=prediction_service)

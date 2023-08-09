@@ -23,8 +23,7 @@ from zenml import step
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     DEFAULT_IMAGE_FILENAME,
 )
-from zenml.steps import Output
-from zenml.steps.step_context import StepContext
+from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)

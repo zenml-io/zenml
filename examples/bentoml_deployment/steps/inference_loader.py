@@ -17,7 +17,7 @@ from typing import Dict, List
 from numpy import asarray
 from PIL import Image
 
-from zenml.steps import step
+from zenml import step
 
 
 @step(enable_cache=False)

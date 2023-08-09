@@ -43,11 +43,6 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -213,6 +208,14 @@ class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
 
 class GCPOAuth2TokenConfig(GCPBaseConfig, GCPOAuth2Token):
     """GCP OAuth 2.0 configuration."""
+
+    service_account_email: Optional[str] = Field(
+        default=None,
+        title="GCP Service Account Email",
+        description="The email address of the service account that signed the "
+        "token. If not provided, the token is assumed to be issued for a user "
+        "account.",
+    )
 
 
 class GCPServiceAccountImpersonationConfig(GCPServiceAccountConfig):
@@ -662,6 +665,8 @@ class GCPServiceConnector(ServiceConnector):
         scopes = self._get_scopes(resource_type, resource_id)
         expires_at: Optional[datetime.datetime] = None
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             # Determine the credentials from the environment
             # Override the project ID if specified in the config
             credentials, project_id = google.auth.default(
@@ -681,6 +686,9 @@ class GCPServiceConnector(ServiceConnector):
                 expiry=expires_at,
                 scopes=scopes,
             )
+
+            if cfg.service_account_email:
+                credentials.signer_email = cfg.service_account_email
         else:
             if auth_method == GCPAuthenticationMethods.USER_ACCOUNT:
                 assert isinstance(cfg, GCPUserAccountConfig)
@@ -1067,6 +1075,8 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = GCPBaseConfig(
                 project_id=project_id,
             )
@@ -1090,8 +1100,10 @@ class GCPServiceConnector(ServiceConnector):
             auth_config = GCPOAuth2TokenConfig(
                 project_id=project_id,
                 token=credentials.token,
+                service_account_email=credentials.signer_email
+                if hasattr(credentials, "signer_email")
+                else None,
             )
-
             if credentials.expiry:
                 # Add the UTC timezone to the expiration time
                 expires_at = credentials.expiry.replace(
@@ -1304,6 +1316,8 @@ class GCPServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1322,10 +1336,13 @@ class GCPServiceConnector(ServiceConnector):
         )
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
-            # Use the temporary credentials extracted from the boto3 session
+            # Use the token extracted from the google credentials object
             config = GCPOAuth2TokenConfig(
                 project_id=self.config.project_id,
                 token=credentials.token,
+                service_account_email=credentials.signer_email
+                if hasattr(credentials, "signer_email")
+                else None,
             )
 
             # Create a client-side GCP connector instance that is fully formed
@@ -1400,6 +1417,18 @@ class GCPServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # temporary Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
+                )
             return KubernetesServiceConnector(
                 id=self.id,
                 name=connector_name,

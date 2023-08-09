@@ -101,7 +101,7 @@ python run.py --stop-tensorboard
 As ZenML continued to expand, we found that supporting more and more 
 orchestration tools, model deployment platforms, and other technologies that 
 require a Kubernetes cluster to operate, can be complex and prone to errors. 
-To simplify this process, we introduced the concept of **[stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes)**. 
+To simplify this process, we introduced the concept of **[stack recipes](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack)**. 
 A stack recipe is a pre-configured collection of orchestrators, artifact-stores,
 and container registries that work together seamlessly. This allows you to 
 quickly spin up a Kubernetes cluster and install all the necessary tools to run 
@@ -189,7 +189,7 @@ zenml orchestrator deploy kubeflow --flavor kubeflow ...
 
 For more information on this `deploy`
 subcommand, please refer to the
-[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
@@ -262,7 +262,7 @@ so make sure to revisit this guide if this is something you're interested in!
 ### 📄 Additional pre-requisites
 
 * A remote ZenML deployment to store metadata related to your pipeline runs. 
-See [here](https://docs.zenml.io/getting-started/deploying-zenml) for more 
+See [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for more 
 information on how to deploy ZenML on GCP.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
 your GCP Kubernetes cluster.
@@ -409,11 +409,11 @@ operations because each user only views and edits the Kubeflow components
 and model artifacts defined in their configuration.
 
 Using a multi-tenant deployment of Kubeflow involves a bit more configuration than is shown in this example.
-For details, refer to the [Kubeflow stack component docs](https://docs.zenml.io/component-gallery/orchestrators/kubeflow).
+For details, refer to the [Kubeflow stack component docs](https://docs.zenml.io/user-guide/component-guide/orchestrators/kubeflow).
 
 # 📜 Learn more
 
-Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/component-gallery/orchestrators/kubeflow).
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/user-guide/component-guide/orchestrators/kubeflow).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/custom).
+check out our [docs](https://docs.zenml.io/user-guide/component-guide/orchestrators/custom).

@@ -31,7 +31,7 @@ Artifacts represent the data that goes through your steps as inputs and outputs 
 
 Materializers define how Artifacts live in-between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
 
-All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../user-guide/advanced-guide/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
+All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../user-guide/advanced-guide/artifact-management/handle-custom-data-types.md) to ensure that your data can be passed from step to step.
 
 #### Parameters & Settings
 
@@ -90,7 +90,7 @@ First, in order to utilize _stack components_ that are running remotely on a clo
 
 #### Metadata Tracking
 
-On top of the communication with the stack components, a **ZenML Server** also keeps track of all the bits of metadata around a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details. This is extremely helpful in troubleshooting.
+On top of the communication with the stack components, the **ZenML Server** also keeps track of all the bits of metadata around a pipeline run. With a ZenML server, you are able to access all of your previous experiments with the associated details. This is extremely helpful in troubleshooting.
 
 #### Secrets
 

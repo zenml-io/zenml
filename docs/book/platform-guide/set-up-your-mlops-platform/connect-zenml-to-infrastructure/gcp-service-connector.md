@@ -73,7 +73,7 @@ If set, the resource name must identify a GCS bucket using one of the following 
 * GCS bucket URI (canonical resource name): gs://{bucket-name}
 * GCS bucket name: {bucket-name}
 
-### EKS Kubernetes cluster
+### GKE Kubernetes cluster
 
 Allows Stack Components to access a GKE cluster as a standard Kubernetes cluster resource. When used by Stack Components, they are provided a pre-authenticated Python Kubernetes client instance.
 
@@ -90,7 +90,7 @@ If set, the resource name must identify a GKE cluster using one of the following
 
 GKE cluster names are project scoped. The connector can only be used to access GKE clusters in the GCP project that it is configured to use.
 
-### ECR container registry
+### GCR container registry
 
 Allows Stack Components to access a GCR registry as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated Python Docker client instance.
 
@@ -115,7 +115,13 @@ The resource name associated with this resource type identifies the GCR containe
 
 ### Implicit authentication
 
-[Implicit authentication](best-security-practices.md#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc). This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
+[Implicit authentication](best-security-practices.md#implicit-authentication) to GCP services using [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
+
+{% hint style="warning" %}
+This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
+{% endhint %}
+
+This authentication method doesn't require any credentials to be explicitly configured. It automatically discovers and uses credentials from one of the following sources:
 
 * environment variables (GOOGLE\_APPLICATION\_CREDENTIALS)
 * local ADC credential files set up by running `gcloud auth application-default login` (e.g. `~/.config/gcloud/application_default_credentials.json`).
@@ -138,23 +144,41 @@ A GCP project is required and the connector may only be used to access GCP resou
 
 The following assumes the local GCP CLI has already been configured with user account credentials by running the `gcloud auth application-default login` command:
 
+```sh
+zenml service-connector register gcp-implicit --type gcp --auth-method implicit --auto-configure
 ```
-$ zenml service-connector register gcp-implicit --type gcp --auth-method implicit --auto-configure
+
+{% code title="Example Command Output" %}
+```text
 Successfully registered service connector `gcp-implicit` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 0c49a7fe-5e87-41b9-adbe-3da0a0452e44 │ gcp-implicit   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 No credentials are stored with the Service Connector:
 
+```sh
+zenml service-connector describe gcp-implicit
 ```
-$ zenml service-connector describe gcp-implicit 
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-implicit' of type 'gcp' with id '0c49a7fe-5e87-41b9-adbe-3da0a0452e44' is owned by user 'default' and is 'private'.
                          'gcp-implicit' gcp Service Connector Details                          
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -195,26 +219,7 @@ Service connector 'gcp-implicit' of type 'gcp' with id '0c49a7fe-5e87-41b9-adbe-
 ┃ project_id │ zenml-core ┃
 ┗━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
-
-Verifying access to resources:
-
-```
-$ zenml service-connector verify gcp-implicit --resource-type gcs-bucket
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-┃ 0c49a7fe-5e87-41b9-adbe-3da0a0452e44 │ gcp-implicit   │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
-┃                                      │                │                │               │ gs://zenml-datasets                             ┃
-┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
-┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
-┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
-┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+{% endcode %}
 
 </details>
 
@@ -236,23 +241,41 @@ If you already have the local GCP CLI set up with these credentials, they will b
 
 The following assumes the local GCP CLI has been configured with GCP user account credentials by running the `gcloud auth application-default login` command:
 
+```sh
+zenml service-connector register gcp-user-account --type gcp --auth-method user-account --auto-configure
 ```
-$ zenml service-connector register gcp-user-account --type gcp --auth-method user-account --auto-configure
+
+{% code title="Example Command Output" %}
+```text
 Successfully registered service connector `gcp-user-account` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                  │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                  │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                  │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 The GCP user account credentials were lifted up from the local host:
 
+```sh
+zenml service-connector describe gcp-user-account
 ```
-$ zenml service-connector describe gcp-user-account 
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-user-account' of type 'gcp' with id 'ddbce93f-df14-4861-a8a4-99a80972f3bc' is owned by user 'default' and is 'private'.
                        'gcp-user-account' gcp Service Connector Details                        
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -295,6 +318,7 @@ Service connector 'gcp-user-account' of type 'gcp' with id 'ddbce93f-df14-4861-a
 ┃ user_account_json │ [HIDDEN]   ┃
 ┗━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -314,29 +338,36 @@ If you already have the `GOOGLE_APPLICATION_CREDENTIALS` environment variable co
 
 The following assumes a GCP service account was created, [granted permissions to access GCS buckets](gcp-service-connector.md#gcs-bucket) in the target project and a service account key JSON was generated and saved locally in the `connectors-devel@zenml-core.json` file:
 
+```sh
+zenml service-connector register gcp-service-account --type gcp --auth-method service-account --resource-type gcs-bucket --project_id=zenml-core --service_account_json=@connectors-devel@zenml-core.json
 ```
-$ zenml service-connector register gcp-service-account --type gcp --auth-method service-account --resource-type gcs-bucket --project_id=zenml-core --service_account_json=@connectors-devel@zenml-core.json
+
+{% code title="Example Command Output" %}
+```text
 Expanding argument value service_account_json to contents of file connectors-devel@zenml-core.json.
 Successfully registered service connector `gcp-service-account` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-┃ 4b3d41c9-6a6f-46da-b7ba-8f374c3f49c5 │ gcp-service-account │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-┃                                      │                     │                │               │ gs://zenml-datasets                             ┃
-┃                                      │                     │                │               │ gs://zenml-internal-artifact-store              ┃
-┃                                      │                     │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-┃                                      │                     │                │               │ gs://zenml-project-time-series-bucket           ┃
-┃                                      │                     │                │               │ gs://zenml-public-bucket                        ┃
-┃                                      │                     │                │               │ gs://zenml-vertex-test                          ┃
-┃                                      │                     │                │               │ gs://zenml_projects_artifact_store              ┃
-┃                                      │                     │                │               │ gs://zennews-artifact-store                     ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 The GCP service connector configuration and service account credentials:
 
+```sh
+zenml service-connector describe gcp-service-account
 ```
-$ zenml service-connector describe gcp-service-account 
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-service-account' of type 'gcp' with id '4b3d41c9-6a6f-46da-b7ba-8f374c3f49c5' is owned by user 'default' and is 'private'.
     'gcp-service-account' gcp Service Connector Details    
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -379,6 +410,7 @@ Service connector 'gcp-service-account' of type 'gcp' with id '4b3d41c9-6a6f-46d
 ┃ service_account_json │ [HIDDEN]   ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -405,57 +437,89 @@ For this example, we have the following set up in GCP:
 
 First, let's show that the `empty-connectors` service account has no permission to access any GCS buckets or any other resources for that matter. We'll register a regular GCP Service Connector that uses the service account key (long-lived credentials) directly:
 
+```sh
+zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
 ```
-$ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
+
+{% code title="Example Command Output" %}
+```text
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-empty-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ db967769-4cd5-4f07-a3f4-54e3fe534d88 │ gcp-empty-sa   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                                                                                            ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                                                                                                ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ 💥 error: connector authorization failure: failed to list GCS buckets: 403 GET                                            ┃
+┃                       │ https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:                        ┃
+┃                       │ empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud         ┃
+┃                       │ project. Permission 'storage.buckets.list' denied on resource (or it may not exist).                                      ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ 💥 error: connector authorization failure: Failed to list GKE clusters: 403 Required "container.clusters.list"            ┃
+┃                       │ permission(s) for "projects/20219041791". [request_id: "0x84808facdac08541"                                               ┃
+┃                       │ ]                                                                                                                         ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                                                                                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
+Verifying access to individual resource types will fail:
+
+```sh
+zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
 Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: Failed to list GKE clusters:
 403 Required "container.clusters.list" permission(s) for "projects/20219041791".
+```
+{% endcode %}
 
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
+```sh
+zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
+```
+
+{% code title="Example Command Output" %}
+```text
 Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to list GCS buckets:
 403 GET https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:
 empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project.
 Permission 'storage.buckets.list' denied on resource (or it may not exist).
+```
+{% endcode %}
 
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+```sh
+zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+```
+
+{% code title="Example Command Output" %}
+```text
 Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to fetch GCS bucket
 zenml-bucket-sl: 403 GET https://storage.googleapis.com/storage/v1/b/zenml-bucket-sl?projection=noAcl&prettyPrint=false:
 empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.get access to the Google Cloud Storage bucket.
 Permission 'storage.buckets.get' denied on resource (or it may not exist).
-
 ```
+{% endcode %}
 
 Next, we'll register a GCP Service Connector that actually uses account impersonation to access the `zenml-bucket-sl` GCS bucket and verify that it can actually access the bucket:
 
+```sh
+zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
 ```
-$ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
+
+{% code title="Example Command Output" %}
+```text
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-impersonate-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
-Service connector 'gcp-impersonate-sa' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠───────────────┼──────────────────────┨
+┃ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -475,19 +539,39 @@ A GCP project is required and the connector may only be used to access GCP resou
 
 Fetching OAuth 2.0 tokens from the local GCP CLI is possible if the GCP CLI is already configured with valid credentials (i.e. by running `gcloud auth application-default login`). We need to force the ZenML CLI to use the OAuth 2.0 token authentication by passing the `--auth-method oauth2-token` option, otherwise, it would automatically pick up long-term credentials:
 
+```sh
+zenml service-connector register gcp-oauth2-token --type gcp --auto-configure --auth-method oauth2-token
 ```
-$ zenml service-connector register gcp-oauth2-token --type gcp --auto-configure --auth-method oauth2-token
-Successfully registered service connector `gcp-oauth2-token` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ ec4d7d85-c71c-476b-aa76-95bf772c90da │ gcp-oauth2-token │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                  │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                  │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                  │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
-$ zenml service-connector describe gcp-oauth2-token 
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcp-oauth2-token` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+```sh
+zenml service-connector describe gcp-oauth2-token
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-oauth2-token' of type 'gcp' with id 'ec4d7d85-c71c-476b-aa76-95bf772c90da' is owned by user 'default' and is 'private'.
                        'gcp-oauth2-token' gcp Service Connector Details                        
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -529,12 +613,17 @@ Service connector 'gcp-oauth2-token' of type 'gcp' with id 'ec4d7d85-c71c-476b-a
 ┠────────────┼────────────┨
 ┃ token      │ [HIDDEN]   ┃
 ┗━━━━━━━━━━━━┷━━━━━━━━━━━━┛
-```
+``` 
+{% endcode %}
 
 Note the temporary nature of the Service Connector. It will expire and become unusable in 1 hour:
 
+```sh
+zenml service-connector list --name gcp-oauth2-token
 ```
-$ zenml service-connector list --name gcp-oauth2-token 
+
+{% code title="Example Command Output" %}
+```text
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME             │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼──────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -544,6 +633,7 @@ $ zenml service-connector list --name gcp-oauth2-token
 ┃        │                  │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -557,19 +647,39 @@ The GCP Service Connector allows [auto-discovering and fetching credentials](ser
 
 The following is an example of lifting GCP user credentials granting access to the same set of GCP resources and services that the local GCP CLI is allowed to access. The GCP CLI should already be configured with valid credentials (i.e. by running `gcloud auth application-default login`). In this case, the [GCP user account authentication method](gcp-service-connector.md#gcp-user-account) is automatically detected:
 
+```sh
+zenml service-connector register gcp-auto --type gcp --auto-configure
 ```
-$ zenml service-connector register gcp-auto --type gcp --auto-configure
-Successfully registered service connector `gcp-auto` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
-$ zenml service-connector describe gcp-auto 
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcp-auto` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+```sh
+zenml service-connector describe gcp-auto
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-auto' of type 'gcp' with id 'fe16f141-7406-437e-a579-acebe618a293' is owned by user 'default' and is 'private'.
                            'gcp-auto' gcp Service Connector Details                            
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -611,32 +721,8 @@ Service connector 'gcp-auto' of type 'gcp' with id 'fe16f141-7406-437e-a579-aceb
 ┠───────────────────┼────────────┨
 ┃ user_account_json │ [HIDDEN]   ┃
 ┗━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-auto --resource-type gcs-bucket
-Service connector 'gcp-auto' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
-┃                                      │                │                │               │ gs://zenml-core_cloudbuild                      ┃
-┃                                      │                │                │               │ gs://zenml-datasets                             ┃
-┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
-┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
-┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
-┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-auto --resource-type kubernetes-cluster
-Service connector 'gcp-auto' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
-┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -650,8 +736,12 @@ The local Kubernetes `kubectl` CLI and the Docker CLI can be[ configured with cr
 
 The following shows an example of configuring the local Kubernetes CLI to access a GKE cluster reachable through a GCP Service Connector:
 
+```sh
+zenml service-connector list --name gcp-user-account
 ```
-$ zenml service-connector list --name gcp-user-account
+
+{% code title="Example Command Output" %}
+```text
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME             │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼──────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -660,48 +750,96 @@ $ zenml service-connector list --name gcp-user-account
 ┃        │                  │                                      │        │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
 ┃        │                  │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector verify gcp-user-account --resource-type kubernetes-cluster
+The following lists all Kubernetes clusters accessible through the GCP Service Connector:
+
+```sh
+zenml service-connector verify gcp-user-account --resource-type kubernetes-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────────┨
-┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES     ┃
+┠───────────────────────┼────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector login gcp-user-account --resource-type kubernetes-cluster --resource-id zenml-test-cluster
+Calling the login CLI command will configure the local Kubernetes `kubectl` CLI to access the Kubernetes cluster through the GCP Service Connector:
+
+```sh
+zenml service-connector login gcp-user-account --resource-type kubernetes-cluster --resource-id zenml-test-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
 ⠴ Attempting to configure local client using service connector 'gcp-user-account'...
 Context "gke_zenml-core_zenml-test-cluster" modified.
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
 The 'gcp-user-account' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+```
+{% endcode %}
 
-$ kubectl cluster-info
+To verify that the local Kubernetes `kubectl` CLI is correctly configured, the following command can be used:
+
+```sh
+kubectl cluster-info
+```
+
+{% code title="Example Command Output" %}
+```text
 Kubernetes control plane is running at https://35.185.95.223
 GLBCDefaultBackend is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
 KubeDNS is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 Metrics-server is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
 ```
+{% endcode %}
 
 A similar process is possible with GCR container registries:
 
+```sh
+zenml service-connector verify gcp-user-account --resource-type docker-registry
 ```
-$ zenml service-connector verify gcp-user-account --resource-type docker-registry
-Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
 
-$ zenml service-connector login gcp-user-account --resource-type docker-registry 
+{% code title="Example Command Output" %}
+```text
+Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE    │ RESOURCE NAMES    ┃
+┠────────────────────┼───────────────────┨
+┃ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+```sh
+zenml service-connector login gcp-user-account --resource-type docker-registry
+```
+
+{% code title="Example Command Output" %}
+```text
 ⠦ Attempting to configure local client using service connector 'gcp-user-account'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'gcp-user-account' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+```
+{% endcode %}
 
-$ docker push gcr.io/zenml-core/zenml-server:connectors
+To verify that the local Docker container registry client is correctly configured, the following command can be used:
+
+```sh
+docker push gcr.io/zenml-core/zenml-server:connectors
+```
+
+{% code title="Example Command Output" %}
+```text
 The push refers to repository [gcr.io/zenml-core/zenml-server]
 d4aef4f5ed86: Pushed 
 2d69a4ce1784: Pushed 
@@ -719,6 +857,7 @@ a1d005f5264e: Layer already exists
 8553b91047da: Layer already exists 
 connectors: digest: sha256:a4cfb18a5cef5b2201759a42dd9fe8eb2f833b788e9d8a6ebde194765b42fe46 size: 3256
 ```
+{% endcode %}
 
 </details>
 
@@ -753,218 +892,310 @@ As a last step, a simple pipeline is run on the resulting Stack.
 
 1.  Configure the local GCP CLI with valid user account credentials with a wide range of permissions (i.e. by running `gcloud auth application-default login`) and install ZenML integration prerequisites:
 
-    ```
-    $ gcloud auth application-default login
+```sh
+zenml integration install -y gcp
+```
 
-    Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
+```sh
+gcloud auth application-default login
+```
 
-    These credentials will be used by any library that requests Application Default Credentials (ADC).
+{% code title="Example Command Output" %}
+```text
+Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
 
-    Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
-    and quota. Note that some services may still bill the project owning the resource.
+These credentials will be used by any library that requests Application Default Credentials (ADC).
 
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
+```
+{% endcode %}
 
-    $ zenml integration install -y gcp
-
-    ```
 2.  Make sure the GCP Service Connector Type is available
 
-    ```
-    $ zenml service-connector list-types --type gcp
-    ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-    ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
-    ┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
-    ┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
-    ┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
-    ┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
-    ┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
-    ┃                       │        │                       │ impersonation   │       │        ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-    ```
+```sh
+zenml service-connector list-types --type gcp
+```
+
+{% code title="Example Command Output" %}
+```text
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
+┃                       │        │                       │ impersonation   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+{% endcode %}
+
 3.  Register a multi-type GCP Service Connector using auto-configuration
 
-    ```
-    $ zenml service-connector register gcp-demo-multi --type gcp --auto-configure
-    Successfully registered service connector `gcp-demo-multi` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-    ┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-    ┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-    ┃                                      │                │                │ 🐳 docker-registry    │                ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-    ```
+```sh
+zenml service-connector register gcp-demo-multi --type gcp --auto-configure
+```
 
-    **NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcp-demo-multi` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+**NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
+
 4.  find out which GCS buckets, GCR registries, and GKE Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal GCP stack: a GCS Artifact Store, a Kubernetes Orchestrator, and a GCP Container Registry.
 
-    ```
-    $ zenml service-connector list-resources --resource-type gcs-bucket
-    The following 'gcs-bucket' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-    ┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
-    ┃                                      │                │                │               │ gs://zenml-core.appspot.com                     ┃
-    ┃                                      │                │                │               │ gs://zenml-core_cloudbuild                      ┃
-    ┃                                      │                │                │               │ gs://zenml-datasets                             ┃
-    ┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
-    ┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-    ┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
-    ┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
-    ┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
-    ┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```sh
+zenml service-connector list-resources --resource-type gcs-bucket
+```
 
-    $ zenml service-connector list-resources --resource-type kubernetes-cluster
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+{% code title="Example Command Output" %}
+```text
+The following 'gcs-bucket' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl                            ┃
+┃                                      │                │                │               │ gs://zenml-core.appspot.com                     ┃
+┃                                      │                │                │               │ gs://zenml-core_cloudbuild                      ┃
+┃                                      │                │                │               │ gs://zenml-datasets                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-    $ zenml service-connector list-resources --resource-type docker-registry
-    The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
-    ```
+```sh
+zenml service-connector list-resources --resource-type kubernetes-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
+The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+```sh
+zenml service-connector list-resources --resource-type docker-registry
+```
+
+{% code title="Example Command Output" %}
+```text
+The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 5.  register and connect a GCS Artifact Store Stack Component to a GCS bucket:
 
-    ```
-    $ zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+```sh
+zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
+```
 
-    $ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcp-demo-multi
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼──────────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+```
+{% endcode %}
+
+```sh
+zenml artifact-store connect gcs-zenml-bucket-sl --connector gcp-demo-multi
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 6.  register and connect a Kubernetes Orchestrator Stack Component to a GKE cluster:
 
-    ```
-    $ zenml orchestrator register gke-zenml-test-cluster --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered orchestrator `gke-zenml-test-cluster`.
+```sh
+zenml orchestrator register gke-zenml-test-cluster --flavor kubernetes --synchronous=true 
+--kubernetes_namespace=zenml-workloads
+```
 
-    $ zenml orchestrator connect gke-zenml-test-cluster --connector gcp-demo-multi
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully connected orchestrator `gke-zenml-test-cluster` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered orchestrator `gke-zenml-test-cluster`.
+```
+{% endcode %}
+
+```sh
+zenml orchestrator connect gke-zenml-test-cluster --connector gcp-demo-multi
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected orchestrator `gke-zenml-test-cluster` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 7.  Register and connect a GCP Container Registry Stack Component to a GCR container registry:
 
-    ```
-    $ zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core 
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered container_registry `gcr-zenml-core`.
+```sh
+zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core
+```
 
-    $ zenml container-registry connect gcr-zenml-core --connector gcp-demo-multi
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully connected container registry `gcr-zenml-core` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-    ┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered container_registry `gcr-zenml-core`.
+```
+{% endcode %}
+
+```sh
+zenml container-registry connect gcr-zenml-core --connector gcp-demo-multi
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected container registry `gcr-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 8.  Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
-    ```
-    $ zenml image-builder register local --flavor local
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered image_builder `local`.
+```sh
+zenml image-builder register local --flavor local
+```
 
-    $ zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o gke-zenml-test-cluster -c gcr-zenml-core -i local --set
-    Running with active workspace: 'default' (global)
-    Stack 'gcp-demo' successfully registered!
-    Active global stack set to:'gcp-demo'
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered image_builder `local`.
+```
+{% endcode %}
+
+```sh
+zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o gke-zenml-test-cluster -c gcr-zenml-core -i local --set
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Stack 'gcp-demo' successfully registered!
+Active global stack set to:'gcp-demo'
+```
+{% endcode %}
+
+
 9.  Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
-    ```python
-    from zenml import pipeline, step
+```python
+from zenml import pipeline, step
 
 
-    @step
-    def step_1() -> str:
-        """Returns the `world` string."""
-        return "world"
+@step
+def step_1() -> str:
+    """Returns the `world` string."""
+    return "world"
 
 
-    @step(enable_cache=False)
-    def step_2(input_one: str, input_two: str) -> None:
-        """Combines the two strings at its input and prints them."""
-        combined_str = f"{input_one} {input_two}"
-        print(combined_str)
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    print(combined_str)
 
 
-    @pipeline
-    def my_pipeline():
-        output_step_one = step_1()
-        step_2(input_one="hello", input_two=output_step_one)
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
 
 
-    if __name__ == "__main__":
-        my_pipeline()
-    ```
+if __name__ == "__main__":
+    my_pipeline()
+```
 
-    Saving that to a `run.py` file and running it gives us:
+Saving that to a `run.py` file and running it gives us:
 
-    ```
-    $ python run.py 
-    Reusing registered pipeline simple_pipeline (version: 1).
-    Building Docker image(s) for pipeline simple_pipeline.
-    Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
-    - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
-    No .dockerignore found, including all files inside build context.
-    Step 1/8 : FROM zenmldocker/zenml:0.39.1-py3.8
-    Step 2/8 : WORKDIR /app
-    Step 3/8 : COPY .zenml_integration_requirements .
-    Step 4/8 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
-    Step 5/8 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
-    Step 6/8 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
-    Step 7/8 : COPY . .
-    Step 8/8 : RUN chmod -R a+rw .
-    Pushing Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
-    Finished pushing Docker image.
-    Finished building Docker image(s).
-    Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
-    Waiting for Kubernetes orchestrator pod...
-    Kubernetes orchestrator pod started.
-    Waiting for pod of step step_1 to start...
-    Step step_1 has started.
-    Step step_1 has finished in 1.357s.
-    Pod of step step_1 completed.
-    Waiting for pod of step simple_step_two to start...
-    Step step_2 has started.
-    Hello World!
-    Step step_2 has finished in 3.136s.
-    Pod of step step_2 completed.
-    Orchestration pod completed.
-    Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
-    ```
+{% code title="Example Command Output" %}
+```text
+$ python run.py 
+Reusing registered pipeline simple_pipeline (version: 1).
+Building Docker image(s) for pipeline simple_pipeline.
+Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+- Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
+No .dockerignore found, including all files inside build context.
+Step 1/8 : FROM zenmldocker/zenml:0.39.1-py3.8
+Step 2/8 : WORKDIR /app
+Step 3/8 : COPY .zenml_integration_requirements .
+Step 4/8 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
+Step 5/8 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
+Step 6/8 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
+Step 7/8 : COPY . .
+Step 8/8 : RUN chmod -R a+rw .
+Pushing Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+Finished pushing Docker image.
+Finished building Docker image(s).
+Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
+Waiting for Kubernetes orchestrator pod...
+Kubernetes orchestrator pod started.
+Waiting for pod of step step_1 to start...
+Step step_1 has started.
+Step step_1 has finished in 1.357s.
+Pod of step step_1 completed.
+Waiting for pod of step simple_step_two to start...
+Step step_2 has started.
+Hello World!
+Step step_2 has finished in 3.136s.
+Pod of step step_2 completed.
+Orchestration pod completed.
+Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
+```
+{% endcode %}
 
 </details>
 
@@ -983,246 +1214,349 @@ As a last step, a simple pipeline is run on the resulting Stack.
 
 1.  Configure the local GCP CLI with valid user account credentials with a wide range of permissions (i.e. by running `gcloud auth application-default login`) and install ZenML integration prerequisites:
 
-    ```
-    $ gcloud auth application-default login
+```sh
+zenml integration install -y gcp
+```
 
-    Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
+```sh
+gcloud auth application-default login
+```
 
-    These credentials will be used by any library that requests Application Default Credentials (ADC).
+{% code title="Example Command Output" %}
+```text
+Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
 
-    Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
-    and quota. Note that some services may still bill the project owning the resource.
+These credentials will be used by any library that requests Application Default Credentials (ADC).
 
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
+```
+{% endcode %}
 
-    $ zenml integration install -y gcp
-
-    ```
 2.  Make sure the GCP Service Connector Type is available
 
-    ```
-    $ zenml service-connector list-types --type gcp
-    ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-    ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
-    ┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
-    ┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
-    ┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
-    ┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
-    ┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
-    ┃                       │        │                       │ impersonation   │       │        ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-    ```
+```sh
+zenml service-connector list-types --type gcp
+```
+
+{% code title="Example Command Output" %}
+```text
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
+┃                       │        │                       │ impersonation   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+{% endcode %}
+
 3.  Register an individual single-instance GCP Service Connector using auto-configuration for each of the resources that will be needed for the Stack Components: a GCS bucket, a GCR registry, and generic GCP access for the VertexAI orchestrator and another one for the GCP Cloud Builder:
 
-    ```
-    $ zenml service-connector register gcs-zenml-bucket-sl --type gcp --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl --auto-configure
-    Successfully registered service connector `gcs-zenml-bucket-sl` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-    ┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
-    ┃ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```sh
+zenml service-connector register gcs-zenml-bucket-sl --type gcp --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl --auto-configure
+```
 
-    $ zenml service-connector register gcr-zenml-core --type gcp --resource-type docker-registry --auto-configure
-    Successfully registered service connector `gcr-zenml-core` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-    ┃ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ gcr-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcs-zenml-bucket-sl` with access to the following resources:
+┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠───────────────┼──────────────────────┨
+┃ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-    $ zenml service-connector register vertex-ai-zenml-core --type gcp --resource-type gcp-generic --auto-configure
-    Successfully registered service connector `vertex-ai-zenml-core` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼──────────────────────┼────────────────┼────────────────┼────────────────┨
-    ┃ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ vertex-ai-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```sh
+zenml service-connector register gcr-zenml-core --type gcp --resource-type docker-registry --auto-configure
+```
 
-    $ zenml service-connector register gcp-cloud-builder-zenml-core --type gcp --resource-type gcp-generic --auto-configure
-    Successfully registered service connector `gcp-cloud-builder-zenml-core` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME               │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼──────────────────────────────┼────────────────┼────────────────┼────────────────┨
-    ┃ 648c1016-76e4-4498-8de7-808fd20f057b │ gcp-cloud-builder-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcr-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃   RESOURCE TYPE    │ RESOURCE NAMES    ┃
+┠────────────────────┼───────────────────┨
+┃ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-    **NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
+```sh
+zenml service-connector register vertex-ai-zenml-core --type gcp --resource-type gcp-generic --auto-configure
+```
 
-    In the end, the service connector list should look like this:
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `vertex-ai-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠────────────────┼────────────────┨
+┃ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-    ```
-    $ zenml service-connector list
-    ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
-    ┃ ACTIVE │ NAME                         │ ID                                   │ TYPE   │ RESOURCE TYPES     │ RESOURCE NAME        │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
-    ┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
-    ┃        │ gcs-zenml-bucket-sl          │ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ 🔵 gcp │ 📦 gcs-bucket      │ gs://zenml-bucket-sl │ ➖     │ default │            │        ┃
-    ┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
-    ┃        │ gcr-zenml-core               │ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ 🔵 gcp │ 🐳 docker-registry │ gcr.io/zenml-core    │ ➖     │ default │            │        ┃
-    ┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
-    ┃        │ vertex-ai-zenml-core         │ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
-    ┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
-    ┃        │ gcp-cloud-builder-zenml-core │ 648c1016-76e4-4498-8de7-808fd20f057b │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
-    ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
-    ```
+```sh
+zenml service-connector register gcp-cloud-builder-zenml-core --type gcp --resource-type gcp-generic --auto-configure
+```
+
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcp-cloud-builder-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠────────────────┼────────────────┨
+┃ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+**NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
+
+In the end, the service connector list should look like this:
+
+```sh
+zenml service-connector list
+```
+
+{% code title="Example Command Output" %}
+```text
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
+┃ ACTIVE │ NAME                         │ ID                                   │ TYPE   │ RESOURCE TYPES     │ RESOURCE NAME        │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcs-zenml-bucket-sl          │ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ 🔵 gcp │ 📦 gcs-bucket      │ gs://zenml-bucket-sl │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcr-zenml-core               │ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ 🔵 gcp │ 🐳 docker-registry │ gcr.io/zenml-core    │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ vertex-ai-zenml-core         │ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcp-cloud-builder-zenml-core │ 648c1016-76e4-4498-8de7-808fd20f057b │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+```
+{% endcode %}
+
 4.  register and connect a GCS Artifact Store Stack Component to the GCS bucket:
 
-    ```
-    $ zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+```sh
+zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
+```
 
-    $ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcs-zenml-bucket-sl
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-    ┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
-    ┃ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+```
+{% endcode %}
+
+```sh
+zenml artifact-store connect gcs-zenml-bucket-sl --connector gcs-zenml-bucket-sl
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 5.  register and connect a Google Cloud Image Builder Stack Component to the target GCP project:
 
-    ```
-    $ zenml image-builder register gcp-zenml-core --flavor gcp 
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered image_builder `gcp-zenml-core`.
+```sh
+zenml image-builder register gcp-zenml-core --flavor gcp
+```
 
-    $ zenml image-builder connect gcp-zenml-core --connector gcp-cloud-builder-zenml-core 
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected image builder `gcp-zenml-core` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME               │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼──────────────────────────────┼────────────────┼────────────────┼────────────────┨
-    ┃ 648c1016-76e4-4498-8de7-808fd20f057b │ gcp-cloud-builder-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered image_builder `gcp-zenml-core`.
+```
+{% endcode %}
+
+```sh
+zenml image-builder connect gcp-zenml-core --connector gcp-cloud-builder-zenml-core 
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected image builder `gcp-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME               │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ 648c1016-76e4-4498-8de7-808fd20f057b │ gcp-cloud-builder-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 6.  register and connect a Vertex AI Orchestrator Stack Component to the target GCP project
 
-    **NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. In our case, that didn't work and issued an inexplicable "Internal error" when trying to run a pipeline, so we had to also create a `connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com` GCP service account, grant it the Vertex AI Service Agent role and pass it as it in the `workload_service_account` configuration attribute:
+**NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. You must grant this account the Vertex AI Service Agent role, otherwise the pipelines will fail. More information on other configurations possible for the Vertex AI Orchestrator can be found [here](../../../user-guide/component-guide/orchestrators/vertex.md#how-to-use-it).
 
-    ```
-    $ zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --workload_service_account=connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com --synchronous=true
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered orchestrator `vertex-ai-zenml-core`.
+```sh
+zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --synchronous=true
+```
 
-    $ zenml orchestrator connect vertex-ai-zenml-core --connector vertex-ai-zenml-core
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected orchestrator `vertex-ai-zenml-core` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼──────────────────────┼────────────────┼────────────────┼────────────────┨
-    ┃ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ vertex-ai-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered orchestrator `vertex-ai-zenml-core`.
+```
+{% endcode %}
+
+```sh
+zenml orchestrator connect vertex-ai-zenml-core --connector vertex-ai-zenml-core
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected orchestrator `vertex-ai-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ vertex-ai-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 7.  Register and connect a GCP Container Registry Stack Component to a GCR container registry:
 
-    ```
-    $ zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core 
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered container_registry `gcr-zenml-core`.
+```sh
+zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core 
+```
 
-    $ zenml container-registry connect gcr-zenml-core --connector gcr-zenml-core
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected container registry `gcr-zenml-core` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-    ┃ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ gcr-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
-    ```
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered container_registry `gcr-zenml-core`.
+```
+{% endcode %}
+
+```sh
+zenml container-registry connect gcr-zenml-core --connector gcr-zenml-core
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected container registry `gcr-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ gcr-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
 8.  Combine all Stack Components together into a Stack and set it as active:
 
-    ```
-    $ zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o vertex-ai-zenml-core -c gcr-zenml-core -i gcp-zenml-core --set
-    Running with active workspace: 'default' (repository)
-    Stack 'gcp-demo' successfully registered!
-    Active repository stack set to:'gcp-demo'
-    ```
+```sh
+zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o vertex-ai-zenml-core -c gcr-zenml-core -i gcp-zenml-core --set
+```
+
+{% code title="Example Command Output" %}
+```text
+Running with active workspace: 'default' (repository)
+Stack 'gcp-demo' successfully registered!
+Active repository stack set to:'gcp-demo'
+```
+{% endcode %}
+
 9.  Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
-    ```python
-    from zenml import pipeline, step
+```python
+from zenml import pipeline, step
 
 
-    @step
-    def step_1() -> str:
-        """Returns the `world` string."""
-        return "world"
+@step
+def step_1() -> str:
+    """Returns the `world` string."""
+    return "world"
 
 
-    @step(enable_cache=False)
-    def step_2(input_one: str, input_two: str) -> None:
-        """Combines the two strings at its input and prints them."""
-        combined_str = f"{input_one} {input_two}"
-        print(combined_str)
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    print(combined_str)
 
 
-    @pipeline
-    def my_pipeline():
-        output_step_one = step_1()
-        step_2(input_one="hello", input_two=output_step_one)
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
 
 
-    if __name__ == "__main__":
-        my_pipeline()
-    ```
+if __name__ == "__main__":
+    my_pipeline()
+```
 
-    Saving that to a `run.py` file and running it gives us:
+Saving that to a `run.py` file and running it gives us:
 
-    ```
-    $ python run.py 
-    Reusing registered pipeline simple_pipeline (version: 1).
-    Building Docker image(s) for pipeline simple_pipeline.
-    Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
-    - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, shapely<2.0
-    Using Cloud Build to build image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator
-    No .dockerignore found, including all files inside build context.
-    Uploading build context to gs://zenml-bucket-sl/cloud-build-contexts/5dda6dbb60e036398bee4974cfe3eb768a138b2e.tar.gz.
-    Build context located in bucket zenml-bucket-sl and object path cloud-build-contexts/5dda6dbb60e036398bee4974cfe3eb768a138b2e.tar.gz
-    Using Cloud Builder image gcr.io/cloud-builders/docker to run the steps in the build. Container will be attached to network using option --network=cloudbuild.
-    Running Cloud Build to build the Docker image. Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/068e77a1-4e6f-427a-bf94-49c52270af7a?project=20219041791
-    The Docker image has been built successfully. More information can be found in the Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/068e77a1-4e6f-427a-bf94-49c52270af7a?project=20219041791.
-    Finished building Docker image(s).
-    Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
-    The attribute pipeline_root has not been set in the orchestrator configuration. One has been generated automatically based on the path of the GCPArtifactStore artifact store in the stack used to execute the pipeline. The generated pipeline_root is gs://zenml-bucket-sl/vertex_pipeline_root/simple_pipeline/simple_pipeline_default_6e72f3e1.
-    /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/kfp/v2/compiler/compiler.py:1290: FutureWarning: APIs imported from the v1 namespace (e.g. kfp.dsl, kfp.components, etc) will not be supported by the v2 compiler since v2.0.0
-      warnings.warn(
-    Writing Vertex workflow definition to /home/stefan/.config/zenml/vertex/8a0b53ee-644a-4fbe-8e91-d4d6ddf79ae8/pipelines/simple_pipeline_default_6e72f3e1.json.
-    No schedule detected. Creating one-off vertex job...
-    Submitting pipeline job with job_id simple-pipeline-default-6e72f3e1 to Vertex AI Pipelines service.
-    The Vertex AI Pipelines job workload will be executed using the connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com service account.
-    Creating PipelineJob
-    INFO:google.cloud.aiplatform.pipeline_jobs:Creating PipelineJob
-    PipelineJob created. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
-    INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob created. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
-    To use this PipelineJob in another session:
-    INFO:google.cloud.aiplatform.pipeline_jobs:To use this PipelineJob in another session:
-    pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1')
-    INFO:google.cloud.aiplatform.pipeline_jobs:pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1')
-    View Pipeline Job:
-    https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
-    INFO:google.cloud.aiplatform.pipeline_jobs:View Pipeline Job:
-    https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
-    View the Vertex AI Pipelines job at https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
-    Waiting for the Vertex AI Pipelines job to finish...
-    PipelineJob projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1 current state:
-    PipelineState.PIPELINE_STATE_RUNNING
-    INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1 current state:
-    PipelineState.PIPELINE_STATE_RUNNING
-    ...
-    PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
-    INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
-    Dashboard URL: https://34.148.132.191/workspaces/default/pipelines/17cac6b5-3071-45fa-a2ef-cda4a7965039/runs
-    ```
+{% code title="Example Command Output" %}
+```text
+$ python run.py 
+Reusing registered pipeline simple_pipeline (version: 1).
+Building Docker image(s) for pipeline simple_pipeline.
+Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+- Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, shapely<2.0
+Using Cloud Build to build image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator
+No .dockerignore found, including all files inside build context.
+Uploading build context to gs://zenml-bucket-sl/cloud-build-contexts/5dda6dbb60e036398bee4974cfe3eb768a138b2e.tar.gz.
+Build context located in bucket zenml-bucket-sl and object path cloud-build-contexts/5dda6dbb60e036398bee4974cfe3eb768a138b2e.tar.gz
+Using Cloud Builder image gcr.io/cloud-builders/docker to run the steps in the build. Container will be attached to network using option --network=cloudbuild.
+Running Cloud Build to build the Docker image. Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/068e77a1-4e6f-427a-bf94-49c52270af7a?project=20219041791
+The Docker image has been built successfully. More information can be found in the Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/068e77a1-4e6f-427a-bf94-49c52270af7a?project=20219041791.
+Finished building Docker image(s).
+Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
+The attribute pipeline_root has not been set in the orchestrator configuration. One has been generated automatically based on the path of the GCPArtifactStore artifact store in the stack used to execute the pipeline. The generated pipeline_root is gs://zenml-bucket-sl/vertex_pipeline_root/simple_pipeline/simple_pipeline_default_6e72f3e1.
+/home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/kfp/v2/compiler/compiler.py:1290: FutureWarning: APIs imported from the v1 namespace (e.g. kfp.dsl, kfp.components, etc) will not be supported by the v2 compiler since v2.0.0
+    warnings.warn(
+Writing Vertex workflow definition to /home/stefan/.config/zenml/vertex/8a0b53ee-644a-4fbe-8e91-d4d6ddf79ae8/pipelines/simple_pipeline_default_6e72f3e1.json.
+No schedule detected. Creating one-off vertex job...
+Submitting pipeline job with job_id simple-pipeline-default-6e72f3e1 to Vertex AI Pipelines service.
+The Vertex AI Pipelines job workload will be executed using the connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com service account.
+Creating PipelineJob
+INFO:google.cloud.aiplatform.pipeline_jobs:Creating PipelineJob
+PipelineJob created. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
+INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob created. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
+To use this PipelineJob in another session:
+INFO:google.cloud.aiplatform.pipeline_jobs:To use this PipelineJob in another session:
+pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1')
+INFO:google.cloud.aiplatform.pipeline_jobs:pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1')
+View Pipeline Job:
+https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
+INFO:google.cloud.aiplatform.pipeline_jobs:View Pipeline Job:
+https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
+View the Vertex AI Pipelines job at https://console.cloud.google.com/vertex-ai/locations/europe-west1/pipelines/runs/simple-pipeline-default-6e72f3e1?project=20219041791
+Waiting for the Vertex AI Pipelines job to finish...
+PipelineJob projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1 current state:
+PipelineState.PIPELINE_STATE_RUNNING
+INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1 current state:
+PipelineState.PIPELINE_STATE_RUNNING
+...
+PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
+INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob run completed. Resource name: projects/20219041791/locations/europe-west1/pipelineJobs/simple-pipeline-default-6e72f3e1
+Dashboard URL: https://34.148.132.191/workspaces/default/pipelines/17cac6b5-3071-45fa-a2ef-cda4a7965039/runs
+```
+{% endcode %}
 
 </details>
 

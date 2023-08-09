@@ -62,6 +62,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
+    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -344,7 +345,7 @@ class Client(metaclass=ClientMetaClass):
                 directory.
         """
         enable_warnings = handle_bool_env_var(
-            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
+            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, False
         )
         self._root = self.find_repository(
             root, enable_warnings=enable_warnings
@@ -555,11 +556,9 @@ class Client(metaclass=ClientMetaClass):
             True if the file is inside the active ZenML repository, False
             otherwise.
         """
-        repo_path = Client.find_repository()
-        if not repo_path:
-            return False
-
-        return repo_path in Path(file_path).resolve().parents
+        if repo_path := Client.find_repository():
+            return repo_path in Path(file_path).resolve().parents
+        return False
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -588,9 +587,7 @@ class Client(metaclass=ClientMetaClass):
             The configuration directory of this client, or None, if the
             client doesn't have an active root.
         """
-        if not self.root:
-            return None
-        return self.root / REPOSITORY_DIRECTORY_NAME
+        return self.root / REPOSITORY_DIRECTORY_NAME if self.root else None
 
     def activate_root(self, root: Optional[Path] = None) -> None:
         """Set the active repository root directory.
@@ -663,11 +660,9 @@ class Client(metaclass=ClientMetaClass):
             The model of the created user.
         """
         user = UserRequestModel(name=name, password=password or None)
-        if self.zen_store.type != StoreType.REST:
-            user.active = password != ""
-        else:
-            user.active = True
-
+        user.active = (
+            password != "" if self.zen_store.type != StoreType.REST else True
+        )
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
@@ -878,12 +873,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created team.
         """
-        user_list = []
+        user_list: List[UUID] = []
         if users:
-            for user_name_or_id in users:
-                user_list.append(
-                    self.get_user(name_id_or_prefix=user_name_or_id).id
-                )
+            user_list.extend(
+                self.get_user(name_id_or_prefix=user_name_or_id).id
+                for user_name_or_id in users
+            )
 
         team = TeamRequestModel(name=name, users=user_list)
 
@@ -924,8 +919,7 @@ class Client(metaclass=ClientMetaClass):
 
         team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
-            union_add_rm = set(remove_users) & set(add_users)
-            if union_add_rm:
+            if union_add_rm := set(remove_users) & set(add_users):
                 raise RuntimeError(
                     f"The `remove_user` and `add_user` "
                     f"options both contain the same value(s): "
@@ -936,10 +930,9 @@ class Client(metaclass=ClientMetaClass):
 
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
-        team_users = []
-
-        if remove_users or add_users:
-            team_users = [u.id for u in team.users]
+        team_users = (
+            [u.id for u in team.users] if remove_users or add_users else []
+        )
         if remove_users:
             for rm_p in remove_users:
                 user = self.get_user(rm_p)
@@ -951,9 +944,7 @@ class Client(metaclass=ClientMetaClass):
                         f"part of the '{team.name}' Team."
                     )
         if add_users:
-            for add_u in add_users:
-                team_users.append(self.get_user(add_u).id)
-
+            team_users.extend(self.get_user(add_u).id for add_u in add_users)
         if team_users:
             team_update.users = team_users
 
@@ -1037,11 +1028,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly created role.
         """
-        permissions: Set[PermissionType] = set()
-        for permission in permissions_list:
-            if permission in PermissionType.values():
-                permissions.add(PermissionType(permission))
-
+        permissions: Set[PermissionType] = {
+            PermissionType(permission)
+            for permission in permissions_list
+            if permission in PermissionType.values()
+        }
         new_role = RoleRequestModel(name=name, permissions=permissions)
         return self.zen_store.create_role(new_role)
 
@@ -1074,8 +1065,7 @@ class Client(metaclass=ClientMetaClass):
         role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
-            union_add_rm = set(remove_permission) & set(add_permission)
-            if union_add_rm:
+            if union_add_rm := set(remove_permission) & set(add_permission):
                 raise RuntimeError(
                     f"The `remove_permission` and `add_permission` "
                     f"options both contain the same value(s): "
@@ -1356,13 +1346,9 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        workspace: Optional["WorkspaceResponseModel"] = None
-        if self._config:
-            workspace = self._config.active_workspace
-
-        if not workspace:
-            workspace = GlobalConfiguration().get_active_workspace()
-
+        workspace = (
+            self._config.active_workspace if self._config else None
+        ) or GlobalConfiguration().get_active_workspace()
         if not workspace:
             raise RuntimeError(
                 "No active workspace is configured. Run "
@@ -1604,7 +1590,7 @@ class Client(metaclass=ClientMetaClass):
             ValueError: If the stack contains private components and is
                 attempted to be registered as shared.
         """
-        stack_components = dict()
+        stack_components = {}
 
         for c_type, c_identifier in components.items():
             # Skip non-existent components.
@@ -1684,10 +1670,7 @@ class Client(metaclass=ClientMetaClass):
         if name:
             shared_status = is_shared or stack.is_shared
 
-            existing_stacks = self.list_stacks(
-                name=name, is_shared=shared_status
-            )
-            if existing_stacks:
+            if self.list_stacks(name=name, is_shared=shared_status):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
@@ -1697,10 +1680,7 @@ class Client(metaclass=ClientMetaClass):
 
         if is_shared:
             current_name = update_model.name or stack.name
-            existing_stacks = self.list_stacks(
-                name=current_name, is_shared=True
-            )
-            if existing_stacks:
+            if self.list_stacks(name=current_name, is_shared=True):
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{current_name}'."
@@ -1728,11 +1708,10 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components_dict = {}
-            for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [
-                    c.id for c in component_list
-                ]
+            components_dict = {
+                component_type: [c.id for c in component_list]
+                for component_type, component_list in stack.components.items()
+            }
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
@@ -1798,11 +1777,10 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 # Check if the stack component is part of another stack
-                if len(stacks) == 1:
-                    if stack.id == stacks[0].id:
-                        stack_components_free_for_deletion.append(
-                            (component_type, component_model)
-                        )
+                if len(stacks) == 1 and stack.id == stacks[0].id:
+                    stack_components_free_for_deletion.append(
+                        (component_type, component_model)
+                    )
 
             self.delete_stack(stack.id)
 
@@ -1889,11 +1867,11 @@ class Client(metaclass=ClientMetaClass):
         # Make sure the stack is registered
         try:
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
-        except KeyError:
+        except KeyError as e:
             raise KeyError(
                 f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
                 f"it is not registered yet. Please register it first."
-            )
+            ) from e
 
         if self._config:
             self._config.set_active_stack(stack=stack)
@@ -1925,12 +1903,12 @@ class Client(metaclass=ClientMetaClass):
                         name_id_or_prefix=component_id,
                         component_type=component_type,
                     )
-                except KeyError:
+                except KeyError as e:
                     raise KeyError(
                         f"Cannot register stack '{stack.name}' since it has an "
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
-                    )
+                    ) from e
             # Get the flavor model
             flavor_model = self.get_flavor_by_name_and_type(
                 name=component.flavor, component_type=component.type
@@ -2220,7 +2198,7 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=is_shared, type=component_type
             )
-            if any([e.id != component.id for e in existing_components.items]):
+            if any(e.id != component.id for e in existing_components.items):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
@@ -2302,7 +2280,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         cloud: str,
         component_type: StackComponentType,
-        configuration: Optional[Dict[str, Any]] = {},
+        configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
     ) -> Optional["ComponentResponseModel"]:
         """Deploys a stack component.
@@ -2419,24 +2397,21 @@ class Client(metaclass=ClientMetaClass):
                 component_type == StackComponentType.EXPERIMENT_TRACKER
                 and flavor == "mlflow"
             ):
-                mlflow_bucket = outputs.get("mlflow-bucket")
-                if mlflow_bucket:
+                if mlflow_bucket := outputs.get("mlflow-bucket"):
                     logger.info(
                         "The bucket used for MLflow is: %s "
                         "You can use this bucket as an artifact store to "
                         "avoid having to create a new one.",
                         mlflow_bucket,
                     )
-
             # if the cloud is k3d, then check the container registry
             # outputs. If they are set, then create one.
             if cloud == "k3d":
-                container_registry_outputs = {
+                if container_registry_outputs := {
                     k: v
                     for k, v in outputs.items()
                     if k.startswith("container_registry")
-                }
-                if container_registry_outputs:
+                }:
                     self.create_stack_component(
                         name=container_registry_outputs[
                             "container_registry_name"
@@ -2451,7 +2426,6 @@ class Client(metaclass=ClientMetaClass):
                             ]
                         ),
                     )
-
         return stack_comp
 
     def destroy_stack_component(
@@ -2544,6 +2518,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             component_type: The type of the component.
             configuration: The component configuration to validate.
+
+        Raises:
+            StackComponentValidationError: in case the stack component configuration is invalid.
         """
         from zenml.enums import StoreType
 
@@ -2563,6 +2540,11 @@ class Client(metaclass=ClientMetaClass):
                 "stack component may not be usable from other hosts or by "
                 "other users. You should consider using a non-local stack "
                 "component alternative instead."
+            )
+        if not configuration.is_valid:
+            raise StackComponentValidationError(
+                f"Invalid stack component configuration. please verify "
+                f"the configurations set for {component_type}."
             )
 
     # .---------.
@@ -2734,24 +2716,23 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        flavors = self.list_flavors(
-            type=component_type,
-            name=name,
-        ).items
-
-        if flavors:
-            if len(flavors) > 1:
-                raise KeyError(
-                    f"More than one flavor with name {name} and type "
-                    f"{component_type} exists."
-                )
-
-            return flavors[0]
-        else:
+        if not (
+            flavors := self.list_flavors(
+                type=component_type,
+                name=name,
+            ).items
+        ):
             raise KeyError(
                 f"No flavor with name '{name}' and type '{component_type}' "
                 "exists."
             )
+        if len(flavors) > 1:
+            raise KeyError(
+                f"More than one flavor with name {name} and type "
+                f"{component_type} exists."
+            )
+
+        return flavors[0]
 
     # -------------
     # - PIPELINES -
@@ -2822,8 +2803,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If left empty, will return
-                the latest version.
+            version: The pipeline version. If not specified, the latest
+                version is returned.
 
         Returns:
             The pipeline.
@@ -3254,9 +3235,9 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINE RUNS -
     # -----------------
 
-    def list_runs(
+    def list_pipeline_runs(
         self,
-        sort_by: str = "created",
+        sort_by: str = "desc:created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
@@ -3335,6 +3316,21 @@ class Client(metaclass=ClientMetaClass):
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
+    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponseModel]:
+        """(Deprecated) List all pipeline runs.
+
+        Args:
+            **kwargs: The filter arguments passed to `list_pipeline_runs`.
+
+        Returns:
+            A page with Pipeline Runs fitting the filter description
+        """
+        logger.warning(
+            "`Client.list_runs()` is deprecated and will be removed in a "
+            "future release. Please use `Client.list_pipeline_runs()` instead."
+        )
+        return self.list_pipeline_runs(**kwargs)
+
     def get_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -3351,7 +3347,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_run,
-            list_method=self.list_runs,
+            list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
         )
@@ -4541,9 +4537,8 @@ class Client(metaclass=ClientMetaClass):
                 "Python packages and ZenML integrations and try again."
             )
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_type = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_type = connector.resource_types[0].resource_type
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
@@ -4784,9 +4779,8 @@ class Client(metaclass=ClientMetaClass):
         else:
             resource_types = resource_type
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_types = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_types = connector.resource_types[0].resource_type
 
         if resource_id == "":
             resource_id = None
