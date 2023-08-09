@@ -220,7 +220,7 @@ zenml stack register production_stack --orchestrator kubernetes_orchestrator --a
 When you run a pipeline with this stack set, it will be running on your deployed
 Kubernetes cluster.
 
-You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack).
+You can also [deploy your own tooling manually](https://docs.zenml.io/stacks-and-components/stack-deployment).
 
 ## 🏇 3. Create a Pipeline
 

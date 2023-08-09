@@ -41,14 +41,14 @@ zenml init
 ```
 
 Additionally, you require a remote ZenML server deployed to the cloud. See the 
-[deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for
+[deployment guide](https://docs.zenml.io/user-guide/starter-guide/switch-to-production) for
 more information.
 
 Each type of step operator has their own prerequisites.
 
 Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
-the [docs](https://docs.zenml.io/user-guide/component-guide/step-operators/step-operators).
+the [docs](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/step-operators).
 
 Please jump to the section applicable to the step operator you would like to 
 use:
@@ -74,10 +74,10 @@ Note that the S3 artifact store and the Sagemaker step operator can both (i.e.
 as individual stack components) be deployed using the ZenML CLI as well, using
 the `zenml <STACK_COMPONENT> deploy` command. For more information on this
 `deploy` subcommand, please refer to the
-[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
+[documentation](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/user-guide/component-guide/step-operators/amazon-sagemaker)
+follow [this guide](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/amazon-sagemaker)
 and then proceed with the following steps:
 
 ```bash
@@ -131,7 +131,7 @@ The stack will consist of:
   on Azure.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/user-guide/component-guide/step-operators/azureml)
+follow [this guide](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/azureml)
 and then proceed with the following steps:
 
 ```bash
@@ -176,7 +176,7 @@ The stack will consist of:
   on GCP.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/user-guide/component-guide/step-operators/gcloud-vertexai)
+follow [this guide](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/gcloud-vertexai)
 and then proceed with the following steps:
 
 ```bash
@@ -235,8 +235,8 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 Our docs for the step operator integrations can be
-found [here](https://docs.zenml.io/user-guide/component-guide/step-operators/step-operators).
+found [here](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/step-operators).
 
 If you want to learn more about step operators in general or about how to build
 your own step operator in ZenML
-check out our [docs](https://docs.zenml.io/user-guide/component-guide/step-operators/custom).
+check out our [docs](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/custom).
