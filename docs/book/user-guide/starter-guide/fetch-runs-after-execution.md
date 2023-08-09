@@ -118,7 +118,7 @@ from newest to oldest.
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
 allows you to specify detailed parameters for filtering or pagination. See the
-[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#list-methods) for more
+[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more
 information.
 {% endhint %}
 
