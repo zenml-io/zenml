@@ -56,13 +56,15 @@ _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
 
 
-class ZenMLProjectTemplate(BaseModel):
+class ZenMLProjectTemplateLocation(BaseModel):
+    """A ZenML project template location."""
+
     github_url: str
     github_tag: str
 
 
 ZENML_PROJECT_TEMPLATES = dict(
-    e2e_batch=ZenMLProjectTemplate(
+    e2e_batch=ZenMLProjectTemplateLocation(
         github_url="gh:zenml-io/template-e2e-batch",
         github_tag="feature/FRW-2173-move-example-here",  # TODO: set to fixed release of template and update for breaking changes
     )
