@@ -85,7 +85,6 @@ As shown above, the global config directory stores the following information:
 
 In addition to the above, you may also find the following files and folders under the global config directory, depending on what you do with ZenML:
 
-* `zenml_examples` - used as a local cache by the `zenml example` command, where the pulled ZenML examples are stored.
 * `kubeflow` - this is where the Kubeflow orchestrators that are part of a stack store some of their configuration and logs.
 
 ## Usage analytics
