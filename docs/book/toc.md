@@ -17,6 +17,7 @@
   * [Connect to a deployed ZenML](user-guide/starter-guide/connect-to-a-deployed-zenml.md)
   * [Switch to production](user-guide/starter-guide/switch-to-production.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
+  * [ZenML project templates](user-guide/starter-guide/using-project-templates.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
     * [Configure steps/pipelines](user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md)
