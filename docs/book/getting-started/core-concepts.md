@@ -82,13 +82,13 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a **ZenML Server**, so that it can communicate with these stack components and run your pipelines.
+First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/starter-guide/switch-to-production.md), so that it can communicate with these stack components and run your pipelines.
 
 ![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04_architecture.png)
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the **ZenML Cloud** which provides a control plane for you to create managed instances of ZenML servers, or deploy it in your self-hosted environment.
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
 
 #### Metadata Tracking
 
