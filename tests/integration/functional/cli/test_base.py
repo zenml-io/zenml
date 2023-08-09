@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -27,6 +28,31 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
     runner = CliRunner()
     runner.invoke(init, ["--path", str(tmp_path)])
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
+
+
+def test_init_creates_from_template(tmp_path: Path) -> None:
+    """Check that init command creates a .zen folder."""
+    runner = CliRunner()
+    runner.invoke(
+        init,
+        [
+            "--path",
+            str(tmp_path),
+            "--template",
+            "e2e_batch",
+            "--template-with-defaults",
+        ],
+    )
+    assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
+    files_in_top_level = set(os.listdir(str(tmp_path)))
+    must_have_files = {
+        ".copier-answers.yml",
+        ".dockerignore",
+        "LICENSE",
+        "README.md",
+        "run.py",
+    }
+    assert not must_have_files - files_in_top_level
 
 
 def test_clean_user_config(clean_workspace) -> None:
