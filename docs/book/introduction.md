@@ -105,7 +105,7 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 
 *   <mark style="color:purple;">**ZenML Cloud**</mark>**:** [ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Tower, and RBAC.\\
 
-    <figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+    <figure><img src=".gitbook/assets/zenml-cloud-overview.png" alt=""><figcaption></figcaption></figure>
 *   **Self-hosted deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
 
     ```bash
