@@ -31,7 +31,7 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
 
 
 def test_init_creates_from_template(tmp_path: Path) -> None:
-    """Check that init command creates a .zen folder."""
+    """Check that init command checks-out template."""
     runner = CliRunner()
     runner.invoke(
         init,

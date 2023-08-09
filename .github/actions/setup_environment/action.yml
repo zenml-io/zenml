@@ -26,6 +26,12 @@ runs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ inputs.python-version }}
+    
+    - name: Configure git
+      shell: bash
+      run: |
+        git config --global user.email "info@zenml.io"
+        git config --global user.name "ZenML GmbH"
 
     - name: Delete error-causing bash
       shell: bash
