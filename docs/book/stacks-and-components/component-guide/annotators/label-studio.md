@@ -57,11 +57,11 @@ offers a detailed guide for each cloud provider on how to set it up.
 
 Before registering a `label_studio` flavor stack component as part of your stack, you'll need to have registered a cloud
 artifact store. (See the docs on how to register and set
-up[ a cloud artifact store](/docs/book/stacks-and-components/component-guideonent-guide/artifact-stores/artifact-stores.md).)
+up[ a cloud artifact store](/docs/book/stacks-and-components/component-guide/artifact-stores/artifact-stores.md).)
 
 Be sure to register a secret for whichever artifact store you choose, and then you should make sure to pass the name of
 that secret into the artifact store as the `--authentication_secret`
-as [described in this guide](/docs/book/stacks-and-components/component-guideonent-guide/artifact-stores/s3.md#advanced-configuration), 
+as [described in this guide](/docs/book/stacks-and-components/component-guide/artifact-stores/s3.md#advanced-configuration), 
 for example in the case of AWS.
 
 You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface. (The

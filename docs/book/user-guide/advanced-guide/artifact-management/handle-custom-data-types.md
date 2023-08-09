@@ -131,7 +131,7 @@ You will need to override these methods according to how you plan to serialize y
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
 
-![Evidently Artifact Visualization Example](../../../.gitbook/assets/artifact\_visualization\_dashboard.png)
+![Evidently Artifact Visualization Example](../../../.gitbook/assets/artifact_visualization_dashboard.png)
 
 Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
@@ -189,7 +189,7 @@ When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIAL
 
 #### Configuring materializers at runtime
 
-As briefly outlined in the [Runtime Configuration](configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
+As briefly outlined in the [Runtime Configuration](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
 For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
 

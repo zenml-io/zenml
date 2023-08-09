@@ -19,7 +19,7 @@ Here is a visual overview of the different environments:
 The client environment is where the ZenML pipelines are _started_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
 
 * A local development environment
-* A [CI runner](broken-reference) in production.
+* A CI runner in production.
 * A `runner` image orchestrated by the ZenML server to start pipelines.
 
 In all the environments, you should use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies. Ensure you install the ZenML package and any required [integrations](../../../stacks-and-components/component-guide/component-guide.md).
@@ -27,7 +27,7 @@ In all the environments, you should use your preferred package manager (e.g., `p
 The client environment typically follows these key steps when starting a pipeline:
 
 1. Generating an intermediate pipeline representation.
-2. Creating or triggering [pipeline and step build environments](manage-environments.md#image-builder-environment) if running remotely.
+2. Creating or triggering [pipeline and step build environments](environment-management.md#image-builder-environment) if running remotely.
 3. Triggering a run in the [orchestrator](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md).
 
 ## ZenML Server Environment

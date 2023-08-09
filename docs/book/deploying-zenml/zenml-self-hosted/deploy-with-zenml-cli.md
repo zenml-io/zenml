@@ -333,7 +333,7 @@ zenml disconnect
 
 Here's an architecture diagram that shows how the workflow looks like when you do `zenml deploy`.
 
-![Running zenml deploy](../../../.gitbook/assets/zenml\_deploy.png)
+![Running zenml deploy](../../.gitbook/assets/zenml_deploy.png)
 
 The deploy CLI makes use of a "recipe" inside the `zenml-io/zenml` repository to deploy the server on the right cloud. Any configuration that you pass with the CLI, is sent to the recipe as input variables.
 

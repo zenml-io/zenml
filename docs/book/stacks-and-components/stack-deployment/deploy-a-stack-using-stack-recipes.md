@@ -80,7 +80,7 @@ This is what you see and where you can make any changes you want to the recipe f
 
 </details>
 
-![Workflow behind using the stack recipe CLI](../../.gitbook/assets/zenml\_stack\_recipe\_deploy.png)
+![Workflow behind using the stack recipe CLI](../../.gitbook/assets/zenml_stack_recipe_deploy.png)
 
 ### Deleting resources
 
