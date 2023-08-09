@@ -27,11 +27,6 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
     
-    - name: Configure git
-      shell: bash
-      run: |
-        git config --global user.email "info@zenml.io"
-        git config --global user.name "ZenML GmbH"
 
     - name: Delete error-causing bash
       shell: bash
@@ -43,6 +38,12 @@ runs:
       if: ${{ inputs.os == 'windows-latest' }}
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
+    
+    - name: Configure git
+      shell: bash
+      run: |
+        git config --global user.email "info@zenml.io"
+        git config --global user.name "ZenML GmbH"
 
     - name: Get current week
       shell: bash
