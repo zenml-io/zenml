@@ -24,7 +24,8 @@ from PIL import Image
 from steps.get_or_create_dataset import LABELS
 from torchvision import models, transforms
 
-from zenml import step
+from zenml import get_step_context, step
+from zenml.client import Client
 from zenml.integrations.label_studio.label_studio_utils import (
     get_file_extension,
     is_azure_url,
@@ -32,8 +33,6 @@ from zenml.integrations.label_studio.label_studio_utils import (
     is_s3_url,
 )
 from zenml.io import fileio
-from zenml.post_execution import get_pipeline
-from zenml.steps import StepContext
 from zenml.utils import io_utils
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
@@ -142,26 +141,10 @@ class CustomDataset:
         return len(self.images)
 
 
-def _find_last_successful_run() -> Optional[int]:
-    """Get the index of the last successful run of this pipeline and step."""
-    pipeline = get_pipeline(PIPELINE_NAME)
-    if pipeline is not None:
-        for idx, run in reversed(list(enumerate(pipeline.runs))):
-            try:
-                run.get_step(PIPELINE_STEP_NAME).output.read()
-                return idx
-            except (KeyError, ValueError):  # step didn't run or had no output
-                pass
-    return None
-
-
 def _load_last_model() -> Optional[nn.Module]:
     """Return the most recently trained model from this pipeline, or None."""
-    idx = _find_last_successful_run()
-    if idx is None:
-        return None
-    last_run = get_pipeline(PIPELINE_NAME).runs[idx]
-    return last_run.get_step(PIPELINE_STEP_NAME).output.read()
+    last_run = Client().get_pipeline(PIPELINE_NAME).last_successful_run
+    return last_run.steps[PIPELINE_STEP_NAME].output.load()
 
 
 def _is_new_data_available(image_urls: List[str]) -> bool:
@@ -171,15 +154,10 @@ def _is_new_data_available(image_urls: List[str]) -> bool:
     if num_samples == 0:
         return False
 
-    # Otherwise, if there was no previous run, the data is for sure new.
-    idx = _find_last_successful_run()
-    if idx is None:
-        return True
-
     # Else, we check whether we had the same number of samples before.
-    last_run = get_pipeline(PIPELINE_NAME).runs[idx]
-    last_inputs = last_run.get_step(PIPELINE_STEP_NAME).inputs
-    last_image_urls = last_inputs["image_urls"].read()
+    last_run = Client().get_pipeline(PIPELINE_NAME).last_successful_run
+    last_inputs = last_run.steps[PIPELINE_STEP_NAME].inputs
+    last_image_urls = last_inputs["image_urls"].load()
     return len(last_image_urls) != len(image_urls)
 
 
@@ -203,7 +181,6 @@ def load_mobilenetv3_transforms():
 def pytorch_model_trainer(
     image_urls: List[str],
     labels: List[Dict[str, str]],
-    context: StepContext,
     batch_size=1,
     num_epochs=2,
     learning_rate=5e-3,
@@ -222,6 +199,7 @@ def pytorch_model_trainer(
     if not _is_new_data_available(image_urls):
         return model
 
+    context = get_step_context()
     artifact_store_path = context.stack.artifact_store.path
 
     # Otherwise finetune the model on the current data

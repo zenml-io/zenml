@@ -15,23 +15,21 @@
 import glob
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Annotated, Dict, Optional, Tuple
 
 from PIL import Image
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     DEFAULT_IMAGE_FILENAME,
 )
-from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)
 def load_image_data(
-    context: StepContext,
     base_path: Optional[str] = None,
     dir_name: str = "batch_1",
-) -> Output(images=Dict, uri=str):
+) -> Tuple[Annotated[Dict[str, Image.Image], "images"], Annotated[str, "uri"]]:
     """Gets images from a cloud artifact store directory."""
     if base_path is None:
         base_path = str(
@@ -39,6 +37,8 @@ def load_image_data(
         )
     image_dir_path = os.path.join(base_path, dir_name)
     image_files = glob.glob(f"{image_dir_path}/*.jpeg")
+
+    context = get_step_context()
     uri = context.get_output_artifact_uri("images")
 
     images = {}
