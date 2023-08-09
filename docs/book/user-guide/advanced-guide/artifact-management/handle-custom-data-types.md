@@ -26,7 +26,8 @@ interaction / activation:
 | [StructuredStringMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.structured_string_materializer.StructuredStringMaterializer) | `zenml.types.CSVString`, `zenml.types.HTMLString`, `zenml.types.MarkdownString` | `.csv` / `.html` / `.md` (depending on type) |
 
 {% hint style="info" %}
-ZenML also provides a built-in [CloudpickleMaterializer]()
+ZenML also provides a built-in 
+[CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers/#zenml.materializers.cloudpickle_materializer.CloudpickleMaterializer)
 that can handle any object by saving it with 
 [cloudpickle](https://github.com/cloudpipe/cloudpickle).
 However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](#custom-materializers) to save your objects in a more robust and efficient format.

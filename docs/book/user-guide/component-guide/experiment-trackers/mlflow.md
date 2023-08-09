@@ -216,7 +216,7 @@ def tf_trainer(...):
 MLflow comes with its own UI that you can use to find further details about 
 your tracked experiments.
 
-you can find the URL of the MLflow experiment linked to a specific ZenML run 
+You can find the URL of the MLflow experiment linked to a specific ZenML run 
 via the metadata of the step in which the experiment tracker was used:
 
 ```python

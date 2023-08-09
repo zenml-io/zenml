@@ -248,8 +248,8 @@ tekton_settings = TektonOrchestratorSettings(
 )
 ```
 
-If some of your pipelines steps have certain hardware requirements, you can
-specify them as `ResourceSettings`:
+If your pipelines steps have certain hardware requirements, you can specify 
+them as `ResourceSettings`:
 
 ```python
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")

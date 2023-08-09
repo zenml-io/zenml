@@ -64,7 +64,11 @@ background to serve the latest models and Bentos.
 
 ## How do you use it?
 
-In order to use the BentoML Model Deployer, we need to understand three main concepts:
+The recommended flow to use the BentoML model deployer is to first
+[create a BentoML Service](#bentoml-service-and-runner),
+then [use the `bento_builder_step`](#zenml-bento-builder-step) to build the
+model and service into a bento bundle, and finally
+[deploy the bundle with the `bentoml_model_deployer_step`](#zenml-bentoml-deployer-step).
 
 ### BentoML Service and Runner
 
