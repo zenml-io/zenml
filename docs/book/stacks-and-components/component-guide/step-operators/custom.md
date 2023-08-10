@@ -78,7 +78,7 @@ the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-step\_opera
 
 If you want to create your own custom flavor for a step operator, you can follow the following steps:
 
-1. Create a class that inherits from the `BaseOrchestrator` class and implement the abstract `launch` method. This
+1. Create a class that inherits from the `BaseStepOperator` class and implement the abstract `launch` method. This
    method has two main responsibilities:
     * Preparing a suitable execution environment (e.g. a Docker image): The general environment is highly dependent on
       the concrete step operator implementation, but for ZenML to be able to run the step it requires you to install
@@ -91,9 +91,9 @@ If you want to create your own custom flavor for a step operator, you can follow
       provided via the `entrypoint_command` argument of the `launch()` method.
 2. If your step operator allows the specification of per-step resources, make sure to handle the resources defined on
    the step (`info.config.resource_settings`) that was passed to the `launch()` method.
-3. If you need to provide any configuration, create a class that inherits from the `BaseOrchestratorConfig` class adds
+3. If you need to provide any configuration, create a class that inherits from the `BaseStepOperatorConfig` class adds
    your configuration parameters.
-4. Bring both the implementation and the configuration together by inheriting from the `BaseOrchestratorFlavor` class.
+4. Bring both the implementation and the configuration together by inheriting from the `BaseStepOperatorFlavor` class.
    Make sure that you give a `name` to the flavor through its abstract property.
 
 Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor
