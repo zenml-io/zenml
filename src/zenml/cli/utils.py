@@ -2548,7 +2548,7 @@ def get_recipe_readme(recipe_name: str) -> Optional[str]:
 
     if recipe_path is not None:
         try:
-            with open(recipe_path + "/README.md", "r") as f:
+            with open(os.path.join(recipe_path, "README.md"), "r") as f:
                 return f.read()
         except FileNotFoundError:
             if fileio.exists(recipe_path) and fileio.isdir(recipe_path):
