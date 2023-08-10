@@ -100,7 +100,7 @@ If you want to learn more about ZenML as a tool, then the
 to get started.
 
 Already have an MLOps stack in mind? ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/user-guide/component-guide) 
+[**:link: Integrations**](https://docs.zenml.io/stacks-and-components/component-guide) 
 for whatever tools you plan to use.
 
 Also, make sure to join our <a href="https://zenml.io/slack-invite" target="_blank">

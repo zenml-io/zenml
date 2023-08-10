@@ -134,7 +134,7 @@ def hp_tuning_select_best_model(
   <img height=500 src="assets/03_train.png">
 </p>
 
-Having the best model architecture and its' hyperparameters defined in the previous stage makes it possible to train a quality model. Also, model training is the right place to bring an [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers) into the picture - we will log all metrics and model itself into the [Experiment Tracker](https://docs.zenml.io/user-guide/component-guide/experiment-trackers), so we can register our model in a [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries) and pass it down to a [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers) easily and traceable. We will use information from Active Stack to make implementation agnostic of the underlying infrastructure.
+Having the best model architecture and its' hyperparameters defined in the previous stage makes it possible to train a quality model. Also, model training is the right place to bring an [Experiment Tracker](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) into the picture - we will log all metrics and model itself into the [Experiment Tracker](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers), so we can register our model in a [Model Registry](https://docs.zenml.io/stacks-and-components/component-guide/model-registries) and pass it down to a [Model Deployer](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) easily and traceable. We will use information from Active Stack to make implementation agnostic of the underlying infrastructure.
 <details>
   <summary>Code snippet 💻</summary>
 
@@ -149,7 +149,7 @@ def model_trainer(
 </details>
 Even knowing that the hyperparameter tuning step happened we would like to ensure that our model meets at least minimal quality standards - this quality gate is on the evaluation step. In case the model is of low-quality metric-wise an Exception will be raised and the pipeline will stop.
 
-To notify maintainers of our Data Product about failures or successful completion of a pipeline we use [Alerter](https://docs.zenml.io/user-guide/component-guide/alerters) of the active stack. For failures it is convenient to use pipeline hook `on_failure` and for successes, a step notifying about it added as a last step of the pipeline comes in handy.
+To notify maintainers of our Data Product about failures or successful completion of a pipeline we use [Alerter](https://docs.zenml.io/stacks-and-components/component-guide/alerters) of the active stack. For failures it is convenient to use pipeline hook `on_failure` and for successes, a step notifying about it added as a last step of the pipeline comes in handy.
 <details>
   <summary>Code snippet 💻</summary>
 
@@ -183,7 +183,7 @@ Once the model is trained and evaluated on meeting basic quality standards, we w
 
 In this example, we are implementing metric compare promotion to decide on the spot and avoid more complex approaches like Champion/Challengers shadow deployments. In other projects, other promotion techniques and strategies can vary.
 
-To achieve this we would retrieve the model version from [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries): latest (the one we just trained) and current (the one having a proper tag). Next, we need to deploy both models using [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers) and run predictions on the testing set for both of them. Next, we select which one of the model versions has a better metric value and associate it with the inference tag. By doing so we ensure that the best model version would be used for inference later on.
+To achieve this we would retrieve the model version from [Model Registry](https://docs.zenml.io/stacks-and-components/component-guide/model-registries): latest (the one we just trained) and current (the one having a proper tag). Next, we need to deploy both models using [Model Deployer](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) and run predictions on the testing set for both of them. Next, we select which one of the model versions has a better metric value and associate it with the inference tag. By doing so we ensure that the best model version would be used for inference later on.
 
 ### [Continuous Deployment] Batch Inference
 
@@ -221,21 +221,21 @@ df_inference = inference_data_preprocessor(
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/data_quality/)
 
-On the drift reporting stage we will use [standard step](https://docs.zenml.io/user-guide/component-guide/data-validators/evidently#how-do-you-use-it) `evidently_report_step` to build Evidently report to assess certain data quality metrics. `evidently_report_step` has reach set of options, but for this example, we will build only `DataQualityPreset` metrics preset to get a number of NA values in reference and current datasets.
+On the drift reporting stage we will use [standard step](https://docs.zenml.io/stacks-and-components/component-guide/data-validators/evidently#how-do-you-use-it) `evidently_report_step` to build Evidently report to assess certain data quality metrics. `evidently_report_step` has reach set of options, but for this example, we will build only `DataQualityPreset` metrics preset to get a number of NA values in reference and current datasets.
 
 After the report is built we execute another quality gate using the `drift_na_count` step, which assesses if a significant drift in NA count is observed. If so, execution is stopped with an exception.
 
-You can follow [Data Validators docs](https://docs.zenml.io/user-guide/component-guide/data-validators) to get more inspiration on how and when to use drift detection in your pipelines.
+You can follow [Data Validators docs](https://docs.zenml.io/stacks-and-components/component-guide/data-validators) to get more inspiration on how and when to use drift detection in your pipelines.
 
 ### [Continuous Deployment] Batch Inference: Inference
 
 [Back to Table of Contents](#table-of-contents) | [📂 Code folder](steps/inference)
 
-As a last step concluding all work done so far, we will calculate predictions on the inference dataset and persist them in [Artifact Store](https://docs.zenml.io/user-guide/component-guide/artifact-stores) for reuse.
+As a last step concluding all work done so far, we will calculate predictions on the inference dataset and persist them in [Artifact Store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores) for reuse.
 
-As we performed promotion as part of the training pipeline it is very easy to fetch the needed model version from [Model Registry](https://docs.zenml.io/user-guide/component-guide/model-registries) and deploy it for inference with [Model Deployer](https://docs.zenml.io/user-guide/component-guide/model-deployers).
+As we performed promotion as part of the training pipeline it is very easy to fetch the needed model version from [Model Registry](https://docs.zenml.io/stacks-and-components/component-guide/model-registries) and deploy it for inference with [Model Deployer](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers).
 
-Once the model version is deployed the only thing left over is to call `.predict()` on the deployment service object and put those predictions as an output of the predictions step, so it is automatically stored in [Artifact Store](https://docs.zenml.io/user-guide/component-guide/artifact-stores) with zero effort.
+Once the model version is deployed the only thing left over is to call `.predict()` on the deployment service object and put those predictions as an output of the predictions step, so it is automatically stored in [Artifact Store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores) with zero effort.
 <details>
   <summary>Code snippet 💻</summary>
 

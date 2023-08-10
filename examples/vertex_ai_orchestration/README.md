@@ -49,7 +49,7 @@ your user account will need to have permissions to use the service account.
 ## 🥞 Create a GCP Kubeflow Pipelines stack
 
 Before registering the stack, you need to deploy a remote ZenML server 
-on GCP. See the [deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) 
+on GCP. See the [deployment guide](https://docs.zenml.io/user-guide/starter-guide/switch-to-production) 
 for more information.
 
 Once everything is done on the GCP side, we will need to configure a
@@ -152,8 +152,8 @@ costs for storage of artifacts, containers or metadata.
 # 📜 Learn more
 
 Our docs regarding the VertexAI integration can be found 
-[here](https://docs.zenml.io/user-guide/component-guide/orchestrators/gcloud-vertexai).
+[here](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/gcloud-vertexai).
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML check out our 
-[docs](https://docs.zenml.io/user-guide/component-guide/orchestrators/custom).
+[docs](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/custom).
