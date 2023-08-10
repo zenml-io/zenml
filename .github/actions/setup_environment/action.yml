@@ -39,11 +39,19 @@ runs:
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
     
-    - name: Configure git
+    - name: Configure git (non-Windows)
+      if: ${{ inputs.os != 'windows-latest' }}
       shell: bash
       run: |
         git config --global user.email "info@zenml.io"
         git config --global user.name "ZenML GmbH"
+    
+    - name: Configure git (Windows)
+      if: ${{ inputs.os == 'windows-latest' }}
+      shell: bash
+      run: |
+        "C:\Program Files\Git\bin\git.exe" config --global user.email "info@zenml.io"
+        "C:\Program Files\Git\bin\git.exe" config --global user.name "ZenML GmbH"
 
     - name: Get current week
       shell: bash
