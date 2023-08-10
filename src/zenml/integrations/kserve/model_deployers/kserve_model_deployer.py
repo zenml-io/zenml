@@ -121,7 +121,7 @@ class KServeModelDeployer(BaseModelDeployer):
             "being maintained by the ZenML core team. If you are looking for a "
             "scalable Kubernetes-based model deployment solution, consider "
             "using Seldon instead: "
-            "https://docs.zenml.io/user-guide/component-guide/model-deployers/seldon",
+            "https://docs.zenml.io/stacks-and-components/component-guide/model-deployers/seldon",
         )
         return StackValidator(
             required_components={

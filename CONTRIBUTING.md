@@ -217,7 +217,7 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Component Guide](https://docs.zenml.io/user-guide/component-guide)
+[Component Guide](https://docs.zenml.io/stacks-and-components/component-guide)
 in the docs and add your implementations. 
 
 ## 🆘 Getting Help
