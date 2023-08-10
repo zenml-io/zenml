@@ -39,7 +39,7 @@ class SecretReferenceMixin(BaseModel):
 
         Raises:
             ValueError: If an attribute that requires custom pydantic validation
-                or an attribute which explicitly disallows secret references is
+                or an attribute which explicitly disallows secret references
                 is passed as a secret reference.
         """
         for key, value in kwargs.items():
@@ -64,7 +64,7 @@ class SecretReferenceMixin(BaseModel):
                         "but future versions of ZenML will require you to pass "
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure values with secrets "
-                        "here: https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store"
+                        "here: https://docs.zenml.io/user-guide/advanced-guide/secret-management"
                     )
                 continue
 

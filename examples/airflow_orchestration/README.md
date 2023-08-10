@@ -124,14 +124,14 @@ rm -rf zenml_examples
 ### 📄 Additional pre-requisites
 
 * A remote ZenML server deployed to the cloud. See the 
-[deployment guide](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for
+[deployment guide](https://docs.zenml.io/user-guide/starter-guide/switch-to-production) for
 more information.
 * A deployed Airflow server. See the 
-[deployment section](https://docs.zenml.io/user-guide/component-guide/orchestrators/airflow#how-to-deploy-it)
+[deployment section](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/airflow#how-to-deploy-it)
 for more information.
-* A [remote artifact store](https://docs.zenml.io/user-guide/component-guide/artifact-stores)
+* A [remote artifact store](https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores)
 as part of your stack.
-* A [remote container registry](https://docs.zenml.io/user-guide/component-guide/container-registries)
+* A [remote container registry](https://docs.zenml.io/stacks-and-components/component-guide/container-registries)
 as part of your stack.
 
 ```bash
@@ -167,4 +167,4 @@ of your Airflow deployment.
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build
-your orchestrators in ZenML check out our [docs](https://docs.zenml.io/user-guide/component-guide/orchestrators).
+your orchestrators in ZenML check out our [docs](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators).

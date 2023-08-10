@@ -57,11 +57,11 @@ print(run.commit)
 
 If you also want to test the increased speed of Docker builds that is unlocked by using a
 code repository, you'll additionally need:
-* A remote ZenML deployment. See [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) 
+* A remote ZenML deployment. See [here](https://docs.zenml.io/user-guide/starter-guide/switch-to-production) 
 for more information on how to deploy ZenML.
 * A remote stack with a containerized component like the
-[`SagemakerOrchestrator`](https://docs.zenml.io/user-guide/component-guide/orchestrators/sagemaker)
-or the [`VertexStepOperator`](https://docs.zenml.io/user-guide/component-guide/step-operators/vertex).
+[`SagemakerOrchestrator`](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/sagemaker)
+or the [`VertexStepOperator`](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/vertex).
 
 
 ```bash

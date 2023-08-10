@@ -110,7 +110,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 {% endtabs %}
 
 {% hint style="info" %}
-There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../component-guide/component-guide.md)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/component-guide.md)
 {% endhint %}
 
 ## Registering a stack
