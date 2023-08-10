@@ -150,4 +150,4 @@ and you can `kill` the process from the terminal.
 # 📜 Learn more
 
 Our docs regarding the Feast feature store integration can be
-found [here](https://docs.zenml.io/user-guide/component-guide/feature-stores/feast).
+found [here](https://docs.zenml.io/stacks-and-components/component-guide/feature-stores/feast).

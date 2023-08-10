@@ -240,4 +240,4 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](https://docs.zenml.io/user-guide/component-guide).
+This also applies to all other [stack components](../../../stacks-and-components/component-guide/component-guide.md).
