@@ -16,7 +16,7 @@ High-level overview of the changes:
 
 * [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is now tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with [ZenML cloud deployments](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md).
 * the [new ZenML Dashboard](migration-zero-twenty.md#the-zenml-dashboard-is-now-available) is now available with all ZenML deployments.
-* [ZenML Profiles have been removed](migration-zero-twenty.md#removal-of-profiles-and-the-local-yaml-database) in favor of ZenML Projects. You need to [manually migrate your existing ZenML Profiles](migration-zero-twenty.md#how-to-migrate-your-profiles) after the update.
+* [ZenML Profiles have been removed](migration-zero-twenty.md#removal-of-profiles-and-the-local-yaml-database) in favor of ZenML Projects. You need to [manually migrate your existing ZenML Profiles](migration-zero-twenty.md#-how-to-migrate-your-profiles) after the update.
 * the [configuration of Stack Components is now decoupled from their implementation](migration-zero-twenty.md#decoupling-stack-component-configuration-from-implementation). If you extended ZenML with custom stack component implementations, you may need to update the way they are registered in ZenML.
 * the updated ZenML server provides a new and improved collaborative experience. When connected to a ZenML server, you can now [share your ZenML Stacks and Stack Components](migration-zero-twenty.md#shared-zenml-stacks-and-stack-components) with other users. If you were previously using the ZenML Profiles or the ZenML server to share your ZenML Stacks, you should switch to the new ZenML server and Dashboard and update your existing workflows to reflect the new features.
 
@@ -43,8 +43,8 @@ The architecture changes for the remote case are shown in the diagram below:
 
 If you're already using ZenML, aside from the above limitation, this change will impact you differently, depending on the flavor of Metadata Stores you have in your stacks:
 
-* if you're using the default `sqlite` Metadata Store flavor in your stacks, you don't need to do anything. ZenML will automatically switch to using its local database instead of your `sqlite` Metadata Stores when you update to 0.20.0 (also see how to [migrate your stacks](migration-zero-twenty.md#how-to-migrate-your-profiles)).
-* if you're using the `kubeflow` Metadata Store flavor _only as a way to connect to the local Kubeflow Metadata Service_ (i.e. the one installed by the `kubeflow` Orchestrator in a local k3d Kubernetes cluster), you also don't need to do anything explicitly. When you [migrate your stacks](migration-zero-twenty.md#how-to-migrate-your-profiles) to ZenML 0.20.0, ZenML will automatically switch to using its local database.
+* if you're using the default `sqlite` Metadata Store flavor in your stacks, you don't need to do anything. ZenML will automatically switch to using its local database instead of your `sqlite` Metadata Stores when you update to 0.20.0 (also see how to [migrate your stacks](migration-zero-twenty.md#-how-to-migrate-your-profiles)).
+* if you're using the `kubeflow` Metadata Store flavor _only as a way to connect to the local Kubeflow Metadata Service_ (i.e. the one installed by the `kubeflow` Orchestrator in a local k3d Kubernetes cluster), you also don't need to do anything explicitly. When you [migrate your stacks](migration-zero-twenty.md#-how-to-migrate-your-profiles) to ZenML 0.20.0, ZenML will automatically switch to using its local database.
 * if you're using the `kubeflow` Metadata Store flavor to connect to a remote Kubeflow Metadata Service such as those provided by a Kubeflow installation running in AWS, Google or Azure, there is currently no equivalent in ZenML 0.20.0. You'll need to [deploy a ZenML Server](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md) instance close to where your Kubeflow service is running (e.g. in the same cloud region).
 * if you're using the `mysql` Metadata Store flavor to connect to a remote MySQL database service (e.g. a managed AWS, GCP or Azure MySQL service), you'll have to [deploy a ZenML Server](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md) instance connected to that same database.
 * if you deployed a `kubernetes` Metadata Store flavor (i.e. a MySQL database service deployed in Kubernetes), you can [deploy a ZenML Server](../../user-guide/getting-started/deploying-zenml/deploying-zenml.md) in the same Kubernetes cluster and connect it to that same database. However, ZenML will no longer provide the `kubernetes` Metadata Store flavor and you'll have to manage the Kubernetes MySQL database service deployment yourself going forward.
@@ -133,7 +133,7 @@ Prior to 0.20.0, ZenML used used a set of local YAML files to store information 
 Profiles and the local YAML database have both been deprecated and removed in ZenML 0.20.0. Stack, Stack Components as well as all other information that ZenML tracks, such as Pipelines and Pipeline Runs, are now stored in a single SQL database. These entities are no longer organized into Profiles, but they can be scoped into different Projects instead.
 
 {% hint style="warning" %}
-Since the local YAML database is no longer used by ZenML 0.20.0, you will lose all the Stacks and Stack Components that you currently have configured when you update to ZenML 0.20.0. If you still want to use these Stacks, you will need to [manually migrate](migration-zero-twenty.md#how-to-migrate-your-profiles) them after the update.
+Since the local YAML database is no longer used by ZenML 0.20.0, you will lose all the Stacks and Stack Components that you currently have configured when you update to ZenML 0.20.0. If you still want to use these Stacks, you will need to [manually migrate](migration-zero-twenty.md#-how-to-migrate-your-profiles) them after the update.
 {% endhint %}
 
 ### 👣 How to migrate your Profiles
@@ -279,7 +279,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 
@@ -465,3 +465,5 @@ While we have tried our best to document everything that has changed, we realize
 For bug reports, please also consider submitting a [GitHub Issue](https://github.com/zenml-io/zenml/issues/new/choose).
 
 Lastly, if the new changes have left you desiring a feature, then consider adding it to our [public feature voting board](https://zenml.io/discussion). Before doing so, do check what is already on there and consider upvoting the features you desire the most.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
