@@ -13,14 +13,22 @@
 #  permissions and limitations under the License.
 """Unit tests for utils.py."""
 
-from kfp.dsl import ContainerOp
+import sys
+
+import pytest
 
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="Kubeflow integration not installed in python 3.11",
+)
 def test_apply_pod_settings():
     """Unit test for `apply_pod_settings`."""
+    from kfp.dsl import ContainerOp
+
     container_op = ContainerOp(
         name="test",
         image="test",
