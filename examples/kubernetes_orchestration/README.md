@@ -49,7 +49,7 @@ cd zenml_examples/kubernetes_orchestration
 In our AWS cloud stack, we will require:
 
 - A remote ZenML deployment to store metadata related to your pipeline runs. 
-See [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml) for more 
+See [here](https://docs.zenml.io/user-guide/starter-guide/switch-to-production) for more 
 information on how to deploy ZenML on AWS.
 - an EKS cluster to set up the orchestration of your pipelines.
 - an ECR container registry to store the built images.
@@ -70,7 +70,7 @@ to have the following additional software installed on your local machine:
 Note that the Kubernetes orchestrator, the ECR container registry and the S3
 artifact store can be deployed using the ZenML CLI as well (in other words, as an
 alternative to the instructions below), using the `zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
-[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
+[documentation](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
 
 #### Setup and Register Kubernetes Orchestrator
 
