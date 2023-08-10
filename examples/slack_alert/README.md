@@ -123,4 +123,4 @@ You can quickly fix this by ensuring that the alerter is configured with the rig
 
 If you want to learn more about alerters in zenml in general or about how to 
 build your own alerter steps in ZenML check out our 
-[docs](https://docs.zenml.io/user-guide/component-guide/alerters/alerters).
+[docs](https://docs.zenml.io/stacks-and-components/component-guide/alerters/alerters).

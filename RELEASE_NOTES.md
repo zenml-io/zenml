@@ -172,14 +172,14 @@ now be assigned to any step output using `typing_extensions.Annotated`.
 
 This is a minor ZenML release that introduces a couple of new features:
 
-* the [Azure Service Connector](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/azure-service-connector) is now available in addition to the AWS and GCP ones. It can be used to connect ZenML and Stack Components to Azure cloud infrastructure resources like Azure Blob Storage, Azure Container Registry and Azure Kubernetes Service.
+* the [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector) is now available in addition to the AWS and GCP ones. It can be used to connect ZenML and Stack Components to Azure cloud infrastructure resources like Azure Blob Storage, Azure Container Registry and Azure Kubernetes Service.
 * Service Connectors can now also be managed through the ZenML Dashboard
 * adds `zenml secret export` CLI command to export secrets from the ZenML Secret Store to a local file
 * adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (courtesy of @bhatt-priyadutt)
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
-* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/user-guide/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/user-guide/component-guide/step-operators/vertex)
+* better documentation and fixes for the ZenML [Vertex AI Orchestrator](https://docs.zenml.io/stacks-and-components/component-guide/orchestrators/vertex) and [Vertex AI Step Operator](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/vertex)
 * adjust Seldon and BentoML Steps and Examples to new pipeline interface
 
 ## What's Changed
@@ -347,7 +347,7 @@ Here are just a few ways you could use ZenML Service Connectors:
 - Assisted setup with security in mind: Our Service Connectors come with features for configuration validation and verification, the generation of temporary, low-privilege credentials, and pre-authenticated and pre-configured clients for Python libraries.
 - Easy local configuration transfer: ZenML's Service Connectors aim to resolve the reproducibility issue in ML pipelines. They do this by automatically transferring authentication configurations and credentials from your local machine, storing them securely, and allowing for effortless sharing across different environments.
 
-[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
+[Visit our documentation pages](https://docs.zenml.io/stacks-and-components/auth-management) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
 
 ## What's Changed
 
