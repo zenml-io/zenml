@@ -1350,7 +1350,7 @@ def register_secrets(
 )
 @click.option(
     "--model-deployer",
-    "-d",
+    "-md",
     "model_deployer",
     required=False,
     type=click.Choice(["kserve", "seldon"]),
@@ -1382,7 +1382,7 @@ def register_secrets(
 )
 @click.option(
     "--debug-mode",
-    "-b",  # TODO: decide whether this is the best flag to use
+    "-d",
     "debug_mode",
     is_flag=True,
     default=False,
@@ -1401,7 +1401,7 @@ def register_secrets(
     "tags",
     required=False,
     type=click.STRING,
-    help="Pass one or more extra configuration values.",
+    help="Pass one or more tags.",
     multiple=True,
 )
 @click.pass_context
