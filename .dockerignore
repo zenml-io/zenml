@@ -3,3 +3,4 @@
 !/pyproject.toml
 !/src/**
 !/scripts
+!/tests
