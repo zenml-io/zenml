@@ -116,7 +116,7 @@ def get_mlstacks_version() -> Optional[str]:
             STACK_RECIPE_PACKAGE_NAME
         ).version
     except pkg_resources.DistributionNotFound:
-        return
+        return None
 
 
 def _get_component_flavor(
