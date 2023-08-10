@@ -14,8 +14,10 @@
 """ZenML logging handler."""
 
 import os
+import re
 import sys
 import time
+from contextvars import ContextVar
 from typing import Optional
 from uuid import uuid4
 
@@ -23,12 +25,19 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
-    LOGS_HANDLER_INTERVAL_SECONDS,
-    LOGS_HANDLER_MAX_MESSAGES,
+    STEP_LOGS_STORAGE_INTERVAL_SECONDS,
+    STEP_LOGS_STORAGE_MAX_MESSAGES,
 )
 
 # Get the logger
 logger = get_logger(__name__)
+
+redirected: ContextVar[bool] = ContextVar("redirected", default=False)
+
+
+def remove_ansi_escape_codes(text):
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 def prepare_logs_uri(
@@ -73,8 +82,8 @@ class StepLogsStorage:
     def __init__(
         self,
         logs_uri: str,
-        max_messages: int = LOGS_HANDLER_MAX_MESSAGES,
-        time_interval: int = LOGS_HANDLER_INTERVAL_SECONDS,
+        max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
+        time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     ):
         self.logs_uri = logs_uri
 
@@ -87,6 +96,9 @@ class StepLogsStorage:
         self.disabled = False
 
     def write(self, text):
+        if text == "\n":
+            return
+
         self.buffer.append(text)
         if (
             len(self.buffer) >= self.max_messages
@@ -100,8 +112,11 @@ class StepLogsStorage:
                 self.disabled = True
 
                 if self.buffer:
-                    with fileio.open(self.logs_uri, "ab") as file:
-                        file.write(("\n".join(self.buffer) + "\n").encode("utf-8"))
+                    with fileio.open(self.logs_uri, "a") as file:
+                        for message in self.buffer:
+                            file.write(
+                                remove_ansi_escape_codes(message) + "\n"
+                            )
                     self.buffer = []
                     self.last_save_time = time.time()
 
@@ -140,7 +155,7 @@ class StepLogsStorageContext:
 
         setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
         setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
-
+        redirected.set(True)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -152,6 +167,7 @@ class StepLogsStorageContext:
 
         setattr(sys.stdout, "write", self.stdout_write)
         setattr(sys.stderr, "write", self.stderr_write)
+        redirected.set(False)
 
     def _wrap_write(self, method):
         """Wrapper function that utilizes the storage object to store logs.
@@ -164,7 +180,8 @@ class StepLogsStorageContext:
         """
 
         def wrapped_write(*args, **kwargs):
-            self.storage.write(args[0])  # TODO: Fix the unfurl
+            if args:
+                self.storage.write(args[0])
             return method(*args, **kwargs)
 
         return wrapped_write

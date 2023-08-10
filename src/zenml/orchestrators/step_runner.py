@@ -38,7 +38,7 @@ from zenml.constants import (
 from zenml.enums import StackComponentType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
-from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.new.steps.step_context import StepContext, get_step_context
@@ -120,7 +120,7 @@ class StepRunner:
             )
 
         logs_context = nullcontext()
-        if step_logging_enabled:
+        if step_logging_enabled and not redirected.get():
             logs_context = StepLogsStorageContext(logs_uri=step_run.logs.uri)
 
         with logs_context:
