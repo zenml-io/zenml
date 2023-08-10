@@ -13,13 +13,9 @@
 #  permissions and limitations under the License.
 """ZenML logging handler."""
 
-import io
-import logging
 import os
+import sys
 import time
-from io import StringIO
-from logging import LogRecord
-from logging.handlers import TimedRotatingFileHandler
 from typing import Optional
 from uuid import uuid4
 
@@ -29,10 +25,7 @@ from zenml.logger import get_logger
 from zenml.logging import (
     LOGS_HANDLER_INTERVAL_SECONDS,
     LOGS_HANDLER_MAX_MESSAGES,
-    STEP_STDERR_LOGGER_NAME,
-    STEP_STDOUT_LOGGER_NAME,
 )
-from zenml.utils.io_utils import is_remote
 
 # Get the logger
 logger = get_logger(__name__)
@@ -76,138 +69,42 @@ def prepare_logs_uri(
     return logs_uri
 
 
-class StepStdOut(StringIO):
-    """A replacement for the sys.stdout to turn outputs into logging entries.
-
-    When used in combination with the ZenHandler, this class allows us to
-    capture any print statements or third party outputs as logs and store them
-    in the artifact store.
-
-    Right now, this is only used during the execution of a ZenML step.
-    """
-
-    stdout_logger = logging.getLogger(STEP_STDOUT_LOGGER_NAME)
-
-    def write(self, message: str) -> int:
-        """Write the incoming string as an info log entry.
-
-        Args:
-            message: the incoming message string
-
-        Returns:
-            the length of the message string
-        """
-        if message != "\n":
-            self.stdout_logger.info(message)
-        return len(message)
-
-
-class StepStdErr(StringIO):
-    """A replacement for the sys.stderr to turn outputs into logging entries.
-
-    When used in combination with the ZenHandler, this class allows us to
-    capture any stderr outputs as logs and store them in the artifact store.
-
-    Right now, this is only used during the execution of a ZenML step.
-    """
-
-    stderr_logger = logging.getLogger(STEP_STDERR_LOGGER_NAME)
-
-    def write(self, message: str) -> int:
-        """Write the incoming string as an info log entry.
-
-        Args:
-            message: the incoming message string
-
-        Returns:
-            the length of the message string
-        """
-        if message != "\n":
-            self.stderr_logger.info(message)
-        return len(message)
-
-
-class StepLoggingFormatter(logging.Formatter):
-    """Specialized formatter changing the level name if step handler is used."""
-
-    def format(self, record: logging.LogRecord) -> str:
-        """Specialized format method to distinguish between logs and stdout.
-
-        Args:
-            record: the incoming log record
-
-        Returns:
-            the formatted string
-        """
-        if record.name == STEP_STDOUT_LOGGER_NAME:
-            record.levelname = "STDOUT"
-
-        if record.name == STEP_STDERR_LOGGER_NAME:
-            record.levelname = "STDERR"
-
-        return super().format(record)
-
-
-class StepLoggingHandler(TimedRotatingFileHandler):
-    """Specialized handler that stores ZenML step logs in artifact stores."""
-
-    def __init__(self, logs_uri: str):
-        """Initializes the handler.
-
-        Args:
-            logs_uri: URI of the logs file.
-        """
+class StepLogsStorage:
+    def __init__(
+        self,
+        logs_uri: str,
+        max_messages: int = LOGS_HANDLER_MAX_MESSAGES,
+        time_interval: int = LOGS_HANDLER_INTERVAL_SECONDS,
+    ):
         self.logs_uri = logs_uri
-        self.max_messages = LOGS_HANDLER_MAX_MESSAGES
-        self.buffer = io.StringIO()
-        self.message_count = 0
-        self.last_upload_time = time.time()
-        self.local_temp_file: Optional[str] = None
+
+        self.max_messages = max_messages
+        self.time_interval = time_interval
+
+        self.buffer = []
+        self.last_save_time = time.time()
+
         self.disabled = False
 
-        # set local_logging_file to self.logs_uri if self.logs_uri is a
-        # local path otherwise, set local_logging_file to a temporary file
-        if is_remote(self.logs_uri):
-            # We log to a temporary file first, because
-            # TimedRotatingFileHandler does not support writing
-            # to a remote file, but still needs a file to get going
-            local_logging_file = f".zenml_tmp_logs_{int(time.time())}"
-            self.local_temp_file = local_logging_file
-        else:
-            local_logging_file = self.logs_uri
-
-        super().__init__(
-            local_logging_file,
-            when="s",
-            interval=LOGS_HANDLER_INTERVAL_SECONDS,
-        )
-
-    def emit(self, record: LogRecord) -> None:
-        """Emits the log record.
-
-        Args:
-            record: Log record to emit.
-        """
-        msg = self.format(record)
-        self.buffer.write(msg + "\n")
-        self.message_count += 1
-
-        current_time = time.time()
-        time_elapsed = current_time - self.last_upload_time
-
+    def write(self, text):
+        self.buffer.append(text)
         if (
-            self.message_count >= self.max_messages
-            or time_elapsed >= self.interval
+            len(self.buffer) >= self.max_messages
+            or time.time() - self.last_save_time >= self.time_interval
         ):
-            self.flush()
+            self.save_to_file()
 
-    def flush(self) -> None:
-        """Flushes the buffer to the artifact store."""
+    def save_to_file(self):
         if not self.disabled:
             try:
                 self.disabled = True
-                with fileio.open(self.logs_uri, mode="wb") as log_file:
-                    log_file.write(self.buffer.getvalue().encode("utf-8"))
+
+                if self.buffer:
+                    with fileio.open(self.logs_uri, "ab") as file:
+                        file.write(("\n".join(self.buffer) + "\n").encode("utf-8"))
+                    self.buffer = []
+                    self.last_save_time = time.time()
+
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
                 # underlying system calls, such as reaching the maximum number
@@ -217,47 +114,57 @@ class StepLoggingHandler(TimedRotatingFileHandler):
             finally:
                 self.disabled = False
 
-        self.message_count = 0
-        self.last_upload_time = time.time()
 
-    def doRollover(self) -> None:
-        """Flushes the buffer and performs a rollover."""
-        self.flush()
-        super().doRollover()
+class StepLogsStorageContext:
+    """Context manager which patches stdout and stderr during step execution."""
 
-    def close(self) -> None:
-        """Tidy up any resources used by the handler."""
-        self.flush()
-        super().close()
+    def __init__(self, logs_uri: str) -> None:
+        """Initializes and prepares a storage object.
 
-        if not self.disabled:
-            try:
-                self.disabled = True
-                if self.local_temp_file and fileio.exists(
-                    self.local_temp_file
-                ):
-                    fileio.remove(self.local_temp_file)
-            except (OSError, IOError) as e:
-                # This exception can be raised if there are issues with the
-                # underlying system calls, such as reaching the maximum number
-                # of open files, permission issues, file corruption, or other
-                # I/O errors.
-                logger.error(f"Error while close the logger: {e}")
-            finally:
-                self.disabled = False
+        Args:
+            logs_uri: the URI of the logs file.
+        """
+        self.storage = StepLogsStorage(logs_uri=logs_uri)
 
+    def __enter__(self) -> "StepLogsStorageContext":
+        """Enter condition of the context manager.
 
-def get_step_logging_handler(logs_uri: str) -> StepLoggingHandler:
-    """Sets up a logging handler for the artifact store.
+        Wraps the `write` method of both stderr and stdout, so each incoming
+        message gets stored in the step logs storage.
 
-    Args:
-        logs_uri: The URI of the output artifact.
+        Returns:
+            self
+        """
+        self.stdout_write = getattr(sys.stdout, "write")
+        self.stderr_write = getattr(sys.stderr, "write")
 
-    Returns:
-        The logging handler.
-    """
-    log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
-    handler = StepLoggingHandler(logs_uri)
-    handler.setFormatter(StepLoggingFormatter(log_format, datefmt=date_format))
-    return handler
+        setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
+        setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """Exit condition of the context manager.
+
+        Restores the `write` method of both stderr and stdout.
+        """
+        self.storage.save_to_file()
+
+        setattr(sys.stdout, "write", self.stdout_write)
+        setattr(sys.stderr, "write", self.stderr_write)
+
+    def _wrap_write(self, method):
+        """Wrapper function that utilizes the storage object to store logs.
+
+        Args:
+            method: the original write method
+
+        Returns:
+            the wrapped write method.
+        """
+
+        def wrapped_write(*args, **kwargs):
+            self.storage.write(args[0])  # TODO: Fix the unfurl
+            return method(*args, **kwargs)
+
+        return wrapped_write

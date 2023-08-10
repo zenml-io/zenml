@@ -13,19 +13,23 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import logging
 import time
-from contextlib import nullcontext, redirect_stderr, redirect_stdout
+from contextlib import nullcontext
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
+from zenml.constants import (
+    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    handle_bool_env_var,
+)
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
+from zenml.logging.step_logging import StepLogsStorageContext
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -144,116 +148,100 @@ class StepLauncher:
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
-        # Set up logging
-        step_logging_enabled = is_setting_enabled(
-            is_enabled_on_step=self._step.config.enable_step_logs,
-            is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
+        # Enable or disable step logs storage
+        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+            step_logging_enabled = False
+        else:
+            step_logging_enabled = is_setting_enabled(
+                is_enabled_on_step=self._step.config.enable_step_logs,
+                is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
+            )
+
+        # Configure the logs
+        logs_uri = step_logging.prepare_logs_uri(
+            self._stack.artifact_store,
+            self._step.config.name,
         )
-        root_logger = logging.getLogger()
-        logs_model: Optional[LogsRequestModel] = None
-        zenml_handler: Optional[step_logging.StepLoggingHandler] = None
+
+        logs_model = LogsRequestModel(
+            uri=logs_uri,
+            artifact_store_id=self._stack.artifact_store.id,
+        )
+
+        logs_context = nullcontext()
         if step_logging_enabled:
-            try:
-                logs_uri = step_logging.prepare_logs_uri(
-                    self._stack.artifact_store,
-                    self._step.config.name,
-                )
-                zenml_handler = step_logging.get_step_logging_handler(logs_uri)
-                root_logger.addHandler(zenml_handler)
-                logger.addHandler(zenml_handler)
-                logs_model = LogsRequestModel(
-                    uri=logs_uri,
-                    artifact_store_id=self._stack.artifact_store.id,
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Logging handler creation failed with error: {e}. "
-                    "Skipping recording logs.."
-                )
+            logs_context = StepLogsStorageContext(logs_uri=logs_uri)
 
         try:
-            with redirect_stdout(
-                step_logging.StepStdOut()
-            ) if step_logging_enabled else nullcontext():
-                with redirect_stderr(
-                    step_logging.StepStdErr()
-                ) if step_logging_enabled else nullcontext():
-                    if run_was_created:
-                        pipeline_run_metadata = (
-                            self._stack.get_pipeline_run_metadata(
-                                run_id=pipeline_run.id
-                            )
+            with logs_context:
+                if run_was_created:
+                    pipeline_run_metadata = (
+                        self._stack.get_pipeline_run_metadata(
+                            run_id=pipeline_run.id
                         )
-                        publish_utils.publish_pipeline_run_metadata(
-                            pipeline_run_id=pipeline_run.id,
-                            pipeline_run_metadata=pipeline_run_metadata,
-                        )
-                    client = Client()
-                    (
-                        docstring,
-                        source_code,
-                    ) = self._get_step_docstring_and_source_code()
-                    step_run = StepRunRequestModel(
-                        name=self._step_name,
+                    )
+                    publish_utils.publish_pipeline_run_metadata(
                         pipeline_run_id=pipeline_run.id,
-                        config=self._step.config,
-                        spec=self._step.spec,
-                        status=ExecutionStatus.RUNNING,
-                        docstring=docstring,
-                        source_code=source_code,
-                        start_time=datetime.utcnow(),
-                        user=client.active_user.id,
-                        workspace=client.active_workspace.id,
-                        logs=logs_model,
+                        pipeline_run_metadata=pipeline_run_metadata,
                     )
+                client = Client()
+                (
+                    docstring,
+                    source_code,
+                ) = self._get_step_docstring_and_source_code()
+                step_run = StepRunRequestModel(
+                    name=self._step_name,
+                    pipeline_run_id=pipeline_run.id,
+                    config=self._step.config,
+                    spec=self._step.spec,
+                    status=ExecutionStatus.RUNNING,
+                    docstring=docstring,
+                    source_code=source_code,
+                    start_time=datetime.utcnow(),
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    logs=logs_model,
+                )
+                try:
+                    execution_needed, step_run = self._prepare(
+                        step_run=step_run
+                    )
+                except:  # noqa: E722
+                    logger.error(
+                        f"Failed preparing run step `{self._step_name}`."
+                    )
+                    step_run.status = ExecutionStatus.FAILED
+                    step_run.end_time = datetime.utcnow()
+                    raise
+                finally:
+                    step_run_response = Client().zen_store.create_run_step(
+                        step_run
+                    )
+
+                logger.info(f"Step `{self._step_name}` has started.")
+                if execution_needed:
                     try:
-                        execution_needed, step_run = self._prepare(
-                            step_run=step_run
+                        self._run_step(
+                            pipeline_run=pipeline_run,
+                            step_run=step_run_response,
                         )
-                    except:  # noqa: E722
+                    except Exception as e:  # noqa: E722
                         logger.error(
-                            f"Failed preparing run step `{self._step_name}`."
+                            f"Failed to run step `{self._step_name}`."
                         )
-                        step_run.status = ExecutionStatus.FAILED
-                        step_run.end_time = datetime.utcnow()
+                        logger.exception(e)
+                        publish_utils.publish_failed_step_run(
+                            step_run_response.id
+                        )
                         raise
-                    finally:
-                        step_run_response = Client().zen_store.create_run_step(
-                            step_run
-                        )
 
-                    logger.info(f"Step `{self._step_name}` has started.")
-                    if execution_needed:
-                        try:
-                            self._run_step(
-                                pipeline_run=pipeline_run,
-                                step_run=step_run_response,
-                            )
-                        except Exception as e:  # noqa: E722
-                            logger.error(
-                                f"Failed to run step `{self._step_name}`."
-                            )
-                            logger.exception(e)
-                            publish_utils.publish_failed_step_run(
-                                step_run_response.id
-                            )
-                            raise
-
-                    publish_utils.update_pipeline_run_status(
-                        pipeline_run=pipeline_run
-                    )
+                publish_utils.update_pipeline_run_status(
+                    pipeline_run=pipeline_run
+                )
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
-        finally:
-            for h in logger.handlers + root_logger.handlers:
-                h.close()
-
-            # Only do this if handler is initialized
-            if zenml_handler:
-                root_logger.removeHandler(zenml_handler)
-                logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
