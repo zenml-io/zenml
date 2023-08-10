@@ -8,9 +8,9 @@ What would you need to get a quick understanding of the ZenML framework and star
 
 ## List of ZenML Project Templates
 
-| Project Template | Tags | Description |
+| Project Template | Short name | Tags | Description |
 | -- | -- | -- |
-| [E2E Training with Batch Predictions](https://github.com/zenml-io/template-e2e-batch) | `etl` `hp-tuning` `model-promotion` `drift-detection` `batch-prediction` `scikit-learn` | This project template is a good starting point for anyone starting with ZenML. It consists of two pipelines with the following high-level steps: load, split, and preprocess data; run HP tuning; train and evaluate model performance; promote model to production; detect data drift; run batch inference. |
+| [E2E Training with Batch Predictions](https://github.com/zenml-io/template-e2e-batch) | `e2e_batch` | `etl` `hp-tuning` `model-promotion` `drift-detection` `batch-prediction` `scikit-learn` | This project template is a good starting point for anyone starting with ZenML. It consists of two pipelines with the following high-level steps: load, split, and preprocess data; run HP tuning; train and evaluate model performance; promote model to production; detect data drift; run batch inference. |
 
 {% hint style="info" %}
 Do you have a personal project powered by ZenML that you would like to see here? At ZenML, we are looking for design partnerships and collaboration to help us better understand the real-world scenarios in which MLOps is being used and to build the best possible experience for our users. If you are interested in sharing all or parts of your project with us in the form of a ZenML project template, please [join our Slack](https://zenml.io/slack-invite/) and leave us a message!
