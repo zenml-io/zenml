@@ -77,7 +77,7 @@ rm -rf zenml_examples
 
 If you want to learn more about centralized secrets management with ZenML in
 general or about how to build your own secrets store back-end, check out our
-[docs](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store).
+[docs](https://docs.zenml.io/user-guide/advanced-guide/secret-management).
 
 We also have extensive docs for the
 [secrets CLI](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).

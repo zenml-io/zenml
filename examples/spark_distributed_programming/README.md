@@ -53,12 +53,12 @@ For Advanced use cases where we have a step operator such as Spark step operator
 or to share stacks and pipelines with the team, we need to have a separate, 
 remote ZenML Server. It should be accessible from your machine as well as all 
 stack components that may need access to information or configurations from the 
-server. [Read more information about the use case here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)
+server. [Read more information about the use case here](https://docs.zenml.io/user-guide/starter-guide/switch-to-production)
 
 In order to achieve this there are two different ways to get access to a remote 
 ZenML Server.
 
-1. Deploy and manage the server manually on [your own cloud](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)/
+1. Deploy and manage the server manually on [your own cloud](https://docs.zenml.io/user-guide/starter-guide/switch-to-production)/
 2. Sign up for [ZenML Enterprise](https://zenml.io/pricing) and get access to a 
 hosted version of the ZenML Server with no setup required.
 
@@ -224,7 +224,7 @@ then set up the stack and stack components.
 Note that the AWS S3 artifact store and the ECR container registry can be deployed using the ZenML CLI as well, using
 the `zenml <STACK_COMPONENT> deploy` command. For more information on this
 `deploy` subcommand, please refer to the
-[documentation](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
+[documentation](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
 
 ```bash
 # Connect to the server
