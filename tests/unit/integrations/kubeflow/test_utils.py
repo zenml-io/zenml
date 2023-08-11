@@ -23,7 +23,7 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="Kubeflow integration not installed in python 3.11",
+    reason="Kubeflow integration not installed in Python 3.11",
 )
 def test_apply_pod_settings():
     """Unit test for `apply_pod_settings`."""

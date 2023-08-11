@@ -50,7 +50,7 @@ def _get_gcp_image_builder(
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="GCP integration not installed in python 3.11",
+    reason="GCP integration not installed in Python 3.11",
 )
 def test_stack_validation(
     local_orchestrator,
