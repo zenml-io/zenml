@@ -4,8 +4,10 @@ description: Executing individual steps in SageMaker.
 
 # Amazon SageMaker
 
-The SageMaker step operator is a [step operator](step-operators.md) flavor provided with the ZenML `aws` integration
-that uses [SageMaker](https://aws.amazon.com/sagemaker/) to execute individual steps of ZenML pipelines.
+[SageMaker](https://aws.amazon.com/sagemaker/) offers specialized compute 
+instances to run your training jobs and has a comprehensive UI to track and 
+manage your models and logs. ZenML's SageMaker step operator allows you to 
+submit individual steps to be run on Sagemaker compute instances.
 
 ### When to use it
 
@@ -103,9 +105,6 @@ or running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
-
-A concrete example of using the SageMaker step operator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 
 For more information and a full list of configurable attributes of the SageMaker step operator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.step\_operators.sagemaker\_step\_operator.SagemakerStepOperator)

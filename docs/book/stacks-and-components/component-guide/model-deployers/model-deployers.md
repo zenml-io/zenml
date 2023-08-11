@@ -127,27 +127,6 @@ zenml model-deployer register seldon --flavor=seldon \
        model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
    ```
 
-#### Custom pre-processing and post-processing
-
-**Pre-processing** is the process of transforming the data before it is passed to the machine learning model.
-
-**Post-processing** is the process of transforming the data after it is returned from the machine learning model, and
-before it is returned to the user.
-
-Both pre-and post-processing is very essential for the model deployment process. Most models require specific input
-formats which require transforming the data before it is passed to the model and after it is returned from the model.
-ZenML allows you to define your own pre- and post-processing in two ways:
-
-1. At the pipeline level, by defining custom steps before and after the predict step in the ZenML pipeline.
-2. At the model deployment tool level, by defining a custom predict, pre- and post-processing functions that would be
-   wrapped in a Docker container and executed on the model deployment server.
-
-{% hint style="info" %}
-The custom model deployment support is available only for the following integrations:
-
-* [Seldon Core Custom Python Model](seldon.md#custom-model-deployment)
-  {% endhint %}
-
 #### &#x20;How to Interact with a model deployer after deployment?
 
 When a Model Deployer is part of the active ZenML Stack, it is also possible to interact with it from the CLI to list,
@@ -158,7 +137,7 @@ $ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
 ┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
-┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ continuous_deployment_pipeline │ seldon_model_deployer_step ┃
+┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ seldon_deployment_pipeline     │ seldon_model_deployer_step ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 $ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
@@ -170,9 +149,9 @@ $ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ MODEL_URI              │ s3://zenprojects/seldon_model_deployer_step/output/884/seldon                          ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
+┃ PIPELINE_NAME          │ seldon_deployment_pipeline                                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ RUN_NAME               │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
+┃ RUN_NAME               │ seldon_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
