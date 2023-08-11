@@ -58,7 +58,7 @@ def _get_kubeflow_orchestrator(
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="Kubeflow integration not installed in python 3.11",
+    reason="Kubeflow integration not installed in Python 3.11",
 )
 def test_kubeflow_orchestrator_remote_stack(
     mocker, remote_artifact_store, remote_container_registry
@@ -105,7 +105,7 @@ def test_kubeflow_orchestrator_remote_stack(
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="Kubeflow integration not installed in python 3.11",
+    reason="Kubeflow integration not installed in Python 3.11",
 )
 def test_kubeflow_orchestrator_local_stack(
     mocker, local_artifact_store, local_container_registry

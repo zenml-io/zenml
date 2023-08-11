@@ -51,7 +51,7 @@ def _get_vertex_orchestrator(**kwargs):
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="GCP integration not installed in python 3.11",
+    reason="GCP integration not installed in Python 3.11",
 )
 def test_vertex_orchestrator_stack_validation(
     local_artifact_store,
@@ -140,7 +140,7 @@ def test_vertex_orchestrator_stack_validation(
 
 @pytest.mark.skipif(
     sys.version_info > (3, 10),
-    reason="GCP integration not installed in python 3.11",
+    reason="GCP integration not installed in Python 3.11",
 )
 @pytest.mark.parametrize(
     "resource_settings, orchestrator_resource_settings, expected_resources",
