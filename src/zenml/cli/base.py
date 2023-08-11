@@ -66,7 +66,7 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="gh:zenml-io/template-e2e-batch",
-        github_tag="feature/FRW-2173-move-example-here",  # TODO: set to fixed release of template and update for breaking changes
+        github_tag="0.42.1",
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="gh:zenml-io/zenml-project-templates",
