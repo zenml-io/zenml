@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 
 import os
+import platform
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
-from zenml.cli.base import clean, init
+from zenml.cli.base import ZENML_PROJECT_TEMPLATES, clean, init
 from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -30,7 +32,17 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
 
 
-def test_init_creates_from_template(tmp_path: Path) -> None:
+@pytest.mark.skipif(
+    platform.system().lower() == "windows",
+    reason="Windows not fully supported",
+)
+@pytest.mark.parametrize(
+    "template_name",
+    list(ZENML_PROJECT_TEMPLATES.keys()),
+)
+def test_init_creates_from_templates(
+    tmp_path: Path, template_name: str
+) -> None:
     """Check that init command checks-out template."""
     runner = CliRunner()
     runner.invoke(
@@ -39,7 +51,7 @@ def test_init_creates_from_template(tmp_path: Path) -> None:
             "--path",
             str(tmp_path),
             "--template",
-            "e2e_batch",
+            template_name,
             "--template-with-defaults",
         ],
     )
@@ -49,7 +61,6 @@ def test_init_creates_from_template(tmp_path: Path) -> None:
         ".copier-answers.yml",
         ".dockerignore",
         "LICENSE",
-        "README.md",
         "run.py",
     }
     assert not must_have_files - files_in_top_level

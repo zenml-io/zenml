@@ -67,7 +67,11 @@ ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="gh:zenml-io/template-e2e-batch",
         github_tag="feature/FRW-2173-move-example-here",  # TODO: set to fixed release of template and update for breaking changes
-    )
+    ),
+    starter=ZenMLProjectTemplateLocation(
+        github_url="gh:zenml-io/zenml-project-templates",
+        github_tag="main",
+    ),
 )
 
 
@@ -170,6 +174,7 @@ def init(
                 dst_path=path,
                 data=dict(
                     email=email,
+                    template=template,
                 ),
                 defaults=template_with_defaults,
                 user_defaults=dict(
