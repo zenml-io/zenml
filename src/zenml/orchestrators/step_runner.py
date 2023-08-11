@@ -114,14 +114,30 @@ class StepRunner:
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
+            enabled_on_step = step_run.config.enable_step_logs
+
+            enabled_on_pipeline = None
+            if pipeline_run.deployment:
+                enabled_on_pipeline = (
+                    pipeline_run.deployment.pipeline_configuration.enable_step_logs
+                )
+
             step_logging_enabled = is_setting_enabled(
-                is_enabled_on_step=step_run.config.enable_step_logs,
-                is_enabled_on_pipeline=pipeline_run.deployment.pipeline_configuration.enable_step_logs,
+                is_enabled_on_step=enabled_on_step,
+                is_enabled_on_pipeline=enabled_on_pipeline,
             )
 
         logs_context = nullcontext()
         if step_logging_enabled and not redirected.get():
-            logs_context = StepLogsStorageContext(logs_uri=step_run.logs.uri)
+            if step_run.logs:
+                logs_context = StepLogsStorageContext(  # type: ignore[assignment]
+                    logs_uri=step_run.logs.uri
+                )
+            else:
+                logger.debug(
+                    "There is no LogsResponseModel prepared for the step. The"
+                    "step logging storage is disabled."
+                )
 
         with logs_context:
             step_instance = self._load_step()

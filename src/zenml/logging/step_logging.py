@@ -18,7 +18,8 @@ import re
 import sys
 import time
 from contextvars import ContextVar
-from typing import Optional
+from types import TracebackType
+from typing import Any, Callable, List, Optional, Type
 from uuid import uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -35,7 +36,15 @@ logger = get_logger(__name__)
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
 
 
-def remove_ansi_escape_codes(text):
+def remove_ansi_escape_codes(text: str) -> str:
+    """Auxiliary function to remove ANSI escape codes from a given string.
+
+    Args:
+        text: the input string
+
+    Returns:
+        the version of the input string where the escape codes are removed.
+    """
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
@@ -79,23 +88,38 @@ def prepare_logs_uri(
 
 
 class StepLogsStorage:
+    """Helper class which buffers and stores logs to a given URI."""
+
     def __init__(
         self,
         logs_uri: str,
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
-    ):
-        self.logs_uri = logs_uri
+    ) -> None:
+        """Initialization.
 
+        Args:
+            logs_uri: the target URI to store the logs.
+            max_messages: the maximum number of messages to save in the buffer.
+            time_interval: the amount of seconds before the buffer gets saved
+                automatically.
+        """
+        # Parameters
+        self.logs_uri = logs_uri
         self.max_messages = max_messages
         self.time_interval = time_interval
 
-        self.buffer = []
+        # State
+        self.buffer: List[str] = []
         self.last_save_time = time.time()
-
         self.disabled = False
 
-    def write(self, text):
+    def write(self, text: str) -> None:
+        """Main write method.
+
+        Args:
+            text: the incoming string.
+        """
         if text == "\n":
             return
 
@@ -106,7 +130,8 @@ class StepLogsStorage:
         ):
             self.save_to_file()
 
-    def save_to_file(self):
+    def save_to_file(self) -> None:
+        """Method to save the buffer to the given URI."""
         if not self.disabled:
             try:
                 self.disabled = True
@@ -158,7 +183,12 @@ class StepLogsStorageContext:
         redirected.set(True)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         """Exit condition of the context manager.
 
         Restores the `write` method of both stderr and stdout.
@@ -169,7 +199,7 @@ class StepLogsStorageContext:
         setattr(sys.stderr, "write", self.stderr_write)
         redirected.set(False)
 
-    def _wrap_write(self, method):
+    def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
         """Wrapper function that utilizes the storage object to store logs.
 
         Args:
@@ -179,9 +209,10 @@ class StepLogsStorageContext:
             the wrapped write method.
         """
 
-        def wrapped_write(*args, **kwargs):
+        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
+            output = method(*args, **kwargs)
             if args:
                 self.storage.write(args[0])
-            return method(*args, **kwargs)
+            return output
 
         return wrapped_write

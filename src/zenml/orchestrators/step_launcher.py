@@ -170,7 +170,7 @@ class StepLauncher:
 
         logs_context = nullcontext()
         if step_logging_enabled:
-            logs_context = StepLogsStorageContext(logs_uri=logs_uri)
+            logs_context = StepLogsStorageContext(logs_uri=logs_uri)  # type: ignore[assignment]
 
         try:
             with logs_context:
