@@ -277,7 +277,7 @@ If you do not want to store the logs in your artifact store, you can:
         ...
     ```
 
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable take precedence over the parameters mentioned above.
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
 
 ## Settings in ZenML
 
