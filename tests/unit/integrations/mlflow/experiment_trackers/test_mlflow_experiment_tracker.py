@@ -113,7 +113,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         name="",
         config=S3ArtifactStoreConfig(path="s3://tmp"),
         id=uuid4(),
-        flavor="gcp",
+        flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         workspace=uuid4(),

@@ -158,7 +158,7 @@ def remote_artifact_store():
         name="",
         id=uuid4(),
         config=S3ArtifactStoreConfig(path="s3://tmp"),
-        flavor="gcp",
+        flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         workspace=uuid4(),
