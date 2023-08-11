@@ -86,7 +86,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     "--template",
     type=click.Choice(list(ZENML_PROJECT_TEMPLATES)),
     required=False,
-    help="Use the ZenML projects templates to initialize the repository "
+    help="Use the ZenML project templates to initialize the repository "
     "and prompt to enter parameter values for the template.",
 )
 @click.option(
@@ -94,7 +94,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     is_flag=True,
     default=False,
     required=False,
-    help="Whether to use default parameters of the ZenML project template or prompt?",
+    help="Whether to use default parameters of the ZenML project template",
 )
 def init(
     path: Optional[Path],
@@ -108,7 +108,7 @@ def init(
         template: Which ZenML project template to use to initialize
             the repository and prompt the user for parameter values.
         template_with_defaults: Whether to use default parameters of
-            the ZenML project template or prompt?
+            the ZenML project template
     """
     if path is None:
         path = Path.cwd()
