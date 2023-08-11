@@ -23,10 +23,6 @@ from pydantic import ValidationError
 from zenml.artifact_stores import LocalArtifactStore, LocalArtifactStoreConfig
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-)
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     DATABRICKS_HOST,
     DATABRICKS_PASSWORD,
@@ -40,6 +36,12 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
 )
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     MLFlowExperimentTrackerConfig,
+)
+from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
+    S3ArtifactStore,
+)
+from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+    S3ArtifactStoreConfig,
 )
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
@@ -107,9 +109,9 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         created=datetime.now(),
         updated=datetime.now(),
     )
-    remote_artifact_store = GCPArtifactStore(
+    remote_artifact_store = S3ArtifactStore(
         name="",
-        config=GCPArtifactStoreConfig(path="gs://my-bucket"),
+        config=S3ArtifactStoreConfig(path="s3://tmp"),
         id=uuid4(),
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
