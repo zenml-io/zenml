@@ -6,7 +6,7 @@ description: Running a hyperparameter tuning trial with ZenML.
 
 {% hint style="warning" %}
 Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is 
-[(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) 
+[(high up) on our roadmap of features](https://zenml.featureos.app/p/enable-hyper-parameter-tuning) 
 and will likely receive first-class ZenML support soon. In the meanwhile, the
 following example shows how hyperparameter tuning can currently be implemented
 within a ZenML run.
