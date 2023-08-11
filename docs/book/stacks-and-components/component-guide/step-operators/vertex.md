@@ -4,8 +4,10 @@ description: Executing individual steps in Vertex AI.
 
 # Google Cloud VertexAI
 
-The Vertex step operator is a [step operator](step-operators.md) flavor provided with the ZenML `gcp` integration that
-uses [Vertex AI](https://cloud.google.com/vertex-ai) to execute individual steps of ZenML pipelines.
+[Vertex AI](https://cloud.google.com/vertex-ai) offers specialized compute 
+instances to run your training jobs and has a comprehensive UI to track and 
+manage your models and logs. ZenML's Vertex AI step operator allows you to 
+submit individual steps to be run on Vertex AI compute instances.
 
 ### When to use it
 
@@ -118,9 +120,6 @@ running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
-
-A concrete example of using the Vertex step operator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 
 For more information and a full list of configurable attributes of the Vertex step operator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.step\_operators.vertex\_step\_operator.VertexStepOperator)
