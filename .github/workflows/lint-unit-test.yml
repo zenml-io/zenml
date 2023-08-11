@@ -115,10 +115,10 @@ jobs:
         run: |
           bash scripts/test-coverage-xml.sh unit
 
-      - name: Upload coverage
-        # only do it for python 3.8, we don't need to do it for every version
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
-        uses: codecov/codecov-action@v2
+      # - name: Upload coverage
+      #   # only do it for python 3.8, we don't need to do it for every version
+      #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+      #   uses: codecov/codecov-action@v2
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
