@@ -88,7 +88,7 @@ passing the ``--template`` option:
 zenml init --template <name_of_template>
 ```
 
-Running command above will result in input prompts being shown to you. If 
+Running the above command will result in input prompts being shown to you. If 
 you would like to rely on default values for the ZenML project template - 
 you can add ``--template-with-defaults`` to the same command, like this:
 
