@@ -112,10 +112,6 @@ ZenML wraps the Great Expectations' functionality in the form of two standard st
 
 You can visualize Great Expectations Suites and Results in Jupyter notebooks or view them directly in the ZenML dashboard.
 
-You can also check out our examples pages for working examples that use the Great Expectations standard steps:
-
-* [Data Validation with Great Expectations](https://github.com/zenml-io/zenml/tree/main/examples/great\_expectations\_data\_validation)
-
 #### The Great Expectation's data profiler step
 
 The standard Great Expectation's data profiler step builds an Expectation Suite automatically by running a [`UserConfigurableProfiler`](https://docs.greatexpectations.io/docs/guides/expectations/how\_to\_create\_and\_edit\_expectations\_with\_a\_profiler) on an input `pandas.DataFrame` dataset. The generated Expectation Suite is saved in the Great Expectations Expectation Store, but also returned as an `ExpectationSuite` artifact that is versioned and saved in the ZenML Artifact Store. The step automatically rebuilds the Data Docs.

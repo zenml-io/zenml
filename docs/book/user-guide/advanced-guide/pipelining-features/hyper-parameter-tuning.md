@@ -6,7 +6,7 @@ description: Running a hyperparameter tuning trial with ZenML.
 
 {% hint style="warning" %}
 Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is 
-[(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) 
+[(high up) on our roadmap of features](https://zenml.featureos.app/p/enable-hyper-parameter-tuning) 
 and will likely receive first-class ZenML support soon. In the meanwhile, the
 following example shows how hyperparameter tuning can currently be implemented
 within a ZenML run.
@@ -60,8 +60,6 @@ def select_model_step():
     for lr, model in trained_models_by_lr.items():
         ...
 ```
-
-For a more sophisticated example of how to implement hyperparameter tuning, see [our Dynamic Pipelines example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic\_pipelines).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

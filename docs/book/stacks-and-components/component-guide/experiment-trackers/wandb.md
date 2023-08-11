@@ -123,11 +123,11 @@ from wandb.integration.keras import WandbCallback
 
 @step(experiment_tracker="<WANDB_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
-        config: TrainerConfig,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        x_val: np.ndarray,
-        y_val: np.ndarray,
+    config: TrainerConfig,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_val: np.ndarray,
+    y_val: np.ndarray,
 ) -> tf.keras.Model:
     ...
 
@@ -145,8 +145,60 @@ def tf_trainer(
         ],
     )
 
+    metric = ...
+
+    wandb.log({"<METRIC_NAME>": metric})
+```
+
+{% hint style="info" %}
+Instead of hardcoding an experiment tracker name, you can also use the 
+[Client](../../advanced-guide/environment-management/client.md) to dynamically
+use the experiment tracker of your active stack:
+
+```python
+from zenml.client import Client
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+@step(experiment_tracker=experiment_tracker.name)
+def tf_trainer(...):
     ...
 ```
+{% endhint %}
+
+### Weights & Biases UI
+
+Weights & Biases comes with a web-based UI that you can use to find further 
+details about your tracked experiments. 
+
+Every ZenML step that uses Weights & Biases should create a separate experiment 
+run which you can inspect in the Weights & Biases UI: 
+
+![WandB UI](../../../.gitbook/assets/WandBUI.png)
+
+You can find the URL of the Weights & Biases experiment linked to 
+a specific ZenML run via the metadata of the step in which the experiment
+tracker was used:
+
+```python
+from zenml.client import Client
+
+last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
+trainer_step = last_run.get_step("<STEP_NAME>")
+tracking_url = trainer_step.metadata.get("experiment_tracker_url")
+print(tracking_url.value)
+```
+
+Alternatively, you can see an overview of all experiment runs at 
+https://wandb.ai/{ENTITY_NAME}/{PROJECT_NAME}/runs/.
+
+{% hint style="info" %}
+The naming convention of each Weights & Biases experiment run is 
+`{pipeline_run_name}_{step_name}` 
+(e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`) and each
+experiment run will be tagged with both `pipeline_name` and `pipeline_run_name`, 
+which you can use to group and filter experiment runs.
+{% endhint %}
 
 #### Additional configuration
 
@@ -171,9 +223,9 @@ wandb_settings = WandbExperimentTrackerSettings(
     }
 )
 def my_step(
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        model: tf.keras.Model,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
 ) -> float:
     """Everything in this step is auto-logged"""
     ...
@@ -185,11 +237,6 @@ Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
-
-You can also check out our examples pages for working examples that use the Weights & Biases Experiment Tracker in their
-stacks:
-
-* [Track Experiments with Weights & Biases](https://github.com/zenml-io/zenml/tree/main/examples/wandb\_tracking)
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

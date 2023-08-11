@@ -39,6 +39,8 @@ class DeepchecksIntegration(Integration):
         "deepchecks[vision]==0.8.0",
         "torchvision==0.14.0",
         "pandas<2.0.0",
+        "opencv-python==4.5.5.64",  # pin to same version
+        "opencv-python-headless==4.5.5.64",  # pin to same version
     ]
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
 

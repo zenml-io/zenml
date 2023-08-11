@@ -21,7 +21,7 @@ and [`bentoctl`](https://github.com/bentoml/bentoctl) are the tools responsible 
 Kubernetes cluster and Cloud Platforms. Full support for these advanced tools is in progress and will be available soon.
 {% endhint %}
 
-### When to use it?
+## When to use it?
 
 You should use the BentoML Model Deployer to:
 
@@ -43,7 +43,7 @@ The `bentoctl` integration implementation is still in progress and will be avail
 you to deploy your models to a specific cloud provider with just a few lines of code using ZenML built-in steps.
 {% endhint %}
 
-### How do you deploy it?
+## How do you deploy it?
 
 Within ZenML you can quickly get started with BentoML by simply creating Model Deployer Stack Component with the BentoML
 flavor. To do so you'll need to install the required Python packages on your local machine to be able to deploy your
@@ -62,11 +62,15 @@ zenml model-deployer register bentoml_deployer --flavor=bentoml
 The ZenML integration will provision a local HTTP deployment server as a daemon process that will continue to run in the
 background to serve the latest models and Bentos.
 
-### How do you use it?
+## How do you use it?
 
-In order to use the BentoML Model Deployer, We need to understand these three main concepts:
+The recommended flow to use the BentoML model deployer is to first
+[create a BentoML Service](#bentoml-service-and-runner),
+then [use the `bento_builder_step`](#zenml-bento-builder-step) to build the
+model and service into a bento bundle, and finally
+[deploy the bundle with the `bentoml_model_deployer_step`](#zenml-bentoml-deployer-step).
 
-#### BentoML Service and Runner
+### BentoML Service and Runner
 
 The first step to being able to deploy your models and use BentoML is to create
 a [bento service](https://docs.bentoml.org/en/latest/concepts/service.html) which is the main logic that defines how
@@ -93,23 +97,22 @@ def classify(input_series: np.ndarray) -> np.ndarray:
 
 ```
 
-#### ZenML Bento Builder step
+### ZenML Bento Builder step
 
 Once you have your bento service and runner defined, we can use the built-in bento builder step to build the bento
 bundle that will be used to serve the model. The following example shows how can call the built-in bento builder step
 within a ZenML pipeline.
 
 ```python
-# Import the step
+from zenml import pipeline, step
 from zenml.integrations.bentoml.steps import bento_builder_step
 
-# The name we gave to our deployed model
-MODEL_NAME = "pytorch_mnist"
-
-# Call the step with the parameters
-bento_builder = bento_builder_step.with_options(
-    parameters=dict(
-        model_name=MODEL_NAME,  # Name of the model
+@pipeline
+def bento_builder_pipeline():
+    model = ...
+    bento = bento_builder_step(
+        model=model,
+        model_name="pytorch_mnist",  # Name of the model
         model_type="pytorch",  # Type of the model (pytorch, tensorflow, sklearn, xgboost..)
         service="service.py:svc",  # Path to the service file within zenml repo
         labels={  # Labels to be added to the bento bundle
@@ -122,7 +125,6 @@ bento_builder = bento_builder_step.with_options(
             "packages": ["zenml", "torch", "torchvision"],
         },  # Python package requirements of the model
     )
-)
 ```
 
 The Bento Builder step can be used in any orchestration pipeline that you create with ZenML. The step will build the
@@ -130,31 +132,28 @@ bento bundle and save it to the used artifact store. Which can be used to serve 
 BentoML Model Deployer Step, or in a remote setting using the `bentoctl` or Yatai. This gives you the flexibility to
 package your model in a way that is ready for different deployment scenarios.
 
-#### ZenML BentoML Deployer step
+### ZenML BentoML Deployer step
 
-We have now built our bento bundle, and we can use the built-in bento deployer step to deploy the bento bundle to our
+We have now built our bento bundle, and we can use the built-in `bentoml_model_deployer_step` to deploy the bento bundle to our
 local HTTP server. The following example shows how to call the built-in bento deployer step within a ZenML pipeline.
 
-Note: the bentoml deployer step can only be used in a local environment.
+Note: the `bentoml_model_deployer_step` can only be used in a local environment.
 
 ```python
-# Import the step and parameters class
-from zenml.integrations.bentoml.steps import bentoml_model_deployer_step,
+from zenml import pipeline, step
+from zenml.integrations.bentoml.steps import bentoml_model_deployer_step
 
-# The name we gave to our deployed model
-MODEL_NAME = "pytorch_mnist"
-
-# Call the step with the parameters
-bentoml_model_deployer = bentoml_model_deployer_step.with_options(
-    parameters=dict(
-        model_name=MODEL_NAME,  # Name of the model
+@pipeline
+def bento_deployer_pipeline():
+    bento = ...
+    deployed_model = bentoml_model_deployer_step(
+        bento=bento
+        model_name="pytorch_mnist",  # Name of the model
         port=3001,  # Port to be used by the http server
-        production=False,  # Deploy the model in production mode
     )
-)
 ```
 
-#### ZenML BentoML Pipeline examples
+### ZenML BentoML Pipeline examples
 
 Once all the steps have been defined, we can create a ZenML pipeline and run it. The bento builder step expects to get
 the trained model as an input, so we need to make sure either we have a previous step that trains the model and outputs
@@ -225,7 +224,7 @@ def local_deploy_pipeline(
 
 ```
 
-#### Predicting with the local deployed model
+### Predicting with the local deployed model
 
 Once the model has been deployed we can use the BentoML client to send requests to the deployed model. ZenML will
 automatically create a BentoML client for you and you can use it to send requests to the deployed model by simply
@@ -257,7 +256,7 @@ Deploying and testing locally is a great way to get started and test your model.
 most likely require you to deploy your model to a remote environment. The next section will show you how to deploy the
 Bento you built with ZenML pipelines to a cloud environment using the `bentoctl` CLI.
 
-#### From Local to Cloud with `bentoctl`
+### From Local to Cloud with `bentoctl`
 
 Bentoctl helps deploy any machine learning models as production-ready API endpoints into the cloud. It is a command line
 tool that provides a simple interface to manage your BentoML bundles.
@@ -299,10 +298,6 @@ bentoctl build -b $BENTO_TAG -f deployment_config.yaml
 # Deploy to the cloud
 bentoctl apply -f deployment_config.yaml
 ```
-
-You can check the BentoML deployment example for more details.
-
-* [Model Deployer with BentoML](https://github.com/zenml-io/zenml/tree/main/examples/bentoml\_deployment)
 
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
