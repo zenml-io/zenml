@@ -55,7 +55,7 @@ def _get_vertex_orchestrator(**kwargs):
 )
 def test_vertex_orchestrator_stack_validation(
     local_artifact_store,
-    remote_artifact_store,
+    gcp_artifact_store,
     local_container_registry,
     remote_container_registry,
 ) -> None:
@@ -73,7 +73,6 @@ def test_vertex_orchestrator_stack_validation(
         location="europe-west4"
     )
 
-    gcp_artifact_store = remote_artifact_store
     gcp_container_registry = remote_container_registry
 
     azure_artifact_store = AzureArtifactStore(

@@ -56,7 +56,7 @@ def test_stack_validation(
     local_orchestrator,
     local_artifact_store,
     local_container_registry,
-    remote_artifact_store,
+    gcp_artifact_store,
     remote_container_registry,
 ) -> None:
     """Tests that the GCP image builder validates that it's stack has a remote
@@ -70,7 +70,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
         ).validate()
 
@@ -80,7 +80,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
             container_registry=local_container_registry,
         ).validate()
@@ -102,7 +102,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
             container_registry=remote_container_registry,
         ).validate()
