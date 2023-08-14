@@ -35,16 +35,16 @@ class TensorBoardIntegration(Integration):
         Returns:
             A list of requirements.
         """
-        if sys.version_info > (3, 10):
-            below_version = "3"
+        if sys.version_info > (3, 11):
+            tf_version = "2.13"
         else:
             # Capping tensorflow to 2.11 for Python 3.10 and below because it
             # is not compatible with Pytorch
             # (see https://github.com/pytorch/pytorch/issues/99637).
-            below_version = "2.12"
+            tf_version = "2.11"
 
         requirements = [
-            f"tensorboard>=2.8.0,<{below_version}",
+            f"tensorboard=={tf_version}",
             "protobuf>=3.6.0,<4.0.0",
         ]
         return requirements
