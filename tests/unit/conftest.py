@@ -252,17 +252,6 @@ def generate_empty_steps():
 
 
 @pytest.fixture
-def empty_pipeline():
-    """Pytest fixture that returns an empty pipeline."""
-
-    @pipeline
-    def _pipeline():
-        pass
-
-    return _pipeline
-
-
-@pytest.fixture
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 

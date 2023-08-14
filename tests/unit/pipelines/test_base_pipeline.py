@@ -18,6 +18,7 @@ from uuid import uuid4
 import pytest
 from pytest_mock import MockFixture
 
+from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -29,6 +30,7 @@ from zenml.exceptions import (
 from zenml.models.page_model import Page
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.pipelines import BasePipeline, Schedule, pipeline
 from zenml.steps import BaseParameters, step
 
@@ -284,10 +286,10 @@ def test_pipeline_decorator_configuration_gets_applied_during_initialization(
     assert pipeline_instance.configuration.extra == {"key": "value"}
 
 
-def test_pipeline_configuration(empty_pipeline):
+def test_pipeline_configuration(empty_pipeline):  # noqa: F811
     """Tests the pipeline configuration and overwriting/merging with existing
     configurations."""
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
 
     pipeline_instance.configure(
         enable_cache=False,
@@ -319,11 +321,13 @@ def test_pipeline_configuration(empty_pipeline):
     }
 
 
-def test_configure_pipeline_with_invalid_settings_key(empty_pipeline):
+def test_configure_pipeline_with_invalid_settings_key(
+    empty_pipeline,  # noqa: F811
+):
     """Tests that configuring a pipeline with an invalid settings key raises an
     error."""
     with pytest.raises(ValueError):
-        empty_pipeline().configure(settings={"invalid_settings_key": {}})
+        empty_pipeline.configure(settings={"invalid_settings_key": {}})
 
 
 def test_run_configuration_in_code(
@@ -518,7 +522,7 @@ def test_unique_identifier_considers_step_source_code(
 
 
 def test_latest_version_fetching(
-    mocker, empty_pipeline, create_pipeline_model
+    mocker, empty_pipeline, create_pipeline_model  # noqa: F811
 ):
     """Tests fetching the latest pipeline version."""
     mock_list_pipelines = mocker.patch(
@@ -532,7 +536,7 @@ def test_latest_version_fetching(
         ),
     )
 
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     assert pipeline_instance._get_latest_version() is None
     mock_list_pipelines.assert_called_with(
         name=pipeline_instance.name, sort_by="desc:created", size=1
@@ -567,7 +571,9 @@ def test_latest_version_fetching(
     assert pipeline_instance._get_latest_version() == 3
 
 
-def test_registering_new_pipeline_version(mocker, empty_pipeline):
+def test_registering_new_pipeline_version(
+    mocker, empty_pipeline  # noqa: F811
+):
     """Tests registering a new pipeline version."""
     mocker.patch(
         "zenml.client.Client.list_pipelines",
@@ -583,20 +589,20 @@ def test_registering_new_pipeline_version(mocker, empty_pipeline):
         "zenml.zen_stores.sql_zen_store.SqlZenStore.create_pipeline",
     )
 
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     pipeline_instance.register()
     _, call_kwargs = mock_create_pipeline.call_args
     assert call_kwargs["pipeline"].version == "1"
     mock_create_pipeline.reset_mock()
 
-    mocker.patch.object(BasePipeline, "_get_latest_version", return_value=3)
+    mocker.patch.object(Pipeline, "_get_latest_version", return_value=3)
     pipeline_instance.register()
     _, call_kwargs = mock_create_pipeline.call_args
     assert call_kwargs["pipeline"].version == "4"
 
 
 def test_reusing_pipeline_version(
-    mocker, empty_pipeline, create_pipeline_model
+    mocker, empty_pipeline, create_pipeline_model  # noqa: F811
 ):
     """Tests reusing an already registered pipeline version."""
     pipeline_model = create_pipeline_model(version="3")
@@ -611,7 +617,7 @@ def test_reusing_pipeline_version(
         ),
     )
 
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     result = pipeline_instance.register()
 
     assert result == pipeline_model
@@ -837,7 +843,9 @@ def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
         BasePipeline.from_model(model)
 
 
-def test_compiling_a_pipeline_merges_schedule(empty_pipeline, tmp_path):
+def test_compiling_a_pipeline_merges_schedule(
+    empty_pipeline, tmp_path  # noqa: F811
+):
     """Tests that compiling a pipeline merges the schedule from the config
     file and in-code configuration."""
     config_path = tmp_path / "config.yaml"
@@ -846,7 +854,11 @@ def test_compiling_a_pipeline_merges_schedule(empty_pipeline, tmp_path):
     )
     config_path.write_text(run_config.yaml())
 
-    _, _, schedule, _ = empty_pipeline()._compile(
+    pipeline_instance = empty_pipeline
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
+
+    _, _, schedule, _ = pipeline_instance._compile(
         config_path=str(config_path),
         schedule=Schedule(cron_expression="5 * * * *", catchup=True),
     )
@@ -856,7 +868,9 @@ def test_compiling_a_pipeline_merges_schedule(empty_pipeline, tmp_path):
     assert schedule.catchup is True
 
 
-def test_compiling_a_pipeline_merges_build(empty_pipeline, tmp_path):
+def test_compiling_a_pipeline_merges_build(
+    empty_pipeline, tmp_path  # noqa: F811
+):
     """Tests that compiling a pipeline merges the build/build ID from the config
     file and in-code configuration."""
     config_path_with_build_id = tmp_path / "config.yaml"
@@ -871,13 +885,18 @@ def test_compiling_a_pipeline_merges_build(empty_pipeline, tmp_path):
     config_path_with_build.write_text(run_config_with_build.yaml())
 
     in_code_build_id = uuid4()
+
+    pipeline_instance = empty_pipeline
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
+
     # Config with ID
-    _, _, _, build = empty_pipeline()._compile(
+    _, _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build_id), build=in_code_build_id
     )
     assert build == in_code_build_id
     # Config with build object
-    _, _, _, build = empty_pipeline()._compile(
+    _, _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build), build=in_code_build_id
     )
     assert build == in_code_build_id
@@ -888,20 +907,22 @@ def test_compiling_a_pipeline_merges_build(empty_pipeline, tmp_path):
         contains_code=True,
     )
     # Config with ID
-    _, _, _, build = empty_pipeline()._compile(
+    _, _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build_id), build=in_code_build
     )
     assert build == in_code_build
     # Config with build object
-    _, _, _, build = empty_pipeline()._compile(
+    _, _, _, build = pipeline_instance._compile(
         config_path=str(config_path_with_build), build=in_code_build
     )
     assert build == in_code_build
 
 
-def test_building_a_pipeline_registers_it(clean_client, empty_pipeline):
+def test_building_a_pipeline_registers_it(
+    clean_client, empty_pipeline  # noqa: F811
+):
     """Tests that building a pipeline registers it in the server."""
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     with pytest.raises(KeyError):
         clean_client.get_pipeline(name_id_or_prefix=pipeline_instance.name)
 
