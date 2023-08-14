@@ -19,13 +19,13 @@ Do you have a personal project powered by ZenML that you would like to see here?
 
 ## Generating project from a project template
 
-First, to use the templates, you need to have Zenml and its `templates` extras installed: 
+First, to use the templates, you need to have ZenML and its `templates` extras installed: 
 
 ```bash
 pip install zenml[templates]
 ```
 
-Now you can generate a project from one of the existing templates by using the `--template` flag with the `zenml init` command:
+Now, you can generate a project from one of the existing templates by using the `--template` flag with the `zenml init` command:
 
 ```bash
 zenml init --template <short_name_of_template>
