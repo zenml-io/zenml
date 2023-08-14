@@ -324,8 +324,14 @@ def email_opt_in_response(
             email_opted_in=user_response.email_opted_in,
         )
 
+        # TODO: The value 'opted_in' below prevents users with empty emails from
+        #   from getting identified in our analytics. This, however, can be
+        #   handled much more gracefully by changing the corresponding user
+        #   models and adding more validation checks.
+        opted_in = user_response.email is not None and user_response.email != ""
+
         email_opt_int(
-            opted_in=user_response.email is not None,
+            opted_in=opted_in,
             email=user_response.email,
             source="zenml server",
         )
