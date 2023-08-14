@@ -328,7 +328,9 @@ def email_opt_in_response(
         #   from getting identified in our analytics. This, however, can be
         #   handled much more gracefully by changing the corresponding user
         #   models and adding more validation checks.
-        opted_in = user_response.email is not None and user_response.email != ""
+        opted_in = (
+            user_response.email is not None and user_response.email != ""
+        )
 
         email_opt_int(
             opted_in=opted_in,
