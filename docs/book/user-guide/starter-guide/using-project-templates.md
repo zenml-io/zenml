@@ -2,16 +2,20 @@
 description: Rocketstart your ZenML journey!
 ---
 
-# ZenML project templates
+# Project templates
 
 What would you need to get a quick understanding of the ZenML framework and start building your ML pipelines? The answer is one of ZenML project templates to cover major use cases of ZenML: a collection of steps and pipelines and, to top it all off, a simple but useful CLI. This is exactly what the ZenML templates are all about!
 
-## List of ZenML Project Templates
+## List of available project templates
+
+<div data-full-width="true">
 
 | Project Template [Short name] | Tags | Description |
 | -- | -- | -- |
 | [E2E Training with Batch Predictions](https://github.com/zenml-io/template-e2e-batch) [`e2e_batch`] | `etl` `hp-tuning` `model-promotion` `drift-detection` `batch-prediction` `scikit-learn` | This project template is a good starting point for anyone starting with ZenML. It consists of two pipelines with the following high-level steps: load, split, and preprocess data; run HP tuning; train and evaluate model performance; promote model to production; detect data drift; run batch inference. |
 | [Starter template](https://github.com/zenml-io/zenml-project-templates/tree/main/starter) [`starter`] | `basic` `scikit-learn` | All the basic ML ingredients you need to get you started with ZenML: parameterized steps, a model training pipeline, a flexible configuration and a simple CLI. All created around a representative and versatile model training use-case implemented with the scikit-learn library. |
+
+</div>
 
 {% hint style="info" %}
 Do you have a personal project powered by ZenML that you would like to see here? At ZenML, we are looking for design partnerships and collaboration to help us better understand the real-world scenarios in which MLOps is being used and to build the best possible experience for our users. If you are interested in sharing all or parts of your project with us in the form of a ZenML project template, please [join our Slack](https://zenml.io/slack-invite/) and leave us a message!
