@@ -21,7 +21,7 @@ class TensorBoardIntegration(Integration):
     """Definition of TensorBoard integration for ZenML."""
 
     NAME = TENSORBOARD
-    REQUIREMENTS = ["tensorboard>=2.8.0,<3", "protobuf>=3.6.0,<4.0.0"]
+    REQUIREMENTS = ["tensorboard>=2.8.0,<=2.11", "protobuf>=3.6.0,<4.0.0"]
 
     @classmethod
     def activate(cls) -> None:
