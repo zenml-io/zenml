@@ -394,8 +394,8 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             value = os.getenv(key)
             if value:
                 environment[key] = value
-        environment['AZURE_STORAGE_ACCOUNT_NAME'] = 'azuremlorchest4205221076'
-        environment['AZURE_STORAGE_ACCOUNT_KEY'] = 'NwtIJpapO1owSrTiLCFwPhEfFO/CCr/wNkAiQMJOEMsMAU6ZUtfSpggz13ZVNbIzPRtNyeaXyNGI+AStNtB9UA=='
+        #environment['AZURE_STORAGE_ACCOUNT_NAME'] = ****
+        #environment['AZURE_STORAGE_ACCOUNT_KEY'] = ****
         # get the compute target to use to run our pipeline
         # can be single node or cluster
         #ml_client = self.setup_compute_target(ml_client)
