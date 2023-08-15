@@ -41,4 +41,4 @@ jobs:
           REPOSITORY: zenml-server
         run: |
           helm package $REPOSITORY
-          helm push $REPOSITORY-${{ github.ref_name }}.tgz $REGISTRY_ALIAS/$REPOSITORY:${{ github.ref_name }}
+          helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS
