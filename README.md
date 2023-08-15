@@ -161,7 +161,7 @@ infrastructures.
 # 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
-[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.10 is required:
+[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
 
 ```bash
 pip install "zenml[server]"

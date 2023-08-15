@@ -15,6 +15,7 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
+  * [Project templates](user-guide/starter-guide/using-project-templates.md)
   * [Switch to production](user-guide/starter-guide/switch-to-production.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)

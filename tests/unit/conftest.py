@@ -145,8 +145,8 @@ def local_artifact_store():
 
 
 @pytest.fixture
-def remote_artifact_store():
-    """Fixture that creates a local artifact store for testing."""
+def gcp_artifact_store():
+    """Fixture that creates a GCP artifact store for testing."""
     from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
         GCPArtifactStore,
     )
@@ -159,6 +159,29 @@ def remote_artifact_store():
         id=uuid4(),
         config=GCPArtifactStoreConfig(path="gs://bucket"),
         flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def s3_artifact_store():
+    """Fixture that creates an S3 artifact store for testing."""
+    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
+        S3ArtifactStore,
+    )
+    from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+        S3ArtifactStoreConfig,
+    )
+
+    return S3ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=S3ArtifactStoreConfig(path="s3://tmp"),
+        flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         workspace=uuid4(),

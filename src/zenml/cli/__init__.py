@@ -80,12 +80,20 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guide/starter-guide/using-project-templates#list-of-zenml-project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
 ```bash
-zenml init --template
+zenml init --template <name_of_template>
+```
+
+Running the above command will result in input prompts being shown to you. If 
+you would like to rely on default values for the ZenML project template - 
+you can add ``--template-with-defaults`` to the same command, like this:
+
+```bash
+zenml init --template <name_of_template> --template-with-defaults
 ```
 
 If you wish to delete all data relating to your workspace from the
