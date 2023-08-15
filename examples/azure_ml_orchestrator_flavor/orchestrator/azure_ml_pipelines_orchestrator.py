@@ -383,6 +383,19 @@ class AzureMLPipelinesOrchestrator(ContainerizedOrchestrator):
             workspace_name=self.config.workspace_name,
         )
         environment[ENV_ZENML_AZUREML_RUN_ID] = str(uuid.uuid4())
+        # set credentials to access azure storage
+
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                environment[key] = value
+        environment['AZURE_STORAGE_ACCOUNT_NAME'] = 'azuremlorchest4205221076'
+        environment['AZURE_STORAGE_ACCOUNT_KEY'] = 'NwtIJpapO1owSrTiLCFwPhEfFO/CCr/wNkAiQMJOEMsMAU6ZUtfSpggz13ZVNbIzPRtNyeaXyNGI+AStNtB9UA=='
         # get the compute target to use to run our pipeline
         # can be single node or cluster
         #ml_client = self.setup_compute_target(ml_client)
