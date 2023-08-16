@@ -73,15 +73,6 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: ${{ inputs.python-version }}
-          os: ${{ inputs.os }}
-      
       - name: run-tests-e2e-batch
         uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@0.42.1
         with:
