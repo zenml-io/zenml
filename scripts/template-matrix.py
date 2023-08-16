@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-from zenml.cli.base import ZENML_PROJECT_TEMPLATES
+from src.zenml.cli.base import ZENML_PROJECT_TEMPLATES
 
 if sys.argv[1] == "generate":
     print(
