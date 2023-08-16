@@ -83,6 +83,6 @@ jobs:
           os: ${{ inputs.os }}
       
       - name: run-tests-e2e-batch
-        uses: zenml-io/template-e2e-batch@0.42.1
+        uses: zenml-io/template-e2e-batch/.github/actions/@0.42.1
         with:
           stack-name: ${{ matrix.stack-name }}
