@@ -55,7 +55,6 @@ jobs:
     runs-on: ${{ inputs.os }}
     strategy:
         matrix:
-            template: [zenml-io/template-e2e-batch@0.42.1]
             stack-name: [local]
         fail-fast: false
     env:
@@ -83,25 +82,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
       
-      - name: run-tests
-        uses: ${{ matrix.template }}
+      - name: run-tests-e2e-batch
+        uses: zenml-io/template-e2e-batch@0.42.1
         with:
           stack-name: ${{ matrix.stack-name }}
-
-      # - name: Setup tmate session before tests
-      #   if: ${{ inputs.enable_tmate == 'before-tests' }}
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Run unit tests
-      #   run: |
-      #     bash scripts/test-templates.sh
-
-      # - name: Setup tmate session after tests
-      #   if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Verify Python Env unaffected
-      #   run: |
-      #     zenml integration list
-      #     pip list
-      #     pip check || true
