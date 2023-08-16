@@ -45,6 +45,7 @@
 ## Deploying ZenML
 
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+  * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
   * [Get started](deploying-zenml/zenml-cloud/get-started.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
   * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
