@@ -23,7 +23,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.8"] #, "3.9", "3.10", "3.11"]
       fail-fast: false
-    uses: zenml-io/template-e2e-batch@0.42.1
+    uses: ./.github/workflows/templates-test.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
