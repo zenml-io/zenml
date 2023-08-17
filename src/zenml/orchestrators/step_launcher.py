@@ -365,6 +365,13 @@ class StepLauncher:
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_cache,
         )
 
+        step_cache = self._step.config.enable_cache
+        if step_cache is not None:
+            logger.info(
+                f"Caching {'`enabled`' if step_cache else '`disabled`'} "
+                f"explicitly for `{self._step_name}`."
+            )
+
         execution_needed = True
         if cache_enabled:
             cached_step_run = cache_utils.get_cached_step_run(
