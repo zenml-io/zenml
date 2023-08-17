@@ -81,3 +81,11 @@ jobs:
           stack-name: ${{ matrix.stack-name }}
           ref-zenml: ${{ github.ref }}
           ref-template: feature/OSS-2173-improve-test-action
+
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=One or more project templates testing failed with new version of ZenML core::\
+            It happens then breaking changes affecting templates are introduced. To mitigate this issue, \
+            please update the code of the failed template(s) in relevant repository(ies), make a release \
+            and update the tag in `zenml.cli.base.ZENML_PROJECT_TEMPLATES`."
