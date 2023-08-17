@@ -77,6 +77,8 @@ jobs:
       - name: run-tests-e2e-batch
         uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@feature/OSS-2173-improve-test-action
         with:
+          os: ${{ inputs.os }}
+          python-version: ${{ inputs.python-version }}
           stack-name: ${{ matrix.stack-name }}
           ref_zenml: ${{ github.ref }}
           ref_template: feature/OSS-2173-improve-test-action
