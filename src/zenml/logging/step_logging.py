@@ -176,10 +176,17 @@ class StepLogsStorageContext:
             self
         """
         self.stdout_write = getattr(sys.stdout, "write")
+        self.stdout_flush = getattr(sys.stdout, "flush")
+
         self.stderr_write = getattr(sys.stderr, "write")
+        self.stderr_flush = getattr(sys.stderr, "flush")
 
         setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
+        setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
+
         setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
+        setattr(sys.stderr, "flush", self._wrap_flush(self.stdout_flush))
+
         redirected.set(True)
         return self
 
@@ -196,7 +203,11 @@ class StepLogsStorageContext:
         self.storage.save_to_file()
 
         setattr(sys.stdout, "write", self.stdout_write)
+        setattr(sys.stdout, "flush", self.stdout_flush)
+
         setattr(sys.stderr, "write", self.stderr_write)
+        setattr(sys.stderr, "flush", self.stderr_flush)
+
         redirected.set(False)
 
     def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
@@ -216,3 +227,20 @@ class StepLogsStorageContext:
             return output
 
         return wrapped_write
+
+    def _wrap_flush(self, method: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrapper function that flushes the buffer of the storage object.
+
+        Args:
+            method: the original flush method
+
+        Returns:
+            the wrapped flush method.
+        """
+
+        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
+            output = method(*args, **kwargs)
+            self.storage.save_to_file()
+            return output
+
+        return wrapped_flush
