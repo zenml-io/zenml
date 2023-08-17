@@ -13,12 +13,21 @@
 #  permissions and limitations under the License.
 """Unit tests for manifest_utils.py."""
 
-from kubernetes.client import V1ObjectMeta, V1Pod, V1PodSpec, V1Toleration
+import pytest
+from kubernetes.client import (
+    V1beta1CronJob,
+    V1beta1CronJobSpec,
+    V1ObjectMeta,
+    V1Pod,
+    V1PodSpec,
+    V1Toleration,
+)
 
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_cron_job_manifest,
     build_pod_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
@@ -49,8 +58,9 @@ def test_build_pod_manifest_metadata():
     assert metadata.annotations["blupus_loves"] == "strawberries"
 
 
-def test_build_pod_manifest_pod_settings():
-    """Test that the pod settings are correctly set in the manifest."""
+@pytest.fixture
+def kubernetes_settings() -> KubernetesOrchestratorSettings:
+    """build KubernetesOrchestratorSettings fixture."""
     kubernetes_settings = KubernetesOrchestratorSettings(
         pod_settings={
             "affinity": {
@@ -81,7 +91,13 @@ def test_build_pod_manifest_pod_settings():
             "resources": {"requests": {"memory": "2G"}},
         }
     )
+    return kubernetes_settings
 
+
+def test_build_pod_manifest_pod_settings(
+    kubernetes_settings: KubernetesOrchestratorSettings,
+):
+    """Test that the pod settings are correctly set in the manifest."""
     manifest: V1Pod = build_pod_manifest(
         pod_name="test_name",
         run_name="test_run",
@@ -101,3 +117,32 @@ def test_build_pod_manifest_pod_settings():
     )
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
+
+
+def test_build_cron_job_manifest_pod_settings(
+    kubernetes_settings: KubernetesOrchestratorSettings,
+):
+    """Test that the pod settings are correctly set in the manifest."""
+    manifest: V1beta1CronJob = build_cron_job_manifest(
+        cron_expression="* * * * *",
+        pod_name="test_name",
+        run_name="test_run",
+        pipeline_name="test_pipeline",
+        image_name="test_image",
+        command=["test", "command"],
+        args=["test", "args"],
+        settings=kubernetes_settings,
+        service_account_name="test_sa",
+    )
+    assert isinstance(manifest, V1beta1CronJob)
+    assert isinstance(manifest.spec, V1beta1CronJobSpec)
+    job_pod_spec = manifest.spec.job_template.spec.template.spec
+    assert (
+        job_pod_spec.affinity["nodeAffinity"][
+            "requiredDuringSchedulingIgnoredDuringExecution"
+        ]["nodeSelectorTerms"][0]["matchExpressions"][0]["key"]
+        == "node.kubernetes.io/name"
+    )
+    assert job_pod_spec.tolerations[0]["key"] == "node.kubernetes.io/name"
+    assert job_pod_spec.containers[0].resources["requests"]["memory"] == "2G"
+    assert job_pod_spec.service_account_name == "test_sa"

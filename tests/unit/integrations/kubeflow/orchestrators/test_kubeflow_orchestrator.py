@@ -11,27 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
-    KubeflowOrchestratorConfig,
-)
-from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.stack import Stack
+
+if TYPE_CHECKING:
+    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
 K8S_CONTEXT = "kubeflow_context"
 
 
 def _get_kubeflow_orchestrator(
     local: bool = False, skip_local_validations: bool = False
-) -> KubeflowOrchestrator:
+) -> "KubeflowOrchestrator":
     """Helper function to get a Kubeflow orchestrator."""
+
+    from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+        KubeflowOrchestratorConfig,
+    )
+    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
     return KubeflowOrchestrator(
         name="",
@@ -50,8 +56,12 @@ def _get_kubeflow_orchestrator(
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="Kubeflow integration not installed in Python 3.11",
+)
 def test_kubeflow_orchestrator_remote_stack(
-    mocker, remote_artifact_store, remote_container_registry
+    mocker, s3_artifact_store, remote_container_registry
 ) -> None:
     """Test the remote and local kubeflow orchestrator with remote stacks."""
     mocker.patch(
@@ -66,7 +76,7 @@ def test_kubeflow_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
 
@@ -77,7 +87,7 @@ def test_kubeflow_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
     orchestrator = _get_kubeflow_orchestrator(
@@ -88,11 +98,15 @@ def test_kubeflow_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="Kubeflow integration not installed in Python 3.11",
+)
 def test_kubeflow_orchestrator_local_stack(
     mocker, local_artifact_store, local_container_registry
 ) -> None:

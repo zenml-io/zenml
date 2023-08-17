@@ -13,29 +13,29 @@
 #  permissions and limitations under the License.
 
 import json
+import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
-import kfp
 import pytest
-from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.azure.artifact_stores import AzureArtifactStore
-from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
-    AzureArtifactStoreConfig,
-)
-from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
-    VertexOrchestratorConfig,
-)
-from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 from zenml.stack import Stack
+
+if TYPE_CHECKING:
+    pass
 
 
 def _get_vertex_orchestrator(**kwargs):
+    from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+        VertexOrchestratorConfig,
+    )
+    from zenml.integrations.gcp.orchestrators import VertexOrchestrator
+
     return VertexOrchestrator(
         name="",
         id=uuid4(),
@@ -49,13 +49,22 @@ def _get_vertex_orchestrator(**kwargs):
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="GCP integration not installed in Python 3.11",
+)
 def test_vertex_orchestrator_stack_validation(
     local_artifact_store,
-    remote_artifact_store,
+    gcp_artifact_store,
     local_container_registry,
     remote_container_registry,
 ) -> None:
     """Tests that the vertex orchestrator validates that it's stack has a container registry and that all stack components used are not local."""
+    from zenml.integrations.azure.artifact_stores import AzureArtifactStore
+    from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+        AzureArtifactStoreConfig,
+    )
+
     orchestrator = _get_vertex_orchestrator(
         location="europe-west4",
         pipeline_root="gs://my-bucket/pipeline",
@@ -64,7 +73,6 @@ def test_vertex_orchestrator_stack_validation(
         location="europe-west4"
     )
 
-    gcp_artifact_store = remote_artifact_store
     gcp_container_registry = remote_container_registry
 
     azure_artifact_store = AzureArtifactStore(
@@ -129,6 +137,10 @@ def test_vertex_orchestrator_stack_validation(
         ).validate()
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="GCP integration not installed in Python 3.11",
+)
 @pytest.mark.parametrize(
     "resource_settings, orchestrator_resource_settings, expected_resources",
     [
@@ -176,6 +188,9 @@ def test_vertex_orchestrator_configure_container_resources(
     expected_resources: dict,
 ) -> None:
     """Tests that the vertex orchestrator sets the correct container resources for a step."""
+    import kfp
+    from kfp.v2.compiler import Compiler as KFPV2Compiler
+
     accelerator = "NVIDIA_TESLA_K80"
     orchestrator = _get_vertex_orchestrator(
         location="europe-west4",

@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard integration."""
 
+import sys
+from typing import List, Optional
 from zenml.integrations.constants import TENSORBOARD
 from zenml.integrations.integration import Integration
 
@@ -21,7 +23,31 @@ class TensorBoardIntegration(Integration):
     """Definition of TensorBoard integration for ZenML."""
 
     NAME = TENSORBOARD
-    REQUIREMENTS = ["tensorboard==2.8.0", "protobuf>=3.6.0,<4.0.0"]
+    REQUIREMENTS = []
+
+    @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Defines platform specific requirements for the integration.
+
+        Args:
+            target_os: The target operating system.
+
+        Returns:
+            A list of requirements.
+        """
+        if sys.version_info > (3, 11):
+            tf_version = "2.13"
+        else:
+            # Capping tensorflow to 2.11 for Python 3.10 and below because it
+            # is not compatible with Pytorch
+            # (see https://github.com/pytorch/pytorch/issues/99637).
+            tf_version = "2.11"
+
+        requirements = [
+            f"tensorboard=={tf_version}",
+            "protobuf>=3.6.0,<4.0.0",
+        ]
+        return requirements
 
     @classmethod
     def activate(cls) -> None:
