@@ -73,7 +73,7 @@ jobs:
         shell: bash
 
     steps:
-      # if breaking changes were introduced - you need to bump version number here
+      # if breaking changes were introduced - you need to bump version number here, after syncing template state
       - name: run-tests-e2e-batch
         uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@feature/OSS-2173-improve-test-action
         with:
