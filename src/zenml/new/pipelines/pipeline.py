@@ -686,7 +686,7 @@ class Pipeline:
             if deployment_model.pipeline_configuration.enable_cache is False:
                 logger.info(
                     f"Caching is disabled by default for "
-                    f"`{deployment_model.pipeline.name}`."
+                    f"`{deployment_model.pipeline_configuration.name}`."
                 )
 
             # Log about the used builds
