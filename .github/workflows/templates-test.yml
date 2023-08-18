@@ -76,7 +76,7 @@ jobs:
       - name: Run template tests for ${{ matrix.template-repo.repo }}
         uses: jenseng/dynamic-uses@v1
         with:
-          uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}
+          uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}@main
           with: '{ "python-version": "${{ inputs.python-version }}", "stack-name": "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}" }'
 
       - name: message-on-error
