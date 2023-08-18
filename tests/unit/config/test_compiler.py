@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import pytest
 
+from tests.unit.conftest_new import empty_pipeline  # noqa: F401
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
@@ -26,10 +27,10 @@ from zenml.steps import step
 
 
 def test_compiling_pipeline_with_invalid_run_name_fails(
-    empty_pipeline, local_stack
+    empty_pipeline, local_stack  # noqa: F811
 ):
     """Tests that compiling a pipeline with an invalid run name fails."""
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     with pipeline_instance:
         pipeline_instance.entrypoint()
     with pytest.raises(ValueError):
@@ -39,6 +40,24 @@ def test_compiling_pipeline_with_invalid_run_name_fails(
             run_configuration=PipelineRunConfiguration(
                 run_name="{invalid_placeholder}"
             ),
+        )
+
+
+@pipeline
+def _no_step_pipeline():
+    pass
+
+
+def test_compiling_pipeline_without_steps_fails(local_stack):
+    """Tests that compiling a pipeline without steps fails."""
+    pipeline_instance = _no_step_pipeline()
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
+    with pytest.raises(ValueError):
+        Compiler().compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
         )
 
 
@@ -100,7 +119,9 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     assert pipeline_instance.enable_cache is True
 
 
-def test_compiling_pipeline_with_invalid_run_configuration(empty_pipeline):
+def test_compiling_pipeline_with_invalid_run_configuration(
+    empty_pipeline,  # noqa: F811
+):
     """Tests that compiling with a run configuration containing invalid steps
     fails."""
     run_config = PipelineRunConfiguration(
@@ -110,7 +131,7 @@ def test_compiling_pipeline_with_invalid_run_configuration(empty_pipeline):
     )
     with pytest.raises(KeyError):
         Compiler()._apply_run_configuration(
-            pipeline=empty_pipeline(), config=run_config
+            pipeline=empty_pipeline, config=run_config
         )
 
 

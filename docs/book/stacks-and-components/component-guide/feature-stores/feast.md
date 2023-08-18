@@ -27,37 +27,34 @@ usable in production settings with deployed models. We will update the docs when
 
 ### How to deploy it?
 
-The Feast Feature Store flavor is provided by the Feast ZenML integration, you need to install it, to be able to
-register it as a Feature Store and add it to your stack:
+ZenML assumes that users already have a Feast feature store that they just need 
+to connect with. If you don't have a feature store yet, follow the
+[Feast Documentation](https://docs.feast.dev/how-to-guides/feast-snowflake-gcp-aws/deploy-a-feature-store)
+to deploy one first.
+
+To use the feature store as a ZenML stack component, you also need to install
+the corresponding `feast` integration in ZenML:
 
 ```shell
 zenml integration install feast
 ```
 
-Since this example is built around a Redis use case, a Python package to interact with Redis will get installed
-alongside Feast, but you will still first need to install Redis yourself. See this page for some instructions on how to
-do that on your operating system.
-
-You will then need to run a Redis server in the background in order for this example to work. You can either use the
-Redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run
-the daemonized version:
+Now you can register your feature store as a ZenML stack component and add it
+into a corresponding stack:
 
 ```shell
-redis-server --daemonize yes
-
-# verify it is running (Unix machines)
-ps aux | grep redis-server
+zenml feature-store register feast_store --flavor=feast --feast_repo="<PATH/TO/FEAST/REPO>"
+zenml stack register ... -f feast_store
 ```
 
 ### How do you use it?
 
-ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data
-retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the
-context of a deployed model or as part of model deployment. We will update this documentation as we develop this
+{% hint style="warning" %}
+Online data retrieval is possible in a local setting, but we don't currently 
+support using the online data serving in the context of a deployed model or as 
+part of model deployment. We will update this documentation as we develop this 
 feature.
-
-ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. (
-See [here](https://sdkdocs.zenml.io/latest/cli/) for details on how to do that.)
+{% endhint %}
 
 Getting features from a registered and active feature store is possible by creating your own step that interfaces into
 the feature store:
@@ -100,6 +97,33 @@ def get_historical_features(
         features=features,
         full_feature_names=full_feature_names,
     )
+
+
+entity_dict = {
+    "driver_id": [1001, 1002, 1003],
+    "label_driver_reported_satisfaction": [1, 5, 3],
+    "event_timestamp": [
+        datetime(2021, 4, 12, 10, 59, 42).isoformat(),
+        datetime(2021, 4, 12, 8, 12, 10).isoformat(),
+        datetime(2021, 4, 12, 16, 40, 26).isoformat(),
+    ],
+    "val_to_add": [1, 2, 3],
+    "val_to_add_2": [10, 20, 30],
+}
+
+
+features = [
+    "driver_hourly_stats:conv_rate",
+    "driver_hourly_stats:acc_rate",
+    "driver_hourly_stats:avg_daily_trips",
+    "transformed_conv_rate:conv_rate_plus_val1",
+    "transformed_conv_rate:conv_rate_plus_val2",
+]
+
+@pipeline
+def my_pipeline():
+    my_features = get_historical_features(entity_dict, features)
+    ...
 ```
 
 {% hint style="warning" %}
@@ -107,9 +131,6 @@ Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in 
 limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for example, or `datetime` values, so in the
 above code you can see that we have to convert them at various points.
 {% endhint %}
-
-A concrete example of using the Feast feature store can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/feast\_feature\_store).
 
 For more information and a full list of configurable attributes of the Feast feature store, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-feast/#zenml.integrations.feast.feature\_stores.feast\_feature\_store.FeastFeatureStore)

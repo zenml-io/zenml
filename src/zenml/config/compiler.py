@@ -151,9 +151,7 @@ class Compiler:
         pipeline = copy.deepcopy(pipeline)
 
         invocations = [
-            self._get_step_spec(
-                invocation=invocation,
-            )
+            self._get_step_spec(invocation=invocation)
             for _, invocation in self._get_sorted_invocations(
                 pipeline=pipeline
             )
@@ -552,8 +550,20 @@ class Compiler:
 
         Returns:
             The pipeline spec.
+
+        Raises:
+            ValueError: If the pipeline has no steps.
         """
         from zenml.pipelines import BasePipeline
+
+        if not step_specs:
+            raise ValueError(
+                f"Pipeline '{pipeline.name}' cannot be compiled because it has "
+                f"no steps. Please make sure that your steps are decorated "
+                "with `@step` and that at least one step is called within the "
+                "pipeline. For more information, see "
+                "https://docs.zenml.io/user-guide/starter-guide."
+            )
 
         additional_spec_args: Dict[str, Any] = {}
         if isinstance(pipeline, BasePipeline):

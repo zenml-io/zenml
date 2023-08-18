@@ -12,11 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+import platform
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
-from zenml.cli.base import clean, init
+from zenml.cli.base import ZENML_PROJECT_TEMPLATES, clean, init
 from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -27,6 +30,40 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
     runner = CliRunner()
     runner.invoke(init, ["--path", str(tmp_path)])
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
+
+
+@pytest.mark.skipif(
+    platform.system().lower() == "windows",
+    reason="Windows not fully supported",
+)
+@pytest.mark.parametrize(
+    "template_name",
+    list(ZENML_PROJECT_TEMPLATES.keys()),
+)
+def test_init_creates_from_templates(
+    tmp_path: Path, template_name: str
+) -> None:
+    """Check that init command checks-out template."""
+    runner = CliRunner()
+    runner.invoke(
+        init,
+        [
+            "--path",
+            str(tmp_path),
+            "--template",
+            template_name,
+            "--template-with-defaults",
+        ],
+    )
+    assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
+    files_in_top_level = set(os.listdir(str(tmp_path)))
+    must_have_files = {
+        ".copier-answers.yml",
+        ".dockerignore",
+        "LICENSE",
+        "run.py",
+    }
+    assert not must_have_files - files_in_top_level
 
 
 def test_clean_user_config(clean_workspace) -> None:
