@@ -50,12 +50,16 @@ on:
         default: 'no'
 
 jobs:
-  e2e-template-tests:
-    name: e2e-template-tests
+  all-template-tests:
+    name: all-template-tests
     runs-on: ${{ inputs.os }}
     strategy:
         matrix:
             stack-name: [local]
+            template-repo: [
+              {repo: zenml-io/zenml-project-templates, path: .github/actions/starter_template_test, ref: feature/OSS-2135-add-unified-testing},
+              {repo: zenml-io/template-e2e-batch, path: .github/actions/e2e_template_test, ref: feature/OSS-2173-improve-test-action}
+            ]
         fail-fast: false
     env:
       ZENML_DEBUG: 1
@@ -69,36 +73,17 @@ jobs:
         shell: bash
 
     steps:
-      - name: run-tests-starter
-        uses: zenml-io/zenml-project-templates/.github/actions/starter_template_test@feature/OSS-2135-add-unified-testing
+      - name: Run template tests for ${{ matrix.template-repo.repo }}
+        uses: jenseng/dynamic-uses@v1
         with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: ${{ matrix.stack-name }}
-          ref-zenml: ${{ github.ref }}
-          ref-template: feature/OSS-2135-add-unified-testing
+          uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}@${{ matrix.template-repo.ref }}
+          with: '{ "python-version": "${{ inputs.python-version }}", "stack-name": "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}", "ref-template": "${{ matrix.template-repo.ref }}"}'
 
       - name: message-on-error
         if: failure()
         run: |
-          echo "::error title=STARTER project template testing failed with new version of ZenML core!::\
-            It happens then breaking changes affecting templates are introduced. To mitigate this issue,\
-            please make the code in zenml-io/zenml-project-templates compatible with new version of\
+          echo "::error title=${{ matrix.template-repo.repo }} project template testing failed with new version of ZenML core!::\
+            It happens then breaking changes affecting template are introduced. To mitigate this issue,\
+            please make the code in ${{ matrix.template-repo.repo }} compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
-      - name: run-tests-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@feature/OSS-2173-improve-test-action
-        with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: ${{ matrix.stack-name }}
-          ref-zenml: ${{ github.ref }}
-          ref-template: feature/OSS-2173-improve-test-action
-
-      - name: message-on-error
-        if: failure()
-        run: |
-          echo "::error title=E2E project template testing failed with new version of ZenML core!::\
-            It happens then breaking changes affecting templates are introduced. To mitigate this issue,\
-            please make the code in zenml-io/template-e2e-batch compatible with new version of\
-            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-  
-      
