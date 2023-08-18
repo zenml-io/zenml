@@ -1275,7 +1275,7 @@ def generate_stack_component_deploy_command(
             "extra_config": extra_config,
             "file": None,
             "debug_mode": debug_mode,
-            component_type.value: name,
+            component_type.value: flavor,
         }
         if component_type == StackComponentType.ARTIFACT_STORE:
             cli_params["extra_config"] = cli_params["extra_config"] + (
