@@ -4,6 +4,10 @@ description: Learning how to develop a custom orchestrator.
 
 # Develop a Custom Orchestrator
 
+{% hint style="info" %}
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../writing-custom-components.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+{% endhint %}
+
 ### Base Implementation
 
 ZenML aims to enable orchestration with any orchestration tool. This is where the `BaseOrchestrator` comes into play. It

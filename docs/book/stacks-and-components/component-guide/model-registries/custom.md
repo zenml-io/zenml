@@ -4,6 +4,10 @@ description: Learning how to develop a custom model registry.
 
 # Develop a Custom Model Registry
 
+{% hint style="info" %}
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../writing-custom-components.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+{% endhint %}
+
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
