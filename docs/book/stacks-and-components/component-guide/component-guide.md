@@ -28,4 +28,9 @@ Here is a full list of all stack components currently supported in ZenML, with a
 
 Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
 
+## Writing  custom components
+
+You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to
+[the general guide on writing component flavors](writing-custom-components.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
