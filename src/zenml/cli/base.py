@@ -64,7 +64,11 @@ class ZenMLProjectTemplateLocation(BaseModel):
 
     @property
     def copier_github_url(self) -> str:
-        """Get the GitHub URL for the copier."""
+        """Get the GitHub URL for the copier.
+
+        Returns:
+            A GitHub URL in copier format.
+        """
         return f"gh:{self.github_url}"
 
 
