@@ -208,7 +208,7 @@ class DockerZenServer(ContainerService):
             ValueError: if started with a global configuration that connects to
                 another ZenML server.
         """
-        import uvicorn  # type: ignore[import]
+        import uvicorn
 
         gc = GlobalConfiguration()
         if gc.store and gc.store.type == StoreType.REST:
@@ -226,7 +226,7 @@ class DockerZenServer(ContainerService):
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
                 host="0.0.0.0",
-                port=self.endpoint.config.port,
+                port=self.endpoint.config.port or 8000,
                 log_level="info",
             )
         except KeyboardInterrupt:

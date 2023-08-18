@@ -241,7 +241,7 @@ class LocalZenServer(LocalDaemonService):
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
                 host=self.endpoint.config.ip_address,
-                port=self.endpoint.config.port,
+                port=self.endpoint.config.port or 8000,
                 log_level="info",
             )
         except KeyboardInterrupt:
