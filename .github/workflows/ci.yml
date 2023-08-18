@@ -201,7 +201,9 @@ jobs:
     secrets: inherit
   
   windows-templates-test:
-    needs: windows-integration-test
+    needs: 
+      - configure-matrixes
+      - windows-integration-test
     strategy:
       matrix:
         os: [windows-latest]
