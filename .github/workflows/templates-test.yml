@@ -57,8 +57,8 @@ jobs:
         matrix:
             stack-name: [local]
             template-repo: [
-              {repo: zenml-io/zenml-project-templates, path: .github/actions/starter_template_test, ref: feature/OSS-2135-add-unified-testing},
-              {repo: zenml-io/template-e2e-batch, path: .github/actions/e2e_template_test, ref: feature/OSS-2173-improve-test-action}
+              {repo: zenml-io/zenml-project-templates, path: .github/actions/starter_template_test},
+              {repo: zenml-io/template-e2e-batch, path: .github/actions/e2e_template_test}
             ]
         fail-fast: false
     env:
@@ -76,8 +76,8 @@ jobs:
       - name: Run template tests for ${{ matrix.template-repo.repo }}
         uses: jenseng/dynamic-uses@v1
         with:
-          uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}@${{ matrix.template-repo.ref }}
-          with: '{ "python-version": "${{ inputs.python-version }}", "stack-name": "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}", "ref-template": "${{ matrix.template-repo.ref }}"}'
+          uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}
+          with: '{ "python-version": "${{ inputs.python-version }}", "stack-name": "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}" }'
 
       - name: message-on-error
         if: failure()
