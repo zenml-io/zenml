@@ -81,6 +81,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -96,6 +97,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
@@ -111,6 +113,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
@@ -126,6 +129,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -157,6 +161,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
@@ -176,6 +181,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
@@ -195,6 +201,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -210,6 +217,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
@@ -225,6 +233,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
