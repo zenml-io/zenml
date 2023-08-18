@@ -126,6 +126,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - ubuntu-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -157,6 +158,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - windows-unit-test
     strategy:
       matrix:
         os: [windows-latest]
@@ -176,6 +178,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - macos-unit-test
     strategy:
       matrix:
         os: [macos-latest]
@@ -195,6 +198,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - ubuntu-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -210,6 +214,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - windows-unit-test
     strategy:
       matrix:
         os: [windows-latest]
@@ -225,6 +230,7 @@ jobs:
     needs: 
       - configure-matrixes
       - lint
+      - macos-unit-test
     strategy:
       matrix:
         os: [macos-latest]
