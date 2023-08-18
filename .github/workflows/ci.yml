@@ -71,9 +71,6 @@ jobs:
   lint:
     needs: 
       - configure-matrixes
-      - ubuntu-setup-python-environment
-      - windows-setup-python-environment
-      - macos-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
