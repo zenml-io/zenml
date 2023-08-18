@@ -145,9 +145,6 @@ class StepLogsStorage:
                                 remove_ansi_escape_codes(message) + "\n"
                             )
 
-                self.buffer = []
-                self.last_save_time = time.time()
-
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
                 # underlying system calls, such as reaching the maximum number
@@ -155,6 +152,9 @@ class StepLogsStorage:
                 # I/O errors.
                 logger.error(f"Error while trying to write logs: {e}")
             finally:
+                self.buffer = []
+                self.last_save_time = time.time()
+
                 self.disabled = False
 
 
