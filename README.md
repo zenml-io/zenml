@@ -91,7 +91,7 @@
     <br />
     <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
-    🎉 Version 0.42.1 is out. Check out the release notes
+    🎉 Version 0.43.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <a href="https://www.linkedin.com/company/zenml/">
@@ -161,7 +161,7 @@ infrastructures.
 # 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
-[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.10 is required:
+[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
 
 ```bash
 pip install "zenml[server]"

@@ -4,9 +4,10 @@ description: Executing individual steps in AzureML.
 
 # AzureML
 
-The AzureML step operator is a [step operator](step-operators.md) flavor provided by the ZenML `azure` integration that
-uses [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/) to execute individual steps of ZenML
-pipelines.
+[AzureML](https://azure.microsoft.com/en-us/services/machine-learning/) offers
+specialized compute instances to run your training jobs and has a comprehensive 
+UI to track and manage your models and logs. ZenML's AzureML step operator 
+allows you to submit individual steps to be run on AzureML compute instances.
 
 ### When to use it
 
@@ -93,9 +94,6 @@ running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
 more information on how to specify settings.
-
-A concrete example of using the AzureML step operator can be
-found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 
 For more information and a full list of configurable attributes of the AzureML step operator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.step\_operators.azureml\_step\_operator.AzureMLStepOperator)

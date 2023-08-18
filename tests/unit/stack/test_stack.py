@@ -16,6 +16,7 @@ from uuid import uuid4
 
 import pytest
 
+from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
@@ -151,7 +152,7 @@ def test_stack_prepare_pipeline_deployment(
 
 
 def test_stack_deployment(
-    stack_with_mock_components, one_step_pipeline, empty_step
+    stack_with_mock_components, empty_pipeline  # noqa: F811
 ):
     """Tests that when a pipeline is deployed on a stack, the stack calls the
     orchestrator to run the pipeline and calls cleanup methods on all of its
@@ -164,9 +165,10 @@ def test_stack_deployment(
         pipeline_run_return_value
     )
 
-    pipeline = one_step_pipeline(empty_step())
+    with empty_pipeline:
+        empty_pipeline.entrypoint()
     deployment = Compiler().compile(
-        pipeline=pipeline,
+        pipeline=empty_pipeline,
         stack=stack_with_mock_components,
         run_configuration=PipelineRunConfiguration(),
     )

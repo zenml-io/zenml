@@ -230,10 +230,6 @@ text_data_report = evidently_report_step.with_options(
 
 You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_report.evidently_report_step) in the SDK docs.
 
-You can also check out our examples pages for working examples that use the Evidently standard step:
-
-* [Data validation with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently\_data\_validation)
-
 #### Data Validation
 
 Aside from data profiling, Evidently can also be used to configure and run automated data validation tests on your data.
@@ -411,10 +407,6 @@ text_data_test = evidently_test_step.with_options(
 ```
 
 You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently\_test.evidently_test_step) in the SDK docs.
-
-You can also check out our examples pages for working examples that use the Evidently standard step:
-
-* [Data validation with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently\_data\_validation)
 
 #### The Evidently Data Validator
 
