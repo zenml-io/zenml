@@ -50,8 +50,7 @@ if TYPE_CHECKING:
 
 
 def verify_installation(func: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Decorator for verifying mlstacks installation before running a function.
+    """Decorator for verifying mlstacks installation before running a function.
 
     Args:
         func: The function to be decorated.
@@ -400,8 +399,7 @@ def convert_mlstacks_primitives_to_dicts(
 
 
 def generate_unique_filename(base_filename: str) -> str:
-    """
-    Generates a unique filename by appending a UUID to the base filename.
+    """Generates a unique filename by appending a UUID to the base filename.
 
     Args:
         base_filename: The base filename.
