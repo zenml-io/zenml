@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML logging handler."""
-
+import logging
 import os
 import re
 import sys
@@ -111,6 +111,7 @@ class StepLogsStorage:
 
         # State
         self.buffer: List[str] = []
+        self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
         self.disabled = False
 
@@ -123,7 +124,11 @@ class StepLogsStorage:
         if text == "\n":
             return
 
-        self.buffer.append(text)
+        if not self.disabled:
+            self.buffer.append(text)
+        else:
+            self.disabled_buffer.append(text)
+
         if (
             len(self.buffer) >= self.max_messages
             or time.time() - self.last_save_time >= self.time_interval
@@ -142,8 +147,10 @@ class StepLogsStorage:
                             file.write(
                                 remove_ansi_escape_codes(message) + "\n"
                             )
-                    self.buffer = []
-                    self.last_save_time = time.time()
+
+                self.buffer = self.disabled_buffer
+                self.disabled_buffer = []
+                self.last_save_time = time.time()
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
