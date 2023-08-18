@@ -83,7 +83,7 @@ orjson = { version = "~3.8.3", optional = true}
 # optional dependencies for stack recipes
 
 # Optional dependencies for project templates
-copier = { version = ">=7.0.0", optional = true }
+copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^23.3.0", optional = true }
 ruff = { version = "^0.0.282", optional = true }
