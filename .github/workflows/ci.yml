@@ -19,12 +19,22 @@ env:
   ZENML_SUPPORTED_PYTHON_VERSIONS: "['3.8', '3.9', '3.10', '3.11']"
 
 jobs:
+  configure-matrixes:
+    runs-on: ubuntu-latest
+    outputs:
+      python-version: ${{ steps.set-python-versions.outputs.test }}
+    steps:
+      - id: set-python-versions
+        run: |
+          echo "test=$ZENML_SUPPORTED_PYTHON_VERSIONS" >> "$GITHUB_OUTPUT"
+
   ubuntu-setup-python-environment:
+    needs: configure-matrixes
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -33,11 +43,12 @@ jobs:
     secrets: inherit
 
   windows-setup-python-environment:
+    needs: configure-matrixes
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -46,11 +57,12 @@ jobs:
     secrets: inherit
 
   macos-setup-python-environment:
+    needs: configure-matrixes
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -59,11 +71,13 @@ jobs:
     secrets: inherit
 
   ubuntu-lint-unit-test:
-    needs: ubuntu-setup-python-environment
+    needs: 
+      - configure-matrixes
+      - ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -72,11 +86,13 @@ jobs:
     secrets: inherit
 
   windows-lint-unit-test:
-    needs: windows-setup-python-environment
+    needs: 
+      - configure-matrixes
+      - windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -85,11 +101,13 @@ jobs:
     secrets: inherit
 
   macos-lint-unit-test:
-    needs: macos-setup-python-environment
+    needs: 
+      - configure-matrixes
+      - macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -98,11 +116,13 @@ jobs:
     secrets: inherit
 
   ubuntu-integration-test:
-    needs: ubuntu-lint-unit-test
+    needs: 
+      - configure-matrixes
+      - ubuntu-lint-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
         test_environment:
           [
             "default",
@@ -127,11 +147,13 @@ jobs:
     secrets: inherit
 
   windows-integration-test:
-    needs: windows-lint-unit-test
+    needs: 
+      - configure-matrixes
+      - windows-lint-unit-test
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
         test_environment: ["default"]
 
       fail-fast: false
@@ -144,12 +166,14 @@ jobs:
     secrets: inherit
 
   macos-integration-test:
-    needs: macos-lint-unit-test
+    needs: 
+      - configure-matrixes
+      - macos-lint-unit-test
     # Exit if its a commit from Gitbook
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
         test_environment: ["default"]
 
       fail-fast: false
@@ -162,11 +186,13 @@ jobs:
     secrets: inherit
 
   ubuntu-templates-test:
-    needs: ubuntu-integration-test
+    needs: 
+      - configure-matrixes
+      - ubuntu-integration-test
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:
@@ -179,7 +205,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:
@@ -188,11 +214,13 @@ jobs:
     secrets: inherit
 
   macos-templates-test:
-    needs: macos-integration-test
+    needs: 
+      - configure-matrixes
+      - macos-integration-test
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(env.ZENML_SUPPORTED_PYTHON_VERSIONS) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:
