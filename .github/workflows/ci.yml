@@ -20,6 +20,7 @@ env:
 
 jobs:
   configure-matrixes:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       python-version: ${{ steps.set-python-versions.outputs.test }}
@@ -30,7 +31,6 @@ jobs:
 
   ubuntu-setup-python-environment:
     needs: configure-matrixes
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -44,7 +44,6 @@ jobs:
 
   windows-setup-python-environment:
     needs: configure-matrixes
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
@@ -58,7 +57,6 @@ jobs:
 
   macos-setup-python-environment:
     needs: configure-matrixes
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
@@ -169,7 +167,6 @@ jobs:
     needs: 
       - configure-matrixes
       - macos-lint-unit-test
-    # Exit if its a commit from Gitbook
     strategy:
       matrix:
         os: [macos-latest]
