@@ -20,24 +20,25 @@ For example, to deploy an MLflow tracking server on a GCP account, you can run:
 
 {% code overflow="wrap" %}
 ```bash
-zenml experiment-tracker deploy my_tracker --flavor=mlflow --cloud=gcp --project_id="zenml"
+zenml experiment-tracker deploy --flavor mlflow --provider gcp --extra-config project_id=zenml --region us-east1 my_tracker
 ```
 {% endcode %}
 
 The command above takes in the following parameters:
 
-* **Name**: The name of the stack component. In this case, it is `my_tracker` . If you don't provide a name, a random one is generated for you.
+* **Name**: The name of the stack component. In this case, it is `my_tracker`.
 * **Flavor:** The flavor of the stack component to deploy. Here, we are deploying an MLflow experiment tracker.
-* **Cloud:** The cloud to deploy this stack component on. Currently, only **GCP, AWS, and k3d** are supported as providers).
-* **Additional Configuration:** Some components can be customized by the user and these settings are passed as flags to the command. In the example above, we pass the GCP project ID to select what project to deploy the component to.
+* **Provider:** The provider to deploy this stack component on. Currently, only
+  **GCP, AWS, and K3D** are supported as providers.
+* **Region**: The region to deploy the stack component in.
+* **Extra Config:** Some components can be customized by the user and these settings are passed as flags to the command. In the example above, we pass the GCP project ID to select what project to deploy the component to.
 
 Successful execution of this command does the following:
 
 * Asks for your confirmation on the resources that will be deployed.
-* Once you agree, it starts the deployment process and gives you a list of outputs at the end pertaining to your deployed stack component (the text in green in the screenshot below).
 * It also automatically registers the deployed stack component with your ZenML server, so you don't have to worry about manually configuring components after the deployment! 🤩
 
-![Deploying an artifact store](../../.gitbook/assets/artifact_store_deploy.png)
+<!-- ![Deploying an artifact store](../../.gitbook/assets/artifact_store_deploy.png) -->
 
 {% hint style="info" %}
 The command currently uses your local credentials for GCP and AWS to provision resources. Integration with your ZenML connectors might be possible soon too!
@@ -47,15 +48,13 @@ The command currently uses your local credentials for GCP and AWS to provision r
 
 <summary>Want to know what happens in the background?</summary>
 
-The stack component deploy CLI is powered by ZenML's [Stack Recipes](https://github.com/zenml-io/mlops-stacks) in the background, more specifically the [new modular recipes](https://github.com/zenml-io/mlops-stacks/releases/tag/0.6.0). These allow you to configure and deploy select stack components as opposed to deploying the full stack, as with the legacy stack recipes.
+The stack component deploy CLI is powered by ZenML's [mlstacks](https://github.com/zenml-io/mlstacks) in the background. This allows you to configure and deploy select stack components.
 
-Using the values you pass for the cloud, the CLI picks up the right modular recipe to use (one of AWS, GCP, or k3d) and then deploys that recipe with the specific stack component enabled.
-
-The recipe files live in the Global Config directory under the `deployed_stack_components` directory.
+Using the values you pass for the cloud, the CLI picks up the right modular recipe to use (one of AWS, GCP, or K3D) and then deploys that recipe with the specific stack component enabled.
 
 </details>
 
-![The workflow behind running a stack-component deploy command](../../.gitbook/assets/zenml_stack-component_deploy.png)
+<!-- ![The workflow behind running a stack-component deploy command](../../.gitbook/assets/zenml_stack-component_deploy.png) -->
 
 ### 🍨 Available flavors for stack components
 
