@@ -416,11 +416,11 @@ Deploying Stack Components
 --------------------------
 
 Stack components can be deployed directly via the CLI. You can use the `deploy`
-subcommand for this. For example, you could deploy an S3 artifact store using
+subcommand for this. For example, you could deploy a GCP artifact store using
 the following command:
 
 ```shell
-zenml artifact-store deploy s3_artifact_store --flavor=s3
+zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
