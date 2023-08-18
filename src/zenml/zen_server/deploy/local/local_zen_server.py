@@ -223,7 +223,7 @@ class LocalZenServer(LocalDaemonService):
             ValueError: if started with a global configuration that connects to
                 another ZenML server.
         """
-        import uvicorn  # type: ignore[import]
+        import uvicorn
 
         gc = GlobalConfiguration()
         if gc.store and gc.store.type == StoreType.REST:
