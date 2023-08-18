@@ -68,46 +68,91 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  ubuntu-lint-unit-test:
+  ubuntu-lint:
     needs: 
       - configure-matrixes
       - ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version)[0] }}
       fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
+    uses: ./.github/workflows/lint.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  windows-lint-unit-test:
+  windows-lint:
     needs: 
       - configure-matrixes
       - windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version)[0] }}
       fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
+    uses: ./.github/workflows/lint.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  macos-lint-unit-test:
+  macos-lint:
     needs: 
       - configure-matrixes
       - macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version)[0] }}
+      fail-fast: false
+    uses: ./.github/workflows/lint.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  ubuntu-unit-test:
+    needs: 
+      - configure-matrixes
+      - ubuntu-lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
         python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
       fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  windows-unit-test:
+    needs: 
+      - configure-matrixes
+      - windows-lint
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  macos-unit-test:
+    needs: 
+      - configure-matrixes
+      - macos-lint
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -116,7 +161,7 @@ jobs:
   ubuntu-integration-test:
     needs: 
       - configure-matrixes
-      - ubuntu-lint-unit-test
+      - ubuntu-lint
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -147,7 +192,7 @@ jobs:
   windows-integration-test:
     needs: 
       - configure-matrixes
-      - windows-lint-unit-test
+      - windows-lint
     strategy:
       matrix:
         os: [windows-latest]
@@ -166,7 +211,7 @@ jobs:
   macos-integration-test:
     needs: 
       - configure-matrixes
-      - macos-lint-unit-test
+      - macos-lint
     strategy:
       matrix:
         os: [macos-latest]
@@ -185,7 +230,7 @@ jobs:
   ubuntu-templates-test:
     needs: 
       - configure-matrixes
-      - ubuntu-integration-test
+      - ubuntu-lint
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -200,7 +245,7 @@ jobs:
   windows-templates-test:
     needs: 
       - configure-matrixes
-      - windows-integration-test
+      - windows-lint
     strategy:
       matrix:
         os: [windows-latest]
@@ -215,7 +260,7 @@ jobs:
   macos-templates-test:
     needs: 
       - configure-matrixes
-      - macos-integration-test
+      - macos-lint
     strategy:
       matrix:
         os: [macos-latest]
