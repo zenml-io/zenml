@@ -125,14 +125,12 @@ class StepLogsStorage:
 
         if not self.disabled:
             self.buffer.append(text)
-        else:
-            self.disabled_buffer.append(text)
 
-        if (
-            len(self.buffer) >= self.max_messages
-            or time.time() - self.last_save_time >= self.time_interval
-        ):
-            self.save_to_file()
+            if (
+                len(self.buffer) >= self.max_messages
+                or time.time() - self.last_save_time >= self.time_interval
+            ):
+                self.save_to_file()
 
     def save_to_file(self) -> None:
         """Method to save the buffer to the given URI."""
@@ -147,8 +145,7 @@ class StepLogsStorage:
                                 remove_ansi_escape_codes(message) + "\n"
                             )
 
-                self.buffer = self.disabled_buffer
-                self.disabled_buffer = []
+                self.buffer = []
                 self.last_save_time = time.time()
 
             except (OSError, IOError) as e:
@@ -203,6 +200,11 @@ class StepLogsStorageContext:
         exc_tb: Optional[TracebackType],
     ) -> None:
         """Exit condition of the context manager.
+
+        Args:
+            exc_type: The class of the exception
+            exc_val: The instance of the exception
+            exc_tb: The traceback of the exception
 
         Restores the `write` method of both stderr and stdout.
         """
