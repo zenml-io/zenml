@@ -50,8 +50,8 @@ on:
         default: 'no'
 
 jobs:
-  lint-unit-tests:
-    name: lint-unit-tests
+  unit-tests:
+    name: unit-tests
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
