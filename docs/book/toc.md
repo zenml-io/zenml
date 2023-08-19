@@ -15,6 +15,7 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
+  * [Project templates](user-guide/starter-guide/using-project-templates.md)
   * [Switch to production](user-guide/starter-guide/switch-to-production.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
@@ -157,7 +158,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/0.43.0/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
