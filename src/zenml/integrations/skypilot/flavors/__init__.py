@@ -33,4 +33,10 @@ __all__ = [
     "SkypilotAWSOrchestratorConfig",
     "SkypilotAWSOrchestratorFlavor",
     "SkypilotAWSOrchestratorSettings",
+    "SkypilotGCPOrchestratorConfig",
+    "SkypilotGCPOrchestratorFlavor",
+    "SkypilotGCPOrchestratorSettings",
+    "SkypilotAzureOrchestratorConfig",
+    "SkypilotAzureOrchestratorFlavor",
+    "SkypilotAzureOrchestratorSettings",
 ]

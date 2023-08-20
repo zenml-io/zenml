@@ -28,8 +28,8 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_aws"
-SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_gcp"
-SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_azure"
+SKYPILOT_GCP_ORCHESTRATOR_FLAVOR = "vm_gcp"
+SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
 
 
 class SkypilotAWSIntegration(Integration):
@@ -56,7 +56,7 @@ class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot GCP Integration for ZenML."""
 
     NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[aws]"]
+    REQUIREMENTS = ["skypilot[gcp]"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
