@@ -52,16 +52,17 @@ def mlflow_register_model_step(
     Args:
         model: Model to be registered, This is not used in the step, but is
             required to trigger the step when the model is trained.
-        name: Name of the registered model.
-        version: Version of the registered model.
-        trained_model_name: Name of the model to be deployed.
+        name: The name of the model.
+        version: The version of the model.
+        trained_model_name: Name of the model artifact in MLflow.
+        model_source_uri: The path to the model. If not provided, the model will
+            be fetched from the MLflow tracking server via the
+            `trained_model_name`.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
-        model_source_uri: URI of the model source. If not provided, the model
-            will be fetched from the MLflow tracking server.
-        description: Description of the model.
-        metadata: Metadata of the model version to be added to the model registry.
+        description: A description of the model version.
+        metadata: A list of metadata to associate with the model version
 
     Raises:
         ValueError: If the model registry is not an MLflow model registry.

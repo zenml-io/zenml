@@ -14,22 +14,67 @@
 import logging
 import os
 import shutil
+import subprocess
+import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 
 import pytest
 
-from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.utils.pagination_utils import depaginate
 
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from zenml.models.pipeline_build_models import PipelineBuildResponseModel
+    from zenml.models.pipeline_models import PipelineResponseModel
+
+
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
 DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
+
+
+class IntegrationTestExample:
+    """Class to encapsulate an integration test example."""
+
+    def __init__(self, path: Path, name: str) -> None:
+        """Create a new example instance.
+
+        Args:
+            name: The name to the example
+            path: Path at which the example code lives.
+        """
+        self.name = name
+        self.path = path
+
+        # Make sure the example has a `run.py` file
+        self.run_dot_py_file = os.path.join(self.path, "run.py")
+        if not os.path.exists(self.run_dot_py_file):
+            raise RuntimeError(
+                f"No `run.py` file found in example {self.name}. "
+                f"{self.run_dot_py_file} does not exist."
+            )
+
+    def __call__(self, *args: str) -> None:
+        """Runs the example directly without going through setup/teardown.
+
+        Args:
+            *args: Arguments to pass to the example.
+
+        Raises:
+            RuntimeError: If running the example fails.
+        """
+        subprocess.check_call(
+            [sys.executable, self.run_dot_py_file, *args],
+            cwd=str(self.path),
+            env=os.environ.copy(),
+        )
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
@@ -46,21 +91,6 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
             shutil.copy2(s, d)
 
 
-def example_runner(examples_dir: Path) -> List[str]:
-    """Get the executable that runs examples.
-
-    By default, returns the path to an executable .sh file in the
-    repository, but can also prefix that with the path to a shell
-    / interpreter when the file is not executable on its own. The
-    latter option is needed for Windows compatibility.
-    """
-    return (
-        [os.environ[SHELL_EXECUTABLE]]
-        if SHELL_EXECUTABLE in os.environ
-        else []
-    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
-
-
 @contextmanager
 def run_example(
     request: pytest.FixtureRequest,
@@ -68,12 +98,8 @@ def run_example(
     example_args: Optional[List[str]] = None,
     pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
-    # pipeline_name: Optional[str] = None,
-    # run_count: Optional[int] = None,
-    # step_count: Optional[int] = None,
-) -> Generator[
-    Tuple[LocalExample, Dict[str, List[PipelineRunResponseModel]]], None, None
-]:
+    is_public_example: bool = False,
+) -> Generator[Dict[str, List[PipelineRunResponseModel]], None, None]:
     """Runs the given example and validates it ran correctly.
 
     Args:
@@ -84,36 +110,69 @@ def run_example(
             run. Maps pipeline names to a Tuple (run_count, step_count) that
             specifies the expected number of runs (and their steps) to validate.
         timeout_limit: The maximum time to wait for the pipeline run to finish.
+        is_public_example: Whether the example is a public example that lives
+            in `examples/` (True) or a test-only example that lives in
+            `tests/integration/examples/` (False).
 
     Yields:
         The example and the pipeline runs that were executed and validated.
     """
-    from zenml.client import Client
-
-    # Root directory of all checked out examples
-    examples_directory = Path(__file__).parents[3] / "examples"
-
-    dst_dir = Path(os.getcwd())
-
     # Copy all example files into the repository directory
-    copy_example_files(str(examples_directory / name), str(dst_dir))
+    if is_public_example:  # examples/<name>
+        examples_directory = str(Path(__file__).parents[3] / "examples" / name)
+    else:  # tests/integration/examples/<name>
+        examples_directory = str(Path(__file__).parents[0] / name)
+    dst_dir = Path(os.getcwd())
+    copy_example_files(examples_directory, str(dst_dir))
 
-    client = Client()
-    existing_pipeline_ids = {
-        pipeline.id
-        for pipeline in depaginate(list_method=client.list_pipelines)
-    }
-    existing_build_ids = {
-        build.id for build in depaginate(list_method=client.list_builds)
-    }
-
+    # Get the existing pipelines and builds
+    existing_pipeline_ids = {pipe.id for pipe in get_pipelines()}
+    existing_build_ids = {build.id for build in get_builds()}
     now = datetime.utcnow()
 
     # Run the example
-    example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
+    example = IntegrationTestExample(name=name, path=dst_dir)
     example_args = example_args or []
-    example.run_example_directly(*example_args)
+    example(*example_args)
 
+    # Validate the pipelines
+    runs = wait_and_validate_pipeline_runs(
+        pipelines=pipelines,
+        older_than=now,
+        timeout_limit=timeout_limit,
+    )
+
+    yield runs
+
+    pipeline_names = list(pipelines.keys()) if pipelines else []
+    cleanup_pipelines(existing_pipeline_ids, pipeline_names)
+
+    if request.config.getoption("cleanup_docker", False):
+        cleanup_docker_files(existing_build_ids)
+
+
+def get_pipelines() -> List["PipelineResponseModel"]:
+    """Get the existing pipelines."""
+    from zenml.client import Client
+
+    client = Client()
+    return depaginate(list_method=client.list_pipelines)
+
+
+def get_builds() -> List["PipelineBuildResponseModel"]:
+    """Get the existing builds."""
+    from zenml.client import Client
+
+    client = Client()
+    return depaginate(list_method=client.list_builds)
+
+
+def wait_and_validate_pipeline_runs(
+    pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
+    older_than: Optional[datetime] = None,
+    timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
+) -> Dict[str, List[PipelineRunResponseModel]]:
+    """Wait for and validate pipeline runs."""
     pipelines = pipelines or {}
     runs: Dict[str, List[PipelineRunResponseModel]] = {}
     for pipeline_name, (run_count, step_count) in pipelines.items():
@@ -121,55 +180,10 @@ def run_example(
             pipeline_name=pipeline_name,
             run_count=run_count,
             step_count=step_count,
-            older_than=now,
+            older_than=older_than,
             finish_timeout=timeout_limit,
         )
-
-    yield example, runs
-
-    # Cleanup registered pipelines so they don't cause trouble in future
-    # example runs
-    for pipeline in depaginate(list_method=client.list_pipelines):
-        if (
-            pipeline.id not in existing_pipeline_ids
-            and pipeline_name in pipelines
-        ):
-            client.delete_pipeline(pipeline.id)
-
-    cleanup_docker = request.config.getoption("cleanup_docker", False)
-
-    if cleanup_docker:
-        # Clean up more expensive resources like docker containers, volumes and
-        # images, if any were created.
-        image_names = set()
-        for build in depaginate(list_method=client.list_builds):
-            if build.id in existing_build_ids:
-                continue
-
-            image_names.update(item.image for item in build.images.values())
-
-        try:
-            from docker.client import DockerClient
-            from docker.errors import ImageNotFound
-
-            # Try to ping Docker, to see if it's installed and running
-            docker_client = DockerClient.from_env()
-            docker_client.ping()
-        except Exception:
-            # Docker is not installed or running
-            pass
-        else:
-            docker_client.containers.prune()
-            docker_client.volumes.prune()
-            for image_name in image_names:
-                try:
-                    logging.debug(f"Removing Docker image {image_name}")
-                    image = docker_client.images.get(image_name)
-                    docker_client.images.remove(image.id, force=True)
-                except ImageNotFound:
-                    pass
-
-            docker_client.images.prune()
+    return runs
 
 
 def wait_and_validate_pipeline_run(
@@ -282,3 +296,56 @@ def wait_and_validate_pipeline_run(
             assert len(run.steps) == step_count
 
     return runs[:run_count]
+
+
+def cleanup_pipelines(
+    existing_pipeline_ids: Set["UUID"],
+    pipeline_names: List[str],
+) -> None:
+    """Cleanup pipelines so they don't cause trouble in future example runs."""
+    client = Client()
+    pipelines = get_pipelines()
+    for pipeline in pipelines:
+        if (
+            pipeline.id not in existing_pipeline_ids
+            and pipeline.name in pipeline_names
+        ):
+            client.delete_pipeline(pipeline.id)
+
+
+def cleanup_docker_files(existing_build_ids: Set["UUID"]) -> None:
+    """Clean up more expensive Docker resources if any were created.
+
+    Cleans up containers, volumes and images.
+    """
+    builds = get_builds()
+
+    image_names = set()
+    for build in builds:
+        if build.id in existing_build_ids:
+            continue
+
+        image_names.update(item.image for item in build.images.values())
+
+    try:
+        from docker.client import DockerClient
+        from docker.errors import ImageNotFound
+
+        # Try to ping Docker, to see if it's installed and running
+        docker_client = DockerClient.from_env()
+        docker_client.ping()
+    except Exception:
+        # Docker is not installed or running
+        pass
+    else:
+        docker_client.containers.prune()
+        docker_client.volumes.prune()
+        for image_name in image_names:
+            try:
+                logging.debug(f"Removing Docker image {image_name}")
+                image = docker_client.images.get(image_name)
+                docker_client.images.remove(image.id, force=True)
+            except ImageNotFound:
+                pass
+
+        docker_client.images.prune()

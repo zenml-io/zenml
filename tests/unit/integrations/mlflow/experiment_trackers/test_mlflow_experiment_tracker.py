@@ -20,13 +20,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from zenml.artifact_stores import LocalArtifactStore, LocalArtifactStoreConfig
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-)
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     DATABRICKS_HOST,
     DATABRICKS_PASSWORD,
@@ -41,9 +36,7 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     MLFlowExperimentTrackerConfig,
 )
-from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
-from zenml.stack.stack_component import StackComponentConfig
 
 
 def test_mlflow_experiment_tracker_attributes() -> None:
@@ -71,7 +64,9 @@ def test_mlflow_experiment_tracker_attributes() -> None:
     assert experiment_tracker.flavor == "mlflow"
 
 
-def test_mlflow_experiment_tracker_stack_validation() -> None:
+def test_mlflow_experiment_tracker_stack_validation(
+    local_orchestrator, local_artifact_store, s3_artifact_store
+) -> None:
     """Tests that the MLflow experiment tracker validates that its stack has a `LocalArtifactStore` if no tracking URI is set."""
     experiment_tracker = MLFlowExperimentTracker(
         name="",
@@ -85,45 +80,11 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         updated=datetime.now(),
     )
 
-    local_orchestrator = LocalOrchestrator(
-        name="",
-        id=uuid4(),
-        config=StackComponentConfig(),
-        flavor="local",
-        type=StackComponentType.ORCHESTRATOR,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-    local_artifact_store = LocalArtifactStore(
-        name="",
-        id=uuid4(),
-        config=LocalArtifactStoreConfig(),
-        flavor="local",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-    remote_artifact_store = GCPArtifactStore(
-        name="",
-        config=GCPArtifactStoreConfig(path="gs://my-bucket"),
-        id=uuid4(),
-        flavor="gcp",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-
     with pytest.raises(StackValidationError):
         Stack(
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             experiment_tracker=experiment_tracker,
             id=uuid4(),
         ).validate()
