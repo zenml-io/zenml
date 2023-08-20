@@ -180,7 +180,6 @@ def init_logging() -> None:
             "rdbms_metadata_access_object",
             "backoff",
             "segment",
-            "botocore.credentials",
         ]
         for logger_name in disabled_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
