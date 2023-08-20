@@ -38,10 +38,6 @@ from zenml.orchestrators.local_docker.local_docker_orchestrator import (
     LocalDockerOrchestrator,
     LocalDockerOrchestratorFlavor,
 )
-from zenml.orchestrators.vm_orchestrator.base_vm_orchestrator import (
-    BaseVMOrchestrator,
-    VMInstanceView,
-)
 
 __all__ = [
     "BaseOrchestrator",
@@ -52,6 +48,4 @@ __all__ = [
     "LocalOrchestratorFlavor",
     "LocalDockerOrchestrator",
     "LocalDockerOrchestratorFlavor",
-    "BaseVMOrchestrator",
-    "VMInstanceView",
 ]
