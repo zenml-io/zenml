@@ -15,12 +15,16 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsConfigMixin,
+)
 from zenml.integrations.skypilot import SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.logger import get_logger
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -41,7 +45,9 @@ class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
 
 
 class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    SkypilotBaseOrchestratorConfig, SkypilotGCPOrchestratorSettings
+    SkypilotBaseOrchestratorConfig,
+    GoogleCredentialsConfigMixin,
+    SkypilotGCPOrchestratorSettings,
 ):
     """Skypilot orchestrator config."""
 
@@ -69,6 +75,23 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="gcp-generic",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

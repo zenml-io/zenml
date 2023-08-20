@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 import sky
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import (
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import (
     SkypilotAzureOrchestratorConfig,
     SkypilotAzureOrchestratorSettings,
 )
