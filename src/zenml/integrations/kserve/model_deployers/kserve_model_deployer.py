@@ -30,6 +30,8 @@ from uuid import UUID, uuid4
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client as k8s_client
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
@@ -55,7 +57,6 @@ from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_deployment_models import (
@@ -261,9 +262,7 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the KServe deployment server could not be stopped.
         """
-        with event_handler(
-            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
-        ) as analytics_handler:
+        with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(KServeDeploymentConfig, config)
             service = None
 
