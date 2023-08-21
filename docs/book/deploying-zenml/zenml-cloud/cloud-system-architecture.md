@@ -49,7 +49,7 @@ This scenario is suitable for users who want the pipeline-centric data to be kep
 ## Scenario 2b: Hybrid SaaS with no data on ZenML side
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2a.png" alt=""><figcaption><p>Scenario 2b: Hybrid SaaS with no data on ZenML side
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2b.png" alt=""><figcaption><p>Scenario 2b: Hybrid SaaS with no data on ZenML side
 </p></figcaption></figure>
 </div>
 
@@ -62,7 +62,7 @@ Note, that ZenML encrypts all customer secrets at transit and at rest.
 ## Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2b.png" alt=""><figcaption><p>Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2c.png" alt=""><figcaption><p>Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
 </div>
 
 This is almost the same as Scenario 2b, however in this the customer brings their own secret store to keep sensitive information on customer side. This allows users to use the [secrets API](../../user-guide/advanced-guide/secret-management/) and ensure their secrets do not leave their environment.
