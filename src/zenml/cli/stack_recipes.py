@@ -22,6 +22,8 @@ import click
 from rich.text import Text
 
 import zenml
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.io import fileio
@@ -32,7 +34,6 @@ from zenml.recipes.stack_recipe_service import (
     LocalStackRecipe,
 )
 from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -477,10 +478,9 @@ def deploy(
         "`zenml deploy` command to deploy a ZenML server."
     )
 
-    with event_handler(
+    with track_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
-        v2=True,
     ) as handler:
         # build a dict of all stack component options that have non-null values
         stack_component_options = {
@@ -756,126 +756,118 @@ def destroy(
     """
     cli_utils.warning(ALPHA_MESSAGE)
 
-    with event_handler(
-        event=AnalyticsEvent.DESTROY_STACK_RECIPE,
-        metadata={"stack_recipe_name": stack_recipe_name},
-    ) as handler:
-        # build a dict of all stack component options that have non-null values
-        stack_component_options = {
-            "artifact_store": artifact_store,
-            "orchestrator": orchestrator,
-            "container_registry": container_registry,
-            "model_deployer": model_deployer,
-            "experiment_tracker": experiment_tracker,
-            "step_operator": step_operator,
-        }
+    # build a dict of all stack component options that have non-null values
+    stack_component_options = {
+        "artifact_store": artifact_store,
+        "orchestrator": orchestrator,
+        "container_registry": container_registry,
+        "model_deployer": model_deployer,
+        "experiment_tracker": experiment_tracker,
+        "step_operator": step_operator,
+    }
 
-        # filter out null values
-        stack_component_options = {
-            k: v for k, v in stack_component_options.items() if v is not None
-        }
+    # filter out null values
+    stack_component_options = {
+        k: v for k, v in stack_component_options.items() if v is not None
+    }
 
-        handler.metadata.update(stack_component_options)
-
-        # add all values that are not None to the disabled services list
-        disabled_services = [
-            f"{name}_{value}"
-            for name, value in stack_component_options.items()
-            if name
-            not in [
-                "artifact_store",
-                "container_registry",
-            ]
+    # add all values that are not None to the disabled services list
+    disabled_services = [
+        f"{name}_{value}"
+        for name, value in stack_component_options.items()
+        if name
+        not in [
+            "artifact_store",
+            "container_registry",
         ]
-        # if artifact store, container registry or secrets manager
-        # are not none, add them as strings to the list of disabled services
-        disabled_services = disabled_services + [
-            f"{name}"
-            for name, _ in stack_component_options.items()
-            if name
-            in [
-                "artifact_store",
-                "container_registry",
-            ]
+    ]
+    # if artifact store, container registry or secrets manager
+    # are not none, add them as strings to the list of disabled services
+    disabled_services = disabled_services + [
+        f"{name}"
+        for name, _ in stack_component_options.items()
+        if name
+        in [
+            "artifact_store",
+            "container_registry",
         ]
+    ]
+
+    try:
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        import python_terraform
+
+        from zenml.recipes import (
+            StackRecipeService,
+        )
+
+        local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
+
+        stack_recipe_service = StackRecipeService.get_service(
+            str(local_recipe_dir)
+        )
+
+        if not stack_recipe_service:
+            cli_utils.error(
+                "No stack recipe found with the path "
+                f"{local_recipe_dir}. You need to first deploy "
+                "the recipe by running \nzenml stack recipe deploy "
+                f"{stack_recipe_name}"
+            )
+
+        if not stack_recipe_service.local_recipe_exists():
+            raise ModuleNotFoundError(
+                f"The recipe {stack_recipe_name} "
+                "has not been pulled at the path  "
+                f"{local_recipe_dir}. Please check  "
+                "if you've deleted the recipe from the path."
+            )
+
+        stack_recipe_service.config.disabled_services = disabled_services
 
         try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            import python_terraform
-
-            from zenml.recipes import (
-                StackRecipeService,
+            # stop the service to destroy resources created by recipe
+            stack_recipe_service.stop()
+        except python_terraform.TerraformCommandError as e:
+            force_message = ""
+            if stack_recipe_name == "aws_minimal":
+                force_message = (
+                    "If there are Kubernetes resources that aren't"
+                    "getting deleted, run 'kubectl delete node -all' to "
+                    "delete the nodes and consequently all Kubernetes "
+                    "resources. Run the destroy again after that, to "
+                    "remove any other remaining resources."
+                )
+            cli_utils.error(
+                f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
+                "\nMost commonly, the error occurs if there's some "
+                "resource that can't be deleted instantly, for example, "
+                "MySQL stores with backups. In such cases, please try "
+                "again after around 30 minutes. If the issue persists, "
+                f"kindly raise an issue at {STACK_RECIPES_GITHUB_REPO}. "
+                f"\n{force_message}"
+            )
+        except subprocess.CalledProcessError as e:
+            cli_utils.warning(
+                f"Error destroying recipe {stack_recipe_name}: {str(e)}"
+                "\nThe kubernetes cluster couldn't be removed due to the "
+                "error above. Please verify if the cluster has already "
+                "been deleted by running kubectl get nodes to check if "
+                "there's any active nodes.Ignore this warning if there "
+                "are no active nodes."
             )
 
-            local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
-
-            stack_recipe_service = StackRecipeService.get_service(
-                str(local_recipe_dir)
-            )
-
-            if not stack_recipe_service:
-                cli_utils.error(
-                    "No stack recipe found with the path "
-                    f"{local_recipe_dir}. You need to first deploy "
-                    "the recipe by running \nzenml stack recipe deploy "
-                    f"{stack_recipe_name}"
-                )
-
-            if not stack_recipe_service.local_recipe_exists():
-                raise ModuleNotFoundError(
-                    f"The recipe {stack_recipe_name} "
-                    "has not been pulled at the path  "
-                    f"{local_recipe_dir}. Please check  "
-                    "if you've deleted the recipe from the path."
-                )
-
-            stack_recipe_service.config.disabled_services = disabled_services
-
-            try:
-                # stop the service to destroy resources created by recipe
-                stack_recipe_service.stop()
-            except python_terraform.TerraformCommandError as e:
-                force_message = ""
-                if stack_recipe_name == "aws_minimal":
-                    force_message = (
-                        "If there are Kubernetes resources that aren't"
-                        "getting deleted, run 'kubectl delete node -all' to "
-                        "delete the nodes and consequently all Kubernetes "
-                        "resources. Run the destroy again after that, to "
-                        "remove any other remaining resources."
-                    )
-                cli_utils.error(
-                    f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                    "\nMost commonly, the error occurs if there's some "
-                    "resource that can't be deleted instantly, for example, "
-                    "MySQL stores with backups. In such cases, please try "
-                    "again after around 30 minutes. If the issue persists, "
-                    f"kindly raise an issue at {STACK_RECIPES_GITHUB_REPO}. "
-                    f"\n{force_message}"
-                )
-            except subprocess.CalledProcessError as e:
-                cli_utils.warning(
-                    f"Error destroying recipe {stack_recipe_name}: {str(e)}"
-                    "\nThe kubernetes cluster couldn't be removed due to the "
-                    "error above. Please verify if the cluster has already "
-                    "been deleted by running kubectl get nodes to check if "
-                    "there's any active nodes.Ignore this warning if there "
-                    "are no active nodes."
-                )
-
-            cli_utils.declare(
-                "\n" + "Your active stack might now be invalid. Please run:"
-            )
-            text = Text("zenml stack describe", style="markdown.code_block")
-            cli_utils.declare(text)
-            cli_utils.declare(
-                "\n" + "to investigate and switch to a new stack if needed."
-            )
+        cli_utils.declare(
+            "\n" + "Your active stack might now be invalid. Please run:"
+        )
+        text = Text("zenml stack describe", style="markdown.code_block")
+        cli_utils.declare(text)
+        cli_utils.declare(
+            "\n" + "to investigate and switch to a new stack if needed."
+        )
 
 
 # a function to get the value of outputs passed as input, from a stack recipe
@@ -934,78 +926,71 @@ def get_outputs(
     """
     import json
 
+    import python_terraform
     import yaml
 
-    with event_handler(
-        event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
-        metadata={"stack_recipe_name": stack_recipe_name},
-    ):
-        import python_terraform
+    cli_utils.warning(ALPHA_MESSAGE)
 
-        cli_utils.warning(ALPHA_MESSAGE)
+    stack_recipes_dir = Path(os.getcwd()) / path
 
-        stack_recipes_dir = Path(os.getcwd()) / path
+    try:
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        stack_recipe_dir = stack_recipes_dir / stack_recipe_name
+        local_stack_recipe = LocalStackRecipe(
+            stack_recipe_dir, stack_recipe_name
+        )
 
-        try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            stack_recipe_dir = stack_recipes_dir / stack_recipe_name
-            local_stack_recipe = LocalStackRecipe(
-                stack_recipe_dir, stack_recipe_name
+        if not local_stack_recipe.is_present():
+            raise ModuleNotFoundError(
+                f"The recipe {stack_recipe_name} "
+                "has not been pulled at the specified path. "
+                f"Run `zenml stack recipe pull {stack_recipe_name}` "
+                f"followed by `zenml stack recipe deploy "
+                f"{stack_recipe_name}` first."
             )
 
-            if not local_stack_recipe.is_present():
-                raise ModuleNotFoundError(
-                    f"The recipe {stack_recipe_name} "
-                    "has not been pulled at the specified path. "
-                    f"Run `zenml stack recipe pull {stack_recipe_name}` "
-                    f"followed by `zenml stack recipe deploy "
-                    f"{stack_recipe_name}` first."
-                )
+        try:
+            # use the stack recipe directory path to find the service instance
+            from zenml.recipes import StackRecipeService
 
-            try:
-                # use the stack recipe directory path to find the service instance
-                from zenml.recipes import StackRecipeService
-
-                stack_recipe_service = StackRecipeService.get_service(
-                    str(local_stack_recipe.path)
+            stack_recipe_service = StackRecipeService.get_service(
+                str(local_stack_recipe.path)
+            )
+            if not stack_recipe_service:
+                cli_utils.error(
+                    "No stack recipe found with the path "
+                    f"{local_stack_recipe.path}. You need to first deploy "
+                    "the recipe by running \nzenml stack recipe deploy "
+                    f"{stack_recipe_name}"
                 )
-                if not stack_recipe_service:
+            outputs = stack_recipe_service.get_outputs()
+            if output:
+                if output in outputs:
+                    cli_utils.declare(f"Output {output}: ")
+                    return cast(Dict[str, Any], outputs[output])
+                else:
                     cli_utils.error(
-                        "No stack recipe found with the path "
-                        f"{local_stack_recipe.path}. You need to first deploy "
-                        "the recipe by running \nzenml stack recipe deploy "
+                        f"Output {output} not found in stack recipe "
                         f"{stack_recipe_name}"
                     )
-                outputs = stack_recipe_service.get_outputs()
-                if output:
-                    if output in outputs:
-                        cli_utils.declare(f"Output {output}: ")
-                        return cast(Dict[str, Any], outputs[output])
-                    else:
-                        cli_utils.error(
-                            f"Output {output} not found in stack recipe "
-                            f"{stack_recipe_name}"
-                        )
-                else:
-                    cli_utils.declare("Outputs: ")
-                    # delete all items that have empty values
-                    outputs = {k: v for k, v in outputs.items() if v != ""}
+            else:
+                cli_utils.declare("Outputs: ")
+                # delete all items that have empty values
+                outputs = {k: v for k, v in outputs.items() if v != ""}
 
-                    if format == "json":
-                        outputs_json = json.dumps(outputs, indent=4)
-                        cli_utils.declare(outputs_json)
-                        return outputs_json
-                    elif format == "yaml":
-                        outputs_yaml = yaml.dump(outputs, indent=4)
-                        cli_utils.declare(outputs_yaml)
-                        return outputs_yaml
-                    else:
-                        cli_utils.declare(str(outputs))
-                        return outputs
-            except python_terraform.TerraformCommandError as e:
-                cli_utils.error(str(e))
+                if format == "json":
+                    outputs_json = json.dumps(outputs, indent=4)
+                    cli_utils.declare(outputs_json)
+                    return outputs_json
+                elif format == "yaml":
+                    outputs_yaml = yaml.dump(outputs, indent=4)
+                    cli_utils.declare(outputs_yaml)
+                    return outputs_yaml
+                else:
+                    cli_utils.declare(str(outputs))
+                    return outputs
+        except python_terraform.TerraformCommandError as e:
+            cli_utils.error(str(e))

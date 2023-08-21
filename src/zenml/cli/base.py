@@ -23,6 +23,8 @@ import click
 from pydantic import BaseModel
 
 from zenml import __version__ as zenml_version
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.cli.server import down
@@ -40,11 +42,6 @@ from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    email_opt_int,
-    event_handler,
-)
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
 
@@ -150,10 +147,9 @@ def init(
             "prompt": not template_with_defaults,
         }
 
-        with event_handler(
+        with track_handler(
             event=AnalyticsEvent.GENERATE_TEMPLATE,
             metadata=metadata,
-            v2=True,
         ):
             console.print(zenml_cli_privacy_message, width=80)
 
@@ -347,9 +343,7 @@ def go() -> None:
         gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
-    with event_handler(
-        event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata, v2=True
-    ):
+    with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
 
         zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
