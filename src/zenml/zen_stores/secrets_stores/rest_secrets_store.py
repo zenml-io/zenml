@@ -37,7 +37,6 @@ from zenml.models import (
     SecretUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -148,7 +147,6 @@ class RestSecretsStore(BaseSecretsStore):
     # Secrets
     # ------
 
-    @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 
@@ -212,7 +210,6 @@ class RestSecretsStore(BaseSecretsStore):
             filter_model=secret_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
@@ -249,7 +246,6 @@ class RestSecretsStore(BaseSecretsStore):
             params=dict(patch_values=True),
         )
 
-    @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 

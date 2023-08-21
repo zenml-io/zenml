@@ -42,11 +42,6 @@ from zenml.models.secret_models import (
 from zenml.models.user_models import UserResponseModel
 from zenml.models.workspace_models import WorkspaceResponseModel
 from zenml.utils import source_utils
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    AnalyticsTrackerMixin,
-    track_event,
-)
 from zenml.utils.pagination_utils import depaginate
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
@@ -66,19 +61,15 @@ ZENML_SECRET_USER_LABEL = "zenml_secret_user"
 ZENML_SECRET_WORKSPACE_LABEL = "zenml_secret_workspace"
 
 
-class BaseSecretsStore(
-    BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, ABC
-):
+class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     """Base class for accessing and persisting ZenML secret objects.
 
     Attributes:
         config: The configuration of the secret store.
-        track_analytics: Only send analytics if set to `True`.
         _zen_store: The ZenML store that owns this secrets store.
     """
 
     config: SecretsStoreConfiguration
-    track_analytics: bool = True
     _zen_store: Optional["BaseZenStore"] = None
 
     TYPE: ClassVar[SecretsStoreType]
@@ -614,25 +605,6 @@ class BaseSecretsStore(
         )
 
         return secret_model
-
-    # ---------
-    # Analytics
-    # ---------
-
-    def track_event(
-        self,
-        event: AnalyticsEvent,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """Track an analytics event.
-
-        Args:
-            event: The event to track.
-            metadata: Additional metadata to track with the event.
-        """
-        if self.track_analytics:
-            # Server information is always tracked, if available.
-            track_event(event, metadata)
 
     class Config:
         """Pydantic configuration class."""
