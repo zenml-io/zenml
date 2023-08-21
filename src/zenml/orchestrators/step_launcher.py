@@ -151,26 +151,31 @@ class StepLauncher:
         # Enable or disable step logs storage
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
+
         else:
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
                 is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
             )
 
-        # Configure the logs
-        logs_uri = step_logging.prepare_logs_uri(
-            self._stack.artifact_store,
-            self._step.config.name,
-        )
-
-        logs_model = LogsRequestModel(
-            uri=logs_uri,
-            artifact_store_id=self._stack.artifact_store.id,
-        )
-
         logs_context = nullcontext()
+        logs_model = None
+
         if step_logging_enabled:
-            logs_context = StepLogsStorageContext(logs_uri=logs_uri)  # type: ignore[assignment]
+            # Configure the logs
+            logs_uri = step_logging.prepare_logs_uri(
+                self._stack.artifact_store,
+                self._step.config.name,
+            )
+
+            logs_context = StepLogsStorageContext(
+                logs_uri=logs_uri
+            )  # type: ignore[assignment]
+
+            logs_model = LogsRequestModel(
+                uri=logs_uri,
+                artifact_store_id=self._stack.artifact_store.id,
+            )
 
         try:
             with logs_context:
