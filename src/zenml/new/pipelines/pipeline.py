@@ -38,6 +38,8 @@ import yaml
 from pydantic import ValidationError
 
 from zenml import constants
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -82,7 +84,6 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -431,7 +432,7 @@ class Pipeline:
         Returns:
             The build output.
         """
-        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+        with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
             deployment, pipeline_spec, _, _ = self._compile(
                 config_path=config_path,
@@ -510,9 +511,7 @@ class Pipeline:
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
-        with event_handler(
-            event=AnalyticsEvent.RUN_PIPELINE, v2=True
-        ) as analytics_handler:
+        with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
