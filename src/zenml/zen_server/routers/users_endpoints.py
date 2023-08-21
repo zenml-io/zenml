@@ -18,6 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 
+from zenml.analytics.utils import email_opt_int
 from zenml.constants import (
     ACTIVATE,
     API,
@@ -39,7 +40,6 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.utils.analytics_utils import email_opt_int
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -324,7 +324,7 @@ def email_opt_in_response(
             email_opted_in=user_response.email_opted_in,
         )
 
-        # TODO: The value 'opted_in' below prevents users with empty emails from
+        # TODO: The value 'opted_in' below prevents users with empty emails
         #   from getting identified in our analytics. This, however, can be
         #   handled much more gracefully by changing the corresponding user
         #   models and adding more validation checks.
