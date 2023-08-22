@@ -83,7 +83,7 @@ jobs:
         if: failure()
         run: |
           echo "::error title=${{ matrix.template-repo.repo }} project template testing failed with new version of ZenML core!::\
-            It happens then breaking changes affecting template are introduced. To mitigate this issue,\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in ${{ matrix.template-repo.repo }} compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
