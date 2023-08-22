@@ -1,7 +1,12 @@
 # package and push the zenml helm chart to the ECR repository
 name: Publish Helm Chart
 
-on: workflow_call
+on: 
+  - workflow_call
+  - workflow_dispatch
+  - push:
+      branches:
+        - feature/CLOUD-289-publish-helm-chart
 
 jobs:
   publish_to_ecr:
@@ -19,7 +24,7 @@ jobs:
       # add tag version to Chart.yaml file for variable version
       - name: Add tag version to Chart.yaml
         run: |
-          sed -i "s/version: .*/version: \"${{ github.ref_name }}\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
+          sed -i "s/version: .*/version: \"0.43.0\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -41,4 +46,4 @@ jobs:
           REPOSITORY: zenml-server
         run: |
           helm package $REPOSITORY
-          helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS
+          helm push $REPOSITORY-0.43.0.tgz oci://$REGISTRY/$REGISTRY_ALIAS
