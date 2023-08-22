@@ -12,6 +12,11 @@ jobs:
   publish_to_ecr:
     name: Publish Helm Chart 🛞 to ECR ☁️
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
