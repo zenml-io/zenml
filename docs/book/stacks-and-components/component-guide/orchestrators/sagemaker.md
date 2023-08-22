@@ -43,7 +43,7 @@ The only other thing necessary to use the ZenML Sagemaker orchestrator is enabli
 particular role.
 
 In order to quickly enable APIs, and create other resources necessary for to use this integration, we will soon provide
-a Sagemaker stack recipe via [our `mlops-stacks` recipe repository](https://github.com/zenml-io/mlops-stacks), which
+a Sagemaker stack recipe via [our `mlstacks` recipe repository](https://github.com/zenml-io/mlstacks), which
 will help you set up the infrastructure with one click.
 
 ### Infrastructure Deployment

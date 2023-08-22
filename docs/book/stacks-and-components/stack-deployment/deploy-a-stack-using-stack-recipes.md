@@ -32,7 +32,7 @@ To answer this question, here are some pros and cons in comparison to the stack-
 
 ### Deploying a stack
 
-Detailed steps are available [in the README](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) of the respective stack recipes but here's what a simple flow could look like:
+Detailed steps are available [in the README](https://github.com/zenml-io/mlstacks#-list-of-recipes) of the respective stack recipes but here's what a simple flow could look like:
 
 1.  📃 List all available recipes in the repository.
 
@@ -75,7 +75,7 @@ zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 
 <summary>Want more details on how this works internally?</summary>
 
-The stack recipe CLI interacts with the [mlops-stacks](https://github.com/zenml-io/mlops-stacks) repository to fetch the recipes and stores them locally in the **Global Config** directory. From here, they are pulled to your local directory or whatever directory you specify in the `--path` flag for the CLI.
+The stack recipe CLI interacts with the [mlstacks](https://github.com/zenml-io/mlstacks) repository to fetch the recipes and stores them locally in the **Global Config** directory. From here, they are pulled to your local directory or whatever directory you specify in the `--path` flag for the CLI.
 
 This is what you see and where you can make any changes you want to the recipe files. You can also use native terraform commands like `terraform apply` to deploy components but this would require you to pass the variables manually using the `-var-file` flag to the terraform CLI.
 
