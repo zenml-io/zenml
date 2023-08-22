@@ -44,7 +44,7 @@ jobs:
       - name: Package and push helm chart to Amazon ECR Public
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-          REGISTRY_ALIAS: q4d5e1c2
+          REGISTRY_ALIAS: zenml
           REPOSITORY: zenml-server
         run: |
           helm package src/zenml/zen_server/deploy/helm
