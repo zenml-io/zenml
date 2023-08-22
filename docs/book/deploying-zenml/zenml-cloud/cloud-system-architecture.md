@@ -2,7 +2,7 @@
 description: Different variations of the ZenML Cloud architecture depending on your needs.
 ---
 
-# ☁ Cloud Architecture
+# Cloud Architecture
 
 {% hint style="info" %}
 ZenML Cloud is currently in the beta phase. We are offering users the opportunity to host a managed ZenML instance and to gain early access to the exciting new features mentioned above. Beta users will receive priority access to the enhanced functionalities and dedicated support to ensure a smooth onboarding experience. 
@@ -96,3 +96,5 @@ Here is a concrete example of how this works:
 In this scenario, all services, data, and secrets are deployed on the customer cloud. This is the opposite of Scenario 1, and is meant for customers who require completely airgapped deployments, for the tightest security standards.
 
 Are you interested in the ZenML Cloud? While in beta, we're looking for early adopters to talk to! [Sign up](https://cloud.zenml.io) and get access to Scenario 2a with a free 30 day trial now!
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
