@@ -8,7 +8,7 @@ ZenML Cloud is a Software-as-a-Service (SaaS) platform that extends the capabili
 
 <div data-full-width="true">
 
-<figure><img src="../../.gitbook/assets/image.png" alt=""><figcaption><p>an architectural overview of the ZenML Cloud</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2a.png" alt=""><figcaption><p>An architectural overview of the ZenML Cloud</p></figcaption></figure>
 
 </div>
 
