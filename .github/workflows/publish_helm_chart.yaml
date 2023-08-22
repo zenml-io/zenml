@@ -23,7 +23,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # the following sed command replaces the "version" number in Chart.yaml with the tag version
+      # The following sed command replaces the version number in Chart.yaml with the tag version.
+      # It replaces the line that starts with "version: " with "version: <tag version>"
       - name: Add tag version to Chart.yaml
         run: |
           sed -i "s/version: .*/version: \"${{ github.ref_name }}\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
