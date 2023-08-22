@@ -55,24 +55,6 @@ class BaseFlavor(Flavor, ABC):
         return None
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
-
-        Returns:
-            A flavor SDK docs url.
-        """
-        return None
-
-    @property
-    def logo_url(self) -> Optional[str]:
-        """A url to represent the flavor in the dashboard.
-
-        Returns:
-            The flavor logo.
-        """
-        return None
-
-    @property
     @abstractmethod
     def type(self) -> StackComponentType:
         """The stack component type.
@@ -223,10 +205,14 @@ When you register a flavor, ZenML imports the flavor class and stores its config
 
 In ZenML, the config is defined in flavor class in the `def config_class(self) -> Type[StackComponentConfig]` method, while in the settings are defined in the implementation class in the `def settings_class(self) -> Type[StackComponentSettings]` function.
 
-## Tips for Developing Flavors
+## Tips and Best Practices
+
+* The implementation class is loaded and resolved by using the zenml repository root (i.e. the place where the `.zen` folder lives via `zenml init`). Therefore, every one on the team should remember to execute `zenml init` in a consistent manner (usually at the root of the repository where the `.git` folder lives). If the `zenml init` command is not executed, the current working directory is used, which could leave to unexpected results.
 
 * You can keep changing the `Config` and `Settings` of your flavor after registration. ZenML will pick up these "live" changes when running pipelines.
 
+* Note that changing the config in a breaking way requries an update of the component (not a flavor). E.g., adding a mandatory name to flavor X field will break a registered component of that flavor. This may lead to a completely broken state where one should delete the component and re-register it.
+  
 * Always test your flavor thoroughly before using it in production. Make sure it works as expected and handles errors gracefully.
 
 * Keep your flavor code clean and well-documented. This will make it easier for others to use and contribute to your flavor.
