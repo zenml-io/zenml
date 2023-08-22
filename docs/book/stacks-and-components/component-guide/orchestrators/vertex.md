@@ -38,7 +38,7 @@ The only other thing necessary to use the ZenML Vertex orchestrator is enabling 
 project.
 
 In order to quickly enable APIs, and create other resources necessary for using this integration, you can also consider
-using the [Vertex AI stack recipe](https://github.com/zenml-io/mlops-stacks/tree/main/vertex-ai), which helps you set up
+using the [Vertex AI stack recipe](https://github.com/zenml-io/mlstacks/tree/main/vertex-ai), which helps you set up
 the infrastructure with one click.
 
 ## How to use it

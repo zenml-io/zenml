@@ -30,7 +30,7 @@ setup is necessary.
 
 There are many options to use a deployed Airflow server:
 
-* Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlops-stacks). This is the simplest solution to
+* Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlstacks). This is the simplest solution to
   get ZenML working with Airflow, as the recipe also takes care of additional steps such as installing required Python
   dependencies in your Airflow server environment.
 * Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer)
