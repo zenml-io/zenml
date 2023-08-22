@@ -59,20 +59,30 @@ In this scenario, the ZenML Cloud only stores metadata while the customer cloud 
 
 Note, that ZenML encrypts all customer secrets at transit and at rest.
 
-## Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store
+## Scenario 3a: Hybrid SaaS with no data on ZenML side + Customer Secret Store managed by ZenML
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2c.png" alt=""><figcaption><p>Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_3a.png" alt=""><figcaption><p>Scenario 3a: Hybrid SaaS with no data on ZenML side + Customer Secret Store managed by ZenML</p></figcaption></figure>
 </div>
 
-This is almost the same as Scenario 2b, however in this case the customer brings their own secret store to keep sensitive information on the customer side. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML to 3rd party services and infrastructure while ensuring their secrets do not leave their environment.
+This scenario is a version of Scenario 2b modified to store all sensitive information on the customer side. In this case, the customer connects their own secret store directly to the ZenML Cloud. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML pipelines and the ZenML Cloud to 3rd party services and infrastructure while ensuring that credentials are always stored on the customer side.
+
+Even though they are stored customer side, access to ZenML secrets is fully managed by the ZenML Cloud. The ZenML Cloud is also allowed to use some of those credentials to connect directly to customer infrastructure services to implement control plane features such as artifact visualization or triggering pipelines. This implies that the secret values are allowed to leave the customer environment to allow their access to be managed centrally by the ZenML Cloud and to enforce access control policies, but the ZenML users and pipelines never have direct access to the secret store.
+
+## Scenario 3b: Hybrid SaaS with no data on ZenML side + Private Secret Store
+
+<div data-full-width="true">
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_3b.png" alt=""><figcaption><p>Scenario 3b: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
+</div>
+
+This is almost the same as Scenario 3a, with one important difference: customer secrets are isolated from the ZenML Cloud. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML to 3rd party services and infrastructure while ensuring their secrets do not leave their environment.
 
 The ZenML secret store still exists, and this is to still give customers the option to allow ZenML Cloud to connect to their environment to enable features such as visualizing artifacts and triggering actions from the ZenML Cloud dashboard.
 
-## Scenario 3: Agent Architecture
+## Scenario 4: Agent Architecture
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_3.png" alt=""><figcaption><p>Scenario 3: ZenML Agent deployment</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_4.png" alt=""><figcaption><p>Scenario 3: ZenML Agent deployment</p></figcaption></figure>
 </div>
 
 This scenario adds a new architectural component into the mix, called the ZenML Agent, which facilitates communication between the two clouds. The customer is responsible for deploying and maintaining the ZenML Agent in their environment. The agent acts as an intermediate step for all operations and information that needs to be exchanged between ZenML cloud and other customer stack components, like the artifact store. This means that all features like visualizing data artifacts in the dashboard and triggering pipelines from the dashboard are fully available, but only the ZenML Agent has access to customer secrets and accesses the customer's infrastructure services. 
@@ -87,10 +97,10 @@ Here is a concrete example of how this works:
 * The agent fetches the artifact and sends it back to the Cloud API.
 * The Cloud API sends the visualization to the dashboard.
 
-## Scenario 4: Fully On-prem
+## Scenario 5: Fully On-prem
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_4.png" alt=""><figcaption><p>Scenario 4: Fully on-premises deployment</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_5.png" alt=""><figcaption><p>Scenario 4: Fully on-premises deployment</p></figcaption></figure>
 </div>
 
 In this scenario, all services, data, and secrets are deployed on the customer cloud. This is the opposite of Scenario 1, and is meant for customers who require completely airgapped deployments, for the tightest security standards.
