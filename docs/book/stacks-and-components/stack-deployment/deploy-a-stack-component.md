@@ -47,7 +47,7 @@ The command currently uses your local credentials for GCP and AWS to provision r
 
 <summary>Want to know what happens in the background?</summary>
 
-The stack component deploy CLI is powered by ZenML's [Stack Recipes](https://github.com/zenml-io/mlops-stacks) in the background, more specifically the [new modular recipes](https://github.com/zenml-io/mlops-stacks/releases/tag/0.6.0). These allow you to configure and deploy select stack components as opposed to deploying the full stack, as with the legacy stack recipes.
+The stack component deploy CLI is powered by ZenML's [Stack Recipes](https://github.com/zenml-io/mlstacks) in the background, more specifically the [new modular recipes](https://github.com/zenml-io/mlstacks/releases/tag/0.6.0). These allow you to configure and deploy select stack components as opposed to deploying the full stack, as with the legacy stack recipes.
 
 Using the values you pass for the cloud, the CLI picks up the right modular recipe to use (one of AWS, GCP, or k3d) and then deploys that recipe with the specific stack component enabled.
 
@@ -71,7 +71,7 @@ Whenever you pass in a flavor to any stack-component deploy function, the combin
 enable_<STACK_COMPONENT>_<FLAVOR>
 ```
 
-This variable is then passed as input to the underlying modular recipe. If you check the [`variables.tf`](https://github.com/zenml-io/mlops-stacks/blob/main/gcp-modular/variables.tf) file for a given recipe, you can find all the supported flavor-stack component combinations there.
+This variable is then passed as input to the underlying modular recipe. If you check the [`variables.tf`](https://github.com/zenml-io/mlstacks/blob/main/gcp-modular/variables.tf) file for a given recipe, you can find all the supported flavor-stack component combinations there.
 
 </details>
 
@@ -87,7 +87,7 @@ With simplicity, we didn't want to compromise on the flexibility that this deplo
 
 The flags that you pass to the deploy CLI are passed on as-is to the backing modular recipes as input variables. This means that all the flags need to be defined as variables in the respective recipe.
 
-For example, if you take a look at the [`variables.tf`](https://github.com/zenml-io/mlops-stacks/blob/main/gcp-modular/variables.tf) file for a modular recipe, like the `gcp-modular` recipe, you can find variables like `mlflow_bucket` that correspond to the `--mlflow-bucket` flag that can be passed to the experiment tracker's deploy CLI.
+For example, if you take a look at the [`variables.tf`](https://github.com/zenml-io/mlstacks/blob/main/gcp-modular/variables.tf) file for a modular recipe, like the `gcp-modular` recipe, you can find variables like `mlflow_bucket` that correspond to the `--mlflow-bucket` flag that can be passed to the experiment tracker's deploy CLI.
 
 Validation for these flags does not exist yet at the CLI level, so you must be careful in naming them while calling `deploy`.
 
