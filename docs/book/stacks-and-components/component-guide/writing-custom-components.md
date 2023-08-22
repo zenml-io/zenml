@@ -99,7 +99,7 @@ class BaseFlavor(Flavor, ABC):
         """
 ```
 
-See the code [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/flavor.py#L29).
+See the full code [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/flavor.py#L29).
 
 ## Writing the implementation class
 
