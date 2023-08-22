@@ -16,7 +16,7 @@ The ZenML Cloud consists of the following moving pieces:
 
 * ZenML Cloud API: This is a centralized MLOps control plane that includes a managed ZenML dashboard and a special ZenML server optimized for production MLOps workloads.
 
-* MLflow Tracking Server: This is an optional add-on with ZenML Cloud that features a MLflow tracking server with detached artifact storage.
+* MLflow Tracking Server: This is an optional add-on with ZenML Cloud that features a MLflow tracking server that may also include artifact storage or be configured to connect to a customer artifact storage solution (e.g. an AWS S3 bucket or a GCS bucket).
 
 * ZenML Cloud Agent: This service is optionally deployed customer side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
 
@@ -32,9 +32,9 @@ In this phase, the scenarios below are experimental and subject to change. For n
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_1.png" alt=""><figcaption><p>Scenario 1: Fully SaaS deployment</p></figcaption></figure>
 </div>
 
-In this scenario, all services are hosted on the ZenML Cloud infrastructure. The ZenML Cloud API and MLflow Tracking store secrets and data on the ZenML side. The Cloud API interact with the customer cloud for certain actions like triggering pipelines, deploying models etc.
+In this scenario, all services are hosted on the ZenML Cloud infrastructure. The ZenML Cloud API and MLflow Tracking Server store secrets and data on the ZenML side. The Cloud API interacts with the customer cloud for certain actions like triggering pipelines, deploying models etc.
 
-This scenario is meant for customers who want to get started quickly with ZenML Cloud and can to a certain extent expose ingress connections to an external SaaS provider. Importantly, the data and secrets are all stored on ZenML Cloud side.
+This scenario is meant for customers who want to get started quickly with ZenML Cloud and can to a certain extent allow ingress connections into their infrastructure from an external SaaS provider. Importantly, the data and secrets are all stored on ZenML Cloud side.
 
 ## Scenario 2a: Hybrid SaaS with partial data on ZenML
 
@@ -42,20 +42,20 @@ This scenario is meant for customers who want to get started quickly with ZenML 
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2a.png" alt=""><figcaption><p>Scenario 2a: Hybrid SaaS deployment</p></figcaption></figure>
 </div>
 
-This scenario builds on top of Scenario 1, with the exception being that some "Data Artifacts" move over the customer cloud, specifically the data produced by ZenML itself. This can be set up quite easily by setting up an [artifact store](../../stacks-and-components/component-guide/artifact-stores/) with your MLOps stack. However, the data stored via MLflow is still stored on ZenML side (e.g. experiments, metadata, models).
+This scenario builds on top of Scenario 1, with the exception being that some "Data Artifacts" move over the customer cloud, specifically the data produced by ZenML itself. This can be set up quite easily by setting up an [artifact store](../../stacks-and-components/component-guide/artifact-stores/) with your MLOps stack. However, the data logged via MLflow is still stored on the ZenML side (e.g. experiments, metadata, models).
 
 This scenario is suitable for users who want the pipeline-centric data to be kept on their side, while they are less concerned about experiment data produced by MLflow.
 
-## Scenario 2b: Hybrid SaaS with no data on ZenML side
+## Scenario 2b: Hybrid SaaS with all data stored on the customer side
 
 <div data-full-width="true">
-<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2b.png" alt=""><figcaption><p>Scenario 2b: Hybrid SaaS with no data on ZenML side
+<figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2b.png" alt=""><figcaption><p>Scenario 2b: Hybrid SaaS with all data stored on the customer side
 </p></figcaption></figure>
 </div>
 
 This scenario builds on top of Scenario 2b, with the exception being that **all** "Data Artifacts" move over the customer cloud, including the ones produced by MLflow.
 
-In this scenario, the ZenML Cloud only stores metadata while the customer cloud keeps potentially sensitive customer data. However, if the customer wants access to special ZenML Cloud features like viewing artifacts on the dashboard, triggering pipeline runs, etc then they have to also provide [connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) which are ultimately stored as secrets on the ZenML side. Therefore, while this scenario keeps the data on customer side, it still gives access to ZenML Cloud to trigger actions via an ingress connection over the internet into the customer cloud.
+In this scenario, the ZenML Cloud only stores metadata while the customer cloud keeps potentially sensitive user data. However, if the customer wants access to special ZenML Cloud features like viewing artifacts on the dashboard, triggering pipeline runs, etc then they have to also configure credentials and [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) required to access some customer infrastructure services. Ultimately, these credentials end up being stored as secrets on the ZenML side. Therefore, while this scenario keeps the data on customer side, it still gives access to ZenML Cloud to trigger actions via ingress connections over the internet into the customer cloud.
 
 Note, that ZenML encrypts all customer secrets at transit and at rest.
 
@@ -65,9 +65,9 @@ Note, that ZenML encrypts all customer secrets at transit and at rest.
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2c.png" alt=""><figcaption><p>Scenario 2c: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
 </div>
 
-This is almost the same as Scenario 2b, however in this the customer brings their own secret store to keep sensitive information on customer side. This allows users to use the [secrets API](../../user-guide/advanced-guide/secret-management/) and ensure their secrets do not leave their environment.
+This is almost the same as Scenario 2b, however in this case the customer brings their own secret store to keep sensitive information on the customer side. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML to 3rd party services and infrastructure while ensuring their secrets do not leave their environment.
 
-The ZenML secret store still exists, and this is again to enable customers to create [connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) to allow ZenML Cloud to triggers actions on their environment.
+The ZenML secret store still exists, and this is to still give customers the option to allow ZenML Cloud to connect to their environment to enable features such as visualizing artifacts and triggering actions from the ZenML Cloud dashboard.
 
 ## Scenario 3: Agent Architecture
 
@@ -77,7 +77,7 @@ The ZenML secret store still exists, and this is again to enable customers to cr
 
 This scenario adds a new architectural component into the mix, called the ZenML Agent, which facilitates communication between the two clouds. The customer is responsible for deploying and maintaining the ZenML Agent in their environment. The agent acts as an intermediate step for all operations and information that needs to be exchanged between ZenML cloud and other customer stack components, like the artifact store. This means that all features like visualizing data artifacts in the dashboard and triggering pipelines from the dashboard are fully available, but only the ZenML Agent has access to customer secrets and accesses the customer's infrastructure services. 
 
-The advantage of this deployment is that the ZenML Cloud does not need access to any sensitive secrets or need create any [connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) to trigger actions customer side. Secrets and data remain on the customer environment, and only one secure ingress connection is exposed.
+The advantage of this deployment is that the ZenML Cloud does not need direct access to any sensitive secrets to trigger actions customer side. The ZenML Agent executes all operations that require access to secrets or customer infrastructure on behalf of the ZenML Cloud. Secrets and data remain on the customer environment, and only one secure ingress connection is established. 
 
 Here is a concrete example of how this works:
 
