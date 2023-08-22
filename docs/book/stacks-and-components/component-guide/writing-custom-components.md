@@ -192,7 +192,7 @@ As each component might define a different interface, please take a look at each
 
 ## Registering a Flavor
 
-Once you have implemented your custom flavor and implementation class, you can register your component using the ZenML CLI. Use the `flavor register` command and provide the path to your flavor class:
+Once you have implemented your custom flavor and implementation class, you can register your component using the ZenML CLI. Use the `flavor register` command and provide the path to your flavor class (see further below for a concrete example):
 
 ```shell
 # This points to the flavor class, not the implementation class
