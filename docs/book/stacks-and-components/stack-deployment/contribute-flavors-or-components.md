@@ -6,7 +6,7 @@ description: Creating your custom stack component solutions.
 
 Before you can start contributing, it is important to know that the stack component deploy CLI also makes use of the stack recipes (specifically, the modular stack recipes) in the background. Thus, contributing a new deployment option for both the deployment methods that we have seen, involves making a contribution to the base recipe.
 
-You can refer to the [`CONTRIBUTING.md`](https://github.com/zenml-io/mlstacks/blob/main/CONTRIBUTING.md) on the `mlops-stack` repo to get an overview of how all recipes are designed in general but here are instructions for contributing to the modular recipes specifically.
+You can refer to the [`CONTRIBUTING.md`](https://github.com/zenml-io/mlstacks/blob/main/CONTRIBUTING.md) on the `mlstacks` repo to get an overview of how all recipes are designed in general but here are instructions for contributing to the modular recipes specifically.
 
 ## Adding new MLOps tools
 
