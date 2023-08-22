@@ -233,7 +233,7 @@ In ZenML, the config is defined in flavor class in the `def config_class(self) -
 
 * Follow best practices for the language and libraries you're using. This will help ensure your flavor is efficient, reliable, and easy to maintain.
 
-Probably the best way to learn about developing flavors it to see the code for the [officially supported flavors of ZenML](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
+Probably the best way to learn about developing flavors is to see the code for the [officially supported flavors of ZenML](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
