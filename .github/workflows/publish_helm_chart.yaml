@@ -50,5 +50,5 @@ jobs:
           REGISTRY_ALIAS: q4d5e1c2
           REPOSITORY: zenml-server
         run: |
-          helm package $REPOSITORY
+          helm package src/zenml/zen_server/deploy/helm
           helm push $REPOSITORY-0.43.0.tgz oci://$REGISTRY/$REGISTRY_ALIAS
