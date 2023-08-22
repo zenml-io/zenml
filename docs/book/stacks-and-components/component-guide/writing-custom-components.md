@@ -2,7 +2,7 @@
 description: How to extend ZenML with plug-in flavor components.
 ---
 
-# Develop a Custom Component Flavor in ZenML
+# Integrate ZenML with your tooling stack
 
 ZenML is built on the philosophy of composability and reusability. It allows users to develop custom component flavors for each type of pipeline component. This guide will help you understand what a flavor is, and how you can develop and register your own custom flavor in ZenML.
 
