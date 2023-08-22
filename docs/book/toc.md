@@ -46,6 +46,7 @@
 ## Deploying ZenML
 
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+  * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
   * [Get started](deploying-zenml/zenml-cloud/get-started.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
   * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
@@ -157,7 +158,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/0.43.0/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
