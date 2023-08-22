@@ -14,16 +14,16 @@ Machine learning often involves data that is sensitive and thus data security is
 
 The ZenML Cloud consists of the following moving pieces:
 
-* ZenML Cloud API: This is a centralized MLOps control plane that includes a managed ZenML dashboard and a special ZenML server optimized for production MLOps workloads.
+* **ZenML Cloud API**: This is a centralized MLOps control plane that includes a managed ZenML dashboard and a special ZenML server optimized for production MLOps workloads.
 
-* MLflow Tracking Server: This is an optional add-on with ZenML Cloud that features a MLflow tracking server that may also include artifact storage or be configured to connect to a customer artifact storage solution (e.g. an AWS S3 bucket or a GCS bucket).
+* **MLflow Tracking Server**: This is an optional add-on with ZenML Cloud that features a MLflow tracking server that may also include artifact storage or be configured to connect to a customer artifact storage solution (e.g. an AWS S3 bucket or a GCS bucket).
 
-* ZenML Cloud Agent: This service is optionally deployed customer-side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
+* **ZenML Cloud Agent**: This service is optionally deployed customer-side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
 
 The above three interact with other MLOps stack components, secrets, and data in varying scenarios described below.
 
 {% hint style="info" %}
-In this phase, the scenarios below are experimental and subject to change. For now, Scenario 2a is used by default when you [sign up for ZenML Cloud](https://cloud.zenml.io). For other scenarios, [contact us on Slack](https://zenml.io/slack).
+In this phase, the scenarios below are experimental and subject to change. For now, **Scenario 2a** is used by default when you [sign up for ZenML Cloud](https://cloud.zenml.io). For other scenarios, [contact us on Slack](https://zenml.io/slack).
 {% endhint %}
 
 ## Scenario 1: Fully SaaS
@@ -41,6 +41,10 @@ This scenario is meant for customers who want to quickly get started with ZenML 
 <div data-full-width="true">
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_2a.png" alt=""><figcaption><p>Scenario 2a: Hybrid SaaS deployment</p></figcaption></figure>
 </div>
+
+{% hint style="info" %}
+This is the default architecture that is setup when you when you [sign up for ZenML Cloud](https://cloud.zenml.io). For other scenarios, [contact us on Slack](https://zenml.io/slack).
+{% endhint %}
 
 This scenario builds on top of Scenario 1, with the exception being that some "Data Artifacts" move over the customer cloud, specifically the data produced by ZenML itself. This can be set up quite easily by setting up an [artifact store](../../stacks-and-components/component-guide/artifact-stores/) with your MLOps stack. However, the data logged via MLflow is still stored on the ZenML side (e.g. experiments, metadata, models).
 
