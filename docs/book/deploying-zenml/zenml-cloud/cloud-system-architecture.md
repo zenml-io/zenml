@@ -75,9 +75,15 @@ Even though they are stored customer side, access to ZenML secrets is fully mana
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_3b.png" alt=""><figcaption><p>Scenario 3b: Hybrid SaaS with no data on ZenML side + Private Secret Store</p></figcaption></figure>
 </div>
 
-This is almost the same as Scenario 3a, with one important difference: customer secrets are isolated from the ZenML Cloud. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML to 3rd party services and infrastructure while ensuring their secrets do not leave their environment.
+This is almost the same as Scenario 3a, with one added difference: customer secrets are kept strictly private and are never accessed by the ZenML Cloud. This allows users to use [service connectors](../../stacks-and-components/auth-management/service-connectors-guide.md) and the [secrets API](../../user-guide/advanced-guide/secret-management/) to authenticate ZenML pipelines to 3rd party services and infrastructure while ensuring their secrets never leave the customer environment.
 
-The ZenML secret store still exists, and this is to still give customers the option to allow ZenML Cloud to connect to their environment to enable features such as visualizing artifacts and triggering actions from the ZenML Cloud dashboard.
+The ZenML Cloud secret store still exists, and this is to still give customers the option to allow ZenML Cloud to connect to their environment to enable features such as visualizing artifacts and triggering actions from the ZenML Cloud dashboard, but this is entirely optional.
+
+This deployment scenario comes with some limitations:
+
+* the ZenML Cloud control plane features such as triggering pipelines and visualizing artifacts are restricted to stack components that have credentials stored in the ZenML cloud
+* ZenML users and pipelines may need to be individually configured to be able to access the secret values kept in the private secret store, because centralized authentication to the secret store is no longer possible through ZenML
+* granular access control to ZenML secrets through RBAC is no longer possible: the ZenML clients can theoretically access any secret in the customer’s secret store unless access is regulated by customer specific means
 
 ## Scenario 4: Agent Architecture
 
