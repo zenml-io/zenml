@@ -199,13 +199,13 @@ zenml <component_type> flavor list
 
 Replace `<component_type>` with the type of component you're interested in, e.g. `orchestrator`.
 
-### Understanding Flavor Registration
+### Understanding flavor registration
 
 When you register a flavor, ZenML imports the flavor class and stores its configuration in the ZenML repository. This allows ZenML to use your flavor when running pipelines, even if the dependencies required by the flavor are not installed in the current environment.
 
 In ZenML, the config is defined in flavor class in the `def config_class(self) -> Type[StackComponentConfig]` method, while in the settings are defined in the implementation class in the `def settings_class(self) -> Type[StackComponentSettings]` function.
 
-## Tips and Best Practices
+## Tips and best practices
 
 * The implementation class is loaded and resolved by using the zenml repository root (i.e. the place where the `.zen` folder lives via `zenml init`). Therefore, every one on the team should remember to execute `zenml init` in a consistent manner (usually at the root of the repository where the `.git` folder lives). If the `zenml init` command is not executed, the current working directory is used, which could leave to unexpected results.
 
