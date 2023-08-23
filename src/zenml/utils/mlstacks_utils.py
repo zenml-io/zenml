@@ -49,7 +49,9 @@ if TYPE_CHECKING:
     from mlstacks.models import Component, Stack
 
 
-def verify_installation(func: Callable[..., Any]) -> Callable[..., Any]:
+def verify_mlstacks_installation(
+    func: Callable[..., Any]
+) -> Callable[..., Any]:
     """Decorator for verifying mlstacks installation before running a function.
 
     Args:
@@ -86,7 +88,7 @@ def stack_exists(stack_name: str) -> bool:
     return True
 
 
-@verify_installation
+@verify_mlstacks_installation
 def stack_spec_exists(stack_name: str) -> bool:
     """Checks whether a stack spec with that name exists or not.
 
@@ -155,7 +157,7 @@ def _get_component_flavor(
     return flavor
 
 
-@verify_installation
+@verify_mlstacks_installation
 def _add_extra_config_to_components(
     components: List["Component"], extra_config: Dict[str, str]
 ) -> List["Component"]:
@@ -253,7 +255,7 @@ def _add_extra_config_to_components(
     return components
 
 
-@verify_installation
+@verify_mlstacks_installation
 def _construct_components(
     params: Dict[str, Any], zenml_component_deploy: bool = False
 ) -> List["Component"]:
@@ -315,7 +317,7 @@ def _get_stack_tags(tags: Dict[str, str]) -> Dict[str, str]:
     return dict(tag.split("=") for tag in tags) if tags else {}
 
 
-@verify_installation
+@verify_mlstacks_installation
 def _construct_stack(params: Dict[str, Any]) -> "Stack":
     """Constructs mlstacks `Stack` object from raw Click CLI params.
 
@@ -340,7 +342,7 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     )
 
 
-@verify_installation
+@verify_mlstacks_installation
 def convert_click_params_to_mlstacks_primitives(
     params: Dict[str, Any],
     zenml_component_deploy: bool = False,
@@ -374,7 +376,7 @@ def convert_click_params_to_mlstacks_primitives(
     return stack, components
 
 
-@verify_installation
+@verify_mlstacks_installation
 def convert_mlstacks_primitives_to_dicts(
     stack: "Stack", components: List["Component"]
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
@@ -413,7 +415,7 @@ def generate_unique_filename(base_filename: str) -> str:
     return f"{base_filename}_{unique_suffix}"
 
 
-@verify_installation
+@verify_mlstacks_installation
 def import_new_mlstacks_stack(
     stack_name: str, provider: str, stack_spec_dir: str
 ) -> None:
@@ -460,7 +462,7 @@ def import_new_mlstacks_stack(
     print_model_url(get_stack_url(imported_stack))
 
 
-@verify_installation
+@verify_mlstacks_installation
 def import_new_mlstacks_component(
     stack_name: str, component_name: str, provider: str, stack_spec_dir: str
 ) -> None:
