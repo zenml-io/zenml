@@ -51,7 +51,7 @@ version = pipeline_model.version
 These pipeline "models" are not related to machine learning models like decision
 trees or neural networks. Rather, you can think of them as similar to types in 
 strictly-typed languages. Checkout the 
-[ZenML Client Documentation](../advanced-guide/environment-management/client.md#resource-models) for
+[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#resource-models) for
 more details.
 {% endhint %}
 
@@ -69,7 +69,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/client.md) for more 
+Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more 
 information on the `Client` class and its purpose.
 {% endhint %}
 
@@ -118,7 +118,7 @@ from newest to oldest.
 {% hint style="info" %}
 Alternatively, you can also use the `pipeline_model.get_runs()` method which 
 allows you to specify detailed parameters for filtering or pagination. See the
-[ZenML Client Documentation](../advanced-guide/environment-management/client.md#list-methods) for more
+[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more
 information.
 {% endhint %}
 
@@ -132,7 +132,7 @@ last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 ```
 
 {% hint style="info" %}
-If your most recent runs have failed and you want to find the last run that has
+If your most recent runs have failed, and you want to find the last run that has
 succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 

@@ -19,10 +19,10 @@ def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../../component-guide/orchestrators/orchestrators.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources.
+If the underlying [orchestrator](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure doesn't cover your requirements, you can also take a look at [step operators](../../../stacks-and-components/component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled

@@ -48,7 +48,7 @@ def test_stack_validation(
     local_orchestrator,
     local_artifact_store,
     local_container_registry,
-    remote_artifact_store,
+    s3_artifact_store,
     remote_container_registry,
 ):
     """Tests that the Kaniko image builder validates that it's stack has a
@@ -112,7 +112,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
             image_builder=image_builder_that_requires_remote_artifact_store,
         ).validate()

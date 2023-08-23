@@ -14,6 +14,7 @@
 """Initialization for TensorFlow integration."""
 
 import platform
+import sys
 from typing import List, Optional
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
@@ -48,15 +49,22 @@ class TensorflowIntegration(Integration):
         Returns:
             A list of requirements.
         """
+        if sys.version_info > (3, 11):
+            tf_version = "2.13"
+        else:
+            # Capping tensorflow to 2.11 for Python 3.10 and below because it
+            # is not compatible with Pytorch
+            # (see https://github.com/pytorch/pytorch/issues/99637).
+            tf_version = "2.11"
         target_os = target_os or platform.system()
         if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                "tensorflow-macos>=2.8.0",
+                f"tensorflow-macos=={tf_version}",
             ]
         else:
             requirements = [
-                "tensorflow==2.8.0",
-                "tensorflow_io==0.24.0",
+                f"tensorflow=={tf_version}",
+                "tensorflow_io>=0.24.0",
                 "protobuf>=3.6.0,<4.0.0",
             ]
         return requirements

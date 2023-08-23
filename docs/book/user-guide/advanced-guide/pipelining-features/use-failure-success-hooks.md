@@ -86,7 +86,7 @@ def my_step(some_parameter: int = 1)
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](../../component-guide/alerters/alerters.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 from zenml import get_step_context
