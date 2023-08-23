@@ -24,6 +24,8 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     _component_display_name,
+    confirmation,
+    error,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
@@ -1540,6 +1542,11 @@ def destroy(
     debug_mode: bool = False,
 ) -> None:
     """Destroy all resources previously created with `zenml stack deploy`."""
+    if not confirmation(
+        f"Are you sure you want to destroy stack '{stack_name}' and all "
+        "associated infrastructure?"
+    ):
+        error("Aborting stack destroy...")
     cli_utils.verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 

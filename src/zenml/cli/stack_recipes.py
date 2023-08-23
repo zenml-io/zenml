@@ -20,9 +20,6 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import stack
 from zenml.logger import get_logger
-from zenml.mlstacks.utils import (
-    get_mlstacks_version,
-)
 from zenml.recipes import GitStackRecipesHandler
 
 logger = get_logger(__name__)
