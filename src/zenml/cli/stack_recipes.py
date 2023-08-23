@@ -43,6 +43,47 @@ def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
 
+@stack_recipe.command(name="list", help="List the available stack recipes.")
+def list_stack_recipes() -> None:
+    """List all available stack recipes."""
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please refer to the `mlstacks` documentation for more "
+        "information at https://mlstacks.zenml.io/"
+    )
+
+
+@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to clean the stack_recipe(s)",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Whether to skip the confirmation prompt.",
+)
+def clean(
+    path: str,
+    yes: bool,
+) -> None:
+    """Deletes the stack recipes directory from your working directory.
+
+    Args:
+        path: The path at which you want to clean the stack_recipe(s).
+        yes: Whether to skip the confirmation prompt.
+    """
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please refer to the `mlstacks` documentation for more "
+        "information at https://mlstacks.zenml.io/"
+    )
+
+
 @stack_recipe.command(help="Find out more about a stack recipe.")
 @click.argument("stack_recipe_name")
 def info(
