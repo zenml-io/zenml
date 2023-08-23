@@ -13,7 +13,7 @@ Before we begin, it will help to understand the [architecture](zenml-self-hosted
 If you don't have an existing Kubernetes cluster, you have the following two options to set it up:
 
 * Creating it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
-* Using a [stack recipe](../../stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) to see if there's something that works for you.
+* Using a [stack recipe](../../stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlstacks#-list-of-recipes) to see if there's something that works for you.
 
 {% hint style="warning" %}
 Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it.
