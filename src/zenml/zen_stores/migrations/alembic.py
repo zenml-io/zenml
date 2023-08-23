@@ -34,6 +34,7 @@ from sqlmodel import SQLModel
 from zenml.zen_stores import schemas
 
 ZENML_ALEMBIC_START_REVISION = "alembic_start"
+DATABASE_LOCK_TIMEOUT = 1
 
 exclude_tables = ["sqlite_sequence"]
 
@@ -138,18 +139,30 @@ class Alembic:
             fn_context_args["fn"] = fn
 
         with self.engine.connect() as connection:
-            self.environment_context.configure(
-                connection=connection,
-                target_metadata=self.metadata,
-                include_object=include_object,
-                compare_type=True,
-                render_as_batch=True,
-                **fn_context_args,
-                **self.context_kwargs,
-            )
+            # Acquire a lock
+            if self.engine.dialect.name == "mysql":
+                database_name = self.engine.url.database  # Get the name of the database
+                lock = connection.execute(f"SELECT GET_LOCK('{database_name}', {DATABASE_LOCK_TIMEOUT})").scalar()
+                if lock is None or lock != 1:
+                    # Add some retry logic or error handling here if needed
+                    raise RuntimeError("Could not acquire the database lock.")
+            try:
+                self.environment_context.configure(
+                    connection=connection,
+                    target_metadata=self.metadata,
+                    include_object=include_object,
+                    compare_type=True,
+                    render_as_batch=True,
+                    **fn_context_args,
+                    **self.context_kwargs,
+                )
 
-            with self.environment_context.begin_transaction():
-                self.environment_context.run_migrations()
+                with self.environment_context.begin_transaction():
+                    self.environment_context.run_migrations()
+            finally:
+                # Release the lock
+                if self.engine.dialect.name == "mysql":
+                    connection.execute(f"SELECT RELEASE_LOCK('{self.engine.url.database}')")
 
     def current_revisions(self) -> List[str]:
         """Get the current database revisions.
