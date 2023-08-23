@@ -324,11 +324,12 @@ def email_opt_in_response(
             email_opted_in=user_response.email_opted_in,
         )
 
-        email_opt_int(
-            opted_in=user_response.email_opted_in,
-            email=user_response.email,
-            source="zenml server",
-        )
+        if user_response.email_opted_in is not None:
+            email_opt_int(
+                opted_in=user_response.email_opted_in,
+                email=user_response.email,
+                source="zenml server",
+            )
 
         return zen_store().update_user(
             user_id=user.id, user_update=user_update
