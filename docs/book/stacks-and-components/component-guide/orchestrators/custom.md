@@ -227,7 +227,7 @@ class MyOrchestrator(ContainerizedOrchestrator):
 
             # You can get the settings your orchestrator like so.
             # The settings are the "dynamic" part of your orchestrators config,
-            # optionally defined when you register your orchestrator but optionally
+            # optionally defined when you register your orchestrator but can be
             # overridden at runtime.
             step_settings = cast(
                 MyOrchestratorSettings, self.get_settings(step)

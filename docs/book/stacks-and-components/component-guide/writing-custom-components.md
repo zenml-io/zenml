@@ -4,9 +4,9 @@ description: How to extend ZenML with plug-in flavor components.
 
 # Integrate ZenML with your tooling stack
 
-ZenML is built on the philosophy of composability and reusability. It allows users to develop custom component flavors for each type of pipeline component. This guide will help you understand what a flavor is, and how you can develop and register your own custom flavor in ZenML.
+ZenML is built on the philosophy of composability and reusability. It allows users to develop custom component flavors for each type of stack component. This guide will help you understand what a flavor is, and how you can develop and register your own custom flavor in ZenML.
 
-## Understanding Component Flavors
+## Understanding component flavors
 
 In ZenML, a component type is a broad category that defines the functionality of a pipeline component. Each type can have multiple flavors, which are specific implementations of the component type. For instance, the type `orchestrator` can have flavors like `local`, `kubernetes`, etc. Each flavor is a unique implementation of the orchestrator functionality.
 
@@ -15,7 +15,7 @@ In order to create a custom component, one must create:
 1. A custom flavor class (inheriting from `zenml.stack.Flavor` or any of its child classes)
 2. An implementation class (inheriting from `zenml.stack.StackComponent` or any of its child classes)
 
-## Writing a Custom Flavor Class
+## Writing a custom flavor class
 
 To develop a custom flavor, you need to create a class that inherits from the `BaseFlavor` class and implement the abstract properties. Here is a simplified version of the `BaseFlavor` class. Read the docstring of each function to understand its use:
 
@@ -172,7 +172,7 @@ In ZenML, a flavor's `config` and `settings` are two separate, yet related entit
 
 As each component might define a different interface, please take a look at each component type to read further details on how to define a custom component of that type. For example, read the [step operator](step-operators/custom.md) guide to learn how to create a custom step operator.
 
-## Registering a Flavor
+## Registering a flavor
 
 Once you have implemented your custom flavor and implementation class, you can register your component using the ZenML CLI. Use the `flavor register` command and provide the path to your flavor class (see further below for a concrete example):
 
