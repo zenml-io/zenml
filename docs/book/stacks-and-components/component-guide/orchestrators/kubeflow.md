@@ -154,7 +154,7 @@ When using the Kubeflow orchestrator locally, you'll additionally need:
 
 To run the pipeline on a local Kubeflow Pipelines deployment, you can use the ZenML Stack recipes to spin up a local
 Kubernetes cluster and install Kubeflow Pipelines on it. The stack recipe is called `k3d-modular` and is available in
-the ZenML [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular). The recipe is
+the ZenML [stack recipe repository](https://github.com/zenml-io/mlstacks/tree/main/k3d-modular). The recipe is
 modular, meaning that you can configure it to use different orchestrators, Model Deployers, and other tools.
 
 To deploy the stack, run the following commands:
@@ -175,7 +175,7 @@ zenml stack set <STACK_NAME>
 kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
 ```
 
-You can read more about the recipes in the [ZenML Stack Recipe Repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+You can read more about the recipes in the [ZenML Stack Recipe Repository](https://github.com/zenml-io/mlstacks/tree/main/k3d-modular).
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 4 GB of RAM, and 30 GB of disk space, so if you are using
