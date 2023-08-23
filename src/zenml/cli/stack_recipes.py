@@ -195,12 +195,12 @@ def describe(
         cli_utils.declare(metadata["Description"])
 
 
-@stack_recipe.command(help="The active version of the mlops-stacks repository")
+@stack_recipe.command(help="The active version of the mlstacks repository")
 @pass_git_stack_recipes_handler
 def version(
     git_stack_recipes_handler: GitStackRecipesHandler,
 ) -> None:
-    """The active version of the mlops-stacks repository.
+    """The active version of the mlstacks repository.
 
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
