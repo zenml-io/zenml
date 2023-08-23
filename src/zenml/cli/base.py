@@ -425,7 +425,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
         else:
             console.print(zenml_cli_thank_you_message, width=80)
 
-            email_opt_int(opted_in=True, email=email, source="zenml go")
+            email_opt_int(opted_in=True, email=email, source=event_source)
 
             GlobalConfiguration().user_email_opt_in = True
 
@@ -439,7 +439,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     else:
         GlobalConfiguration().user_email_opt_in = False
 
-        email_opt_int(opted_in=False, email=None, source="zenml go")
+        email_opt_int(opted_in=False, email=None, source=event_source)
 
         # This is the case where user opts out
         client.update_user(

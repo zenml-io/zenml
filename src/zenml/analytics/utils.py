@@ -85,9 +85,7 @@ def email_opt_int(opted_in: bool, email: Optional[str], source: str) -> None:
         source: Location when the user replied ["zenml go", "zenml server"]
     """
     # If the user opted in, associate email with the anonymous distinct ID
-    print(f"Opted in: {opted_in}, Email: {email}, Source: {source}")
-    if opted_in:
-        # TODO: Change this to another property
+    if opted_in and email is not None and email != "":
         identify(metadata={"email": email})
 
     # Track that the user answered the prompt
