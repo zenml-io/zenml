@@ -6,7 +6,7 @@ description: Deploying an entire stack with the ZenML Stack Recipes.
 
 A Stack Recipe is a collection of carefully crafted Terraform modules and resources which, when executed, creates a range of stack components that can be used to run your pipelines. Each recipe is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.
 
-Check out the full list of available recipes at the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks#-list-of-recipes).
+Check out the full list of available recipes at the [mlstacks repository](https://github.com/zenml-io/mlstacks#-list-of-recipes).
 
 ## When should I use the stack recipes?
 
@@ -31,7 +31,7 @@ We recommend the use of _modular_ recipes going forward if you're deploying on G
 
 ### Deploying a recipe 🚀
 
-Detailed steps are available [in the README](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) of the respective stack recipes but here's what a simple flow could look like:
+Detailed steps are available [in the README](https://github.com/zenml-io/mlstacks#-list-of-recipes) of the respective stack recipes but here's what a simple flow could look like:
 
 1.  📃 List all available recipes in the repository.
 
@@ -74,7 +74,7 @@ zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 
 <summary>Want more details on how this works internally?</summary>
 
-The stack recipe CLI interacts with the [mlops-stacks](https://github.com/zenml-io/mlops-stacks) repository to fetch the recipes and stores them locally in the **Global Config** directory. From here, they are pulled to your local directory or whatever directory you specify in the `--path` flag for the CLI.
+The stack recipe CLI interacts with the [mlstacks](https://github.com/zenml-io/mlstacks) repository to fetch the recipes and stores them locally in the **Global Config** directory. From here, they are pulled to your local directory or whatever directory you specify in the `--path` flag for the CLI.
 
 This is what you see and where you can make any changes you want to the recipe files. You can also use native terraform commands like `terraform apply` to deploy components but this would require you to pass the variables manually using the `-var-file` flag to the terraform CLI.
 
