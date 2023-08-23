@@ -46,17 +46,17 @@ from zenml.constants import ALPHA_MESSAGE
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
+from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
+from zenml.utils import source_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.dashboard_utils import get_component_url
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
     import_new_mlstacks_component,
     verify_spec_and_tf_files_exist,
 )
-from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
-from zenml.utils import source_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.utils.dashboard_utils import get_component_url
-from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.yaml_utils import write_yaml
 
 

@@ -46,6 +46,11 @@ from zenml.exceptions import (
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
+from zenml.models import StackFilterModel
+from zenml.recipes import GitStackRecipesHandler
+from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.dashboard_utils import get_stack_url
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
@@ -54,11 +59,6 @@ from zenml.utils.mlstacks_utils import (
     stack_spec_exists,
     verify_spec_and_tf_files_exist,
 )
-from zenml.models import StackFilterModel
-from zenml.recipes import GitStackRecipesHandler
-from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.utils.dashboard_utils import get_stack_url
-from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 logger = get_logger(__name__)
