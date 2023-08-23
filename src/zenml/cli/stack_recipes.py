@@ -484,10 +484,12 @@ def get_outputs(
     )
 
 
-@stack_recipe.command(help="The active version of the mlstacks recipes.")
+@stack_recipe.command(help="DISABLED: The active version of mlstacks recipes.")
 def version() -> None:
     """The active version of the mlstacks recipes."""
-    if active_version := get_mlstacks_version():
-        cli_utils.declare(f"Running `mlstacks` version {active_version}.")
-    else:
-        cli_utils.warning("Unable to detect version.")
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. For more information and to learn about the new syntax, "
+        "please refer to the `mlstacks` documentation at "
+        "https://mlstacks.zenml.io/"
+    )
