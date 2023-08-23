@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
-import os
+from typing import Any, Dict, Optional, Union
 
 import click
 
@@ -24,7 +24,6 @@ from zenml.mlstacks.utils import (
     get_mlstacks_version,
 )
 from zenml.recipes import GitStackRecipesHandler
-from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 
@@ -36,14 +35,16 @@ pass_git_stack_recipes_handler = click.make_pass_decorator(
 
 @stack.group(
     "recipe",
-    help="Commands for using the stack recipes.",
+    help="DISABLED: Commands for using the stack recipes.",
     invoke_without_command=True,
 )
 def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
 
-@stack_recipe.command(name="list", help="List the available stack recipes.")
+@stack_recipe.command(
+    name="list", help="DISABLED: List the available stack recipes."
+)
 def list_stack_recipes() -> None:
     """List all available stack recipes."""
     cli_utils.warning(
@@ -53,7 +54,9 @@ def list_stack_recipes() -> None:
     )
 
 
-@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
+@stack_recipe.command(
+    help="DISABLED: Deletes the ZenML stack recipes directory."
+)
 @click.option(
     "--path",
     "-p",
@@ -84,7 +87,7 @@ def clean(
     )
 
 
-@stack_recipe.command(help="Find out more about a stack recipe.")
+@stack_recipe.command(help="DISABLED: Find out more about a stack recipe.")
 @click.argument("stack_recipe_name")
 def info(
     stack_recipe_name: str,
@@ -96,18 +99,15 @@ def info(
     Args:
         stack_recipe_name: The name of the stack recipe.
     """
-    recipe_readme = cli_utils.get_recipe_readme(stack_recipe_name)
-    if recipe_readme is None:
-        cli_utils.error(
-            f"Unable to find stack recipe {stack_recipe_name}. "
-            "Please check the name and try again."
-        )
-    cli_utils.print_markdown_with_pager(recipe_readme)
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please refer to the `mlstacks` documentation for more "
+        "information at https://mlstacks.zenml.io/"
+    )
 
 
 @stack_recipe.command(
-    help="Describe the stack components and their tools that are "
-    "created as part of this recipe."
+    help="DISABLED: Describe the stack components for a recipe."
 )
 @click.argument(
     "stack_recipe_name",
@@ -116,22 +116,372 @@ def info(
 def describe(
     stack_recipe_name: str,
 ) -> None:
-    """Describe the stack components and their tools that are created as part of this recipe.
+    """Describe the stack components and their tools.
 
     Outputs the "Description" section of the recipe metadata.
 
     Args:
         stack_recipe_name: The name of the stack recipe.
     """
-    stack_recipe_path = cli_utils.get_recipe_path(stack_recipe_name)
-    if stack_recipe_path is None:
-        cli_utils.error(
-            f"Unable to find stack recipe {stack_recipe_name}. "
-            "Please check the name and try again."
-        )
-    recipe_metadata_yaml = os.path.join(stack_recipe_path, "metadata.yaml")
-    recipe_metadata = yaml_utils.read_yaml(recipe_metadata_yaml)
-    logger.info(recipe_metadata["Description"])
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please refer to the `mlstacks` documentation for more "
+        "information at https://mlstacks.zenml.io/"
+    )
+
+
+@stack_recipe.command(help="DISABLED: Pull stack recipes.")
+@click.argument("stack_recipe_name", required=False, default=None)
+@click.option(
+    "--yes",
+    "-y",
+    "force",
+    is_flag=True,
+    help="Force the redownload of the stack_recipes folder to the ZenML config "
+    "folder.",
+)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to install the stack recipe(s)",
+)
+def pull(
+    stack_recipe_name: str,
+    force: bool,
+    path: str,
+) -> None:
+    """Pull stack_recipes straight into your current working directory.
+
+    Add the flag --yes or -y to redownload all the stack_recipes afresh.
+
+    Args:
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        force: Force the redownload of the stack_recipes folder.
+        path: The path at which you want to install the stack_recipe(s).
+    """
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please refer to the `mlstacks` documentation for more "
+        "information at https://mlstacks.zenml.io/"
+    )
+
+
+@stack_recipe.command(help="DISABLED: Deploy a stack recipe.")
+@click.argument("stack_recipe_name", required=True)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which local stack recipe(s) should exist",
+)
+@click.option(
+    "--force",
+    "-f",
+    "force",
+    is_flag=True,
+    help="Force pull the stack recipe. This overwrites any existing recipe "
+    "files present locally, including the terraform state files and the "
+    "local configuration.",
+)
+@click.option(
+    "--stack-name",
+    "-n",
+    type=click.STRING,
+    required=False,
+    help="Set a name for the ZenML stack that will be imported from the YAML "
+    "configuration file which gets generated after deploying the stack recipe. "
+    "Defaults to the name of the stack recipe being deployed.",
+)
+@click.option(
+    "--import",
+    "import_stack_flag",
+    is_flag=True,
+    help="Import the stack automatically after the recipe is deployed.",
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(
+        ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
+    ),
+    help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
+    "log level for the deploy operation.",
+    default="ERROR",
+)
+@click.option(
+    "--no-server",
+    is_flag=True,
+    help="Don't deploy ZenML even if there's no active cloud deployment.",
+)
+@click.option(
+    "--skip-pull",
+    is_flag=True,
+    help="Skip the pulling of the stack recipe before deploying. This should be used "
+    "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
+    "specify the directory that hosts your recipe(s).",
+)
+@click.option(
+    "--artifact-store",
+    "-a",
+    help="The flavor of artifact store to use. "
+    "If not specified, the default artifact store will be used.",
+)
+@click.option(
+    "--orchestrator",
+    "-o",
+    help="The flavor of orchestrator to use. "
+    "If not specified, the default orchestrator will be used.",
+)
+@click.option(
+    "--container-registry",
+    "-c",
+    help="The flavor of container registry to use. "
+    "If not specified, no container registry will be deployed.",
+)
+@click.option(
+    "--model-deployer",
+    "-d",
+    help="The flavor of model deployer to use. "
+    "If not specified, no model deployer will be deployed.",
+)
+@click.option(
+    "--experiment-tracker",
+    "-e",
+    help="The flavor of experiment tracker to use. "
+    "If not specified, no experiment tracker will be deployed.",
+)
+@click.option(
+    "--secrets-manager",
+    "-x",
+    help="The flavor of secrets manager to use. "
+    "If not specified, no secrets manager will be deployed.",
+)
+@click.option(
+    "--step-operator",
+    "-s",
+    help="The flavor of step operator to use. "
+    "If not specified, no step operator will be deployed.",
+)
+@click.option(
+    "--config",
+    help="Use a YAML or JSON configuration or configuration file to pass"
+    "variables to the stack recipe.",
+    required=False,
+    type=str,
+)
+@pass_git_stack_recipes_handler
+@click.pass_context
+def deploy(
+    ctx: click.Context,
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    stack_recipe_name: str,
+    artifact_store: Optional[str],
+    orchestrator: Optional[str],
+    container_registry: Optional[str],
+    model_deployer: Optional[str],
+    experiment_tracker: Optional[str],
+    secrets_manager: Optional[str],
+    step_operator: Optional[str],
+    path: str,
+    force: bool,
+    import_stack_flag: bool,
+    log_level: str,
+    no_server: bool,
+    skip_pull: bool,
+    stack_name: Optional[str],
+    config: Optional[str],
+) -> None:
+    """Run the stack_recipe at the specified relative path.
+    `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
+    same relative path before the `deploy` command.
+    Args:
+        ctx: The click context.
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        path: The path at which you want to install the stack_recipe(s).
+        force: Force pull the stack recipe, overwriting any existing files.
+        stack_name: A name for the ZenML stack that gets imported as a result
+            of the recipe deployment.
+        import_stack_flag: Import the stack automatically after the recipe is
+            deployed. The stack configuration file is always generated and
+            can be imported manually otherwise.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR
+            (case-insensitive) as log level for the `deploy` operation.
+        no_server: Don't deploy ZenML even if there's no active cloud
+            deployment.
+        skip_pull: Skip the pull of the stack recipe before deploying. This
+            should be used if you have a local copy of your recipe already.
+        artifact_store: The flavor of artifact store to deploy. In the case of
+            the artifact store, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
+        orchestrator: The flavor of orchestrator to use.
+        container_registry: The flavor of container registry to deploy. In the case of
+            the container registry, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
+        model_deployer: The flavor of model deployer to deploy.
+        experiment_tracker: The flavor of experiment tracker to deploy.
+        secrets_manager: The flavor of secrets manager to deploy. In the case of
+            the secrets manager, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
+        step_operator: The flavor of step operator to deploy.
+        config: Use a YAML or JSON configuration or configuration file to pass
+            variables to the stack recipe.
+    """
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please use `zenml stack deploy ...` instead. For more "
+        "information and to learn about the new syntax, please refer to "
+        "the `mlstacks` documentation at https://mlstacks.zenml.io/"
+    )
+
+
+@stack_recipe.command(help="DISABLED: Destroy stack components")
+@click.argument("stack_recipe_name", required=True)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to install the stack_recipe(s)",
+)
+@click.option(
+    "--artifact-store",
+    "-a",
+    help="The flavor of artifact store to destroy. "
+    "If not specified, the default artifact store will be assumed.",
+)
+@click.option(
+    "--orchestrator",
+    "-o",
+    help="The flavor of orchestrator to destroy. "
+    "If not specified, the default orchestrator will be used.",
+)
+@click.option(
+    "--container-registry",
+    "-c",
+    help="The flavor of container registry to destroy. "
+    "If not specified, no container registry will be destroyed.",
+)
+@click.option(
+    "--model-deployer",
+    "-d",
+    help="The flavor of model deployer to destroy. "
+    "If not specified, no model deployer will be destroyed.",
+)
+@click.option(
+    "--experiment-tracker",
+    "-e",
+    help="The flavor of experiment tracker to destroy. "
+    "If not specified, no experiment tracker will be destroyed.",
+)
+@click.option(
+    "--step-operator",
+    "-s",
+    help="The flavor of step operator to destroy. "
+    "If not specified, no step operator will be destroyed.",
+)
+@pass_git_stack_recipes_handler
+def destroy(
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    stack_recipe_name: str,
+    path: str,
+    artifact_store: Optional[str],
+    orchestrator: Optional[str],
+    container_registry: Optional[str],
+    model_deployer: Optional[str],
+    experiment_tracker: Optional[str],
+    step_operator: Optional[str],
+) -> None:
+    """Destroy all resources from the stack_recipe at the specified relative path.
+    `zenml stack_recipe deploy stack_recipe_name` has to be called with the
+    same relative path before the destroy command. If you want to destroy
+    specific components of the stack, you can specify the component names
+    with the corresponding options. If no component is specified, all
+    components will be destroyed.
+    Args:
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        path: The path of the stack recipe you want to destroy.
+        artifact_store: The flavor of the artifact store to destroy. In the case of
+            the artifact store, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be destroyed.
+        orchestrator: The flavor of the orchestrator to destroy.
+        container_registry: The flavor of the container registry to destroy. In the
+            case of the container registry, it doesn't matter what you specify
+            here, as there's only one flavor per cloud provider and that will be
+            destroyed.
+        model_deployer: The flavor of the model deployer to destroy.
+        experiment_tracker: The flavor of the experiment tracker to destroy.
+        step_operator: The flavor of the step operator to destroy.
+    Raises:
+        ModuleNotFoundError: If the recipe is found at the given path.
+    """
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. Please use `zenml stack destroy ...` instead. For more "
+        "information and to learn about the new syntax, please refer to "
+        "the `mlstacks` documentation at https://mlstacks.zenml.io/"
+    )
+
+
+@stack_recipe.command(
+    name="output",
+    help="DISABLED: Get outputs from a stack recipe.",
+)
+@click.argument("stack_recipe_name", type=str)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to install the stack_recipe(s)",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.STRING,
+    default=None,
+    help="Name of the output you want to get the value of. If none is given,"
+    "all outputs are returned.",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "yaml"], case_sensitive=False),
+)
+@pass_git_stack_recipes_handler
+def get_outputs(
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    stack_recipe_name: str,
+    path: str,
+    output: Optional[str],
+    format: Optional[str],
+) -> Union[Dict[str, Any], str]:
+    """Get the outputs of the stack recipe at the specified relative path.
+    `zenml stack_recipe deploy stack_recipe_name` has to be called from the
+    same relative path before the get_outputs command.
+    Args:
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        path: The path of the stack recipe you want to get the outputs from.
+        output: The name of the output you want to get the value of. If none is given,
+            all outputs are returned.
+        format: The format of the output. If none is given, the output is printed
+            to the console.
+    Returns:
+        One or more outputs of the stack recipe in the specified format.
+    Raises:
+        ModuleNotFoundError: If the recipe is found at the given path.
+    """
+    cli_utils.warning(
+        "This command has been disabled and will be removed in a future "
+        "release. For more information and to learn about the new syntax, "
+        "please refer to the `mlstacks` documentation at "
+        "https://mlstacks.zenml.io/"
+    )
 
 
 @stack_recipe.command(help="The active version of the mlstacks recipes.")
