@@ -51,7 +51,6 @@ zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 alembic = { version = "~1.8.1"}
-analytics-python = "^1.4.0"
 click = "^8.0.1,<8.1.4"
 click-params = "^0.3.0"
 cloudpickle = ">=2.0.0,<3"
