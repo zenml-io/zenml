@@ -175,6 +175,15 @@ class EntrypointFunctionDefinition(NamedTuple):
                 "is not allowed."
             )
 
+        if not yaml_utils.is_json_serializable(value):
+            raise StepInterfaceError(
+                f"Argument type (`{type(value)}`) for argument "
+                f"'{key}' is not JSON serializable and can not be passed as "
+                "a parameter. This input can either be provided by the "
+                "output of another step or as an external artifact: "
+                "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#pass-any-kind-of-data-to-your-steps"
+            )
+
         try:
             self._validate_input_value(parameter=parameter, value=value)
         except ValidationError as e:
@@ -183,13 +192,6 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"Expected type `{parameter.annotation}` but received type "
                 f"`{type(value)}`."
             ) from e
-
-        if not yaml_utils.is_json_serializable(value):
-            raise StepInterfaceError(
-                f"Argument type (`{type(value)}`) for argument "
-                f"'{key}' is not JSON "
-                "serializable."
-            )
 
     def _validate_input_value(
         self, parameter: inspect.Parameter, value: Any

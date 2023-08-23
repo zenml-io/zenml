@@ -114,7 +114,7 @@ def pipeline(
             f"{pipeline_name} pipeline is deprecated. Check out the 0.40.0 "
             "migration guide for more information on how to migrate your "
             "pipelines to the new syntax: "
-            "https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.html"
+            "https://docs.zenml.io/reference/migration-guide/migration-zero-forty.html"
         )
 
         return type(
@@ -138,7 +138,4 @@ def pipeline(
             },
         )
 
-    if _func is None:
-        return inner_decorator
-    else:
-        return inner_decorator(_func)
+    return inner_decorator if _func is None else inner_decorator(_func)

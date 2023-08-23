@@ -303,7 +303,7 @@ def _load_artifact_store(
             StackComponent.from_model(artifact_store_model),
         )
     except ImportError:
-        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"Artifact store '{artifact_store_model.name}' could not be "
             f"instantiated. This is likely because the artifact store's "
@@ -342,7 +342,7 @@ def _load_file_from_artifact_store(
         )
     except Exception as e:
         logger.exception(e)
-        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"File '{uri}' could not be loaded because the underlying artifact "
             f"store '{artifact_store.name}' could not open the file. This is "

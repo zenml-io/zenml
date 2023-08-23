@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.42.1"
+version = "0.43.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -63,7 +64,7 @@ passlib = { extras = ["bcrypt"], version = "~1.7.4"}
 pydantic = "<1.11, >=1.9.0"
 pymysql = { version = "~1.0.2"}
 pyparsing = "<3,>=2.4.0"
-python = ">=3.8,<3.11"
+python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 python-terraform = { version = "^0.10.1" }
 pyyaml = ">=6.0.1"
@@ -85,7 +86,7 @@ orjson = { version = "~3.8.3", optional = true}
 copier = { version = ">=7.0.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^23.3.0", optional = true }
-ruff = { version = "^0.0.270", optional = true }
+ruff = { version = "^0.0.282", optional = true }
 
 # Optional dependencies for the AWS secrets store
 boto3 = { version=">=1.16.0,<=1.24.59", optional = true }
@@ -133,7 +134,7 @@ hypothesis = { version = "^6.43.1", optional = true }
 typing-extensions = { version = ">=3.7.4", optional = true }
 darglint = { version = "^1.8.1", optional = true }
 # pytest
-pytest = { version = "^6.2.4", optional = true }
+pytest = { version = "^7.4.0", optional = true }
 pytest-randomly = { version = "^3.10.1", optional = true }
 pytest-mock = { version = "^3.6.1", optional = true }
 pytest-clarity = { version = "^1.0.1", optional = true }
@@ -192,6 +193,9 @@ log_cli = true
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true
+norecursedirs = [
+    "tests/integration/examples/*",  # ignore example folders
+]
 
 [tool.coverage.run]
 parallel = true
