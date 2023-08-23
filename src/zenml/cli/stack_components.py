@@ -46,7 +46,7 @@ from zenml.constants import ALPHA_MESSAGE
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
-from zenml.mlstacks.utils import (
+from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
     import_new_mlstacks_component,
