@@ -31,11 +31,6 @@ from typing import (
 import click
 import pkg_resources
 
-from zenml.cli.utils import (
-    error,
-    print_model_url,
-    verify_mlstacks_prerequisites_installation,
-)
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
@@ -64,6 +59,8 @@ def verify_mlstacks_installation(
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> Any:
+        from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
         verify_mlstacks_prerequisites_installation()
         return func(*args, **kwargs)
 
@@ -376,7 +373,6 @@ def convert_click_params_to_mlstacks_primitives(
     return stack, components
 
 
-@verify_mlstacks_installation
 def convert_mlstacks_primitives_to_dicts(
     stack: "Stack", components: List["Component"]
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
@@ -389,6 +385,8 @@ def convert_mlstacks_primitives_to_dicts(
     Returns:
         A tuple of Stack and List[Component] dicts.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
 
     # convert to json first to strip out Enums objects
@@ -428,6 +426,8 @@ def import_new_mlstacks_stack(
     """
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
+
+    from zenml.cli.utils import print_model_url
 
     tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
     stack_spec_file = f"{stack_spec_dir}/stack-{stack_name}.yaml"
@@ -477,6 +477,8 @@ def import_new_mlstacks_component(
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
 
+    from zenml.cli.utils import print_model_url
+
     tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
     stack_spec_file = f"{stack_spec_dir}/stack-{stack_name}.yaml"
     # strip out the `./` from the stack_file_path
@@ -516,6 +518,8 @@ def verify_spec_and_tf_files_exist(
         spec_file_path: The path to the spec file.
         tf_file_path: The path to the tf file.
     """
+    from zenml.cli.utils import error
+
     if not Path(spec_file_path).exists():
         error(f"Could not find the Stack spec file at {spec_file_path}.")
     elif not Path(tf_file_path).exists():
