@@ -1517,7 +1517,6 @@ def deploy(
         no_import_stack_flag=no_import_stack_flag,
         user_created_spec=bool(file),
     )
-    return None
 
 
 @stack.command(
