@@ -45,7 +45,7 @@ PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
 EXCLUDED_RECIPE_DIRS = [""]
-STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
+STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlstacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 
 
@@ -439,7 +439,7 @@ class GitStackRecipesHandler(object):
         shutil.rmtree(stack_recipes_directory)
 
     def get_active_version(self) -> Optional[str]:
-        """Returns the active version of the mlops-stacks repository.
+        """Returns the active version of the mlstacks repository.
 
         Returns:
             The active version of the repository.

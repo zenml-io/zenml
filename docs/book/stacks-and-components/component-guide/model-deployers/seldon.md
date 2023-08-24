@@ -83,7 +83,7 @@ section.
 {% hint style="info" %}
 Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of
 Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes
-can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
+can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlstacks).
 {% endhint %}
 
 ### Infrastructure Deployment
