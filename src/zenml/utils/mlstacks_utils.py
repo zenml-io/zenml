@@ -87,6 +87,27 @@ def stack_exists(stack_name: str) -> bool:
     return True
 
 
+def get_stack_spec_file_path(stack_name: str) -> str:
+    """Gets the path to the stack spec file for the given stack name.
+
+    Args:
+        stack_name: The name of the stack spec to get the path for.
+
+    Returns:
+        The path to the stack spec file for the given stack name.
+
+    Raises:
+        KeyError: If the stack does not exist.
+    """
+    try:
+        stack = Client().get_stack(
+            name_id_or_prefix=stack_name, allow_name_prefix_match=False
+        )
+    except KeyError as e:
+        raise e
+    return stack.stack_spec_path
+
+
 @verify_mlstacks_installation
 def stack_spec_exists(stack_name: str) -> bool:
     """Checks whether a stack spec with that name exists or not.

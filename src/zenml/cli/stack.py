@@ -14,6 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 import getpass
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -56,6 +57,7 @@ from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
     deploy_mlstacks_stack,
+    get_stack_spec_file_path,
     stack_exists,
     stack_spec_exists,
     verify_spec_and_tf_files_exist,
@@ -1426,7 +1428,7 @@ def deploy(
     tags: Optional[List[str]] = None,
     extra_config: Optional[List[str]] = None,
 ) -> None:
-    """Run the stack_recipe at the specified relative path.
+    """Deploy a stack with mlstacks.
 
     `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
     same relative path before the `deploy` command.
@@ -1451,31 +1453,31 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
     """
+    # TODO make these checks after the stack spec is created
+    # handle at stack level as well as component level
+    # delete stack spec if we error out
+    if stack_exists(stack_name):
+        cli_utils.error(
+            f"Stack with name '{stack_name}' already exists. Please choose a "
+            "different name."
+        )
+    elif stack_spec_exists(stack_name):
+        cli_utils.error(
+            f"Stack spec for stack named '{stack_name}' already exists. "
+            "Please choose a different name."
+        )
+
+    cli_utils.declare("Checking prerequisites are installed...")
+    cli_utils.verify_mlstacks_prerequisites_installation()
+    cli_utils.warning(ALPHA_MESSAGE)
+
     if not file:
-        # TODO make these checks after the stack spec is created
-        # handle at stack level as well as component level
-        # delete stack spec if we error out
-        if stack_exists(stack_name):
-            cli_utils.error(
-                f"Stack with name '{stack_name}' already exists. Please choose a "
-                "different name."
-            )
-        elif stack_spec_exists(stack_name):
-            cli_utils.error(
-                f"Stack spec for stack named '{stack_name}' already exists. "
-                "Please choose a different name."
-            )
-
-        cli_utils.declare("Checking prerequisites are installed...")
-        cli_utils.verify_mlstacks_prerequisites_installation()
-        from mlstacks.utils import zenml_utils
-
-        cli_utils.warning(ALPHA_MESSAGE)
-
         cli_params: Dict[str, Any] = ctx.params
         stack, components = convert_click_params_to_mlstacks_primitives(
             cli_params
         )
+
+        from mlstacks.utils import zenml_utils
 
         cli_utils.declare("Checking flavor compatibility...")
         if not zenml_utils.has_valid_flavor_combinations(stack, components):
@@ -1503,11 +1505,16 @@ def deploy(
             )
     else:
         declare("Importing from stack specification file...")
+        stack_file_path = file
+
+        from mlstacks.utils.yaml_utils import load_stack_yaml
+
+        stack = load_stack_yaml(stack_file_path)
 
     deploy_mlstacks_stack(
         spec_file_path=stack_file_path,
         stack_name=stack.name,
-        stack_provider=provider,
+        stack_provider=stack.provider,
         debug_mode=debug_mode,
         no_import_stack_flag=no_import_stack_flag,
         user_created_spec=bool(file),
@@ -1556,12 +1563,12 @@ def destroy(
             "try again."
         )
 
-    # TODO: get the stack_filepath from the stack model to handle case of
-    # stack user-created from spec
+    spec_file_path = get_stack_spec_file_path(stack_name)
     spec_files_dir: str = (
         f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
     )
-    spec_file_path: str = f"{spec_files_dir}/stack-{stack_name}.yaml"
+    user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
+
     tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
 
     cli_utils.declare(
@@ -1591,7 +1598,7 @@ def destroy(
         )
 
     spec_dir = os.path.dirname(spec_file_path)
-    if cli_utils.confirmation(
+    if not user_created_spec and cli_utils.confirmation(
         f"Would you like to delete the `mlstacks` spec directory for "
         f"this stack, located at {spec_dir}?"
     ):
