@@ -488,7 +488,7 @@ def import_new_mlstacks_component(
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
         component_spec_path = f"{stack_spec_dir}/{component_name}.yaml"
-        # TODO: find a nicer way to do this (most likely fix the TF
+        # TODO: [LOW] find a nicer way to do this (most likely fix the TF
         # recipe stack yaml output)
         component_config["name"] = component_name
 
