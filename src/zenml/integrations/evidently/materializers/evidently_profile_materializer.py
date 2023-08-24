@@ -51,7 +51,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
-        if type(contents) != dict:
+        if not isinstance(contents, dict):
             raise TypeError(
                 f"Contents {contents} was type {type(contents)} but expected "
                 f"dictionary"
