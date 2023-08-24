@@ -171,6 +171,9 @@ def _add_extra_config_to_components(
 
     Returns:
         A list of mlstacks `Component` objects.
+
+    Raises:
+        KeyError: If the component type is not supported.
     """
     from mlstacks.models.component import ComponentMetadata
 

@@ -1430,7 +1430,6 @@ def deploy(
     Args:
         ctx: The click context.
         provider: The cloud provider to deploy the stack to.
-        force: Force pull the stack recipe, overwriting any existing files.
         stack_name: A name for the ZenML stack that gets imported as a result
             of the recipe deployment.
         no_import_stack_flag: If you don't want the stack to be imported into

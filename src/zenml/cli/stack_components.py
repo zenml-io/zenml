@@ -1199,14 +1199,11 @@ def generate_stack_component_deploy_command(
             name: Name of the component to register.
             flavor: Flavor of the component to register.
             provider: Cloud provider (or local) to use to deploy the stack
-            component.
+                component.
             region: Region to deploy the stack component to.
             debug_mode: Whether to deploy the stack component in debug mode.
             tags: Tags to be added to the component.
             extra_config: Extra configuration values to be added to the
-
-        Raises:
-            error: If the component type is not supported.
         """
         client = Client()
         try:

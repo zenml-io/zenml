@@ -408,9 +408,6 @@ def destroy(
         model_deployer: The flavor of the model deployer to destroy.
         experiment_tracker: The flavor of the experiment tracker to destroy.
         step_operator: The flavor of the step operator to destroy.
-
-    Raises:
-        ModuleNotFoundError: If the recipe is found at the given path.
     """
     cli_utils.warning(
         "This command has been disabled and will be removed in a future "
@@ -463,12 +460,6 @@ def get_outputs(
             If none is given, all outputs are returned.
         format: The format of the output. If none is given, the output
             is printed to the console.
-
-    Returns:
-        One or more outputs of the stack recipe in the specified format.
-
-    Raises:
-        ModuleNotFoundError: If the recipe is found at the given path.
     """
     cli_utils.warning(
         "This command has been disabled and will be removed in a future "
