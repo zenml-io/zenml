@@ -401,11 +401,11 @@ def _setup_import(
     stack_spec_dir: str,
     user_stack_spec_file: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], str]:
-    """
-    Sets up the environment for importing a new stack or component.
+    """Sets up the environment for importing a new stack or component.
 
     Args:
-        provider: The cloud provider for which the stack or component is deployed.
+        provider: The cloud provider for which the stack or component
+            is deployed.
         stack_name: The name of the stack to import.
         stack_spec_dir: The path to the directory containing the stack spec.
         user_stack_spec_file: The path to the user-created stack spec file.
@@ -439,8 +439,7 @@ def _import_components(
     stack_spec_dir: str,
     component_name: Optional[str] = None,
 ) -> Dict[str, str]:
-    """
-    Imports components based on the provided data.
+    """Imports components based on the provided data.
 
     Args:
         data: The parsed YAML data containing component details.
@@ -478,8 +477,7 @@ def import_new_mlstacks_stack(
     stack_spec_dir: str,
     user_stack_spec_file: Optional[str] = None,
 ) -> None:
-    """
-    Import a new stack deployed for a particular cloud provider.
+    """Import a new stack deployed for a particular cloud provider.
 
     Args:
         stack_name: The name of the stack to import.
@@ -507,8 +505,7 @@ def import_new_mlstacks_stack(
 def import_new_mlstacks_component(
     stack_name: str, component_name: str, provider: str, stack_spec_dir: str
 ) -> None:
-    """
-    Import a new component deployed for a particular cloud provider.
+    """Import a new component deployed for a particular cloud provider.
 
     Args:
         stack_name: The name of the stack to import.
