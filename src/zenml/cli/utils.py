@@ -16,10 +16,7 @@ import contextlib
 import datetime
 import json
 import os
-import pkgutil
-import random
 import re
-import string
 import subprocess
 import sys
 from typing import (
@@ -52,16 +49,12 @@ from rich.style import Style
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
-    APP_NAME,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
     NOT_INSTALLED_MESSAGE,
-    STACK_RECIPE_PACKAGE_NAME,
-    STACK_RECIPE_TERRAFORM_FILES_PATH,
     TERRAFORM_NOT_INSTALLED_MESSAGE,
 )
 from zenml.enums import GenericFilterOps, StackComponentType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     ModelVersion,
@@ -75,7 +68,6 @@ from zenml.models.filter_models import (
     StrFilter,
     UUIDFilter,
 )
-from zenml.models.mlstacks_models import MlstacksSpec
 from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
@@ -2477,203 +2469,6 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
             f'the "sort_by" option: {e}'
         )
         return False
-
-
-# MLSTACKS UTIL FUNCTIONS
-
-
-def get_recipe_names() -> List[str]:
-    """Get the recipe names from inside the installed mlstacks package.
-
-    Returns:
-        A list of recipe names.
-    """
-    verify_mlstacks_prerequisites_installation()
-    # Get the package's directory path.
-    package_path = os.path.dirname(
-        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
-    )
-    resource_path = os.path.join(
-        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
-    )
-
-    return [
-        name
-        for name in os.listdir(resource_path)
-        if os.path.isdir(os.path.join(resource_path, name))
-    ]
-
-
-def get_recipe_path(recipe_name: str) -> Optional[str]:
-    """Get the path to the recipe from inside the installed mlstacks package.
-
-    Args:
-        recipe_name: The name of the recipe to get the path for.
-
-    Returns:
-        The path to the recipe.
-    """
-    verify_mlstacks_prerequisites_installation()
-    # Get the package's directory path.
-    package_path = os.path.dirname(
-        pkgutil.get_loader(STACK_RECIPE_PACKAGE_NAME).get_filename()
-    )
-    resource_path = os.path.join(
-        package_path, STACK_RECIPE_TERRAFORM_FILES_PATH
-    )
-
-    recipe_path = os.path.join(resource_path, recipe_name)
-
-    if not os.path.exists(recipe_path):
-        return
-
-    return recipe_path
-
-
-def get_recipe_readme(recipe_name: str) -> Optional[str]:
-    """Get the readme of the recipe.
-
-    Args:
-        recipe_name: The name of the recipe to get the readme for.
-
-    Returns:
-        The readme of the recipe.
-
-    Raises:
-        FileNotFoundError: If the recipe does not exist.
-        ValueError: If the recipe does not have a readme.
-    """
-    verify_mlstacks_prerequisites_installation()
-    recipe_path = get_recipe_path(recipe_name)
-
-    if recipe_path is not None:
-        try:
-            with open(os.path.join(recipe_path, "README.md"), "r") as f:
-                return f.read()
-        except FileNotFoundError:
-            if fileio.exists(recipe_path) and fileio.isdir(recipe_path):
-                raise ValueError(f"No README.md file found in {recipe_path}.")
-            else:
-                raise FileNotFoundError(
-                    f"Recipe {recipe_name} is not one of the avaiable options. \n To list all available recipes, type: `zenml stack recipe list`."
-                )
-
-
-def create_temp_spec_dir(unique_path: str) -> str:
-    """Creates a directory at with the config dir as the base path.
-
-    Args:
-        unique_path: The unique path to create the directory at.
-
-    Returns:
-        The path to the created directory.
-    """
-    base_path = click.get_app_dir(APP_NAME)
-    temp_spec_dir = os.path.join(base_path, "mlstacks", unique_path)
-    if not os.path.exists(temp_spec_dir):
-        os.makedirs(temp_spec_dir)
-    return temp_spec_dir
-
-
-def generate_unique_recipe_directory_name(recipe_name: str) -> str:
-    """Generates a unique directory name for the recipe.
-
-    Args:
-        recipe_name: The name of the recipe to generate the directory name for.
-
-    Returns:
-        A unique directory name for the recipe.
-    """
-    # Get the current date and time
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    # Generate a string of 4 random letters
-    random_string = "".join(
-        random.choice(string.ascii_letters) for _ in range(4)
-    )
-
-    return f"{recipe_name}_{timestamp}_{random_string}"
-
-
-# TODO: move this to mlstacks utils
-def generate_and_copy_spec_files(
-    temp_dir: str, stack_config: MlstacksSpec
-) -> None:
-    """Generates and copy spec files for mlstacks use.
-
-    Args:
-        temp_dir: The path to the temporary directory to copy the spec files to.
-        stack_config: The stack configuration to use.
-    """
-    from mlstacks.constants import MLSTACKS_STACK_COMPONENT_FLAGS
-
-    components = []
-    for component_flag in MLSTACKS_STACK_COMPONENT_FLAGS:
-        flavor_value = getattr(stack_config, component_flag)
-
-        if flavor_value and flavor_value != "False":
-            component_name = (
-                f"{component_flag}-{flavor_value}"
-                if type(flavor_value) != bool
-                else component_flag
-            )
-
-            component = {
-                "spec_version": 1,
-                "spec_type": "component",
-                "component_type": component_flag,
-                "component_flavor": getattr(stack_config, component_flag),
-                "name": component_name,
-                "provider": stack_config.provider,
-            }
-            components.append(component)
-
-    stack = {
-        "spec_version": 1,
-        "spec_type": "stack",
-        "name": stack_config.stack_name,
-        "provider": stack_config.provider,
-        "default_region": stack_config.region,
-        "default_tags": stack_config.tags,
-        "deployment_method": "kubernetes",
-        "components": [f"{c['name']}.yaml" for c in components],
-    }
-    # write the `stack` dict to a file as YAML
-    with open(os.path.join(temp_dir, "stack.yaml"), "w") as f:
-        yaml.dump(stack, f)
-
-    # write a new component file for each component
-    for component in components:
-        with open(
-            os.path.join(temp_dir, f"{component['name']}.yaml"), "w"
-        ) as f:
-            yaml.dump(component, f)
-
-
-def get_recipe_outputs(
-    stack_name: str, output_key: Optional[str] = None
-) -> Dict[str, str]:
-    verify_mlstacks_prerequisites_installation()
-    # TODO: FIX THIS
-    recipe_path = get_recipe_path(recipe_name)
-    if recipe_path is not None:
-        from mlstacks.utils import terraform_utils  # noqa
-
-        return terraform_utils.get_stack_outputs(stack_name, output_key)
-
-
-def create_mlspacks_spec(stack_config: Dict[str, Union[str, bool]]) -> None:
-    """Creates MLStacks specification files for ZenML.
-
-    Args:
-        stack_config: A dictionary containing the stack configuration.
-    """
-    # specify the destination for the spec files
-
-    # write a new component file for each component
-
-    # write the stack config to a file
-    return None
 
 
 def print_model_url(url: Optional[str]) -> None:

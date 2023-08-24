@@ -1377,7 +1377,7 @@ def register_secrets(
     type=click.Choice(["sagemaker"]),
     help="The flavor of step operator to use.",
 )
-@click.option(  # TODO: handle this case
+@click.option(
     "--file",
     "-f",
     "file",
@@ -1453,9 +1453,6 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
     """
-    # TODO make these checks after the stack spec is created
-    # handle at stack level as well as component level
-    # delete stack spec if we error out
     if stack_exists(stack_name):
         cli_utils.error(
             f"Stack with name '{stack_name}' already exists. Please choose a "
