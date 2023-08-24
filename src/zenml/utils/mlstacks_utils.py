@@ -24,6 +24,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 import click
 
@@ -77,7 +78,7 @@ def get_stack_spec_file_path(stack_name: str) -> str:
         )
     except KeyError as e:
         raise e
-    return stack.stack_spec_path
+    return stack.stack_spec_path or ""
 
 
 def stack_spec_exists(stack_name: str) -> bool:
@@ -438,7 +439,7 @@ def _import_components(
     data: Dict[str, Any],
     stack_spec_dir: str,
     component_name: Optional[str] = None,
-) -> Dict[str, str]:
+) -> Dict[StackComponentType, UUID]:
     """Imports components based on the provided data.
 
     Args:
