@@ -15,7 +15,6 @@
 
 import json
 import os
-import uuid
 from functools import wraps
 from pathlib import Path
 from typing import (
@@ -24,19 +23,16 @@ from typing import (
     Callable,
     Dict,
     List,
-    Optional,
     Tuple,
     Union,
 )
 
 import click
-import pkg_resources
 
 from zenml.cli import utils as cli_utils
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
-    STACK_RECIPE_PACKAGE_NAME,
 )
 from zenml.enums import StackComponentType
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
@@ -124,20 +120,6 @@ def stack_spec_exists(stack_name: str) -> bool:
         f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
     )
     return Path(spec_dir).exists()
-
-
-def get_mlstacks_version() -> Optional[str]:
-    """Gets the version of mlstacks locally installed.
-
-    Raises:
-        pkg_resources.DistributionNotFound: If mlstacks is not installed.
-    """
-    try:
-        return pkg_resources.get_distribution(
-            STACK_RECIPE_PACKAGE_NAME
-        ).version
-    except pkg_resources.DistributionNotFound:
-        return None
 
 
 def _get_component_flavor(
@@ -419,21 +401,6 @@ def convert_mlstacks_primitives_to_dicts(
     ]
 
     return stack_dict, components_dicts
-
-
-def generate_unique_filename(base_filename: str) -> str:
-    """Generates a unique filename by appending a UUID to the base filename.
-
-    Args:
-        base_filename: The base filename.
-
-    Returns:
-        The unique filename.
-    """
-    unique_suffix = (
-        uuid.uuid4().hex
-    )  # Generate a random UUID and convert it to a string.
-    return f"{base_filename}_{unique_suffix}"
 
 
 @verify_mlstacks_installation
