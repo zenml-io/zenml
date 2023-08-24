@@ -1288,7 +1288,7 @@ def register_secrets(
     type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
 )
 @click.option(
-    "--stack-name",
+    "--name",
     "-n",
     "stack_name",
     type=click.STRING,
@@ -1306,8 +1306,8 @@ def register_secrets(
     help="The region to deploy the stack to.",
 )
 @click.option(
-    "--import",
-    "-i",
+    "--no-import",
+    "-ni",
     "no_import_stack_flag",
     is_flag=True,
     help="If you don't want the stack to be imported automatically.",
