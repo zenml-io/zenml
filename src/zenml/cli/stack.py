@@ -25,6 +25,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     _component_display_name,
     confirmation,
+    declare,
     error,
     is_sorted_or_filtered,
     list_options,
@@ -54,7 +55,7 @@ from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
     convert_click_params_to_mlstacks_primitives,
     convert_mlstacks_primitives_to_dicts,
-    import_new_mlstacks_stack,
+    deploy_mlstacks_stack,
     stack_exists,
     stack_spec_exists,
     verify_spec_and_tf_files_exist,
@@ -1450,10 +1451,20 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
     """
+    if file:
+        declare("Importing from stack specification file...")
+        deploy_mlstacks_stack(
+            spec_file_path=file,
+            stack_name=stack_name,
+            stack_provider=provider,
+            debug_mode=debug_mode,
+            no_import_stack_flag=no_import_stack_flag,
+        )
+        return None
     # TODO make these checks after the stack spec is created
     # handle at stack level as well as component level
     # delete stack spec if we error out
-    if stack_exists(stack_name):
+    elif stack_exists(stack_name):
         cli_utils.error(
             f"Stack with name '{stack_name}' already exists. Please choose a "
             "different name."
@@ -1500,20 +1511,14 @@ def deploy(
             contents=component,
         )
 
-    from mlstacks.utils import terraform_utils
-
-    cli_utils.declare("Deploying stack using Terraform...")
-    terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
-    cli_utils.declare("Stack successfully deployed.")
-
-    if not no_import_stack_flag:
-        cli_utils.declare(f"Importing stack '{stack_name}' into ZenML...")
-        import_new_mlstacks_stack(
-            stack_name=stack_name,
-            provider=stack.provider,
-            stack_spec_dir=spec_dir,
-        )
-        cli_utils.declare("Stack successfully imported into ZenML.")
+    deploy_mlstacks_stack(
+        spec_file_path=stack_file_path,
+        stack_name=stack.name,
+        stack_provider=provider,
+        debug_mode=debug_mode,
+        no_import_stack_flag=no_import_stack_flag,
+    )
+    return None
 
 
 @stack.command(

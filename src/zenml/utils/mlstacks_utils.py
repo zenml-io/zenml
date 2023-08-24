@@ -14,6 +14,7 @@
 """Functionality to handle interaction with the mlstacks package."""
 
 import json
+import os
 import uuid
 from functools import wraps
 from pathlib import Path
@@ -31,6 +32,7 @@ from typing import (
 import click
 import pkg_resources
 
+from zenml.cli import utils as cli_utils
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
@@ -527,3 +529,42 @@ def verify_spec_and_tf_files_exist(
             f"Could not find the Terraform files for the stack "
             f"at {tf_file_path}."
         )
+
+
+@verify_mlstacks_installation
+def deploy_mlstacks_stack(
+    spec_file_path: str,
+    stack_name: str,
+    stack_provider: str,
+    debug_mode: bool = False,
+    no_import_stack_flag: bool = False,
+) -> None:
+    """Deploys an MLStacks stack given a spec file path.
+
+    Args:
+        spec_file_path: The path to the spec file.
+        stack_name: The name of the stack.
+        stack_provider: The cloud provider for which the stack is deployed.
+        debug_mode: A boolean indicating whether to run in debug mode.
+        no_import_stack_flag: A boolean indicating whether to import the stack
+            into ZenML.
+    """
+    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+    from mlstacks.utils import terraform_utils
+
+    spec_dir = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
+    )
+    cli_utils.declare("Deploying stack using Terraform...")
+    terraform_utils.deploy_stack(spec_file_path, debug_mode=debug_mode)
+    cli_utils.declare("Stack successfully deployed.")
+
+    if not no_import_stack_flag:
+        cli_utils.declare(f"Importing stack '{stack_name}' into ZenML...")
+        import_new_mlstacks_stack(
+            stack_name=stack_name,
+            provider=stack_provider,
+            stack_spec_dir=spec_dir,
+        )
+        cli_utils.declare("Stack successfully imported into ZenML.")
+    return None
