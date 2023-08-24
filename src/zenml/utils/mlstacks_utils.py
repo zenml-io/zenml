@@ -417,7 +417,10 @@ def generate_unique_filename(base_filename: str) -> str:
 
 @verify_mlstacks_installation
 def import_new_mlstacks_stack(
-    stack_name: str, provider: str, stack_spec_dir: str
+    stack_name: str,
+    provider: str,
+    stack_spec_dir: str,
+    user_stack_spec_file: str = None,
 ) -> None:
     """Import a new stack deployed for a particular cloud provider.
 
@@ -425,6 +428,7 @@ def import_new_mlstacks_stack(
         stack_name: The name of the stack to import.
         provider: The cloud provider for which the stack is deployed.
         stack_spec_dir: The path to the directory containing the stack spec.
+        user_stack_spec_file: The path to the user-created stack spec file.
     """
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
@@ -432,7 +436,9 @@ def import_new_mlstacks_stack(
     from zenml.cli.utils import print_model_url
 
     tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
-    stack_spec_file = f"{stack_spec_dir}/stack-{stack_name}.yaml"
+    stack_spec_file = (
+        user_stack_spec_file or f"{stack_spec_dir}/stack-{stack_name}.yaml"
+    )
     # strip out the `./` from the stack_file_path
     stack_filename = terraform_utils.get_stack_outputs(
         stack_spec_file, output_key="stack-yaml-path"
@@ -538,6 +544,7 @@ def deploy_mlstacks_stack(
     stack_provider: str,
     debug_mode: bool = False,
     no_import_stack_flag: bool = False,
+    user_created_spec: bool = False,
 ) -> None:
     """Deploys an MLStacks stack given a spec file path.
 
@@ -565,6 +572,7 @@ def deploy_mlstacks_stack(
             stack_name=stack_name,
             provider=stack_provider,
             stack_spec_dir=spec_dir,
+            user_stack_spec_file=spec_file_path if user_created_spec else None,
         )
         cli_utils.declare("Stack successfully imported into ZenML.")
     return None

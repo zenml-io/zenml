@@ -1451,65 +1451,58 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
     """
-    if file:
+    if not file:
+        # TODO make these checks after the stack spec is created
+        # handle at stack level as well as component level
+        # delete stack spec if we error out
+        if stack_exists(stack_name):
+            cli_utils.error(
+                f"Stack with name '{stack_name}' already exists. Please choose a "
+                "different name."
+            )
+        elif stack_spec_exists(stack_name):
+            cli_utils.error(
+                f"Stack spec for stack named '{stack_name}' already exists. "
+                "Please choose a different name."
+            )
+
+        cli_utils.declare("Checking prerequisites are installed...")
+        cli_utils.verify_mlstacks_prerequisites_installation()
+        from mlstacks.utils import zenml_utils
+
+        cli_utils.warning(ALPHA_MESSAGE)
+
+        cli_params: Dict[str, Any] = ctx.params
+        stack, components = convert_click_params_to_mlstacks_primitives(
+            cli_params
+        )
+
+        cli_utils.declare("Checking flavor compatibility...")
+        if not zenml_utils.has_valid_flavor_combinations(stack, components):
+            cli_utils.error(
+                "The specified stack and component flavors are not compatible "
+                "with the provider or with one another. Please try again."
+            )
+
+        stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+            stack, components
+        )
+        # write the stack and component yaml files
+        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+        spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+        cli_utils.declare(f"Writing spec files to {spec_dir}...")
+        create_dir_recursive_if_not_exists(spec_dir)
+
+        stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+        write_yaml(file_path=stack_file_path, contents=stack_dict)
+        for component in component_dicts:
+            write_yaml(
+                file_path=f"{spec_dir}/{component['name']}.yaml",
+                contents=component,
+            )
+    else:
         declare("Importing from stack specification file...")
-        deploy_mlstacks_stack(
-            spec_file_path=file,
-            stack_name=stack_name,
-            stack_provider=provider,
-            debug_mode=debug_mode,
-            no_import_stack_flag=no_import_stack_flag,
-        )
-        return None
-    # TODO make these checks after the stack spec is created
-    # handle at stack level as well as component level
-    # delete stack spec if we error out
-    elif stack_exists(stack_name):
-        cli_utils.error(
-            f"Stack with name '{stack_name}' already exists. Please choose a "
-            "different name."
-        )
-    elif stack_spec_exists(stack_name):
-        cli_utils.error(
-            f"Stack spec for stack named '{stack_name}' already exists. "
-            "Please choose a different name."
-        )
-
-    cli_utils.declare("Checking prerequisites are installed...")
-    cli_utils.verify_mlstacks_prerequisites_installation()
-    from mlstacks.utils import zenml_utils
-
-    cli_utils.warning(ALPHA_MESSAGE)
-
-    cli_params: Dict[str, Any] = ctx.params
-    stack, components = convert_click_params_to_mlstacks_primitives(cli_params)
-
-    cli_utils.declare("Checking flavor compatibility...")
-    if not zenml_utils.has_valid_flavor_combinations(stack, components):
-        cli_utils.error(
-            "The specified stack and component flavors are not compatible "
-            "with the provider or with one another. Please try again."
-        )
-
-    stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
-        stack, components
-    )
-    # write the stack and component yaml files
-    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
-
-    spec_dir = (
-        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
-    )
-    cli_utils.declare(f"Writing spec files to {spec_dir}...")
-    create_dir_recursive_if_not_exists(spec_dir)
-
-    stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
-    write_yaml(file_path=stack_file_path, contents=stack_dict)
-    for component in component_dicts:
-        write_yaml(
-            file_path=f"{spec_dir}/{component['name']}.yaml",
-            contents=component,
-        )
 
     deploy_mlstacks_stack(
         spec_file_path=stack_file_path,
@@ -1517,6 +1510,7 @@ def deploy(
         stack_provider=provider,
         debug_mode=debug_mode,
         no_import_stack_flag=no_import_stack_flag,
+        user_created_spec=bool(file),
     )
     return None
 
@@ -1561,6 +1555,9 @@ def destroy(
             f"Stack with name '{stack_name}' does not exist. Please check and "
             "try again."
         )
+
+    # TODO: get the stack_filepath from the stack model to handle case of
+    # stack user-created from spec
     spec_files_dir: str = (
         f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
     )
