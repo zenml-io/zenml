@@ -163,7 +163,7 @@ types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
 
 # mlstacks dependencies
-mlstacks = { version = "0.1.0", optional = true }
+mlstacks = { version = "0.7.0", optional = true }
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils", "orjson"]
