@@ -543,6 +543,8 @@ def deploy_mlstacks_stack(
         debug_mode: A boolean indicating whether to run in debug mode.
         no_import_stack_flag: A boolean indicating whether to import the stack
             into ZenML.
+        user_created_spec: A boolean indicating whether the user created the
+            spec file.
     """
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils

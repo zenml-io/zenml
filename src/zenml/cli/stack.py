@@ -49,7 +49,6 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilterModel
-from zenml.recipes import GitStackRecipesHandler
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -65,11 +64,6 @@ from zenml.utils.mlstacks_utils import (
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 logger = get_logger(__name__)
-
-
-pass_git_stack_recipes_handler = click.make_pass_decorator(
-    GitStackRecipesHandler, ensure=True
-)
 
 
 # Stacks
@@ -1452,6 +1446,12 @@ def deploy(
         experiment_tracker: The flavor of experiment tracker to deploy.
         step_operator: The flavor of step operator to deploy.
         extra_config: Extra configurations as key=value pairs.
+        tags: Pass one or more tags.
+        debug_mode: Whether to run the stack deployment in debug mode.
+        file: Use a YAML specification file as the basis of the stack
+            deployment.
+        mlops_platform: The flavor of MLOps platform to use.
+        region: The region to deploy the stack to.
     """
     if stack_exists(stack_name):
         cli_utils.error(

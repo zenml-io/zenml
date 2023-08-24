@@ -83,7 +83,6 @@ if TYPE_CHECKING:
 
     from rich.text import Text
 
-    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer

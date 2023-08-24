@@ -46,8 +46,6 @@ PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
 EXCLUDED_RECIPE_DIRS = [""]
-STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlstacks.git"
-STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 
 
 class LocalStackRecipe:

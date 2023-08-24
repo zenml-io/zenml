@@ -20,14 +20,8 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import stack
 from zenml.logger import get_logger
-from zenml.recipes import GitStackRecipesHandler
 
 logger = get_logger(__name__)
-
-
-pass_git_stack_recipes_handler = click.make_pass_decorator(
-    GitStackRecipesHandler, ensure=True
-)
 
 
 @stack.group(
@@ -154,7 +148,6 @@ def pull(
     Add the flag --yes or -y to redownload all the stack_recipes afresh.
 
     Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         force: Force the redownload of the stack_recipes folder.
         path: The path at which you want to install the stack_recipe(s).
@@ -269,11 +262,9 @@ def pull(
     required=False,
     type=str,
 )
-@pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
     ctx: click.Context,
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     artifact_store: Optional[str],
     orchestrator: Optional[str],
@@ -292,11 +283,12 @@ def deploy(
     config: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
+
     `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
     same relative path before the `deploy` command.
+
     Args:
         ctx: The click context.
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         force: Force pull the stack recipe, overwriting any existing files.
@@ -313,16 +305,19 @@ def deploy(
             should be used if you have a local copy of your recipe already.
         artifact_store: The flavor of artifact store to deploy. In the case of
             the artifact store, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
+            there's only one flavor per cloud provider and that will be
+            deployed.
         orchestrator: The flavor of orchestrator to use.
-        container_registry: The flavor of container registry to deploy. In the case of
-            the container registry, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
+        container_registry: The flavor of container registry to deploy.
+            In the case of the container registry, it doesn't matter what you
+            specify here, as there's only one flavor per cloud provider and
+            that will be deployed.
         model_deployer: The flavor of model deployer to deploy.
         experiment_tracker: The flavor of experiment tracker to deploy.
-        secrets_manager: The flavor of secrets manager to deploy. In the case of
-            the secrets manager, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be deployed.
+        secrets_manager: The flavor of secrets manager to deploy. In the
+            case of the secrets manager, it doesn't matter what you specify
+            here, as there's only one flavor per cloud provider and that will
+            be deployed.
         step_operator: The flavor of step operator to deploy.
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.
@@ -380,9 +375,7 @@ def deploy(
     help="The flavor of step operator to destroy. "
     "If not specified, no step operator will be destroyed.",
 )
-@pass_git_stack_recipes_handler
 def destroy(
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
     artifact_store: Optional[str],
@@ -392,27 +385,30 @@ def destroy(
     experiment_tracker: Optional[str],
     step_operator: Optional[str],
 ) -> None:
-    """Destroy all resources from the stack_recipe at the specified relative path.
+    """Destroy all resources.
+
     `zenml stack_recipe deploy stack_recipe_name` has to be called with the
     same relative path before the destroy command. If you want to destroy
     specific components of the stack, you can specify the component names
     with the corresponding options. If no component is specified, all
     components will be destroyed.
+
     Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path of the stack recipe you want to destroy.
-        artifact_store: The flavor of the artifact store to destroy. In the case of
-            the artifact store, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be destroyed.
+        artifact_store: The flavor of the artifact store to destroy.
+            In the case of the artifact store, it doesn't matter what you
+            specify here, as there's only one flavor per cloud provider and
+            that will be destroyed.
         orchestrator: The flavor of the orchestrator to destroy.
-        container_registry: The flavor of the container registry to destroy. In the
-            case of the container registry, it doesn't matter what you specify
-            here, as there's only one flavor per cloud provider and that will be
-            destroyed.
+        container_registry: The flavor of the container registry to destroy.
+            In the case of the container registry, it doesn't matter what you
+            specify here, as there's only one flavor per cloud provider and
+            that will be destroyed.
         model_deployer: The flavor of the model deployer to destroy.
         experiment_tracker: The flavor of the experiment tracker to destroy.
         step_operator: The flavor of the step operator to destroy.
+
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
@@ -449,27 +445,28 @@ def destroy(
     "-f",
     type=click.Choice(["json", "yaml"], case_sensitive=False),
 )
-@pass_git_stack_recipes_handler
 def get_outputs(
-    git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
     output: Optional[str],
     format: Optional[str],
 ) -> Union[Dict[str, Any], str]:
     """Get the outputs of the stack recipe at the specified relative path.
+
     `zenml stack_recipe deploy stack_recipe_name` has to be called from the
     same relative path before the get_outputs command.
+
     Args:
-        git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path of the stack recipe you want to get the outputs from.
-        output: The name of the output you want to get the value of. If none is given,
-            all outputs are returned.
-        format: The format of the output. If none is given, the output is printed
-            to the console.
+        output: The name of the output you want to get the value of.
+            If none is given, all outputs are returned.
+        format: The format of the output. If none is given, the output
+            is printed to the console.
+
     Returns:
         One or more outputs of the stack recipe in the specified format.
+
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
