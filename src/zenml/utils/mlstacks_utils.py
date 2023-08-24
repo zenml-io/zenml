@@ -15,12 +15,10 @@
 
 import json
 import os
-from functools import wraps
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Tuple,
@@ -30,6 +28,7 @@ from typing import (
 import click
 
 from zenml.cli import utils as cli_utils
+from zenml.cli.utils import verify_mlstacks_prerequisites_installation
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
@@ -40,29 +39,6 @@ from zenml.utils.yaml_utils import read_yaml
 
 if TYPE_CHECKING:
     from mlstacks.models import Component, Stack
-
-
-def verify_mlstacks_installation(
-    func: Callable[..., Any]
-) -> Callable[..., Any]:
-    """Decorator for verifying mlstacks installation before running a function.
-
-    Args:
-        func: The function to be decorated.
-
-    Returns:
-        The decorated function, which will run verify_mlstacks_installation()
-        before executing the original function.
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-        from zenml.cli.utils import verify_mlstacks_prerequisites_installation
-
-        verify_mlstacks_prerequisites_installation()
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 def stack_exists(stack_name: str) -> bool:
@@ -104,7 +80,6 @@ def get_stack_spec_file_path(stack_name: str) -> str:
     return stack.stack_spec_path
 
 
-@verify_mlstacks_installation
 def stack_spec_exists(stack_name: str) -> bool:
     """Checks whether a stack spec with that name exists or not.
 
@@ -114,6 +89,8 @@ def stack_spec_exists(stack_name: str) -> bool:
     Returns:
         A boolean indicating whether the stack spec exists or not.
     """
+    verify_mlstacks_prerequisites_installation()
+
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
     spec_dir = (
@@ -159,7 +136,6 @@ def _get_component_flavor(
     return flavor
 
 
-@verify_mlstacks_installation
 def _add_extra_config_to_components(
     components: List["Component"], extra_config: Dict[str, str]
 ) -> List["Component"]:
@@ -175,6 +151,7 @@ def _add_extra_config_to_components(
     Raises:
         KeyError: If the component type is not supported.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.models.component import ComponentMetadata
 
     # Define configuration map
@@ -260,7 +237,6 @@ def _add_extra_config_to_components(
     return components
 
 
-@verify_mlstacks_installation
 def _construct_components(
     params: Dict[str, Any], zenml_component_deploy: bool = False
 ) -> List["Component"]:
@@ -275,6 +251,7 @@ def _construct_components(
     Returns:
         A list of mlstacks `Component` objects.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.models import Component
 
     provider = params["provider"]
@@ -322,7 +299,6 @@ def _get_stack_tags(tags: Dict[str, str]) -> Dict[str, str]:
     return dict(tag.split("=") for tag in tags) if tags else {}
 
 
-@verify_mlstacks_installation
 def _construct_stack(params: Dict[str, Any]) -> "Stack":
     """Constructs mlstacks `Stack` object from raw Click CLI params.
 
@@ -332,6 +308,7 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     Returns:
         A mlstacks `Stack` object.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.models import Stack
 
     tags = _get_stack_tags(params["tags"])
@@ -347,7 +324,6 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     )
 
 
-@verify_mlstacks_installation
 def convert_click_params_to_mlstacks_primitives(
     params: Dict[str, Any],
     zenml_component_deploy: bool = False,
@@ -363,6 +339,7 @@ def convert_click_params_to_mlstacks_primitives(
     Returns:
         A tuple of Stack and List[Component] objects.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.models import Component, Stack
 
@@ -406,7 +383,6 @@ def convert_mlstacks_primitives_to_dicts(
     return stack_dict, components_dicts
 
 
-@verify_mlstacks_installation
 def import_new_mlstacks_stack(
     stack_name: str,
     provider: str,
@@ -421,6 +397,7 @@ def import_new_mlstacks_stack(
         stack_spec_dir: The path to the directory containing the stack spec.
         user_stack_spec_file: The path to the user-created stack spec file.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
 
@@ -461,7 +438,6 @@ def import_new_mlstacks_stack(
     print_model_url(get_stack_url(imported_stack))
 
 
-@verify_mlstacks_installation
 def import_new_mlstacks_component(
     stack_name: str, component_name: str, provider: str, stack_spec_dir: str
 ) -> None:
@@ -473,6 +449,7 @@ def import_new_mlstacks_component(
         provider: The cloud provider for which the stack is deployed.
         stack_spec_dir: The path to the directory containing the stack spec.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
 
@@ -528,7 +505,6 @@ def verify_spec_and_tf_files_exist(
         )
 
 
-@verify_mlstacks_installation
 def deploy_mlstacks_stack(
     spec_file_path: str,
     stack_name: str,
@@ -549,6 +525,7 @@ def deploy_mlstacks_stack(
         user_created_spec: A boolean indicating whether the user created the
             spec file.
     """
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
 
