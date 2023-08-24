@@ -42,7 +42,7 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.constants import ALPHA_MESSAGE
+from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
@@ -1147,7 +1147,7 @@ def generate_stack_component_deploy_command(
         "-p",
         "provider",
         required=True,
-        type=click.Choice(["aws", "gcp", "k3d"]),
+        type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
         help="The cloud (or local provider) to use to deploy the stack component.",
     )
     @click.option(
@@ -1179,7 +1179,7 @@ def generate_stack_component_deploy_command(
         "tags",
         required=False,
         type=click.STRING,
-        help="Pass one or more extra configuration values.",
+        help="Pass one or more tags.",
         multiple=True,
     )
     def deploy_stack_component_command(
@@ -1249,12 +1249,12 @@ def generate_stack_component_deploy_command(
             )
 
         # if the cloud is gcp, project_id is required
-        extra_config_dict = (
+        extra_config_obj = (
             dict(config.split("=") for config in extra_config)
             if extra_config
             else ()
         )
-        if provider == "gcp" and "project_id" not in extra_config_dict:
+        if provider == "gcp" and "project_id" not in extra_config_obj:
             cli_utils.error(
                 "Missing Project ID. You must pass your GCP project ID to "
                 "the deploy command as part of the `--extra_config` option."
@@ -1376,10 +1376,10 @@ def generate_stack_component_destroy_command(
             provider: Cloud provider (or local) where the stack was deployed.
             debug_mode: Whether to destroy the stack component in debug mode.
         """
-        c = Client()
+        client = Client()
 
         try:
-            component = c.get_stack_component(
+            component = client.get_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
                 component_type=component_type,
                 allow_name_prefix_match=False,
@@ -1432,7 +1432,7 @@ def generate_stack_component_destroy_command(
             f"component '{component.name}'?\nThis will delete the stack "
             "component registered with ZenML."
         ):
-            c.delete_stack_component(
+            client.delete_stack_component(
                 name_id_or_prefix=component.id,
                 component_type=component.type,
             )
