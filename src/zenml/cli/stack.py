@@ -1489,15 +1489,17 @@ def deploy(
         # write the stack and component yaml files
         from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-        spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+        spec_dir = os.path.join(
+            click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack.name
+        )
         cli_utils.declare(f"Writing spec files to {spec_dir}...")
         create_dir_recursive_if_not_exists(spec_dir)
 
-        stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+        stack_file_path = os.path.join(spec_dir, f"stack-{stack.name}.yaml")
         write_yaml(file_path=stack_file_path, contents=stack_dict)
         for component in component_dicts:
             write_yaml(
-                file_path=f"{spec_dir}/{component['name']}.yaml",
+                file_path=os.path.join(spec_dir, f"{component['name']}.yaml"),
                 contents=component,
             )
     else:
@@ -1561,12 +1563,16 @@ def destroy(
         )
 
     spec_file_path = get_stack_spec_file_path(stack_name)
-    spec_files_dir: str = (
-        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
+    spec_files_dir: str = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
     )
     user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
 
-    tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+    tf_definitions_path: str = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+        "terraform",
+        f"{provider}-modular",
+    )
 
     cli_utils.declare(
         "Checking Terraform definitions and spec files are present..."
@@ -1588,8 +1594,8 @@ def destroy(
     ):
         from zenml.client import Client
 
-        c = Client()
-        c.delete_stack(name_id_or_prefix=stack_name, recursive=True)
+        client = Client()
+        client.delete_stack(name_id_or_prefix=stack_name, recursive=True)
         cli_utils.declare(
             f"Stack '{stack_name}' successfully deleted from ZenML."
         )
