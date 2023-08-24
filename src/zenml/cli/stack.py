@@ -1527,13 +1527,6 @@ def deploy(
 )
 @click.argument("stack_name", required=True)
 @click.option(
-    "--provider",
-    "-p",
-    "provider",
-    type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
-    help="The cloud provider on which the stack is deployed.",
-)
-@click.option(
     "--debug",
     "-d",
     "debug_mode",
@@ -1543,10 +1536,14 @@ def deploy(
 )
 def destroy(
     stack_name: str,
-    provider: str,
     debug_mode: bool = False,
 ) -> None:
-    """Destroy all resources previously created with `zenml stack deploy`."""
+    """Destroy all resources previously created with `zenml stack deploy`.
+
+    Args:
+        stack_name: Name of the stack
+        debug_mode: Whether to run Terraform in debug mode.
+    """
     if not confirmation(
         f"Are you sure you want to destroy stack '{stack_name}' and all "
         "associated infrastructure?"
@@ -1568,6 +1565,7 @@ def destroy(
     )
     user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
 
+    provider = read_yaml(file_path=spec_file_path).get("provider")
     tf_definitions_path: str = os.path.join(
         click.get_app_dir(MLSTACKS_PACKAGE_NAME),
         "terraform",
