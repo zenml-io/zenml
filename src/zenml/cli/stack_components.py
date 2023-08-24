@@ -1121,7 +1121,9 @@ def generate_stack_component_flavor_delete_command(
 
 def generate_stack_component_deploy_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, str, List[str]], None]:
+) -> Callable[
+    [str, str, str, str, bool, Optional[List[str]], List[str]], None
+]:
     """Generates a `deploy` command for the stack component type.
 
     Args:
@@ -1313,7 +1315,7 @@ def generate_stack_component_deploy_command(
         terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
         cli_utils.declare("Stack successfully deployed.")
 
-        stack_name = cli_params["stack_name"]
+        stack_name: str = cli_params["stack_name"]  # type: ignore[assignment]
         cli_utils.declare(
             f"Importing {component_type.value} component '{name}' into ZenML..."
         )
@@ -1330,7 +1332,7 @@ def generate_stack_component_deploy_command(
 
 def generate_stack_component_destroy_command(
     component_type: StackComponentType,
-) -> Callable[[str], None]:
+) -> Callable[[str, str, bool], None]:
     """Generates a `destroy` command for the stack component type.
 
     Args:
