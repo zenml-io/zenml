@@ -112,9 +112,16 @@ def _get_component_flavor(
     Returns:
         The component flavor.
     """
-    if key in {"artifact_store", "container_registry"} and bool(value):
+    if key in {"artifact_store"} and bool(value):
         if provider == "aws":
             flavor = "s3"
+        elif provider == "azure":
+            flavor = "azure"
+        elif provider == "gcp":
+            flavor = "gcp"
+    elif key in {"container_registry"} and bool(value):
+        if provider == "aws":
+            flavor = "aws"
         elif provider == "azure":
             flavor = "azure"
         elif provider == "gcp":
