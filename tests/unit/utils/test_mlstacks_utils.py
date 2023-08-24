@@ -11,3 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.utils.mlstacks_utils import stack_exists
+
+
+def test_stack_exists_works(local_stack):
+    stack_name = "aria_test_stack"
+    assert not stack_exists(stack_name)
+    assert stack_exists(local_stack.name)
