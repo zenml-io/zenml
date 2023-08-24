@@ -1,4 +1,4 @@
-name: Build, Lint, Unit & Integration Test
+name: Build, Lint, Unit, Integration and Templates Tests
 
 on:
   workflow_dispatch:
@@ -15,26 +15,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  ZENML_SUPPORTED_PYTHON_VERSIONS: "['3.8', '3.9', '3.10', '3.11']"
-
 jobs:
-  configure-matrixes:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    outputs:
-      python-version: ${{ steps.set-python-versions.outputs.test }}
-    steps:
-      - id: set-python-versions
-        run: |
-          echo "test=$ZENML_SUPPORTED_PYTHON_VERSIONS" >> "$GITHUB_OUTPUT"
-
   ubuntu-setup-python-environment:
-    needs: configure-matrixes
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -43,11 +29,10 @@ jobs:
     secrets: inherit
 
   windows-setup-python-environment:
-    needs: configure-matrixes
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -56,11 +41,10 @@ jobs:
     secrets: inherit
 
   macos-setup-python-environment:
-    needs: configure-matrixes
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -68,55 +52,40 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  lint:
-    needs: 
-      - configure-matrixes
-    uses: ./.github/workflows/lint.yml
-    with:
-      os: ubuntu-latest
-      python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version)[0] }}
-    secrets: inherit
-
-  ubuntu-unit-test:
-    needs: 
-      - configure-matrixes
-      - lint
+  ubuntu-lint-unit-test:
+    needs: ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/lint-unit-test.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
-
-  windows-unit-test:
-    needs: 
-      - configure-matrixes
-      - lint
+        
+  windows-lint-unit-test:
+    needs: windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/lint-unit-test.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
-
-  macos-unit-test:
-    needs: 
-      - configure-matrixes
-      - lint
+    
+  macos-lint-unit-test:
+    needs: macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/lint-unit-test.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -124,13 +93,11 @@ jobs:
 
   ubuntu-integration-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - ubuntu-unit-test
+      - ubuntu-lint-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           [
             "default",
@@ -156,13 +123,11 @@ jobs:
 
   windows-integration-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - windows-unit-test
+      - windows-lint-unit-test
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment: ["default"]
 
       fail-fast: false
@@ -176,13 +141,11 @@ jobs:
 
   macos-integration-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - macos-unit-test
+      - macos-lint-unit-test
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment: ["default"]
 
       fail-fast: false
@@ -196,13 +159,11 @@ jobs:
 
   ubuntu-templates-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - ubuntu-unit-test
+      - ubuntu-lint-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:
@@ -212,13 +173,11 @@ jobs:
   
   windows-templates-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - windows-unit-test
+      - windows-lint-unit-test
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:
@@ -228,13 +187,11 @@ jobs:
 
   macos-templates-test:
     needs: 
-      - configure-matrixes
-      - lint
-      - macos-unit-test
+      - macos-lint-unit-test
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ${{ fromJSON(needs.configure-matrixes.outputs.python-version) }}
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/templates-test.yml
     with:

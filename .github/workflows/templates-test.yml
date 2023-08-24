@@ -11,11 +11,6 @@ on:
         description: 'Python version'
         type: string
         required: true
-      enable_tmate:
-        description: 'Enable tmate session for debugging'
-        type: string
-        required: false
-        default: "never"
 
   workflow_dispatch:
     inputs:
@@ -38,16 +33,6 @@ on:
           - '3.11'
         required: false
         default: '3.8'
-      enable_tmate:
-        description: 'Enable tmate session for debugging'
-        type: choice
-        options:
-          - 'no'
-          - 'on-failure'
-          - 'always'
-          - 'before-tests'
-        required: false
-        default: 'no'
 
 jobs:
   all-template-tests:
