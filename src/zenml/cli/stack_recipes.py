@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Optional
 
 import click
 
@@ -447,7 +447,7 @@ def get_outputs(
     path: str,
     output: Optional[str],
     format: Optional[str],
-) -> Union[Dict[str, Any], str]:
+) -> None:
     """Get the outputs of the stack recipe at the specified relative path.
 
     `zenml stack_recipe deploy stack_recipe_name` has to be called from the

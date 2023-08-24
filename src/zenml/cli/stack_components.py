@@ -280,6 +280,7 @@ def generate_stack_component_register_command(
                 configuration=parsed_args,
                 labels=parsed_labels,
                 is_shared=share,
+                component_spec_path=None,
             )
 
             cli_utils.declare(
@@ -631,6 +632,7 @@ def generate_stack_component_copy_command(
                 configuration=component_to_copy.configuration,
                 labels=component_to_copy.labels,
                 is_shared=component_to_copy.is_shared,
+                component_spec_path=component_to_copy.component_spec_path,
             )
             print_model_url(get_component_url(copied_component))
 
@@ -1189,7 +1191,7 @@ def generate_stack_component_deploy_command(
         region: str,
         debug_mode: bool = False,
         tags: Optional[List[str]] = None,
-        extra_config: Optional[List[str]] = None,
+        extra_config: List[str] = [],
     ) -> None:
         """Deploy a stack component.
 
@@ -1275,9 +1277,7 @@ def generate_stack_component_deploy_command(
             component_type.value: flavor,
         }
         if component_type == StackComponentType.ARTIFACT_STORE:
-            cli_params["extra_config"] = cli_params["extra_config"] + (
-                f"bucket_name={name}",
-            )
+            cli_params["extra_config"].append(f"bucket_name={name}")  # type: ignore[union-attr]
         stack, components = convert_click_params_to_mlstacks_primitives(
             cli_params, zenml_component_deploy=True
         )

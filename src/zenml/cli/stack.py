@@ -1414,11 +1414,11 @@ def deploy(
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    no_import_stack_flag: Optional[bool] = None,
+    no_import_stack_flag: bool = False,
     artifact_store: Optional[bool] = None,
     container_registry: Optional[bool] = None,
     file: Optional[str] = None,
-    debug_mode: Optional[bool] = None,
+    debug_mode: bool = False,
     tags: Optional[List[str]] = None,
     extra_config: Optional[List[str]] = None,
 ) -> None:
