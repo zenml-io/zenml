@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality to handle interaction with the mlstacks package."""
-
 import json
 import os
 from pathlib import Path
@@ -21,6 +20,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     Tuple,
     Union,
 )
@@ -395,25 +395,27 @@ def convert_mlstacks_primitives_to_dicts(
     return stack_dict, components_dicts
 
 
-def import_new_mlstacks_stack(
-    stack_name: str,
+def _setup_import(
     provider: str,
+    stack_name: str,
     stack_spec_dir: str,
-    user_stack_spec_file: str = None,
-) -> None:
-    """Import a new stack deployed for a particular cloud provider.
+    user_stack_spec_file: Optional[str] = None,
+) -> Tuple[Dict[str, Any], str]:
+    """
+    Sets up the environment for importing a new stack or component.
 
     Args:
+        provider: The cloud provider for which the stack or component is deployed.
         stack_name: The name of the stack to import.
-        provider: The cloud provider for which the stack is deployed.
         stack_spec_dir: The path to the directory containing the stack spec.
         user_stack_spec_file: The path to the user-created stack spec file.
+
+    Returns:
+        A tuple containing the parsed YAML data and the stack spec file path.
     """
     verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
-
-    from zenml.cli.utils import print_model_url
 
     tf_dir = os.path.join(
         click.get_app_dir(MLSTACKS_PACKAGE_NAME),
@@ -423,20 +425,40 @@ def import_new_mlstacks_stack(
     stack_spec_file = user_stack_spec_file or os.path.join(
         stack_spec_dir, f"stack-{stack_name}.yaml"
     )
-    # strip out the `./` from the stack_file_path
     stack_filename = terraform_utils.get_stack_outputs(
         stack_spec_file, output_key="stack-yaml-path"
     ).get("stack-yaml-path")[2:]
     import_stack_path = os.path.join(tf_dir, stack_filename)
     data = read_yaml(import_stack_path)
-    # import stack components
+
+    return data, stack_spec_file
+
+
+def _import_components(
+    data: Dict[str, Any],
+    stack_spec_dir: str,
+    component_name: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Imports components based on the provided data.
+
+    Args:
+        data: The parsed YAML data containing component details.
+        stack_spec_dir: The path to the directory containing the stack spec.
+        component_name: The name of the component to import (if any).
+
+    Returns:
+        A dictionary mapping component types to their respective IDs.
+    """
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
         component_spec_path = os.path.join(
             stack_spec_dir,
-            f"{component_config['flavor']}-{component_type_str}.yaml",
+            f"{component_name or component_config['flavor']}-{component_type_str}.yaml",
         )
+        if component_name:
+            component_config["name"] = component_name
 
         from zenml.cli.stack import _import_stack_component
 
@@ -446,6 +468,29 @@ def import_new_mlstacks_stack(
             component_spec_path=component_spec_path,
         )
         component_ids[component_type] = component_id
+
+    return component_ids
+
+
+def import_new_mlstacks_stack(
+    stack_name: str,
+    provider: str,
+    stack_spec_dir: str,
+    user_stack_spec_file: Optional[str] = None,
+) -> None:
+    """
+    Import a new stack deployed for a particular cloud provider.
+
+    Args:
+        stack_name: The name of the stack to import.
+        provider: The cloud provider for which the stack is deployed.
+        stack_spec_dir: The path to the directory containing the stack spec.
+        user_stack_spec_file: The path to the user-created stack spec file.
+    """
+    data, stack_spec_file = _setup_import(
+        provider, stack_name, stack_spec_dir, user_stack_spec_file
+    )
+    component_ids = _import_components(data, stack_spec_dir)
 
     imported_stack = Client().create_stack(
         name=stack_name,
@@ -454,13 +499,16 @@ def import_new_mlstacks_stack(
         stack_spec_file=stack_spec_file,
     )
 
+    from zenml.cli.utils import print_model_url
+
     print_model_url(get_stack_url(imported_stack))
 
 
 def import_new_mlstacks_component(
     stack_name: str, component_name: str, provider: str, stack_spec_dir: str
 ) -> None:
-    """Import a new component deployed for a particular cloud provider.
+    """
+    Import a new component deployed for a particular cloud provider.
 
     Args:
         stack_name: The name of the stack to import.
@@ -468,44 +516,18 @@ def import_new_mlstacks_component(
         provider: The cloud provider for which the stack is deployed.
         stack_spec_dir: The path to the directory containing the stack spec.
     """
-    verify_mlstacks_prerequisites_installation()
-    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
-    from mlstacks.utils import terraform_utils
+    data, _ = _setup_import(provider, stack_name, stack_spec_dir)
+    component_ids = _import_components(
+        data, stack_spec_dir, component_name=component_name
+    )
+    component_type = list(component_ids.keys())[
+        0
+    ]  # Assuming only one component is imported
+    component = Client().get_stack_component(
+        component_type, component_ids[component_type]
+    )
 
     from zenml.cli.utils import print_model_url
-
-    tf_dir = os.path.join(
-        click.get_app_dir(MLSTACKS_PACKAGE_NAME),
-        "terraform",
-        f"{provider}-modular",
-    )
-    stack_spec_file = os.path.join(stack_spec_dir, f"/stack-{stack_name}.yaml")
-    # strip out the `./` from the stack_file_path
-    stack_filename = terraform_utils.get_stack_outputs(
-        stack_spec_file, output_key="stack-yaml-path"
-    ).get("stack-yaml-path")[2:]
-    import_stack_path = os.path.join(tf_dir, stack_filename)
-    data = read_yaml(import_stack_path)
-    # import stack components
-    component_ids = {}
-    for component_type_str, component_config in data["components"].items():
-        component_type = StackComponentType(component_type_str)
-        component_spec_path = os.path.join(
-            stack_spec_dir, f"{component_name}.yaml"
-        )
-        # TODO: [LOW] find a nicer way to do this (most likely fix the TF
-        # recipe stack yaml output)
-        component_config["name"] = component_name
-
-        from zenml.cli.stack import _import_stack_component
-
-        component_id = _import_stack_component(
-            component_type=component_type,
-            component_dict=component_config,
-            component_spec_path=component_spec_path,
-        )
-        component_ids[component_type] = component_id
-        component = Client().get_stack_component(component_type, component_id)
 
     print_model_url(get_component_url(component))
 
