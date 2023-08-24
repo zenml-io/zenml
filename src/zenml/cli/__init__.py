@@ -1397,7 +1397,7 @@ Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just
 a few commands. Each recipe uses Terraform modules under the hood and once
 executed can set up a ZenML stack, ready to run your pipelines!
 
-A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
+A number of stack recipes are already available at [the `mlstacks` repository](https://github.com/zenml-io/mlstacks/). List them
 using the following command:
 
 ```bash
