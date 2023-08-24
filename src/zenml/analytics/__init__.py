@@ -57,7 +57,7 @@ def group(  # type: ignore[return]
         group_metadata: Metadata to attach to the group.
 
     Returns:
-        True if event is sent successfully, False is not.
+        True if event is sent successfully, False if not.
     """
     from zenml.analytics.context import AnalyticsContext
 
@@ -76,7 +76,7 @@ def track(  # type: ignore[return]
         metadata: Dict of metadata to track.
 
     Returns:
-        True if event is sent successfully, False is not.
+        True if event is sent successfully, False if not.
     """
     from zenml.analytics.context import AnalyticsContext
 
