@@ -83,7 +83,7 @@ class ComponentBaseModel(BaseModel):
 
     component_spec_path: Optional[str] = Field(
         default=None,
-        title="The path to the component spec.",
+        title="The path to the component spec used for mlstacks deployments.",
     )
 
 

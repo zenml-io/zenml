@@ -48,7 +48,7 @@ class StackBaseModel(BaseModel):
 
     stack_spec_path: Optional[str] = Field(
         default=None,
-        title="The path to the stack spec.",
+        title="The path to the stack spec used for mlstacks deployments.",
     )
 
 
