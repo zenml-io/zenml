@@ -93,8 +93,8 @@ def stack_spec_exists(stack_name: str) -> bool:
 
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-    spec_dir = (
-        f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack_name}"
+    spec_dir = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
     )
     return Path(spec_dir).exists()
 
@@ -352,7 +352,12 @@ def convert_click_params_to_mlstacks_primitives(
     # using format '<provider>-<component_name>.yaml'
     for component in components:
         stack.components.append(
-            f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}/{component.name}.yaml"
+            os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "stack_specs",
+                stack.name,
+                f"{component.name}.yaml",
+            )
         )
 
     return stack, components
@@ -403,21 +408,28 @@ def import_new_mlstacks_stack(
 
     from zenml.cli.utils import print_model_url
 
-    tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
-    stack_spec_file = (
-        user_stack_spec_file or f"{stack_spec_dir}/stack-{stack_name}.yaml"
+    tf_dir = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+        "terraform",
+        f"{provider}-modular",
+    )
+    stack_spec_file = user_stack_spec_file or os.path.join(
+        stack_spec_dir, f"stack-{stack_name}.yaml"
     )
     # strip out the `./` from the stack_file_path
     stack_filename = terraform_utils.get_stack_outputs(
         stack_spec_file, output_key="stack-yaml-path"
     ).get("stack-yaml-path")[2:]
-    import_stack_path = f"{tf_dir}/{stack_filename}"
+    import_stack_path = os.path.join(tf_dir, stack_filename)
     data = read_yaml(import_stack_path)
     # import stack components
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
-        component_spec_path = f"{stack_spec_dir}/{component_config['flavor']}-{component_type_str}.yaml"
+        component_spec_path = os.path.join(
+            stack_spec_dir,
+            f"{component_config['flavor']}-{component_type_str}.yaml",
+        )
 
         from zenml.cli.stack import _import_stack_component
 
@@ -455,19 +467,25 @@ def import_new_mlstacks_component(
 
     from zenml.cli.utils import print_model_url
 
-    tf_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
-    stack_spec_file = f"{stack_spec_dir}/stack-{stack_name}.yaml"
+    tf_dir = os.path.join(
+        click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+        "terraform",
+        f"{provider}-modular",
+    )
+    stack_spec_file = os.path.join(stack_spec_dir, f"/stack-{stack_name}.yaml")
     # strip out the `./` from the stack_file_path
     stack_filename = terraform_utils.get_stack_outputs(
         stack_spec_file, output_key="stack-yaml-path"
     ).get("stack-yaml-path")[2:]
-    import_stack_path = f"{tf_dir}/{stack_filename}"
+    import_stack_path = os.path.join(tf_dir, stack_filename)
     data = read_yaml(import_stack_path)
     # import stack components
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
-        component_spec_path = f"{stack_spec_dir}/{component_name}.yaml"
+        component_spec_path = os.path.join(
+            stack_spec_dir, f"{component_name}.yaml"
+        )
         # TODO: [LOW] find a nicer way to do this (most likely fix the TF
         # recipe stack yaml output)
         component_config["name"] = component_name
