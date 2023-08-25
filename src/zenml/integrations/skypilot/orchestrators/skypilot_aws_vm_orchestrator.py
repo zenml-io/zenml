@@ -42,6 +42,7 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
 
     DEFAULT_INSTANCE_TYPE: str = "t3.xlarge"
 
+    @property
     def cloud(self) -> sky.clouds.Cloud:
         """The type of sky cloud to use.
 

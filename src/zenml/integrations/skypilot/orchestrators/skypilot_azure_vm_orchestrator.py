@@ -41,6 +41,7 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
 
     DEFAULT_INSTANCE_TYPE: str = "Standard_B1ms"
 
+    @property
     def cloud(self) -> sky.clouds.Cloud:
         """The type of sky cloud to use.
 
