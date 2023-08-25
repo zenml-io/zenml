@@ -102,6 +102,15 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             A `sky.clouds.Cloud` instance.
         """
 
+    def setup_credentials(self) -> Any:
+        """Set up credentials for the orchestrator.
+
+        Returns:
+            A client authentication object, dependant on the cloud.
+        """
+        connector = self.get_connector()
+        return connector.connect()
+
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
         """Run to set up the sky job.
 
@@ -164,6 +173,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         start_time = time.time()
 
         instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
+
+        # Set up credentials
+        self.setup_credentials()
 
         # Run the entire pipeline
         try:
