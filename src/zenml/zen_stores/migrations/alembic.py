@@ -142,8 +142,8 @@ class Alembic:
             # Acquire a lock
             if self.engine.dialect.name == "mysql":
                 query = f"SELECT GET_LOCK('zenml', {DATABASE_LOCK_TIMEOUT})"
-                lock = connection.execute(text(query))
-                if lock.first()[0] != 1:
+                lock = connection.execute(text(query)).scalar()
+                if lock is None or lock != 1:
                     raise RuntimeError("Could not acquire database lock.")
             try:
                 self.environment_context.configure(
