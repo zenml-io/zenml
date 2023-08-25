@@ -138,7 +138,7 @@ def _get_component_flavor(
             "step_operator",
         }
         and value
-        and type(value) == str
+        and isinstance(value, str)
     ):
         flavor = value
     return flavor
