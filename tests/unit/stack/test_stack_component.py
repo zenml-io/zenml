@@ -227,6 +227,7 @@ def test_stack_component_secret_reference_resolving(
             component_type=StackComponentType.SECRETS_MANAGER,
             flavor="local",
             configuration=LocalSecretsManagerConfig().dict(),
+            component_spec_path=None,
         )
     )
 
