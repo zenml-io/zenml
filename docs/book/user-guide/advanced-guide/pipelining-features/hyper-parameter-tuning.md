@@ -4,6 +4,8 @@ description: Running a hyperparameter tuning trial with ZenML.
 
 # Hyperparameter Tuning
 
+## Understanding the basics
+
 {% hint style="warning" %}
 Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is 
 [(high up) on our roadmap of features](https://zenml.featureos.app/p/enable-hyper-parameter-tuning) 
@@ -60,6 +62,44 @@ def select_model_step():
     for lr, model in trained_models_by_lr.items():
         ...
 ```
+
+## Playground using project template
+
+To better digest the suggest concept of hyperparameter tunning described above,
+we recommend following `E2E Batch` project template:
+
+1. Initialize project template with `zenml init --template e2e_batch --template-with-defaults`
+2. In `pipelines/training.py` you will find training pipeline with `Hyperparameter tuning stage` section.
+It contains a `for` loop over configured model search spaces to run `hp_tuning_single_search` on 
+followed by `hp_tuning_select_best_model` executed after all search steps are completed. As a result we
+are getting `best_model_config` to be used to train best possible model later on.
+
+```python
+...
+    ########## Hyperparameter tuning stage ##########
+    after = []
+    search_steps_prefix = "hp_tuning_search_"
+    for i, model_search_configuration in enumerate(
+        MetaConfig.model_search_space
+    ):
+        step_name = f"{search_steps_prefix}{i}"
+        hp_tuning_single_search(
+            model_metadata=ExternalArtifact(
+                value=model_search_configuration,
+            ),
+            id=step_name,
+            dataset_trn=dataset_trn,
+            dataset_tst=dataset_tst,
+            target=target,
+        )
+        after.append(step_name)
+    best_model_config = hp_tuning_select_best_model(
+        search_steps_prefix=search_steps_prefix, after=after
+    )
+...
+```
+3. In `steps/hp_tuning` folder you will find two step files, which can be used as a starting point for
+building your own hyperparameter search tailored specifically to your use case.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
