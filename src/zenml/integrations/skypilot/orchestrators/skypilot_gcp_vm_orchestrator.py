@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 import sky
 
 from zenml.config.base_settings import BaseSettings
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import (
     SkypilotGCPOrchestratorConfig,
     SkypilotGCPOrchestratorSettings,
-)
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsMixin,
 )
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
@@ -36,7 +36,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class SkypilotGCPOrchestrator(SkypilotBaseOrchestrator, GoogleCredentialsMixin):
+class SkypilotGCPOrchestrator(
+    SkypilotBaseOrchestrator, GoogleCredentialsMixin
+):
     """Orchestrator responsible for running pipelines remotely in a VM.
 
     This orchestrator does not support running on a schedule.
