@@ -53,26 +53,6 @@ class SkypilotAWSIntegration(Integration):
 
 
 class SkypilotGCPIntegration(Integration):
-    """Definition of Skypilot GCP Integration for ZenML."""
-
-    NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[gcp]"]
-
-    @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Skypilot AWS integration.
-
-        Returns:
-            List of stack component flavors for this integration.
-        """
-        from zenml.integrations.skypilot.flavors import (
-            SkypilotGCPOrchestratorFlavor,
-        )
-
-        return [SkypilotGCPOrchestratorFlavor]
-
-
-class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
