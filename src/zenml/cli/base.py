@@ -62,15 +62,24 @@ class ZenMLProjectTemplateLocation(BaseModel):
     github_url: str
     github_tag: str
 
+    @property
+    def copier_github_url(self) -> str:
+        """Get the GitHub URL for the copier.
+
+        Returns:
+            A GitHub URL in copier format.
+        """
+        return f"gh:{self.github_url}"
+
 
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
-        github_url="gh:zenml-io/template-e2e-batch",
-        github_tag="0.42.1",
+        github_url="zenml-io/template-e2e-batch",
+        github_tag="0.43.0",
     ),
     starter=ZenMLProjectTemplateLocation(
-        github_url="gh:zenml-io/zenml-project-templates",
-        github_tag="main",
+        github_url="zenml-io/zenml-project-templates",
+        github_tag="0.43.0",
     ),
 )
 
@@ -169,7 +178,7 @@ def init(
                 console.print(prompt_message, width=80)
 
             with Worker(
-                src_path=zenml_project_template.github_url,
+                src_path=zenml_project_template.copier_github_url,
                 vcs_ref=zenml_project_template.github_tag,
                 dst_path=path,
                 data=dict(
