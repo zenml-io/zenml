@@ -63,16 +63,18 @@ def select_model_step():
         ...
 ```
 
-## Playground using project template
+## Playground using the project template
 
-To better digest the suggest concept of hyperparameter tunning described above,
-we recommend following `E2E Batch` project template:
+To better digest the suggested concept of hyperparameter tuning described above, 
+we recommend the following `E2E Batch` project template:
 
 1. Initialize project template with `zenml init --template e2e_batch --template-with-defaults`
-2. In `pipelines/training.py` you will find training pipeline with `Hyperparameter tuning stage` section.
-It contains a `for` loop over configured model search spaces to run `hp_tuning_single_search` on 
-followed by `hp_tuning_select_best_model` executed after all search steps are completed. As a result we
-are getting `best_model_config` to be used to train best possible model later on.
+2. In `pipelines/training.py` you will find a training pipeline with 
+`Hyperparameter tuning stage` section. It contains a `for` loop over configured 
+model search spaces to run `hp_tuning_single_search` on followed by 
+`hp_tuning_select_best_model` executed after all search steps are completed. As 
+a result, we are getting `best_model_config` to be used to train the best possible 
+model later on.
 
 ```python
 ...
@@ -98,8 +100,9 @@ are getting `best_model_config` to be used to train best possible model later on
     )
 ...
 ```
-3. In `steps/hp_tuning` folder you will find two step files, which can be used as a starting point for
-building your own hyperparameter search tailored specifically to your use case.
+3. In `steps/hp_tuning` folder you will find two step files, which can be used 
+as a starting point for building your own hyperparameter search tailored 
+specifically to your use case.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
