@@ -58,6 +58,8 @@ class AnalyticsEvent(str, Enum):
 
     # Stack recipes
     RUN_STACK_RECIPE = "Stack recipe ran"
+    DEPLOY_STACK = "Stack deployed"
+    DESTROY_STACK = "Stack destroyed"
 
     # Stack component deploy
     DEPLOY_STACK_COMPONENT = "Stack component deployed"

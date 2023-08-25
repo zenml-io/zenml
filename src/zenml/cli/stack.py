@@ -21,6 +21,8 @@ from uuid import UUID
 import click
 
 import zenml
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
@@ -1448,71 +1450,96 @@ def deploy(
         mlops_platform: The flavor of MLOps platform to use.
         region: The region to deploy the stack to.
     """
-    if stack_exists(stack_name):
-        cli_utils.error(
-            f"Stack with name '{stack_name}' already exists. Please choose a "
-            "different name."
-        )
-    elif stack_spec_exists(stack_name):
-        cli_utils.error(
-            f"Stack spec for stack named '{stack_name}' already exists. "
-            "Please choose a different name."
-        )
-
-    cli_utils.declare("Checking prerequisites are installed...")
-    cli_utils.verify_mlstacks_prerequisites_installation()
-    cli_utils.warning(ALPHA_MESSAGE)
-
-    if not file:
-        cli_params: Dict[str, Any] = ctx.params
-        stack, components = convert_click_params_to_mlstacks_primitives(
-            cli_params
-        )
-
-        from mlstacks.utils import zenml_utils
-
-        cli_utils.declare("Checking flavor compatibility...")
-        if not zenml_utils.has_valid_flavor_combinations(stack, components):
+    with track_handler(
+        event=AnalyticsEvent.DEPLOY_STACK,
+    ) as analytics_handler:
+        if stack_exists(stack_name):
             cli_utils.error(
-                "The specified stack and component flavors are not compatible "
-                "with the provider or with one another. Please try again."
+                f"Stack with name '{stack_name}' already exists. Please choose a "
+                "different name."
+            )
+        elif stack_spec_exists(stack_name):
+            cli_utils.error(
+                f"Stack spec for stack named '{stack_name}' already exists. "
+                "Please choose a different name."
             )
 
-        stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
-            stack, components
-        )
-        # write the stack and component yaml files
-        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+        cli_utils.declare("Checking prerequisites are installed...")
+        cli_utils.verify_mlstacks_prerequisites_installation()
+        cli_utils.warning(ALPHA_MESSAGE)
 
-        spec_dir = os.path.join(
-            click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack.name
-        )
-        cli_utils.declare(f"Writing spec files to {spec_dir}...")
-        create_dir_recursive_if_not_exists(spec_dir)
-
-        stack_file_path = os.path.join(spec_dir, f"stack-{stack.name}.yaml")
-        write_yaml(file_path=stack_file_path, contents=stack_dict)
-        for component in component_dicts:
-            write_yaml(
-                file_path=os.path.join(spec_dir, f"{component['name']}.yaml"),
-                contents=component,
+        if not file:
+            cli_params: Dict[str, Any] = ctx.params
+            stack, components = convert_click_params_to_mlstacks_primitives(
+                cli_params
             )
-    else:
-        declare("Importing from stack specification file...")
-        stack_file_path = file
 
-        from mlstacks.utils.yaml_utils import load_stack_yaml
+            from mlstacks.utils import zenml_utils
 
-        stack = load_stack_yaml(stack_file_path)
+            cli_utils.declare("Checking flavor compatibility...")
+            if not zenml_utils.has_valid_flavor_combinations(
+                stack, components
+            ):
+                cli_utils.error(
+                    "The specified stack and component flavors are not compatible "
+                    "with the provider or with one another. Please try again."
+                )
 
-    deploy_mlstacks_stack(
-        spec_file_path=stack_file_path,
-        stack_name=stack.name,
-        stack_provider=stack.provider,
-        debug_mode=debug_mode,
-        no_import_stack_flag=no_import_stack_flag,
-        user_created_spec=bool(file),
-    )
+            stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+                stack, components
+            )
+            # write the stack and component yaml files
+            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+            spec_dir = os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "stack_specs",
+                stack.name,
+            )
+            cli_utils.declare(f"Writing spec files to {spec_dir}...")
+            create_dir_recursive_if_not_exists(spec_dir)
+
+            stack_file_path = os.path.join(
+                spec_dir, f"stack-{stack.name}.yaml"
+            )
+            write_yaml(file_path=stack_file_path, contents=stack_dict)
+            for component in component_dicts:
+                write_yaml(
+                    file_path=os.path.join(
+                        spec_dir, f"{component['name']}.yaml"
+                    ),
+                    contents=component,
+                )
+        else:
+            declare("Importing from stack specification file...")
+            stack_file_path = file
+
+            from mlstacks.utils.yaml_utils import load_stack_yaml
+
+            stack = load_stack_yaml(stack_file_path)
+
+        analytics_handler.metadata = {
+            "stack_provider": stack.provider,
+            "debug_mode": debug_mode,
+            "no_import_stack_flag": no_import_stack_flag,
+            "user_created_spec": bool(file),
+            "mlops_platform": mlops_platform,
+            "orchestrator": orchestrator,
+            "model_deployer": model_deployer,
+            "experiment_tracker": experiment_tracker,
+            "step_operator": step_operator,
+            "artifact_store": artifact_store,
+            "container_registry": container_registry,
+        }
+
+        deploy_mlstacks_stack(
+            spec_file_path=stack_file_path,
+            stack_name=stack.name,
+            stack_provider=stack.provider,
+            debug_mode=debug_mode,
+            no_import_stack_flag=no_import_stack_flag,
+            user_created_spec=bool(file),
+        )
 
 
 @stack.command(
@@ -1543,62 +1570,69 @@ def destroy(
         "associated infrastructure?"
     ):
         error("Aborting stack destroy...")
-    cli_utils.verify_mlstacks_prerequisites_installation()
-    from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-    # check the stack actually exists
-    if not stack_exists(stack_name):
-        cli_utils.error(
-            f"Stack with name '{stack_name}' does not exist. Please check and "
-            "try again."
+    with track_handler(
+        event=AnalyticsEvent.DESTROY_STACK,
+    ) as analytics_handler:
+        analytics_handler.metadata["debug_mode"] = debug_mode
+        cli_utils.verify_mlstacks_prerequisites_installation()
+        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+        # check the stack actually exists
+        if not stack_exists(stack_name):
+            cli_utils.error(
+                f"Stack with name '{stack_name}' does not exist. Please check and "
+                "try again."
+            )
+
+        spec_file_path = get_stack_spec_file_path(stack_name)
+        spec_files_dir: str = os.path.join(
+            click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
+        )
+        user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
+
+        provider = read_yaml(file_path=spec_file_path).get("provider")
+        tf_definitions_path: str = os.path.join(
+            click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+            "terraform",
+            f"{provider}-modular",
         )
 
-    spec_file_path = get_stack_spec_file_path(stack_name)
-    spec_files_dir: str = os.path.join(
-        click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
-    )
-    user_created_spec = str(Path(spec_file_path).parent) != spec_files_dir
-
-    provider = read_yaml(file_path=spec_file_path).get("provider")
-    tf_definitions_path: str = os.path.join(
-        click.get_app_dir(MLSTACKS_PACKAGE_NAME),
-        "terraform",
-        f"{provider}-modular",
-    )
-
-    cli_utils.declare(
-        "Checking Terraform definitions and spec files are present..."
-    )
-    verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
-
-    from mlstacks.utils import terraform_utils
-
-    cli_utils.declare(f"Destroying stack '{stack_name}' using Terraform...")
-    terraform_utils.destroy_stack(
-        stack_path=spec_file_path, debug_mode=debug_mode
-    )
-    cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
-
-    if cli_utils.confirmation(
-        f"Would you like to recursively delete the associated ZenML "
-        f"stack '{stack_name}'?\nThis will delete the stack and any "
-        "underlying stack components."
-    ):
-        from zenml.client import Client
-
-        client = Client()
-        client.delete_stack(name_id_or_prefix=stack_name, recursive=True)
         cli_utils.declare(
-            f"Stack '{stack_name}' successfully deleted from ZenML."
+            "Checking Terraform definitions and spec files are present..."
         )
+        verify_spec_and_tf_files_exist(spec_file_path, tf_definitions_path)
 
-    spec_dir = os.path.dirname(spec_file_path)
-    if not user_created_spec and cli_utils.confirmation(
-        f"Would you like to delete the `mlstacks` spec directory for "
-        f"this stack, located at {spec_dir}?"
-    ):
-        rmtree(spec_files_dir)
+        from mlstacks.utils import terraform_utils
+
         cli_utils.declare(
-            f"Spec directory for stack '{stack_name}' successfully deleted."
+            f"Destroying stack '{stack_name}' using Terraform..."
         )
-    cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
+        terraform_utils.destroy_stack(
+            stack_path=spec_file_path, debug_mode=debug_mode
+        )
+        cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
+
+        if cli_utils.confirmation(
+            f"Would you like to recursively delete the associated ZenML "
+            f"stack '{stack_name}'?\nThis will delete the stack and any "
+            "underlying stack components."
+        ):
+            from zenml.client import Client
+
+            client = Client()
+            client.delete_stack(name_id_or_prefix=stack_name, recursive=True)
+            cli_utils.declare(
+                f"Stack '{stack_name}' successfully deleted from ZenML."
+            )
+
+        spec_dir = os.path.dirname(spec_file_path)
+        if not user_created_spec and cli_utils.confirmation(
+            f"Would you like to delete the `mlstacks` spec directory for "
+            f"this stack, located at {spec_dir}?"
+        ):
+            rmtree(spec_files_dir)
+            cli_utils.declare(
+                f"Spec directory for stack '{stack_name}' successfully deleted."
+            )
+        cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")

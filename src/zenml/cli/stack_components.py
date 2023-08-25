@@ -24,6 +24,8 @@ from uuid import UUID
 import click
 from rich.markdown import Markdown
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
@@ -1207,123 +1209,137 @@ def generate_stack_component_deploy_command(
             tags: Tags to be added to the component.
             extra_config: Extra configuration values to be added to the
         """
-        client = Client()
-        try:
-            # raise error if user already has a component with the same name
-            client.get_stack_component(
-                component_type=component_type,
-                name_id_or_prefix=name,
-                allow_name_prefix_match=False,
-            )
-            cli_utils.error(
-                f"A stack component of type '{component_type.value}' with "
-                f"the name '{name}' already exists. Please try again with "
-                f"a different component name."
-            )
-        except KeyError:
-            pass
-        from mlstacks.constants import ALLOWED_FLAVORS
+        with track_handler(
+            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
+        ) as analytics_handler:
+            client = Client()
+            try:
+                # raise error if user already has a component with the same name
+                client.get_stack_component(
+                    component_type=component_type,
+                    name_id_or_prefix=name,
+                    allow_name_prefix_match=False,
+                )
+                cli_utils.error(
+                    f"A stack component of type '{component_type.value}' with "
+                    f"the name '{name}' already exists. Please try again with "
+                    f"a different component name."
+                )
+            except KeyError:
+                pass
+            from mlstacks.constants import ALLOWED_FLAVORS
 
-        if flavor not in ALLOWED_FLAVORS[component_type.value]:
-            cli_utils.error(
-                f"Flavor '{flavor}' is not supported for "
-                f"{_component_display_name(component_type, True)}. "
-                "Allowed flavors are: "
-                f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
-            )
+            if flavor not in ALLOWED_FLAVORS[component_type.value]:
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)}. "
+                    "Allowed flavors are: "
+                    f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
+                )
 
-        # for cases like artifact store, secrets manager and container registry
-        # the flavor is the same as the cloud
-        if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
-            cli_utils.error(
-                f"Flavor '{flavor}' is not supported for "
-                f"{_component_display_name(component_type, True)} on "
-                f"{provider}."
-            )
-        elif flavor in {"vertex", "gcp"} and provider != "gcp":
-            cli_utils.error(
-                f"Flavor '{flavor}' is not supported for "
-                f"{_component_display_name(component_type, True)} on "
-                f"{provider}."
-            )
+            # for cases like artifact store, secrets manager and container registry
+            # the flavor is the same as the cloud
+            if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)} on "
+                    f"{provider}."
+                )
+            elif flavor in {"vertex", "gcp"} and provider != "gcp":
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)} on "
+                    f"{provider}."
+                )
 
-        # if the cloud is gcp, project_id is required
-        extra_config_obj = (
-            dict(config.split("=") for config in extra_config)
-            if extra_config
-            else ()
-        )
-        if provider == "gcp" and "project_id" not in extra_config_obj:
-            cli_utils.error(
-                "Missing Project ID. You must pass your GCP project ID to "
-                "the deploy command as part of the `--extra_config` option."
+            # if the cloud is gcp, project_id is required
+            extra_config_obj = (
+                dict(config.split("=") for config in extra_config)
+                if extra_config
+                else ()
             )
-        cli_utils.declare("Checking prerequisites are installed...")
-        cli_utils.verify_mlstacks_prerequisites_installation()
-        from mlstacks.utils import zenml_utils
+            if provider == "gcp" and "project_id" not in extra_config_obj:
+                cli_utils.error(
+                    "Missing Project ID. You must pass your GCP project ID to "
+                    "the deploy command as part of the `--extra_config` option."
+                )
+            cli_utils.declare("Checking prerequisites are installed...")
+            cli_utils.verify_mlstacks_prerequisites_installation()
+            from mlstacks.utils import zenml_utils
 
-        cli_utils.warning(ALPHA_MESSAGE)
-        cli_params = {
-            "provider": provider,
-            "region": region,
-            "stack_name": "".join(
-                random.choice(string.ascii_letters + string.digits)
-                for _ in range(5)
-            ),
-            "tags": tags,
-            "extra_config": extra_config,
-            "file": None,
-            "debug_mode": debug_mode,
-            component_type.value: flavor,
-        }
-        if component_type == StackComponentType.ARTIFACT_STORE:
-            cli_params["extra_config"].append(f"bucket_name={name}")  # type: ignore[union-attr]
-        stack, components = convert_click_params_to_mlstacks_primitives(
-            cli_params, zenml_component_deploy=True
-        )
-
-        cli_utils.declare("Checking flavor compatibility...")
-        if not zenml_utils.has_valid_flavor_combinations(stack, components):
-            cli_utils.error(
-                "The specified stack and component flavors are not compatible "
-                "with the provider or with one another. Please try again."
+            cli_utils.warning(ALPHA_MESSAGE)
+            cli_params = {
+                "provider": provider,
+                "region": region,
+                "stack_name": "".join(
+                    random.choice(string.ascii_letters + string.digits)
+                    for _ in range(5)
+                ),
+                "tags": tags,
+                "extra_config": extra_config,
+                "file": None,
+                "debug_mode": debug_mode,
+                component_type.value: flavor,
+            }
+            if component_type == StackComponentType.ARTIFACT_STORE:
+                cli_params["extra_config"].append(f"bucket_name={name}")  # type: ignore[union-attr]
+            stack, components = convert_click_params_to_mlstacks_primitives(
+                cli_params, zenml_component_deploy=True
             )
 
-        stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
-            stack, components
-        )
-        # write the stack and component yaml files
-        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+            analytics_handler.metadata = {
+                "flavor": flavor,
+                "provider": provider,
+                "debug_mode": debug_mode,
+                "component_type": component_type.value,
+            }
 
-        spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
-        cli_utils.declare(f"Writing spec files to {spec_dir}...")
-        create_dir_recursive_if_not_exists(spec_dir)
+            cli_utils.declare("Checking flavor compatibility...")
+            if not zenml_utils.has_valid_flavor_combinations(
+                stack, components
+            ):
+                cli_utils.error(
+                    "The specified stack and component flavors are not compatible "
+                    "with the provider or with one another. Please try again."
+                )
 
-        stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
-        write_yaml(file_path=stack_file_path, contents=stack_dict)
-        for component in component_dicts:
-            write_yaml(
-                file_path=f"{spec_dir}/{component['name']}.yaml",
-                contents=component,
+            stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+                stack, components
             )
+            # write the stack and component yaml files
+            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-        from mlstacks.utils import terraform_utils
+            spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+            cli_utils.declare(f"Writing spec files to {spec_dir}...")
+            create_dir_recursive_if_not_exists(spec_dir)
 
-        cli_utils.declare("Deploying stack using Terraform...")
-        terraform_utils.deploy_stack(stack_file_path, debug_mode=debug_mode)
-        cli_utils.declare("Stack successfully deployed.")
+            stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+            write_yaml(file_path=stack_file_path, contents=stack_dict)
+            for component in component_dicts:
+                write_yaml(
+                    file_path=f"{spec_dir}/{component['name']}.yaml",
+                    contents=component,
+                )
 
-        stack_name: str = cli_params["stack_name"]  # type: ignore[assignment]
-        cli_utils.declare(
-            f"Importing {component_type.value} component '{name}' into ZenML..."
-        )
-        import_new_mlstacks_component(
-            stack_name=stack_name,
-            component_name=name,
-            provider=stack.provider,
-            stack_spec_dir=spec_dir,
-        )
-        cli_utils.declare("Component successfully imported into ZenML.")
+            from mlstacks.utils import terraform_utils
+
+            cli_utils.declare("Deploying stack using Terraform...")
+            terraform_utils.deploy_stack(
+                stack_file_path, debug_mode=debug_mode
+            )
+            cli_utils.declare("Stack successfully deployed.")
+
+            stack_name: str = cli_params["stack_name"]  # type: ignore[assignment]
+            cli_utils.declare(
+                f"Importing {component_type.value} component '{name}' into ZenML..."
+            )
+            import_new_mlstacks_component(
+                stack_name=stack_name,
+                component_name=name,
+                provider=stack.provider,
+                stack_spec_dir=spec_dir,
+            )
+            cli_utils.declare("Component successfully imported into ZenML.")
 
     return deploy_stack_component_command
 
@@ -1373,83 +1389,91 @@ def generate_stack_component_destroy_command(
             provider: Cloud provider (or local) where the stack was deployed.
             debug_mode: Whether to destroy the stack component in debug mode.
         """
-        client = Client()
+        with track_handler(
+            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
+        ) as analytics_handler:
+            analytics_handler.metadata = {
+                "provider": provider,
+                "component_type": component_type.value,
+                "debug_mode": debug_mode,
+            }
+            client = Client()
 
-        try:
-            component = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                allow_name_prefix_match=False,
+            try:
+                component = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    allow_name_prefix_match=False,
+                )
+            except KeyError:
+                cli_utils.error(
+                    "Could not find a stack component with name or id "
+                    f"'{name_id_or_prefix}'.",
+                )
+
+            # Check if the component was created by a recipe
+            if not component.component_spec_path:
+                cli_utils.error(
+                    f"Cannot destroy stack component {component.name}. It "
+                    "was not created by a recipe.",
+                )
+
+            cli_utils.verify_mlstacks_prerequisites_installation()
+            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+            # spec_files_dir: str = component.component_spec_path
+            component_spec_path: str = component.component_spec_path
+            stack_name: str = os.path.basename(
+                os.path.dirname(component_spec_path)
             )
-        except KeyError:
-            cli_utils.error(
-                "Could not find a stack component with name or id "
-                f"'{name_id_or_prefix}'.",
+            stack_spec_path: str = f"{os.path.dirname(component_spec_path)}/stack-{stack_name}.yaml"
+            tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+
+            cli_utils.declare(
+                "Checking Terraform definitions and spec files are present..."
+            )
+            verify_spec_and_tf_files_exist(
+                stack_spec_path, tf_definitions_path
             )
 
-        # Check if the component was created by a recipe
-        if not component.component_spec_path:
-            cli_utils.error(
-                f"Cannot destroy stack component {component.name}. It "
-                "was not created by a recipe.",
+            from mlstacks.utils import terraform_utils
+
+            cli_utils.declare(
+                f"Destroying component '{component.name}' using Terraform..."
             )
-
-        cli_utils.verify_mlstacks_prerequisites_installation()
-        from mlstacks.constants import MLSTACKS_PACKAGE_NAME
-
-        # spec_files_dir: str = component.component_spec_path
-        component_spec_path: str = component.component_spec_path
-        stack_name: str = os.path.basename(
-            os.path.dirname(component_spec_path)
-        )
-        stack_spec_path: str = (
-            f"{os.path.dirname(component_spec_path)}/stack-{stack_name}.yaml"
-        )
-        tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
-
-        cli_utils.declare(
-            "Checking Terraform definitions and spec files are present..."
-        )
-        verify_spec_and_tf_files_exist(stack_spec_path, tf_definitions_path)
-
-        from mlstacks.utils import terraform_utils
-
-        cli_utils.declare(
-            f"Destroying component '{component.name}' using Terraform..."
-        )
-        terraform_utils.destroy_stack(
-            stack_path=stack_spec_path, debug_mode=debug_mode
-        )
-        cli_utils.declare(
-            f"Component '{component.name}' successfully destroyed."
-        )
-
-        if cli_utils.confirmation(
-            f"Would you like to delete the associated ZenML "
-            f"component '{component.name}'?\nThis will delete the stack "
-            "component registered with ZenML."
-        ):
-            client.delete_stack_component(
-                name_id_or_prefix=component.id,
-                component_type=component.type,
+            terraform_utils.destroy_stack(
+                stack_path=stack_spec_path, debug_mode=debug_mode
             )
             cli_utils.declare(
-                f"Component '{component.name}' successfully deleted from ZenML."
+                f"Component '{component.name}' successfully destroyed."
             )
 
-        spec_dir = os.path.dirname(stack_spec_path)
-        if cli_utils.confirmation(
-            f"Would you like to delete the `mlstacks` spec directory for "
-            f"this component, located at {spec_dir}?"
-        ):
-            fileio.rmtree(spec_dir)
+            if cli_utils.confirmation(
+                f"Would you like to delete the associated ZenML "
+                f"component '{component.name}'?\nThis will delete the stack "
+                "component registered with ZenML."
+            ):
+                client.delete_stack_component(
+                    name_id_or_prefix=component.id,
+                    component_type=component.type,
+                )
+                cli_utils.declare(
+                    f"Component '{component.name}' successfully deleted from ZenML."
+                )
+
+            spec_dir = os.path.dirname(stack_spec_path)
+            if cli_utils.confirmation(
+                f"Would you like to delete the `mlstacks` spec directory for "
+                f"this component, located at {spec_dir}?"
+            ):
+                fileio.rmtree(spec_dir)
+                cli_utils.declare(
+                    f"Spec directory for component '{component.name}' successfully "
+                    "deleted."
+                )
             cli_utils.declare(
-                f"Spec directory for component '{component.name}' successfully "
-                "deleted."
+                f"Component '{component.name}' successfully destroyed."
             )
-        cli_utils.declare(
-            f"Component '{component.name}' successfully destroyed."
-        )
 
     return destroy_stack_component_command
 
