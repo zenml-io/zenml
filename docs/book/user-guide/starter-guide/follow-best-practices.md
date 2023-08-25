@@ -34,7 +34,7 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
-Check out how to initialize your project from template following best practices in [Project templates](./using-project-templates.md) section.
+Check out how to initialize your project from template following best practices in [Project templates](./using-project-templates.md#generating-project-from-a-project-template) section.
 
 #### Steps
 
