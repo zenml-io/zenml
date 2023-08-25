@@ -44,8 +44,9 @@ class SkypilotGCPOrchestrator(
     This orchestrator does not support running on a schedule.
     """
 
-    DEFAULT_INSTANCE_TYPE: str = "t3.xlarge"
+    DEFAULT_INSTANCE_TYPE: str = "n1-standard-4"
 
+    @property
     def cloud(self) -> sky.clouds.Cloud:
         """The type of sky cloud to use.
 
