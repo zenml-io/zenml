@@ -131,4 +131,8 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
+        from zenml.integrations.skypilot.orchestrators import (
+            SkypilotAWSOrchestrator,
+        )
+
         return SkypilotAWSOrchestrator
