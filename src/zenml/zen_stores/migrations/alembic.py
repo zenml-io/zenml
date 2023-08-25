@@ -25,7 +25,7 @@ from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.schema import MetaData
@@ -34,7 +34,7 @@ from sqlmodel import SQLModel
 from zenml.zen_stores import schemas
 
 ZENML_ALEMBIC_START_REVISION = "alembic_start"
-DATABASE_LOCK_TIMEOUT = 1
+DATABASE_LOCK_TIMEOUT = 15
 
 exclude_tables = ["sqlite_sequence"]
 
@@ -141,11 +141,10 @@ class Alembic:
         with self.engine.connect() as connection:
             # Acquire a lock
             if self.engine.dialect.name == "mysql":
-                database_name = self.engine.url.database  # Get the name of the database
-                lock = connection.execute(f"SELECT GET_LOCK('{database_name}', {DATABASE_LOCK_TIMEOUT})").scalar()
-                if lock is None or lock != 1:
-                    # Add some retry logic or error handling here if needed
-                    raise RuntimeError("Could not acquire the database lock.")
+                query = f"SELECT GET_LOCK('zenml', {DATABASE_LOCK_TIMEOUT})"
+                lock = connection.execute(text(query))
+                if lock.first()[0] != 1:
+                    raise RuntimeError("Could not acquire database lock.")
             try:
                 self.environment_context.configure(
                     connection=connection,
@@ -162,7 +161,8 @@ class Alembic:
             finally:
                 # Release the lock
                 if self.engine.dialect.name == "mysql":
-                    connection.execute(f"SELECT RELEASE_LOCK('{self.engine.url.database}')")
+                    query = "SELECT RELEASE_LOCK('zenml')"
+                    connection.execute(text(query))
 
     def current_revisions(self) -> List[str]:
         """Get the current database revisions.
