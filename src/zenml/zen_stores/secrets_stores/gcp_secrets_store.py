@@ -34,6 +34,8 @@ from uuid import UUID
 from google.api_core import exceptions as google_exceptions
 from google.cloud.secretmanager import SecretManagerServiceClient
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_decorator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
@@ -47,7 +49,6 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -252,7 +253,7 @@ class GCPSecretsStore(BaseSecretsStore):
             filter_terms
         )
 
-    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Create a new secret.
 
@@ -468,7 +469,6 @@ class GCPSecretsStore(BaseSecretsStore):
             max_size=secret_filter_model.size,
         )
 
-    @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
@@ -585,7 +585,6 @@ class GCPSecretsStore(BaseSecretsStore):
             updated=updated,
         )
 
-    @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 
