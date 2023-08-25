@@ -48,7 +48,6 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
 from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
 from zenml.utils import source_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.dashboard_utils import get_component_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -596,7 +595,6 @@ def generate_stack_component_copy_command(
         "source_component_name_id_or_prefix", type=str, required=True
     )
     @click.argument("target_component", type=str, required=True)
-    @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
         target_component: str,
@@ -1637,7 +1635,6 @@ def generate_stack_component_connect_command(
         help="Skip verification of the connector resource.",
         type=click.BOOL,
     )
-    @track(AnalyticsEvent.CONNECTED_STACK_COMPONENT)
     def connect_stack_component_command(
         name_id_or_prefix: Optional[str],
         connector: Optional[str] = None,

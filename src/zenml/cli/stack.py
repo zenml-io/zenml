@@ -49,7 +49,6 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilterModel
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -951,7 +950,6 @@ def down_stack(force: bool = False) -> None:
 @stack.command("export", help="Exports a stack to a YAML file.")
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
-@track(AnalyticsEvent.EXPORT_STACK)
 def export_stack(
     stack_name_or_id: Optional[str] = None,
     filename: Optional[str] = None,
@@ -1042,7 +1040,6 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
-@track(AnalyticsEvent.IMPORT_STACK)
 def import_stack(
     stack_name: str,
     filename: Optional[str],
@@ -1131,7 +1128,6 @@ def import_stack(
     help="Use this flag to share this stack with other users.",
     type=click.BOOL,
 )
-@track(AnalyticsEvent.COPIED_STACK)
 def copy_stack(
     source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
