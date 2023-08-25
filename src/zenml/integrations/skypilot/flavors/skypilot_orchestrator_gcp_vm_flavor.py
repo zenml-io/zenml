@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator GCP flavor."""
 
-from typing import Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -23,14 +23,17 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
-from zenml.integrations.skypilot.orchestrators import (
-    SkypilotGCPOrchestrator,
-)
 from zenml.logger import get_logger
 from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 logger = get_logger(__name__)
+
+
+if TYPE_CHECKING:
+    from zenml.integrations.skypilot.orchestrators import (
+        SkypilotGCPOrchestrator,
+    )
 
 
 class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):

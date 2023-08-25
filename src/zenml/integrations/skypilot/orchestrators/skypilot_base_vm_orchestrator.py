@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the a Skypilot based AWS VM orchestrator."""
 
-import copy
+import os
 import time
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
@@ -93,6 +93,24 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_remote_components,
         )
 
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        try:
+            return os.environ[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID}."
+            )
+
     @property
     @abstractmethod
     def cloud(self) -> sky.clouds.Cloud:
@@ -163,11 +181,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         # Set up docker run command
         image = self.get_image(deployment=deployment)
-        run_args = copy.deepcopy(settings.run_args)
-        docker_environment = run_args.pop("environment", {})
-        docker_environment.update(environment)
         docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in docker_environment.items()
+            f"-e {k}={v}" for k, v in environment.items()
         )
 
         start_time = time.time()
