@@ -28,8 +28,6 @@ from uuid import UUID
 
 import click
 
-from zenml.cli import utils as cli_utils
-from zenml.cli.utils import verify_mlstacks_prerequisites_installation
 from zenml.client import Client
 from zenml.constants import (
     MLSTACKS_SUPPORTED_STACK_COMPONENTS,
@@ -90,8 +88,9 @@ def stack_spec_exists(stack_name: str) -> bool:
     Returns:
         A boolean indicating whether the stack spec exists or not.
     """
-    verify_mlstacks_prerequisites_installation()
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
 
+    verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
     spec_dir = os.path.join(
@@ -159,6 +158,8 @@ def _add_extra_config_to_components(
     Raises:
         KeyError: If the component type is not supported.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
     from mlstacks.models.component import ComponentMetadata
 
@@ -259,6 +260,8 @@ def _construct_components(
     Returns:
         A list of mlstacks `Component` objects.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
     from mlstacks.models import Component
 
@@ -316,6 +319,8 @@ def _construct_stack(params: Dict[str, Any]) -> "Stack":
     Returns:
         A mlstacks `Stack` object.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
     from mlstacks.models import Stack
 
@@ -347,6 +352,8 @@ def convert_click_params_to_mlstacks_primitives(
     Returns:
         A tuple of Stack and List[Component] objects.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.models import Component, Stack
@@ -414,7 +421,10 @@ def _setup_import(
     Returns:
         A tuple containing the parsed YAML data and the stack spec file path.
     """
+    from zenml.cli.utils import verify_mlstacks_prerequisites_installation
+
     verify_mlstacks_prerequisites_installation()
+
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
 
@@ -570,6 +580,11 @@ def deploy_mlstacks_stack(
         user_created_spec: A boolean indicating whether the user created the
             spec file.
     """
+    from zenml.cli.utils import (
+        declare,
+        verify_mlstacks_prerequisites_installation,
+    )
+
     verify_mlstacks_prerequisites_installation()
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.utils import terraform_utils
@@ -577,16 +592,16 @@ def deploy_mlstacks_stack(
     spec_dir = os.path.join(
         click.get_app_dir(MLSTACKS_PACKAGE_NAME), "stack_specs", stack_name
     )
-    cli_utils.declare("Deploying stack using Terraform...")
+    declare("Deploying stack using Terraform...")
     terraform_utils.deploy_stack(spec_file_path, debug_mode=debug_mode)
-    cli_utils.declare("Stack successfully deployed.")
+    declare("Stack successfully deployed.")
 
     if not no_import_stack_flag:
-        cli_utils.declare(f"Importing stack '{stack_name}' into ZenML...")
+        declare(f"Importing stack '{stack_name}' into ZenML...")
         import_new_mlstacks_stack(
             stack_name=stack_name,
             provider=stack_provider,
             stack_spec_dir=spec_dir,
             user_stack_spec_file=spec_file_path if user_created_spec else None,
         )
-        cli_utils.declare("Stack successfully imported into ZenML.")
+        declare("Stack successfully imported into ZenML.")
