@@ -22,6 +22,7 @@ from typing import List
 
 import requests
 
+from zenml.analytics.utils import AnalyticsAPIError
 from zenml.constants import ANALYTICS_SERVER_URL
 
 logger = logging.getLogger(__name__)
@@ -59,26 +60,3 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
         return response
 
     raise AnalyticsAPIError(response.status_code, response.text)
-
-
-class AnalyticsAPIError(Exception):
-    """Custom exception class for API-related errors."""
-
-    def __init__(self, status: int, message: str) -> None:
-        """Initialization.
-
-        Args:
-            status: The status code of the response.
-            message: The text of the response.
-        """
-        self.message = message
-        self.status = status
-
-    def __str__(self) -> str:
-        """Method to represent the instance as a string.
-
-        Returns:
-            A representation of the message and the status code.
-        """
-        msg = "[ZenML Analytics] {1}: {0}"
-        return msg.format(self.message, self.status)
