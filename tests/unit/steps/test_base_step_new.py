@@ -38,11 +38,11 @@ def test_input_validation_outside_of_pipeline():
 
     output = step_with_int_input(input_=1)
     assert output == 1
-    assert type(output) is int
+    assert isinstance(output, int)
 
     output = step_with_int_input(input_=3.0)
     assert output == 3
-    assert type(output) is int
+    assert isinstance(output, int)
 
 
 def test_input_validation_inside_pipeline():

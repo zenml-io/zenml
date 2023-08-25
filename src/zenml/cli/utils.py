@@ -284,7 +284,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+                k for k in model.dict().keys() if k not in exclude_columns
             ]
         else:
             include_columns = columns
