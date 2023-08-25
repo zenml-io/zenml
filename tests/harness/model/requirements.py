@@ -268,6 +268,7 @@ class StackRequirement(BaseTestConfigModel):
             name=self.name or f"pytest-{random_str(6).lower()}",
             flavor=self.flavor,
             component_type=self.type,
+            component_spec_path=None,
             configuration=self.configuration.dict()
             if self.configuration
             else {},
