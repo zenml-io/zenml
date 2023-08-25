@@ -95,6 +95,7 @@ def test_secret_reference_resolving(clean_client: Client):
         flavor=flavor.name,
         component_type=flavor.type,
         configuration={},
+        component_spec_path=None,
     )
     components = {
         StackComponentType.ORCHESTRATOR: clean_client.get_stack_component(

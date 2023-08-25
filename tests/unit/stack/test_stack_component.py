@@ -159,6 +159,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes(
             configuration={"attribute_with_validator": "{{secret.key}}"},
             flavor="TEST",
             component_type=StackComponentType.ORCHESTRATOR,
+            component_spec_path=None,
         )
 
     with does_not_raise():
@@ -167,6 +168,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes(
             configuration={"attribute_without_validator": "{{secret.key}}"},
             flavor="TEST",
             component_type=StackComponentType.ORCHESTRATOR,
+            component_spec_path=None,
         )
 
 
@@ -182,6 +184,7 @@ def test_stack_component_secret_reference_resolving(
             configuration=LocalArtifactStoreConfig().dict(),
             flavor="local",
             component_type=StackComponentType.ARTIFACT_STORE,
+            component_spec_path=None,
         )
     )
     new_orchestrator = (
@@ -192,6 +195,7 @@ def test_stack_component_secret_reference_resolving(
                 attribute_without_validator="{{secret.key}}"
             ).dict(),
             flavor="TEST",
+            component_spec_path=None,
         )
     )
 
@@ -274,6 +278,7 @@ def test_stack_component_serialization_does_not_resolve_secrets(
                 attribute_without_validator=secret_ref,
             ).dict(),
             flavor="TEST",
+            component_spec_path=None,
         )
     )
     assert (
