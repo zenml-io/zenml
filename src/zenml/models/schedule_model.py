@@ -38,8 +38,8 @@ class ScheduleBaseModel(Schedule, BaseModel):
 
     name: str
     active: bool
-    orchestrator_id: Optional[UUID]
-    pipeline_id: Optional[UUID]
+    orchestrator_id: Optional[UUID] = None
+    pipeline_id: Optional[UUID] = None
 
 
 # -------- #

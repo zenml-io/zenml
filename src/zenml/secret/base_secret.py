@@ -16,7 +16,7 @@
 from abc import ABC
 from typing import Any, ClassVar, Dict, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseSecretSchema(BaseModel, ABC):
@@ -60,10 +60,4 @@ class BaseSecretSchema(BaseModel, ABC):
             if schema_key not in ignored_keys
         ]
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # report extra attributes as validation failures
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")

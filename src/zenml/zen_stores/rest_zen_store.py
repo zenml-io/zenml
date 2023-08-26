@@ -31,7 +31,7 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, ConfigDict, field_validator, root_validator
 
 import zenml
 from zenml.analytics import source_context
@@ -209,7 +209,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
-    @validator("secrets_store")
+    @field_validator("secrets_store")
+    @classmethod
     def validate_secrets_store(
         cls, secrets_store: Optional[SecretsStoreConfiguration]
     ) -> SecretsStoreConfiguration:
@@ -256,7 +257,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
                 "Neither api_token nor username is set in the store config."
             )
 
-    @validator("url")
+    @field_validator("url")
+    @classmethod
     def validate_url(cls, url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
@@ -284,7 +286,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         return url
 
-    @validator("verify_ssl")
+    @field_validator("verify_ssl")
+    @classmethod
     def validate_verify_ssl(
         cls, verify_ssl: Union[bool, str]
     ) -> Union[bool, str]:
@@ -378,15 +381,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         config.expand_certificates()
         return config
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Don't validate attributes when assigning them. This is necessary
-        # because the `verify_ssl` attribute can be expanded to the contents
-        # of the certificate file.
-        validate_assignment = False
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=False, extra="forbid")
 
 
 class RestZenStore(BaseZenStore):

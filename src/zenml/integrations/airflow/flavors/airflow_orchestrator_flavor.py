@@ -87,6 +87,8 @@ class AirflowOrchestratorSettings(BaseSettings):
 
     custom_dag_generator: Optional[str] = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("operator", always=True)
     def _convert_operator(
         cls, value: Optional[Union[str, OperatorType]]

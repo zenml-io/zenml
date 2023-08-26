@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
@@ -217,7 +217,8 @@ class LocalDockerOrchestratorSettings(BaseSettings):
 
     run_args: Dict[str, Any] = {}
 
-    @validator("run_args", pre=True)
+    @field_validator("run_args", mode="before")
+    @classmethod
     def _convert_json_string(
         cls, value: Union[None, str, Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:

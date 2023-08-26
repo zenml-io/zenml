@@ -18,7 +18,7 @@ from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from zenml.console import console
 from zenml.logger import get_logger
@@ -169,7 +169,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
 
     SERVICE_TYPE: ClassVar[ServiceType]
 
-    uuid: UUID = Field(default_factory=uuid4, allow_mutation=False)
+    uuid: UUID = Field(default_factory=uuid4, frozen=True)
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceConfig
     status: ServiceStatus
@@ -435,14 +435,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         return self.__repr__()
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        validate_assignment=True, underscore_attrs_are_private=True
+    )
 
 
 class BaseDeploymentService(BaseService):

@@ -15,7 +15,7 @@
 
 from typing import Any, ClassVar, Dict
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.secret.base_secret import BaseSecretSchema
@@ -28,7 +28,8 @@ class ArbitrarySecretSchema(BaseSecretSchema):
 
     arbitrary_kv_pairs: Dict[str, Any]
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def build_arbitrary_kv_pairs(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:

@@ -14,7 +14,7 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
@@ -50,7 +50,8 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
         """Ensures the pipeline name is allowed.
 

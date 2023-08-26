@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
+from pydantic import ConfigDict
+
 from zenml.logger import get_logger
 from zenml.services import (
     ServiceType,
@@ -141,11 +143,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     database_ssl_key: str = ""
     database_ssl_verify_server_cert: bool = True
     analytics_opt_in: bool = True
-
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class TerraformZenServerConfig(TerraformServiceConfig):

@@ -31,7 +31,7 @@ from evidently.metrics.base_metric import (  # type: ignore[import]
     generate_column_metrics,
 )
 from evidently.utils.generators import BaseGenerator  # type: ignore[import]
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.logger import get_logger
 from zenml.utils import source_utils
@@ -357,7 +357,4 @@ class EvidentlyMetricConfig(BaseModel):
                 f"`{self.class_path}`: {str(e)}"
             )
 
-    class Config:
-        """Pydantic config class."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")

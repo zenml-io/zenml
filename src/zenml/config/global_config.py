@@ -22,7 +22,14 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    ValidationError,
+    field_validator,
+)
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
@@ -137,10 +144,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
-    version: Optional[str]
-    store: Optional[StoreConfiguration]
-    active_stack_id: Optional[uuid.UUID]
-    active_workspace_name: Optional[str]
+    version: Optional[str] = None
+    store: Optional[StoreConfiguration] = None
+    active_stack_id: Optional[uuid.UUID] = None
+    active_workspace_name: Optional[str] = None
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
@@ -209,7 +216,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if config:
             config._write_config()
 
-    @validator("version")
+    @field_validator("version")
+    @classmethod
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
         """Validate the version attribute.
 
@@ -733,21 +741,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self.active_stack_id
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Allow extra attributes from configs of previous ZenML versions to
-        # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
-        # This is needed to allow correct handling of SecretStr values during
-        # serialization.
-        json_encoders = {
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`, `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="allow",
+        underscore_attrs_are_private=True,
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value() if v else None
-        }
+        },
+    )

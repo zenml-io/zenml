@@ -18,7 +18,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -116,11 +116,7 @@ class ModelRegistryModelMetadata(BaseModel):
         else:
             return super().dict(exclude_unset=exclude_unset, **kwargs)
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Allow extra attributes to be set in the metadata
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class ModelVersion(BaseModel):

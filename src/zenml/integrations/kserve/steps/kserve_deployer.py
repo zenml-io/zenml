@@ -15,7 +15,7 @@
 import os
 from typing import List, Optional, cast
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from zenml import get_step_context
 from zenml.client import Client
@@ -74,7 +74,8 @@ class TorchServeParameters(BaseModel):
     model_version: Optional[str] = "1.0"
     torch_config: Optional[str] = None
 
-    @validator("model_class")
+    @field_validator("model_class")
+    @classmethod
     def model_class_validate(cls, v: str) -> str:
         """Validate model class file path.
 
@@ -95,7 +96,8 @@ class TorchServeParameters(BaseModel):
             )
         return v
 
-    @validator("handler")
+    @field_validator("handler")
+    @classmethod
     def handler_validate(cls, v: str) -> str:
         """Validate handler.
 
@@ -121,7 +123,8 @@ class TorchServeParameters(BaseModel):
         else:
             raise ValueError("Handler is required.")
 
-    @validator("extra_files")
+    @field_validator("extra_files")
+    @classmethod
     def extra_files_validate(
         cls, v: Optional[List[str]]
     ) -> Optional[List[str]]:
@@ -148,7 +151,8 @@ class TorchServeParameters(BaseModel):
             return extra_files
         return v
 
-    @validator("torch_config")
+    @field_validator("torch_config")
+    @classmethod
     def torch_config_validate(cls, v: Optional[str]) -> Optional[str]:
         """Validate torch config file.
 
@@ -180,7 +184,8 @@ class CustomDeployParameters(BaseModel):
 
     predict_function: str
 
-    @validator("predict_function")
+    @field_validator("predict_function")
+    @classmethod
     def predict_function_validate(cls, predict_func_path: str) -> str:
         """Validate predict function.
 

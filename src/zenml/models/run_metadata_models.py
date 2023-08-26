@@ -37,9 +37,9 @@ class RunMetadataBaseModel(BaseModel):
     pipeline_run_id: Optional[UUID] = Field(
         title="The ID of the pipeline run that this metadata belongs to.",
     )
-    step_run_id: Optional[UUID]
-    artifact_id: Optional[UUID]
-    stack_component_id: Optional[UUID]
+    step_run_id: Optional[UUID] = None
+    artifact_id: Optional[UUID] = None
+    stack_component_id: Optional[UUID] = None
     key: str = Field(
         title="The key of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,

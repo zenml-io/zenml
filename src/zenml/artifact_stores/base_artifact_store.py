@@ -29,7 +29,7 @@ from typing import (
     cast,
 )
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
@@ -113,7 +113,8 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
         """Validator function for the Artifact Stores.
 

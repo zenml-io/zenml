@@ -20,6 +20,7 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     SecretStr,
     ValidationError,
 )
@@ -1359,9 +1360,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         return connector_client
 
-    class Config:
-        """Connector configuration."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(underscore_attrs_are_private=True)

@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -195,7 +195,8 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
         title="The service connector linked to this stack component.",
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
         """Validator to ensure that the given name is not a secret reference.
 

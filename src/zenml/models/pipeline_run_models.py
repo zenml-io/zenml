@@ -317,10 +317,10 @@ class PipelineRunRequestModel(
     """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
-    stack: Optional[UUID]  # Might become None if the stack is deleted.
-    pipeline: Optional[UUID]  # Unlisted runs have this as None.
-    build: Optional[UUID]
-    deployment: Optional[UUID]
+    stack: Optional[UUID] = None  # Might become None if the stack is deleted.
+    pipeline: Optional[UUID] = None  # Unlisted runs have this as None.
+    build: Optional[UUID] = None
+    deployment: Optional[UUID] = None
 
 
 # ------ #

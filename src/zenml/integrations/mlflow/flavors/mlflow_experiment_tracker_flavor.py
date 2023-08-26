@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -107,7 +107,8 @@ class MLFlowExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def _ensure_authentication_if_necessary(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:

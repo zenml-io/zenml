@@ -16,7 +16,7 @@
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Set, Tuple, Type, Union
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from zenml.logger import get_logger
 
@@ -62,7 +62,8 @@ def deprecate_pydantic_attributes(
         to deprecate or migrate attributes.
     """
 
-    @root_validator(pre=True, allow_reuse=True)
+    @model_validator(mode="before")
+    @classmethod
     def _deprecation_validator(
         cls: Type[BaseModel], values: Dict[str, Any]
     ) -> Dict[str, Any]:

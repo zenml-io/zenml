@@ -17,6 +17,8 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+from pydantic import ConfigDict
+
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -62,11 +64,7 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
-
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class LocalZenServerConfig(LocalDaemonServiceConfig):

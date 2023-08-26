@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.step_operators.base_step_operator import (
@@ -45,7 +45,8 @@ class SparkStepOperatorSettings(BaseSettings):
     deploy_mode: str = "cluster"
     submit_kwargs: Optional[Dict[str, Any]] = None
 
-    @validator("submit_kwargs", pre=True)
+    @field_validator("submit_kwargs", mode="before")
+    @classmethod
     def _convert_json_string(
         cls, value: Union[None, str, Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:

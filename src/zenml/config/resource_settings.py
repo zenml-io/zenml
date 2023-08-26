@@ -16,7 +16,8 @@
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import Extra, Field, NonNegativeInt, PositiveFloat
+from pydantic import Field, NonNegativeInt, PositiveFloat
+from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
 
@@ -70,7 +71,7 @@ class ResourceSettings(BaseSettings):
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
-    memory: Optional[str] = Field(regex=MEMORY_REGEX)
+    memory: Optional[str] = Field(pattern=MEMORY_REGEX)
 
     @property
     def empty(self) -> bool:
@@ -114,11 +115,6 @@ class ResourceSettings(BaseSettings):
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = False
-
-        # prevent extra attributes during model initialization
-        extra = Extra.forbid
+    # TODO[pydantic]: The following keys were removed: `allow_mutation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = SettingsConfigDict(allow_mutation=False, extra="forbid")

@@ -17,7 +17,7 @@ import json
 import os
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -116,9 +116,6 @@ class FileSyncModel(BaseModel):
 
         self._config_file_timestamp = file_timestamp
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(underscore_attrs_are_private=True)

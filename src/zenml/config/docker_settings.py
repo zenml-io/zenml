@@ -16,7 +16,8 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra, root_validator
+from pydantic import model_validator, root_validator
+from pydantic_settings import SettingsConfigDict
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -193,7 +194,8 @@ class DockerSettings(BaseSettings):
         "copy_files", "copy_global_config"
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Migrates the value from the old copy_files attribute.
 
@@ -248,10 +250,6 @@ class DockerSettings(BaseSettings):
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = False
-        # prevent extra attributes during model initialization
-        extra = Extra.forbid
+    # TODO[pydantic]: The following keys were removed: `allow_mutation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = SettingsConfigDict(allow_mutation=False, extra="forbid")

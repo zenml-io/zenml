@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
@@ -285,17 +285,11 @@ class StackComponentConfig(BaseModel, ABC):
         # attributes without failing
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = False
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-        # prevent extra attributes during model initialization
-        extra = Extra.forbid
+    # TODO[pydantic]: The following keys were removed: `allow_mutation`, `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        allow_mutation=False, underscore_attrs_are_private=True, extra="forbid"
+    )
 
 
 class StackComponent:

@@ -35,7 +35,7 @@ from azure.identity import (
     DefaultAzureCredential,
 )
 from azure.keyvault.secrets import SecretClient
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
@@ -88,12 +88,7 @@ class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
     azure_client_id: Optional[SecretStr] = None
     azure_client_secret: Optional[SecretStr] = None
     azure_tenant_id: Optional[SecretStr] = None
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class AzureSecretsStore(BaseSecretsStore):

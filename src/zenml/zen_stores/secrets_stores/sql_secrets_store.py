@@ -23,6 +23,7 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import ConfigDict
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
@@ -72,16 +73,7 @@ class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
 
     type: SecretsStoreType = SecretsStoreType.SQL
     encryption_key: Optional[str] = None
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Don't validate attributes when assigning them. This is necessary
-        # because the certificate attributes can be expanded to the contents
-        # of the certificate files.
-        validate_assignment = False
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=False, extra="forbid")
 
 
 class SqlSecretsStore(BaseSecretsStore):

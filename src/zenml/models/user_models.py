@@ -28,7 +28,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr, root_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
@@ -495,15 +495,13 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
     activation_token: Optional[str] = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them
-        validate_assignment = True
-        # Forbid extra attributes to prevent unexpected behavior
-        extra = "forbid"
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="forbid",
+        underscore_attrs_are_private=True,
+    )
 
     @classmethod
     def _create_hashed_secret(cls, secret: Optional[str]) -> Optional[str]:

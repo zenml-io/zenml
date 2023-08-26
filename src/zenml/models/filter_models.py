@@ -29,7 +29,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.typing import get_args
 from sqlmodel import SQLModel
 
@@ -75,9 +75,10 @@ class Filter(BaseModel, ABC):
 
     operation: GenericFilterOps
     column: str
-    value: Any
+    value: Any = None
 
-    @validator("operation", pre=True)
+    @field_validator("operation", mode="before")
+    @classmethod
     def validate_operation(cls, op: str) -> str:
         """Validate that the operation is a valid op for the field type.
 
@@ -299,7 +300,8 @@ class BaseFilterModel(BaseModel):
         default=None, description="Updated"
     )
 
-    @validator("sort_by", pre=True)
+    @field_validator("sort_by", mode="before")
+    @classmethod
     def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand.
 
@@ -347,7 +349,8 @@ class BaseFilterModel(BaseModel):
                 "You can only sort by valid fields of this resource"
             )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal.
 

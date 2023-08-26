@@ -21,7 +21,7 @@ artifacts get stored.
 import os
 from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.artifact_stores import (
     BaseArtifactStore,
@@ -50,7 +50,8 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
 
     path: str = ""
 
-    @validator("path")
+    @field_validator("path")
+    @classmethod
     def ensure_path_local(cls, path: str) -> str:
         """Pydantic validator which ensures that the given path is a local path.
 

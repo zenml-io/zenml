@@ -37,7 +37,13 @@ from typing import (
 from uuid import UUID
 
 import pymysql
-from pydantic import SecretStr, root_validator, validator
+from pydantic import (
+    ConfigDict,
+    SecretStr,
+    field_validator,
+    model_validator,
+    root_validator,
+)
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -309,7 +315,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     max_overflow: int = 20
     pool_pre_ping: bool = True
 
-    @validator("secrets_store")
+    @field_validator("secrets_store")
+    @classmethod
     def validate_secrets_store(
         cls, secrets_store: Optional[SecretsStoreConfiguration]
     ) -> SecretsStoreConfiguration:
@@ -326,7 +333,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return secrets_store
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Removes old GRPC attributes.
 
@@ -630,15 +638,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return str(sql_url), sqlalchemy_connect_args, engine_args
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Don't validate attributes when assigning them. This is necessary
-        # because the certificate attributes can be expanded to the contents
-        # of the certificate files.
-        validate_assignment = False
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=False, extra="forbid")
 
 
 class SqlZenStore(BaseZenStore):

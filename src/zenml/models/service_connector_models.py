@@ -30,10 +30,11 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     SecretStr,
+    field_validator,
     root_validator,
-    validator,
 )
 
 from zenml.logger import get_logger
@@ -238,10 +239,9 @@ class AuthenticationMethodModel(BaseModel):
 
         return expiration_seconds
 
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(underscore_attrs_are_private=True)
 
 
 class ServiceConnectorTypeModel(BaseModel):
@@ -356,7 +356,8 @@ class ServiceConnectorTypeModel(BaseModel):
         """
         self._connector_class = connector_class
 
-    @validator("resource_types")
+    @field_validator("resource_types")
+    @classmethod
     def validate_resource_types(
         cls, values: List[ResourceTypeModel]
     ) -> List[ResourceTypeModel]:
@@ -383,7 +384,8 @@ class ServiceConnectorTypeModel(BaseModel):
 
         return values
 
-    @validator("auth_methods")
+    @field_validator("auth_methods")
+    @classmethod
     def validate_auth_methods(
         cls, values: List[AuthenticationMethodModel]
     ) -> List[AuthenticationMethodModel]:
@@ -495,10 +497,9 @@ class ServiceConnectorTypeModel(BaseModel):
 
         return auth_method_spec, resource_type_spec
 
-    class Config:
-        """Pydantic config class."""
-
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(underscore_attrs_are_private=True)
 
 
 class ServiceConnectorBaseModel(BaseModel):
@@ -1273,13 +1274,7 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
 
         return values
 
-    class Config:
-        """Pydantic config class."""
-
-        # Exclude the labels field from the serialized response
-        # (it is only used internally). The labels_str field is a string
-        # representation of the labels that can be used in the API.
-        exclude = ["labels"]
+    model_config = ConfigDict(exclude=["labels"])
 
 
 # ------- #

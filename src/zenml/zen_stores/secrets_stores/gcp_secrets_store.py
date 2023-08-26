@@ -33,6 +33,7 @@ from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud.secretmanager import SecretManagerServiceClient
+from pydantic import ConfigDict
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
@@ -76,12 +77,7 @@ class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
 
     type: SecretsStoreType = SecretsStoreType.GCP
     project_id: str
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class GCPSecretsStore(BaseSecretsStore):

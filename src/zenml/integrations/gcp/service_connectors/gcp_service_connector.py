@@ -36,7 +36,7 @@ from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, validator
+from pydantic import Field, SecretStr, field_validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -77,7 +77,8 @@ class GCPUserAccountCredentials(AuthenticationConfig):
         title="GCP User Account Credentials JSON",
     )
 
-    @validator("user_account_json")
+    @field_validator("user_account_json")
+    @classmethod
     def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
         """Validate the user account credentials JSON.
 
@@ -129,7 +130,8 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         title="GCP Service Account Key JSON",
     )
 
-    @validator("service_account_json")
+    @field_validator("service_account_json")
+    @classmethod
     def validate_service_account_json(cls, v: SecretStr) -> SecretStr:
         """Validate the service account credentials JSON.
 

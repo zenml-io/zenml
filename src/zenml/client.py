@@ -35,7 +35,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
@@ -202,18 +202,13 @@ class ClientConfiguration(FileSyncModel):
         """
         self.active_stack_id = stack.id
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Allow extra attributes from configs of previous ZenML versions to
-        # permit downgrading
-        extra = "allow"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="allow",
+        underscore_attrs_are_private=True,
+    )
 
 
 class ClientMetaClass(ABCMeta):

@@ -26,7 +26,7 @@ from typing import (
     Union,
 )
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
@@ -72,9 +72,10 @@ class S3ArtifactStoreConfig(
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
 
-    @validator(
-        "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True
+    @field_validator(
+        "client_kwargs", "config_kwargs", "s3_additional_kwargs", mode="before"
     )
+    @classmethod
     def _convert_json_string(
         cls, value: Union[None, str, Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
@@ -108,7 +109,8 @@ class S3ArtifactStoreConfig(
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
-    @validator("client_kwargs")
+    @field_validator("client_kwargs")
+    @classmethod
     def _validate_client_kwargs(
         cls, value: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:

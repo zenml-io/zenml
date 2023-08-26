@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -46,7 +46,8 @@ class WandbExperimentTrackerSettings(BaseSettings):
     tags: List[str] = []
     settings: Dict[str, Any] = {}
 
-    @validator("settings", pre=True)
+    @field_validator("settings", mode="before")
+    @classmethod
     def _convert_settings(
         cls, value: Union[Dict[str, Any], "wandb.Settings"]
     ) -> Dict[str, Any]:

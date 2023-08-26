@@ -40,8 +40,7 @@ fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
 from typing import Generator, Generic, List, TypeVar
 
-from pydantic import SecretStr
-from pydantic.generics import GenericModel
+from pydantic import BaseModel, ConfigDict, SecretStr
 from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.base_models import BaseResponseModel
@@ -50,7 +49,7 @@ from zenml.models.filter_models import BaseFilterModel
 B = TypeVar("B", bound=BaseResponseModel)
 
 
-class Page(GenericModel, Generic[B]):
+class Page(BaseModel, Generic[B]):
     """Return Model for List Models to accommodate pagination."""
 
     index: PositiveInt
@@ -117,11 +116,10 @@ class Page(GenericModel, Generic[B]):
         """
         return item in self.items
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # This is needed to allow the REST API server to unpack SecretStr
-        # values correctly before sending them to the client.
-        json_encoders = {
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value() if v else None
         }
+    )

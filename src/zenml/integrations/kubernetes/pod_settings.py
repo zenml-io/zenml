@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
@@ -45,7 +45,8 @@ class KubernetesPodSettings(BaseSettings):
     resources: Dict[str, Dict[str, str]] = {}
     annotations: Dict[str, str] = {}
 
-    @validator("affinity", pre=True)
+    @field_validator("affinity", mode="before")
+    @classmethod
     def _convert_affinity(
         cls, value: Union[Dict[str, Any], "V1Affinity"]
     ) -> Dict[str, Any]:
@@ -64,7 +65,8 @@ class KubernetesPodSettings(BaseSettings):
         else:
             return value
 
-    @validator("tolerations", pre=True)
+    @field_validator("tolerations", mode="before")
+    @classmethod
     def _convert_tolerations(
         cls, value: List[Union[Dict[str, Any], "V1Toleration"]]
     ) -> List[Dict[str, Any]]:
@@ -89,7 +91,8 @@ class KubernetesPodSettings(BaseSettings):
 
         return result
 
-    @validator("resources", pre=True)
+    @field_validator("resources", mode="before")
+    @classmethod
     def _convert_resources(
         cls, value: Union[Dict[str, Any], "V1ResourceRequirements"]
     ) -> Dict[str, Any]:

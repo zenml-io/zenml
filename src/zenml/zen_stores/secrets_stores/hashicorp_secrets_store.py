@@ -30,7 +30,7 @@ from uuid import UUID
 
 import hvac  # type: ignore[import]
 from hvac.exceptions import InvalidPath, VaultError  # type: ignore[import]
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
@@ -83,12 +83,7 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
     vault_namespace: Optional[str] = None
     mount_point: Optional[str] = None
     max_versions: int = 1
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class HashiCorpVaultSecretsStore(BaseSecretsStore):

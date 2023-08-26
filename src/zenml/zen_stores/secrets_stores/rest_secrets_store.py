@@ -21,6 +21,8 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import ConfigDict
+
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.constants import SECRETS
 from zenml.enums import (
@@ -56,16 +58,7 @@ class RestSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     type: SecretsStoreType = SecretsStoreType.REST
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Don't validate attributes when assigning them. This is necessary
-        # because the certificate attributes can be expanded to the contents
-        # of the certificate files.
-        validate_assignment = False
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=False, extra="forbid")
 
 
 class RestSecretsStore(BaseSecretsStore):

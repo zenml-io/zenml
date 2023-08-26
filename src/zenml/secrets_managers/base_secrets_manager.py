@@ -25,7 +25,7 @@ from typing import (
     cast,
 )
 
-from pydantic import root_validator
+from pydantic import model_validator, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -85,7 +85,8 @@ class BaseSecretsManagerConfig(StackComponentConfig):
 
         super().__init__(**kwargs)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def scope_initializer(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Pydantic root_validator for the scope.
 

@@ -31,7 +31,7 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import SecretStr
+from pydantic import ConfigDict, SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
@@ -92,12 +92,7 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     aws_session_token: Optional[SecretStr] = None
     list_page_size: int = 100
     secret_list_refresh_timeout: int = 0
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Forbid extra attributes set in the class.
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class AWSSecretsStore(BaseSecretsStore):

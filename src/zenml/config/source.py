@@ -16,7 +16,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from zenml.logger import get_logger
 
@@ -129,10 +129,7 @@ class Source(BaseModel):
         """
         return self.attribute is None
 
-    class Config:
-        """Pydantic config class."""
-
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class DistributionPackageSource(Source):
@@ -147,7 +144,8 @@ class DistributionPackageSource(Source):
     version: Optional[str] = None
     type: SourceType = SourceType.DISTRIBUTION_PACKAGE
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def _validate_type(cls, value: SourceType) -> SourceType:
         """Validate the source type.
 
@@ -181,7 +179,8 @@ class CodeRepositorySource(Source):
     subdirectory: str
     type: SourceType = SourceType.CODE_REPOSITORY
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def _validate_type(cls, value: SourceType) -> SourceType:
         """Validate the source type.
 
@@ -217,7 +216,8 @@ def convert_source_validator(*attributes: str) -> "AnyClassMethod":
         to convert source fields.
     """
 
-    @validator(*attributes, pre=True, allow_reuse=True)
+    @field_validator(*attributes, mode="before")
+    @classmethod
     def _convert_source(
         cls: Type[BaseModel], value: Union[Source, str, None]
     ) -> Optional[Source]:

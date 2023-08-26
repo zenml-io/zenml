@@ -15,7 +15,7 @@
 from enum import IntFlag, auto
 from typing import Any, ClassVar, Dict, Union
 
-from pydantic import Extra
+from pydantic import ConfigDict
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 
@@ -44,12 +44,6 @@ class BaseSettings(SecretReferenceMixin):
     LEVEL: ClassVar[ConfigurationLevel] = (
         ConfigurationLevel.PIPELINE | ConfigurationLevel.STEP
     )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = False
-        # allow extra attributes so this class can be used to parse dicts
-        # of arbitrary subclasses
-        extra = Extra.allow
+    # TODO[pydantic]: The following keys were removed: `allow_mutation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(allow_mutation=False, extra="allow")

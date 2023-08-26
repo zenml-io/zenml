@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 import zenml
 from zenml.analytics.utils import analytics_disabler
@@ -785,14 +785,10 @@ class BaseZenStore(
             WorkspaceRequestModel(name=workspace_name)
         )
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="ignore",
+        underscore_attrs_are_private=True,
+    )

@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
-from pydantic import validator
+from pydantic import field_validator
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
@@ -76,14 +76,15 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
 
     executor_args: List[str] = []
 
-    @validator(
+    @field_validator(
         "env",
         "env_from",
         "volume_mounts",
         "volumes",
         "executor_args",
-        pre=True,
+        mode="before",
     )
+    @classmethod
     def _convert_json_string(
         cls, value: Union[None, str, List[Any]]
     ) -> Optional[List[Any]]:

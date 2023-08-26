@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import ServerProviderType
 from zenml.services.service_status import ServiceState
@@ -34,16 +34,7 @@ class ServerDeploymentConfig(BaseModel):
 
     name: str
     provider: ServerProviderType
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Allow extra attributes to be set in the base class. The concrete
-        # classes are responsible for validating the attributes.
-        extra = "allow"
+    model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
 class ServerDeploymentStatus(BaseModel):
@@ -83,7 +74,7 @@ class ServerDeployment(BaseModel):
     """
 
     config: ServerDeploymentConfig
-    status: Optional[ServerDeploymentStatus]
+    status: Optional[ServerDeploymentStatus] = None
 
     @property
     def is_running(self) -> bool:

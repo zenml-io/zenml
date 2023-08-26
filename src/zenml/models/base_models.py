@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import Field, SecretStr
+from pydantic import ConfigDict, Field, SecretStr
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 
@@ -36,22 +36,16 @@ class BaseZenModel(AnalyticsTrackedModelMixin):
     SecretStr values.
     """
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # This is needed to allow the REST client and server to unpack SecretStr
-        # values correctly.
-        json_encoders = {
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        json_encoders={
             SecretStr: lambda v: v.get_secret_value()
             if v is not None
             else None
-        }
-
-        # Allow extras on all models to support forwards and backwards
-        # compatibility (e.g. new fields in newer versions of ZenML servers
-        # are allowed to be present in older versions of ZenML clients and
-        # vice versa).
-        extra = "allow"
+        },
+        extra="allow",
+    )
 
 
 # --------------- #
