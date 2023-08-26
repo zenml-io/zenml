@@ -171,7 +171,6 @@ def test_analytics_event(
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
         configuration={"path": "/tmp/path/for/test"},
-        component_spec_path=None,
     )
     clean_client.create_stack(
         name="new_stack",
