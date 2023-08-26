@@ -2084,9 +2084,9 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         flavor: str,
-        component_spec_path: Optional[str],
         component_type: StackComponentType,
         configuration: Dict[str, str],
+        component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":

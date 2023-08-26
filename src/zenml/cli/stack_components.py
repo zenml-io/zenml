@@ -281,7 +281,6 @@ def generate_stack_component_register_command(
                 configuration=parsed_args,
                 labels=parsed_labels,
                 is_shared=share,
-                component_spec_path=None,
             )
 
             cli_utils.declare(
@@ -1309,15 +1308,23 @@ def generate_stack_component_deploy_command(
             # write the stack and component yaml files
             from mlstacks.constants import MLSTACKS_PACKAGE_NAME
 
-            spec_dir = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/stack_specs/{stack.name}"
+            spec_dir = os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "stack_specs",
+                stack.name,
+            )
             cli_utils.declare(f"Writing spec files to {spec_dir}...")
             create_dir_recursive_if_not_exists(spec_dir)
 
-            stack_file_path = f"{spec_dir}/stack-{stack.name}.yaml"
+            stack_file_path = os.path.join(
+                spec_dir, f"stack-{stack.name}.yaml"
+            )
             write_yaml(file_path=stack_file_path, contents=stack_dict)
             for component in component_dicts:
                 write_yaml(
-                    file_path=f"{spec_dir}/{component['name']}.yaml",
+                    file_path=os.path.join(
+                        spec_dir, f"{component['name']}.yaml"
+                    ),
                     contents=component,
                 )
 
@@ -1426,8 +1433,15 @@ def generate_stack_component_destroy_command(
             stack_name: str = os.path.basename(
                 os.path.dirname(component_spec_path)
             )
-            stack_spec_path: str = f"{os.path.dirname(component_spec_path)}/stack-{stack_name}.yaml"
-            tf_definitions_path: str = f"{click.get_app_dir(MLSTACKS_PACKAGE_NAME)}/terraform/{provider}-modular"
+            stack_spec_path: str = os.path.join(
+                os.path.dirname(component_spec_path),
+                f"stack-{stack_name}.yaml",
+            )
+            tf_definitions_path: str = os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "terraform",
+                f"{provider}-modular",
+            )
 
             cli_utils.declare(
                 "Checking Terraform definitions and spec files are present..."
