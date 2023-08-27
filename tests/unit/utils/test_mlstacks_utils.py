@@ -14,7 +14,12 @@
 
 import pytest
 
-from zenml.utils.mlstacks_utils import get_stack_spec_file_path, stack_exists
+from zenml.utils.mlstacks_utils import (
+    _get_component_flavor,
+    get_stack_spec_file_path,
+    stack_exists,
+    stack_spec_exists,
+)
 
 
 def test_stack_exists_works(local_stack):
@@ -43,3 +48,45 @@ def test_get_stack_spec_file_path_only_works_with_full_name():
     """Checks util function only works for full name matches."""
     with pytest.raises(KeyError):
         get_stack_spec_file_path("defau")  # prefix of 'default'
+
+
+def test_spec_file_exists_works_when_no_file():
+    """Checks spec file search works when no file."""
+    assert not stack_spec_exists("default")
+    assert not stack_spec_exists("humpty-dumpty")
+
+
+def test_component_flavor_parsing_works():
+    """Checks component flavor parsing."""
+    assert (
+        _get_component_flavor(key="artifact_store", value=True, provider="aws")
+        == "s3"
+    )
+    assert (
+        _get_component_flavor(
+            key="experiment_tracker", value="mlflow", provider="aws"
+        )
+        == "mlflow"
+    )
+    assert (
+        _get_component_flavor(
+            key="experiment_tracker", value="mlflow", provider="azure"
+        )
+        == "mlflow"
+    )
+    assert (
+        _get_component_flavor(
+            key="mlops_platform", value="zenml", provider="azure"
+        )
+        == "zenml"
+    )
+    assert (
+        _get_component_flavor(
+            key="container_registry", value=True, provider="azure"
+        )
+        == "azure"
+    )
+    assert (
+        _get_component_flavor(key="artifact_store", value=True, provider="k3d")
+        == "minio"
+    )
