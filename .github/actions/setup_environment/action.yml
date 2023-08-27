@@ -80,9 +80,7 @@ runs:
     - name: Install Terraform (Windows)
       if: ${{ inputs.os == 'windows-latest' }}
       shell: bash
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((Invoke-WebRequest -Uri 'https://chocolatey.org/install.ps1').Content)
-        choco install terraform -y
+      run: choco install terraform -y
 
     - name: Install Terraform (Mac)
       if: ${{ inputs.os == 'macos-latest' }}
