@@ -312,8 +312,10 @@ def _get_stack_tags(tags: Dict[str, str]) -> Dict[str, str]:
     return dict(tag.split("=") for tag in tags) if tags else {}
 
 
-def _construct_stack(params: Dict[str, Any]) -> "Stack":
+def _construct_base_stack(params: Dict[str, Any]) -> "Stack":
     """Constructs mlstacks `Stack` object from raw Click CLI params.
+
+    Components are added to the `Stack` object subsequently.
 
     Args:
         params: Raw Click CLI params.
@@ -360,7 +362,7 @@ def convert_click_params_to_mlstacks_primitives(
     from mlstacks.constants import MLSTACKS_PACKAGE_NAME
     from mlstacks.models import Component, Stack
 
-    stack: Stack = _construct_stack(params)
+    stack: Stack = _construct_base_stack(params)
     components: List[Component] = _construct_components(
         params, zenml_component_deploy
     )

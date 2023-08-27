@@ -16,6 +16,7 @@ import pytest
 
 from zenml.utils.mlstacks_utils import (
     _add_extra_config_to_components,
+    _construct_base_stack,
     _construct_components,
     _get_component_flavor,
     get_stack_spec_file_path,
@@ -175,3 +176,61 @@ def test_component_construction_works_for_stack_deploy():
     ][0]
     assert s3_bucket.component_flavor == "s3"
     assert s3_bucket.component_type == "artifact_store"
+
+
+def test_component_construction_works_for_component_deploy():
+    """Tests zenml component construction helper works for stack deploy."""
+    from mlstacks.models.component import Component
+
+    artifact_store_name = "aria-ka-artifact-store"
+
+    params = {
+        "provider": "aws",
+        "region": "us-east-1",
+        "artifact_store": artifact_store_name,
+        "extra_config": (
+            "something_extra=something_blue",
+            "bucket_name=bikkel",
+        ),
+    }
+    components = _construct_components(
+        params=params, zenml_component_deploy=True
+    )
+    assert isinstance(components, list)
+    assert len(components) == 1
+
+    s3_bucket = [
+        component
+        for component in components
+        if component.component_flavor == "s3"
+    ][0]
+    assert isinstance(s3_bucket, Component)
+    assert s3_bucket.component_flavor == "s3"
+    assert s3_bucket.name == artifact_store_name
+    assert s3_bucket.component_type == "artifact_store"
+    assert not s3_bucket.metadata.config.get("something_extra")
+
+
+def test_stack_construction_works_for_stack_deploy():
+    """Tests zenml component construction helper works for stack deploy."""
+    from mlstacks.models.stack import Stack
+
+    artifact_store_name = "aria-ka-artifact-store"
+    params = {
+        "provider": "aws",
+        "region": "us-east-1",
+        "stack_name": "aria",
+        "artifact_store": artifact_store_name,
+        "extra_config": (
+            "something_extra=something_blue",
+            "bucket_name=bikkel",
+        ),
+        "tags": ("windy_city=chicago",),
+    }
+    stack = _construct_base_stack(params=params)
+    assert isinstance(stack, Stack)
+    assert stack.name == "aria"
+    assert stack.provider == "aws"
+    assert stack.default_region == "us-east-1"
+    assert stack.default_tags.get("windy_city") == "chicago"
+    assert len(stack.components) == 0
