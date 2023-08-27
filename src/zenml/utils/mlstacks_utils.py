@@ -269,8 +269,8 @@ def _construct_components(
 
     provider = params["provider"]
     extra_config = (
-        dict(config.split("=") for config in params["extra_config"])
-        if params["extra_config"]
+        dict(config.split("=") for config in params.get("extra_config"))
+        if params.get("extra_config")
         else {}
     )
     if zenml_component_deploy:

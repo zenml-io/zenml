@@ -16,6 +16,7 @@ import pytest
 
 from zenml.utils.mlstacks_utils import (
     _add_extra_config_to_components,
+    _construct_components,
     _get_component_flavor,
     get_stack_spec_file_path,
     stack_exists,
@@ -136,3 +137,41 @@ def test_config_addition_works():
         if component.name == container_registry_name
     ][0]
     assert container_registry.metadata.config["repo_name"] == "blupus-ka-repo"
+
+
+def test_component_construction_works_for_stack_deploy():
+    """Tests zenml component construction helper works for stack deploy."""
+    from mlstacks.models.component import Component
+
+    params = {
+        "provider": "aws",
+        "region": "us-east-1",
+        "mlops_platform": "zenml",
+        "artifact_store": True,
+        "extra_config": (
+            "something_extra=something_blue",
+            "bucket_name=bikkel",
+        ),
+    }
+    components = _construct_components(
+        params=params, zenml_component_deploy=False
+    )
+    assert isinstance(components, list)
+    assert len(components) == 2
+    zenml_component = [
+        component
+        for component in components
+        if component.component_flavor == "zenml"
+    ][0]
+    assert isinstance(zenml_component, Component)
+    assert zenml_component.component_flavor == "zenml"
+    assert zenml_component.component_type == "mlops_platform"
+    assert not zenml_component.metadata.config.get("something_extra")
+
+    s3_bucket = [
+        component
+        for component in components
+        if component.component_flavor == "s3"
+    ][0]
+    assert s3_bucket.component_flavor == "s3"
+    assert s3_bucket.component_type == "artifact_store"
