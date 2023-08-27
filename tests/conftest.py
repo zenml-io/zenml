@@ -103,9 +103,7 @@ def auto_environment(
     Yields:
         The active environment and a client connected with it.
     """
-    session_mocker.patch("analytics.track")
-    session_mocker.patch("analytics.group")
-    session_mocker.patch("analytics.identify")
+    session_mocker.patch("zenml.analytics.request.post")
 
     environment_name = request.config.getoption("environment", None)
     no_provision = request.config.getoption("no_provision", False)

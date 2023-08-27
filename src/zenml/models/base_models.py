@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import Field, SecretStr
 
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.analytics.models import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
