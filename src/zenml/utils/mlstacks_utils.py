@@ -119,6 +119,8 @@ def _get_component_flavor(
             flavor = "azure"
         elif provider == "gcp":
             flavor = "gcp"
+        elif provider == "k3d":
+            flavor = "minio"
     elif key in {"container_registry"} and bool(value):
         if provider == "aws":
             flavor = "aws"
