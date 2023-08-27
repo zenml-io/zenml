@@ -133,6 +133,9 @@ class Alembic:
         Args:
             fn: Migration function to run. If not set, the function configured
                 externally by the Alembic CLI command is used.
+
+        Raises:
+            RuntimeError: If the database lock could not be acquired.
         """
         fn_context_args: Dict[Any, Any] = {}
         if fn is not None:
