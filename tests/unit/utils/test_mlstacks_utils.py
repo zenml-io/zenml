@@ -15,6 +15,7 @@
 import pytest
 
 from zenml.utils.mlstacks_utils import (
+    _add_extra_config_to_components,
     _get_component_flavor,
     get_stack_spec_file_path,
     stack_exists,
@@ -90,3 +91,48 @@ def test_component_flavor_parsing_works():
         _get_component_flavor(key="artifact_store", value=True, provider="k3d")
         == "minio"
     )
+
+
+def test_config_addition_works():
+    """Checks ability to add extra_config values to components."""
+    from mlstacks.models.component import Component
+
+    artifact_store_name = "blupus-ka-artifact-store"
+    container_registry_name = "blupus-ka-container-registry"
+    bucket_name = "blupus-ka-bucket"
+    repo_name = "blupus-ka-repo"
+    components = [
+        Component(
+            name=artifact_store_name,
+            component_type="artifact_store",
+            component_flavor="gcp",
+            provider="gcp",
+        ),
+        Component(
+            name=container_registry_name,
+            component_type="container_registry",
+            component_flavor="gcp",
+            provider="gcp",
+        ),
+    ]
+    extra_config = {
+        "repo_name": repo_name,
+        "bucket_name": bucket_name,
+        "project_id": "blupus-ka-project",  # needed for GCP
+    }
+    _add_extra_config_to_components(
+        components=components, extra_config=extra_config
+    )
+    artifact_store = [
+        component
+        for component in components
+        if component.name == artifact_store_name
+    ][0]
+    assert artifact_store.metadata.config["bucket_name"] == "blupus-ka-bucket"
+
+    container_registry = [
+        component
+        for component in components
+        if component.name == container_registry_name
+    ][0]
+    assert container_registry.metadata.config["repo_name"] == "blupus-ka-repo"
