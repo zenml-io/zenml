@@ -19,6 +19,7 @@ from zenml.utils.mlstacks_utils import (
     _construct_base_stack,
     _construct_components,
     _get_component_flavor,
+    convert_click_params_to_mlstacks_primitives,
     get_stack_spec_file_path,
     stack_exists,
     stack_spec_exists,
@@ -183,7 +184,6 @@ def test_component_construction_works_for_component_deploy():
     from mlstacks.models.component import Component
 
     artifact_store_name = "aria-ka-artifact-store"
-
     params = {
         "provider": "aws",
         "region": "us-east-1",
@@ -234,3 +234,44 @@ def test_stack_construction_works_for_stack_deploy():
     assert stack.default_region == "us-east-1"
     assert stack.default_tags.get("windy_city") == "chicago"
     assert len(stack.components) == 0
+
+
+def test_click_params_to_mlstacks_conversion():
+    """Tests the conversion of click params to mlstacks primitives."""
+    from mlstacks.models.component import Component
+    from mlstacks.models.stack import Stack
+
+    params = {
+        "provider": "aws",
+        "region": "us-east-1",
+        "stack_name": "aria",
+        "artifact_store": True,
+        "mlops_platform": "zenml",
+        "extra_config": (
+            "something_extra=something_blue",
+            "bucket_name=bikkel",
+        ),
+        "tags": ("windy_city=chicago",),
+    }
+    stack, components = convert_click_params_to_mlstacks_primitives(
+        params=params
+    )
+    assert stack
+    assert isinstance(stack, Stack)
+    assert isinstance(components, list)
+    assert len(components) == 2
+    assert stack.name == "aria"
+    assert stack.provider == "aws"
+    assert stack.default_region == "us-east-1"
+    assert stack.default_tags.get("windy_city") == "chicago"
+    assert all(c.endswith(".yaml") for c in stack.components)
+    assert all(isinstance(c, str) for c in stack.components)
+
+    artifact_store = [
+        component
+        for component in components
+        if component.component_flavor == "s3"
+    ][0]
+    assert isinstance(artifact_store, Component)
+    assert artifact_store.component_flavor == "s3"
+    assert artifact_store.name == "aws-artifact_store"
