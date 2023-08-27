@@ -271,7 +271,7 @@ def _construct_components(
     if not params.get("extra_config"):
         params["extra_config"] = ()
     extra_config = (
-        dict(config.split("=") for config in params.get("extra_config"))
+        dict(config.split("=") for config in params["extra_config"])
         if params.get("extra_config")
         else {}
     )
