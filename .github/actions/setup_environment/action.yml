@@ -77,6 +77,20 @@ runs:
     #     # don't appear that often
     #     custom_cache_key_element: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
 
+    - name: Install Terraform (Windows)
+      if: ${{ inputs.os == 'windows-latest' }}
+      shell: bash
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((Invoke-WebRequest -Uri 'https://chocolatey.org/install.ps1').Content)
+        choco install terraform -y
+
+    - name: Install Terraform (Mac)
+      if: ${{ inputs.os == 'macos-latest' }}
+      shell: bash
+      run: |
+        brew tap hashicorp/tap
+        brew install hashicorp/tap/terraform
+
     - name: Install ZenML and dependencies
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       shell: bash
