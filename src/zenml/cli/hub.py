@@ -29,6 +29,8 @@ from zenml._hub.constants import (
     ZENML_HUB_VERIFIED_TAG,
 )
 from zenml._hub.utils import parse_plugin_name, plugin_display_name
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table, warning
 from zenml.enums import CliCategories
@@ -38,7 +40,6 @@ from zenml.models.hub_plugin_models import (
     HubPluginResponseModel,
     PluginStatus,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -194,9 +195,8 @@ def install_plugin(
         no_deps: If set, dependencies of the plugin will not be installed.
         yes: If set, no confirmation will be asked for before installing.
     """
-    with event_handler(
+    with track_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_INSTALL,
-        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -304,9 +304,8 @@ def uninstall_plugin(plugin_name: str) -> None:
     Args:
         plugin_name: Name of the plugin.
     """
-    with event_handler(
+    with track_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_UNINSTALL,
-        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -362,9 +361,8 @@ def clone_plugin(
     """
     from zenml.utils.git_utils import clone_git_repository
 
-    with event_handler(
+    with track_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_CLONE,
-        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -607,9 +605,8 @@ def submit_plugin(
         interactive: Whether to run the command in interactive mode, asking for
             missing or invalid parameters.
     """
-    with event_handler(
+    with track_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_SUBMIT,
-        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -678,8 +675,9 @@ def submit_plugin(
         # In interactive mode, ask for a description if none is provided
         if interactive and not description:
             declare(
-                "You can optionally provide a description for your plugin below. "
-                "If not set, the first line of your README.md will be used."
+                "You can optionally provide a description for your plugin "
+                "below. If not set, the first line of your README.md will "
+                "be used."
             )
             description = click.prompt(
                 "(Optional) plugin description", default=""
