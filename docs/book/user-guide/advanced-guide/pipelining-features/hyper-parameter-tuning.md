@@ -14,7 +14,7 @@ within a ZenML run.
 
 {% hint style="info" %}
 To setup environment used in `Explore this concept with E2E Template` sections follow
-recommendations from [Project templates](../../starter-guide/using-project-templates#advanced-guide)
+recommendations from [Project templates](../../starter-guide/using-project-templates.md#advanced-guide)
 documentation section.
 {% endhint %}
 
