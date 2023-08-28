@@ -43,6 +43,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: "utf-8"
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+      OPT_IN_OUT_EMAIL: info@zenml.io
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
     defaults:
