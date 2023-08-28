@@ -4,14 +4,18 @@ description: Running a hyperparameter tuning trial with ZenML.
 
 # Hyperparameter Tuning
 
-## Understanding the basics
-
 {% hint style="warning" %}
 Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is 
 [(high up) on our roadmap of features](https://zenml.featureos.app/p/enable-hyper-parameter-tuning) 
 and will likely receive first-class ZenML support soon. In the meanwhile, the
 following example shows how hyperparameter tuning can currently be implemented
 within a ZenML run.
+{% endhint %}
+
+{% hint style="info" %}
+To setup environment used in `Explore this concept with E2E Template` sections follow
+recommendations from [Project templates](../../starter-guide/using-project-templates#advanced-guide)
+documentation section.
 {% endhint %}
 
 A basic iteration through a number of hyperparameters can be achieved with 
@@ -34,42 +38,11 @@ that would allow for a different learning rate to be used across the same
 the `select_model_step` finds which hyperparameters gave the best results or 
 performance.
 
-The main challenge of this implementation is that it is currently not possible 
-to pass a variable number of artifacts into a step programmatically, so the
-`select_model_step` needs to query all artifacts produced by the previous steps 
-via the ZenML Client instead:
+<details>
 
-```python
-from zenml import step, get_step_context
-from zenml.client import Client
+<summary>Explore this concept with E2E Template</summary>
 
-@step
-def select_model_step():
-    run_name = get_step_context().pipeline_run.name
-    run = Client().get_pipeline_run(run_name)
-
-    # Fetch all models trained by a 'train_step' before
-    trained_models_by_lr = {}
-    for step_name, step in run.steps.items():
-        if step_name.startswith("train_step"):
-            for output_name, output in step.outputs.items():
-                if output_name == "<NAME_OF_MODEL_OUTPUT_IN_TRAIN_STEP>":
-                    model = output.load()
-                    lr = step.config.parameters["learning_rate"]
-                    trained_models_by_lr[lr] = model
-    
-    # Evaluate the models to find the best one
-    for lr, model in trained_models_by_lr.items():
-        ...
-```
-
-## Playground using the project template
-
-To better digest the suggested concept of hyperparameter tuning described above, 
-we recommend the following `E2E Batch` project template:
-
-1. Initialize project template with `zenml init --template e2e_batch --template-with-defaults`
-2. In `pipelines/training.py` you will find a training pipeline with 
+In `pipelines/training.py` you will find a training pipeline with 
 `Hyperparameter tuning stage` section. It contains a `for` loop over configured 
 model search spaces to run `hp_tuning_single_search` on followed by 
 `hp_tuning_select_best_model` executed after all search steps are completed. As 
@@ -100,9 +73,52 @@ model later on.
     )
 ...
 ```
-3. In `steps/hp_tuning` folder you will find two step files, which can be used 
+
+</details>
+
+The main challenge of this implementation is that it is currently not possible 
+to pass a variable number of artifacts into a step programmatically, so the
+`select_model_step` needs to query all artifacts produced by the previous steps 
+via the ZenML Client instead:
+
+```python
+from zenml import step, get_step_context
+from zenml.client import Client
+
+@step
+def select_model_step():
+    run_name = get_step_context().pipeline_run.name
+    run = Client().get_pipeline_run(run_name)
+
+    # Fetch all models trained by a 'train_step' before
+    trained_models_by_lr = {}
+    for step_name, step in run.steps.items():
+        if step_name.startswith("train_step"):
+            for output_name, output in step.outputs.items():
+                if output_name == "<NAME_OF_MODEL_OUTPUT_IN_TRAIN_STEP>":
+                    model = output.load()
+                    lr = step.config.parameters["learning_rate"]
+                    trained_models_by_lr[lr] = model
+    
+    # Evaluate the models to find the best one
+    for lr, model in trained_models_by_lr.items():
+        ...
+```
+
+<details>
+
+<summary>Explore this concept with E2E Template</summary>
+
+In `steps/hp_tuning` folder you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
-specifically to your use case.
+specifically to your use case:
+- `hp_tuning_single_search(...)` is performing a randomized 
+    search for best model hyperparameters in configured space.
+- `hp_tuning_select_best_model(...)` is searching for best hyperparameters,
+    looping other results of previous random searches to find best model according 
+    to defined metric.
+
+</details>
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

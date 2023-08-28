@@ -38,7 +38,7 @@ zenml init --template <short_name_of_template> --template-with-defaults
 
 ## Project templates used in our examples
 
-### Starter Guide
+<!-- ### Starter Guide
 
 Our Starter Guide documentation is built around the `Starter` project template codes. 
 Mostly examples will come from it, so we highly recommend you to install `starter` template
@@ -49,7 +49,7 @@ so you can follow this guide along using your own local environment.
 mkdir starter
 cd starter
 zenml init --template starter --template-with-defaults
-```
+``` -->
 
 ### Advanced Guide
 
