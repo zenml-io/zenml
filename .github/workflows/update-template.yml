@@ -43,7 +43,6 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: "utf-8"
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
-      OPT_IN_OUT_EMAIL: info@zenml.io
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
     defaults:
@@ -61,7 +60,7 @@ jobs:
           os: ${{ inputs.os }}
 
       - name: Check-out fresh E2E template
-        run: zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+        run: printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
       
       - name: Check for changes
         id: check_changes
