@@ -17,10 +17,10 @@ You can refer to the [`CONTRIBUTING.md`](https://github.com/zenml-io/mlstacks/bl
 * If you want to enable users to set any configuration parameters through the CLI, add those variables to the `variables.tf` file. You can take a look at existing variables like `mlflow_bucket` to get an idea of how to do this.
 * Now, add a variable that allows the user to enable this service, to the `variables.tf` file. The format for the name is `enable_<STACK_COMPONENT>_<FLAVOR>`
 * You also need to populate the `outputs.tf` file with information that a stack component registration for your new component might need. This is used by the stack component deploy CLI.
-* Add a block to the `output_file.tf` file that corresponds to your component. This is the file that gets generated on a successful `stack recipe deploy` event and can be imported as a ZenML stack.
+* Add a block to the `output_file.tf` file that corresponds to your component. This is the file that gets generated on a successful `stack deploy` event and can be imported as a ZenML stack.
 * Finally, contribute a PR back to `develop`! 🥳
 
-Once merged, this should allow other people to use your new component while deploying through the `zenml stack recipe deploy ..-modular` flow. To enable integration with the stack component deploy CLI, you need to also contribute to the `zenml-io/zenml` repo.
+Once merged, this should allow other people to use your new component while deploying through the `zenml stack deploy` flow. To enable integration with the stack component deploy CLI, you need to also contribute to the `zenml-io/zenml` repo.
 
 ## Enabling the stack component deploy CLI
 
