@@ -36,10 +36,8 @@ performance.
 
 <summary>Explore this concept with E2E Template</summary>
 
-{% hint style="info" %}
-To setup environment used in below follow recommendations from 
-[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).
-{% endhint %}
+*To setup environment used below follow recommendations from 
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 In `pipelines/training.py` you will find a training pipeline with 
 `Hyperparameter tuning stage` section. It contains a `for` loop over configured 
@@ -108,10 +106,9 @@ def select_model_step():
 
 <summary>Explore this concept with E2E Template</summary>
 
-{% hint style="info" %}
-To setup environment used in below follow recommendations from 
-[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).
-{% endhint %}
+*To setup environment used below follow recommendations from 
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
+
 
 In `steps/hp_tuning` folder you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
