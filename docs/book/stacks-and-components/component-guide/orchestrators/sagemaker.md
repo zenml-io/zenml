@@ -51,7 +51,7 @@ will help you set up the infrastructure with one click.
 A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker ...
+zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker --provider=aws ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,

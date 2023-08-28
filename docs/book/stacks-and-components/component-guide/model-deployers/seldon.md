@@ -91,12 +91,12 @@ can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-i
 The Seldon Model Deployer can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml model-deployer deploy seldon_deployer --flavor=seldon ...
+zenml model-deployer deploy seldon_deployer --flavor=seldon --provider=<YOUR_PROVIDER> ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
-dedicated documentation section.
+[dedicated documentation section](../../stack-deployment/stack-deployment.md).
 
 ### Seldon Core Installation Example
 
