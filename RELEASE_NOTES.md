@@ -1,5 +1,30 @@
 <!-- markdown-link-check-disable -->
 
+# 0.44.0
+
+This release brings various improvements over the previous version, mainly 
+focusing on the usage of newly refactored `mlstacks` package, ZenML's `logging` 
+module and the changes in our analytics.
+
+## What's Changed
+
+* Remove e2e example and point to templates by @avishniakov in https://github.com/zenml-io/zenml/pull/1752
+* Add cloud architecture docs by @htahir1 in https://github.com/zenml-io/zenml/pull/1751
+* Update docs/docstrings following `mlstacks` repo name change by @strickvl in https://github.com/zenml-io/zenml/pull/1754
+* Update Cloud deployment scenarios by @stefannica in https://github.com/zenml-io/zenml/pull/1757
+* Fixing the logging message regarding caching by @bcdurak in https://github.com/zenml-io/zenml/pull/1748
+* Improvements to the step logs storage functionality by @bcdurak in https://github.com/zenml-io/zenml/pull/1733
+* Fix `qemu`/`colima` Github Actions bug by @safoinme in https://github.com/zenml-io/zenml/pull/1760
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1762
+* Add Template Testing in Core by @avishniakov in https://github.com/zenml-io/zenml/pull/1745
+* Removing analytics v1 and optimizing v2 by @bcdurak in https://github.com/zenml-io/zenml/pull/1753
+* Update publish script to take a token by @strickvl in https://github.com/zenml-io/zenml/pull/1758
+* Update variable name for release publication token by @strickvl in https://github.com/zenml-io/zenml/pull/1764
+* Lock `MYSQL` Database during DB migrations  by @safoinme in https://github.com/zenml-io/zenml/pull/1763
+* `mlstacks` integration (and deprecation of old deployment logic) by @strickvl in https://github.com/zenml-io/zenml/pull/1721
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.43.0...0.44.0
+
 # 0.43.0
 
 This release brings limited support for Python 3.11, 
