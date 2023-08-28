@@ -20,12 +20,10 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineResponseModel,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 logger = get_logger(__name__)
 
 
-@track(event=AnalyticsEvent.GET_PIPELINES)
 def get_pipelines() -> List["PipelineResponseModel"]:
     """(Deprecated) Fetches all pipelines in the active workspace.
 
@@ -40,7 +38,6 @@ def get_pipelines() -> List["PipelineResponseModel"]:
     return Client().list_pipelines().items
 
 
-@track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
     pipeline: str,
     version: Optional[str] = None,

@@ -37,6 +37,8 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -142,7 +144,6 @@ from zenml.models.schedule_model import (
     ScheduleResponseModel,
 )
 from zenml.utils import io_utils, source_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 
@@ -433,18 +434,17 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
-            root = root or Path.cwd()
-            logger.debug("Initializing new repository at path %s.", root)
-            if Client.is_repository_directory(root):
-                raise InitializationException(
-                    f"Found existing ZenML repository at path '{root}'."
-                )
+        root = root or Path.cwd()
+        logger.debug("Initializing new repository at path %s.", root)
+        if Client.is_repository_directory(root):
+            raise InitializationException(
+                f"Found existing ZenML repository at path '{root}'."
+            )
 
-            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-            io_utils.create_dir_recursive_if_not_exists(config_directory)
-            # Initialize the repository configuration at the custom path
-            Client(root=root)
+        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+        io_utils.create_dir_recursive_if_not_exists(config_directory)
+        # Initialize the repository configuration at the custom path
+        Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -601,7 +601,6 @@ class Client(metaclass=ClientMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_WORKSPACE)
     def set_active_workspace(
         self, workspace_name_or_id: Union[str, UUID]
     ) -> "WorkspaceResponseModel":
@@ -1852,7 +1851,6 @@ class Client(metaclass=ClientMetaClass):
         stack_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_stacks(stack_filter_model)
 
-    @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
     ) -> None:
@@ -2317,10 +2315,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-        with event_handler(
-            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
-            v2=True,
-        ) as handler:
+        with track_handler(AnalyticsEvent.DEPLOY_STACK_COMPONENT) as handler:
             handler.metadata.update({component_type.value: flavor})
 
             import python_terraform
@@ -2463,10 +2458,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-        with event_handler(
-            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
-            v2=True,
-        ) as handler:
+        with track_handler(AnalyticsEvent.DESTROY_STACK_COMPONENT) as handler:
             handler.metadata.update({component.type.value: component.flavor})
 
             import python_terraform

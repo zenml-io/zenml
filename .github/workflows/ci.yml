@@ -1,4 +1,4 @@
-name: Build, Lint, Unit & Integration Test
+name: Build, Lint, Unit, Integration and Templates Tests
 
 on:
   workflow_dispatch:
@@ -17,7 +17,6 @@ concurrency:
 
 jobs:
   ubuntu-setup-python-environment:
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -30,7 +29,6 @@ jobs:
     secrets: inherit
 
   windows-setup-python-environment:
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
@@ -43,7 +41,6 @@ jobs:
     secrets: inherit
 
   macos-setup-python-environment:
-    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
@@ -67,7 +64,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
-
+        
   windows-lint-unit-test:
     needs: windows-setup-python-environment
     strategy:
@@ -80,7 +77,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
-
+    
   macos-lint-unit-test:
     needs: macos-setup-python-environment
     strategy:
@@ -95,7 +92,8 @@ jobs:
     secrets: inherit
 
   ubuntu-integration-test:
-    needs: ubuntu-lint-unit-test
+    needs: 
+      - ubuntu-lint-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -124,7 +122,8 @@ jobs:
     secrets: inherit
 
   windows-integration-test:
-    needs: windows-lint-unit-test
+    needs: 
+      - windows-lint-unit-test
     strategy:
       matrix:
         os: [windows-latest]
@@ -141,8 +140,8 @@ jobs:
     secrets: inherit
 
   macos-integration-test:
-    needs: macos-lint-unit-test
-    # Exit if its a commit from Gitbook
+    needs: 
+      - macos-lint-unit-test
     strategy:
       matrix:
         os: [macos-latest]
@@ -156,4 +155,46 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+
+  ubuntu-templates-test:
+    needs: 
+      - ubuntu-lint-unit-test
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    uses: ./.github/workflows/templates-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+  
+  windows-templates-test:
+    needs: 
+      - windows-lint-unit-test
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    uses: ./.github/workflows/templates-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  macos-templates-test:
+    needs: 
+      - macos-lint-unit-test
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    uses: ./.github/workflows/templates-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
     secrets: inherit

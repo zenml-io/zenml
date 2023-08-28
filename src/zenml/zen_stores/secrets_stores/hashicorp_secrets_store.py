@@ -32,6 +32,8 @@ import hvac  # type: ignore[import]
 from hvac.exceptions import InvalidPath, VaultError  # type: ignore[import]
 from pydantic import SecretStr
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_decorator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
@@ -45,7 +47,6 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -266,7 +267,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             values=values,
         )
 
-    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 
@@ -503,7 +504,6 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             max_size=secret_filter_model.size,
         )
 
-    @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
@@ -609,7 +609,6 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         return secret_model
 
-    @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 
