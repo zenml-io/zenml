@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.8"]
       fail-fast: false
-    uses: ./.github/workflows/compare-template.yml
+    uses: ./.github/workflows/update-template.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}

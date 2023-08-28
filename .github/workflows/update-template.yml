@@ -1,4 +1,4 @@
-name: Compare checked-out examples with recent template check-out
+name: Auto-update E2E template
 
 on:
   workflow_call:
@@ -35,8 +35,8 @@ on:
         default: '3.8'
 
 jobs:
-  compare-template:
-    name: compare-template
+  update-template:
+    name: update-template
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
@@ -58,9 +58,36 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
+
+      - name: Check-out fresh E2E template
+        run: zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          changes=$(git diff --exit-code || echo "true")
+          echo "::set-output name=changes::$changes"
           
-      - name: Run template compare
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
-        run: bash scripts/compare-template.sh
+      - name: Commit and push template
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Auto-update of template"
+          git push origin HEAD:${{ github.ref }}
+
+      - name: Create PR comment
+        if: steps.check_changes.outputs.changes == 'true'
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Auto-update of template changes have been pushed.'
+            })
 
 
