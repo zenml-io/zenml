@@ -12,12 +12,6 @@ following example shows how hyperparameter tuning can currently be implemented
 within a ZenML run.
 {% endhint %}
 
-{% hint style="info" %}
-To setup environment used in `Explore this concept with E2E Template` sections follow
-recommendations from [Project templates](../../starter-guide/using-project-templates.md#advanced-guide)
-documentation section.
-{% endhint %}
-
 A basic iteration through a number of hyperparameters can be achieved with 
 ZenML by using a simple pipeline like this:
 
@@ -41,6 +35,11 @@ performance.
 <details>
 
 <summary>Explore this concept with E2E Template</summary>
+
+{% hint style="info" %}
+To setup environment used in below follow recommendations from 
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).
+{% endhint %}
 
 In `pipelines/training.py` you will find a training pipeline with 
 `Hyperparameter tuning stage` section. It contains a `for` loop over configured 
@@ -108,6 +107,11 @@ def select_model_step():
 <details>
 
 <summary>Explore this concept with E2E Template</summary>
+
+{% hint style="info" %}
+To setup environment used in below follow recommendations from 
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).
+{% endhint %}
 
 In `steps/hp_tuning` folder you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
