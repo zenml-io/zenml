@@ -50,6 +50,15 @@ jobs:
         shell: bash
 
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          
       - name: Run template compare
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
         run: bash scripts/compare-template.sh
