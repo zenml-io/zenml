@@ -53,7 +53,7 @@ To figure out the URI for your registry:
 An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml container-registry deploy ecr_container_registry --flavor=aws ...
+zenml container-registry deploy ecr_container_registry --flavor=aws --provider=aws ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,

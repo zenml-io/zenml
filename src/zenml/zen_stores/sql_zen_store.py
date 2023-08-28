@@ -1042,6 +1042,7 @@ class SqlZenStore(BaseZenStore):
                 workspace_id=stack.workspace,
                 user_id=stack.user,
                 is_shared=stack.is_shared,
+                stack_spec_path=stack.stack_spec_path,
                 name=stack.name,
                 description=stack.description,
                 components=defined_components,
@@ -1351,6 +1352,7 @@ class SqlZenStore(BaseZenStore):
                 workspace_id=component.workspace,
                 user_id=component.user,
                 is_shared=component.is_shared,
+                component_spec_path=component.component_spec_path,
                 type=component.type,
                 flavor=component.flavor,
                 configuration=base64.b64encode(
