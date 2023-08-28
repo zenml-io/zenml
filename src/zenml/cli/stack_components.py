@@ -1255,7 +1255,7 @@ def generate_stack_component_deploy_command(
             extra_config_obj = (
                 dict(config.split("=") for config in extra_config)
                 if extra_config
-                else ()
+                else {}
             )
             if provider == "gcp" and "project_id" not in extra_config_obj:
                 cli_utils.error(
@@ -1275,7 +1275,7 @@ def generate_stack_component_deploy_command(
                     for _ in range(5)
                 ),
                 "tags": tags,
-                "extra_config": extra_config,
+                "extra_config": list(extra_config),
                 "file": None,
                 "debug_mode": debug_mode,
                 component_type.value: flavor,
