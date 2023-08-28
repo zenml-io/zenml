@@ -1,0 +1,57 @@
+name: Compare checked-out examples with recent template check-out
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS'
+        type: choice
+        options: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        required: false
+        default: 'ubuntu-latest'
+      python-version:
+        description: 'Python version'
+        type: choice
+        options:
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+        required: false
+        default: '3.8'
+
+jobs:
+  compare-template:
+    name: compare-template
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: "utf-8"
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Run template compare
+        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+        run: bash scripts/compare-template.sh
+
+
