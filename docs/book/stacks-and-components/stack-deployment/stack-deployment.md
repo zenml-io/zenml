@@ -59,7 +59,7 @@ describes a component. (Currently all deployments of components (in various
 combinations) must be defined within the context of a stack.)
 
 ZenML handles the creation of stack specifications for you when you run one of
-the `deploy` subcommands using the CLI. A valid specifcation is generated and
+the `deploy` subcommands using the CLI. A valid specification is generated and
 used by `mlstacks` to deploy your stack using Terraform. The Terraform
 definitions and state are stored in your global configuration directory along
 with any state files generated while deploying your stack.
