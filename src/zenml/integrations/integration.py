@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
+import re
 from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
@@ -63,7 +64,38 @@ class Integration(metaclass=IntegrationMeta):
         """
         try:
             for r in cls.get_requirements():
-                pkg_resources.get_distribution(r)
+                # Extract the name and extras from the requirement string
+                match = re.match(
+                    r"([a-zA-Z0-9\-_]+)(\[[a-zA-Z0-9\-_,]+\])?", r
+                )
+                if match:
+                    name, extras = match.groups()
+                    dist = pkg_resources.get_distribution(name)
+                    # Check if extras are specified and installed
+                    if extras:
+                        extra_list = extras[1:-1].split(",")
+                        for extra in extra_list:
+                            try:
+                                requirements = dist.requires(extras=[extra])
+                            except pkg_resources.UnknownExtra:
+                                logger.debug("Unknown extra: " + str(e))
+                                raise
+
+                            for ri in requirements:
+                                try:
+                                    pkg_resources.get_distribution(ri)
+                                except IndexError:
+                                    logger.debug(
+                                        f"Unable to find required extra '{ri.project_name}' for "
+                                        f"requirements '{name}' coming from integration '{cls.NAME}'."
+                                    )
+                                    return False
+                else:
+                    logger.debug(
+                        f"Invalid requirement format '{r}' for integration {cls.NAME}."
+                    )
+                    return False
+
             logger.debug(
                 f"Integration {cls.NAME} is installed correctly with "
                 f"requirements {cls.get_requirements()}."
