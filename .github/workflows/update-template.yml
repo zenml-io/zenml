@@ -93,7 +93,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
-          git commit -m "Auto-update of template"
+          git commit -am "Auto-update of template"
           git push origin HEAD:${{ github.ref }}
 
       - name: Create PR comment
