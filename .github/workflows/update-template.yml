@@ -63,14 +63,14 @@ jobs:
         run: |
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
-      
+      - name: Check for changes
+        run: |
+          git diff --exit-code || echo "true"
       - name: Check for changes
         id: check_changes
         run: |
           changes=$(git diff --exit-code || echo "true")
           echo "changes=$changes" >> $GITHUB_OUTPUT
-          echo DEBUG CHANGES:
-          echo $changes
           
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
