@@ -75,10 +75,6 @@ def initialize_zen_store() -> None:
             "when trying to start the ZenML Server."
         )
 
-    # We override track_analytics=False because we do not
-    # want to track anything server side.
-    zen_store_.track_analytics = False
-
     # Use an environment variable to flag the instance as a server
     os.environ[ENV_ZENML_SERVER] = "true"
 

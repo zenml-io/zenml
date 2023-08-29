@@ -142,7 +142,7 @@
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
 * [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
-  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
+  * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
 ## Learning

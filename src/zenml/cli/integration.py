@@ -33,7 +33,6 @@ from zenml.cli.utils import (
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -267,15 +266,13 @@ def install(
             install_packages(requirements)
             if "label_studio" in integrations:
                 warning(
-                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
+                    "There is a known issue with Label Studio installations "
+                    "via zenml. You might find that the Label Studio "
+                    "installation breaks the ZenML CLI. In this case, "
+                    "please run `pip install 'pydantic<1.11,>=1.9.0'` to "
+                    "fix the issue or message us on Slack if you need help "
+                    "with this. We are working on a more definitive fix."
                 )
-
-        for integration_name in integrations_to_install:
-            track_event(
-                event=AnalyticsEvent.INSTALL_INTEGRATION,
-                metadata={"integration_name": integration_name},
-                v2=True,
-            )
 
 
 @integration.command(
@@ -402,11 +399,10 @@ def upgrade(
             install_packages(requirements, upgrade=True)
             if "label_studio" in integrations:
                 warning(
-                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
+                    "There is a known issue with Label Studio installations "
+                    "via zenml. You might find that the Label Studio "
+                    "installation breaks the ZenML CLI. In this case, please "
+                    "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
+                    "issue or message us on Slack if you need help with this. "
+                    "We are working on a more definitive fix."
                 )
-
-        for integration_name in integrations_to_install:
-            track_event(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
-            )

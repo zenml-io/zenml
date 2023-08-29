@@ -25,7 +25,7 @@ from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.schema import MetaData
@@ -34,6 +34,7 @@ from sqlmodel import SQLModel
 from zenml.zen_stores import schemas
 
 ZENML_ALEMBIC_START_REVISION = "alembic_start"
+DATABASE_LOCK_TIMEOUT = 15
 
 exclude_tables = ["sqlite_sequence"]
 
@@ -132,24 +133,39 @@ class Alembic:
         Args:
             fn: Migration function to run. If not set, the function configured
                 externally by the Alembic CLI command is used.
+
+        Raises:
+            RuntimeError: If the database lock could not be acquired.
         """
         fn_context_args: Dict[Any, Any] = {}
         if fn is not None:
             fn_context_args["fn"] = fn
 
         with self.engine.connect() as connection:
-            self.environment_context.configure(
-                connection=connection,
-                target_metadata=self.metadata,
-                include_object=include_object,
-                compare_type=True,
-                render_as_batch=True,
-                **fn_context_args,
-                **self.context_kwargs,
-            )
+            # Acquire a lock
+            if self.engine.dialect.name == "mysql":
+                query = f"SELECT GET_LOCK('zenml', {DATABASE_LOCK_TIMEOUT})"
+                lock = connection.execute(text(query)).scalar()
+                if lock is None or lock != 1:
+                    raise RuntimeError("Could not acquire database lock.")
+            try:
+                self.environment_context.configure(
+                    connection=connection,
+                    target_metadata=self.metadata,
+                    include_object=include_object,
+                    compare_type=True,
+                    render_as_batch=True,
+                    **fn_context_args,
+                    **self.context_kwargs,
+                )
 
-            with self.environment_context.begin_transaction():
-                self.environment_context.run_migrations()
+                with self.environment_context.begin_transaction():
+                    self.environment_context.run_migrations()
+            finally:
+                # Release the lock
+                if self.engine.dialect.name == "mysql":
+                    query = "SELECT RELEASE_LOCK('zenml')"
+                    connection.execute(text(query))
 
     def current_revisions(self) -> List[str]:
         """Get the current database revisions.
