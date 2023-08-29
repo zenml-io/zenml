@@ -60,13 +60,15 @@ jobs:
           os: ${{ inputs.os }}
 
       - name: Check-out fresh E2E template
-        run: printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+        run: printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults | mkdir examples/e2e
       
       - name: Check for changes
         id: check_changes
         run: |
           changes=$(git diff --exit-code || echo "true")
-          echo "::set-output name=changes::$changes"
+          echo "changes=$changes" >> $GITHUB_OUTPUT
+          echo DEBUG CHANGES:
+          echo $changes
           
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
