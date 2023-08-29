@@ -52,25 +52,40 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: ${{ inputs.python-version }}
-          os: ${{ inputs.os }}
+      # - name: Setup environment
+      #   uses: ./.github/actions/setup_environment
+      #   with:
+      #     cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+      #     python-version: ${{ inputs.python-version }}
+      #     os: ${{ inputs.os }}
 
-      - name: Check-out fresh E2E template
+      # - name: Check-out fresh E2E template
+      #   run: |
+      #     mkdir -p examples/e2e
+      #     printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+      
+      - name: Fake changes
         run: |
-          mkdir -p examples/e2e
-          printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          touch fake_change.txt
       - name: Check for changes
         run: |
-          git diff --exit-code || echo "true"
+          if git diff --quiet HEAD^..HEAD; then
+            echo "No active Git changes found."
+            echo "::set-output name=changes::false"
+          else
+            echo "Active Git changes found."
+            echo "::set-output name=changes::true"
+          fi
       - name: Check for changes
         id: check_changes
         run: |
-          changes=$(git diff --exit-code || echo "true")
-          echo "changes=$changes" >> $GITHUB_OUTPUT
+          if git diff --quiet HEAD^..HEAD; then
+            echo "No active Git changes found."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Active Git changes found."
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
           
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
