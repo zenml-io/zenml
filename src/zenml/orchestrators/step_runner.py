@@ -216,30 +216,30 @@ class StepRunner:
                                 success_hook_source,
                                 step_exception=None,
                             )
-                    StepContext._clear()  # Remove the step context singleton
 
-                # Store and publish the output artifacts of the step function.
-                output_annotations = parse_return_type_annotations(
-                    func=step_instance.entrypoint
-                )
-                output_data = self._validate_outputs(
-                    return_values, output_annotations
-                )
-                artifact_metadata_enabled = is_setting_enabled(
-                    is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                    is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                )
-                artifact_visualization_enabled = is_setting_enabled(
-                    is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                    is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                )
-                output_artifact_ids = self._store_output_artifacts(
-                    output_data=output_data,
-                    output_artifact_uris=output_artifact_uris,
-                    output_materializers=output_materializers,
-                    artifact_metadata_enabled=artifact_metadata_enabled,
-                    artifact_visualization_enabled=artifact_visualization_enabled,
-                )
+                    # Store and publish the output artifacts of the step function.
+                    output_annotations = parse_return_type_annotations(
+                        func=step_instance.entrypoint
+                    )
+                    output_data = self._validate_outputs(
+                        return_values, output_annotations
+                    )
+                    artifact_metadata_enabled = is_setting_enabled(
+                        is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                    )
+                    artifact_visualization_enabled = is_setting_enabled(
+                        is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                        is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                    )
+                    output_artifact_ids = self._store_output_artifacts(
+                        output_data=output_data,
+                        output_artifact_uris=output_artifact_uris,
+                        output_materializers=output_materializers,
+                        artifact_metadata_enabled=artifact_metadata_enabled,
+                        artifact_visualization_enabled=artifact_visualization_enabled,
+                    )
+                    StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             publish_successful_step_run(
