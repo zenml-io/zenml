@@ -35,12 +35,12 @@ install_integrations() {
     # if python version is 3.11, exclude all integrations depending on kfp
     # because they are not yet compatible with python 3.11
     if [ "$python_version" = "3.11" ]; then
-        ignore_integrations="$ignore_integrations kubeflow tekton gcp skypilot[aws] skypilot[gcp] skypilot[azure] skypilot"
+        ignore_integrations="$ignore_integrations kubeflow tekton gcp skypilot_aws skypilot_gcp skypilot_azure skypilot"
     fi
 
     # if python version is 3.10, exclude all skypilot integrations
     if [ "$python_version" = "3.10" ]; then
-        ignore_integrations="$ignore_integrations skypilot[aws] skypilot[gcp] skypilot[azure] skypilot"
+        ignore_integrations="$ignore_integrations skypilot_aws skypilot_gcp skypilot_azure skypilot"
     fi
 
     # turn the ignore integrations into a list of --ignore-integration args
