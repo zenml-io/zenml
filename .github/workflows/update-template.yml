@@ -51,6 +51,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       # - name: Setup environment
       #   uses: ./.github/actions/setup_environment
