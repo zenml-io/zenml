@@ -37,11 +37,7 @@ if TYPE_CHECKING:
 
 
 class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings.
-
-    Attributes:
-
-    """
+    """Skypilot orchestrator settings."""
 
 
 class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

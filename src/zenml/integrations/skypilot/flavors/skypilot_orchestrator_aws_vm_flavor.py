@@ -34,11 +34,7 @@ logger = get_logger(__name__)
 
 
 class SkypilotAWSOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings.
-
-    Attributes:
-
-    """
+    """Skypilot orchestrator settings."""
 
 
 class SkypilotAWSOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
