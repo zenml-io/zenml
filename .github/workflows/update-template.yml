@@ -54,21 +54,18 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      # - name: Setup environment
-      #   uses: ./.github/actions/setup_environment
-      #   with:
-      #     cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-      #     python-version: ${{ inputs.python-version }}
-      #     os: ${{ inputs.os }}
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
 
-      # - name: Check-out fresh E2E template
-      #   run: |
-      #     mkdir -p examples/e2e
-      #     printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
-      
-      - name: Fake changes
+      - name: Check-out fresh E2E template
         run: |
-          touch fake_change.txt
+          mkdir -p examples/e2e
+          printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          bash scripts/format.sh
 
       - name: Check for changes
         id: check_changes
