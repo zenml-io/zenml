@@ -67,15 +67,7 @@ jobs:
       - name: Fake changes
         run: |
           touch fake_change.txt
-      - name: Check for changes
-        run: |
-          if git diff --quiet HEAD^..HEAD; then
-            echo "No active Git changes found."
-            echo "::set-output name=changes::false"
-          else
-            echo "Active Git changes found."
-            echo "::set-output name=changes::true"
-          fi
+
       - name: Check for changes
         id: check_changes
         run: |
@@ -94,7 +86,7 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -am "Auto-update of template"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
