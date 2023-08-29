@@ -68,7 +68,7 @@ zenml integration install -y kserve
 zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
 pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
 pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
-
+pip install typing-extensions --upgrade
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
 
