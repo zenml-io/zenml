@@ -37,8 +37,6 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
-from zenml.analytics.enums import AnalyticsEvent
-from zenml.analytics.utils import track_handler
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -1574,6 +1572,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
+        stack_spec_file: Optional[str] = None,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
 
@@ -1581,6 +1580,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
             is_shared: boolean to decide whether the stack is shared
+            stack_spec_file: path to the stack spec file
 
         Returns:
             The model of the registered stack.
@@ -1619,6 +1619,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             is_shared=is_shared,
+            stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1632,6 +1633,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
@@ -1643,6 +1645,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
             is_shared: the new shared status of the stack.
+            stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
@@ -1664,6 +1667,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            stack_spec_path=stack_spec_file,
         )
 
         if name:
@@ -2082,6 +2086,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
+        component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":
@@ -2090,6 +2095,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack component.
             flavor: The flavor of the stack component.
+            component_spec_path: The path to the stack spec file.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
@@ -2120,6 +2126,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
+            component_spec_path=component_spec_path,
             configuration=configuration,
             is_shared=is_shared,
             user=self.active_user.id,
@@ -2137,6 +2144,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
+        component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
@@ -2150,6 +2158,7 @@ class Client(metaclass=ClientMetaClass):
                 update.
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
+            component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
@@ -2173,6 +2182,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            component_spec_path=component_spec_path,
         )
 
         if name is not None:
@@ -2270,234 +2280,6 @@ class Client(metaclass=ClientMetaClass):
             "Deregistered stack component (type: %s) with name '%s'.",
             component.type,
             component.name,
-        )
-
-    def deploy_stack_component(
-        self,
-        name: str,
-        flavor: str,
-        cloud: str,
-        component_type: StackComponentType,
-        configuration: Optional[Dict[str, Any]] = None,
-        labels: Optional[Dict[str, Any]] = None,
-    ) -> Optional["ComponentResponseModel"]:
-        """Deploys a stack component.
-
-        Args:
-            name: The name of the deployed stack component.
-            flavor: The flavor of the deployed stack component.
-            cloud: The cloud of the deployed stack component.
-            component_type: The type of the stack component to deploy.
-            configuration: The configuration of the deployed stack component.
-            labels: The labels of the deployed stack component.
-
-        Returns:
-            The deployed stack component.
-        """
-        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
-
-        if component_type.value not in [
-            "artifact_store",
-            "container_registry",
-            "secrets_manager",
-        ]:
-            enabled_services = [f"{component_type.value}_{flavor}"]
-        else:
-            enabled_services = [f"{component_type.value}"]
-
-        # path should be fixed at a constant in the
-        # global config directory
-        path = Path(
-            os.path.join(
-                io_utils.get_global_config_directory(),
-                STACK_COMPONENT_RECIPE_DIR,
-                f"{cloud}-modular",
-            )
-        )
-
-        with track_handler(AnalyticsEvent.DEPLOY_STACK_COMPONENT) as handler:
-            handler.metadata.update({component_type.value: flavor})
-
-            import python_terraform
-
-            from zenml.recipes import (
-                StackRecipeService,
-                StackRecipeServiceConfig,
-            )
-
-            # create the stack recipe service.
-            stack_recipe_service_config = StackRecipeServiceConfig(
-                directory_path=str(path),
-                enabled_services=enabled_services,
-                input_variables=configuration,
-            )
-
-            stack_recipe_service = StackRecipeService.get_service(str(path))
-
-            if stack_recipe_service:
-                logger.info(
-                    "An existing deployment of the recipe found. "
-                    f"with path {path}. "
-                    "Proceeding to update or create resources. "
-                )
-            else:
-                stack_recipe_service = StackRecipeService(
-                    config=stack_recipe_service_config,
-                    stack_recipe_name=f"{cloud}-modular",
-                )
-
-            try:
-                # start the service (the init and apply operation)
-                stack_recipe_service.start()
-
-            except python_terraform.TerraformCommandError:
-                logger.error(
-                    "Deployment of the stack component failed or was "
-                    "interrupted. "
-                )
-                return None
-
-            # get the outputs from the deployed recipe
-            outputs = stack_recipe_service.get_outputs()
-            outputs = {k: v for k, v in outputs.items() if v != ""}
-
-            # get all outputs that start with the component type into a map
-            comp_outputs = {
-                k: v
-                for k, v in outputs.items()
-                if k.startswith(component_type.value)
-            }
-
-            logger.info(
-                "Registering a new stack component of type %s with name '%s'.",
-                component_type,
-                name or comp_outputs[f"{component_type.value}_name"],
-            )
-
-            # call the register stack component function using the values of the outputs
-            # truncate the component type from the output
-            stack_comp = self.create_stack_component(
-                name=name or comp_outputs[f"{component_type.value}_name"],
-                flavor=comp_outputs[f"{component_type.value}_flavor"],
-                component_type=component_type,
-                configuration=eval(
-                    comp_outputs[f"{component_type.value}_configuration"]
-                ),
-                labels=labels,
-            )
-
-            # if the component is an experiment tracker of flavor mlflow, then
-            # output the name of the mlflow bucket if it exists
-            if (
-                component_type == StackComponentType.EXPERIMENT_TRACKER
-                and flavor == "mlflow"
-            ):
-                if mlflow_bucket := outputs.get("mlflow-bucket"):
-                    logger.info(
-                        "The bucket used for MLflow is: %s "
-                        "You can use this bucket as an artifact store to "
-                        "avoid having to create a new one.",
-                        mlflow_bucket,
-                    )
-            # if the cloud is k3d, then check the container registry
-            # outputs. If they are set, then create one.
-            if cloud == "k3d":
-                if container_registry_outputs := {
-                    k: v
-                    for k, v in outputs.items()
-                    if k.startswith("container_registry")
-                }:
-                    self.create_stack_component(
-                        name=container_registry_outputs[
-                            "container_registry_name"
-                        ],
-                        flavor=container_registry_outputs[
-                            "container_registry_flavor"
-                        ],
-                        component_type=StackComponentType.CONTAINER_REGISTRY,
-                        configuration=eval(
-                            container_registry_outputs[
-                                "container_registry_configuration"
-                            ]
-                        ),
-                    )
-        return stack_comp
-
-    def destroy_stack_component(
-        self,
-        component: ComponentResponseModel,
-    ) -> None:
-        """Destroys a stack component.
-
-        Args:
-            component: The stack component to destroy.
-
-        Returns:
-            None
-        """
-        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
-
-        if component.type.value not in [
-            "artifact_store",
-            "container_registry",
-            "secrets_manager",
-        ]:
-            disabled_services = [f"{component.type.value}_{component.flavor}"]
-        else:
-            disabled_services = [f"{component.type.value}"]
-
-        # assert that labels is not None
-        assert component.labels is not None
-        # path should be fixed at a constant in the
-        # global config directory
-        path = Path(
-            os.path.join(
-                io_utils.get_global_config_directory(),
-                STACK_COMPONENT_RECIPE_DIR,
-                f"{component.labels['cloud']}-modular",
-            )
-        )
-
-        with track_handler(AnalyticsEvent.DESTROY_STACK_COMPONENT) as handler:
-            handler.metadata.update({component.type.value: component.flavor})
-
-            import python_terraform
-
-            from zenml.recipes import (
-                StackRecipeService,
-            )
-
-            stack_recipe_service = StackRecipeService.get_service(str(path))
-
-            if not stack_recipe_service:
-                logger.error(
-                    f"No deployed {component.type.value} found with "
-                    f"flavor {component.flavor} and name {component.name}."
-                )
-                return None
-
-            stack_recipe_service.config.disabled_services = disabled_services
-
-            try:
-                # start the service (the init and apply operation)
-                stack_recipe_service.stop()
-
-            except python_terraform.TerraformCommandError:
-                logger.error(
-                    "Destruction of the stack component failed or was "
-                    "interrupted. "
-                )
-                return None
-
-        logger.info(
-            "Deregistering stack component %s...",
-            component.name,
-        )
-
-        # call the delete stack component function
-        self.delete_stack_component(
-            name_id_or_prefix=component.name,
-            component_type=component.type,
         )
 
     def _validate_stack_component_configuration(
