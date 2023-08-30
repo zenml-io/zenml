@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )

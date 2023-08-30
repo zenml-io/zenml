@@ -400,6 +400,7 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
+    "sky.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",

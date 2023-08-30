@@ -24,7 +24,7 @@ import sky
 from zenml.client import Client
 from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import (
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.logger import get_logger
@@ -32,7 +32,7 @@ from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
 from zenml.orchestrators import utils as orchestrator_utils
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -132,6 +132,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
         """Run to set up the sky job.
 
+        Args:
+            stack: The stack to use.
+
         Returns:
             A `setup` string.
         """
@@ -220,8 +223,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             if cluster_name is None:
                 # Find existing cluster
                 for i in sky.status(refresh=True):
-                    if type(i["handle"].launched_resources.cloud) is type(
-                        self.cloud
+                    if isinstance(
+                        i["handle"].launched_resources.cloud, type(self.cloud)
                     ):
                         cluster_name = i["handle"].cluster_name
                         logger.info(

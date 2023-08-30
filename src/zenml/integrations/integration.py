@@ -76,10 +76,10 @@ class Integration(metaclass=IntegrationMeta):
                         extra_list = extras[1:-1].split(",")
                         for extra in extra_list:
                             try:
-                                requirements = dist.requires(extras=[extra])
-                            except pkg_resources.UnknownExtra:
+                                requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
+                            except pkg_resources.UnknownExtra as e:
                                 logger.debug("Unknown extra: " + str(e))
-                                raise
+                                return False
 
                             for ri in requirements:
                                 try:

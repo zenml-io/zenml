@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import (
     SkypilotAWSOrchestratorConfig,
     SkypilotAWSOrchestratorSettings,
@@ -54,9 +53,13 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
         """Run to set up the sky job.
 
+        Args:
+            stack: The stack to use.
+
         Returns:
             A `setup` string.
         """
+        assert stack.container_registry is not None
         return f"aws ecr get-login-password --region {stack.container_registry._get_region()} | docker login --username AWS --password-stdin {stack.container_registry.config.uri}"
 
     @property
