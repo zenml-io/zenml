@@ -1,7 +1,7 @@
 """add stack and component spec paths to stack and components [e1d66d91a099].
 
 Revision ID: e1d66d91a099
-Revises: 0.42.1
+Revises: 0.43.0
 Create Date: 2023-07-27 16:07:57.115142
 
 """
