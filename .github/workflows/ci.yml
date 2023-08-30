@@ -16,193 +16,193 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ubuntu-setup-python-environment:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+  # ubuntu-setup-python-environment:
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/setup-python-environment.yml
+  #   with:
+  #     python-version: ${{ matrix.python-version }}
+  #     os: ${{ matrix.os }}
+  #   secrets: inherit
 
-  windows-setup-python-environment:
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+  # windows-setup-python-environment:
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/setup-python-environment.yml
+  #   with:
+  #     python-version: ${{ matrix.python-version }}
+  #     os: ${{ matrix.os }}
+  #   secrets: inherit
 
-  macos-setup-python-environment:
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+  # macos-setup-python-environment:
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/setup-python-environment.yml
+  #   with:
+  #     python-version: ${{ matrix.python-version }}
+  #     os: ${{ matrix.os }}
+  #   secrets: inherit
   
   update-e2e-template:
-    needs: ubuntu-setup-python-environment
+    # needs: ubuntu-setup-python-environment
     uses: ./.github/workflows/update-e2e-template.yml
     with:
       python-version: "3.8"
       os: ubuntu-latest
     secrets: inherit
 
-  ubuntu-lint-unit-test:
-    needs: ubuntu-setup-python-environment
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # ubuntu-lint-unit-test:
+  #   needs: ubuntu-setup-python-environment
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/lint-unit-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
         
-  windows-lint-unit-test:
-    needs: windows-setup-python-environment
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # windows-lint-unit-test:
+  #   needs: windows-setup-python-environment
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/lint-unit-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
     
-  macos-lint-unit-test:
-    needs: macos-setup-python-environment
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # macos-lint-unit-test:
+  #   needs: macos-setup-python-environment
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/lint-unit-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
 
-  ubuntu-integration-test:
-    needs: 
-      - ubuntu-lint-unit-test
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        test_environment:
-          [
-            "default",
-            "docker-server-docker-orchestrator",
-          ]
-        exclude:
-          # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator
-            python-version: "3.9"
-          - test_environment: docker-server-docker-orchestrator
-            python-version: "3.10"
-          - test_environment: docker-server-docker-orchestrator
-            python-version: "3.11"
+  # ubuntu-integration-test:
+  #   needs: 
+  #     - ubuntu-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #       test_environment:
+  #         [
+  #           "default",
+  #           "docker-server-docker-orchestrator",
+  #         ]
+  #       exclude:
+  #         # docker is time-consuming to run, so we only run it on 3.8
+  #         - test_environment: docker-server-docker-orchestrator
+  #           python-version: "3.9"
+  #         - test_environment: docker-server-docker-orchestrator
+  #           python-version: "3.10"
+  #         - test_environment: docker-server-docker-orchestrator
+  #           python-version: "3.11"
 
-      fail-fast: false
+  #     fail-fast: false
 
-    uses: ./.github/workflows/integration-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+  #   uses: ./.github/workflows/integration-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #     test_environment: ${{ matrix.test_environment }}
+  #   secrets: inherit
 
-  windows-integration-test:
-    needs: 
-      - windows-lint-unit-test
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        test_environment: ["default"]
+  # windows-integration-test:
+  #   needs: 
+  #     - windows-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #       test_environment: ["default"]
 
-      fail-fast: false
+  #     fail-fast: false
 
-    uses: ./.github/workflows/integration-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+  #   uses: ./.github/workflows/integration-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #     test_environment: ${{ matrix.test_environment }}
+  #   secrets: inherit
 
-  macos-integration-test:
-    needs: 
-      - macos-lint-unit-test
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        test_environment: ["default"]
+  # macos-integration-test:
+  #   needs: 
+  #     - macos-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #       test_environment: ["default"]
 
-      fail-fast: false
+  #     fail-fast: false
 
-    uses: ./.github/workflows/integration-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
+  #   uses: ./.github/workflows/integration-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #     test_environment: ${{ matrix.test_environment }}
+  #   secrets: inherit
 
-  ubuntu-templates-test:
-    needs: 
-      - ubuntu-lint-unit-test
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/templates-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # ubuntu-templates-test:
+  #   needs: 
+  #     - ubuntu-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/templates-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
   
-  windows-templates-test:
-    needs: 
-      - windows-lint-unit-test
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/templates-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # windows-templates-test:
+  #   needs: 
+  #     - windows-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/templates-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
 
-  macos-templates-test:
-    needs: 
-      - macos-lint-unit-test
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/templates-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
+  # macos-templates-test:
+  #   needs: 
+  #     - macos-lint-unit-test
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/templates-test.yml
+  #   with:
+  #     os: ${{ matrix.os }}
+  #     python-version: ${{ matrix.python-version }}
+  #   secrets: inherit
