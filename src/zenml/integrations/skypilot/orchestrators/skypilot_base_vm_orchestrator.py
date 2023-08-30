@@ -54,7 +54,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
     """
 
     # The default instance type to use if none is specified in settings
-    DEFAULT_INSTANCE_TYPE: str = None
+    DEFAULT_INSTANCE_TYPE: Optional[str] = None
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -127,7 +127,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             A client authentication object, dependant on the cloud.
         """
         connector = self.get_connector()
-        return connector.connect()
+        if connector:
+            return connector.connect()
 
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
         """Run to set up the sky job.

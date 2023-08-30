@@ -59,7 +59,7 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
         Returns:
             A `setup` string.
         """
-        assert stack.container_registry is not None
+        assert stack is not None and stack.container_registry is not None
         return f"aws ecr get-login-password --region {stack.container_registry._get_region()} | docker login --username AWS --password-stdin {stack.container_registry.config.uri}"
 
     @property
