@@ -70,7 +70,7 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet HEAD^..HEAD; then
+          if git diff --quiet "${{ github.event.pull_request.head.ref }}" "origin/${{ github.event.pull_request.head.ref }}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
