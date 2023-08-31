@@ -169,7 +169,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     )
                 if kubernetes_context != active_context:
                     logger.warning(
-                        f"{msg}the Kubernetes context '{kubernetes_context}' "
+                        f"{msg}the Kubernetes context '{kubernetes_context}' "  # nosec
                         f"configured for the Tekton orchestrator is not "
                         f"the same as the active context in the local "
                         f"Kubernetes configuration. If this is not deliberate,"
