@@ -89,9 +89,14 @@ def email_opt_int(opted_in: bool, email: Optional[str], source: str) -> None:
         identify(metadata={"email": email})
 
     # Track that the user answered the prompt
+    metadata = {"opted_in": opted_in, "source": source}
+
+    if opted_in and email is not None and email != "":
+        metadata.update({"email": email})
+
     track(
-        AnalyticsEvent.OPT_IN_OUT_EMAIL,
-        {"opted_in": opted_in, "source": source},
+        event=AnalyticsEvent.OPT_IN_OUT_EMAIL,
+        metadata=metadata,
     )
 
 
