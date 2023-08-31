@@ -1,7 +1,7 @@
 """Release [0.44.0].
 
 Revision ID: 0.44.0
-Revises: 0.43.0, e1d66d91a099
+Revises: e1d66d91a099
 Create Date: 2023-08-28 16:44:39.678447
 
 """
@@ -9,7 +9,7 @@ Create Date: 2023-08-28 16:44:39.678447
 
 # revision identifiers, used by Alembic.
 revision = "0.44.0"
-down_revision = ("0.43.0", "e1d66d91a099")
+down_revision = "e1d66d91a099"
 branch_labels = None
 depends_on = None
 
