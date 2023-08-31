@@ -158,9 +158,6 @@ def init_logging() -> None:
     console_handler.setFormatter(CustomFormatter())
     logging.root.addHandler(console_handler)
 
-    logging.basicConfig()
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
         ENV_ZENML_SUPPRESS_LOGS, True

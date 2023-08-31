@@ -104,7 +104,6 @@ class Alembic:
         self.config.set_main_option(
             "version_locations", str(Path(__file__).parent / "versions")
         )
-        self.config.attributes['verbose'] = True
 
         self.script_directory = ScriptDirectory.from_config(self.config)
         if context is None:
