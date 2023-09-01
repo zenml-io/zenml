@@ -111,6 +111,10 @@ jobs:
         # Only run the markdown link check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
+      - name: Check for alembic branch divergence
+        run: |
+          bash scripts/check-alembic-branches.sh
+
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
