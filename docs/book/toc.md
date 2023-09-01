@@ -158,7 +158,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/0.43.0/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)

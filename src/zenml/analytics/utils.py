@@ -86,7 +86,7 @@ def email_opt_int(opted_in: bool, email: Optional[str], source: str) -> None:
     """
     # If the user opted in, associate email with the anonymous distinct ID
     if opted_in and email is not None and email != "":
-        identify(metadata={"email": email})
+        identify(metadata={"email": email, "source": source})
 
     # Track that the user answered the prompt
     track(
