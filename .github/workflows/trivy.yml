@@ -2,10 +2,10 @@ name: Trivy Scan
 
 on:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["develop"]
+    # branches: ["develop"]
     types: [opened, synchronize, ready_for_review]
 
 jobs:
