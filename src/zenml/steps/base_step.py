@@ -349,7 +349,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                hash_ = hashlib.md5()
+                hash_ = hashlib.md5()  # nosec
 
                 for source in output.materializer_source:
                     materializer_class = source_utils.load(source)

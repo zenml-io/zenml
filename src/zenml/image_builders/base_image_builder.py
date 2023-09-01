@@ -117,7 +117,7 @@ class BaseImageBuilder(StackComponent, ABC):
         parent_path = f"{artifact_store.path}/{parent_path_directory_name}"
         fileio.makedirs(parent_path)
 
-        hash_ = hashlib.sha1()
+        hash_ = hashlib.sha1()  # nosec
         with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as f:
             build_context.write_archive(f, gzip=True)
 
