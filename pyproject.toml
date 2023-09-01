@@ -392,6 +392,7 @@ module = [
     "slack_sdk.*",
     "azure-keyvault-keys.*",
     "azure-mgmt-resource.*",
+    "azure.mgmt.resource.*",
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
