@@ -31,6 +31,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
+from aws_profile_manager import Common
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
@@ -1316,6 +1317,7 @@ class AWSServiceConnector(ServiceConnector):
 
     def _configure_local_client(
         self,
+        profile_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
@@ -1324,6 +1326,11 @@ class AWSServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
+            profile_name: The name of the AWS profile to use. If not specified,
+                a profile name is generated based on the first 8 digits of the
+                connector's UUID in the form 'zenml-<uuid[:8]>'. If a profile
+                with the given or generated name already exists, the profile is
+                overwritten.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -1335,10 +1342,41 @@ class AWSServiceConnector(ServiceConnector):
         resource_type = self.resource_type
 
         if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
-            raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+            session, _ = self.get_boto3_session(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=self.resource_id,
             )
+
+            # Configure a new AWS SDK profile with the credentials
+            # from the session using the aws-profile-manager package
+
+            # Generate a profile name based on the first 8 digits from the
+            # connector UUID, if one is not supplied
+            aws_profile_name = profile_name or f"zenml-{str(self.id)[:8]}"
+            common = Common()
+            users_home = common.get_users_home()
+            all_profiles = common.get_all_profiles(users_home)
+
+            credentials = session.get_credentials()
+            all_profiles[aws_profile_name] = {
+                "region": self.config.region,
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
+            }
+
+            if credentials.token:
+                all_profiles[aws_profile_name][
+                    "aws_session_token"
+                ] = credentials.token
+
+            common.rewrite_credentials_file(all_profiles, users_home)
+
+            logger.info(
+                f"Configured local AWS SDK profile '{aws_profile_name}'."
+            )
+
+            return
 
         raise NotImplementedError(
             f"Configuring the local client for {resource_type} resources is "
