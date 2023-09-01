@@ -277,7 +277,6 @@ jobs:
           pip check || true
 
   mlstacks-compatibility-check:
-    needs: integration-tests
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
