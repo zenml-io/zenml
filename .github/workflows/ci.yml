@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ubuntu-setup-python-environment:
+  ubuntu-setup-and-test-python:
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -28,7 +28,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  windows-setup-python-environment:
+  windows-setup-and-test-python:
     strategy:
       matrix:
         os: [windows-latest]
@@ -40,7 +40,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  macos-setup-python-environment:
+  macos-setup-and-test-python:
     strategy:
       matrix:
         os: [macos-latest]
@@ -50,50 +50,11 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
-    secrets: inherit
-
-  ubuntu-lint-unit-test:
-    needs: ubuntu-setup-python-environment
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
-        
-  windows-lint-unit-test:
-    needs: windows-setup-python-environment
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
-    
-  macos-lint-unit-test:
-    needs: macos-setup-python-environment
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
     secrets: inherit
 
   ubuntu-integration-test:
     needs: 
-      - ubuntu-lint-unit-test
+      - ubuntu-setup-and-test-python
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -123,7 +84,7 @@ jobs:
 
   windows-integration-test:
     needs: 
-      - windows-lint-unit-test
+      - windows-setup-and-test-python
     strategy:
       matrix:
         os: [windows-latest]
@@ -141,7 +102,7 @@ jobs:
 
   macos-integration-test:
     needs: 
-      - macos-lint-unit-test
+      - macos-setup-and-test-python
     strategy:
       matrix:
         os: [macos-latest]
@@ -158,8 +119,8 @@ jobs:
     secrets: inherit
 
   ubuntu-templates-test:
-    needs: 
-      - ubuntu-lint-unit-test
+    needs:
+      - ubuntu-setup-and-test-python
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -170,10 +131,10 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
     secrets: inherit
-  
+
   windows-templates-test:
     needs: 
-      - windows-lint-unit-test
+      - windows-setup-and-test-python
     strategy:
       matrix:
         os: [windows-latest]
@@ -186,8 +147,8 @@ jobs:
     secrets: inherit
 
   macos-templates-test:
-    needs: 
-      - macos-lint-unit-test
+    needs:
+      - macos-setup-and-test-python
     strategy:
       matrix:
         os: [macos-latest]
