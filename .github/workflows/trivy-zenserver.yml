@@ -1,4 +1,4 @@
-name: Trivy Scan
+name: Trivy ZenServer Scan
 
 on:
   push:
@@ -27,16 +27,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: "trivy-results-zenserver.sarif"
-
-      - name: zenml-Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-            image-ref: "docker.io/zenmldocker/zenml:latest"
-            format: "sarif"
-            output: "trivy-results-zenml.sarif"
-
-      - name: Upload Trivy zenml scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-            sarif_file: "trivy-results-zenml.sarif"
-

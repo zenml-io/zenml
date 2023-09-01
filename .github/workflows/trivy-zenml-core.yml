@@ -1,0 +1,30 @@
+name: Trivy ZenServer Scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    # branches: ["develop"]
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  trivy-scan:
+    name: Trivy scan & analysis
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: zenml-Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+            image-ref: "docker.io/zenmldocker/zenml:latest"
+            format: "sarif"
+            output: "trivy-results-zenml.sarif"
+
+      - name: Upload Trivy zenml scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+            sarif_file: "trivy-results-zenml.sarif"
+
