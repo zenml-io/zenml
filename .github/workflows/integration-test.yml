@@ -275,3 +275,29 @@ jobs:
           zenml integration list
           pip list
           pip check || true
+
+  mlstacks-compatibility-check:
+    needs: integration-tests
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      MLSTACKS_ANALYTICS_OPT_IN: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+
+      - name: Install current package as editable
+        run: pip install -e .
+
+      - name: Install mlstacks package
+        run: pip install mlstacks
+
+      - name: Check for broken dependencies
+        run: pip check

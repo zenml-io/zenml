@@ -16,7 +16,7 @@ jobs:
       python-version: "3.8"
     secrets: inherit
 
-  compatibility-check:
+  mlstacks-compatibility-check:
     needs: lint-unit-test
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
         run: pip check
 
   publish-python-package:
-    needs: [lint-unit-test, compatibility-check]
+    needs: [lint-unit-test, mlstacks-compatibility-check]
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
