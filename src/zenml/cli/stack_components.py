@@ -1522,7 +1522,7 @@ def prompt_select_resource_id(
         # User needs to select a resource ID from the list
         if not interactive:
             cli_utils.error(
-                f"{msg}Please use the `--resource-id` command line "
+                f"{msg}Please use the `--resource-id` command line "  # nosec
                 f"argument to select a {resource_name} resource from the "
                 "list."
             )

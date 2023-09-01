@@ -81,7 +81,7 @@ class ServiceEndpointStatus(ServiceStatus):
             return None
 
         hostname = self.hostname
-        if hostname == "0.0.0.0":
+        if hostname == "0.0.0.0":  # nosec
             hostname = DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 
         return f"{self.protocol.value}://{hostname}:{self.port}"
