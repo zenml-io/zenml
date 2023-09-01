@@ -124,7 +124,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         """Set up credentials for the orchestrator.
 
         Returns:
-            A client authentication object, dependant on the cloud.
+            A client authentication object, dependent on the cloud.
         """
         connector = self.get_connector()
         if connector:
