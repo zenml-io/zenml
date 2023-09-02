@@ -982,7 +982,7 @@ class Pipeline:
         """
         from packaging import version
 
-        hash_ = hashlib.md5()
+        hash_ = hashlib.md5()  # nosec
         hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         if version.parse(pipeline_spec.version) >= version.parse("0.4"):
