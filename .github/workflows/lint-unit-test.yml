@@ -99,6 +99,9 @@ jobs:
         # Only run the docstring check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
+      - name: Security check
+        run: bash scripts/check-security.sh
+
       - name: Markdown link check
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:

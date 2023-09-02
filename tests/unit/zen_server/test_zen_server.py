@@ -50,7 +50,9 @@ def test_server_up_down(clean_client, mocker):
         )
         assert server.status is not None
         assert server.status.url == endpoint
-        assert requests.head(endpoint + "/health").status_code == 200
+        assert (
+            requests.head(endpoint + "/health", timeout=31).status_code == 200
+        )
     except RuntimeError:
         print("ZenServer failed to start. Pulling logs...")
         for line in deployer.get_server_logs(

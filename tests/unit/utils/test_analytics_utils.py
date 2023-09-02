@@ -170,7 +170,7 @@ def test_analytics_event(
         name="new_artifact_store",
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
-        configuration={"path": "/tmp/path/for/test"},
+        configuration={"path": "/tmp/path/for/test"},  # nosec
     )
     clean_client.create_stack(
         name="new_stack",
