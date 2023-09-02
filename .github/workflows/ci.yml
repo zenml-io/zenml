@@ -16,6 +16,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mlstacks-compatibility-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install current package as editable
+        run: pip install -e .
+
+      - name: Install mlstacks package
+        run: pip install mlstacks
+
+      - name: Check for broken dependencies
+        run: pip check
+
   ubuntu-setup-and-test-python:
     strategy:
       matrix:
