@@ -202,7 +202,7 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 
 </details>
 
-#### Azure Service Principal
+### Azure Service Principal
 
 Azure service principal credentials consists of an Azure client ID and client secret. These credentials are used to authenticate clients to Azure services.
 
@@ -290,7 +290,7 @@ zenml service-connector describe azure-service-principal
 
 </details>
 
-#### Azure Access Token
+### Azure Access Token
 
 Uses [temporary Azure access tokens](best-security-practices.md#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
 
