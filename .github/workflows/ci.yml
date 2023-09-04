@@ -73,7 +73,7 @@ jobs:
     secrets: inherit
   
   update-e2e-template:
-    needs: ubuntu-setup-python-environment
+    needs: ubuntu-setup-and-test-python
     uses: ./.github/workflows/update-e2e-template.yml
     with:
       python-version: "3.8"
