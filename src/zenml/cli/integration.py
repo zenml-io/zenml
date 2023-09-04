@@ -57,7 +57,7 @@ def list_integrations() -> None:
     warning(
         "\n" + "To install the dependencies of a specific integration, type: "
     )
-    warning("zenml integration install EXAMPLE_NAME")
+    warning("zenml integration install INTEGRATION_NAME")
 
 
 @integration.command(
@@ -89,7 +89,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
                 "\n" + "To install the dependencies of a "
                 "specific integration, type: "
             )
-            warning("zenml integration install EXAMPLE_NAME")
+            warning("zenml integration install INTEGRATION_NAME")
 
 
 @integration.command(

@@ -36,12 +36,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6,<=0.2.8"]  # supports old API and pyyaml 6
-
-    @staticmethod
-    def activate() -> None:
-        """Activate the Evidently integration."""
-        from zenml.integrations.evidently import materializers  # noqa
+    REQUIREMENTS = ["evidently>0.2.6"]  # supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
