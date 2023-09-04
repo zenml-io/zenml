@@ -82,7 +82,7 @@ def _patch_k8s_clients(mocker):
     )
 
     mocker.patch("kubernetes.client.CoreV1Api")
-    mocker.patch("kubernetes.client.BatchV1beta1Api")
+    mocker.patch("kubernetes.client.BatchV1Api")
     mocker.patch("kubernetes.client.RbacAuthorizationV1Api")
 
 
