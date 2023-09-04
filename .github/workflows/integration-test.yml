@@ -198,10 +198,7 @@ jobs:
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           brew update
-          # Workaround for https://github.com/actions/runner-images/issues/8104
-          brew remove --ignore-dependencies qemu
-          curl -o ./qemu.rb https://raw.githubusercontent.com/Homebrew/homebrew-core/dc0669eca9479e9eeb495397ba3a7480aaa45c2e/Formula/qemu.rb
-          brew install ./qemu.rb
+          brew install --reinstall qemu
           brew install docker colima
 
           # We need to mount the /private/tmp/zenml-test/ folder because
