@@ -198,7 +198,6 @@ jobs:
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           brew update
-          brew install --reinstall qemu
           brew install docker colima
 
           # We need to mount the /private/tmp/zenml-test/ folder because
