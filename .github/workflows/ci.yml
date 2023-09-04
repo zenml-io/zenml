@@ -51,6 +51,14 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  
+  update-e2e-template:
+    needs: ubuntu-setup-python-environment
+    uses: ./.github/workflows/update-e2e-template.yml
+    with:
+      python-version: "3.8"
+      os: ubuntu-latest
+    secrets: inherit
 
   ubuntu-lint-unit-test:
     needs: ubuntu-setup-python-environment
