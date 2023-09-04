@@ -3,10 +3,8 @@ name: Trivy ZenServer Scan
 on:
   push:
     branches: ["main"]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    # branches: ["develop"]
-    types: [opened, synchronize, ready_for_review]
+  schedule:
+    - cron: '0 4 * * 1'  # At 04:00 on Monday
 
 jobs:
   trivy-scan:
