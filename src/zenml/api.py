@@ -25,19 +25,20 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def show(ngrok_token: Optional[str] = None) -> None:
+def show(ngrok_token: Optional[str] = None, local: bool = False) -> None:
     """Show the ZenML dashboard.
 
     Args:
         ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
+        local: If set to True, only show the local dashboard.
     """
     from zenml.utils.dashboard_utils import show_dashboard
     from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
     from zenml.zen_server.utils import get_active_server_details
 
-    url, port = get_active_server_details()
+    url, port = get_active_server_details(local=local)
 
     if ngrok_token and port:
         ngrok_url = get_or_create_ngrok_tunnel(

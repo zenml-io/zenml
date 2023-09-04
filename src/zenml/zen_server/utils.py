@@ -29,9 +29,6 @@ from zenml.constants import (
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
-from zenml.zen_server.deploy.local.local_zen_server import (
-    LocalServerDeploymentConfig,
-)
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -123,7 +120,24 @@ def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
     return None
 
 
-def get_active_server_details() -> Tuple[str, Optional[int]]:
+def get_deployed_server_url(local: bool = True) -> Optional[str]:
+    """Get the URL of the deployed server.
+
+    Args:
+        local: Whether to return the local or remote server URL.
+
+    Returns:
+        The URL of the deployed server or None if no server was found.
+    """
+    server = get_active_deployment(local=local)
+    if server and server.status and server.status.url:
+        return server.status.url
+    return None
+
+
+def get_active_server_details(
+    local: bool = False,
+) -> Tuple[str, Optional[int]]:
     """Get the URL of the current ZenML Server.
 
     When multiple servers are present, the following precedence is used to
@@ -132,30 +146,34 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     - If no server is connected, a server that was deployed remotely has
         precedence over a server that was deployed locally.
 
+    Args:
+        local: If True, only locally deployed servers are considered.
+
     Returns:
         The URL and port of the currently active server.
 
     Raises:
         RuntimeError: If no server is active.
     """
+    url: Optional[str] = None
+
     # Check for connected servers first
     gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
+    if not local and not gc.uses_default_store() and gc.store is not None:
         logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store.url)
-        return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
-    # Else, check for deployed servers
-    server = get_active_deployment(local=False)
-    if server:
+        url = gc.store.url
+
+    # Next, check for remotely deployed servers
+    elif not local and (url := get_deployed_server_url(local=False)):
         logger.debug("Getting URL of remote server.")
-    else:
-        server = get_active_deployment(local=True)
+
+    # Finally, check for locally deployed servers
+    elif url := get_deployed_server_url(local=True):
         logger.debug("Getting URL of local server.")
 
-    if server and server.status and server.status.url:
-        if isinstance(server.config, LocalServerDeploymentConfig):
-            return server.status.url, server.config.port
-        return server.status.url, None
+    if url:
+        parsed_url = urlparse(url)
+        return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
 
     raise RuntimeError(
         "ZenML is not connected to any server right now. Please use "
