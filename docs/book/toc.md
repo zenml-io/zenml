@@ -15,6 +15,7 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
+  * [Project templates](user-guide/starter-guide/using-project-templates.md)
   * [Switch to production](user-guide/starter-guide/switch-to-production.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
@@ -45,6 +46,7 @@
 ## Deploying ZenML
 
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+  * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
   * [Get started](deploying-zenml/zenml-cloud/get-started.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
   * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
@@ -140,7 +142,7 @@
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
 * [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
-  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
+  * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
 ## Learning

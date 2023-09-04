@@ -50,6 +50,8 @@ from sqlalchemy.orm import noload
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_decorator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -163,7 +165,6 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -983,8 +984,8 @@ class SqlZenStore(BaseZenStore):
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
 
-        # Fetch the deployment ID from the database and use it to replace the one
-        # fetched from the global configuration
+        # Fetch the deployment ID from the database and use it to replace
+        # the one fetched from the global configuration
         with Session(self.engine) as session:
             identity = session.exec(select(IdentitySchema)).first()
 
@@ -998,7 +999,7 @@ class SqlZenStore(BaseZenStore):
     # ------
     # Stacks
     # ------
-    @track(AnalyticsEvent.REGISTERED_STACK, v2=True)
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
@@ -1041,6 +1042,7 @@ class SqlZenStore(BaseZenStore):
                 workspace_id=stack.workspace,
                 user_id=stack.user,
                 is_shared=stack.is_shared,
+                stack_spec_path=stack.stack_spec_path,
                 name=stack.name,
                 description=stack.description,
                 components=defined_components,
@@ -1114,7 +1116,7 @@ class SqlZenStore(BaseZenStore):
             schema=StackSchema, workspace_id=workspace_id
         )
 
-    @track(AnalyticsEvent.UPDATED_STACK, v2=True)
+    @track_decorator(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
@@ -1185,7 +1187,6 @@ class SqlZenStore(BaseZenStore):
 
             return existing_stack.to_model()
 
-    @track(AnalyticsEvent.DELETED_STACK)
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
@@ -1297,7 +1298,7 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Stack components
     # ----------------
-    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT, v2=True)
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
         component: ComponentRequestModel,
@@ -1351,6 +1352,7 @@ class SqlZenStore(BaseZenStore):
                 workspace_id=component.workspace,
                 user_id=component.user,
                 is_shared=component.is_shared,
+                component_spec_path=component.component_spec_path,
                 type=component.type,
                 flavor=component.flavor,
                 configuration=base64.b64encode(
@@ -1435,7 +1437,6 @@ class SqlZenStore(BaseZenStore):
             schema=StackComponentSchema, workspace_id=workspace_id
         )
 
-    @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
         self, component_id: UUID, component_update: ComponentUpdateModel
     ) -> ComponentResponseModel:
@@ -1533,7 +1534,6 @@ class SqlZenStore(BaseZenStore):
 
             return existing_component.to_model()
 
-    @track(AnalyticsEvent.DELETED_STACK_COMPONENT)
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
@@ -1673,7 +1673,7 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR, v1=False, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -1810,7 +1810,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=flavor_filter_model,
             )
 
-    @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
 
@@ -1854,7 +1853,6 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
-    @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
@@ -1956,7 +1954,6 @@ class SqlZenStore(BaseZenStore):
             )
             return paged_user
 
-    @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
         self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
@@ -1992,7 +1989,6 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_user)
             return existing_user.to_model()
 
-    @track(AnalyticsEvent.DELETED_USER)
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -2018,7 +2014,6 @@ class SqlZenStore(BaseZenStore):
     # Teams
     # -----
 
-    @track(AnalyticsEvent.CREATED_TEAM)
     def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
@@ -2094,7 +2089,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=team_filter_model,
             )
 
-    @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
         self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
@@ -2140,7 +2134,6 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_team)
             return existing_team.to_model()
 
-    @track(AnalyticsEvent.DELETED_TEAM)
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
@@ -2156,7 +2149,6 @@ class SqlZenStore(BaseZenStore):
     # Roles
     # -----
 
-    @track(AnalyticsEvent.CREATED_ROLE)
     def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
@@ -2226,7 +2218,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=role_filter_model,
             )
 
-    @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
         self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
@@ -2303,7 +2294,6 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_role)
             return existing_role.to_model()
 
-    @track(AnalyticsEvent.DELETED_ROLE)
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
 
@@ -2615,7 +2605,7 @@ class SqlZenStore(BaseZenStore):
     # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_WORKSPACE, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
     def create_workspace(
         self, workspace: WorkspaceRequestModel
     ) -> WorkspaceResponseModel:
@@ -2691,7 +2681,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=workspace_filter_model,
             )
 
-    @track(AnalyticsEvent.UPDATED_WORKSPACE)
     def update_workspace(
         self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
     ) -> WorkspaceResponseModel:
@@ -2738,7 +2727,6 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_workspace)
             return existing_workspace.to_model()
 
-    @track(AnalyticsEvent.DELETED_WORKSPACE)
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
         """Deletes a workspace.
 
@@ -2768,7 +2756,7 @@ class SqlZenStore(BaseZenStore):
     # ---------
     # Pipelines
     # ---------
-    @track(AnalyticsEvent.CREATE_PIPELINE, v2=True)
+    @track_decorator(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self,
         pipeline: PipelineRequestModel,
@@ -2866,7 +2854,6 @@ class SqlZenStore(BaseZenStore):
             schema=PipelineSchema, workspace_id=workspace_id
         )
 
-    @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self,
         pipeline_id: UUID,
@@ -2903,7 +2890,6 @@ class SqlZenStore(BaseZenStore):
 
             return existing_pipeline.to_model()
 
-    @track(AnalyticsEvent.DELETE_PIPELINE)
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
@@ -4388,7 +4374,7 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
-    @track(AnalyticsEvent.CREATED_SERVICE_CONNECTOR, v1=False, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_SERVICE_CONNECTOR)
     def create_service_connector(
         self, service_connector: ServiceConnectorRequestModel
     ) -> ServiceConnectorResponseModel:

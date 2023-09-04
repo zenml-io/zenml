@@ -1,23 +1,26 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
-
-from typing import Annotated, Any, Dict
 
 import mlflow
 import pandas as pd
+from artifacts.model_metadata import ModelMetadata
 from sklearn.base import ClassifierMixin
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.client import Client
@@ -42,7 +45,7 @@ if not experiment_tracker or not isinstance(
 @step(experiment_tracker=experiment_tracker.name)
 def model_trainer(
     dataset_trn: pd.DataFrame,
-    best_model_config: Dict[str, Any],
+    model_config: ModelMetadata,
     target: str,
     random_seed: int = 42,
 ) -> Annotated[ClassifierMixin, "model"]:
@@ -69,9 +72,7 @@ def model_trainer(
 
     Args:
         dataset_trn: The preprocessed train dataset.
-        best_model_config: Dictionary describing best model from Hyperparameter tuning step.
-            It has `class` - a pointer to model class and `params` - dictionary of best possible
-            parameters.
+        model_config: `ModelMetadata` to train on
         target: Name of target columns in dataset.
         random_seed: Fixed seed of random generator.
 
@@ -82,8 +83,8 @@ def model_trainer(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Initialize the model with the hyperparameters indicated in the step
     # parameters and train it on the training set.
-    hyperparameters = best_model_config["params"]
-    model_class = best_model_config["class"]
+    hyperparameters = model_config.params
+    model_class = model_config.model_class
     if "random_seed" in model_class.__init__.__code__.co_varnames:
         model = model_class(random_seed=random_seed, **hyperparameters)
     else:

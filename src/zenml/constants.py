@@ -97,6 +97,8 @@ ENV_ZENML_SERVER = "ZENML_SERVER"
 ENV_ZENML_HUB_URL = "ZENML_HUB_URL"
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
+ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
+
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -256,3 +258,36 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
+
+# Stack Recipe constants
+STACK_RECIPE_PACKAGE_NAME = "mlstacks"
+STACK_RECIPE_TERRAFORM_FILES_PATH = "terraform"
+STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
+STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
+ALPHA_MESSAGE = (
+    "The mlstacks tool/package is in alpha and actively being developed. "
+    "Please avoid running mission-critical workloads on resources deployed "
+    "through these commands. If you encounter any problems, create an issue "
+    f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
+)
+NOT_INSTALLED_MESSAGE = (
+    "The prerequisites for using `mlstacks` (the `mlstacks` and "
+    "`python-terraform` packages seem to be unavailable on your machine "
+    "and/or in your environment. To install the missing dependencies: \n\n"
+    "`pip install mlstacks`"
+)
+TERRAFORM_NOT_INSTALLED_MESSAGE = (
+    "Terraform appears not to be installed on your machine and/or in your "
+    "environment. Please install Terraform and try again."
+)
+STACK_RECIPE_MODULAR_RECIPES = ["aws", "gcp", "k3d"]
+MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
+    "artifact_store",
+    "container_registry",
+    "experiment_tracker",
+    "orchestrator",
+    "model_deployer",
+    "model_registry",
+    "mlops_platform",
+    "step_operator",
+]

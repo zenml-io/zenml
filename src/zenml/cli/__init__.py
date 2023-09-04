@@ -80,12 +80,20 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guide/starter-guide/using-project-templates#list-of-zenml-project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
 ```bash
-zenml init --template
+zenml init --template <name_of_template>
+```
+
+Running the above command will result in input prompts being shown to you. If 
+you would like to rely on default values for the ZenML project template - 
+you can add ``--template-with-defaults`` to the same command, like this:
+
+```bash
+zenml init --template <name_of_template> --template-with-defaults
 ```
 
 If you wish to delete all data relating to your workspace from the
@@ -408,11 +416,11 @@ Deploying Stack Components
 --------------------------
 
 Stack components can be deployed directly via the CLI. You can use the `deploy`
-subcommand for this. For example, you could deploy an S3 artifact store using
+subcommand for this. For example, you could deploy a GCP artifact store using
 the following command:
 
 ```shell
-zenml artifact-store deploy s3_artifact_store --flavor=s3
+zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
@@ -1389,7 +1397,7 @@ Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just
 a few commands. Each recipe uses Terraform modules under the hood and once
 executed can set up a ZenML stack, ready to run your pipelines!
 
-A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
+A number of stack recipes are already available at [the `mlstacks` repository](https://github.com/zenml-io/mlstacks/). List them
 using the following command:
 
 ```bash

@@ -44,7 +44,7 @@ SLACK_CHANNEL_IDS = [get_channel_id_from_name("general")]
 def page_exists(url: str) -> bool:
     import requests
 
-    r = requests.get(url)
+    r = requests.get(url, timeout=5)
     return r.status_code == 200
 
 
@@ -62,7 +62,9 @@ def get_release_date(
         release if it exists (or None).
     """
     # Get the package's release information from the PyPI API
-    response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
+    response = requests.get(
+        f"https://pypi.org/pypi/{package_name}/json", timeout=5
+    )
 
     # Parse the JSON data
     data = response.json()

@@ -258,7 +258,7 @@ class SparkStepOperator(BaseStepOperator):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            shell=True,
+            shell=True,  # nosec
         )
         stdout, stderr = process.communicate()
 

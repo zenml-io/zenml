@@ -1,21 +1,24 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
-from typing import Annotated, Any, Dict
-
-from utils.sklearn_materializer import ModelInfoMaterializer
+from artifacts.materializer import ModelMetadataMaterializer
+from artifacts.model_metadata import ModelMetadata
+from typing_extensions import Annotated
 
 from zenml import get_step_context, step
 from zenml.client import Client
@@ -24,10 +27,10 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(output_materializers=ModelInfoMaterializer)
+@step(output_materializers=ModelMetadataMaterializer)
 def hp_tuning_select_best_model(
     search_steps_prefix: str,
-) -> Annotated[Dict[str, Any], "best_model"]:
+) -> Annotated[ModelMetadata, "best_model"]:
     """Find best model across all HP tuning attempts.
 
     This is an example of a model hyperparameter tuning step that takes
@@ -49,11 +52,8 @@ def hp_tuning_select_best_model(
         if run_step_name.startswith(search_steps_prefix):
             for output_name, output in run_step.outputs.items():
                 if output_name == "best_model":
-                    model = output.load()
-                    if (
-                        best_model is None
-                        or best_model["metric"] < model["metric"]
-                    ):
+                    model: ModelMetadata = output.load()
+                    if best_model is None or best_model.metric < model.metric:
                         best_model = model
     ### YOUR CODE ENDS HERE ###
-    return best_model or {}  # for types compatibility
+    return best_model or ModelMetadata(None)  # for types compatibility

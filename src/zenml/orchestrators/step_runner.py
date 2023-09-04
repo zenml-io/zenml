@@ -15,6 +15,7 @@
 """Class to run steps."""
 
 import inspect
+from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -30,9 +31,14 @@ from pydantic.typing import get_origin, is_union
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
+from zenml.constants import (
+    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    handle_bool_env_var,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
+from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.new.steps.step_context import StepContext, get_step_context
@@ -105,108 +111,141 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        step_instance = self._load_step()
-        output_materializers = self._load_output_materializers()
-        spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
+        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+            step_logging_enabled = False
+        else:
+            enabled_on_step = step_run.config.enable_step_logs
 
-        # (Deprecated) Wrap the execution of the step function in a step environment
-        # that the step function code can access to retrieve information about
-        # the pipeline runtime, such as the current step name and the current
-        # pipeline run ID
-        cache_enabled = is_setting_enabled(
-            is_enabled_on_step=step_run_info.config.enable_cache,
-            is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
-        )
-        with StepEnvironment(
-            step_run_info=step_run_info,
-            cache_enabled=cache_enabled,
-        ):
-            self._stack.prepare_step_run(info=step_run_info)
+            enabled_on_pipeline = None
+            if pipeline_run.deployment:
+                enabled_on_pipeline = (
+                    pipeline_run.deployment.pipeline_configuration.enable_step_logs
+                )
 
-            # Initialize the step context singleton
-            StepContext._clear()
-            StepContext(
-                pipeline_run=pipeline_run,
-                step_run=step_run,
-                output_materializers=output_materializers,
-                output_artifact_uris=output_artifact_uris,
+            step_logging_enabled = is_setting_enabled(
+                is_enabled_on_step=enabled_on_step,
+                is_enabled_on_pipeline=enabled_on_pipeline,
+            )
+
+        logs_context = nullcontext()
+        if step_logging_enabled and not redirected.get():
+            if step_run.logs:
+                logs_context = StepLogsStorageContext(  # type: ignore[assignment]
+                    logs_uri=step_run.logs.uri
+                )
+            else:
+                logger.debug(
+                    "There is no LogsResponseModel prepared for the step. The"
+                    "step logging storage is disabled."
+                )
+
+        with logs_context:
+            step_instance = self._load_step()
+            output_materializers = self._load_output_materializers()
+            spec = inspect.getfullargspec(
+                inspect.unwrap(step_instance.entrypoint)
+            )
+
+            # (Deprecated) Wrap the execution of the step function in a step
+            # environment that the step function code can access to retrieve
+            # information about the pipeline runtime, such as the current step
+            # name and the current pipeline run ID
+            cache_enabled = is_setting_enabled(
+                is_enabled_on_step=step_run_info.config.enable_cache,
+                is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
+            )
+            with StepEnvironment(
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
-            )
+            ):
+                self._stack.prepare_step_run(info=step_run_info)
 
-            # Parse the inputs for the entrypoint function.
-            function_params = self._parse_inputs(
-                args=spec.args,
-                annotations=spec.annotations,
-                input_artifacts=input_artifacts,
-            )
+                # Initialize the step context singleton
+                StepContext._clear()
+                StepContext(
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
+                    output_materializers=output_materializers,
+                    output_artifact_uris=output_artifact_uris,
+                    step_run_info=step_run_info,
+                    cache_enabled=cache_enabled,
+                )
 
-            step_failed = False
-            try:
-                return_values = step_instance.call_entrypoint(
-                    **function_params
+                # Parse the inputs for the entrypoint function.
+                function_params = self._parse_inputs(
+                    args=spec.args,
+                    annotations=spec.annotations,
+                    input_artifacts=input_artifacts,
                 )
-            except BaseException as step_exception:  # noqa: E722
-                step_failed = True
-                failure_hook_source = self.configuration.failure_hook_source
-                if failure_hook_source:
-                    logger.info("Detected failure hook. Running...")
-                    self.load_and_run_hook(
-                        failure_hook_source,
-                        step_exception=step_exception,
+
+                step_failed = False
+                try:
+                    return_values = step_instance.call_entrypoint(
+                        **function_params
                     )
-                raise
-            finally:
-                step_run_metadata = self._stack.get_step_run_metadata(
-                    info=step_run_info,
-                )
-                publish_step_run_metadata(
-                    step_run_id=step_run_info.step_run_id,
-                    step_run_metadata=step_run_metadata,
-                )
-                self._stack.cleanup_step_run(
-                    info=step_run_info, step_failed=step_failed
-                )
-                if not step_failed:
-                    success_hook_source = (
-                        self.configuration.success_hook_source
+                except BaseException as step_exception:  # noqa: E722
+                    step_failed = True
+                    failure_hook_source = (
+                        self.configuration.failure_hook_source
                     )
-                    if success_hook_source:
-                        logger.info("Detected success hook. Running...")
+                    if failure_hook_source:
+                        logger.info("Detected failure hook. Running...")
                         self.load_and_run_hook(
-                            success_hook_source,
-                            step_exception=None,
+                            failure_hook_source,
+                            step_exception=step_exception,
                         )
-                StepContext._clear()  # Remove the step context singleton
+                    raise
+                finally:
+                    step_run_metadata = self._stack.get_step_run_metadata(
+                        info=step_run_info,
+                    )
+                    publish_step_run_metadata(
+                        step_run_id=step_run_info.step_run_id,
+                        step_run_metadata=step_run_metadata,
+                    )
+                    self._stack.cleanup_step_run(
+                        info=step_run_info, step_failed=step_failed
+                    )
+                    if not step_failed:
+                        success_hook_source = (
+                            self.configuration.success_hook_source
+                        )
+                        if success_hook_source:
+                            logger.info("Detected success hook. Running...")
+                            self.load_and_run_hook(
+                                success_hook_source,
+                                step_exception=None,
+                            )
 
-            # Store and publish the output artifacts of the step function.
-            output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
-            )
-            output_data = self._validate_outputs(
-                return_values, output_annotations
-            )
-            artifact_metadata_enabled = is_setting_enabled(
-                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-            )
-            artifact_visualization_enabled = is_setting_enabled(
-                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-            )
-            output_artifact_ids = self._store_output_artifacts(
-                output_data=output_data,
-                output_artifact_uris=output_artifact_uris,
-                output_materializers=output_materializers,
-                artifact_metadata_enabled=artifact_metadata_enabled,
-                artifact_visualization_enabled=artifact_visualization_enabled,
-            )
+                        # Store and publish the output artifacts of the step function.
+                        output_annotations = parse_return_type_annotations(
+                            func=step_instance.entrypoint
+                        )
+                        output_data = self._validate_outputs(
+                            return_values, output_annotations
+                        )
+                        artifact_metadata_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                        )
+                        artifact_visualization_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                        )
+                        output_artifact_ids = self._store_output_artifacts(
+                            output_data=output_data,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                            artifact_metadata_enabled=artifact_metadata_enabled,
+                            artifact_visualization_enabled=artifact_visualization_enabled,
+                        )
+                    StepContext._clear()  # Remove the step context singleton
 
-        # Update the status and output artifacts of the step run.
-        publish_successful_step_run(
-            step_run_id=step_run_info.step_run_id,
-            output_artifact_ids=output_artifact_ids,
-        )
+            # Update the status and output artifacts of the step run.
+            publish_successful_step_run(
+                step_run_id=step_run_info.step_run_id,
+                output_artifact_ids=output_artifact_ids,
+            )
 
     def _load_step(self) -> "BaseStep":
         """Load the step instance.

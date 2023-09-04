@@ -113,10 +113,10 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     zenml deploy --provider aws
 
     # Deploy MLOps tools and infrastructure to any cloud
-    zenml orchestrator deploy kfp --flavor kubeflow --cloud gcp
+    zenml orchestrator deploy kfp --flavor kubeflow --provider gcp
 
     # Deploy entire MLOps stacks at once
-    zenml stack recipe deploy gcp-vertexai  
+    zenml stack deploy gcp-vertexai --provider gcp -o kubeflow ...
     ```
 *   **Standardization:** With ZenML, you can standardize MLOps infrastructure and tooling across your organization. Simply register your staging and production environments as ZenML stacks and invite your colleagues to run ML workflows on them.
 

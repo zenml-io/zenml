@@ -587,7 +587,7 @@ class KServeDeploymentService(BaseDeploymentService):
             request = json.loads(request)
         else:
             raise ValueError("Request must be a json string.")
-        response = requests.post(
+        response = requests.post(  # nosec
             self.prediction_url,
             headers=headers,
             json={"instances": request},

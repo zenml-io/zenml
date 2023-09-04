@@ -248,11 +248,11 @@ def build_cron_job_manifest(
     job_spec = k8s_client.V1CronJobSpec(
         schedule=cron_expression,
         job_template=k8s_client.V1JobTemplateSpec(
-            metadata=pod_manifest["metadata"],
+            metadata=pod_manifest.metadata,
             spec=k8s_client.V1JobSpec(
                 template=k8s_client.V1PodTemplateSpec(
-                    metadata=pod_manifest["metadata"],
-                    spec=pod_manifest["spec"],
+                    metadata=pod_manifest.metadata,
+                    spec=pod_manifest.spec,
                 ),
             ),
         ),
@@ -261,7 +261,7 @@ def build_cron_job_manifest(
     job_manifest = k8s_client.V1CronJob(
         kind="CronJob",
         api_version="batch/v1",
-        metadata=pod_manifest["metadata"],
+        metadata=pod_manifest.metadata,
         spec=job_spec,
     )
 

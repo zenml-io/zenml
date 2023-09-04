@@ -117,7 +117,7 @@ is a requirement for ZenML to connect to your Kubeflow Pipelines deployment.
 A Kubeflow orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy kubeflow_orchestrator --flavor=kubeflow ...
+zenml orchestrator deploy kubeflow_orchestrator --flavor=kubeflow --provider=<YOUR_PROVIDER> ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
@@ -151,23 +151,18 @@ When using the Kubeflow orchestrator locally, you'll additionally need:
 * [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local Kubernetes cluster.
 * [Terraform](https://www.terraform.io/downloads.html) installed to set up the Kubernetes cluster with various
   deployments.
+* [MLStacks](https://mlstacks.zenml.io) installed to handle the deployment
 
-To run the pipeline on a local Kubeflow Pipelines deployment, you can use the ZenML Stack recipes to spin up a local
-Kubernetes cluster and install Kubeflow Pipelines on it. The stack recipe is called `k3d-modular` and is available in
-the ZenML [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular). The recipe is
-modular, meaning that you can configure it to use different orchestrators, Model Deployers, and other tools.
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+ZenML `mlstacks` package to spin up a local
+Kubernetes cluster and install Kubeflow Pipelines on it.
 
 To deploy the stack, run the following commands:
 
 ```shell
-# Pull the `k3d-modular` recipe to your local system
-zenml stack recipe pull k3d-modular
 # Deploy the stack using the ZenML CLI:
-zenml stack recipe deploy k3d-modular -o kubeflow -a minio --no-server
-# run the following command to import the resources as a ZenML stack, manually
-zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-# set the imported stack as the active stack
-zenml stack set <STACK_NAME>
+zenml stack deploy k3d-modular -o kubeflow -a minio --provider k3d
+zenml stack set k3d-modular
 ```
 
 ```shell
@@ -175,7 +170,7 @@ zenml stack set <STACK_NAME>
 kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
 ```
 
-You can read more about the recipes in the [ZenML Stack Recipe Repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+You can read more about `mlstacks` on [our dedicated documentation page here](https://mlstacks.zenml.io).
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 4 GB of RAM, and 30 GB of disk space, so if you are using

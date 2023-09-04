@@ -213,7 +213,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 and kubernetes_context != active_context
             ):
                 logger.warning(
-                    f"{msg}the Kubernetes context '{kubernetes_context}' "
+                    f"{msg}the Kubernetes context '{kubernetes_context}' "  # nosec
                     f"configured for the Kubeflow orchestrator is not the "
                     f"same as the active context in the local Kubernetes "
                     f"configuration. If this is not deliberate, you should "
