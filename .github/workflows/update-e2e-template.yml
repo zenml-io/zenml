@@ -43,7 +43,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: "utf-8"
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
 
     defaults:
       run:
