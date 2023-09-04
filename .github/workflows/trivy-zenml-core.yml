@@ -1,4 +1,4 @@
-name: Trivy ZenServer Scan
+name: Trivy ZenML (core) Scan
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   trivy-scan:
-    name: Trivy scan & analysis
+    name: Trivy zenml scan & analysis
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code

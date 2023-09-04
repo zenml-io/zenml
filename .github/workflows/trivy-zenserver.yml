@@ -10,7 +10,7 @@ on:
 
 jobs:
   trivy-scan:
-    name: Trivy scan & analysis
+    name: Trivy ZenServer scan & analysis
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
