@@ -1,7 +1,7 @@
 """add stack and component spec paths to stack and components [e1d66d91a099].
 
 Revision ID: e1d66d91a099
-Revises: 0.42.1
+Revises: 0.43.0
 Create Date: 2023-07-27 16:07:57.115142
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e1d66d91a099"
-down_revision = "0.42.1"
+down_revision = "0.43.0"
 branch_labels = None
 depends_on = None
 
