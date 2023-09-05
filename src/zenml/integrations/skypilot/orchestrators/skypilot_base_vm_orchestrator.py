@@ -120,15 +120,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             A `sky.clouds.Cloud` instance.
         """
 
-    def setup_credentials(self) -> Any:
-        """Set up credentials for the orchestrator.
-
-        Returns:
-            A client authentication object, dependent on the cloud.
-        """
+    def setup_credentials(self) -> None:
+        """Set up credentials for the orchestrator."""
         connector = self.get_connector()
-        if connector:
-            return connector.connect()
+        connector._configure_local_client()
 
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
         """Run to set up the sky job.
