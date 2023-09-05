@@ -59,21 +59,31 @@ ZENML_PREVENT_PIPELINE_EXECUTION=false
 
 ## Disable rich traceback
 
-Set to `false` to disable the [`rich`](https://github.com/Textualize/rich) traceback:
+Set to `false` to disable the [`rich` traceback](https://rich.readthedocs.io/en/stable/traceback.html):
+
+
 ```bash
 ZENML_ENABLE_RICH_TRACEBACK=true
 ```
 
 ## ZenML global config path
 
-Path to global ZenML config:
+To set the path to the global config file, used by ZenML to manage and store the
+state for a number of settings, set the environment variable as follows:
+
 ```bash
 export ZENML_CONFIG_PATH=/path/to/somewhere
 ```
 
 ## Integration logs
 
-Setting to `false` disables integrations logs suppression:
+Setting this to `false` disables integrations logs suppression:
 ```bash
-ZENML_SUPPRESS_LOGS=false
+export ZENML_SUPPRESS_LOGS=false
 ```
+
+## Server configuration
+
+For more information on server configuration, see the [ZenML Server
+documentation](../../../deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
+for more, especially the section entitled "ZenML server configuration options".
