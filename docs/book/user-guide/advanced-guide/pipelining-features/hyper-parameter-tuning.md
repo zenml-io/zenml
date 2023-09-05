@@ -48,7 +48,7 @@ model later on.
 
 [code](../../../../../examples/e2e/pipelines/training.py)
 
-{% include "../../../../../examples/e2e/pipelines/training.py" start="5" end="10" %}
+{% render "../../../../../examples/e2e/pipelines/training.py" start="5" end="10" %}
 
 ```python
 ...
