@@ -1,4 +1,3 @@
-
 #  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,31 +24,41 @@ from zenml.exceptions import StackValidationError
 from zenml.stack import Stack
 
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot.orchestrators import SkypilotBaseOrchestrator
+    from zenml.integrations.skypilot.orchestrators import (
+        SkypilotBaseOrchestrator,
+    )
 
 
 def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
     """Helper function to get a SkyPilot VM orchestrator."""
-    from zenml.integrations.skypilot.orchestrators import (
-        SkypilotAWSOrchestrator,
-        SkypilotGCPOrchestrator,
-        SkypilotAzureOrchestrator,
-    )
     from zenml.integrations.skypilot.flavors import (
         SkypilotAWSOrchestratorConfig,
-        SkypilotGCPOrchestratorConfig,
         SkypilotAzureOrchestratorConfig,
+        SkypilotGCPOrchestratorConfig,
+    )
+    from zenml.integrations.skypilot.orchestrators import (
+        SkypilotAWSOrchestrator,
+        SkypilotAzureOrchestrator,
+        SkypilotGCPOrchestrator,
     )
 
     # Create a list of orchestrator classes and corresponding flavors
     orchestrators = [
         (SkypilotAWSOrchestrator, SkypilotAWSOrchestratorConfig, "vm_aws"),
         (SkypilotGCPOrchestrator, SkypilotGCPOrchestratorConfig, "vm_gcp"),
-        (SkypilotAzureOrchestrator, SkypilotAzureOrchestratorConfig, "vm_azure"),
+        (
+            SkypilotAzureOrchestrator,
+            SkypilotAzureOrchestratorConfig,
+            "vm_azure",
+        ),
     ]
 
     # Randomly select an orchestrator class and flavor
-    selected_orchestrator_class, selected_config_class, selected_flavor = random.choice(orchestrators)
+    (
+        selected_orchestrator_class,
+        selected_config_class,
+        selected_flavor,
+    ) = random.choice(orchestrators)
 
     return selected_orchestrator_class(
         name="",
@@ -62,7 +71,6 @@ def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
         created=datetime.now(),
         updated=datetime.now(),
     )
-
 
 
 def test_skypilot_orchestrator_local_stack(

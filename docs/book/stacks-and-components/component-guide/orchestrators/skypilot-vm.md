@@ -29,25 +29,14 @@ You should use the SkyPilot VM Orchestrator if:
 
 The SkyPilot VM Orchestrator integrates with the ZenML pipeline framework, allowing you to easily
 incorporate VM provisioning and management into your ML workflows. It abstracts away the complexities
-of managing cloud infrastructure, making it simple to launch jobs and clusters on any cloud provider.
+of managing cloud infrastructure, making it simple to launch jobs and clusters on a VM in any cloud of your choice.
 
 The orchestrator leverages the SkyPilot framework to handle the provisioning and scaling of VMs.
-It automatically manages the process of launching VMs on different cloud providers, ensuring maximum
-cost savings and GPU availability.
+It automatically manages the process of launching VMs for your pipelines, with support for both
+on-demand and managed spot VMs. While you can select the VM type you want to use, the orchestrator
+also includes an optimizer that automatically selects the cheapest VM/zone/region/cloud for your workloads.
+Finally, the orchestrator includes an autostop feature that cleans up idle clusters, preventing unnecessary cloud costs.
 
-One of the key features of the SkyPilot VM Orchestrator is its ability to maximize GPU availability.
-It achieves this by provisioning VMs in all available zones, regions, and clouds, with automatic failover.
-This ensures that your jobs can make the most efficient use of GPU resources.
-
-Additionally, the SkyPilot VM Orchestrator offers cost savings through various mechanisms.
-It leverages managed spot VMs, which can provide significant cost savings compared to on-demand VMs.
-The integration also includes an optimizer that automatically selects the cheapest VM/zone/region/cloud
-for your workloads, further reducing costs. Finally, the orchestrator includes an autostop feature that
-cleans up idle clusters, preventing unnecessary cloud costs.
-
-The SkyPilot VM Orchestrator seamlessly supports your existing GPU, TPU, and CPU workloads, requiring
-no code changes. It provides a unified interface for provisioning and managing VMs across different cloud
-providers, making it easy to run your machine learning workloads in a cost-effective and efficient manner.
 
 {% hint style="warning" %}
 The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs)
@@ -91,7 +80,15 @@ To use the SkyPilot VM Orchestrator, you need:
 * A [remote ZenML deployment](/docs/book/deploying-zenml/zenml-self-hosted/zenml-self-hosted.md) as part of your stack.
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 
-### Configure Service Connector with the SkyPilot VM Orchestrator.
+{% tabs %}
+{% tab title="AWS" %}
+
+We need first to install SkyPilot integration for AWS, using the following command:
+
+  ```shell
+    pip install zenml[connectors-aws]
+    zenml integration install aws vm_aws 
+  ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
 We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
@@ -128,7 +125,96 @@ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-skypilot-vm
 # Register and activate a stack with the new orchestrator
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+{% endtab %}
 
+{% tab title="GCP" %}
+
+We need first to install SkyPilot integration for GCP, using the following command:
+
+  ```shell
+    pip install zenml[connectors-gcp]
+    zenml integration install gcp vm_gcp 
+  ```
+
+To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
+We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
+for this purpose. For this example, we will use the [GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector)
+To configure the GCP Service Connector, you need to register a new service connector using the
+following command:
+
+```
+zenml service-connector list-types --type gcp
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ➖     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
+┃                       │        │                       │ impersonation   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+zenml service-connector register gcp-skypilot-vm -t gcp --auto-configure 
+
+```
+
+This will automatically configure the service connector with the appropriate credentials and permissions to
+provision VMs on GCP. You can then use the service connector to configure your registered VM Orchestrator stack component
+using the following command:
+
+```shell
+# Register the orchestrator
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor vm_gcp
+# Connect the orchestrator to the service connector
+zenml orchestrator connect <ORCHESTRATOR_NAME> --connector gcp-skypilot-vm
+
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+{% endtab %}
+
+{% tab title="Azure" %}
+
+We need first to install SkyPilot integration for Azure, using the following command:
+
+  ```shell
+    pip install zenml[connectors-azure]
+    zenml integration install azure vm_azure 
+  ```
+
+To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
+We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
+for this purpose. For this example, we will use the [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector)
+To configure the Azure Service Connector, you need to register a new service connector using the
+following command:
+
+```
+zenml service-connector list-types --type azure
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
+┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
+┃ Azure Service Connector │ 🇦  azure │ 🇦  azure-generic      │ implicit          │ ✅    │ ➖     ┃
+┃                         │          │ 📦 blob-container     │ service-principal │       │        ┃
+┃                         │          │ 🌀 kubernetes-cluster │ access-token      │       │        ┃
+┃                         │          │ 🐳 docker-registry    │                   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+zenml service-connector register azure-skypilot-vm -t azure --auto-configure 
+
+```
+
+This will automatically configure the service connector with the appropriate credentials and permissions to
+provision VMs on Azure. You can then use the service connector to configure your registered VM Orchestrator stack component
+using the following command:
+
+```shell
+# Register the orchestrator
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor vm_azure
+# Connect the orchestrator to the service connector
+zenml orchestrator connect <ORCHESTRATOR_NAME> --connector azure-skypilot-vm
+
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+{% endtab %}
 
 #### Additional Configuration
 
