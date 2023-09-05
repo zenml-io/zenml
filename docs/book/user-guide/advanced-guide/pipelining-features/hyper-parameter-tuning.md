@@ -32,6 +32,9 @@ that would allow for a different learning rate to be used across the same
 the `select_model_step` finds which hyperparameters gave the best results or 
 performance.
 
+{% set softwareVersion = "1.0.0" %}
+Current version is {{ softwareVersion }}.
+[Download it](website.com/download/{{ softwareVersion }})
 {{ config.variables.version }}
 
 {% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ config.variables.version }}/examples/e2e/pipelines/training.py" %}
