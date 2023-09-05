@@ -32,9 +32,9 @@ that would allow for a different learning rate to be used across the same
 the `select_model_step` finds which hyperparameters gave the best results or 
 performance.
 
-{{ version }}
+{% version %}
 
-{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ version }}/examples/e2e/pipelines/training.py" %}
+{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{% version %}/examples/e2e/pipelines/training.py" %}
 
 <details>
 
