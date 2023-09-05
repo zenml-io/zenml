@@ -36,7 +36,7 @@ performance.
 
 <summary>Explore this concept with E2E Template</summary>
 
-*To setup environment used below follow recommendations from 
+*To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 In `pipelines/training.py` you will find a training pipeline with 
@@ -45,6 +45,8 @@ model search spaces to run `hp_tuning_single_search` on followed by
 `hp_tuning_select_best_model` executed after all search steps are completed. As 
 a result, we are getting `best_model_config` to be used to train the best possible 
 model later on.
+
+{% include "../../../../examples/e2e/pipelines/training.py" start="5" end="10" %}
 
 ```python
 ...
@@ -106,7 +108,7 @@ def select_model_step():
 
 <summary>Explore this concept with E2E Template</summary>
 
-*To setup environment used below follow recommendations from 
+*To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 
