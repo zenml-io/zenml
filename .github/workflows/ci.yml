@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
     paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
     types: [opened, synchronize, ready_for_review]
@@ -70,6 +70,14 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+    secrets: inherit
+  
+  update-e2e-template:
+    needs: ubuntu-setup-and-test-python
+    uses: ./.github/workflows/update-e2e-template.yml
+    with:
+      python-version: "3.8"
+      os: ubuntu-latest
     secrets: inherit
 
   ubuntu-integration-test:
