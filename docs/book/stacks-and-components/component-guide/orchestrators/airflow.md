@@ -40,7 +40,7 @@ There are many options to use a deployed Airflow server:
   official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more
   information.
 
-If you're not using a stack recipe to deploy Airflow, there are some additional Python packages that you'll need to
+If you're not using `mlstacks` to deploy Airflow, there are some additional Python packages that you'll need to
 install in the Python environment of your Airflow server:
 
 * `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
