@@ -112,7 +112,7 @@ def select_model_step():
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 
-In [`steps/hp_tuning`](../../../../../examples/e2e/steps/hp_tuning) folder you will find two step files, which can be used 
+In [`steps/hp_tuning`](../../../../../examples/e2e/steps/hp_tuning/) folder you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
 specifically to your use case:
 - [`hp_tuning_single_search(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_single_search.py) is performing a randomized 
