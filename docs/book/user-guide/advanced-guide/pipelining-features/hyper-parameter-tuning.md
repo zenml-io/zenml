@@ -32,6 +32,10 @@ that would allow for a different learning rate to be used across the same
 the `select_model_step` finds which hyperparameters gave the best results or 
 performance.
 
+{{ space.name }}
+
+{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ space.name }}/examples/e2e/pipelines/training.py" %}
+
 <details>
 
 <summary>Explore this concept with E2E Template</summary>
@@ -46,9 +50,7 @@ model search spaces to run `hp_tuning_single_search` on followed by
 a result, we are getting `best_model_config` to be used to train the best possible 
 model later on.
 
-{{ space.name }}
 
-{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ space.name }}/examples/e2e/pipelines/training.py" %}
 
 ```python
 ...
