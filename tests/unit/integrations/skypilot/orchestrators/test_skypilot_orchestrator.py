@@ -1,0 +1,90 @@
+
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+import random
+from contextlib import ExitStack as does_not_raise
+from datetime import datetime
+from typing import TYPE_CHECKING
+from uuid import uuid4
+
+import pytest
+
+from zenml.enums import StackComponentType
+from zenml.exceptions import StackValidationError
+from zenml.stack import Stack
+
+if TYPE_CHECKING:
+    from zenml.integrations.skypilot.orchestrators import SkypilotBaseOrchestrator
+
+
+def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
+    """Helper function to get a SkyPilot VM orchestrator."""
+    from zenml.integrations.skypilot.orchestrators import (
+        SkypilotAWSOrchestrator,
+        SkypilotGCPOrchestrator,
+        SkypilotAzureOrchestrator,
+    )
+    from zenml.integrations.skypilot.flavors import (
+        SkypilotAWSOrchestratorConfig,
+        SkypilotGCPOrchestratorConfig,
+        SkypilotAzureOrchestratorConfig,
+    )
+
+    # Create a list of orchestrator classes and corresponding flavors
+    orchestrators = [
+        (SkypilotAWSOrchestrator, SkypilotAWSOrchestratorConfig, "vm_aws"),
+        (SkypilotGCPOrchestrator, SkypilotGCPOrchestratorConfig, "vm_gcp"),
+        (SkypilotAzureOrchestrator, SkypilotAzureOrchestratorConfig, "vm_azure"),
+    ]
+
+    # Randomly select an orchestrator class and flavor
+    selected_orchestrator_class, selected_config_class, selected_flavor = random.choice(orchestrators)
+
+    return selected_orchestrator_class(
+        name="",
+        id=uuid4(),
+        config=selected_config_class(**kwargs),
+        flavor=selected_flavor,
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+
+def test_skypilot_orchestrator_local_stack(
+    local_artifact_store, s3_artifact_store, remote_container_registry
+) -> None:
+    """Test the SkyPilot VM orchestrator with remote stacks."""
+
+    # Test missing container registry
+    orchestrator = _get_skypilot_orchestrator()
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=s3_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+
+    with pytest.raises(StackValidationError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+        ).validate()
