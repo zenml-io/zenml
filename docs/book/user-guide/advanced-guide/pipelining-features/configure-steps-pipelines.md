@@ -182,6 +182,52 @@ Another way to search would be by a combination of a pipeline name where the art
 artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="model")
 ```
 
+<details>
+
+<summary>Advance with E2E example</summary>
+
+*To setup local environment used below follow recommendations from 
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
+
+In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py) you can find an example using `ExternalArtifact` concept to
+share Artifacts produced by training pipeline inside batch inference pipeline.
+
+On ETL stage pipeline developer can pass `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
+With this we ensure that exactly same feature preprocessor used during training will be used during inference.
+
+```python
+    ########## ETL stage  ##########
+    df_inference, target = data_loader(is_inference=True)
+    df_inference = inference_data_preprocessor(
+        dataset_inf=df_inference,
+        preprocess_pipeline=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="preprocess_pipeline",
+        ),
+        target=target,
+    )
+```
+
+On DataQuality stage pipeline developer can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus current inference one to apply Evidently and get Data Quality report back.
+With this we ensure that exactly same training dataset used during training phase will be used to compare with inference dataset here.
+
+```python
+    ########## DataQuality stage  ##########
+    report, _ = evidently_report_step(
+        reference_dataset=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="dataset_trn",
+        ),
+        comparison_dataset=df_inference,
+        ignored_cols=["target"],
+        metrics=[
+            EvidentlyMetricConfig.metric("DataQualityPreset"),
+        ],
+    )
+```
+
+</details>
+
 ### Using a custom step invocation ID
 
 When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps) about the invocation after the pipeline has finished running.
