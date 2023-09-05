@@ -35,6 +35,7 @@
     * [Connect your git repository](user-guide/advanced-guide/environment-management/connect-your-git-repository.md)
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
+    * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
     * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
