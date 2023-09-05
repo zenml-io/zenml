@@ -34,7 +34,7 @@ performance.
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
@@ -106,7 +106,7 @@ def select_model_step():
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*

@@ -184,7 +184,7 @@ artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="mo
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*

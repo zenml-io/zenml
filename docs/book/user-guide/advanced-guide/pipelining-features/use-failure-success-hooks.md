@@ -64,7 +64,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
@@ -122,7 +122,7 @@ def my_step(some_parameter: int = 1)
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
@@ -153,7 +153,7 @@ def build_message(status: str) -> str:
         f"Run `{step_context.pipeline_run.name}` [{str(step_context.pipeline_run.id)}]\n"
         f"URL: {run_url}"
     )
-    
+
 @step(enable_cache=False)
 def notify_on_success() -> None:
     """Notifies user on pipeline success."""
@@ -190,7 +190,7 @@ def my_step(...):
 
 <details>
 
-<summary>Advance with E2E example</summary>
+<summary>See it in action with the E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
