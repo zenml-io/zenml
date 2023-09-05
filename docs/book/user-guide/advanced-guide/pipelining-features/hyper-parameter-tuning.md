@@ -48,7 +48,7 @@ model later on.
 
 [code](../../../../../examples/e2e/pipelines/training.py)
 
-{% render "../../../../../examples/e2e/pipelines/training.py" start="5" end="10" %}
+{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ space.name }}/examples/e2e/pipelines/training.py" %}
 
 ```python
 ...
