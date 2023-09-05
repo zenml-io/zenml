@@ -32,25 +32,14 @@ that would allow for a different learning rate to be used across the same
 the `select_model_step` finds which hyperparameters gave the best results or 
 performance.
 
-{% set softwareVersion = "1.0.0" %}
-
-Current version is {{ softwareVersion }}.
-[Download it](website.com/download/{{ softwareVersion }})
-
-{{ config.variables.version }}
-
-{% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ config.variables.version }}/examples/e2e/pipelines/training.py" %}
-
-{% include "../../../../../examples/e2e/pipelines/training.py" %}
-
 <details>
 
-<summary>Explore this concept with E2E Template</summary>
+<summary>Advance with E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In `pipelines/training.py` you will find a training pipeline with 
+In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py) you will find a training pipeline with 
 `Hyperparameter tuning stage` section. It contains a `for` loop over configured 
 model search spaces to run `hp_tuning_single_search` on followed by 
 `hp_tuning_select_best_model` executed after all search steps are completed. As 
@@ -117,18 +106,18 @@ def select_model_step():
 
 <details>
 
-<summary>Explore this concept with E2E Template</summary>
+<summary>Advance with E2E example</summary>
 
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 
-In `steps/hp_tuning` folder you will find two step files, which can be used 
+In [`steps/hp_tuning`](../../../../../examples/e2e/steps/hp_tuning) folder you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
 specifically to your use case:
-- `hp_tuning_single_search(...)` is performing a randomized 
+- [`hp_tuning_single_search(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_single_search.py) is performing a randomized 
     search for best model hyperparameters in configured space.
-- `hp_tuning_select_best_model(...)` is searching for best hyperparameters,
+- [`hp_tuning_select_best_model(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_select_best_model.py) is searching for best hyperparameters,
     looping other results of previous random searches to find best model according 
     to defined metric.
 
