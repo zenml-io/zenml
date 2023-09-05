@@ -46,7 +46,7 @@ model search spaces to run `hp_tuning_single_search` on followed by
 a result, we are getting `best_model_config` to be used to train the best possible 
 model later on.
 
-[code](../../../../../examples/e2e/pipelines/training.py)
+{{ space.name }}
 
 {% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ space.name }}/examples/e2e/pipelines/training.py" %}
 
