@@ -41,9 +41,7 @@ Current version is {{ softwareVersion }}.
 
 {% @github-files/github-code-block url="https://github.com/zenml-io/zenml/blob/{{ config.variables.version }}/examples/e2e/pipelines/training.py" %}
 
-```python
 {% include "../../../../../examples/e2e/pipelines/training.py" %}
-```
 
 <details>
 
