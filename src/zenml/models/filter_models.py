@@ -255,7 +255,7 @@ class BaseFilterModel(BaseModel):
         count_steps="gte:5"
         sort_by="created",
         page=2,
-        size=50
+        size=20
     )
     ```
     """
