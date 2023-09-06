@@ -1670,9 +1670,9 @@ class Client(metaclass=ClientMetaClass):
             stack_spec_path=stack_spec_file,
         )
 
-        if name:
-            shared_status = is_shared or stack.is_shared
+        shared_status = is_shared or stack.is_shared
 
+        if name:
             if self.list_stacks(name=name, is_shared=shared_status):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
@@ -1697,7 +1697,7 @@ class Client(metaclass=ClientMetaClass):
                             f"components are also shared. Component "
                             f"'{component_type}:{c.name}' is not shared. Set "
                             f"the {component_type} to shared like this and "
-                            f"then try re-sharing your stack:\n "
+                            f"then try re-sharing your stack:\n"
                             f"`zenml {component_type.replace('_', '-')} "
                             f"share {c.id}`\nAlternatively, you can rerun "
                             f"your command with `-r` to recursively "
@@ -1711,22 +1711,38 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components_dict = {
-                component_type: [c.id for c in component_list]
-                for component_type, component_list in stack.components.items()
-            }
+            components_dict = stack.components.copy()
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
                     components_dict[component_type] = [
                         self.get_stack_component(
-                            name_id_or_prefix=c,
+                            name_id_or_prefix=component_id,
                             component_type=component_type,
-                        ).id
-                        for c in component_id_list
+                        )
+                        for component_id in component_id_list
                     ]
 
-            update_model.components = components_dict
+            # If the stack is shared, ensure all new components are also shared
+            if shared_status:
+                for component_list in components_dict.values():
+                    for component in component_list:
+                        if not component.is_shared:
+                            raise ValueError(
+                                "Private components cannot be added to a "
+                                "shared stack. Component "
+                                f"'{component.type}:{component.name}' is not "
+                                "shared. Set the component to shared like "
+                                "this and then try adding it to your stack "
+                                "again:\n"
+                                f"`zenml {component.type.replace('_', '-')} "
+                                f"share {component.id}`."
+                            )
+
+            update_model.components = {
+                c_type: [c.id for c in c_list]
+                for c_type, c_list in components_dict.items()
+            }
 
         return self.zen_store.update_stack(
             stack_id=stack.id,
