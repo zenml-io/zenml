@@ -253,16 +253,16 @@ def down() -> None:
 
     if not server:
         cli_utils.declare("The local ZenML dashboard is not running.")
-        return
-    from zenml.zen_server.deploy.deployer import ServerDeployer
 
-    deployer = ServerDeployer()
-    deployer.remove_server(server.config.name)
+    else:
+        from zenml.zen_server.deploy.deployer import ServerDeployer
+
+        deployer = ServerDeployer()
+        deployer.remove_server(server.config.name)
+        cli_utils.declare("The local ZenML dashboard has been shut down.")
 
     gc = GlobalConfiguration()
     gc.set_default_store()
-
-    cli_utils.declare("The local ZenML dashboard has been shut down.")
 
 
 @cli.command("deploy", help="Deploy ZenML in the cloud.")
