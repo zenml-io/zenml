@@ -259,7 +259,8 @@ def down() -> None:
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
 
-    GlobalConfiguration()
+    gc = GlobalConfiguration()
+    gc.set_default_store()
 
     cli_utils.declare("The local ZenML dashboard has been shut down.")
 

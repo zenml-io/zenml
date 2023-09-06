@@ -144,8 +144,8 @@ class BaseZenStore(
             )
             if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
                 recommendation = (
-                    "Please run `zenml disconnect` and `zenml up` to restart "
-                    "the server."
+                    "Please run `zenml down` and `zenml up` to restart the "
+                    "server."
                 )
             else:
                 recommendation = (
