@@ -25,10 +25,6 @@ file.
 import logging
 import os
 import warnings
-from numba.core.errors import (
-    NumbaDeprecationWarning,
-    NumbaPendingDeprecationWarning,
-)
 from typing import List, Type
 
 from zenml.integrations.constants import EVIDENTLY
@@ -36,14 +32,20 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 
-# Fix numba errors in Docker
-os.environ["NUMBA_CACHE_DIR"] = "/tmp"
+# Fix numba errors in Docker and suppress logs and deprecation warning spam
+try:
+    from numba.core.errors import (  # type: ignore[import]
+        NumbaDeprecationWarning,
+        NumbaPendingDeprecationWarning,
+    )
 
-# Make numba not spam our test logs with debug messages and deprecation warnings
-numba_logger = logging.getLogger("numba")
-numba_logger.setLevel(logging.WARNING)
-warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
-warnings.simplefilter("ignore", category=NumbaPendingDeprecationWarning)
+    os.environ["NUMBA_CACHE_DIR"] = "/tmp"
+    numba_logger = logging.getLogger("numba")
+    numba_logger.setLevel(logging.WARNING)
+    warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
+    warnings.simplefilter("ignore", category=NumbaPendingDeprecationWarning)
+except ImportError:
+    pass
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
