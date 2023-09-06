@@ -39,10 +39,9 @@ performance.
 *To setup the local environment used below, follow the recommendations from the
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py) you will find a training pipeline with 
-`Hyperparameter tuning stage` section. It contains a `for` loop over configured 
-model search spaces to run `hp_tuning_single_search` on followed by 
-`hp_tuning_select_best_model` executed after all search steps are completed. As 
+In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py), you will find a training pipeline with a
+`Hyperparameter tuning stage` section. It contains a `for` loop that runs the `hp_tuning_single_search` over the configured model search spaces, followed by the
+`hp_tuning_select_best_model` being executed after all search steps are completed. As 
 a result, we are getting `best_model_config` to be used to train the best possible 
 model later on.
 
@@ -112,14 +111,14 @@ def select_model_step():
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 
-In `steps/hp_tuning` folder you will find two step files, which can be used 
+In the `steps/hp_tuning` folder, you will find two step files, which can be used 
 as a starting point for building your own hyperparameter search tailored 
 specifically to your use case:
 - [`hp_tuning_single_search(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_single_search.py) is performing a randomized 
-    search for best model hyperparameters in configured space.
-- [`hp_tuning_select_best_model(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_select_best_model.py) is searching for best hyperparameters,
-    looping other results of previous random searches to find best model according 
-    to defined metric.
+    search for the best model hyperparameters in a configured space.
+- [`hp_tuning_select_best_model(...)`](../../../../../examples/e2e/steps/hp_tuning/hp_tuning_select_best_model.py) is searching for the best hyperparameters,
+    looping other results of previous random searches to find the best model according 
+    to a defined metric.
 
 </details>
 

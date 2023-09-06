@@ -41,7 +41,7 @@ zenml init --template <short_name_of_template> --template-with-defaults
 <!-- ### Starter Guide
 
 Our Starter Guide documentation is built around the `Starter` project template codes. 
-Mostly examples will come from it, so we highly recommend you to install `starter` template
+Most examples will be based on it, so we highly recommend you to install the `starter` template
 with `--template-with-defaults` flag before diving deeper into this documentation section, 
 so you can follow this guide along using your own local environment.
 
@@ -54,7 +54,7 @@ zenml init --template starter --template-with-defaults
 ### Advanced Guide
 
 Our Advanced Guide documentation is built around the `E2E Batch` project template codes. 
-Mostly examples will come from it, so we highly recommend you to install `e2e_batch` template
+Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template
 with `--template-with-defaults` flag before diving deeper into this documentation section, 
 so you can follow this guide along using your own local environment.
 
