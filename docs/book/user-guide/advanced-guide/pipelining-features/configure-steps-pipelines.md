@@ -189,11 +189,11 @@ artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="mo
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py) you can find an example using `ExternalArtifact` concept to
-share Artifacts produced by training pipeline inside batch inference pipeline.
+In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
+share Artifacts produced by a training pipeline inside a batch inference pipeline.
 
-On ETL stage pipeline developer can pass `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
-With this we ensure that exactly same feature preprocessor used during training will be used during inference.
+On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
+With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
 
 ```python
     ########## ETL stage  ##########
@@ -208,8 +208,8 @@ With this we ensure that exactly same feature preprocessor used during training 
     )
 ```
 
-On DataQuality stage pipeline developer can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus current inference one to apply Evidently and get Data Quality report back.
-With this we ensure that exactly same training dataset used during training phase will be used to compare with inference dataset here.
+On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back.
+With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
 
 ```python
     ########## DataQuality stage  ##########

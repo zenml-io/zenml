@@ -69,14 +69,14 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py) you will find a step to notify the user
+In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py), you will find a step to notify the user
 about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md)
 from the active stack.
 
-We use `@step` for success notification to only notify the user about fully successful pipeline run and not about every successful step.
+We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
-In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py) you can find the usage of a notification step and a function. We will attach
-a notify on failure function directly to the pipeline definition like this:
+In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py), you can find the usage of a notification step and a function. We will attach
+a `notify_on_failure` function directly to the pipeline definition like this:
 
 ```python
 @pipeline(
@@ -86,7 +86,7 @@ a notify on failure function directly to the pipeline definition like this:
 )
 ```
 
-At the very end of the training pipeline we will execute the notify on success step, but only after all other steps finished - we control it with `after` statement as follows:
+At the very end of the training pipeline, we will execute the `notify_on_success` step, but only after all other steps have finished - we control it with `after` statement as follows:
 
 ```python
 ...
@@ -127,13 +127,13 @@ def my_step(some_parameter: int = 1)
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py) you will find a step to notify the user
+In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py), you will find a step to notify the user
 about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md)
 from the active stack.
 
-We use `@step` for success notification to only notify the user about fully successful pipeline run and not about every successful step.
+We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
-Inside the helper function `build_message()` you will find an example how developers can work with [StepContext](fetch-metadata-within-steps.md) to form a proper notification:
+Inside the helper function `build_message()`, you will find an example on how developers can work with [StepContext](fetch-metadata-within-steps.md) to form a proper notification:
 
 ```python
 def build_message(status: str) -> str:
@@ -195,13 +195,13 @@ def my_step(...):
 *To setup local environment used below follow recommendations from 
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py) you will find a step to notify the user
+In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify_on.py), you will find a step to notify the user
 about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md)
 from the active stack.
 
-We use `@step` for success notification to only notify the user about fully successful pipeline run and not about every successful step.
+We use `@step` for success notification to only notify the user about a fully successful pipeline run and not about every successful step.
 
-Inside code file you can find how developers can work with Al component to send notification messages across configured channels:
+Inside this code file, you can find how developers can work with Al component to send notification messages across configured channels:
 
 ```python
 from zenml.client import Client
