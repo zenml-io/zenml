@@ -22,12 +22,28 @@ dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
 file.
 """
 
+import logging
+import os
+import warnings
+from numba.core.errors import (
+    NumbaDeprecationWarning,
+    NumbaPendingDeprecationWarning,
+)
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
+
+
+# Fix numba errors in Docker
+os.environ["NUMBA_CACHE_DIR"] = "/tmp"
+
+# Make numba not spam our test logs with debug messages and deprecation warnings
+numba_logger = logging.getLogger("numba")
+numba_logger.setLevel(logging.WARNING)
+warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
+warnings.simplefilter("ignore", category=NumbaPendingDeprecationWarning)
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
