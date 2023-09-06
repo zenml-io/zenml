@@ -11,3 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+import logging
+
+from numba.core.errors import (
+    NumbaDeprecationWarning,
+    NumbaPendingDeprecationWarning,
+)
+import warnings
+
+
+# Make numba not spam our test logs with debug messages and deprecation warnings
+numba_logger = logging.getLogger("numba")
+numba_logger.setLevel(logging.WARNING)
+warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
+warnings.simplefilter("ignore", category=NumbaPendingDeprecationWarning)
