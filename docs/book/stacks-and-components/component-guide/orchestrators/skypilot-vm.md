@@ -108,8 +108,12 @@ zenml service-connector list-types --type aws
 ┃                       │        │                       │ session-token    │       │        ┃
 ┃                       │        │                       │ federation-token │       │        ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-zenml service-connector register aws-skypilot-vm -t aws --auto-configure 
+```
 
+For this example we will configure a service connector using the `sts-token` auth method. But before we can do that, we recommend you to create a new AWS profile, that will be used by the service connector. Once we have created the profile, we can register a new service connector using the following command:
+
+```shell
+AWS_PROFILE=connectors zenml service-connector register aws-skypilot-vm --type aws --auth-method sts-token --region=us-east-1 --auto-configure
 ```
 
 This will automatically configure the service connector with the appropriate credentials and permissions to
@@ -153,8 +157,23 @@ zenml service-connector list-types --type gcp
 ┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
 ┃                       │        │                       │ impersonation   │       │        ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-zenml service-connector register gcp-skypilot-vm -t gcp --auto-configure 
+```
 
+For this example we will configure a service connector using the `user-account` auth method. But before we can do that, we need to
+login to GCP using the following command:
+
+```shell
+ gcloud auth application-default login 
+```
+
+This will open a browser window and ask you to login to your GCP account. Once you have logged in, you can register a new service connector using the
+following command:
+
+```shell
+# We want to use --auto-configure to automatically configure the service connector with the appropriate credentials and permissions to provision VMs on GCP.
+zenml service-connector register gcp-skypilot-vm -t gcp --auth-method user-account --auto-configure 
+# using generic resource type requires disabling the generation of temporary tokens
+zenml service-connector update gcp-skypilot-vm --generate_temporary_tokens=False
 ```
 
 This will automatically configure the service connector with the appropriate credentials and permissions to
@@ -183,21 +202,21 @@ We need first to install SkyPilot integration for Azure, using the following com
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
 We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
-for this purpose. For this example, we will use the [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector)
+for this purpose. For this example, we will use the [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector)
 To configure the Azure Service Connector, you need to register a new service connector using the
 following command:
 
 ```
 zenml service-connector list-types --type azure
-┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
-┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
-┃ Azure Service Connector │ 🇦  azure │ 🇦  azure-generic      │ implicit          │ ✅    │ ➖     ┃
-┃                         │          │ 📦 blob-container     │ service-principal │       │        ┃
-┃                         │          │ 🌀 kubernetes-cluster │ access-token      │       │        ┃
-┃                         │          │ 🐳 docker-registry    │                   │       │        ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-zenml service-connector register azure-skypilot-vm -t azure --auto-configure 
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃          NAME           │ TYPE      │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
+┠─────────────────────────┼───────────┼───────────────────────┼───────────────────┼───────┼────────┨
+┃ Azure Service Connector │ 🇦  azure │ 🇦  azure-generic     │ implicit          │ ✅    │ ➖     ┃
+┃                         │           │ 📦 blob-container     │ service-principal │       │        ┃
+┃                         │           │ 🌀 kubernetes-cluster │ access-token      │       │        ┃
+┃                         │           │ 🐳 docker-registry    │                   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+zenml service-connector register azure-skypilot-vm -t azure --auth-method access-token --auto-configure
 
 ```
 
@@ -215,6 +234,7 @@ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector azure-skypilot-vm
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 {% endtab %}
+{% endtabs %}
 
 #### Additional Configuration
 
