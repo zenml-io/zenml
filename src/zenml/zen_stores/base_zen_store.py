@@ -152,7 +152,7 @@ class BaseZenStore(
                     "Please run `zenml disconnect` and `zenml connect --url "
                     f"{self.url}` to reconnect to the server."
                 )
-            raise RuntimeError(f"{error_message} {recommendation}") from e
+            raise RuntimeError(f"{error_message}\n{recommendation}") from e
 
         except Exception as e:
             raise RuntimeError(
