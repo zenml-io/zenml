@@ -301,16 +301,6 @@ def mlflow_model_registry_deployer_step(
         timeout=timeout,
     )
 
-    # Creating a new service with inactive state and status by default
-    service = MLFlowDeploymentService(predictor_cfg)
-    if existing_services:
-        service = cast(MLFlowDeploymentService, existing_services[0])
-
-    # check if the model is already deployed but not running
-    if existing_services and not service.is_running:
-        service.start(timeout)
-        return service
-
     # create a new model deployment and replace an old one if it exists
     new_service = cast(
         MLFlowDeploymentService,
@@ -325,5 +315,10 @@ def mlflow_model_registry_deployer_step(
         f"MLflow deployment service started and reachable at:\n"
         f"    {new_service.prediction_url}\n"
     )
+
+    if existing_services:
+        logger.info("Stopping existing services...")
+        for existing_service in existing_services:
+            existing_service.stop(timeout)
 
     return new_service
