@@ -186,7 +186,7 @@ artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="mo
 
 <summary>See it in action with the E2E example</summary>
 
-*To setup local environment used below follow recommendations from 
+*To setup the local environment used below, follow the recommendations from the
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py) you can find an example using `ExternalArtifact` concept to

@@ -36,7 +36,7 @@ performance.
 
 <summary>See it in action with the E2E example</summary>
 
-*To setup local environment used below follow recommendations from 
+*To setup the local environment used below, follow the recommendations from the
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 In [`pipelines/training.py`](../../../../../examples/e2e/pipelines/training.py) you will find a training pipeline with 
@@ -108,7 +108,7 @@ def select_model_step():
 
 <summary>See it in action with the E2E example</summary>
 
-*To setup local environment used below follow recommendations from 
+*To setup the local environment used below, follow the recommendations from the
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 
