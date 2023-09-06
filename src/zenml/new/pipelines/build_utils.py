@@ -321,7 +321,7 @@ def compute_build_checksum(
     Returns:
         The build checksum.
     """
-    hash_ = hashlib.md5()
+    hash_ = hashlib.md5()  # nosec
 
     for item in items:
         key = PipelineBuildBaseModel.get_image_key(

@@ -142,7 +142,7 @@
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
 * [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
-  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
+  * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
 ## Learning
@@ -158,7 +158,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/0.43.0/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)

@@ -90,7 +90,7 @@ ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with 
 A Tekton orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy tekton_orchestrator --flavor=tekton ...
+zenml orchestrator deploy tekton_orchestrator --flavor=tekton --provider=<YOUR_PROVIDER> ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,

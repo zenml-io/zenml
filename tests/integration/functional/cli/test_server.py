@@ -52,7 +52,7 @@ def test_server_cli_up_down(clean_client, mocker):
     time.sleep(5)
 
     endpoint = f"http://127.0.0.1:{port}"
-    assert requests.head(endpoint + "/health").status_code == 200
+    assert requests.head(endpoint + "/health", timeout=16).status_code == 200
 
     down_command = cli.commands["down"]
     cli_runner.invoke(down_command)
