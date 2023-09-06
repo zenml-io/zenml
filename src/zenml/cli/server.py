@@ -120,7 +120,22 @@ def up(
     """
     from zenml.zen_server.deploy.deployer import ServerDeployer
 
+    if connect:
+        logger.warning(
+            "The `--connect` flag is deprecated, has no effect, and will be "
+            "removed in a future release."
+        )
+
     gc = GlobalConfiguration()
+
+    # Raise an error if the client is already connected to a remote server.
+    if gc.store is not None and gc.store.type == StoreType.REST:
+        if not gc.zen_store.is_local_store():
+            cli_utils.error(
+                "Your ZenML client is already connected to a remote server. If "
+                "you want to spin up a local ZenML server, please disconnect "
+                "from the remote server first by running `zenml disconnect`."
+            )
 
     if docker:
         from zenml.utils.docker_utils import check_docker
@@ -180,41 +195,11 @@ def up(
             DEFAULT_USERNAME,
         )
 
-        # Don't connect to the local server if the client is already
-        # connected to a remote server.
-        if (
-            gc.store is not None
-            and gc.store.type == StoreType.REST
-            and not connect
-        ):
-            try:
-                if gc.zen_store.is_local_store():
-                    connect = True
-                else:
-                    cli_utils.declare(
-                        "Skipped connecting to the local server. The "
-                        "client is already connected to a remote ZenML "
-                        "server. Pass the `--connect` flag to connect to "
-                        "the local server anyway."
-                    )
-            except Exception as e:
-                logger.debug(
-                    f"The current ZenML server configuration is no longer "
-                    f"valid. Connecting to the local server: {e}"
-                )
-                # even when connected to a remote ZenML server, if the
-                # connection is not working, we default to connecting to the
-                # local server
-                connect = True
-        else:
-            connect = True
-
-        if connect:
-            deployer.connect_to_server(
-                LOCAL_ZENML_SERVER_NAME,
-                DEFAULT_USERNAME,
-                DEFAULT_PASSWORD,
-            )
+        deployer.connect_to_server(
+            LOCAL_ZENML_SERVER_NAME,
+            DEFAULT_USERNAME,
+            DEFAULT_PASSWORD,
+        )
 
         if server.status and server.status.url:
             cli_utils.declare(
@@ -673,6 +658,15 @@ def connect(
     """
     from zenml.config.store_config import StoreConfiguration
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
+    # Raise an error if a local server is running when trying to connect.
+    if get_active_deployment(local=True):
+        cli_utils.error(
+            "You're trying to connect to a remote ZenML server but already "
+            "have a local server running. This can lead to unexpected "
+            "behavior. Please shut down the local server by running "
+            "`zenml down` before connecting to a remote server."
+        )
 
     store_dict: Dict[str, Any] = {}
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
