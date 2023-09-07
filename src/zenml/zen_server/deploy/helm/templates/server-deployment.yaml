@@ -46,7 +46,7 @@ spec:
         - name: {{ .Chart.Name }}-db-init
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           args: ["status"]
           command: ['zenml']
@@ -124,7 +124,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           env:
             {{- if .Values.zenml.debug }}
