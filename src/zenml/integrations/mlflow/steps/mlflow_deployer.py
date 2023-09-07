@@ -56,7 +56,7 @@ def mlflow_model_deployer_step(
     workers: int = 1,
     mlserver: bool = False,
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
-) -> MLFlowDeploymentService:
+) -> Optional[MLFlowDeploymentService]:
     """Model deployer pipeline step for MLflow.
 
     This step deploys a model logged in the MLflow artifact store to a
@@ -79,7 +79,7 @@ def mlflow_model_deployer_step(
         timeout: the number of seconds to wait for the service to start/stop.
 
     Returns:
-        MLflow deployment service
+        MLflow deployment service or None if no service was deployed or found
 
     Raises:
         ValueError: if the MLflow experiment tracker is not found
@@ -111,98 +111,83 @@ def mlflow_model_deployer_step(
         run_name=run_name or run_name,
     )
 
+    # Fetch the model URI from the MLflow artifact store
     model_uri = ""
     if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
         model_uri = artifact_utils.get_artifact_uri(
             run_id=mlflow_run_id, artifact_path=model_name
         )
 
-    # fetch existing services with same pipeline name, step name and model name
+    # Fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
         model_name=model_name,
     )
 
-    # create a config for the new model service
-    predictor_cfg = MLFlowDeploymentConfig(
-        model_name=model_name or "",
-        model_uri=model_uri,
-        workers=workers,
-        mlserver=mlserver,
-        pipeline_name=pipeline_name,
-        run_name=run_name,
-        pipeline_run_id=run_name,
-        pipeline_step_name=step_name,
-        timeout=timeout,
-    )
-
-    # Creating a new service with inactive state and status by default
-    service = MLFlowDeploymentService(predictor_cfg)
-    if existing_services:
-        service = cast(MLFlowDeploymentService, existing_services[0])
-
-    # check for conditions to deploy the model
-    if not model_uri:
-        # an MLflow model was not trained in the current run, so we simply reuse
-        # the currently running service created for the same model, if any
-        if not existing_services:
-            logger.warning(
-                f"An MLflow model with name `{model_name}` was not "
-                f"logged in the current pipeline run and no running MLflow "
-                f"model server was found. Please ensure that your pipeline "
-                f"includes a step with a MLflow experiment configured that "
-                "trains a model and logs it to MLflow. This could also happen "
-                "if the current pipeline run did not log an MLflow model  "
-                f"because the training step was cached."
-            )
-            # return an inactive service just because we have to return
-            # something
-            return service
-        logger.info(
-            f"An MLflow model with name `{model_name}` was not "
-            f"trained in the current pipeline run. Reusing the existing "
-            f"MLflow model server."
-        )
-        if not service.is_running:
-            service.start(timeout)
-
-        # return the existing service
-        return service
-
-    # even when the deploy decision is negative, if an existing model server
-    # is not running for this pipeline/step, we still have to serve the
-    # current model, to ensure that a model server is available at all times
-    if not deploy_decision and existing_services:
-        logger.info(
-            f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Reusing last model server deployed by step "
-            f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{model_name}'..."
-        )
-        # even when the deploy decision is negative, we still need to start
-        # the previous model server if it is no longer running, to ensure
-        # that a model server is available at all times
-        if not service.is_running:
-            service.start(timeout)
-        return service
-
-    # create a new model deployment and replace an old one if it exists
-    new_service = cast(
-        MLFlowDeploymentService,
-        model_deployer.deploy_model(
-            replace=True,
-            config=predictor_cfg,
+    # Check whether to deploy a new service
+    if model_uri and deploy_decision:
+        predictor_cfg = MLFlowDeploymentConfig(
+            model_name=model_name or "",
+            model_uri=model_uri,
+            workers=workers,
+            mlserver=mlserver,
+            pipeline_name=pipeline_name,
+            run_name=run_name,
+            pipeline_run_id=run_name,
+            pipeline_step_name=step_name,
             timeout=timeout,
-        ),
-    )
+        )
+        new_service = cast(
+            MLFlowDeploymentService,
+            model_deployer.deploy_model(
+                replace=True,
+                config=predictor_cfg,
+                timeout=timeout,
+            ),
+        )
+        logger.info(
+            f"MLflow deployment service started and reachable at:\n"
+            f"    {new_service.prediction_url}\n"
+        )
+        logger.info("Stopping existing services...")
+        for existing_service in existing_services:
+            existing_service.stop(timeout)
+        return new_service
 
-    logger.info(
-        f"MLflow deployment service started and reachable at:\n"
-        f"    {new_service.prediction_url}\n"
-    )
+    # Check whether an existing service can be reused
+    elif existing_services:
+        if not model_uri:
+            logger.info(
+                f"Skipping model deployment because an MLflow model with name "
+                f" `{model_name}` was not trained in the current pipeline run."
+            )
+        elif not deploy_decision:
+            logger.info(
+                "Skipping model deployment because the deployment decision "
+                "was negative."
+            )
+        logger.info(
+            f"Reusing last model server deployed by step '{step_name}' of "
+            f"pipeline '{pipeline_name}' for model '{model_name}'..."
+        )
+        service = cast(MLFlowDeploymentService, existing_services[0])
+        if not service.is_running:
+            service.start(timeout)
+        return service
 
-    return new_service
+    # Log a warning if no service was deployed or found
+    elif deploy_decision and not model_uri:
+        logger.warning(
+            f"An MLflow model with name `{model_name}` was not "
+            f"logged in the current pipeline run and no running MLflow "
+            f"model server was found. Please ensure that your pipeline "
+            f"includes a step with an MLflow experiment configured that "
+            "trains a model and logs it to MLflow. This could also happen "
+            "if the current pipeline run did not log an MLflow model  "
+            f"because the training step was cached."
+        )
+    return None
 
 
 @step(enable_cache=False)
@@ -316,16 +301,6 @@ def mlflow_model_registry_deployer_step(
         timeout=timeout,
     )
 
-    # Creating a new service with inactive state and status by default
-    service = MLFlowDeploymentService(predictor_cfg)
-    if existing_services:
-        service = cast(MLFlowDeploymentService, existing_services[0])
-
-    # check if the model is already deployed but not running
-    if existing_services and not service.is_running:
-        service.start(timeout)
-        return service
-
     # create a new model deployment and replace an old one if it exists
     new_service = cast(
         MLFlowDeploymentService,
@@ -340,5 +315,10 @@ def mlflow_model_registry_deployer_step(
         f"MLflow deployment service started and reachable at:\n"
         f"    {new_service.prediction_url}\n"
     )
+
+    if existing_services:
+        logger.info("Stopping existing services...")
+        for existing_service in existing_services:
+            existing_service.stop(timeout)
 
     return new_service

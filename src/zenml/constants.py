@@ -239,7 +239,7 @@ SECRET_VALUES = "values"
 # Pagination and filtering defaults
 PAGINATION_STARTING_PAGE: int = 1
 PAGE_SIZE_DEFAULT: int = handle_int_env_var(
-    ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=50
+    ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=20
 )
 PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
