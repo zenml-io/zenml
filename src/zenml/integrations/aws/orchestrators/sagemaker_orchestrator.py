@@ -146,6 +146,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Raises:
+            RuntimeError: If a connector is used that does not return a
+                `boto3.Session` object.
         """
         if deployment.schedule:
             logger.warning(
