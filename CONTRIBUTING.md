@@ -20,6 +20,7 @@ you finalize your pull requests.
     - [⁉️ Issues](#-issues)
     - [🏷 Pull Requests: When to make one](#-pull-requests-when-to-make-one)
     - [💯 Pull Requests: Workflow to Contribute](#-pull-requests-workflow-to-contribute)
+    - [🧱 Pull Requests: Rebase on develop](#-pull-requests-rebase-your-branch-on-develop)
     - [🧐 Linting, formatting, and tests](#-linting-formatting-and-tests)
     - [🚨 Reporting a Vulnerability](#-reporting-a-vulnerability)
   - [Coding Conventions](#coding-conventions)
@@ -117,6 +118,43 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 8. Push changes to your fork.
 9. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
    follow the PR template so that we can efficiently review the changes.
+
+### 🧱 Pull Requests: Rebase Your Branch on Develop
+
+In case you have based your branch on `main` instead of `develop`, you can rebase your branch on `develop` by following the steps below:
+
+1. Make sure your branch is based on the `develop` branch. If it's not, you can create a new branch based on `develop` by running the following command:
+   ```
+   git checkout -b <new-branch-name> develop
+   ```
+2. Fetch the latest changes from the remote `develop` branch:
+   ```
+   git fetch origin develop
+   ```
+3. Switch to your branch:
+   ```
+   git checkout <your-branch-name>
+   ```
+4. Rebase your branch on `develop`:
+   ```
+   git rebase origin/develop
+   ```
+   This will apply your branch's changes on top of the latest changes in `develop`.
+5. Resolve any conflicts that may arise during the rebase. Git will notify you if there are any conflicts that need to be resolved. Use a text editor to manually resolve the conflicts in the affected files.
+6. After resolving the conflicts, stage the changes:
+   ```
+   git add .
+   ```
+7. Continue the rebase:
+   ```
+   git rebase --continue
+   ```
+8. Push the rebased branch to your remote repository:
+   ```
+   git push origin <your-branch-name>
+   ```
+9. Open a pull request targeting the `develop` branch. The changes from your rebased branch will now be based on the latest `develop` branch.
+By rebasing your branch on `develop`, you ensure that your changes are up to date with the latest changes in the `develop` branch. This helps in avoiding conflicts and makes the review process smoother.
 
 ### 🧐 Linting, formatting, and tests
 
