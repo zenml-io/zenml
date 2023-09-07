@@ -39,7 +39,7 @@ try:
         NumbaPendingDeprecationWarning,
     )
 
-    os.environ["NUMBA_CACHE_DIR"] = "/tmp"
+    os.environ["NUMBA_CACHE_DIR"] = "/tmp"  # nosec
     numba_logger = logging.getLogger("numba")
     numba_logger.setLevel(logging.WARNING)
     warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
