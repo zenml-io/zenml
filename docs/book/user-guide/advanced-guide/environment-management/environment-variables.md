@@ -15,6 +15,11 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
+If you want to configure whether logged output from steps is stored or not, set
+the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that
+this will mean that logs from your steps will no longer be stored and thus won't
+be visible on the dashboard any more.
+
 ## ZenML repository path
 
 To configure where ZenML will install and look for its repository, set the
