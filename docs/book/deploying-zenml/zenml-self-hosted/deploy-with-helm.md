@@ -6,7 +6,7 @@ description: Deploying ZenML in a Kubernetes cluster with Helm.
 
 If you wish to manually deploy and manage ZenML in a Kubernetes cluster of your choice, ZenML also includes a Helm chart among its available deployment options.
 
-You can find the chart on this [ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-server/zenml-server), along with the templates, default values and instructions on how to install it. Read on to find detailed explanations on prerequisites, configuration, and deployment scenarios.
+You can find the chart on this [ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml), along with the templates, default values and instructions on how to install it. Read on to find detailed explanations on prerequisites, configuration, and deployment scenarios.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ You'll need the following:
 
 ## ZenML Helm Configuration
 
-You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-server/zenml-server?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML deployment.
+You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML deployment.
 
 In addition to tools and infrastructure, you will also need to collect and [prepare information related to your database](deploy-with-helm.md#collect-information-from-your-sql-database-service) and [information related to your external secrets management service](deploy-with-helm.md#collect-information-from-your-secrets-management-service) to be used for the Helm chart configuration and you may also want to install additional [optional services in your cluster](deploy-with-helm.md#optional-cluster-services).
 
