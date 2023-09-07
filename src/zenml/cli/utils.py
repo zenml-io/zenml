@@ -46,8 +46,14 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
+from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
+    TERRAFORM_NOT_INSTALLED_MESSAGE,
+)
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -77,7 +83,6 @@ if TYPE_CHECKING:
 
     from rich.text import Text
 
-    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -169,6 +174,27 @@ def warning(
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style, **kwargs)
+
+
+def print_markdown(text: str) -> None:
+    """Prints a string as markdown.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    console.print(markdown_text)
+
+
+def print_markdown_with_pager(text: str) -> None:
+    """Prints a string as markdown with a pager.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    with console.pager():
+        console.print(markdown_text)
 
 
 def print_table(
@@ -400,6 +426,9 @@ def print_stack_configuration(
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 
+    if stack.stack_spec_path:
+        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
+
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
@@ -519,6 +548,11 @@ def print_stack_component_configuration(
             rich_table.add_row(label, value)
 
         console.print(rich_table)
+
+    if component.component_spec_path:
+        declare(
+            f"Component spec path for `mlstacks`: {component.component_spec_path}"
+        )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -2459,3 +2493,18 @@ def warn_deprecated_example_subcommand() -> None:
         "The `example` CLI subcommand has been deprecated and will be removed "
         "in a future release."
     )
+
+
+def verify_mlstacks_prerequisites_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+        import python_terraform  # noqa: F401
+
+        subprocess.check_output(
+            ["terraform", "--version"], universal_newlines=True
+        )
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)
+    except subprocess.CalledProcessError:
+        error(TERRAFORM_NOT_INSTALLED_MESSAGE)

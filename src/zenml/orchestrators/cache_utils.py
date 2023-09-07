@@ -60,7 +60,7 @@ def generate_cache_key(
     Returns:
         A cache key.
     """
-    hash_ = hashlib.md5()
+    hash_ = hashlib.md5()  # nosec
 
     # Workspace ID
     hash_.update(workspace_id.bytes)

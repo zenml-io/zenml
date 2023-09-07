@@ -37,13 +37,13 @@ def data_loader() -> (
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
-        f.write(requests.get(TRAIN_SET_RAW).text)
+        f.write(requests.get(TRAIN_SET_RAW, timeout=13).text)
         df_train = pd.read_csv(f.name, header=None, sep="\t")
 
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
-        f.write(requests.get(TEST_SET_RAW).text)
+        f.write(requests.get(TEST_SET_RAW, timeout=13).text)
         df_test = pd.read_csv(f.name, header=None, sep="\t")
 
     # Parse data

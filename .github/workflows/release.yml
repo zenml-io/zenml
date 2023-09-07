@@ -16,8 +16,29 @@ jobs:
       python-version: "3.8"
     secrets: inherit
 
-  publish-python-package:
+  mlstacks-compatibility-check:
     needs: lint-unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install current package as editable
+        run: pip install -e .
+
+      - name: Install mlstacks package
+        run: pip install mlstacks
+
+      - name: Check for broken dependencies
+        run: pip check
+
+  publish-python-package:
+    needs: [lint-unit-test, mlstacks-compatibility-check]
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 

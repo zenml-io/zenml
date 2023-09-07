@@ -15,8 +15,8 @@
 
 import pytest
 from kubernetes.client import (
-    V1beta1CronJob,
-    V1beta1CronJobSpec,
+    V1CronJob,
+    V1CronJobSpec,
     V1ObjectMeta,
     V1Pod,
     V1PodSpec,
@@ -123,7 +123,7 @@ def test_build_cron_job_manifest_pod_settings(
     kubernetes_settings: KubernetesOrchestratorSettings,
 ):
     """Test that the pod settings are correctly set in the manifest."""
-    manifest: V1beta1CronJob = build_cron_job_manifest(
+    manifest: V1CronJob = build_cron_job_manifest(
         cron_expression="* * * * *",
         pod_name="test_name",
         run_name="test_run",
@@ -134,8 +134,8 @@ def test_build_cron_job_manifest_pod_settings(
         settings=kubernetes_settings,
         service_account_name="test_sa",
     )
-    assert isinstance(manifest, V1beta1CronJob)
-    assert isinstance(manifest.spec, V1beta1CronJobSpec)
+    assert isinstance(manifest, V1CronJob)
+    assert isinstance(manifest.spec, V1CronJobSpec)
     job_pod_spec = manifest.spec.job_template.spec.template.spec
     assert (
         job_pod_spec.affinity["nodeAffinity"][
