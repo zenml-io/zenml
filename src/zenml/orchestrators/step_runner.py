@@ -14,6 +14,7 @@
 
 """Class to run steps."""
 
+import copy
 import inspect
 from contextlib import nullcontext
 from typing import (
@@ -256,6 +257,7 @@ class StepRunner:
         from zenml.steps import BaseStep
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
+        step_instance = copy.deepcopy(step_instance)
         step_instance._configuration = self._step.config
         return step_instance
 
