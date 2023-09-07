@@ -46,7 +46,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
           REGISTRY_ALIAS: zenml
-          REPOSITORY: zenml-server
+          REPOSITORY: zenml
         run: |
           helm package src/zenml/zen_server/deploy/helm
           helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS

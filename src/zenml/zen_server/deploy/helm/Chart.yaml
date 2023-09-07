@@ -1,5 +1,5 @@
 apiVersion: v2
-name: zenml-server
+name: zenml
 version: ""
 description: Open source MLOps framework for portable production ready ML pipelines
 keywords:
