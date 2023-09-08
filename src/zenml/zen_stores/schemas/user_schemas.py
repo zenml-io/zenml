@@ -92,7 +92,7 @@ class UserSchema(NamedSchema, table=True):
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
     )
-    service_connectors: List["ModelSchema"] = Relationship(
+    models: List["ModelSchema"] = Relationship(
         back_populates="user",
     )
 
