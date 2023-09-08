@@ -215,7 +215,7 @@ def notify_on_failure() -> None:
         alerter.post(message=build_message(status="failed"))
 ```
 
-If the Al component is not present in Stack we supress notification, but you can also dump it to the log as Error using:
+If the Al component is not present in Stack we suppress notification, but you can also dump it to the log as Error using:
 
 ```python
 from zenml.client import Client
