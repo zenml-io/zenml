@@ -216,7 +216,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             processor_args_for_step.setdefault(
                 "tags",
-                [step_settings.processor_tags]
+                [
+                    {"Key": key, "Value": value}
+                    for key, value in step_settings.processor_tags.items()
+                ]
                 if step_settings.processor_tags
                 else None,
             )
