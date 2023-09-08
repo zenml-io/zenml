@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         ArtifactSchema,
         CodeRepositorySchema,
         FlavorSchema,
+        ModelSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -113,6 +114,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    models: List["ModelSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

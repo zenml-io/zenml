@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022-2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -145,6 +145,19 @@ from zenml.models.logs_models import (
     LogsRequestModel,
     LogsResponseModel,
 )
+from zenml.models.model_models import (
+    ModelBaseModel,
+    ModelFilterModel,
+    ModelResponseModel,
+    ModelRequestModel,
+    ModelUpdateModel,
+    ModelConfigBaseModel,
+    ModelConfigResponseModel,
+    ModelConfigRequestModel,
+    ModelVersionBaseModel,
+    ModelVersionResponseModel,
+    ModelVersionRequestModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -254,6 +267,36 @@ ServiceConnectorResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+ModelRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelConfigRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelConfigResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
@@ -346,4 +389,15 @@ __all__ = [
     "LogsBaseModel",
     "LogsRequestModel",
     "LogsResponseModel",
+    "ModelBaseModel",
+    "ModelFilterModel",
+    "ModelRequestModel",
+    "ModelResponseModel",
+    "ModelUpdateModel",
+    "ModelConfigBaseModel",
+    "ModelConfigRequestModel",
+    "ModelConfigResponseModel",
+    "ModelVersionBaseModel",
+    "ModelVersionRequestModel",
+    "ModelVersionResponseModel",
 ]

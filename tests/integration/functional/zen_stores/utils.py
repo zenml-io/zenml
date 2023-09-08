@@ -42,6 +42,9 @@ from zenml.models import (
     ComponentUpdateModel,
     FlavorFilterModel,
     FlavorRequestModel,
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineDeploymentFilterModel,
@@ -813,6 +816,26 @@ service_connector_crud_test_config = CrudTestConfig(
     filter_model=ServiceConnectorFilterModel,
     entity_name="service_connector",
 )
+model_crud_test_config = CrudTestConfig(
+    create_model=ModelRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name="super_model",
+        license="who cares",
+        description="cool stuff",
+        audience="world",
+        use_cases="all",
+        limitations="none",
+        trade_offs="secret",
+        ethic="all good",
+        tags=["cool", "stuff"],
+    ),
+    update_model=ModelUpdateModel(
+        name=sample_name("updated_sample_service_connector"),
+    ),
+    filter_model=ModelFilterModel,
+    entity_name="model",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -848,4 +871,5 @@ list_of_entities = [
     deployment_crud_test_config,
     code_repository_crud_test_config,
     service_connector_crud_test_config,
+    model_crud_test_config,
 ]

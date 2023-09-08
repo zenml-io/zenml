@@ -27,6 +27,7 @@ if TYPE_CHECKING:
         ArtifactSchema,
         CodeRepositorySchema,
         FlavorSchema,
+        ModelSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -89,6 +90,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
+        back_populates="user",
+    )
+    service_connectors: List["ModelSchema"] = Relationship(
         back_populates="user",
     )
 

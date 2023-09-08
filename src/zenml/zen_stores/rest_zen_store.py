@@ -49,6 +49,7 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
@@ -94,6 +95,10 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -2275,6 +2280,92 @@ class RestZenStore(BaseZenStore):
             return service_connector_registry.get_service_connector_type(
                 connector_type
             )
+
+    #########
+    # Model
+    #########
+
+    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+        """Creates a new model.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=model,
+            response_model=ModelResponseModel,
+            route=MODELS,
+        )
+
+    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a model.
+
+        Args:
+            model_name_or_id: name or id of the model to be deleted.
+
+        Returns:
+            The newly created or existing model.
+        """
+        self._delete_resource(resource_id=model_name_or_id, route=MODELS)
+
+    def update_model(
+        self,
+        model_id: UUID,
+        model_update: ModelUpdateModel,
+    ) -> ModelResponseModel:
+        """Updates an existing model.
+
+        Args:
+            model_id: UUID of the model to be updated.
+            model: the Model to be updated.
+
+        Returns:
+            The updated model.
+        """
+        return self._update_resource(
+            resource_id=model_id,
+            resource_update=model_update,
+            route=MODELS,
+            response_model=ModelResponseModel,
+        )
+
+    def get_model(
+        self, model_name_or_id: Union[str, UUID]
+    ) -> ModelResponseModel:
+        """Get an existing model.
+
+        Args:
+            model_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The model of interest.
+        """
+        return self._get_resource(
+            resource_id=model_name_or_id,
+            route=MODELS,
+            response_model=ModelResponseModel,
+        )
+
+    def list_models(
+        self, model_filter_model: ModelFilterModel
+    ) -> Page[ModelResponseModel]:
+        """Get all models by filter.
+
+        Args:
+            model_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all models.
+        """
+        return self._list_paginated_resources(
+            route=MODELS,
+            response_model=ModelResponseModel,
+            filter_model=model_filter_model,
+        )
 
     # =======================
     # Internal helper methods
