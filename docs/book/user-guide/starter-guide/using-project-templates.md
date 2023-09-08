@@ -36,4 +36,32 @@ zenml init --template <short_name_of_template> --template-with-defaults
 # example: zenml init --template e2e_batch --template-with-defaults
 ```
 
+## Project templates used in our examples
+
+<!-- ### Starter Guide
+
+Our Starter Guide documentation is built around the `Starter` project template codes. 
+Most examples will be based on it, so we highly recommend you to install the `starter` template
+with `--template-with-defaults` flag before diving deeper into this documentation section, 
+so you can follow this guide along using your own local environment.
+
+```bash
+mkdir starter
+cd starter
+zenml init --template starter --template-with-defaults
+``` -->
+
+### Advanced Guide
+
+Our Advanced Guide documentation is built around the `E2E Batch` project template codes. 
+Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template
+with `--template-with-defaults` flag before diving deeper into this documentation section, 
+so you can follow this guide along using your own local environment.
+
+```bash
+mkdir e2e_batch
+cd e2e_batch
+zenml init --template e2e_batch --template-with-defaults
+```
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
