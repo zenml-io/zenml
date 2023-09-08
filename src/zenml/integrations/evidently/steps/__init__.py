@@ -20,6 +20,3 @@ from zenml.integrations.evidently.steps.evidently_report import (
 from zenml.integrations.evidently.steps.evidently_test import (
     evidently_test_step,
 )
-from zenml.integrations.evidently.steps.evidently_profile import (
-    evidently_profile_step,
-)
