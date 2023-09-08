@@ -54,3 +54,8 @@ jobs:
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     secrets: inherit
+
+  publish-helm-chart:
+    needs: publish-docker-image
+    uses: ./.github/workflows/publish_helm_chart.yml
+    secrets: inherit

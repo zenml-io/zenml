@@ -22,12 +22,30 @@ dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
 file.
 """
 
+import logging
+import os
+import warnings
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
+
+
+# Fix numba errors in Docker and suppress logs and deprecation warning spam
+try:
+    from numba.core.errors import (  # type: ignore[import]
+        NumbaDeprecationWarning,
+        NumbaPendingDeprecationWarning,
+    )
+
+    os.environ["NUMBA_CACHE_DIR"] = "/tmp"  # nosec
+    numba_logger = logging.getLogger("numba")
+    numba_logger.setLevel(logging.WARNING)
+    warnings.simplefilter("ignore", category=NumbaDeprecationWarning)
+    warnings.simplefilter("ignore", category=NumbaPendingDeprecationWarning)
+except ImportError:
+    pass
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
@@ -36,12 +54,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6,<=0.2.8"]  # supports old API and pyyaml 6
-
-    @staticmethod
-    def activate() -> None:
-        """Activate the Evidently integration."""
-        from zenml.integrations.evidently import materializers  # noqa
+    REQUIREMENTS = ["evidently>0.2.6"]  # supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
