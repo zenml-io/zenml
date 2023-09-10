@@ -18,6 +18,7 @@ import re
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
+import boto3
 import sagemaker
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -145,6 +146,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             environment: Environment variables to set in the orchestration
                 environment.
 
+        Raises:
+            RuntimeError: If a connector is used that does not return a
+                `boto3.Session` object.
         """
         if deployment.schedule:
             logger.warning(
@@ -162,7 +166,18 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
         )
 
-        session = sagemaker.Session(default_bucket=self.config.bucket)
+        # Get authenticated session
+        boto_session: Optional[boto3.Session] = None
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        session = sagemaker.Session(
+            boto_session=boto_session, default_bucket=self.config.bucket
+        )
 
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
@@ -201,7 +216,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             processor_args_for_step.setdefault(
                 "tags",
-                [step_settings.processor_tags]
+                [
+                    {"Key": key, "Value": value}
+                    for key, value in step_settings.processor_tags.items()
+                ]
                 if step_settings.processor_tags
                 else None,
             )
