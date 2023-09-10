@@ -137,13 +137,13 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
    ```
    git rebase origin/develop
    ```
-   This will apply your branch's changes on top of the latest changes in `develop`.
+   This will apply your branch's changes on top of the latest changes in `develop`, one commit at a time.
 5. Resolve any conflicts that may arise during the rebase. Git will notify you if there are any conflicts that need to be resolved. Use a text editor to manually resolve the conflicts in the affected files.
 6. After resolving the conflicts, stage the changes:
    ```
    git add .
    ```
-7. Continue the rebase:
+7. Continue the rebase for all of your commits and go to 5) if there are conflicts.
    ```
    git rebase --continue
    ```
