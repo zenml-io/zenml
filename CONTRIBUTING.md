@@ -121,9 +121,7 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧱 Pull Requests: Rebase Your Branch on Develop
 
-In case you have based your branch on `main` instead of `develop`, you can rebase your branch on `develop` by following the steps below:
-
-1. Make sure your branch is based on the `develop` branch. If it's not, you can create a new branch based on `develop` by running the following command:
+1. When making pull requests to ZenML, you should always make your changes on a branch that is based on `develop`. You can create a new branch based on `develop` by running the following command:
    ```
    git checkout -b <new-branch-name> develop
    ```
@@ -151,10 +149,9 @@ In case you have based your branch on `main` instead of `develop`, you can rebas
    ```
 8. Push the rebased branch to your remote repository:
    ```
-   git push origin <your-branch-name>
+   git push origin --force <your-branch-name>
    ```
 9. Open a pull request targeting the `develop` branch. The changes from your rebased branch will now be based on the latest `develop` branch.
-By rebasing your branch on `develop`, you ensure that your changes are up to date with the latest changes in the `develop` branch. This helps in avoiding conflicts and makes the review process smoother.
 
 ### 🧐 Linting, formatting, and tests
 
