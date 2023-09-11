@@ -1,13 +1,14 @@
 # Quickly setting up a minimal Stack on GCP
 
-
+This page will serve as a simple guide to quickly set up a minimal stack on 
+gcp. 
 
 1) Choose a GCP project
 In the Google Cloud console, on the project selector page, select or [create 
 a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
 {% hint style="info" %}
-f you don't plan to keep the resources that you create in this procedure, 
+If you don't plan to keep the resources that you create in this procedure, 
 create a project instead of selecting an existing project. After you finish
 these steps, you can delete the project, removing all resources associated 
 with the project.
@@ -21,14 +22,17 @@ The following APIs will need to be enabled within your chosen gcp project.
 * Cloud Run Admin API
 * Cloud Logging API
 
-3) Create a service account with the following roles.
-
-One way to get the necessary permissions is to add the following roles:
+3) Create a service account with the necessary roles.
+The following roles give the service account permissions for full crud on 
+storage objects and full permissions for compute within vertex.
 * AI Platform Service Agent
 * Storage Object Admin
 
 
 4) Create a JSON Key for your service account.
+
+
+
 5) Create a Service Connector in ZenML
 ```bash
 zenml integration install gcp \
