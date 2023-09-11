@@ -1684,6 +1684,9 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The newly created model.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
         """
 
     @abstractmethod
@@ -1726,13 +1729,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_models(
         self,
-        workspace_id: UUID,
         model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
         """Get all models by filter.
 
         Args:
-            workspace_id: The name or ID of the workspace to scope to.
             model_filter_model: All filter parameters including pagination
                 params.
 

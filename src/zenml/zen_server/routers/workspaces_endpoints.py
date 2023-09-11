@@ -1217,7 +1217,7 @@ def list_models(
         The models according to query filters.
     """
     workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+    model_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_models(
-        workspace_id=workspace_id,
         model_filter_model=model_filter_model,
     )
