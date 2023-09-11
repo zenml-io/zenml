@@ -2305,9 +2305,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
-
-        Returns:
-            The newly created or existing model.
         """
         self._delete_resource(resource_id=model_name_or_id, route=MODELS)
 

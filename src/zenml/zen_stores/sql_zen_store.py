@@ -5389,6 +5389,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             model_name_or_id: name or id of the model to be retrieved.
 
+        Raises:
+            KeyError: specified ID or name not found.
+
         Returns:
             The model of interest.
         """
@@ -5440,8 +5443,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             model_name_or_id: name or id of the model to be deleted.
 
-        Returns:
-            The newly created or existing model.
+        Raises:
+            KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
             is_id = type(model_name_or_id) == UUID
@@ -5475,6 +5478,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             model_id: UUID of the model to be updated.
             model_update: the Model to be updated.
+
+        Raises:
+            KeyError: specified ID not found.
 
         Returns:
             The updated model.

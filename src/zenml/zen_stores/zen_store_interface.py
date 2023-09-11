@@ -1692,9 +1692,6 @@ class ZenStoreInterface(ABC):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
-
-        Returns:
-            The newly created or existing model.
         """
 
     @abstractmethod

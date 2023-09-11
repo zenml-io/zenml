@@ -134,8 +134,12 @@ class ModelResponseModel(
         """List all versions of the model."""
         pass
 
-    def get_version(self, version: str) -> ModelVersionResponseModel:  # type: ignore[empty-body]
-        """Get specific version of the model."""
+    def get_version(self, version: Optional[str] = None) -> ModelVersionResponseModel:  # type: ignore[empty-body]
+        """Get specific version of the model.
+
+        Args:
+            version: version number, stage or None for latest version.
+        """
         pass
 
 
