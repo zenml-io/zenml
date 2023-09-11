@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -32,6 +33,7 @@ class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
     version: str
+    description: Optional[str]
     stage: Optional[str]
     _model_objects: Dict[str, UUID] = None
     _artifact_objects: Dict[str, UUID] = None
@@ -77,10 +79,9 @@ class ModelVersionResponseModel(
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
         return self._fetch_artifacts_from_list(self._deployments)
 
-    # TODO: after https://zenml.atlassian.net/browse/OSS-2419
-    # def set_stage(self, stage: ModelStages):
-    #     """Sets Model Version to a desired stage."""
-    #     ...
+    def set_stage(self, stage: ModelStages):
+        """Sets Model Version to a desired stage."""
+        pass
 
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
     # def generate_model_card(self, template_name: str) -> str:
