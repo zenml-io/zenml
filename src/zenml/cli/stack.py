@@ -782,11 +782,21 @@ def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     type=click.STRING,
     required=False,
 )
-def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
+@click.option(
+    "--outputs",
+    "-o",
+    is_flag=True,
+    default=False,
+    help="Include the outputs from mlstacks deployments.",
+)
+def describe_stack(
+    stack_name_or_id: Optional[str] = None, outputs: bool = False
+) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
         stack_name_or_id: Name of the stack to describe.
+        outputs: Include the outputs from mlstacks deployments.
     """
     client = Client()
 
@@ -800,6 +810,8 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
             stack=stack_,
             active=stack_.id == client.active_stack_model.id,
         )
+        if outputs:
+            cli_utils.print_stack_outputs(stack_)
 
     print_model_url(get_stack_url(stack_))
 
