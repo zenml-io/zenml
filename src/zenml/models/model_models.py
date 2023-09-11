@@ -130,11 +130,11 @@ class ModelResponseModel(
     """Model response model."""
 
     @property
-    def versions(self) -> List[ModelVersionResponseModel]:
+    def versions(self) -> List[ModelVersionResponseModel]:  # type: ignore[empty-body]
         """List all versions of the model."""
         pass
 
-    def get_version(version: str) -> ModelVersionResponseModel:
+    def get_version(self, version: str) -> ModelVersionResponseModel:  # type: ignore[empty-body]
         """Get specific version of the model."""
         pass
 
