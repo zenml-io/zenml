@@ -111,7 +111,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethic=self.ethic,
-            tags=json.loads(self.tags),
+            tags=json.loads(self.tags) if self.tags else None,
         )
 
     def update(

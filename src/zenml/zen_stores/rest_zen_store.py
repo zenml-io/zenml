@@ -2363,7 +2363,7 @@ class RestZenStore(BaseZenStore):
             A page of all models.
         """
         return self._list_paginated_resources(
-            route=f"{WORKSPACES}/{workspace_id}{MODELS}",
+            route=MODELS,
             response_model=ModelResponseModel,
             filter_model=model_filter_model,
         )

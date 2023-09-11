@@ -1198,7 +1198,7 @@ def create_model(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_models(
+def list_workspace_models(
     workspace_name_or_id: Union[str, UUID],
     model_filter_model: ModelFilterModel = Depends(
         make_dependable(ModelFilterModel)

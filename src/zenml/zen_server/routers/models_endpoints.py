@@ -16,18 +16,21 @@
 from typing import Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, MODELS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    ModelFilterModel,
     ModelResponseModel,
     ModelUpdateModel,
 )
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
+    make_dependable,
     zen_store,
 )
 
@@ -36,6 +39,33 @@ router = APIRouter(
     tags=["models"],
     responses={401: error_response},
 )
+
+
+@router.get(
+    "",
+    response_model=Page[ModelResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_models(
+    model_filter_model: ModelFilterModel = Depends(
+        make_dependable(ModelFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelResponseModel]:
+    """Get models according to query filters.
+
+    Args:
+        model_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+
+    Returns:
+        The models according to query filters.
+    """
+    return zen_store().list_models(
+        model_filter_model=model_filter_model,
+    )
 
 
 @router.delete(
