@@ -162,7 +162,7 @@ class ModelFilterModel(WorkspaceScopedFilterModel):
     )
 
 
-class ModelUpdateModel(ModelBaseModel):
+class ModelUpdateModel(BaseModel):
     """Model update model."""
 
     license: Optional[str]
