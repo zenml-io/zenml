@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Llama Index integration."""
-from zenml.integrations.integration import Integration
-
-from zenml.logger import get_logger
 from zenml.integrations.constants import LLAMA_INDEX
 from zenml.integrations.integration import Integration
+from zenml.logger import get_logger
+
 
 logger = get_logger(__name__)
 
