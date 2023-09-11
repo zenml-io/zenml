@@ -14,6 +14,7 @@
 """SQLModel implementation of model tables."""
 
 
+import json
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -87,7 +88,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethic=model_request.ethic,
-            tags=model_request.tags,
+            tags=json.dumps(model_request.tags),
         )
 
     def to_model(self) -> ModelResponseModel:
@@ -110,7 +111,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethic=self.ethic,
-            tags=self.tags,
+            tags=json.loads(self.tags),
         )
 
     def update(
@@ -126,6 +127,9 @@ class ModelSchema(NamedSchema, table=True):
             The updated `ModelSchema`.
         """
         for field, value in model_update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+            if field == "tags":
+                setattr(self, field, json.dumps(value))
+            else:
+                setattr(self, field, value)
         self.updated = datetime.utcnow()
         return self
