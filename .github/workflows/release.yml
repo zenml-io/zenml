@@ -9,15 +9,15 @@ on:
 
 jobs:
 
-  lint-unit-test:
-    uses: ./.github/workflows/lint-unit-test.yml
+  setup-and-test:
+    uses: ./.github/workflows/setup-python-environment.yml
     with:
       os: "ubuntu-latest"
       python-version: "3.8"
     secrets: inherit
 
   mlstacks-compatibility-check:
-    needs: lint-unit-test
+    needs: setup-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
         run: pip check
 
   publish-python-package:
-    needs: [lint-unit-test, mlstacks-compatibility-check]
+    needs: [setup-and-test, mlstacks-compatibility-check]
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
