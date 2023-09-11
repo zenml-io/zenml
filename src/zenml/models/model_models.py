@@ -13,23 +13,29 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.zen_server.utils import zen_store
 
 
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
-    pass
+    version: str
+    stage: Optional[str]
+    _model_objects: Dict[str, UUID] = None
+    _artifact_objects: Dict[str, UUID] = None
+    _deployments: Dict[str, UUID] = None
 
 
 class ModelVersionRequestModel(
@@ -47,7 +53,38 @@ class ModelVersionResponseModel(
 ):
     """Model Version response model."""
 
-    pass
+    @staticmethod
+    def _fetch_artifacts_from_list(
+        artifacts: Dict[str, UUID]
+    ) -> Dict[str, ArtifactResponseModel]:
+        if artifacts:
+            return {
+                name: zen_store().get_artifact(a)
+                for name, a in artifacts.items()
+            }
+        else:
+            return {}
+
+    @property
+    def model_objects(self) -> Dict[str, ArtifactResponseModel]:
+        return self._fetch_artifacts_from_list(self._model_objects)
+
+    @property
+    def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
+        return self._fetch_artifacts_from_list(self._artifact_objects)
+
+    @property
+    def deployments(self) -> Dict[str, ArtifactResponseModel]:
+        return self._fetch_artifacts_from_list(self._deployments)
+
+    # TODO: after https://zenml.atlassian.net/browse/OSS-2419
+    # def set_stage(self, stage: ModelStages):
+    #     """Sets Model Version to a desired stage."""
+    #     ...
+
+    # TODO in https://zenml.atlassian.net/browse/OSS-2433
+    # def generate_model_card(self, template_name: str) -> str:
+    #     """Return HTML/PDF based on input template"""
 
 
 class ModelConfigBaseModel(BaseModel):
