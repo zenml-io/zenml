@@ -274,7 +274,7 @@ NOT_INSTALLED_MESSAGE = (
     "The prerequisites for using `mlstacks` (the `mlstacks` and "
     "`python-terraform` packages seem to be unavailable on your machine "
     "and/or in your environment. To install the missing dependencies: \n\n"
-    "`pip install mlstacks`"
+    "`pip install mlstacks` or `zenml integration install mlstacks`"
 )
 TERRAFORM_NOT_INSTALLED_MESSAGE = (
     "Terraform appears not to be installed on your machine and/or in your "
