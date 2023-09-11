@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Model implementation to support Model WatchTower feature."""
 
 from typing import List, Optional, Union
 from uuid import UUID
@@ -26,6 +27,8 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 
 class ModelVersionBaseModel(BaseModel):
+    """Model Version base model."""
+
     pass
 
 
@@ -33,6 +36,8 @@ class ModelVersionRequestModel(
     ModelVersionBaseModel,
     WorkspaceScopedRequestModel,
 ):
+    """Model Version request model."""
+
     pass
 
 
@@ -40,10 +45,14 @@ class ModelVersionResponseModel(
     ModelVersionBaseModel,
     WorkspaceScopedResponseModel,
 ):
+    """Model Version response model."""
+
     pass
 
 
 class ModelConfigBaseModel(BaseModel):
+    """Model Config base model."""
+
     pass
 
 
@@ -51,6 +60,8 @@ class ModelConfigRequestModel(
     ModelConfigBaseModel,
     WorkspaceScopedRequestModel,
 ):
+    """Model Config request model."""
+
     pass
 
 
@@ -58,10 +69,14 @@ class ModelConfigResponseModel(
     ModelConfigBaseModel,
     WorkspaceScopedResponseModel,
 ):
+    """Model Config response model."""
+
     pass
 
 
 class ModelBaseModel(BaseModel):
+    """Model base model."""
+
     name: str = Field(
         title="The name of the model",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -103,6 +118,8 @@ class ModelRequestModel(
     WorkspaceScopedRequestModel,
     ModelBaseModel,
 ):
+    """Model request model."""
+
     pass
 
 
@@ -110,11 +127,15 @@ class ModelResponseModel(
     WorkspaceScopedResponseModel,
     ModelBaseModel,
 ):
+    """Model response model."""
+
     @property
     def versions(self) -> List[ModelVersionResponseModel]:
+        """List all versions of the model."""
         pass
 
     def get_version(version: str) -> ModelVersionResponseModel:
+        """Get specific version of the model."""
         pass
 
 
@@ -134,6 +155,8 @@ class ModelFilterModel(WorkspaceScopedFilterModel):
 
 
 class ModelUpdateModel(ModelBaseModel):
+    """Model update model."""
+
     license: Optional[str]
     description: Optional[str]
     audience: Optional[str]

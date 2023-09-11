@@ -2320,7 +2320,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             model_id: UUID of the model to be updated.
-            model: the Model to be updated.
+            model_update: the Model to be updated.
 
         Returns:
             The updated model.
