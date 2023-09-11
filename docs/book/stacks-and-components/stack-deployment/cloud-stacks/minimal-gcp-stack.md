@@ -16,9 +16,9 @@ In the Google Cloud console, on the project selector page, select or [create a G
 If you don't plan to keep the resources that you create in this procedure, create a new project. After you finish these steps, you can delete the project, thereby removing all resources associated with the project.
 {% endhint %}
 
-### 2) [Enable GCloud APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\_wcB)
+### 2) Enable GCloud APIs
 
-The following APIs will need to be enabled within your chosen gcp project.
+The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen gcp project.
 
 * Cloud Functions API
 * Cloud Build API
@@ -35,9 +35,9 @@ The service account should have these following roles.
 
 These roles give permissions for full crud on storage objects and full permissions for compute within vertex.
 
-### 4) [Create a JSON Key](https://cloud.google.com/iam/docs/keys-create-delete) for your service account
+### 4) Create a JSON Key for your service account
 
-This json file will allow the service account to assume the identity of this service account. You will need the filepath of the downloaded file in the next step.
+This [json file](https://cloud.google.com/iam/docs/keys-create-delete) will allow the service account to assume the identity of this service account. You will need the filepath of the downloaded file in the next step.
 
 ```bash
 export JSON_KEY_FILE_PATH=<JSON_KEY_FILE_PATH>
