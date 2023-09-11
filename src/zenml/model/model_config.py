@@ -80,7 +80,9 @@ class ModelConfig(ModelBaseModel):
         )
         model_request = ModelRequestModel.parse_obj(request_params)
         try:
-            model = zenml_client.zen_store.get_model(self.name)
+            model = zenml_client.zen_store.get_model(
+                model_name_or_id=self.name
+            )
         except KeyError:
             model = zenml_client.zen_store.create_model(model=model_request)
             logger.warning(f"New model `{self.name}` was created implicitly.")
