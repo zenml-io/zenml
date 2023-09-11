@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -112,6 +112,10 @@ class ModelBaseModel(BaseModel):
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
     )
+
+    @validator("name")
+    def validate_name(cls, name):
+        return name.title()
 
 
 class ModelRequestModel(
