@@ -5396,9 +5396,20 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created model.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
         """
         with Session(self.engine) as session:
-            # Save artifact.
+            existing_model = session.exec(
+                select(ModelSchema).where(ModelSchema.name == model.name)
+            ).first()
+            if existing_model is not None:
+                raise EntityExistsError(
+                    f"Unable to create model {model.name}: "
+                    "A model with this name already exists."
+                )
+
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -5432,13 +5443,11 @@ class SqlZenStore(BaseZenStore):
 
     def list_models(
         self,
-        workspace_id: UUID,
         model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
         """Get all models by filter.
 
         Args:
-            workspace_id: The ID of the workspace to scope to.
             model_filter_model: All filter parameters including pagination
                 params.
 
@@ -5447,7 +5456,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelSchema)
-            model_filter_model.set_scope_workspace(workspace_id)
             return self.filter_and_paginate(
                 session=session,
                 query=query,

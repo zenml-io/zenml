@@ -2293,6 +2293,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created model.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
         """
         return self._create_workspace_scoped_resource(
             resource=model,
@@ -2348,13 +2351,11 @@ class RestZenStore(BaseZenStore):
 
     def list_models(
         self,
-        workspace_id: UUID,
         model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
         """Get all models by filter.
 
         Args:
-            workspace_id: The name or ID of the workspace to scope to.
             model_filter_model: All filter parameters including pagination
                 params.
 
@@ -2362,7 +2363,7 @@ class RestZenStore(BaseZenStore):
             A page of all models.
         """
         return self._list_paginated_resources(
-            route=f"{WORKSPACES}/{workspace_id}{MODELS}",
+            route=MODELS,
             response_model=ModelResponseModel,
             filter_model=model_filter_model,
         )
