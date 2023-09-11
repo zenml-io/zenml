@@ -1725,11 +1725,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_models(
-        self, model_filter_model: ModelFilterModel
+        self,
+        workspace_id: UUID,
+        model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
         """Get all models by filter.
 
         Args:
+            workspace_id: The name or ID of the workspace to scope to.
             model_filter_model: All filter parameters including pagination
                 params.
 

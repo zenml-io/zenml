@@ -5318,6 +5318,30 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
+    def _get_model_schema(
+        self,
+        model_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> ModelSchema:
+        """Gets a model schema by name or ID.
+
+        This is a helper method that is used in various places to find a run
+        by its name or ID.
+
+        Args:
+            model_name_or_id: The name or ID of the run to get.
+            session: The database session to use.
+
+        Returns:
+            The model schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=model_name_or_id,
+            schema_class=ModelSchema,
+            schema_name="model",
+            session=session,
+        )
+
     def _create_or_reuse_code_reference(
         self,
         session: Session,
@@ -5396,32 +5420,25 @@ class SqlZenStore(BaseZenStore):
             The model of interest.
         """
         with Session(self.engine) as session:
-            is_id = type(model_name_or_id) == UUID
-            if is_id:
-                model = session.exec(
-                    select(ModelSchema).where(
-                        ModelSchema.id == model_name_or_id
-                    )
-                ).first()
-            else:
-                model = session.exec(
-                    select(ModelSchema).where(
-                        ModelSchema.name == model_name_or_id
-                    )
-                ).first()
+            model = self._get_model_schema(
+                model_name_or_id=model_name_or_id, session=session
+            )
             if model is None:
                 raise KeyError(
-                    f"Unable to get model with {'ID' if is_id else 'Name'} `{model_name_or_id}`: "
-                    f"No model with this {'ID' if is_id else 'Name'} found."
+                    f"Unable to get model with ID `{model_name_or_id}`: "
+                    f"No model with this ID found."
                 )
             return ModelSchema.to_model(model)
 
     def list_models(
-        self, model_filter_model: ModelFilterModel
+        self,
+        workspace_id: UUID,
+        model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
         """Get all models by filter.
 
         Args:
+            workspace_id: The ID of the workspace to scope to.
             model_filter_model: All filter parameters including pagination
                 params.
 
@@ -5430,6 +5447,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelSchema)
+            model_filter_model.set_scope_workspace(workspace_id)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -5447,23 +5465,13 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            is_id = type(model_name_or_id) == UUID
-            if is_id:
-                model = session.exec(
-                    select(ModelSchema).where(
-                        ModelSchema.id == model_name_or_id
-                    )
-                ).first()
-            else:
-                model = session.exec(
-                    select(ModelSchema).where(
-                        ModelSchema.name == model_name_or_id
-                    )
-                ).first()
+            model = self._get_model_schema(
+                model_name_or_id=model_name_or_id, session=session
+            )
             if model is None:
                 raise KeyError(
-                    f"Unable to delete model with {'ID' if is_id else 'Name'} `{model_name_or_id}`: "
-                    f"No model with this {'ID' if is_id else 'Name'} found."
+                    f"Unable to delete model with ID `{model_name_or_id}`: "
+                    f"No model with this ID found."
                 )
             session.delete(model)
             session.commit()
