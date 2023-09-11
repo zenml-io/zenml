@@ -41,6 +41,7 @@ from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
+from zenml.integrations.mlstacks import MlstacksIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
