@@ -1,39 +1,54 @@
-# Quickly setting up a minimal Stack on GCP
+---
+description: A simple guide to quickly set up a minimal stack on GCP.
+---
 
-This page will serve as a simple guide to quickly set up a minimal stack on 
-gcp. 
+# Set up minimal GCP stack
 
-1) Choose a GCP project
-In the Google Cloud console, on the project selector page, select or [create 
-a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
+Here's a 7-step guide to get a production-ready GCP stack.
+
+
+
+### 1) Choose a GCP project&#x20;
+
+In the Google Cloud console, on the project selector page, select or [create a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
 {% hint style="info" %}
-If you don't plan to keep the resources that you create in this procedure, 
-create a project instead of selecting an existing project. After you finish
-these steps, you can delete the project, removing all resources associated 
-with the project.
+If you don't plan to keep the resources that you create in this procedure, create a new project. After you finish these steps, you can delete the project, thereby removing all resources associated with the project.
 {% endhint %}
 
-2) [Enable GCloud APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&_ga=2.103703808.1862683951.1694002459-205697788.1651483076&_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw_wcB)
+### 2) [Enable GCloud APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\_wcB)
+
 The following APIs will need to be enabled within your chosen gcp project.
+
 * Cloud Functions API
 * Cloud Build API
 * Artifact Registry API
 * Cloud Run Admin API
 * Cloud Logging API
 
-3) Create a service account with the necessary roles.
-The following roles give the service account permissions for full crud on 
-storage objects and full permissions for compute within vertex.
+
+
+### 3) Create a dedicated service account
+
+The service account should have these following roles.
+
 * AI Platform Service Agent
 * Storage Object Admin
 
+These roles give permissions for full crud on storage objects and full permissions for compute within vertex.
 
-4) Create a JSON Key for your service account.
+### 4) [Create a JSON Key](https://cloud.google.com/iam/docs/keys-create-delete) for your service account
 
+This json file will allow the service account to assume the identity of this service account. You will need the filepath of the downloaded file in the next step.
 
+```bash
+export JSON_KEY_FILE_PATH=<JSON_KEY_FILE_PATH>
+```
 
-5) Create a Service Connector in ZenML
+### 5) Create a Service Connector within ZenML
+
+The service connector will allow ZenML and other ZenML components to authenticate themselves with GCP.
+
 ```bash
 zenml integration install gcp \
 && zenml service-connector register gcp_connector \
@@ -42,12 +57,12 @@ zenml integration install gcp \
 --service_account_json=@<FILE_PATH> \
 --project_id=<GCP_PROJECT_ID>
 ```
-6) Create Stack Components
-### Artifact Store
 
-Before you run anything within the zenml CLI, head on over to gcp and create a 
-gcs bucket if you don't have one that you can use. Once this is done, you can 
-create the zenml stack component as follows:
+### 6) Create Stack Components
+
+#### Artifact Store
+
+Before you run anything within the zenml CLI, head on over to gcp and create a gcs bucket if you don't have one that you can use. Once this is done, you can create the zenml stack component as follows:
 
 ```bash
 export ARTIFACT_STORE_NAME=gcp_artifact_store
@@ -61,12 +76,10 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/artifact-stores/gcp) to learn 
-more.
+Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn more.
 {% endhint %}
 
-
-### Orchestrator
+#### Orchestrator
 
 ```bash
 export ORCHESTRATOR_NAME=gcp_vertex_orchestrator
@@ -80,11 +93,10 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to 
-learn more.
+Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to learn more.
 {% endhint %}
 
-### Container Registry
+#### Container Registry
 
 ```bash
 export CONTAINER_REGISTRY_NAME=gcp_container_registry
@@ -96,12 +108,10 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/container-registries/gcp.md)
-to learn more.
+Head on over to our [docs](../../component-guide/container-registries/gcp.md) to learn more.
 {% endhint %}
 
-
-7) Create Stack
+### 7) Create Stack
 
 ```bash
 export STACK_NAME=gcp_stack
@@ -111,11 +121,9 @@ zenml stack register ${STACK_NAME} -o ${ORCHESTRATOR_NAME} \
 ```
 
 {% hint style="info" %}
-In case you want to also add any other stack components to this stack, feel free
-to do so.
+In case you want to also add any other stack components to this stack, feel free to do so.
 {% endhint %}
 
 ## Finished
 
-Just like that, you now have a fully working GCP stack ready to go. Feel free to
-take it for a spin with a pipeline run.
+Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin with a pipeline run.
