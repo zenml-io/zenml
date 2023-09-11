@@ -20,6 +20,7 @@ from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.orchestrators import SagemakerOrchestrator
@@ -87,10 +88,28 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 ):
     """Config for the Sagemaker orchestrator.
 
+    There are three ways to authenticate to AWS:
+    - By connecting a `ServiceConnector` to the orchestrator,
+    - By configuring explicit AWS credentials (`aws_access_key_id`,
+        `aws_secret_access_key`, `aws_session_token`, `profile_name`, `region`),
+    - If none of the above are provided, unspecified credentials will be
+        loaded from the default AWS config.
+
     Attributes:
         synchronous: Whether to run the processing job synchronously or
             asynchronously. Defaults to False.
         execution_role: The IAM role ARN to use for the pipeline.
+        aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
+            If not provided, the value from the default AWS config will be used.
+        aws_secret_access_key: The AWS secret access key to use to authenticate
+            to AWS. If not provided, the value from the default AWS config will
+            be used.
+        aws_session_token: The AWS session token to use to authenticate to AWS.
+            If not provided, the value from the default AWS config will be used.
+        aws_profile: The AWS profile name to use to authenticate to AWS. If not
+            provided, the value from the default AWS config will be used.
+        aws_region: The AWS region to use to authenticate to AWS. If not
+            provided, the value from the default AWS config will be used.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format:
@@ -99,6 +118,11 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 
     synchronous: bool = False
     execution_role: str
+    aws_access_key_id: Optional[str] = SecretField()
+    aws_secret_access_key: Optional[str] = SecretField()
+    aws_session_token: Optional[str] = SecretField()
+    aws_profile: Optional[str] = None
+    aws_region: Optional[str] = None
     bucket: Optional[str] = None
 
     @property

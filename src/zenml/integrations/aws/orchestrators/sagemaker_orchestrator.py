@@ -167,7 +167,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Get authenticated session
-        boto_session: Optional[boto3.Session] = None
+        # Option 1: Service connector
+        boto_session: boto3.Session
         if connector := self.get_connector():
             boto_session = connector.connect()
             if not isinstance(boto_session, boto3.Session):
@@ -175,6 +176,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     f"Expected to receive a `boto3.Session` object from the "
                     f"linked connector, but got type `{type(boto_session)}`."
                 )
+        # Option 2: Explicit configuration
+        # Args that are not provided will be taken from the default AWS config.
+        else:
+            boto_session = boto3.Session(
+                aws_access_key_id=self.config.aws_access_key_id,
+                aws_secret_access_key=self.config.aws_secret_access_key,
+                aws_session_token=self.config.aws_session_token,
+                region_name=self.config.aws_region,
+                profile_name=self.config.aws_profile,
+            )
         session = sagemaker.Session(
             boto_session=boto_session, default_bucket=self.config.bucket
         )
