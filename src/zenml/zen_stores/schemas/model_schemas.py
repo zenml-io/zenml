@@ -203,6 +203,7 @@ class ModelVersionSchema(BaseSchema, table=True):
         return cls(
             workspace_id=model_version_request.workspace,
             user_id=model_version_request.user,
+            model_id=model_version_request.model_id,
             version=model_version_request.version,
             description=model_version_request.description,
             stage=model_version_request.stage,
@@ -220,6 +221,7 @@ class ModelVersionSchema(BaseSchema, table=True):
             workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
+            model_id=self.model_id,
             version=self.version,
             description=self.description,
             stage=self.stage,
@@ -245,26 +247,6 @@ class ModelVersionSchema(BaseSchema, table=True):
                 if al.pipeline_run_id is not None
             ],
         )
-
-    # def update(
-    #     self,
-    #     model_update: ModelUpdateModel,
-    # ) -> "ModelSchema":
-    #     """Updates a `ModelSchema` from a `ModelUpdateModel`.
-
-    #     Args:
-    #         model_update: The `ModelUpdateModel` to update from.
-
-    #     Returns:
-    #         The updated `ModelSchema`.
-    #     """
-    #     # for field, value in model_update.dict(exclude_unset=True).items():
-    #     #     if field == "tags":
-    #     #         setattr(self, field, json.dumps(value))
-    #     #     else:
-    #     #         setattr(self, field, value)
-    #     # self.updated = datetime.utcnow()
-    #     # return self
 
 
 class ModelVersionLinkSchema(NamedSchema, table=True):
@@ -375,23 +357,3 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
             is_model_object=self.is_model_object,
             is_deployment=self.is_deployment,
         )
-
-    # def update(
-    #     self,
-    #     model_update: ModelUpdateModel,
-    # ) -> "ModelSchema":
-    #     """Updates a `ModelSchema` from a `ModelUpdateModel`.
-
-    #     Args:
-    #         model_update: The `ModelUpdateModel` to update from.
-
-    #     Returns:
-    #         The updated `ModelSchema`.
-    #     """
-    #     for field, value in model_update.dict(exclude_unset=True).items():
-    #         if field == "tags":
-    #             setattr(self, field, json.dumps(value))
-    #         else:
-    #             setattr(self, field, value)
-    #     self.updated = datetime.utcnow()
-    #     return self

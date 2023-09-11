@@ -32,6 +32,10 @@ from zenml.models.pipeline_run_models import PipelineRunResponseModel
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
+    model_id: str = Field(
+        title="The ID of the model",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     version: str = Field(
         title="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -115,6 +119,24 @@ class ModelVersionResponseModel(
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
     # def generate_model_card(self, template_name: str) -> str:
     #     """Return HTML/PDF based on input template"""
+
+
+class ModelVersionFilterModel(WorkspaceScopedFilterModel):
+    """Filter Model for Model Version."""
+
+    model_name: str = Field(
+        description="Name of the Model",
+    )
+    model_version_name: Optional[str] = Field(
+        default=None,
+        description="Name of the Model Version",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the Model Version"
+    )
 
 
 class ModelVersionLinkBaseModel(BaseModel):

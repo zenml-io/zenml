@@ -36,6 +36,9 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionFilterModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -1739,4 +1742,58 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A page of all models.
+        """
+
+    #################
+    # Model Versions
+    #################
+
+    @abstractmethod
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version.
+        Args:
+            model: the Model Version to be created.
+        Returns:
+            The newly created model version.
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_model_version(
+        self, model_name_or_id: Union[str, UUID], model_version_name: str
+    ) -> None:
+        """Deletes a model version.
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name: name of the model version to be deleted.
+        """
+
+    @abstractmethod
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name: str,
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version.
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be retrieved.
+        Returns:
+            The model version of interest.
+        """
+
+    @abstractmethod
+    def list_model_versions(
+        self,
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get all model versions by filter.
+        Args:
+            model_version_filter_model: All filter parameters including pagination
+                params.
+        Returns:
+            A page of all model versions.
         """

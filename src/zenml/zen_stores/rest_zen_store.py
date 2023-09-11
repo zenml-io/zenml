@@ -49,6 +49,7 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
@@ -99,6 +100,9 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionFilterModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -2366,6 +2370,76 @@ class RestZenStore(BaseZenStore):
             route=MODELS,
             response_model=ModelResponseModel,
             filter_model=model_filter_model,
+        )
+
+    #################
+    # Model Versions
+    #################
+
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version.
+        Args:
+            model: the Model Version to be created.
+        Returns:
+            The newly created model version.
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=model_version,
+            response_model=ModelVersionResponseModel,
+            route=MODEL_VERSIONS,
+        )
+
+    def delete_model_version(
+        self, model_name_or_id: Union[str, UUID], model_version_name: str
+    ) -> None:
+        """Deletes a model version.
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name: name of the model version to be deleted.
+        """
+        self._delete_resource(
+            resource_id=(model_name_or_id, model_version_name),
+            route=MODEL_VERSIONS,
+        )
+
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name: str,
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version.
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be retrieved.
+        Returns:
+            The model version of interest.
+        """
+        return self._get_resource(
+            resource_id=(model_name_or_id, model_version_name),
+            route=MODEL_VERSIONS,
+            response_model=ModelVersionResponseModel,
+        )
+
+    def list_model_versions(
+        self,
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get all model versions by filter.
+        Args:
+            model_version_filter_model: All filter parameters including pagination
+                params.
+        Returns:
+            A page of all model versions.
+        """
+
+        return self._list_paginated_resources(
+            route=MODEL_VERSIONS,
+            response_model=ModelVersionFilterModel,
+            filter_model=model_version_filter_model,
         )
 
     # =======================
