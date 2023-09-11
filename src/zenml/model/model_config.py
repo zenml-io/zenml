@@ -15,21 +15,22 @@
 
 from typing import Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.model.model_stages import ModelStages
 from zenml.models import (
+    ModelBaseModel,
     ModelRequestModel,
     ModelResponseModel,
     ModelVersionResponseModel,
 )
-from zenml.zen_server.utils import zen_store
 
 logger = get_logger(__name__)
 
 
-class ModelConfig(BaseModel):
+class ModelConfig(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into
     a model context.
 
@@ -39,8 +40,7 @@ class ModelConfig(BaseModel):
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
 
-    model_name: str
-    model_version: Optional[Union[str, ModelStages]] = Field(
+    version: Optional[Union[str, ModelStages]] = Field(
         default=None,
         description="Model version is optional and points model context to a specific version or stage. It can be a version number, stage, ",
     )
@@ -61,19 +61,29 @@ class ModelConfig(BaseModel):
 
     @property
     def _db_version(self):
-        return getattr(self.model_version, "value", self.model_version)
+        return getattr(self.version, "value", self.version)
 
     def _get_or_create_model(self) -> ModelResponseModel:
         """This method should get or create a model from Model WatchTower.
         New model is created implicitly, if missing, otherwise fetched."""
-        model_request = ModelRequestModel(name=self.model_name)
+        zenml_client = Client()
+        request_params = {
+            k: v
+            for k, v in self.dict().items()
+            if k in ModelRequestModel.schema()["properties"]
+        }
+        request_params.update(
+            {
+                "user": zenml_client.active_user.id,
+                "workspace": zenml_client.active_workspace.id,
+            }
+        )
+        model_request = ModelRequestModel.parse_obj(request_params)
         try:
-            model = zen_store().get_model(model_request)
+            model = zenml_client.zen_store.get_model(self.name)
         except KeyError:
-            model = zen_store().create_model(model_request)
-            logger.warning(
-                f"New model `{self.model_name}` was created implicitly."
-            )
+            model = zenml_client.zen_store.create_model(model=model_request)
+            logger.warning(f"New model `{self.name}` was created implicitly.")
         return model
 
     def _get_or_create_model_version(self) -> ModelVersionResponseModel:
