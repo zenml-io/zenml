@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.client import Client
 from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
@@ -26,18 +27,40 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.zen_server.utils import zen_store
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
-    version: str
-    description: Optional[str]
-    stage: Optional[str]
-    _model_objects: Dict[str, UUID] = None
-    _artifact_objects: Dict[str, UUID] = None
-    _deployments: Dict[str, UUID] = None
+    version: str = Field(
+        title="The name of the model version",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: Optional[str] = Field(
+        title="The description of the model version",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    stage: Optional[str] = Field(
+        title="The stage of the model version",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    _model_objects: Dict[str, UUID] = Field(
+        title="Model Objects linked to the model version",
+        default={},
+    )
+    _artifact_objects: Dict[str, UUID] = Field(
+        title="Artifacts linked to the model version",
+        default={},
+    )
+    _deployments: Dict[str, UUID] = Field(
+        title="Deployments linked to the model version",
+        default={},
+    )
+    _pipeline_runs: List[UUID] = Field(
+        title="Pipeline runs linked to the model version",
+        default=[],
+    )
 
 
 class ModelVersionRequestModel(
@@ -61,8 +84,7 @@ class ModelVersionResponseModel(
     ) -> Dict[str, ArtifactResponseModel]:
         if artifacts:
             return {
-                name: zen_store().get_artifact(a)
-                for name, a in artifacts.items()
+                name: Client().get_artifact(a) for name, a in artifacts.items()
             }
         else:
             return {}
@@ -78,6 +100,10 @@ class ModelVersionResponseModel(
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
         return self._fetch_artifacts_from_list(self._deployments)
+
+    @property
+    def pipeline_runs(self) -> List[PipelineRunResponseModel]:
+        return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
 
     def set_stage(self, stage: ModelStages):
         """Sets Model Version to a desired stage."""

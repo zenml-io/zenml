@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         CodeRepositorySchema,
         FlavorSchema,
         ModelSchema,
+        ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -93,6 +94,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     models: List["ModelSchema"] = Relationship(
+        back_populates="user",
+    )
+    model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
 
