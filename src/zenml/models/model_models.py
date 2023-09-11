@@ -18,7 +18,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.client import Client
 from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
@@ -82,6 +81,8 @@ class ModelVersionResponseModel(
     def _fetch_artifacts_from_list(
         artifacts: Dict[str, UUID]
     ) -> Dict[str, ArtifactResponseModel]:
+        from zenml.client import Client
+
         if artifacts:
             return {
                 name: Client().get_artifact(a) for name, a in artifacts.items()
@@ -103,7 +104,9 @@ class ModelVersionResponseModel(
 
     @property
     def pipeline_runs(self) -> List[PipelineRunResponseModel]:
-        return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
+        from zenml.client import Client
+
+        return [Client().get_run(pr) for pr in self._pipeline_runs]
 
     def set_stage(self, stage: ModelStages):
         """Sets Model Version to a desired stage."""
