@@ -16,7 +16,7 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
@@ -115,6 +115,44 @@ class ModelVersionResponseModel(
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
     # def generate_model_card(self, template_name: str) -> str:
     #     """Return HTML/PDF based on input template"""
+
+
+class ModelVersionLinkBaseModel(BaseModel):
+    """Model version links base model."""
+
+    name: str = Field(
+        title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    artifact_id: Optional[UUID]
+    pipeline_run_id: Optional[UUID]
+    model_version_id: UUID
+    is_model_object: bool = False
+    is_deployment: bool = False
+
+    @validator("model_version_id")
+    def validate_links(cls, model_version_id, values):
+        artifact_id = values.get("artifact_id", None)
+        pipeline_run_id = values.get("pipeline_run_id", None)
+        if (artifact_id is None and pipeline_run_id is None) or (
+            artifact_id is not None and pipeline_run_id is not None
+        ):
+            raise ValueError(
+                "You must provide only `artifact_id` or only `pipeline_run_id`."
+            )
+        return model_version_id
+
+
+class ModelVersionLinkRequestModel(
+    ModelVersionLinkBaseModel, WorkspaceScopedRequestModel
+):
+    """Model version links request model."""
+
+
+class ModelVersionLinkResponseModel(
+    ModelVersionLinkBaseModel, WorkspaceScopedResponseModel
+):
+    """Model version links response model."""
 
 
 class ModelConfigBaseModel(BaseModel):

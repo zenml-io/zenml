@@ -14,20 +14,25 @@
 """SQLModel implementation of model tables."""
 
 
-import json
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import BOOLEAN, TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionLinkRequestModel,
+    ModelVersionLinkResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
 )
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -173,82 +178,220 @@ class ModelVersionSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model: Optional["ModelSchema"] = Relationship(
-        back_populates="model_versions"
+    model: "ModelSchema" = Relationship(back_populates="model_versions")
+    objects_links: List["ModelVersionLinkSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     version: str = Field(sa_column=Column(TEXT, nullable=False))
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
-    use_cases: str = Field(sa_column=Column(TEXT, nullable=True))
-    limitations: str = Field(sa_column=Column(TEXT, nullable=True))
-    trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
-    ethic: str = Field(sa_column=Column(TEXT, nullable=True))
-    tags: str = Field(sa_column=Column(TEXT, nullable=True))
 
     @classmethod
-    def from_request(cls, model_request: ModelRequestModel) -> "ModelSchema":
-        """Convert an `ModelRequestModel` to an `ModelSchema`.
+    def from_request(
+        cls, model_version_request: ModelVersionRequestModel
+    ) -> "ModelVersionSchema":
+        """Convert an `ModelVersionRequestModel` to an `ModelVersionSchema`.
 
         Args:
-            model_request: The request model to convert.
+            model_version_request: The request model version to convert.
 
         Returns:
             The converted schema.
         """
         return cls(
-            name=model_request.name,
-            workspace_id=model_request.workspace,
-            user_id=model_request.user,
-            license=model_request.license,
-            description=model_request.description,
-            audience=model_request.audience,
-            use_cases=model_request.use_cases,
-            limitations=model_request.limitations,
-            trade_offs=model_request.trade_offs,
-            ethic=model_request.ethic,
-            tags=json.dumps(model_request.tags),
+            workspace_id=model_version_request.workspace,
+            user_id=model_version_request.user,
+            version=model_version_request.version,
+            description=model_version_request.description,
+            stage=model_version_request.stage,
         )
 
-    def to_model(self) -> ModelResponseModel:
-        """Convert an `ModelSchema` to an `ModelResponseModel`.
+    def to_model(self) -> ModelVersionResponseModel:
+        """Convert an `ModelVersionSchema` to an `ModelVersionResponseModel`.
 
         Returns:
-            The created `ModelResponseModel`.
+            The created `ModelVersionResponseModel`.
         """
-        return ModelResponseModel(
+        return ModelVersionResponseModel(
+            id=self.id,
+            user=self.user.to_model() if self.user else None,
+            workspace=self.workspace.to_model(),
+            created=self.created,
+            updated=self.updated,
+            version=self.version,
+            description=self.description,
+            stage=self.stage,
+            _model_objects={
+                al.name: al.artifact_id
+                for al in self.objects_links
+                if al.artifact_id is not None and al.is_model_object
+            },
+            _deployments={
+                al.name: al.artifact_id
+                for al in self.objects_links
+                if al.artifact_id is not None and al.is_deployment
+            },
+            _artifact_objects={
+                al.name: al.artifact_id
+                for al in self.objects_links
+                if al.artifact_id is not None
+                and not (al.is_deployment or al.is_model_object)
+            },
+            _pipeline_runs=[
+                al.artifact_id
+                for al in self.objects_links
+                if al.pipeline_run_id is not None
+            ],
+        )
+
+    # def update(
+    #     self,
+    #     model_update: ModelUpdateModel,
+    # ) -> "ModelSchema":
+    #     """Updates a `ModelSchema` from a `ModelUpdateModel`.
+
+    #     Args:
+    #         model_update: The `ModelUpdateModel` to update from.
+
+    #     Returns:
+    #         The updated `ModelSchema`.
+    #     """
+    #     # for field, value in model_update.dict(exclude_unset=True).items():
+    #     #     if field == "tags":
+    #     #         setattr(self, field, json.dumps(value))
+    #     #     else:
+    #     #         setattr(self, field, value)
+    #     # self.updated = datetime.utcnow()
+    #     # return self
+
+
+class ModelVersionLinkSchema(NamedSchema, table=True):
+    """SQL Model for linking of Model Versions and Artifacts or Pipeline Runs M:M."""
+
+    __tablename__ = "model_version_links"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="model_version_links"
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="model_version_links"
+    )
+
+    model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelVersionSchema.__tablename__,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model_version: "ModelVersionSchema" = Relationship(
+        back_populates="objects_links"
+    )
+    artifact_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    artifact: Optional["ArtifactSchema"] = Relationship(
+        back_populates="model_version_links"
+    )
+    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
+        back_populates="model_version_links"
+    )
+
+    is_model_object: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
+    is_deployment: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
+
+    @classmethod
+    def from_request(
+        cls, model_version_artifact_request: ModelVersionLinkRequestModel
+    ) -> "ModelVersionLinkSchema":
+        """Convert an `ModelVersionArtifactRequestModel` to an `ModelVersionArtifactSchema`.
+
+        Args:
+            model_version_artifact_request: The request link to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            name=model_version_artifact_request.name,
+            workspace_id=model_version_artifact_request.workspace,
+            user_id=model_version_artifact_request.user,
+            model_version_id=model_version_artifact_request.model_version_id,
+            artifact_id=model_version_artifact_request.artifact_id,
+            pipeline_run_id=model_version_artifact_request.pipeline_run_id,
+            is_model_object=model_version_artifact_request.is_model_object,
+            is_deployment=model_version_artifact_request.is_deployment,
+        )
+
+    def to_model(self) -> ModelVersionLinkResponseModel:
+        """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponseModel`.
+
+        Returns:
+            The created `ModelVersionArtifactResponseModel`.
+        """
+        return ModelVersionLinkResponseModel(
             id=self.id,
             name=self.name,
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            license=self.license,
-            description=self.description,
-            audience=self.audience,
-            use_cases=self.use_cases,
-            limitations=self.limitations,
-            trade_offs=self.trade_offs,
-            ethic=self.ethic,
-            tags=json.loads(self.tags) if self.tags else None,
+            model_version_id=self.model_version_id,
+            artifact_id=self.artifact_id,
+            pipeline_run_id=self.pipeline_run_id,
+            is_model_object=self.is_model_object,
+            is_deployment=self.is_deployment,
         )
 
-    def update(
-        self,
-        model_update: ModelUpdateModel,
-    ) -> "ModelSchema":
-        """Updates a `ModelSchema` from a `ModelUpdateModel`.
+    # def update(
+    #     self,
+    #     model_update: ModelUpdateModel,
+    # ) -> "ModelSchema":
+    #     """Updates a `ModelSchema` from a `ModelUpdateModel`.
 
-        Args:
-            model_update: The `ModelUpdateModel` to update from.
+    #     Args:
+    #         model_update: The `ModelUpdateModel` to update from.
 
-        Returns:
-            The updated `ModelSchema`.
-        """
-        for field, value in model_update.dict(exclude_unset=True).items():
-            if field == "tags":
-                setattr(self, field, json.dumps(value))
-            else:
-                setattr(self, field, value)
-        self.updated = datetime.utcnow()
-        return self
+    #     Returns:
+    #         The updated `ModelSchema`.
+    #     """
+    #     for field, value in model_update.dict(exclude_unset=True).items():
+    #         if field == "tags":
+    #             setattr(self, field, json.dumps(value))
+    #         else:
+    #             setattr(self, field, value)
+    #     self.updated = datetime.utcnow()
+    #     return self

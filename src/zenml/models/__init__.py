@@ -157,6 +157,9 @@ from zenml.models.model_models import (
     ModelVersionBaseModel,
     ModelVersionResponseModel,
     ModelVersionRequestModel,
+    ModelVersionLinkBaseModel,
+    ModelVersionLinkRequestModel,
+    ModelVersionLinkResponseModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -297,6 +300,16 @@ ModelVersionResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+ModelVersionLinkRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionLinkResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
@@ -400,4 +413,7 @@ __all__ = [
     "ModelVersionBaseModel",
     "ModelVersionRequestModel",
     "ModelVersionResponseModel",
+    "ModelVersionLinkBaseModel",
+    "ModelVersionLinkRequestModel",
+    "ModelVersionLinkResponseModel",
 ]

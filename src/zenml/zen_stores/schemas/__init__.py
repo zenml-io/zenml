@@ -60,6 +60,7 @@ from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.model_schemas import (
     ModelSchema,
     ModelVersionSchema,
+    ModelVersionLinkSchema,
 )
 
 __all__ = [
@@ -97,4 +98,5 @@ __all__ = [
     "LogsSchema",
     "ModelSchema",
     "ModelVersionSchema",
+    "ModelVersionLinkSchema",
 ]
