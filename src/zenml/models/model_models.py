@@ -139,10 +139,10 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     """Filter Model for Model Version."""
 
-    model: Optional[Union[str, UUID]] = Field(
+    model_id: Union[str, UUID] = Field(
         description="The ID of the Model",
     )
-    version: Optional[str] = Field(
+    version: Optional[Union[str, UUID]] = Field(
         default=None,
         description="The name of the Model Version",
     )
@@ -175,21 +175,22 @@ class ModelVersionLinkBaseModel(BaseModel):
         title="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    artifact_id: Optional[UUID]
-    pipeline_run_id: Optional[UUID]
-    model_version_id: UUID
+    artifact: Optional[UUID]
+    pipeline_run: Optional[UUID]
+    model: UUID
+    model_version: UUID
     is_model_object: bool = False
     is_deployment: bool = False
 
-    @validator("model_version_id")
+    @validator("model_version")
     def validate_links(cls, model_version_id, values):
-        artifact_id = values.get("artifact_id", None)
-        pipeline_run_id = values.get("pipeline_run_id", None)
-        if (artifact_id is None and pipeline_run_id is None) or (
-            artifact_id is not None and pipeline_run_id is not None
+        artifact = values.get("artifact", None)
+        pipeline_run = values.get("pipeline_run", None)
+        if (artifact is None and pipeline_run is None) or (
+            artifact is not None and pipeline_run is not None
         ):
             raise ValueError(
-                "You must provide only `artifact_id` or only `pipeline_run_id`."
+                "You must provide only `artifact` or only `pipeline_run`."
             )
         return model_version_id
 
@@ -204,6 +205,44 @@ class ModelVersionLinkResponseModel(
     ModelVersionLinkBaseModel, WorkspaceScopedResponseModel
 ):
     """Model version links response model."""
+
+
+class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
+    """Model version links filter model."""
+
+    model_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model",
+    )
+    model_version_id: Union[str, UUID] = Field(
+        default=None,
+        description="The name or ID of the Model Version",
+    )
+    name: Optional[str] = Field(
+        title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
+    only_artifacts: bool = False
+    only_model_objects: bool = False
+    only_deployments: bool = False
+    only_pipeline_runs: bool = False
+
+    @validator("only_pipeline_runs")
+    def validate_flags(cls, only_pipeline_runs, values):
+        s = int(only_pipeline_runs)
+        s += int(values.get("only_artifacts", False))
+        s += int(values.get("only_model_objects", False))
+        s += int(values.get("only_deployments", False))
+        if s > 1:
+            raise ValueError(
+                "Only one of the selection flags can be used at once."
+            )
+        return only_pipeline_runs
 
 
 class ModelConfigBaseModel(BaseModel):

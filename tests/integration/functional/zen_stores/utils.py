@@ -45,6 +45,7 @@ from zenml.models import (
     ModelFilterModel,
     ModelRequestModel,
     ModelUpdateModel,
+    ModelVersionRequestModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineDeploymentFilterModel,
@@ -510,13 +511,17 @@ class ServiceConnectorContext:
 
 
 class ModelVersionContext:
-    def __init__(self):
+    def __init__(self, create_version: bool = False):
         self.workspace = "workspace"
         self.user = "su"
         self.model = "su_model"
+        self.model_version = "2.0.0"
         self.del_ws = False
         self.del_user = False
         self.del_model = False
+        self.del_mv = False
+
+        self.create_version = create_version
 
     def __enter__(self):
         zs = Client().zen_store
@@ -541,18 +546,33 @@ class ModelVersionContext:
                 )
             )
             self.del_model = True
-        return model
+        if self.create_version:
+            try:
+                mv = zs.get_model_version(self.model, self.model_version)
+            except:
+                mv = zs.create_model_version(
+                    ModelVersionRequestModel(
+                        user=user.id,
+                        workspace=ws.id,
+                        model=model.id,
+                        version=self.model_version,
+                    )
+                )
+                self.del_mv = True
+        if self.create_version:
+            return mv
+        else:
+            return model
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         zs = Client().zen_store
+        if self.del_mv:
+            zs.delete_model_version(self.model, self.model_version)
         if self.del_model:
-            print("del_model")
             zs.delete_model(self.model)
         if self.del_user:
-            print("del_user")
             zs.delete_user(self.user)
         if self.del_ws:
-            print("del_ws")
             zs.delete_workspace(self.workspace)
 
 

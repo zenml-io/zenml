@@ -49,6 +49,7 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    MODEL_VERSION_LINKS,
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
@@ -101,6 +102,9 @@ from zenml.models import (
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionFilterModel,
+    ModelVersionLinkFilterModel,
+    ModelVersionLinkRequestModel,
+    ModelVersionLinkResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
@@ -2408,7 +2412,7 @@ class RestZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name: str,
+        model_version_name_or_id: Union[str, UUID],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
@@ -2420,7 +2424,7 @@ class RestZenStore(BaseZenStore):
             The model version of interest.
         """
         return self._get_resource(
-            resource_id=model_version_name,
+            resource_id=model_version_name_or_id,
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
         )
@@ -2440,7 +2444,7 @@ class RestZenStore(BaseZenStore):
         """
 
         return self._list_paginated_resources(
-            route=f"{MODELS}/{model_version_filter_model.model}{MODEL_VERSIONS}",
+            route=f"{MODELS}/{model_version_filter_model.model_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
             filter_model=model_version_filter_model,
         )
@@ -2464,6 +2468,64 @@ class RestZenStore(BaseZenStore):
             resource_update=model_version_update_model,
             route=f"{MODELS}/{model_version_update_model.model}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
+        )
+
+    #######################
+    # Model Versions Links
+    #######################
+
+    def create_model_version_link(
+        self, model_version_link: ModelVersionLinkRequestModel
+    ) -> ModelVersionLinkResponseModel:
+        """Creates a new model version link.
+
+        Args:
+            model_version_link: the Model Version Link to be created.
+
+        Returns:
+            The newly created model version link.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=model_version_link,
+            response_model=ModelVersionLinkResponseModel,
+            route=f"{MODELS}/{model_version_link.model}{MODEL_VERSIONS}/{model_version_link.model_version}{MODEL_VERSION_LINKS}",
+        )
+
+    def list_model_version_links(
+        self,
+        model_version_link_filter_model: ModelVersionLinkFilterModel,
+    ) -> Page[ModelVersionLinkResponseModel]:
+        """Get all model version links by filter.
+
+        Args:
+            model_version_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version links.
+        """
+        return self._list_paginated_resources(
+            route=f"{MODELS}/{model_version_link_filter_model.model_id}{MODEL_VERSIONS}/{model_version_link_filter_model.model_version_id}{MODEL_VERSION_LINKS}",
+            response_model=ModelVersionLinkResponseModel,
+            filter_model=model_version_link_filter_model,
+        )
+
+    def delete_model_version_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_link_name_or_id: name or ID of the model version link to be deleted.
+        """
+        self._delete_resource(
+            resource_id=model_version_link_name_or_id,
+            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{MODEL_VERSION_LINKS}",
         )
 
     # =======================

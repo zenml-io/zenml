@@ -18,13 +18,21 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, MODEL_VERSIONS, MODELS, VERSION_1
+from zenml.constants import (
+    API,
+    MODEL_VERSION_LINKS,
+    MODEL_VERSIONS,
+    MODELS,
+    VERSION_1,
+)
 from zenml.enums import PermissionType
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionFilterModel,
+    ModelVersionLinkFilterModel,
+    ModelVersionLinkResponseModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
 )
@@ -238,4 +246,67 @@ def update_model(
     return zen_store().update_model_version(
         model_version_id=model_version_id,
         model_version_update_model=model_version_update_model,
+    )
+
+
+######################
+# Model Version Links
+######################
+
+
+@router.get(
+    "/{model_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + MODEL_VERSION_LINKS,
+    response_model=Page[ModelVersionLinkResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_model_version_links(
+    model_version_link_filter_model: ModelVersionLinkFilterModel = Depends(
+        make_dependable(ModelVersionLinkFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelVersionLinkResponseModel]:
+    """Get model version links according to query filters.
+
+    Args:
+        model_version_link_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+    Returns:
+        The model version links according to query filters.
+    """
+    return zen_store().list_model_version_links(
+        model_version_link_filter_model=model_version_link_filter_model,
+    )
+
+
+@router.delete(
+    "/{model_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + MODEL_VERSION_LINKS
+    + "/{model_version_link_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_model_version_link(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_link_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Deletes a model version link.
+
+    Args:
+        model_name_or_id: name or ID of the model containing the model version.
+        model_version_name_or_id: name or ID of the model version containing the link.
+        model_version_link_name_or_id: name or ID of the model version link to be deleted.
+    """
+    zen_store().delete_model_version_link(
+        model_name_or_id,
+        model_version_name_or_id,
+        model_version_link_name_or_id,
     )

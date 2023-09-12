@@ -21,6 +21,7 @@ from zenml.constants import (
     API,
     CODE_REPOSITORIES,
     GET_OR_CREATE,
+    MODEL_VERSION_LINKS,
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
@@ -53,6 +54,9 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelVersionFilterModel,
+    ModelVersionLinkFilterModel,
+    ModelVersionLinkRequestModel,
+    ModelVersionLinkResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     PipelineBuildFilterModel,
@@ -1250,7 +1254,7 @@ def create_model_version(
     Args:
         model_name_or_id: Name or ID of the model.
         workspace_name_or_id: Name or ID of the workspace.
-        model_version: The model to create.
+        model_version: The model version to create.
         auth_context: Authentication context.
 
     Returns:
@@ -1306,4 +1310,99 @@ def list_workspace_model_versions(
     model_version_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
+    )
+
+
+@router.post(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODELS
+    + "/{model_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + MODEL_VERSION_LINKS,
+    response_model=ModelVersionLinkResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_link(
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_link: ModelVersionLinkRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionLinkResponseModel:
+    """Create a new model version link.
+
+    Args:
+        model_name_or_id: Name or ID of the model.
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version_name_or_id: Name or ID of the model version.
+        model_version_link: The model version link to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model version link.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if model_version_link.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating model versions outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model_version_link.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version_link(model_version_link)
+    return mv
+
+
+@router.get(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + MODEL_VERSION_LINKS,
+    response_model=Page[ModelVersionLinkResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_model_version_links(
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_link_filter_model: ModelVersionLinkFilterModel = Depends(
+        make_dependable(ModelVersionLinkFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelVersionLinkResponseModel]:
+    """Get models according to query filters.
+
+    Args:
+        model_name_or_id: Name or ID of the model.
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version_name_or_id: Name or ID of the model version.
+        model_version_link: The model version link to create.
+        model_version_link_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+
+    Returns:
+        The model version links according to query filters.
+    """
+    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+    model_version_link_filter_model.set_scope_workspace(workspace_id)
+    return zen_store().list_model_version_links(
+        model_version_link_filter_model=model_version_link_filter_model,
     )

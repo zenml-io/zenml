@@ -37,6 +37,9 @@ from zenml.models import (
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionFilterModel,
+    ModelVersionLinkFilterModel,
+    ModelVersionLinkRequestModel,
+    ModelVersionLinkResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
@@ -1690,7 +1693,7 @@ class ZenStoreInterface(ABC):
             The newly created model.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model with the given name already exists.
         """
 
     @abstractmethod
@@ -1759,7 +1762,7 @@ class ZenStoreInterface(ABC):
         Returns:
             The newly created model version.
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model version with the given name already exists.
         """
 
     @abstractmethod
@@ -1778,12 +1781,12 @@ class ZenStoreInterface(ABC):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name: str,
+        model_version_name_or_id: Union[str, UUID],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name: name or id of the model version to be retrieved.
+            model_version_name_or_id: name or id of the model version to be retrieved.
         Returns:
             The model version of interest.
         Raises:
@@ -1820,4 +1823,57 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: If the model version not found
             RuntimeError: If there is a model version with target stage, but `force` flag is off
+        """
+
+    #######################
+    # Model Versions Links
+    #######################
+
+    @abstractmethod
+    def create_model_version_link(
+        self, model_version_link: ModelVersionLinkRequestModel
+    ) -> ModelVersionLinkResponseModel:
+        """Creates a new model version link.
+
+        Args:
+            model_version_link: the Model Version Link to be created.
+
+        Returns:
+            The newly created model version link.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+
+    @abstractmethod
+    def list_model_version_links(
+        self,
+        model_version_link_filter_model: ModelVersionLinkFilterModel,
+    ) -> Page[ModelVersionLinkResponseModel]:
+        """Get all model version links by filter.
+
+        Args:
+            model_version_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version links.
+        """
+
+    @abstractmethod
+    def delete_model_version_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_link_name_or_id: name or ID of the model version link to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
         """

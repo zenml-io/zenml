@@ -76,6 +76,10 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    objects_links: List["ModelVersionLinkSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     @classmethod
     def from_request(cls, model_request: ModelRequestModel) -> "ModelSchema":
@@ -300,6 +304,15 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         back_populates="model_version_links"
     )
 
+    model_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelSchema.__tablename__,
+        source_column="model_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model: "ModelSchema" = Relationship(back_populates="objects_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -353,9 +366,10 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
             name=model_version_artifact_request.name,
             workspace_id=model_version_artifact_request.workspace,
             user_id=model_version_artifact_request.user,
-            model_version_id=model_version_artifact_request.model_version_id,
-            artifact_id=model_version_artifact_request.artifact_id,
-            pipeline_run_id=model_version_artifact_request.pipeline_run_id,
+            model_id=model_version_artifact_request.model,
+            model_version_id=model_version_artifact_request.model_version,
+            artifact_id=model_version_artifact_request.artifact,
+            pipeline_run_id=model_version_artifact_request.pipeline_run,
             is_model_object=model_version_artifact_request.is_model_object,
             is_deployment=model_version_artifact_request.is_deployment,
         )
@@ -373,9 +387,10 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
             workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            model_version_id=self.model_version_id,
-            artifact_id=self.artifact_id,
-            pipeline_run_id=self.pipeline_run_id,
+            model=self.model_id,
+            model_version=self.model_version_id,
+            artifact=self.artifact_id,
+            pipeline_run=self.pipeline_run_id,
             is_model_object=self.is_model_object,
             is_deployment=self.is_deployment,
         )

@@ -158,6 +158,7 @@ from zenml.models.model_models import (
     ModelVersionResponseModel,
     ModelVersionRequestModel,
     ModelVersionLinkBaseModel,
+    ModelVersionLinkFilterModel,
     ModelVersionLinkRequestModel,
     ModelVersionLinkResponseModel,
     ModelVersionFilterModel,
@@ -418,6 +419,7 @@ __all__ = [
     "ModelVersionResponseModel",
     "ModelVersionUpdateModel",
     "ModelVersionLinkBaseModel",
+    "ModelVersionLinkFilterModel",
     "ModelVersionLinkRequestModel",
     "ModelVersionLinkResponseModel",
 ]
