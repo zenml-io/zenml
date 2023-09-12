@@ -1,0 +1,52 @@
+# package and push the zenml helm chart to the ECR repository
+name: Publish Helm Chart
+
+on: 
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  publish_to_ecr:
+    name: Publish Helm Chart 🛞 to ECR ☁️
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # The following sed command replaces the version number in Chart.yaml with the tag version.
+      # It replaces the line that starts with "version: " with "version: <tag version>"
+      - name: Add tag version to Chart.yaml
+        run: |
+          sed -i "s/version: .*/version: \"${{ github.ref_name }}\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-helm
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+          registry-type: public
+
+      - name: Package and push helm chart to Amazon ECR Public
+        env:
+          REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+          REGISTRY_ALIAS: zenml
+          REPOSITORY: zenml
+        run: |
+          helm package src/zenml/zen_server/deploy/helm
+          helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS

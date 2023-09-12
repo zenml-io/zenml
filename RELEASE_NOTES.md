@@ -1,5 +1,110 @@
 <!-- markdown-link-check-disable -->
 
+# 0.44.2
+
+This release contains updates for some of the most popular integrations, as well as several bug fixes and documentation improvements. 
+
+## Minor Default Behavior Changes
+* The default page size for `zenml list` commands was reduced to 20 (from 50) to speed up the runtime of such commands.
+* Simultaneous connection to local and remote ZenML servers is no longer possible since this caused several unexpected behaviors in the past.
+
+## Integration Updates
+- The `mlflow` integration now supports the newest MLflow version `2.6.0`.
+- The `evidently` integration now supports the latest Evidently version `0.4.4`.
+- The SageMaker orchestrator of the `aws` integration now supports authentication via service connectors.
+
+## What's Changed
+
+* Add `bandit` to CI for security linting by @strickvl in https://github.com/zenml-io/zenml/pull/1775
+* Add `mlstacks` compatibility check to CI by @strickvl in https://github.com/zenml-io/zenml/pull/1767
+* extend `StepContext` visibility to materializers by @avishniakov in https://github.com/zenml-io/zenml/pull/1769
+* Revert GH changes to fix colima bug in macos gh by @safoinme in https://github.com/zenml-io/zenml/pull/1779
+* Reduce CI runner count by @strickvl in https://github.com/zenml-io/zenml/pull/1777
+* Add E2E template as example by @avishniakov in https://github.com/zenml-io/zenml/pull/1766
+* Fix CI step names by @avishniakov in https://github.com/zenml-io/zenml/pull/1784
+* Add vulnerability scanner by @strickvl in https://github.com/zenml-io/zenml/pull/1776
+* Stop CI from running on push to `develop` by @strickvl in https://github.com/zenml-io/zenml/pull/1788
+* Skip update templates outside PR by @avishniakov in https://github.com/zenml-io/zenml/pull/1786
+* Fix azure service connector docs by @stefannica in https://github.com/zenml-io/zenml/pull/1778
+* fix: use k8s V1CronJob instead of V1beta1CronJob (#1781) by @francoisserra in https://github.com/zenml-io/zenml/pull/1787
+* Page limit adjustment by @bcdurak in https://github.com/zenml-io/zenml/pull/1791
+* Prevent simultaneous connection to local and remote servers by @fa9r in https://github.com/zenml-io/zenml/pull/1792
+* Update `MLflow` version to allow support for 2.6.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1782
+* Improve `ConnectionError` error message by @fa9r in https://github.com/zenml-io/zenml/pull/1783
+* Stop old MLflow services when deploying new ones by @fa9r in https://github.com/zenml-io/zenml/pull/1793
+* Prevent adding private components into shared stacks by @fa9r in https://github.com/zenml-io/zenml/pull/1794
+* Publish server helm chart as part of CI by @wjayesh in https://github.com/zenml-io/zenml/pull/1740
+* Docs on the use of ZenML-specific environment variables by @strickvl in https://github.com/zenml-io/zenml/pull/1796
+* Add support for newer Evidently versions by @fa9r in https://github.com/zenml-io/zenml/pull/1780
+* Link E2E example to docs by @avishniakov in https://github.com/zenml-io/zenml/pull/1790
+* Copy step instance before applying configuration by @schustmi in https://github.com/zenml-io/zenml/pull/1798
+* Fix AWS container registry image pushing with service connectors by @fa9r in https://github.com/zenml-io/zenml/pull/1797
+* Make Sagemaker orchestrator work with connectors by @fa9r in https://github.com/zenml-io/zenml/pull/1799
+* Add rebase Pre-requisite to PRs template by @safoinme in https://github.com/zenml-io/zenml/pull/1801
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.1...0.44.2
+
+# 0.44.1
+
+This release brings various improvements over the previous version, mainly 
+focusing on the usage of newly refactored `mlstacks` package, ZenML's `logging` 
+module and the changes in our analytics.
+
+**Note:** *0.44.0 was removed from pypi due to an issue with the alembic versions which could affect the database state. A branch occurred in the versions: 0.42.1 -> [0.43.0, e1d66d91a099] -> 0.44.0. This release fixes the issue.<br>
+The primary issue arises when deploying version 0.44.0 using a MySQL backend. Although the alembic migration executes all tasks up to 0.44.0, the alembic version represented in the database remains at 0.43.0. This issue persists irrespective of the measures taken, including trying various versions after 0.43.0.<br>
+This imbalance leads to failure when running a second replica migration because the database's state is at 0.44.0 while the alembic version remains at 0.43.0. Similarly, attempts to run a second replica or restart the pod fail as the alembic tries to migrate from 0.43.0 to 0.44.0, which is not possible because these changes already exist in the database.<br>
+Please note: If you encounter this problem, we recommend that you rollback to previous versions and then upgrade to 0.43.0. If you still experience difficulties, please join our Slack community at https://zenml.io/slack. We're ready to help you work through this issue.*
+
+## What's Changed
+
+* Remove e2e example and point to templates by @avishniakov in https://github.com/zenml-io/zenml/pull/1752
+* Add cloud architecture docs by @htahir1 in https://github.com/zenml-io/zenml/pull/1751
+* Update docs/docstrings following `mlstacks` repo name change by @strickvl in https://github.com/zenml-io/zenml/pull/1754
+* Update Cloud deployment scenarios by @stefannica in https://github.com/zenml-io/zenml/pull/1757
+* Fixing the logging message regarding caching by @bcdurak in https://github.com/zenml-io/zenml/pull/1748
+* Improvements to the step logs storage functionality by @bcdurak in https://github.com/zenml-io/zenml/pull/1733
+* Fix `qemu`/`colima` Github Actions bug by @safoinme in https://github.com/zenml-io/zenml/pull/1760
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1762
+* Add Template Testing in Core by @avishniakov in https://github.com/zenml-io/zenml/pull/1745
+* Removing analytics v1 and optimizing v2 by @bcdurak in https://github.com/zenml-io/zenml/pull/1753
+* Update publish script to take a token by @strickvl in https://github.com/zenml-io/zenml/pull/1758
+* Update variable name for release publication token by @strickvl in https://github.com/zenml-io/zenml/pull/1764
+* Lock `MYSQL` Database during DB migrations  by @safoinme in https://github.com/zenml-io/zenml/pull/1763
+* `mlstacks` integration (and deprecation of old deployment logic) by @strickvl in https://github.com/zenml-io/zenml/pull/1721
+* Upgrade typing extensions within api docs build workflow by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1741
+* Fix branching alembic history by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1772
+* Remove pinned `zenml` version specified in TOC for SDK docs by @strickvl in https://github.com/zenml-io/zenml/pull/1770
+* Modified the track metadata for the opt-in event by @bcdurak in https://github.com/zenml-io/zenml/pull/1774
+* Check alembic branch divergence in CI by @strickvl in https://github.com/zenml-io/zenml/pull/1773
+* Remove the DB lock by @safoinme in https://github.com/zenml-io/zenml/pull/1771
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.43.0...0.44.1
+
+
+# 0.44.0
+
+This release brings various improvements over the previous version, mainly 
+focusing on the usage of newly refactored `mlstacks` package, ZenML's `logging` 
+module and the changes in our analytics.
+
+## What's Changed
+
+* Remove e2e example and point to templates by @avishniakov in https://github.com/zenml-io/zenml/pull/1752
+* Add cloud architecture docs by @htahir1 in https://github.com/zenml-io/zenml/pull/1751
+* Update docs/docstrings following `mlstacks` repo name change by @strickvl in https://github.com/zenml-io/zenml/pull/1754
+* Update Cloud deployment scenarios by @stefannica in https://github.com/zenml-io/zenml/pull/1757
+* Fixing the logging message regarding caching by @bcdurak in https://github.com/zenml-io/zenml/pull/1748
+* Improvements to the step logs storage functionality by @bcdurak in https://github.com/zenml-io/zenml/pull/1733
+* Fix `qemu`/`colima` Github Actions bug by @safoinme in https://github.com/zenml-io/zenml/pull/1760
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1762
+* Add Template Testing in Core by @avishniakov in https://github.com/zenml-io/zenml/pull/1745
+* Removing analytics v1 and optimizing v2 by @bcdurak in https://github.com/zenml-io/zenml/pull/1753
+* Update publish script to take a token by @strickvl in https://github.com/zenml-io/zenml/pull/1758
+* Update variable name for release publication token by @strickvl in https://github.com/zenml-io/zenml/pull/1764
+* Lock `MYSQL` Database during DB migrations  by @safoinme in https://github.com/zenml-io/zenml/pull/1763
+* `mlstacks` integration (and deprecation of old deployment logic) by @strickvl in https://github.com/zenml-io/zenml/pull/1721
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.43.0...0.44.0
+
 # 0.43.0
 
 This release brings limited support for Python 3.11, 

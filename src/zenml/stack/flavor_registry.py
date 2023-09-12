@@ -16,6 +16,7 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Type
 
+from zenml.analytics.utils import analytics_disabler
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -107,25 +108,29 @@ class FlavorRegistry:
         Args:
             store: The instance of the zen_store to use
         """
-        for flavor in self.builtin_flavors:
-            flavor_request_model = flavor().to_model(
-                integration="built-in",
-                scoped_by_workspace=False,
-                is_custom=False,
-            )
-            existing_flavor = store.list_flavors(
-                FlavorFilterModel(
-                    name=flavor_request_model.name,
-                    type=flavor_request_model.type,
+        with analytics_disabler():
+            for flavor in self.builtin_flavors:
+                flavor_request_model = flavor().to_model(
+                    integration="built-in",
+                    scoped_by_workspace=False,
+                    is_custom=False,
                 )
-            )
-            if len(existing_flavor) == 0:
-                store.create_flavor(flavor_request_model)
-            else:
-                flavor_update_model = FlavorUpdateModel.parse_obj(
-                    flavor_request_model
+                existing_flavor = store.list_flavors(
+                    FlavorFilterModel(
+                        name=flavor_request_model.name,
+                        type=flavor_request_model.type,
+                    )
                 )
-                store.update_flavor(existing_flavor[0].id, flavor_update_model)
+
+                if len(existing_flavor) == 0:
+                    store.create_flavor(flavor_request_model)
+                else:
+                    flavor_update_model = FlavorUpdateModel.parse_obj(
+                        flavor_request_model
+                    )
+                    store.update_flavor(
+                        existing_flavor[0].id, flavor_update_model
+                    )
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
@@ -134,32 +139,33 @@ class FlavorRegistry:
         Args:
             store: The instance of the zen_store to use
         """
-        for name, integration in integration_registry.integrations.items():
-            try:
-                integrated_flavors = integration.flavors()
-                for flavor in integrated_flavors:
-                    flavor_request_model = flavor().to_model(
-                        integration=name,
-                        scoped_by_workspace=False,
-                        is_custom=False,
+        with analytics_disabler():
+            for name, integration in integration_registry.integrations.items():
+                try:
+                    integrated_flavors = integration.flavors()
+                    for flavor in integrated_flavors:
+                        flavor_request_model = flavor().to_model(
+                            integration=name,
+                            scoped_by_workspace=False,
+                            is_custom=False,
+                        )
+                        existing_flavor = store.list_flavors(
+                            FlavorFilterModel(
+                                name=flavor_request_model.name,
+                                type=flavor_request_model.type,
+                            )
+                        )
+                        if len(existing_flavor) == 0:
+                            store.create_flavor(flavor_request_model)
+                        else:
+                            flavor_update_model = FlavorUpdateModel.parse_obj(
+                                flavor_request_model
+                            )
+                            store.update_flavor(
+                                existing_flavor[0].id, flavor_update_model
+                            )
+                except Exception as e:
+                    logger.warning(
+                        f"Integration {name} failed to register flavors. "
+                        f"Error: {e}"
                     )
-                    existing_flavor = store.list_flavors(
-                        FlavorFilterModel(
-                            name=flavor_request_model.name,
-                            type=flavor_request_model.type,
-                        )
-                    )
-                    if len(existing_flavor) == 0:
-                        store.create_flavor(flavor_request_model)
-                    else:
-                        flavor_update_model = FlavorUpdateModel.parse_obj(
-                            flavor_request_model
-                        )
-                        store.update_flavor(
-                            existing_flavor[0].id, flavor_update_model
-                        )
-            except Exception as e:
-                logger.warning(
-                    f"Integration {name} failed to register flavors. "
-                    f"Error: {e}"
-                )

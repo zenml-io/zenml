@@ -53,6 +53,7 @@ class StackComponentSchema(ShareableSchema, table=True):
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
+    component_spec_path: Optional[str]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -156,6 +157,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             labels=json.loads(base64.b64decode(self.labels).decode())
             if self.labels
             else None,
+            component_spec_path=self.component_spec_path,
             created=self.created,
             updated=self.updated,
         )

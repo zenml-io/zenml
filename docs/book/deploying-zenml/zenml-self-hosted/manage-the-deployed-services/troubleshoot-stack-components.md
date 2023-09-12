@@ -25,7 +25,7 @@ Other components include cloud-specific apps like Vertex AI, Sagemaker, S3 bucke
 The first step to figuring out the problem with a deployed Kubernetes app is to get access to the underlying cluster hosting it. When you deploy apps that require a cluster, ZenML creates a cluster for you and this is reused for all subsequent apps that need it.
 
 {% hint style="info" %}
-If you've used the `zenml stack recipe deploy` flow to deploy your components, your local `kubectl` might already have access to the cluster. Check by running the following command:
+If you've used the `zenml stack deploy` flow to deploy your components, your local `kubectl` might already have access to the cluster. Check by running the following command:
 
 ```
 kubectl get nodes

@@ -6,7 +6,7 @@ description: Deploying ZenML in a Kubernetes cluster with Helm.
 
 If you wish to manually deploy and manage ZenML in a Kubernetes cluster of your choice, ZenML also includes a Helm chart among its available deployment options.
 
-The Helm chart is not available on a public online repository yet, but it is included in the ZenML source code repository. You can follow this guide to deploy ZenML in any Kubernetes cluster using the Helm chart.
+You can find the chart on this [ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml), along with the templates, default values and instructions on how to install it. Read on to find detailed explanations on prerequisites, configuration, and deployment scenarios.
 
 ## Prerequisites
 
@@ -18,17 +18,9 @@ You'll need the following:
 * [Helm](https://helm.sh/docs/intro/install/) installed on your machine
 * Optional: an external Secrets Manager service (e.g. one of the managed secrets management services offered by Google Cloud, AWS, Azure, or HashiCorp Vault). By default, ZenML stores secrets inside the SQL database that it's connected to, but you also have the option of using an external cloud Secrets Manager service if you already happen to use one of those cloud or service providers
 
-In order to gain access to the ZenML Helm chart, you'll need to clone the ZenML repository and checkout the `main` branch, or one of the release tags:
+## ZenML Helm Configuration
 
-```bash
-git clone https://github.com/zenml-io/zenml.git
-# Optional: checkout a previous release tag
-# git checkout 0.21.1 
-# Switch to the directory that hosts the helm chart
-cd src/zenml/zen_server/deploy/helm/
-```
-
-You can start by taking a look at the `values.yaml` file and familiarize yourself with some of the configuration settings that you can customize for your ZenML deployment.
+You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML deployment.
 
 In addition to tools and infrastructure, you will also need to collect and [prepare information related to your database](deploy-with-helm.md#collect-information-from-your-sql-database-service) and [information related to your external secrets management service](deploy-with-helm.md#collect-information-from-your-secrets-management-service) to be used for the Helm chart configuration and you may also want to install additional [optional services in your cluster](deploy-with-helm.md#optional-cluster-services).
 
@@ -87,7 +79,13 @@ It is common practice to install additional infrastructure-related services in a
 
 ### Configure the Helm chart
 
-To customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file located in the `src/zenml/zen_server/deploy/helm` folder (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
+To use the Helm chart with custom values that includes path to files like the database SSL certificates, you need to pull the chart to your local directory first. You can do this with the following command:
+
+```bash
+helm pull oci://public.ecr.aws/zenml/zenml-server --version <VERSION> --untar
+```
+
+Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml-server/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
 
 In most cases, you’ll need to change the following configuration values in `custom-values.yaml`:
 
@@ -100,11 +98,11 @@ In most cases, you’ll need to change the following configuration values in `cu
   * enabling self-signed certificates
   * configuring the hostname that will be used to access the ZenML server, if different from the IP address or hostname associated with the Ingress service installed in your cluster
 
-> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `src/zenml/zen_server/deploy/helm` helm chart directory, meaning that you also have to copy these files there.
+> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `./zenml-server` helm chart directory, meaning that you also have to copy these files there.
 
 ### Install the Helm chart
 
-Once everything is configured, you can run the following command in the `src/zenml/zen_server/deploy/helm` folder to install the Helm chart.
+Once everything is configured, you can run the following command in the `./zenml-server` folder to install the Helm chart.
 
 ```
 helm -n <namespace> --create-namespace install zenml-server . --values custom-values.yaml 

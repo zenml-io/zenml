@@ -60,7 +60,7 @@ would be to deploy and connect to a
 A Kubernetes orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes ...
+zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes --provider=<YOUR_PROVIDER> ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,

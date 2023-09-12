@@ -35,6 +35,7 @@
     * [Connect your git repository](user-guide/advanced-guide/environment-management/connect-your-git-repository.md)
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
+    * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
     * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
@@ -142,7 +143,7 @@
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
 * [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
-  * [Deploy a stack using Stack Recipes](stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md)
+  * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
 ## Learning
@@ -158,7 +159,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/0.43.0/)
+* [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)

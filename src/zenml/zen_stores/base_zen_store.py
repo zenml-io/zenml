@@ -25,11 +25,14 @@ from typing import (
     Type,
     Union,
 )
+from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel
+from requests import ConnectionError
 
 import zenml
+from zenml.analytics.utils import analytics_disabler
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -66,12 +69,6 @@ from zenml.models.server_models import (
     ServerDeploymentType,
     ServerModel,
 )
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    AnalyticsTrackerMixin,
-    track,
-    track_event,
-)
 from zenml.utils.proxy_utils import make_proxy_class
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
@@ -99,19 +96,15 @@ class BaseZenStore(
     BaseModel,
     ZenStoreInterface,
     SecretsStoreInterface,
-    AnalyticsTrackerMixin,
     ABC,
 ):
     """Base class for accessing and persisting ZenML core objects.
 
     Attributes:
         config: The configuration of the store.
-        track_analytics: Only send analytics if set to `True`.
-        secrets_store: The secrets store to use for storing sensitive data.
     """
 
     config: StoreConfiguration
-    track_analytics: bool = True
     _secrets_store: Optional[BaseSecretsStore] = None
     _event_handlers: Dict[StoreEvent, List[Callable[..., Any]]] = {}
 
@@ -142,6 +135,25 @@ class BaseZenStore(
 
         try:
             self._initialize()
+
+        # Handle cases where the ZenML server is not available
+        except ConnectionError as e:
+            error_message = (
+                "Cannot connect to the ZenML database because the ZenML server "
+                f"at {self.url} is not running."
+            )
+            if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
+                recommendation = (
+                    "Please run `zenml down` and `zenml up` to restart the "
+                    "server."
+                )
+            else:
+                recommendation = (
+                    "Please run `zenml disconnect` and `zenml connect --url "
+                    f"{self.url}` to reconnect to the server."
+                )
+            raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
         except Exception as e:
             raise RuntimeError(
                 f"Error initializing {self.type.value} store with URL "
@@ -526,7 +538,6 @@ class BaseZenStore(
     # Stacks
     # ------
 
-    @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
     def _create_default_stack(
         self,
         workspace_name_or_id: Union[str, UUID],
@@ -545,50 +556,53 @@ class BaseZenStore(
         Returns:
             The model of the created default stack.
         """
-        workspace = self.get_workspace(
-            workspace_name_or_id=workspace_name_or_id
-        )
-        user = self.get_user(user_name_or_id=user_name_or_id)
+        with analytics_disabler():
+            workspace = self.get_workspace(
+                workspace_name_or_id=workspace_name_or_id
+            )
+            user = self.get_user(user_name_or_id=user_name_or_id)
 
-        logger.info(
-            f"Creating default stack for user '{user.name}' in workspace "
-            f"{workspace.name}..."
-        )
+            logger.info(
+                f"Creating default stack for user '{user.name}' in workspace "
+                f"{workspace.name}..."
+            )
 
-        # Register the default orchestrator
-        orchestrator = self.create_stack_component(
-            component=ComponentRequestModel(
-                user=user.id,
+            # Register the default orchestrator
+            orchestrator = self.create_stack_component(
+                component=ComponentRequestModel(
+                    user=user.id,
+                    workspace=workspace.id,
+                    name=DEFAULT_STACK_COMPONENT_NAME,
+                    type=StackComponentType.ORCHESTRATOR,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
+            # Register the default artifact store
+            artifact_store = self.create_stack_component(
+                component=ComponentRequestModel(
+                    user=user.id,
+                    workspace=workspace.id,
+                    name=DEFAULT_STACK_COMPONENT_NAME,
+                    type=StackComponentType.ARTIFACT_STORE,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
+            components = {
+                c.type: [c.id] for c in [orchestrator, artifact_store]
+            }
+            # Register the default stack
+            stack = StackRequestModel(
+                name=DEFAULT_STACK_NAME,
+                components=components,
+                is_shared=False,
                 workspace=workspace.id,
-                name=DEFAULT_STACK_COMPONENT_NAME,
-                type=StackComponentType.ORCHESTRATOR,
-                flavor="local",
-                configuration={},
-            ),
-        )
-
-        # Register the default artifact store
-        artifact_store = self.create_stack_component(
-            component=ComponentRequestModel(
                 user=user.id,
-                workspace=workspace.id,
-                name=DEFAULT_STACK_COMPONENT_NAME,
-                type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                configuration={},
-            ),
-        )
-
-        components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
-        # Register the default stack
-        stack = StackRequestModel(
-            name=DEFAULT_STACK_NAME,
-            components=components,
-            is_shared=False,
-            workspace=workspace.id,
-            user=user.id,
-        )
-        return self.create_stack(stack=stack)
+            )
+            return self.create_stack(stack=stack)
 
     def _get_default_stack(
         self,
@@ -633,7 +647,6 @@ class BaseZenStore(
         """
         return self.get_role(DEFAULT_ADMIN_ROLE)
 
-    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_admin_role(self) -> RoleResponseModel:
         """Creates the admin role.
 
@@ -661,7 +674,6 @@ class BaseZenStore(
         """
         return self.get_role(DEFAULT_GUEST_ROLE)
 
-    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_guest_role(self) -> RoleResponseModel:
         """Creates the guest role.
 
@@ -708,7 +720,6 @@ class BaseZenStore(
         except KeyError:
             raise KeyError(f"The default user '{user_name}' is not configured")
 
-    @track(AnalyticsEvent.CREATED_DEFAULT_USER)
     def _create_default_user(self) -> UserResponseModel:
         """Creates a default user with the admin role.
 
@@ -783,7 +794,6 @@ class BaseZenStore(
                 f"The default workspace '{workspace_name}' is not configured"
             )
 
-    @track(AnalyticsEvent.CREATED_DEFAULT_WORKSPACE)
     def _create_default_workspace(self) -> WorkspaceResponseModel:
         """Creates a default workspace.
 
@@ -795,25 +805,6 @@ class BaseZenStore(
         return self.create_workspace(
             WorkspaceRequestModel(name=workspace_name)
         )
-
-    # ---------
-    # Analytics
-    # ---------
-
-    def track_event(
-        self,
-        event: AnalyticsEvent,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """Track an analytics event.
-
-        Args:
-            event: The event to track.
-            metadata: Additional metadata to track with the event.
-        """
-        if self.track_analytics:
-            # Server information is always tracked, if available.
-            track_event(event, metadata)
 
     class Config:
         """Pydantic configuration class."""

@@ -103,13 +103,9 @@ However, in order to improve **ZenML** and understand how it is being used, we n
 
 #### How does ZenML collect these statistics? <a href="#implementation" id="implementation"></a>
 
-Currently, **ZenML** utilizes two different, yet similar, strategies to track the analytics.
+We use [Segment](https://segment.com) as the data aggregation library for all our analytics. However, before any events get sent to [Segment](https://segment.com), they first go through a central ZenML analytics server. This added layer allows us to put various countermeasures to incidents such as getting spammed with events and enables us to have a more optimized tracking process.
 
-In the first version, it uses [`Segment`](https://segment.com) as the data aggregation library for all our analytics. The entire code is entirely visible and can be seen at [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics\_utils.py). The main function is the `track(...)`function that triggers a [Segment Analytics Track event](https://segment.com/docs/connections/spec/track/), which runs on a separate background thread from the main thread.
-
-In the second version, the creation of the events and their corresponding metadata follows a similar process. However, before getting tracked by [`Segment`](https://segment.com), the events first go through a central ZenML analytics server. This added layer allows us to put various countermeasures to incidents such as getting spammed events and enables us to have a more optimized tracking process.
-
-In both versions, none of the data sent can identify you individually but allows us to understand how **ZenML** is being used holistically.
+The client code is entirely visible and can be seen in the [`analytics`](https://github.com/zenml-io/zenml/tree/main/src/zenml/analytics) module of our main repository.
 
 #### If I share my email, will you spam me?
 
