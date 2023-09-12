@@ -13,11 +13,7 @@
 #  permissions and limitations under the License.
 
 # How many seconds to wait before uploading logs to the artifact store
-LOGS_HANDLER_INTERVAL_SECONDS: int = 5
+STEP_LOGS_STORAGE_INTERVAL_SECONDS: int = 15
 
 # How many messages to buffer before uploading logs to the artifact store
-LOGS_HANDLER_MAX_MESSAGES: int = 100
-
-# Name of the ZenML step logger
-STEP_STDOUT_LOGGER_NAME = "_step_stdout_logger"
-STEP_STDERR_LOGGER_NAME = "_step_stderr_logger"
+STEP_LOGS_STORAGE_MAX_MESSAGES: int = 100

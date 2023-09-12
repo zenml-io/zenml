@@ -49,7 +49,7 @@ def get_data_from_api():
         "/mnist_handwritten_test.json"
     )
 
-    df = pd.DataFrame(requests.get(url).json())
+    df = pd.DataFrame(requests.get(url, timeout=31).json())
     data = df["image"].map(lambda x: np.array(x)).values
     data = np.array([x.reshape(28, 28) for x in data])
     return data
@@ -77,7 +77,7 @@ def inference_image_loader(
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-    response = requests.get(img_url)
+    response = requests.get(img_url, timeout=31)
     img = Image.open(BytesIO(response.content))
     numpydata = asarray(img)
     input = numpydata.tolist()

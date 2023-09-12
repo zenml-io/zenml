@@ -31,7 +31,8 @@ state of their database.
 
 1) Make sure the `store.url` of your global config points at an instance of the 
    database that represents the status-quo before your changes to the database.
-   (One way of achieving this is to run a `zenml clean -y` before you start.)
+   (One way of achieving this is to find and delete the `.db` file inside your local config
+   folder before you start.)
 2) You have updated a Schema at src/zenml/zen_stores/schemas
    (e.g. adding a new column to stacks called `stack_cats`)
 3) In the repository root run `alembic revision --autogenerate -m "<insert description>"`

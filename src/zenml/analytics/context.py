@@ -20,17 +20,18 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from zenml import __version__, analytics
+from zenml import __version__
+from zenml.analytics.client import default_client
 from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml.analytics.enums import AnalyticsEvent
     from zenml.models.server_models import (
         ServerDatabaseType,
         ServerDeploymentType,
     )
-    from zenml.utils.analytics_utils import AnalyticsEvent
 
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
@@ -55,15 +56,6 @@ class AnalyticsContext:
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
-
-    @property
-    def in_server(self) -> bool:
-        """Flag to check whether the code is running in a ZenML server.
-
-        Returns:
-            True if running in a server, False otherwise.
-        """
-        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter analytics context manager.
@@ -131,9 +123,18 @@ class AnalyticsContext:
             True.
         """
         if exc_val is not None:
-            logger.debug(f"Sending telemetry 2.0 data failed: {exc_val}")
+            logger.debug(f"Sending telemetry data failed: {exc_val}")
 
         return True
+
+    @property
+    def in_server(self) -> bool:
+        """Flag to check whether the code is running in a ZenML server.
+
+        Returns:
+            True if running in a server, False otherwise.
+        """
+        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
@@ -146,7 +147,7 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            success, _ = analytics.identify(
+            success, _ = default_client.identify(
                 user_id=self.user_id,
                 traits=traits,
             )
@@ -174,7 +175,7 @@ class AnalyticsContext:
 
             traits.update({"group_id": group_id})
 
-            success, _ = analytics.group(
+            success, _ = default_client.group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -196,7 +197,7 @@ class AnalyticsContext:
         Returns:
             True if tracking information was sent, False otherwise.
         """
-        from zenml.utils.analytics_utils import AnalyticsEvent
+        from zenml.analytics.enums import AnalyticsEvent
 
         if properties is None:
             properties = {}
@@ -231,7 +232,7 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = analytics.track(
+        success, _ = default_client.track(
             user_id=self.user_id,
             event=event,
             properties=properties,

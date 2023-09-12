@@ -135,7 +135,7 @@ class RunProvider(metaclass=SingletonMetaClass):
             run = neptune.init_run(
                 project=self.project,
                 api_token=self.token,
-                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore
+                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore  # nosec
                 tags=self.tags,
             )
             run[_INTEGRATION_VERSION_KEY] = zenml.__version__

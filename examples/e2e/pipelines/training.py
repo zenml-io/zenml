@@ -1,16 +1,19 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
 from typing import List, Optional
@@ -39,6 +42,7 @@ from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
 from zenml.logger import get_logger
+from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 
@@ -48,12 +52,11 @@ logger = get_logger(__name__)
     on_failure=notify_on_failure,
     extra=DEFAULT_PIPELINE_EXTRAS,
 )
-def e2e_example_training(
+def e2e_use_case_training(
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
     drop_columns: Optional[List[str]] = None,
-    hp_tuning_enabled: bool = True,
     random_seed: int = 42,
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
@@ -71,7 +74,6 @@ def e2e_example_training(
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
         drop_columns: List of columns to drop from dataset
-        hp_tuning_enabled: If `True` hyperparameter search would happen.
         random_seed: Seed of random generator,
         min_train_accuracy: Threshold to stop execution if train set accuracy is lower
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
@@ -95,31 +97,31 @@ def e2e_example_training(
         normalize=normalize,
         drop_columns=drop_columns,
     )
-
     ########## Hyperparameter tuning stage ##########
-    if hp_tuning_enabled:
-        after = []
-        search_steps_prefix = "hp_tuning_search_"
-        for i, config_key in enumerate(MetaConfig.supported_models):
-            step_name = f"{search_steps_prefix}{i}"
-            hp_tuning_single_search(
-                id=step_name,
-                config_key=config_key,
-                dataset_trn=dataset_trn,
-                dataset_tst=dataset_tst,
-                target=target,
-            )
-            after.append(step_name)
-        best_model_config = hp_tuning_select_best_model(
-            search_steps_prefix=search_steps_prefix, after=after
+    after = []
+    search_steps_prefix = "hp_tuning_search_"
+    for i, model_search_configuration in enumerate(
+        MetaConfig.model_search_space
+    ):
+        step_name = f"{search_steps_prefix}{i}"
+        hp_tuning_single_search(
+            model_metadata=ExternalArtifact(
+                value=model_search_configuration,
+            ),
+            id=step_name,
+            dataset_trn=dataset_trn,
+            dataset_tst=dataset_tst,
+            target=target,
         )
-    else:
-        best_model_config = MetaConfig.default_model_config
+        after.append(step_name)
+    best_model_config = hp_tuning_select_best_model(
+        search_steps_prefix=search_steps_prefix, after=after
+    )
 
     ########## Training stage ##########
     model = model_trainer(
         dataset_trn=dataset_trn,
-        best_model_config=best_model_config,
+        model_config=best_model_config,
         random_seed=random_seed,
         target=target,
     )
@@ -172,6 +174,7 @@ def e2e_example_training(
         latest_version=latest_version,
         current_version=current_version,
     )
+    last_step_name = "promote_metric_compare_promoter"
 
-    notify_on_success(after=["promote_metric_compare_promoter"])
+    notify_on_success(after=[last_step_name])
     ### YOUR CODE ENDS HERE ###
