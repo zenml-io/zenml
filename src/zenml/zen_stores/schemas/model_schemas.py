@@ -254,6 +254,22 @@ class ModelVersionSchema(BaseSchema, table=True):
             ],
         )
 
+    def update(
+        self,
+        target_stage: str,
+    ) -> "ModelVersionSchema":
+        """Updates a `ModelVersionSchema` to a target stage.
+
+        Args:
+            target_stage: The stage to be updated.
+
+        Returns:
+            The updated `ModelVersionSchema`.
+        """
+        self.stage = target_stage
+        self.updated = datetime.utcnow()
+        return self
+
 
 class ModelVersionLinkSchema(NamedSchema, table=True):
     """SQL Model for linking of Model Versions and Artifacts or Pipeline Runs M:M."""

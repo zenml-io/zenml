@@ -5682,7 +5682,7 @@ class SqlZenStore(BaseZenStore):
                         f"in {model_version_update_model.stage.value}, but `force` flag is False."
                     )
                 else:
-                    existing_model_version_in_target_stage.stage = (
+                    existing_model_version_in_target_stage.update(
                         ModelStages.ARCHIVED.value
                     )
                     session.add(existing_model_version_in_target_stage)
@@ -5692,7 +5692,9 @@ class SqlZenStore(BaseZenStore):
                     logger.info(
                         f"Model version {existing_model_version_in_target_stage.version} has been set to {ModelStages.ARCHIVED.value}."
                     )
-            existing_model_version.stage = model_version_update_model.stage
+            existing_model_version.update(
+                model_version_update_model.stage.value
+            )
             session.add(existing_model_version)
             session.commit()
             session.refresh(existing_model_version)
