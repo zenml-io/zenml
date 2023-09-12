@@ -76,6 +76,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.model import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -101,6 +102,7 @@ from zenml.models import (
     ModelVersionFilterModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
+    ModelVersionUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -5630,3 +5632,69 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(model_version)
             session.commit()
+
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+
+        Raises:
+            KeyError: If the model version not found
+            RuntimeError: If there is a model version with target stage, but `force` flag is off
+        """
+        with Session(self.engine) as session:
+            existing_model_version = session.exec(
+                select(ModelVersionSchema)
+                .where(
+                    ModelVersionSchema.model_id
+                    == model_version_update_model.model
+                )
+                .where(ModelVersionSchema.id == model_version_id)
+            ).first()
+
+            if not existing_model_version:
+                raise KeyError(f"Model version {model_version_id} not found.")
+
+            existing_model_version_in_target_stage = session.exec(
+                select(ModelVersionSchema)
+                .where(
+                    ModelVersionSchema.model_id
+                    == model_version_update_model.model
+                )
+                .where(
+                    ModelVersionSchema.stage
+                    == model_version_update_model.stage.value
+                )
+            ).first()
+
+            if existing_model_version_in_target_stage is not None:
+                if not model_version_update_model.force:
+                    raise RuntimeError(
+                        f"Model version {existing_model_version_in_target_stage.version} is "
+                        f"in {model_version_update_model.stage.value}, but `force` flag is False."
+                    )
+                else:
+                    existing_model_version_in_target_stage.stage = (
+                        ModelStages.ARCHIVED.value
+                    )
+                    session.add(existing_model_version_in_target_stage)
+                    session.commit()
+                    session.refresh(existing_model_version_in_target_stage)
+
+                    logger.info(
+                        f"Model version {existing_model_version_in_target_stage.version} has been set to {ModelStages.ARCHIVED.value}."
+                    )
+            existing_model_version.stage = model_version_update_model.stage
+            session.add(existing_model_version)
+            session.commit()
+            session.refresh(existing_model_version)
+
+            return existing_model_version.to_model()

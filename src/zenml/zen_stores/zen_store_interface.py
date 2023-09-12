@@ -39,6 +39,7 @@ from zenml.models import (
     ModelVersionFilterModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
+    ModelVersionUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -1782,7 +1783,7 @@ class ZenStoreInterface(ABC):
         """Get an existing model version.
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be retrieved.
+            model_version_name: name or id of the model version to be retrieved.
         Returns:
             The model version of interest.
         Raises:
@@ -1800,4 +1801,23 @@ class ZenStoreInterface(ABC):
                 params.
         Returns:
             A page of all model versions.
+        """
+
+    @abstractmethod
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+
+        Raises:
+            KeyError: If the model version not found
+            RuntimeError: If there is a model version with target stage, but `force` flag is off
         """

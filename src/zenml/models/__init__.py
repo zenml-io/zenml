@@ -161,6 +161,7 @@ from zenml.models.model_models import (
     ModelVersionLinkRequestModel,
     ModelVersionLinkResponseModel,
     ModelVersionFilterModel,
+    ModelVersionUpdateModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -415,6 +416,7 @@ __all__ = [
     "ModelVersionFilterModel",
     "ModelVersionRequestModel",
     "ModelVersionResponseModel",
+    "ModelVersionUpdateModel",
     "ModelVersionLinkBaseModel",
     "ModelVersionLinkRequestModel",
     "ModelVersionLinkResponseModel",

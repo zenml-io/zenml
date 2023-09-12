@@ -26,6 +26,7 @@ from zenml.models import (
     ModelUpdateModel,
     ModelVersionFilterModel,
     ModelVersionResponseModel,
+    ModelVersionUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -212,4 +213,29 @@ def get_model_version(
     """
     return zen_store().get_model_version(
         model_name_or_id, model_version_name_or_id
+    )
+
+
+@router.put(
+    "/{model_id}" + MODEL_VERSIONS + "/{model_version_id}",
+    response_model=ModelVersionResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_model(
+    model_version_id: UUID,
+    model_version_update_model: ModelVersionUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> ModelVersionResponseModel:
+    """Get all model versions by filter.
+    Args:
+        model_version_id: The ID of model version to be updated.
+        model_version_update_model: The model version to be updated.
+
+    Returns:
+        An updated model version.
+    """
+    return zen_store().update_model_version(
+        model_version_id=model_version_id,
+        model_version_update_model=model_version_update_model,
     )

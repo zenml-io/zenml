@@ -17,8 +17,10 @@ from enum import StrEnum
 
 
 class ModelStages(StrEnum):
+    """All possible stages of a Model Version."""
+
     NONE = "none"
-    STAGING = "starting"
+    STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
     # technical stages

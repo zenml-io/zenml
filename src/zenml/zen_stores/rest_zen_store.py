@@ -103,6 +103,7 @@ from zenml.models import (
     ModelVersionFilterModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
+    ModelVersionUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -2377,8 +2378,10 @@ class RestZenStore(BaseZenStore):
         self, model_version: ModelVersionRequestModel
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
+
         Args:
             model_version: the Model Version to be created.
+
         Returns:
             The newly created model version.
         """
@@ -2392,6 +2395,7 @@ class RestZenStore(BaseZenStore):
         self, model_name_or_id: Union[str, UUID], model_version_name: str
     ) -> None:
         """Deletes a model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name: name of the model version to be deleted.
@@ -2407,9 +2411,11 @@ class RestZenStore(BaseZenStore):
         model_version_name: str,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be retrieved.
+
         Returns:
             The model version of interest.
         """
@@ -2424,17 +2430,40 @@ class RestZenStore(BaseZenStore):
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
+
         Args:
             model_version_filter_model: All filter parameters including pagination
                 params.
+
         Returns:
             A page of all model versions.
         """
 
         return self._list_paginated_resources(
-            route=f"{MODELS}/{model_version_filter_model.model_id}{MODEL_VERSIONS}",
+            route=f"{MODELS}/{model_version_filter_model.model}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
             filter_model=model_version_filter_model,
+        )
+
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+
+        """
+        return self._update_resource(
+            resource_id=model_version_id,
+            resource_update=model_version_update_model,
+            route=f"{MODELS}/{model_version_update_model.model}{MODEL_VERSIONS}",
+            response_model=ModelVersionResponseModel,
         )
 
     # =======================

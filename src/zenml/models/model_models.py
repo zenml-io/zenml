@@ -98,25 +98,38 @@ class ModelVersionResponseModel(
 
     @property
     def model_objects(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all model objects linked to this version."""
         return self._fetch_artifacts_from_list(self._model_objects)
 
     @property
     def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all artifacts linked to this version."""
         return self._fetch_artifacts_from_list(self._artifact_objects)
 
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all deployments linked to this version."""
         return self._fetch_artifacts_from_list(self._deployments)
 
     @property
     def pipeline_runs(self) -> List[PipelineRunResponseModel]:
+        """Get all pipeline runs linked to this version."""
         from zenml.client import Client
 
-        return [Client().get_run(pr) for pr in self._pipeline_runs]
+        return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
 
-    def set_stage(self, stage: ModelStages):
-        """Sets Model Version to a desired stage."""
-        pass
+    def set_stage(self, stage: ModelStages, force: bool = False):
+        """Sets this Model Version to a desired stage."""
+        from zenml.client import Client
+
+        return Client().zen_store.update_model_version(
+            model_version_id=self.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=self.model.id,
+                stage=stage,
+                force=force,
+            ),
+        )
 
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
     # def generate_model_card(self, template_name: str) -> str:
@@ -126,10 +139,10 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     """Filter Model for Model Version."""
 
-    model_id: Optional[Union[str, UUID]] = Field(
+    model: Optional[Union[str, UUID]] = Field(
         description="The ID of the Model",
     )
-    model_version_name: Optional[str] = Field(
+    version: Optional[str] = Field(
         default=None,
         description="The name of the Model Version",
     )
@@ -138,6 +151,20 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
+    )
+
+
+class ModelVersionUpdateModel(BaseModel):
+    model: UUID = Field(
+        title="The ID of the model containing version",
+    )
+    stage: ModelStages = Field(
+        title="Target model version stage to be set",
+    )
+    force: bool = Field(
+        title="Whether existing model version in target stage should be silently archived "
+        "or an error should be raised.",
+        default=False,
     )
 
 

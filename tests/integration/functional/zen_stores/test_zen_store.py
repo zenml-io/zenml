@@ -54,6 +54,7 @@ from zenml.models import (
     ComponentUpdateModel,
     ModelVersionFilterModel,
     ModelVersionRequestModel,
+    ModelVersionUpdateModel,
     PipelineRunFilterModel,
     RoleFilterModel,
     RoleRequestModel,
@@ -2512,9 +2513,7 @@ def test_model_version_get_found():
 def test_model_version_list_empty():
     with ModelVersionContext() as model:
         zs = Client().zen_store
-        mvs = zs.list_model_versions(
-            ModelVersionFilterModel(model_id=model.id)
-        )
+        mvs = zs.list_model_versions(ModelVersionFilterModel(model=model.id))
         assert len(mvs) == 0
 
 
@@ -2537,9 +2536,7 @@ def test_model_version_list_not_empty():
                 version="and yet another one",
             )
         )
-        mvs = zs.list_model_versions(
-            ModelVersionFilterModel(model_id=model.id)
-        )
+        mvs = zs.list_model_versions(ModelVersionFilterModel(model=model.id))
         assert len(mvs) == 2
         assert mv1 in mvs
         assert mv2 in mvs
@@ -2575,3 +2572,137 @@ def test_model_version_delete_found():
                 model_name_or_id=model.id,
                 model_version_name="great one",
             )
+
+
+def test_model_version_update_not_found():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.update_model_version(
+                model_version_id=uuid4(),
+                model_version_update_model=ModelVersionUpdateModel(
+                    model=model.id,
+                    stage="staging",
+                    force=False,
+                ),
+            )
+
+
+def test_model_version_update_not_forced():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        mv1 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model=model.id,
+                version="great one",
+            )
+        )
+        mv2 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model=model.id,
+                version="yet another one",
+            )
+        )
+        zs.update_model_version(
+            model_version_id=mv1.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model.id,
+                stage="staging",
+                force=False,
+            ),
+        )
+        with pytest.raises(RuntimeError):
+            zs.update_model_version(
+                model_version_id=mv2.id,
+                model_version_update_model=ModelVersionUpdateModel(
+                    model=model.id,
+                    stage="staging",
+                    force=False,
+                ),
+            )
+
+
+def test_model_version_update_forced():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        mv1 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model=model.id,
+                version="great one",
+            )
+        )
+        mv2 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model=model.id,
+                version="yet another one",
+            )
+        )
+        zs.update_model_version(
+            model_version_id=mv1.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model.id,
+                stage="staging",
+                force=False,
+            ),
+        )
+        assert (
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name=mv1.version
+            ).stage
+            == "staging"
+        )
+        zs.update_model_version(
+            model_version_id=mv2.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model.id,
+                stage="staging",
+                force=True,
+            ),
+        )
+
+        assert (
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name=mv1.version
+            ).stage
+            == "archived"
+        )
+        assert (
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name=mv2.version
+            ).stage
+            == "staging"
+        )
+
+
+def test_model_version_update_public_interface():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        mv1 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model=model.id,
+                version="great one",
+            )
+        )
+        assert (
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name=mv1.version
+            ).stage
+            is None
+        )
+        mv1.set_stage("staging")
+        assert (
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name=mv1.version
+            ).stage
+            == "staging"
+        )
