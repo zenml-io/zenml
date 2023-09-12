@@ -46,8 +46,14 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
+from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
+    TERRAFORM_NOT_INSTALLED_MESSAGE,
+)
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -77,7 +83,6 @@ if TYPE_CHECKING:
 
     from rich.text import Text
 
-    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -171,6 +176,27 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
+def print_markdown(text: str) -> None:
+    """Prints a string as markdown.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    console.print(markdown_text)
+
+
+def print_markdown_with_pager(text: str) -> None:
+    """Prints a string as markdown with a pager.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    with console.pager():
+        console.print(markdown_text)
+
+
 def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
@@ -258,7 +284,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+                k for k in model.dict().keys() if k not in exclude_columns
             ]
         else:
             include_columns = columns
@@ -400,6 +426,9 @@ def print_stack_configuration(
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 
+    if stack.stack_spec_path:
+        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
+
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
@@ -519,6 +548,11 @@ def print_stack_component_configuration(
             rich_table.add_row(label, value)
 
         console.print(rich_table)
+
+    if component.component_spec_path:
+        declare(
+            f"Component spec path for `mlstacks`: {component.component_spec_path}"
+        )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -2343,7 +2377,7 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information."
     )
 
@@ -2357,7 +2391,7 @@ def fail_secrets_manager_creation() -> None:
         "existing secrets to the centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command."
         " See the `zenml secret` CLI command or the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information. "
     )
 
@@ -2370,7 +2404,7 @@ def fail_secret_creation_on_secrets_manager() -> None:
         "Existing secrets managers will be removed in an "
         "upcoming release in favor of the centralized secrets management. "
         "Learn more about this in our documentation:"
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "Please also consider migrating all your existing secrets to the "
         "centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command. "
@@ -2459,3 +2493,18 @@ def warn_deprecated_example_subcommand() -> None:
         "The `example` CLI subcommand has been deprecated and will be removed "
         "in a future release."
     )
+
+
+def verify_mlstacks_prerequisites_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+        import python_terraform  # noqa: F401
+
+        subprocess.check_output(
+            ["terraform", "--version"], universal_newlines=True
+        )
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)
+    except subprocess.CalledProcessError:
+        error(TERRAFORM_NOT_INSTALLED_MESSAGE)

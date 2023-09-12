@@ -1,16 +1,19 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
 from datetime import datetime as dt
@@ -18,7 +21,7 @@ from typing import Optional
 
 import click
 from config import MetaConfig
-from pipelines import e2e_example_batch_inference, e2e_example_training
+from pipelines import e2e_use_case_batch_inference, e2e_use_case_training
 
 from zenml.logger import get_logger
 from zenml.steps.external_artifact import ExternalArtifact
@@ -28,9 +31,9 @@ logger = get_logger(__name__)
 
 @click.command(
     help="""
-{{ project_name }} CLI v{{ version }}.
+ZenML E2E project CLI v0.0.1.
 
-Run the {{ project_name }} model training pipeline with various
+Run the ZenML E2E project model training pipeline with various
 options.
 
 Examples:
@@ -67,12 +70,6 @@ Examples:
     is_flag=True,
     default=False,
     help="Disable caching for the pipeline run.",
-)
-@click.option(
-    "--no-hp-tuning",
-    is_flag=True,
-    default=False,
-    help="Whether to skip Hyperparameter tuning step and use default model.",
 )
 @click.option(
     "--no-drop-na",
@@ -125,7 +122,6 @@ Examples:
 )
 def main(
     no_cache: bool = False,
-    no_hp_tuning: bool = False,
     no_drop_na: bool = False,
     no_normalize: bool = False,
     drop_columns: Optional[str] = None,
@@ -145,7 +141,6 @@ def main(
 
     Args:
         no_cache: If `True` cache will be disabled.
-        no_hp_tuning: If `True` HP tuning will be disabled.
         no_drop_na: If `True` NA values will not be dropped from the dataset.
         no_normalize: If `True` normalization will not be done for the dataset.
         drop_columns: List of comma-separated names of columns to drop from the dataset.
@@ -168,7 +163,6 @@ def main(
     if not only_inference:
         # Execute Training Pipeline
         run_args_train = {
-            "hp_tuning_enabled": not no_hp_tuning,
             "drop_na": not no_drop_na,
             "normalize": not no_normalize,
             "random_seed": 42,
@@ -183,7 +177,7 @@ def main(
         pipeline_args[
             "run_name"
         ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        e2e_example_training.with_options(**pipeline_args)(**run_args_train)
+        e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
     # Execute Batch Inference Pipeline
@@ -191,7 +185,7 @@ def main(
     pipeline_args[
         "run_name"
     ] = f"{MetaConfig.pipeline_name_batch_inference}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    e2e_example_batch_inference.with_options(**pipeline_args)(
+    e2e_use_case_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
     )
 

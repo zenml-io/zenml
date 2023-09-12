@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.analytics import group
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -39,12 +40,6 @@ from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    AnalyticsGroup,
-    event_handler,
-    identify_group,
-)
 
 if TYPE_CHECKING:
     from zenml.models import StackResponseModel, WorkspaceResponseModel
@@ -598,15 +593,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        with event_handler(
-            AnalyticsEvent.INITIALIZED_STORE
-        ) as analytics_handler:
-            default_store_cfg = self.get_default_store()
-            self._configure_store(default_store_cfg)
-            logger.debug("Using the default store for the global config.")
-            analytics_handler.metadata = {
-                "store_type": default_store_cfg.type.value
-            }
+        default_store_cfg = self.get_default_store()
+        self._configure_store(default_store_cfg)
+        logger.debug("Using the default store for the global config.")
 
     def uses_default_store(self) -> bool:
         """Check if the global configuration uses the default store.
@@ -636,37 +625,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             **kwargs: Additional keyword arguments to pass to the store
                 constructor.
         """
-        with event_handler(
-            event=AnalyticsEvent.INITIALIZED_STORE,
-            metadata={"store_type": config.type.value},
-        ):
-            self._configure_store(config, skip_default_registrations, **kwargs)
-            logger.info("Updated the global store configuration.")
+        self._configure_store(config, skip_default_registrations, **kwargs)
+        logger.info("Updated the global store configuration.")
 
-            if self.zen_store.type == StoreType.REST:
-                # Every time a client connects to a ZenML server, we want to
-                # group the client ID and the server ID together. This records
-                # only that a particular client has successfully connected to a
-                # particular server at least once, but no information about the
-                # user account is recorded here.
+        if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
+            server_info = self.zen_store.get_store_info()
 
-                with event_handler(
-                    event=AnalyticsEvent.ZENML_SERVER_CONNECTED
-                ):
-                    server_info = self.zen_store.get_store_info()
-
-                    identify_group(
-                        AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=server_info.id,
-                        group_metadata={
-                            "version": server_info.version,
-                            "deployment_type": str(
-                                server_info.deployment_type
-                            ),
-                            "database_type": str(server_info.database_type),
-                        },
-                        v2=True,
-                    )
+            group(
+                group_id=server_info.id,
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
 
     @property
     def zen_store(self) -> "BaseZenStore":

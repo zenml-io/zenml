@@ -89,9 +89,10 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.42.1 is out. Check out the release notes
-    <a href="https://github.com/zenml-io/zenml/releases">here</a>.
+    <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
+    🎉 Version 0.44.2 is out. Check out the release notes
+    <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <a href="https://www.linkedin.com/company/zenml/">
     <img src="https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555" alt="Logo">
@@ -160,7 +161,7 @@ infrastructures.
 # 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
-[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.10 is required:
+[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
 
 ```bash
 pip install "zenml[server]"
@@ -185,17 +186,17 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
 
-In case your machine is authenticated with one of the big three cloud 
-providers, this command will do the full deployment for you.
+Currently, there are two main options to deploy ZenML:
 
-```bash
-zenml deploy --provider aws  # aws, gcp and azure are supported providers
-```
+- **ZenML Cloud**: With [ZenML Cloud](https://docs.zenml.io/deploying-zenml/zenml-cloud), 
+you can utilize a control plane to create ZenML servers, also known as tenants. 
+These tenants are managed and maintained by ZenML's dedicated team, alleviating 
+the burden of server management from your end. 
 
-You can also choose to deploy with docker or helm with full control over
-the configuration and deployment. Check out the
-[docs](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)
-to find out how.
+- **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy 
+ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted). 
+This can be achieved through various methods, including using our CLI, Docker, 
+Helm, or HuggingFace Spaces.
 
 ## 👨‍🍳 2. Deploy Stack Components
 
@@ -219,7 +220,7 @@ zenml stack register production_stack --orchestrator kubernetes_orchestrator --a
 When you run a pipeline with this stack set, it will be running on your deployed
 Kubernetes cluster.
 
-You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack).
+You can also [deploy your own tooling manually](https://docs.zenml.io/stacks-and-components/stack-deployment).
 
 ## 🏇 3. Create a Pipeline
 
@@ -282,7 +283,7 @@ and you can directly influence the roadmap as follows:
   board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our
-  Github repo.
+  GitHub repo.
 
 # 🙌 Contributing and Community
 

@@ -178,7 +178,7 @@ def step(
             f"The `@step` decorator that you used to define your {step_name}"
             "step is deprecated. Check out the 0.40.0 migration guide for more "
             "information on how to migrate your steps to the new syntax: "
-            "https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.html"
+            "https://docs.zenml.io/reference/migration-guide/migration-zero-forty"
         )
 
         return type(  # noqa

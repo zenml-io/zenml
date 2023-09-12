@@ -82,12 +82,12 @@ def _patch_k8s_clients(mocker):
     )
 
     mocker.patch("kubernetes.client.CoreV1Api")
-    mocker.patch("kubernetes.client.BatchV1beta1Api")
+    mocker.patch("kubernetes.client.BatchV1Api")
     mocker.patch("kubernetes.client.RbacAuthorizationV1Api")
 
 
 def test_kubernetes_orchestrator_remote_stack(
-    mocker, remote_artifact_store, remote_container_registry
+    mocker, s3_artifact_store, remote_container_registry
 ) -> None:
     """Test the remote and local kubernetes orchestrator with remote stacks."""
     _patch_k8s_clients(mocker)
@@ -99,7 +99,7 @@ def test_kubernetes_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
 
@@ -110,7 +110,7 @@ def test_kubernetes_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
     orchestrator = _get_kubernetes_orchestrator(
@@ -121,7 +121,7 @@ def test_kubernetes_orchestrator_remote_stack(
             id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
 

@@ -26,6 +26,7 @@ runs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ inputs.python-version }}
+    
 
     - name: Delete error-causing bash
       shell: bash
@@ -37,6 +38,20 @@ runs:
       if: ${{ inputs.os == 'windows-latest' }}
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
+    
+    - name: Configure git (non-Windows)
+      if: ${{ inputs.os != 'windows-latest' }}
+      shell: bash
+      run: |
+        git config --global user.email "info@zenml.io"
+        git config --global user.name "ZenML GmbH"
+    
+    - name: Configure git (Windows)
+      if: ${{ inputs.os == 'windows-latest' }}
+      shell: bash
+      run: |
+        "C:\Program Files\Git\bin\git.exe" config --global user.email "info@zenml.io"
+        "C:\Program Files\Git\bin\git.exe" config --global user.name "ZenML GmbH"
 
     - name: Get current week
       shell: bash
@@ -62,34 +77,30 @@ runs:
     #     # don't appear that often
     #     custom_cache_key_element: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
 
-    - name: Install ZenML
+    - name: Install Terraform (Windows)
+      if: ${{ inputs.os == 'windows-latest' }}
+      shell: bash
+      run: choco install terraform -y
+
+    - name: Install Terraform (Mac)
+      if: ${{ inputs.os == 'macos-latest' }}
+      shell: bash
+      run: |
+        brew tap hashicorp/tap
+        brew install hashicorp/tap/terraform
+
+    - name: Install ZenML and dependencies
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install -e .[server,templates,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]
+        scripts/install-zenml-dev.sh --integrations ${{inputs.install_integrations}}
 
-    - name: Install basic ZenML integrations
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
-      shell: bash
-      run: |
-        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve --ignore-integration langchain --ignore-integration llama_index --ignore-integration pycaret
-        pip install -r integration-requirements.txt
-        rm integration-requirements.txt
-
-    - name: Install langchain and llama_index integrations
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
-      shell: bash
-      run: |
-        zenml integration install -y langchain llama_index
-
-      # Refresh the ZenML installation if using a cached virtualenv or after
-      # installing integrations
+      # if using a cached virtualenv, just refresh the ZenML installation 
     - name: Refresh ZenML installation
-      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || inputs.install_integrations == 'yes'
+      if: steps.cache-virtualenv.outputs.cache-hit == 'true'
       shell: bash
       run: |
-        pip install -e .[server,templates,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev]
+        scripts/install-zenml-dev.sh
 
     - name: Check Python environment
       shell: bash

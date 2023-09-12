@@ -1,22 +1,25 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
 from config import DEFAULT_PIPELINE_EXTRAS, PIPELINE_SETTINGS, MetaConfig
 from steps import (
     data_loader,
-    drift_na_count,
+    drift_quality_gate,
     inference_data_preprocessor,
     inference_get_current_version,
     inference_predict,
@@ -41,7 +44,7 @@ logger = get_logger(__name__)
     on_failure=notify_on_failure,
     extra=DEFAULT_PIPELINE_EXTRAS,
 )
-def e2e_example_batch_inference():
+def e2e_use_case_batch_inference():
     """
     Model batch inference pipeline.
 
@@ -61,7 +64,6 @@ def e2e_example_batch_inference():
         ),
         target=target,
     )
-
     ########## DataQuality stage  ##########
     report, _ = evidently_report_step(
         reference_dataset=ExternalArtifact(
@@ -74,8 +76,7 @@ def e2e_example_batch_inference():
             EvidentlyMetricConfig.metric("DataQualityPreset"),
         ],
     )
-    drift_na_count(report)
-
+    drift_quality_gate(report)
     ########## Inference stage  ##########
     registry_model_version = inference_get_current_version()
     deployment_service = mlflow_model_registry_deployer_step(
@@ -86,7 +87,7 @@ def e2e_example_batch_inference():
     inference_predict(
         deployment_service=deployment_service,
         dataset_inf=df_inference,
-        after=["drift_na_count"],
+        after=["drift_quality_gate"],
     )
 
     notify_on_success(after=["inference_predict"])

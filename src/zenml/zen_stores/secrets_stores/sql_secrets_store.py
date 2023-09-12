@@ -28,6 +28,8 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Session, select
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_decorator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretScope,
@@ -45,7 +47,6 @@ from zenml.models import (
     SecretUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.schemas import (
     SecretSchema,
 )
@@ -252,7 +253,7 @@ class SqlSecretsStore(BaseSecretsStore):
 
         return False, ""
 
-    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 
@@ -350,7 +351,6 @@ class SqlSecretsStore(BaseSecretsStore):
                 ),
             )
 
-    @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
@@ -430,7 +430,6 @@ class SqlSecretsStore(BaseSecretsStore):
                 encryption_engine=self._encryption_engine
             )
 
-    @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 

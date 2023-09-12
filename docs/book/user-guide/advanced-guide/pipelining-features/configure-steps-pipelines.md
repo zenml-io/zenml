@@ -2,10 +2,11 @@
 description: Configuring pipelines, steps, and stack components in ZenML.
 ---
 
-# Define steps
+# Configure steps/pipelines
 
-To define a step, all you need to do is decorate your Python functions with ZenML's
-`@step` decorator:
+## Define steps
+
+To define a step, all you need to do is decorate your Python functions with ZenML's `@step` decorator:
 
 ```python
 from zenml import step
@@ -15,19 +16,12 @@ def my_function():
     ...
 ```
 
-## Type annotations
+### Type annotations
 
-Your functions will work as ZenML steps even if you don't provide any type annotations
-for their inputs and outputs.
-However, adding type annotations to your step functions gives you
-lots of additional benefits:
-- **Type validation of your step inputs**: ZenML makes sure that your step functions
-receive an object of the correct type from the upstream steps in your pipeline.
-- **Better serialization**: Without type annotations, ZenML uses
-[Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs.
-When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers)
-that is best suited for the output. In case none of the builtin materializers work, you can even
-[write a custom materializer](../artifact-management/handle-custom-data-types.md).
+Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
+
+* **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
+* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../artifact-management/handle-custom-data-types.md).
 
 ```python
 from typing import Tuple
@@ -44,14 +38,9 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 ```
 
 {% hint style="info" %}
-It is impossible for ZenML to detect whether you want your step to
-have a singe output artifact of type `Tuple` or multiple output artifacts
-just by looking at the type annotation.
+It is impossible for ZenML to detect whether you want your step to have a single output artifact of type `Tuple` or multiple output artifacts just by looking at the type annotation.
 
-We use the following convention to differentiate between the two: When
-the `return` statement is followed by a tuple literal (e.g. `return 1, 2`
-or `return (value_1, value_2)`) we treat it as a step with multiple outputs.
-All other cases are treated as a step with a single output of type `Tuple`.
+We use the following convention to differentiate between the two: When the `return` statement is followed by a tuple literal (e.g. `return 1, 2` or `return (value_1, value_2)`) we treat it as a step with multiple outputs. All other cases are treated as a step with a single output of type `Tuple`.
 
 ```python
 # Single output artifact
@@ -90,20 +79,13 @@ def my_step() -> Tuple[int, ...]:
 ```
 {% endhint %}
 
-If you want to make sure you get all the benefits of type annotating your
-steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
-ZenML will then raise an exception in case one of the steps you're trying to run is
-missing a type annotation.
+If you want to make sure you get all the benefits of type annotating your steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`. ZenML will then raise an exception in case one of the steps you're trying to run is missing a type annotation.
 
-## Step output names
+### Step output names
 
-By default, ZenML uses the output name `output` for single output steps
-and `output_0, output_1, ...` for steps with multiple outputs. These output names
-are used to display your outputs in the dashboard and
-[fetch them after your pipeline finished](../../starter-guide/fetch-runs-after-execution.md).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetch-runs-after-execution.md).
 
-If you want to use custom output names for your steps, use the `Annotated` type
-annotation:
+If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
 ```python
 from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
@@ -122,9 +104,9 @@ def divide(a: int, b: int) -> Tuple[
     return a // b, a % b
 ```
 
-# Configure steps/pipelines
+## Configure steps/pipelines
 
-## Parameters for your steps
+### Parameters for your steps
 
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
@@ -158,7 +140,7 @@ When an input is passed as a parameter, the step will only be cached if all para
 
 When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
 
-## Pass any kind of data to your steps
+### Pass any kind of data to your steps
 
 **External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by an upstream step.
 
@@ -180,7 +162,7 @@ def my_pipeline():
     # trainer(data=np.array([1, 2, 3]))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
@@ -200,14 +182,55 @@ Another way to search would be by a combination of a pipeline name where the art
 artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="model")
 ```
 
+<details>
 
+<summary>See it in action with the E2E example</summary>
 
-## Using a custom step invocation ID
+*To setup the local environment used below, follow the recommendations from the
+[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID**
-that you can use to reference this step invocation when [defining the execution order](#control-the-execution-order)
-of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps)
-about the invocation after the pipeline finished running.
+In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
+share Artifacts produced by a training pipeline inside a batch inference pipeline.
+
+On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
+With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
+
+```python
+    ########## ETL stage  ##########
+    df_inference, target = data_loader(is_inference=True)
+    df_inference = inference_data_preprocessor(
+        dataset_inf=df_inference,
+        preprocess_pipeline=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="preprocess_pipeline",
+        ),
+        target=target,
+    )
+```
+
+On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back.
+With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
+
+```python
+    ########## DataQuality stage  ##########
+    report, _ = evidently_report_step(
+        reference_dataset=ExternalArtifact(
+            pipeline_name=MetaConfig.pipeline_name_training,
+            artifact_name="dataset_trn",
+        ),
+        comparison_dataset=df_inference,
+        ignored_cols=["target"],
+        metrics=[
+            EvidentlyMetricConfig.metric("DataQualityPreset"),
+        ],
+    )
+```
+
+</details>
+
+### Using a custom step invocation ID
+
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -231,9 +254,9 @@ def example_pipeline():
     my_step(id="my_custom_invocation_id")
 ```
 
-## Control the execution order
+### Control the execution order
 
-By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.&#x20;
+By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.
 
 The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
 
@@ -250,8 +273,7 @@ def example_pipeline():
 If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by passing the invocation IDs of steps that should run before your step like this: `my_step(after="other_step")`. If you want to define multiple upstream steps, you can also pass a list for the `after` argument when calling your step: `my_step(after=["other_step", "other_step_2"])`.
 
 {% hint style="info" %}
-Check out the [previous section](#using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a
-custom one for your steps.
+Check out the [previous section](configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a custom one for your steps.
 {% endhint %}
 
 ```python
@@ -266,7 +288,7 @@ def example_pipeline():
 
 This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
 
-## Enable or disable logs storing
+### Enable or disable logs storing
 
 By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
 
@@ -285,47 +307,50 @@ You can display the logs in the dashboard as follows:
 
 ![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
 
-If you do not want to store the logs in your artifact store, you can disable this behavior by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+If you do not want to store the logs in your artifact store, you can:
 
-```python
-from zenml import pipeline, step
+1. Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+   
+    ```python
+    from zenml import pipeline, step
+    
+    @step(enable_step_logs=False)  # disables logging for this step
+    def my_step() -> None:
+        ...
+    
+    @pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
+    def my_pipeline():
+        ...
+    ```
 
-@step(enable_step_logs=False)  # disables logging for this step
-def my_step() -> None:
-    ...
+2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
 
-@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
-def my_pipeline():
-    ...
-```
-
-
-# Settings in ZenML
+## Settings in ZenML
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](../environment-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](../environment-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
-## Types of settings
+### Types of settings
 
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](containerize-your-pipeline.md) to specify docker settings.
-  * [`ResourceSettings`](scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
+  * [`DockerSettings`](../environment-management/containerize-your-pipeline.md) to specify docker settings.
+  * [`ResourceSettings`](../environment-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
-  * [`KubeflowOrchestratorSettings`](../../component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](../../component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](../../component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](../../component-guide/data-validators/whylogs.md) to specify Whylogs settings.
+  * [`KubeflowOrchestratorSettings`](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md) to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](../../../stacks-and-components/component-guide/experiment-trackers/mlflow.md) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](../../../stacks-and-components/component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](../../../stacks-and-components/component-guide/data-validators/whylogs.md) to specify Whylogs settings.
 
 For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue`, etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [`MLflow Experiment Tracker`](../../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [`MLflow Experiment Tracker`](../../../stacks-and-components/component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
@@ -335,7 +360,7 @@ This means that all pipelines that run using this experiment tracker use nested 
 Stack Component Config vs Settings in ZenML
 {% endembed %}
 
-#### Using objects or dicts
+**Using objects or dicts**
 
 Settings can be passed in directly as BaseSettings-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
 
@@ -351,9 +376,9 @@ Or like this:
 settings = {'docker': {'requirements': ['pandas']}}
 ```
 
-## Utilizing the settings
+### Utilizing the settings
 
-### Method 1: Directly on the decorator
+#### Method 1: Directly on the decorator
 
 The most basic way to set settings is through the `settings` variable that exists in both `@step` and `@pipeline` decorators:
 
@@ -374,7 +399,7 @@ The most basic way to set settings is through the `settings` variable that exist
 Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
-### Method 2: On the step/pipeline instance
+#### Method 2: On the step/pipeline instance
 
 This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
 
@@ -396,7 +421,7 @@ my_step.configure(settings=...)
 my_pipeline.configure(settings=...)
 ```
 
-### Method 3: Configuring with YAML
+#### Method 3: Configuring with YAML
 
 As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
@@ -417,9 +442,7 @@ def my_pipeline():
 my_pipeline = my_pipeline.with_options(config_path='/local/path/to/config.yaml')
 ```
 
-The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the
-[step invocation ID](#using-a-custom-step-invocation-id) inside the `steps` dictionary.
-Here is a rough skeleton of a valid YAML config. All keys are optional.
+The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the [step invocation ID](configure-steps-pipelines.md#using-a-custom-step-invocation-id) inside the `steps` dictionary. Here is a rough skeleton of a valid YAML config. All keys are optional.
 
 ```yaml
 enable_cache: True
@@ -438,8 +461,8 @@ steps:
   ...
 ```
 
-You can also use the following method to generate a config template (at path `/local/path/to/config.yaml`) that
-includes all configuration options for this specific pipeline and your active stack:
+You can also use the following method to generate a config template (at path `/local/path/to/config.yaml`) that includes all configuration options for this specific pipeline and your active stack:
+
 ```python
 my_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
@@ -536,7 +559,7 @@ steps:
 
 </details>
 
-### The `extra` dict
+#### The `extra` dict
 
 You might have noticed another dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
 
@@ -549,8 +572,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be 
-[fetched later](../../starter-guide/fetch-runs-after-execution.md):
+This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetch-runs-after-execution.md):
 
 ```python
 from zenml.client import Client
@@ -562,11 +584,11 @@ print(pipeline_run.config.extra)
 # {'tag': 'production'}
 ```
 
-### Hierarchy and precedence
+#### Hierarchy and precedence
 
 Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step-level settings will be merged with pipeline settings.
 
-### Merging settings on instance/run:
+#### Merging settings on instance/run:
 
 When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
 
@@ -589,5 +611,4 @@ my_step.configuration.settings["resources"]
 
 In the above example, the two settings were automatically merged.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

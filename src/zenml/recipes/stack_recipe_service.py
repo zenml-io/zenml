@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, cast
 import yaml
 
 import zenml
+from zenml.constants import STACK_RECIPES_GITHUB_REPO, STACK_RECIPES_REPO_DIR
 from zenml.exceptions import DoesNotExistException, GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -32,7 +33,6 @@ from zenml.services.terraform.terraform_service import (
     TerraformServiceConfig,
 )
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -45,8 +45,6 @@ PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
 EXCLUDED_RECIPE_DIRS = [""]
-STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
-STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 
 
 class LocalStackRecipe:
@@ -439,7 +437,7 @@ class GitStackRecipesHandler(object):
         shutil.rmtree(stack_recipes_directory)
 
     def get_active_version(self) -> Optional[str]:
-        """Returns the active version of the mlops-stacks repository.
+        """Returns the active version of the mlstacks repository.
 
         Returns:
             The active version of the repository.
@@ -519,49 +517,43 @@ class StackRecipeService(TerraformService):
 
         git_stack_recipes_handler.pull()
 
-        with event_handler(
-            event=AnalyticsEvent.PULL_STACK_RECIPE,
-            metadata={"stack_recipe_name": self.stack_recipe_name},
-        ):
-            if self.local_recipe_exists():
-                if force:
-                    fileio.rmtree(self.config.directory_path)
-                else:
-                    return
+        if self.local_recipe_exists():
+            if force:
+                fileio.rmtree(self.config.directory_path)
+            else:
+                return
 
-            logger.info(f"Pulling stack recipe {self.stack_recipe_name}...")
+        logger.info(f"Pulling stack recipe {self.stack_recipe_name}...")
 
-            io_utils.create_dir_recursive_if_not_exists(
-                self.config.directory_path
+        io_utils.create_dir_recursive_if_not_exists(self.config.directory_path)
+        stack_recipe = git_stack_recipes_handler.get_stack_recipes(
+            self.stack_recipe_name
+        )[0]
+        git_stack_recipes_handler.copy_stack_recipe(
+            stack_recipe, self.config.directory_path
+        )
+        logger.info(
+            f"Stack recipe pulled in directory: {self.config.directory_path}"
+        )
+        logger.info(
+            "\n Please edit the configuration values as you see fit, "
+            f"in the file: {os.path.join(self.config.directory_path, 'locals.tf')} "
+            "before you run the deploy command."
+        )
+        # also copy the modules folder from the repo (if it exists)
+        # this is a temporary fix until we have a proper module registry
+        modules_dir = os.path.join(
+            git_stack_recipes_handler.stack_recipes_dir, "modules"
+        )
+        if os.path.exists(modules_dir):
+            logger.info("Copying modules folder...")
+            io_utils.copy_dir(
+                modules_dir,
+                os.path.join(
+                    os.path.dirname(self.config.directory_path), "modules"
+                ),
+                True,
             )
-            stack_recipe = git_stack_recipes_handler.get_stack_recipes(
-                self.stack_recipe_name
-            )[0]
-            git_stack_recipes_handler.copy_stack_recipe(
-                stack_recipe, self.config.directory_path
-            )
-            logger.info(
-                f"Stack recipe pulled in directory: {self.config.directory_path}"
-            )
-            logger.info(
-                "\n Please edit the configuration values as you see fit, "
-                f"in the file: {os.path.join(self.config.directory_path, 'locals.tf')} "
-                "before you run the deploy command."
-            )
-            # also copy the modules folder from the repo (if it exists)
-            # this is a temporary fix until we have a proper module registry
-            modules_dir = os.path.join(
-                git_stack_recipes_handler.stack_recipes_dir, "modules"
-            )
-            if os.path.exists(modules_dir):
-                logger.info("Copying modules folder...")
-                io_utils.copy_dir(
-                    modules_dir,
-                    os.path.join(
-                        os.path.dirname(self.config.directory_path), "modules"
-                    ),
-                    True,
-                )
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.

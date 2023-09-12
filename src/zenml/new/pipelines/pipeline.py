@@ -38,6 +38,8 @@ import yaml
 from pydantic import ValidationError
 
 from zenml import constants
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -82,7 +84,6 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -395,10 +396,7 @@ class Pipeline:
         self._prepare_if_possible()
         integration_registry.activate_integrations()
 
-        custom_configurations = self.configuration.dict(
-            exclude_defaults=True, exclude={"name"}
-        )
-        if custom_configurations:
+        if self.configuration.dict(exclude_defaults=True, exclude={"name"}):
             logger.warning(
                 f"The pipeline `{self.name}` that you're registering has "
                 "custom configurations applied to it. These will not be "
@@ -434,7 +432,7 @@ class Pipeline:
         Returns:
             The build output.
         """
-        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+        with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
             self._prepare_if_possible()
             deployment, pipeline_spec, _, _ = self._compile(
                 config_path=config_path,
@@ -513,9 +511,7 @@ class Pipeline:
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
-        with event_handler(
-            event=AnalyticsEvent.RUN_PIPELINE, v2=True
-        ) as analytics_handler:
+        with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
@@ -686,8 +682,11 @@ class Pipeline:
                 logger.info("Executing a new run.")
 
             # Log about the caching status
-            if not deployment_model.pipeline_configuration.enable_cache:
-                logger.info("Caching disabled.")
+            if deployment_model.pipeline_configuration.enable_cache is False:
+                logger.info(
+                    f"Caching is disabled by default for "
+                    f"`{deployment_model.pipeline_configuration.name}`."
+                )
 
             # Log about the used builds
             if deployment_model.build:
@@ -983,7 +982,7 @@ class Pipeline:
         """
         from packaging import version
 
-        hash_ = hashlib.md5()
+        hash_ = hashlib.md5()  # nosec
         hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         if version.parse(pipeline_spec.version) >= version.parse("0.4"):
@@ -1006,13 +1005,12 @@ class Pipeline:
         all_pipelines = Client().list_pipelines(
             name=self.name, sort_by="desc:created", size=1
         )
-        if all_pipelines.total:
-            pipeline = all_pipelines.items[0]
-            if pipeline.version == "UNVERSIONED":
-                return None
-            return int(all_pipelines.items[0].version)
-        else:
+        if not all_pipelines.total:
             return None
+        pipeline = all_pipelines.items[0]
+        if pipeline.version == "UNVERSIONED":
+            return None
+        return int(all_pipelines.items[0].version)
 
     def add_step_invocation(
         self,

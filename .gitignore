@@ -189,3 +189,9 @@ examples/feast_feature_store/feast_feature_repo/data/registry.db
 
 #neptune
 *.neptune/
+
+#generated folder by zenml
+zenml_tutorial/
+
+# script for testing
+mlstacks_reset.sh
