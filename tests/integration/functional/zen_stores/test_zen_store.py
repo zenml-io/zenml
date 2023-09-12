@@ -2441,7 +2441,7 @@ def test_model_version_create_pass():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="great one",
             )
         )
@@ -2454,7 +2454,7 @@ def test_model_version_create_duplicated():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="great one",
             )
         )
@@ -2463,7 +2463,7 @@ def test_model_version_create_duplicated():
                 ModelVersionRequestModel(
                     user=model.user.id,
                     workspace=model.workspace.id,
-                    model_id=model.id,
+                    model=model.id,
                     version="great one",
                 )
             )
@@ -2477,7 +2477,7 @@ def test_model_version_create_no_model():
                 ModelVersionRequestModel(
                     user=model.user.id,
                     workspace=model.workspace.id,
-                    model_id=uuid4(),
+                    model=uuid4(),
                     version="great one",
                 )
             )
@@ -2499,7 +2499,7 @@ def test_model_version_get_found():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="great one",
             )
         )
@@ -2525,7 +2525,7 @@ def test_model_version_list_not_empty():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="great one",
             )
         )
@@ -2533,7 +2533,7 @@ def test_model_version_list_not_empty():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="and yet another one",
             )
         )
@@ -2562,7 +2562,7 @@ def test_model_version_delete_found():
             ModelVersionRequestModel(
                 user=model.user.id,
                 workspace=model.workspace.id,
-                model_id=model.id,
+                model=model.id,
                 version="great one",
             )
         )

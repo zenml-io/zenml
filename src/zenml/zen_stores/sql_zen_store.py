@@ -5537,7 +5537,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a workspace with the given name already exists.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_version.model_id)
+            model = self.get_model(model_version.model)
             existing_model_version = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)

@@ -2385,7 +2385,7 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=model_version,
             response_model=ModelVersionResponseModel,
-            route=f"{MODELS}/{model_version.model_id}{MODEL_VERSIONS}",
+            route=f"{MODELS}/{model_version.model}{MODEL_VERSIONS}",
         )
 
     def delete_model_version(

@@ -68,7 +68,7 @@ class ModelVersionRequestModel(
 ):
     """Model Version request model."""
 
-    model_id: UUID = Field(
+    model: UUID = Field(
         title="The ID of the model containing version",
     )
 

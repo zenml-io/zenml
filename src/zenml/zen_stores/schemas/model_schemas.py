@@ -209,7 +209,7 @@ class ModelVersionSchema(BaseSchema, table=True):
         return cls(
             workspace_id=model_version_request.workspace,
             user_id=model_version_request.user,
-            model_id=model_version_request.model_id,
+            model_id=model_version_request.model,
             version=model_version_request.version,
             description=model_version_request.description,
             stage=model_version_request.stage,
