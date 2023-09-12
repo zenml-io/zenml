@@ -87,10 +87,10 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
 
     @property
     def runs(self) -> List["PipelineRunResponseModel"]:
-        """Returns the 50 most recent runs of this pipeline in descending order.
+        """Returns the 20 most recent runs of this pipeline in descending order.
 
         Returns:
-            The 50 most recent runs of this pipeline in descending order.
+            The 20 most recent runs of this pipeline in descending order.
         """
         return self.get_runs()
 

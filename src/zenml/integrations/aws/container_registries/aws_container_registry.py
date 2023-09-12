@@ -17,7 +17,7 @@ import re
 from typing import List, Optional, cast
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -70,9 +70,27 @@ class AWSContainerRegistry(BaseContainerRegistry):
         Raises:
             ValueError: If the docker image name is invalid.
         """
-        response = boto3.client(
-            "ecr", region_name=self._get_region()
-        ).describe_repositories()
+        # Find repository name from image name
+        match = re.search(f"{self.config.uri}/(.*):.*", image_name)
+        if not match:
+            raise ValueError(f"Invalid docker image name '{image_name}'.")
+        repo_name = match.group(1)
+
+        try:
+            response = boto3.client(
+                "ecr", region_name=self._get_region()
+            ).describe_repositories()
+        except NoCredentialsError:
+            logger.warning(
+                "Amazon ECR requires you to create a repository before you can "
+                f"push an image to it. ZenML is trying to push the image "
+                f"{image_name} but could not find any repositories because "
+                "your local AWS credentials are not set. We will try to push "
+                "anyway, but in case it fails you need to create a repository "
+                f"named `{repo_name}`."
+            )
+            return
+
         try:
             repo_uris: List[str] = [
                 repository["repositoryUri"]
@@ -87,11 +105,6 @@ class AWSContainerRegistry(BaseContainerRegistry):
             image_name.startswith(f"{uri}:") for uri in repo_uris
         )
         if not repo_exists:
-            match = re.search(f"{self.config.uri}/(.*):.*", image_name)
-            if not match:
-                raise ValueError(f"Invalid docker image name '{image_name}'.")
-
-            repo_name = match.group(1)
             logger.warning(
                 "Amazon ECR requires you to create a repository before you can "
                 f"push an image to it. ZenML is trying to push the image "
