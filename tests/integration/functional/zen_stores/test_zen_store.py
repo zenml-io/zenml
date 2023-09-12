@@ -2772,13 +2772,13 @@ def test_model_version_link_delete_found():
         zs.delete_model_version_link(
             model_version.model.id, model_version.id, "link"
         )
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
             )
         )
-        assert len(l) == 0
+        assert len(mvls) == 0
 
 
 def test_model_version_link_delete_not_found():
@@ -2793,25 +2793,25 @@ def test_model_version_link_delete_not_found():
 def test_model_version_link_list_empty():
     with ModelVersionContext(True) as model_version:
         zs = Client().zen_store
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
             )
         )
-        assert len(l) == 0
+        assert len(mvls) == 0
 
 
 def test_model_version_link_list_populated():
     with ModelVersionContext(True) as model_version:
         zs = Client().zen_store
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
             )
         )
-        assert len(l) == 0
+        assert len(mvls) == 0
         for n, mo, dep, pr in [
             ("link1", False, False, False),
             ("link2", True, False, False),
@@ -2831,46 +2831,46 @@ def test_model_version_link_list_populated():
                     is_deployment=dep,
                 )
             )
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
             )
         )
-        assert len(l) == 4
+        assert len(mvls) == 4
 
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
                 only_artifacts=True,
             )
         )
-        assert len(l) == 1 and l[0].name == "link1"
+        assert len(mvls) == 1 and mvls[0].name == "link1"
 
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
                 only_model_objects=True,
             )
         )
-        assert len(l) == 1 and l[0].name == "link2"
+        assert len(mvls) == 1 and mvls[0].name == "link2"
 
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
                 only_deployments=True,
             )
         )
-        assert len(l) == 1 and l[0].name == "link3"
+        assert len(mvls) == 1 and mvls[0].name == "link3"
 
-        l = zs.list_model_version_links(
+        mvls = zs.list_model_version_links(
             ModelVersionLinkFilterModel(
                 model_id=model_version.model.id,
                 model_version_id=model_version.id,
                 only_pipeline_runs=True,
             )
         )
-        assert len(l) == 1 and l[0].name == "link4"
+        assert len(mvls) == 1 and mvls[0].name == "link4"

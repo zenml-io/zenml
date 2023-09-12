@@ -1393,10 +1393,8 @@ def list_workspace_model_version_links(
         model_name_or_id: Name or ID of the model.
         workspace_name_or_id: Name or ID of the workspace.
         model_version_name_or_id: Name or ID of the model version.
-        model_version_link: The model version link to create.
         model_version_link_filter_model: Filter model used for pagination, sorting,
             filtering
-
 
     Returns:
         The model version links according to query filters.

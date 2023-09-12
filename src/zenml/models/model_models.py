@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -98,28 +98,53 @@ class ModelVersionResponseModel(
 
     @property
     def model_objects(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all model objects linked to this version."""
+        """Get all model objects linked to this version.
+
+        Returns:
+            Dictionary of Model Objects as ArtifactResponseModel
+        """
         return self._fetch_artifacts_from_list(self._model_objects)
 
     @property
     def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all artifacts linked to this version."""
+        """Get all artifacts linked to this version.
+
+        Returns:
+            Dictionary of Artifact Objects as ArtifactResponseModel
+        """
         return self._fetch_artifacts_from_list(self._artifact_objects)
 
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all deployments linked to this version."""
+        """Get all deployments linked to this version.
+
+        Returns:
+            Dictionary of Deployments as ArtifactResponseModel
+        """
         return self._fetch_artifacts_from_list(self._deployments)
 
     @property
     def pipeline_runs(self) -> List[PipelineRunResponseModel]:
-        """Get all pipeline runs linked to this version."""
+        """Get all pipeline runs linked to this version.
+
+        Returns:
+            List of Pipeline Runs as PipelineRunResponseModel
+        """
         from zenml.client import Client
 
         return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
 
-    def set_stage(self, stage: ModelStages, force: bool = False):
-        """Sets this Model Version to a desired stage."""
+    def set_stage(
+        self, stage: ModelStages, force: bool = False
+    ) -> "ModelVersionResponseModel":
+        """Sets this Model Version to a desired stage.
+
+        Args:
+            stage: the target stage for model version.
+            force: whether to force archiving of current model version in target stage or raise.
+
+        Returns:
+            Dictionary of Model Objects as model_version_name_or_id"""
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
@@ -155,6 +180,8 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
 
 
 class ModelVersionUpdateModel(BaseModel):
+    """Update Model for Model Version."""
+
     model: UUID = Field(
         title="The ID of the model containing version",
     )
@@ -183,7 +210,9 @@ class ModelVersionLinkBaseModel(BaseModel):
     is_deployment: bool = False
 
     @validator("model_version")
-    def validate_links(cls, model_version_id, values):
+    def _validate_links(
+        cls, model_version: UUID, values: Dict[str, Any]
+    ) -> UUID:
         artifact = values.get("artifact", None)
         pipeline_run = values.get("pipeline_run", None)
         if (artifact is None and pipeline_run is None) or (
@@ -192,7 +221,7 @@ class ModelVersionLinkBaseModel(BaseModel):
             raise ValueError(
                 "You must provide only `artifact` or only `pipeline_run`."
             )
-        return model_version_id
+        return model_version
 
 
 class ModelVersionLinkRequestModel(
@@ -214,7 +243,6 @@ class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
         description="The name or ID of the Model",
     )
     model_version_id: Union[str, UUID] = Field(
-        default=None,
         description="The name or ID of the Model Version",
     )
     name: Optional[str] = Field(
@@ -227,13 +255,15 @@ class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
-    only_artifacts: bool = False
-    only_model_objects: bool = False
-    only_deployments: bool = False
-    only_pipeline_runs: bool = False
+    only_artifacts: Optional[bool] = False
+    only_model_objects: Optional[bool] = False
+    only_deployments: Optional[bool] = False
+    only_pipeline_runs: Optional[bool] = False
 
     @validator("only_pipeline_runs")
-    def validate_flags(cls, only_pipeline_runs, values):
+    def _validate_flags(
+        cls, only_pipeline_runs: bool, values: Dict[str, Any]
+    ) -> bool:
         s = int(only_pipeline_runs)
         s += int(values.get("only_artifacts", False))
         s += int(values.get("only_model_objects", False))

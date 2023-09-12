@@ -5535,10 +5535,13 @@ class SqlZenStore(BaseZenStore):
         self, model_version: ModelVersionRequestModel
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
+
         Args:
             model_version: the Model Version to be created.
+
         Returns:
             The newly created model version.
+
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
@@ -5570,11 +5573,14 @@ class SqlZenStore(BaseZenStore):
         model_version_name_or_id: Union[str, UUID],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be retrieved.
+
         Returns:
             The model version of interest.
+
         Raises:
             KeyError: specified ID or name not found.
         """
@@ -5588,7 +5594,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     ModelVersionSchema.id == model_version_name_or_id
                 )
-            except:
+            except ValueError:
                 query = query.where(
                     ModelVersionSchema.version == model_version_name_or_id
                 )
@@ -5605,9 +5611,11 @@ class SqlZenStore(BaseZenStore):
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
+
         Args:
             model_version_filter_model: All filter parameters including pagination
                 params.
+
         Returns:
             A page of all model versions.
         """
@@ -5621,25 +5629,37 @@ class SqlZenStore(BaseZenStore):
             )
 
     def delete_model_version(
-        self, model_name_or_id: Union[str, UUID], model_version_name: str
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name: name of the model version to be deleted.
+            model_version_name_or_id: name or id of the model version to be deleted.
+
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
             model = self.get_model(model_name_or_id)
-            model_version = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .where(ModelVersionSchema.version == model_version_name)
-            ).first()
+            query = select(ModelVersionSchema).where(
+                ModelVersionSchema.model_id == model.id
+            )
+            try:
+                UUID(str(model_version_name_or_id))
+                query = query.where(
+                    ModelVersionSchema.id == model_version_name_or_id
+                )
+            except ValueError:
+                query = query.where(
+                    ModelVersionSchema.version == model_version_name_or_id
+                )
+            model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to delete model version with name `{model_version_name}`: "
+                    f"Unable to delete model version with name `{model_version_name_or_id}`: "
                     f"No model version with this name found."
                 )
             session.delete(model_version)
@@ -5651,6 +5671,7 @@ class SqlZenStore(BaseZenStore):
         model_version_update_model: ModelVersionUpdateModel,
     ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
+
         Args:
             model_version_id: The ID of model version to be updated.
             model_version_update_model: The model version to be updated.
@@ -5769,37 +5790,80 @@ class SqlZenStore(BaseZenStore):
             A page of all model version links.
         """
         with Session(self.engine) as session:
+            # issue: https://github.com/tiangolo/sqlmodel/issues/109
             if model_version_link_filter_model.only_artifacts:
                 query = (
                     select(ModelVersionLinkSchema)
-                    .where(ModelVersionLinkSchema.is_model_object == False)
-                    .where(ModelVersionLinkSchema.is_deployment == False)
-                    .where(ModelVersionLinkSchema.pipeline_run == None)
-                    .where(ModelVersionLinkSchema.artifact != None)
+                    .where(
+                        ModelVersionLinkSchema.is_model_object
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.is_deployment
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.pipeline_run
+                        == None  # noqa: E712, E711
+                    )
+                    .where(
+                        ModelVersionLinkSchema.artifact
+                        != None  # noqa: E712, E711
+                    )
                 )
             elif model_version_link_filter_model.only_deployments:
                 query = (
                     select(ModelVersionLinkSchema)
                     .where(ModelVersionLinkSchema.is_deployment)
-                    .where(ModelVersionLinkSchema.is_model_object == False)
-                    .where(ModelVersionLinkSchema.pipeline_run == None)
-                    .where(ModelVersionLinkSchema.artifact != None)
+                    .where(
+                        ModelVersionLinkSchema.is_model_object
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.pipeline_run
+                        == None  # noqa: E712, E711
+                    )
+                    .where(
+                        ModelVersionLinkSchema.artifact
+                        != None  # noqa: E712, E711
+                    )
                 )
             elif model_version_link_filter_model.only_model_objects:
                 query = (
                     select(ModelVersionLinkSchema)
                     .where(ModelVersionLinkSchema.is_model_object)
-                    .where(ModelVersionLinkSchema.is_deployment == False)
-                    .where(ModelVersionLinkSchema.pipeline_run == None)
-                    .where(ModelVersionLinkSchema.artifact != None)
+                    .where(
+                        ModelVersionLinkSchema.is_deployment
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.pipeline_run
+                        == None  # noqa: E712, E711
+                    )
+                    .where(
+                        ModelVersionLinkSchema.artifact
+                        != None  # noqa: E712, E711
+                    )
                 )
             elif model_version_link_filter_model.only_pipeline_runs:
                 query = (
                     select(ModelVersionLinkSchema)
-                    .where(ModelVersionLinkSchema.is_model_object == False)
-                    .where(ModelVersionLinkSchema.is_deployment == False)
-                    .where(ModelVersionLinkSchema.pipeline_run != None)
-                    .where(ModelVersionLinkSchema.artifact == None)
+                    .where(
+                        ModelVersionLinkSchema.is_model_object
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.is_deployment
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionLinkSchema.pipeline_run
+                        != None  # noqa: E712, E711
+                    )
+                    .where(
+                        ModelVersionLinkSchema.artifact
+                        == None  # noqa: E712, E711
+                    )
                 )
             else:
                 query = select(ModelVersionLinkSchema)
@@ -5843,7 +5907,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     ModelVersionLinkSchema.id == model_version_link_name_or_id
                 )
-            except:
+            except ValueError:
                 query = query.where(
                     ModelVersionLinkSchema.name
                     == model_version_link_name_or_id

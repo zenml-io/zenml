@@ -2442,7 +2442,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A page of all model versions.
         """
-
         return self._list_paginated_resources(
             route=f"{MODELS}/{model_version_filter_model.model_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
@@ -2455,6 +2454,7 @@ class RestZenStore(BaseZenStore):
         model_version_update_model: ModelVersionUpdateModel,
     ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
+
         Args:
             model_version_id: The ID of model version to be updated.
             model_version_update_model: The model version to be updated.

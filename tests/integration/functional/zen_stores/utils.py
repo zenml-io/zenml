@@ -527,19 +527,19 @@ class ModelVersionContext:
         zs = Client().zen_store
         try:
             ws = zs.get_workspace(self.workspace)
-        except:
+        except KeyError:
             ws = zs.create_workspace(
                 WorkspaceRequestModel(name=self.workspace)
             )
             self.del_ws = True
         try:
             user = zs.get_user(self.user)
-        except:
+        except KeyError:
             user = zs.create_user(UserRequestModel(name=self.user))
             self.del_user = True
         try:
             model = zs.get_model(self.model)
-        except:
+        except KeyError:
             model = zs.create_model(
                 ModelRequestModel(
                     name=self.model, user=user.id, workspace=ws.id
@@ -549,7 +549,7 @@ class ModelVersionContext:
         if self.create_version:
             try:
                 mv = zs.get_model_version(self.model, self.model_version)
-            except:
+            except KeyError:
                 mv = zs.create_model_version(
                     ModelVersionRequestModel(
                         user=user.id,

@@ -1731,6 +1731,9 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The model of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod
@@ -1757,10 +1760,13 @@ class ZenStoreInterface(ABC):
         self, model_version: ModelVersionRequestModel
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
+
         Args:
             model_version: the Model Version to be created.
+
         Returns:
             The newly created model version.
+
         Raises:
             EntityExistsError: If a model version with the given name already exists.
         """
@@ -1770,9 +1776,11 @@ class ZenStoreInterface(ABC):
         self, model_name_or_id: Union[str, UUID], model_version_name: str
     ) -> None:
         """Deletes a model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name: name of the model version to be deleted.
+
         Raises:
             KeyError: specified ID or name not found.
         """
@@ -1784,11 +1792,14 @@ class ZenStoreInterface(ABC):
         model_version_name_or_id: Union[str, UUID],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
+
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be retrieved.
+
         Returns:
             The model version of interest.
+
         Raises:
             KeyError: specified ID or name not found.
         """
@@ -1799,9 +1810,11 @@ class ZenStoreInterface(ABC):
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
+
         Args:
             model_version_filter_model: All filter parameters including pagination
                 params.
+
         Returns:
             A page of all model versions.
         """
@@ -1813,6 +1826,7 @@ class ZenStoreInterface(ABC):
         model_version_update_model: ModelVersionUpdateModel,
     ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
+
         Args:
             model_version_id: The ID of model version to be updated.
             model_version_update_model: The model version to be updated.
