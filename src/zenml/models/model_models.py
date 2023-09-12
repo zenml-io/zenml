@@ -32,10 +32,6 @@ from zenml.models.pipeline_run_models import PipelineRunResponseModel
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
-    model_id: str = Field(
-        title="The ID of the model",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     version: str = Field(
         title="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -72,7 +68,9 @@ class ModelVersionRequestModel(
 ):
     """Model Version request model."""
 
-    pass
+    model_id: UUID = Field(
+        title="The ID of the model containing version",
+    )
 
 
 class ModelVersionResponseModel(
@@ -80,6 +78,10 @@ class ModelVersionResponseModel(
     WorkspaceScopedResponseModel,
 ):
     """Model Version response model."""
+
+    model: "ModelResponseModel" = Field(
+        title="The model containing version",
+    )
 
     @staticmethod
     def _fetch_artifacts_from_list(
@@ -124,18 +126,18 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     """Filter Model for Model Version."""
 
-    model_name: str = Field(
-        description="Name of the Model",
+    model_id: Optional[Union[str, UUID]] = Field(
+        description="The ID of the Model",
     )
     model_version_name: Optional[str] = Field(
         default=None,
-        description="Name of the Model Version",
+        description="The name of the Model Version",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace of the Model Version"
+        default=None, description="The workspace of the Model Version"
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the Model Version"
+        default=None, description="The user of the Model Version"
     )
 
 

@@ -5530,7 +5530,7 @@ class SqlZenStore(BaseZenStore):
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
         Args:
-            model: the Model Version to be created.
+            model_version: the Model Version to be created.
         Returns:
             The newly created model version.
         Raises:
@@ -5539,10 +5539,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             model = self.get_model(model_version.model_id)
             existing_model_version = session.exec(
-                select(ModelVersionSchema).where(
-                    ModelVersionSchema.version == model_version.version
-                    and ModelVersionSchema.model_id == model.id
-                )
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .where(ModelVersionSchema.version == model_version.version)
             ).first()
             if existing_model_version is not None:
                 raise EntityExistsError(
@@ -5556,7 +5555,8 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_schema)
 
             session.commit()
-            return ModelVersionSchema.to_model(model_version_schema)
+            mv = ModelVersionSchema.to_model(model_version_schema)
+        return mv
 
     def get_model_version(
         self,
@@ -5569,15 +5569,21 @@ class SqlZenStore(BaseZenStore):
             model_version_name_or_id: name or id of the model version to be retrieved.
         Returns:
             The model version of interest.
+        Raises:
+            KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
             model = self.get_model(model_name_or_id)
             model_version = session.exec(
-                select(ModelVersionSchema).where(
-                    ModelVersionSchema.version == model_version_name
-                    and ModelVersionSchema.model_id == model
-                )
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .where(ModelVersionSchema.version == model_version_name)
             ).first()
+            if model_version is None:
+                raise KeyError(
+                    f"Unable to get model version with name `{model_version_name}`: "
+                    f"No model version with this name found."
+                )
             return ModelVersionSchema.to_model(model_version)
 
     def list_model_versions(
@@ -5607,14 +5613,20 @@ class SqlZenStore(BaseZenStore):
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name: name of the model version to be deleted.
+        Raises:
+            KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
             model = self.get_model(model_name_or_id)
             model_version = session.exec(
-                select(ModelVersionSchema).where(
-                    ModelVersionSchema.version == model_version_name
-                    and ModelVersionSchema.model_id == model
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .where(ModelVersionSchema.version == model_version_name)
+            ).first()
+            if model_version is None:
+                raise KeyError(
+                    f"Unable to delete model version with name `{model_version_name}`: "
+                    f"No model version with this name found."
                 )
-            )
             session.delete(model_version)
             session.commit()

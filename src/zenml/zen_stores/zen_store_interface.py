@@ -1754,7 +1754,7 @@ class ZenStoreInterface(ABC):
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
         Args:
-            model: the Model Version to be created.
+            model_version: the Model Version to be created.
         Returns:
             The newly created model version.
         Raises:
@@ -1769,6 +1769,8 @@ class ZenStoreInterface(ABC):
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name: name of the model version to be deleted.
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod
@@ -1783,6 +1785,8 @@ class ZenStoreInterface(ABC):
             model_version_name_or_id: name or id of the model version to be retrieved.
         Returns:
             The model version of interest.
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod

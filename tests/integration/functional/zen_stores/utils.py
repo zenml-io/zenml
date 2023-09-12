@@ -509,6 +509,53 @@ class ServiceConnectorContext:
                 pass
 
 
+class ModelVersionContext:
+    def __init__(self):
+        self.workspace = "workspace"
+        self.user = "su"
+        self.model = "su_model"
+        self.del_ws = False
+        self.del_user = False
+        self.del_model = False
+
+    def __enter__(self):
+        zs = Client().zen_store
+        try:
+            ws = zs.get_workspace(self.workspace)
+        except:
+            ws = zs.create_workspace(
+                WorkspaceRequestModel(name=self.workspace)
+            )
+            self.del_ws = True
+        try:
+            user = zs.get_user(self.user)
+        except:
+            user = zs.create_user(UserRequestModel(name=self.user))
+            self.del_user = True
+        try:
+            model = zs.get_model(self.model)
+        except:
+            model = zs.create_model(
+                ModelRequestModel(
+                    name=self.model, user=user.id, workspace=ws.id
+                )
+            )
+            self.del_model = True
+        return model
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        zs = Client().zen_store
+        if self.del_model:
+            print("del_model")
+            zs.delete_model(self.model)
+        if self.del_user:
+            print("del_user")
+            zs.delete_user(self.user)
+        if self.del_ws:
+            print("del_ws")
+            zs.delete_workspace(self.workspace)
+
+
 class CatClawMarks(AuthenticationConfig):
     """Cat claw marks authentication credentials."""
 
@@ -836,6 +883,7 @@ model_crud_test_config = CrudTestConfig(
     filter_model=ModelFilterModel,
     entity_name="model",
 )
+
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(

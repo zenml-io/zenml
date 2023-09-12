@@ -21,6 +21,7 @@ from zenml.constants import (
     API,
     CODE_REPOSITORIES,
     GET_OR_CREATE,
+    MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
@@ -51,6 +52,9 @@ from zenml.models import (
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -1220,4 +1224,86 @@ def list_workspace_models(
     model_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_models(
         model_filter_model=model_filter_model,
+    )
+
+
+@router.post(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODELS
+    + "/{model_name_or_id}"
+    + MODEL_VERSIONS,
+    response_model=ModelVersionResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version(
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version: ModelVersionRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionResponseModel:
+    """Create a new model version.
+
+    Args:
+        model_name_or_id: Name or ID of the model.
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version: The model to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model version.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if model_version.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating model versions outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model_version.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version(model_version)
+    return mv
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + MODEL_VERSIONS,
+    response_model=Page[ModelVersionResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_model_versions(
+    workspace_name_or_id: Union[str, UUID],
+    model_version_filter_model: ModelVersionFilterModel = Depends(
+        make_dependable(ModelVersionFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelVersionResponseModel]:
+    """Get models according to query filters.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+
+    Returns:
+        The model versions according to query filters.
+    """
+    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+    model_version_filter_model.set_scope_workspace(workspace_id)
+    return zen_store().list_model_versions(
+        model_version_filter_model=model_version_filter_model,
     )

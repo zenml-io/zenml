@@ -16,6 +16,7 @@ import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+from uuid import uuid4
 
 import pytest
 from pydantic import SecretStr
@@ -25,6 +26,7 @@ from tests.integration.functional.zen_stores.utils import (
     CodeRepositoryContext,
     ComponentContext,
     CrudTestConfig,
+    ModelVersionContext,
     PipelineRunContext,
     RoleContext,
     ServiceConnectorContext,
@@ -50,6 +52,8 @@ from zenml.models import (
     ArtifactFilterModel,
     ComponentFilterModel,
     ComponentUpdateModel,
+    ModelVersionFilterModel,
+    ModelVersionRequestModel,
     PipelineRunFilterModel,
     RoleFilterModel,
     RoleRequestModel,
@@ -2423,3 +2427,151 @@ def test_connector_validation():
             secrets=secrets,
         ):
             pass
+
+
+#################
+# Models
+#################
+
+
+def test_model_version_create_pass():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="great one",
+            )
+        )
+
+
+def test_model_version_create_duplicated():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="great one",
+            )
+        )
+        with pytest.raises(EntityExistsError):
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model_id=model.id,
+                    version="great one",
+                )
+            )
+
+
+def test_model_version_create_no_model():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model_id=uuid4(),
+                    version="great one",
+                )
+            )
+
+
+def test_model_version_get_not_found():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.get_model_version(
+                model_name_or_id=model.id, model_version_name="1.0.0"
+            )
+
+
+def test_model_version_get_found():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="great one",
+            )
+        )
+        zs.get_model_version(
+            model_name_or_id=model.id,
+            model_version_name="great one",
+        )
+
+
+def test_model_version_list_empty():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        mvs = zs.list_model_versions(
+            ModelVersionFilterModel(model_id=model.id)
+        )
+        assert len(mvs) == 0
+
+
+def test_model_version_list_not_empty():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        mv1 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="great one",
+            )
+        )
+        mv2 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="and yet another one",
+            )
+        )
+        mvs = zs.list_model_versions(
+            ModelVersionFilterModel(model_id=model.id)
+        )
+        assert len(mvs) == 2
+        assert mv1 in mvs
+        assert mv2 in mvs
+
+
+def test_model_version_delete_not_found():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.delete_model_version(
+                model_name_or_id=model.id,
+                model_version_name="1.0.0",
+            )
+
+
+def test_model_version_delete_found():
+    with ModelVersionContext() as model:
+        zs = Client().zen_store
+        zs.create_model_version(
+            ModelVersionRequestModel(
+                user=model.user.id,
+                workspace=model.workspace.id,
+                model_id=model.id,
+                version="great one",
+            )
+        )
+        zs.delete_model_version(
+            model_name_or_id=model.id,
+            model_version_name="great one",
+        )
+        with pytest.raises(KeyError):
+            zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name="great one",
+            )

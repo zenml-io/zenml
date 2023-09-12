@@ -18,12 +18,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, MODELS, VERSION_1
+from zenml.constants import API, MODEL_VERSIONS, MODELS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionFilterModel,
+    ModelVersionResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -140,98 +142,74 @@ def update_model(
 # Model Versions
 #################
 
-# router = APIRouter(
-#     prefix=API + VERSION_1 + MODELS,
-#     tags=["models"],
-#     responses={401: error_response},
-# )
 
-# @router.get(
-#     "",
-#     response_model=Page[ModelResponseModel],
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def list_models(
-#     model_filter_model: ModelFilterModel = Depends(
-#         make_dependable(ModelFilterModel)
-#     ),
-#     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-# ) -> Page[ModelResponseModel]:
-#     """Get models according to query filters.
+@router.get(
+    "/{model_name_or_id}" + MODEL_VERSIONS,
+    response_model=Page[ModelVersionResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_model_versions(
+    model_version_filter_model: ModelVersionFilterModel = Depends(
+        make_dependable(ModelVersionFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelVersionResponseModel]:
+    """Get model versions according to query filters.
 
-#     Args:
-#         model_filter_model: Filter model used for pagination, sorting,
-#             filtering
+    Args:
+        model_version_filter_model: Filter model used for pagination, sorting,
+            filtering
 
-
-#     Returns:
-#         The models according to query filters.
-#     """
-#     return zen_store().list_models(
-#         model_filter_model=model_filter_model,
-#     )
+    Returns:
+        The model versions according to query filters.
+    """
+    return zen_store().list_model_versions(
+        model_version_filter_model=model_version_filter_model,
+    )
 
 
-# @router.delete(
-#     "/{model_name_or_id}",
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def delete_model(
-#     model_name_or_id: Union[str, UUID],
-#     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-# ) -> None:
-#     """Delete a model by name or ID.
+@router.delete(
+    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_model_version(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete a model by name or ID.
 
-#     Args:
-#         model_name_or_id: The name or ID of the model to delete.
-#     """
-#     zen_store().delete_model(model_name_or_id)
-
-
-# @router.get(
-#     "/{model_name_or_id}",
-#     response_model=ModelResponseModel,
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def get_model(
-#     model_name_or_id: Union[str, UUID],
-#     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-# ) -> ModelResponseModel:
-#     """Get a model by name or ID.
-
-#     Args:
-#         model_name_or_id: The name or ID of the model to get.
-
-#     Returns:
-#         The model with the given name or ID.
-#     """
-#     return zen_store().get_model(model_name_or_id)
+    Args:
+        model_name_or_id: The name or ID of the model containing version.
+        model_version_name_or_id: The name or ID of the model version to delete.
+    """
+    zen_store().delete_model_version(
+        model_name_or_id, model_version_name_or_id
+    )
 
 
-# @router.put(
-#     "/{model_id}",
-#     response_model=ModelResponseModel,
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def update_model(
-#     model_id: UUID,
-#     model_update: ModelUpdateModel,
-#     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-# ) -> ModelResponseModel:
-#     """Updates a model.
+@router.get(
+    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
+    response_model=ModelVersionResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_model_version(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> ModelVersionResponseModel:
+    """Get a model version by name or ID.
 
-#     Args:
-#         model_id: Name of the stack.
-#         model_update: Stack to use for the update.
+    Args:
+        model_name_or_id: The name or ID of the model containing version.
+        model_version_name_or_id: The name or ID of the model version to get.
 
-#     Returns:
-#         The updated model.
-#     """
-#     return zen_store().update_model(
-#         model_id=model_id,
-#         model_update=model_update,
-#     )
+    Returns:
+        The model version with the given name or ID.
+    """
+    return zen_store().get_model_version(
+        model_name_or_id, model_version_name_or_id
+    )

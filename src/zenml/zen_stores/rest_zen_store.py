@@ -2378,16 +2378,14 @@ class RestZenStore(BaseZenStore):
     ) -> ModelVersionResponseModel:
         """Creates a new model version.
         Args:
-            model: the Model Version to be created.
+            model_version: the Model Version to be created.
         Returns:
             The newly created model version.
-        Raises:
-            EntityExistsError: If a workspace with the given name already exists.
         """
         return self._create_workspace_scoped_resource(
             resource=model_version,
             response_model=ModelVersionResponseModel,
-            route=MODEL_VERSIONS,
+            route=f"{MODELS}/{model_version.model_id}{MODEL_VERSIONS}",
         )
 
     def delete_model_version(
@@ -2399,8 +2397,8 @@ class RestZenStore(BaseZenStore):
             model_version_name: name of the model version to be deleted.
         """
         self._delete_resource(
-            resource_id=(model_name_or_id, model_version_name),
-            route=MODEL_VERSIONS,
+            resource_id=model_version_name,
+            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
         )
 
     def get_model_version(
@@ -2416,8 +2414,8 @@ class RestZenStore(BaseZenStore):
             The model version of interest.
         """
         return self._get_resource(
-            resource_id=(model_name_or_id, model_version_name),
-            route=MODEL_VERSIONS,
+            resource_id=model_version_name,
+            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
         )
 
@@ -2434,8 +2432,8 @@ class RestZenStore(BaseZenStore):
         """
 
         return self._list_paginated_resources(
-            route=MODEL_VERSIONS,
-            response_model=ModelVersionFilterModel,
+            route=f"{MODELS}/{model_version_filter_model.model_id}{MODEL_VERSIONS}",
+            response_model=ModelVersionResponseModel,
             filter_model=model_version_filter_model,
         )
 

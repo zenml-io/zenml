@@ -227,27 +227,27 @@ class ModelVersionSchema(BaseSchema, table=True):
             workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            model_id=self.model_id,
+            model=self.model.to_model(),
             version=self.version,
             description=self.description,
             stage=self.stage,
-            _model_objects={
+            model_objects={
                 al.name: al.artifact_id
                 for al in self.objects_links
                 if al.artifact_id is not None and al.is_model_object
             },
-            _deployments={
+            deployments={
                 al.name: al.artifact_id
                 for al in self.objects_links
                 if al.artifact_id is not None and al.is_deployment
             },
-            _artifact_objects={
+            artifact_objects={
                 al.name: al.artifact_id
                 for al in self.objects_links
                 if al.artifact_id is not None
                 and not (al.is_deployment or al.is_model_object)
             },
-            _pipeline_runs=[
+            pipeline_runs=[
                 al.artifact_id
                 for al in self.objects_links
                 if al.pipeline_run_id is not None
