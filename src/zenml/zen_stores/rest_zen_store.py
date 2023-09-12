@@ -2297,9 +2297,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created model.
-
-        Raises:
-            EntityExistsError: If a workspace with the given name already exists.
         """
         return self._create_workspace_scoped_resource(
             resource=model,
