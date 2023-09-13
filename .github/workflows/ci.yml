@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   mlstacks-compatibility-check:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,6 +38,7 @@ jobs:
         run: pip check
 
   ubuntu-setup-and-test-python:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -49,6 +51,7 @@ jobs:
     secrets: inherit
 
   windows-setup-and-test-python:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
@@ -61,6 +64,7 @@ jobs:
     secrets: inherit
 
   macos-setup-and-test-python:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
