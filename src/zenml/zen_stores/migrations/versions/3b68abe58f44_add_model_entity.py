@@ -1,7 +1,7 @@
 """add model entity [3b68abe58f44].
 
 Revision ID: 3b68abe58f44
-Revises: 0.44.1
+Revises: 0.44.2
 Create Date: 2023-09-11 07:53:18.641081
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3b68abe58f44"
-down_revision = "0.44.1"
+down_revision = "0.44.2"
 branch_labels = None
 depends_on = None
 
