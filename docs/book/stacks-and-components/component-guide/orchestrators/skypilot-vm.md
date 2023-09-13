@@ -15,14 +15,18 @@ a [remote ZenML deployment scenario](/docs/book/deploying-zenml/zenml-self-hoste
 Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
+{% hint style="info" %}
+SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
+{% endhint %}
+
 ## When to use it
 
 You should use the SkyPilot VM Orchestrator if:
 
 * you want to maximize cost savings by leveraging spot VMs and auto-picking the cheapest VM/zone/region/cloud.
 * you want to ensure high GPU availability by provisioning VMs in all zones/regions/clouds you have access to.
-* you don't need a UI to list all your pipeline runs.
-* you're not willing to maintain Kubernetes based solution or in paying for managed solutions like [Sagemaker](sagemaker.md).
+* you don't need a built-in UI of the orchestrator. You can still use ZenML's Dashboard to monitor your pipelines/artifacts.
+* you're not willing to maintain Kubernetes based solutions or pay for managed solutions like [Sagemaker](sagemaker.md).
 
 
 ## How it works
@@ -79,6 +83,8 @@ To use the SkyPilot VM Orchestrator, you need:
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A [remote ZenML deployment](/docs/book/deploying-zenml/zenml-self-hosted/zenml-self-hosted.md) as part of your stack.
 * The appropriate permissions to provision VMs on your cloud provider of choice.
+* A [service connector](https://docs.zenml.io/stacks-and-components/auth-management) configured to authenticate with your cloud provider of choice.
+
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -90,11 +96,8 @@ We need first to install SkyPilot integration for AWS, using the following comma
     zenml integration install aws vm_aws 
   ```
 
-To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
-We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
-for this purpose. For this example, we will use the [AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector)
-To configure the AWS Service Connector, you need to register a new service connector using the
-following command:
+To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector).
+To configure the AWS Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
 ```
 zenml service-connector list-types --type aws
@@ -110,10 +113,10 @@ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-For this example we will configure a service connector using the `sts-token` auth method. But before we can do that, we recommend you to create a new AWS profile, that will be used by the service connector. Once we have created the profile, we can register a new service connector using the following command:
+For this example we will configure a service connector using the `iam-role` auth method. But before we can do that, we recommend you to create a new AWS profile, that will be used by the service connector. Once we have created the profile, we can register a new service connector using the following command:
 
 ```shell
-AWS_PROFILE=connectors zenml service-connector register aws-skypilot-vm --type aws --auth-method sts-token --region=us-east-1 --auto-configure
+AWS_PROFILE=connectors zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
 ```
 
 This will automatically configure the service connector with the appropriate credentials and permissions to
@@ -140,11 +143,9 @@ We need first to install SkyPilot integration for GCP, using the following comma
     zenml integration install gcp vm_gcp 
   ```
 
-To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
-We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
-for this purpose. For this example, we will use the [GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector)
-To configure the GCP Service Connector, you need to register a new service connector using the
-following command:
+To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector)
+
+To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
 ```
 zenml service-connector list-types --type gcp
@@ -200,11 +201,10 @@ We need first to install SkyPilot integration for Azure, using the following com
     zenml integration install azure vm_azure 
   ```
 
-To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with cloud provider.
-We recommend using one of available [Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/service-connectors-guide) 
-for this purpose. For this example, we will use the [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector)
-To configure the Azure Service Connector, you need to register a new service connector using the
-following command:
+To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector)
+
+To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
+
 
 ```
 zenml service-connector list-types --type azure
@@ -262,7 +262,8 @@ For additional configuration of the Skypilot orchestrator, you can pass `Skypilo
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotBaseOrchestratorSettings
 
 skypilot_settings = SkypilotBaseOrchestratorSettings(
-    instance_type="m5.large",
+**Code Example:**
+
     cpus="2",
     memory="16",
     accelerators="V100:2",
@@ -290,7 +291,7 @@ skypilot_settings = SkypilotBaseOrchestratorSettings(
 ```
 
 Check out
-the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings)
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
 information on how to specify settings.
 
