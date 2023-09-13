@@ -25,7 +25,7 @@ You should use the SkyPilot VM Orchestrator if:
 
 * you want to maximize cost savings by leveraging spot VMs and auto-picking the cheapest VM/zone/region/cloud.
 * you want to ensure high GPU availability by provisioning VMs in all zones/regions/clouds you have access to.
-* you don't need a built-in UI of the orchestrator. You can still use ZenML's Dashboard to monitor your pipelines/artifacts.
+* you don't need a built-in UI of the orchestrator. You can still use ZenML's Dashboard to view and monitor your pipelines/artifacts
 * you're not willing to maintain Kubernetes based solutions or pay for managed solutions like [Sagemaker](sagemaker.md).
 
 
