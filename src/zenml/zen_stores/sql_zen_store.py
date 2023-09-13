@@ -94,6 +94,10 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -189,6 +193,7 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     FlavorSchema,
     IdentitySchema,
+    ModelSchema,
     NamedSchema,
     PipelineBuildSchema,
     PipelineDeploymentSchema,
@@ -5313,6 +5318,30 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
+    def _get_model_schema(
+        self,
+        model_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> ModelSchema:
+        """Gets a model schema by name or ID.
+
+        This is a helper method that is used in various places to find a run
+        by its name or ID.
+
+        Args:
+            model_name_or_id: The name or ID of the run to get.
+            session: The database session to use.
+
+        Returns:
+            The model schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=model_name_or_id,
+            schema_class=ModelSchema,
+            schema_name="model",
+            session=session,
+        )
+
     def _create_or_reuse_code_reference(
         self,
         session: Session,
@@ -5354,3 +5383,136 @@ class SqlZenStore(BaseZenStore):
 
         session.add(new_reference)
         return new_reference.id
+
+    ########
+    # Model
+    ########
+
+    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+        """Creates a new model.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            existing_model = session.exec(
+                select(ModelSchema).where(ModelSchema.name == model.name)
+            ).first()
+            if existing_model is not None:
+                raise EntityExistsError(
+                    f"Unable to create model {model.name}: "
+                    "A model with this name already exists."
+                )
+
+            model_schema = ModelSchema.from_request(model)
+            session.add(model_schema)
+
+            session.commit()
+            return ModelSchema.to_model(model_schema)
+
+    def get_model(
+        self, model_name_or_id: Union[str, UUID]
+    ) -> ModelResponseModel:
+        """Get an existing model.
+
+        Args:
+            model_name_or_id: name or id of the model to be retrieved.
+
+        Raises:
+            KeyError: specified ID or name not found.
+
+        Returns:
+            The model of interest.
+        """
+        with Session(self.engine) as session:
+            model = self._get_model_schema(
+                model_name_or_id=model_name_or_id, session=session
+            )
+            if model is None:
+                raise KeyError(
+                    f"Unable to get model with ID `{model_name_or_id}`: "
+                    f"No model with this ID found."
+                )
+            return ModelSchema.to_model(model)
+
+    def list_models(
+        self,
+        model_filter_model: ModelFilterModel,
+    ) -> Page[ModelResponseModel]:
+        """Get all models by filter.
+
+        Args:
+            model_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all models.
+        """
+        with Session(self.engine) as session:
+            query = select(ModelSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ModelSchema,
+                filter_model=model_filter_model,
+            )
+
+    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a model.
+
+        Args:
+            model_name_or_id: name or id of the model to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+        with Session(self.engine) as session:
+            model = self._get_model_schema(
+                model_name_or_id=model_name_or_id, session=session
+            )
+            if model is None:
+                raise KeyError(
+                    f"Unable to delete model with ID `{model_name_or_id}`: "
+                    f"No model with this ID found."
+                )
+            session.delete(model)
+            session.commit()
+
+    def update_model(
+        self,
+        model_id: UUID,
+        model_update: ModelUpdateModel,
+    ) -> ModelResponseModel:
+        """Updates an existing model.
+
+        Args:
+            model_id: UUID of the model to be updated.
+            model_update: the Model to be updated.
+
+        Raises:
+            KeyError: specified ID not found.
+
+        Returns:
+            The updated model.
+        """
+        with Session(self.engine) as session:
+            existing_model = session.exec(
+                select(ModelSchema).where(ModelSchema.id == model_id)
+            ).first()
+
+            if not existing_model:
+                raise KeyError(f"Model with ID {model_id} not found.")
+
+            existing_model.update(model_update=model_update)
+            session.add(existing_model)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_model)
+            return existing_model.to_model()

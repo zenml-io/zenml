@@ -21,6 +21,7 @@ from zenml.constants import (
     API,
     CODE_REPOSITORIES,
     GET_OR_CREATE,
+    MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
@@ -47,6 +48,9 @@ from zenml.models import (
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -1141,4 +1145,79 @@ def list_service_connector_resources(
         connector_type=connector_type,
         resource_type=resource_type,
         resource_id=resource_id,
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + MODELS,
+    response_model=ModelResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model(
+    workspace_name_or_id: Union[str, UUID],
+    model: ModelRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelResponseModel:
+    """Create a new model.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model: The model to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if model.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating models outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_model(model)
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + MODELS,
+    response_model=Page[ModelResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_models(
+    workspace_name_or_id: Union[str, UUID],
+    model_filter_model: ModelFilterModel = Depends(
+        make_dependable(ModelFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ModelResponseModel]:
+    """Get models according to query filters.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+
+    Returns:
+        The models according to query filters.
+    """
+    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+    model_filter_model.set_scope_workspace(workspace_id)
+    return zen_store().list_models(
+        model_filter_model=model_filter_model,
     )
