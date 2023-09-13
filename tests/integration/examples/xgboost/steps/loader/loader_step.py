@@ -43,12 +43,12 @@ def data_loader() -> (
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TRAIN_SET_RAW, timeout=13).text)
-        mat_train = xgb.DMatrix(f.name)
+        mat_train = xgb.DMatrix(f.name + "?format=libsvm")
 
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TEST_SET_RAW, timeout=13).text)
-        mat_test = xgb.DMatrix(f.name)
+        mat_test = xgb.DMatrix(f.name + "?format=libsvm")
 
     return mat_train, mat_test
