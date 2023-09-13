@@ -832,6 +832,7 @@ model_crud_test_config = CrudTestConfig(
     ),
     update_model=ModelUpdateModel(
         name=sample_name("updated_sample_service_connector"),
+        description="new_description",
     ),
     filter_model=ModelFilterModel,
     entity_name="model",
