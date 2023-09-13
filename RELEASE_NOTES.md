@@ -1,5 +1,49 @@
 <!-- markdown-link-check-disable -->
 
+# 0.44.2
+
+This release contains updates for some of the most popular integrations, as well as several bug fixes and documentation improvements. 
+
+## Minor Default Behavior Changes
+* The default page size for `zenml list` commands was reduced to 20 (from 50) to speed up the runtime of such commands.
+* Simultaneous connection to local and remote ZenML servers is no longer possible since this caused several unexpected behaviors in the past.
+
+## Integration Updates
+- The `mlflow` integration now supports the newest MLflow version `2.6.0`.
+- The `evidently` integration now supports the latest Evidently version `0.4.4`.
+- The SageMaker orchestrator of the `aws` integration now supports authentication via service connectors.
+
+## What's Changed
+
+* Add `bandit` to CI for security linting by @strickvl in https://github.com/zenml-io/zenml/pull/1775
+* Add `mlstacks` compatibility check to CI by @strickvl in https://github.com/zenml-io/zenml/pull/1767
+* extend `StepContext` visibility to materializers by @avishniakov in https://github.com/zenml-io/zenml/pull/1769
+* Revert GH changes to fix colima bug in macos gh by @safoinme in https://github.com/zenml-io/zenml/pull/1779
+* Reduce CI runner count by @strickvl in https://github.com/zenml-io/zenml/pull/1777
+* Add E2E template as example by @avishniakov in https://github.com/zenml-io/zenml/pull/1766
+* Fix CI step names by @avishniakov in https://github.com/zenml-io/zenml/pull/1784
+* Add vulnerability scanner by @strickvl in https://github.com/zenml-io/zenml/pull/1776
+* Stop CI from running on push to `develop` by @strickvl in https://github.com/zenml-io/zenml/pull/1788
+* Skip update templates outside PR by @avishniakov in https://github.com/zenml-io/zenml/pull/1786
+* Fix azure service connector docs by @stefannica in https://github.com/zenml-io/zenml/pull/1778
+* fix: use k8s V1CronJob instead of V1beta1CronJob (#1781) by @francoisserra in https://github.com/zenml-io/zenml/pull/1787
+* Page limit adjustment by @bcdurak in https://github.com/zenml-io/zenml/pull/1791
+* Prevent simultaneous connection to local and remote servers by @fa9r in https://github.com/zenml-io/zenml/pull/1792
+* Update `MLflow` version to allow support for 2.6.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1782
+* Improve `ConnectionError` error message by @fa9r in https://github.com/zenml-io/zenml/pull/1783
+* Stop old MLflow services when deploying new ones by @fa9r in https://github.com/zenml-io/zenml/pull/1793
+* Prevent adding private components into shared stacks by @fa9r in https://github.com/zenml-io/zenml/pull/1794
+* Publish server helm chart as part of CI by @wjayesh in https://github.com/zenml-io/zenml/pull/1740
+* Docs on the use of ZenML-specific environment variables by @strickvl in https://github.com/zenml-io/zenml/pull/1796
+* Add support for newer Evidently versions by @fa9r in https://github.com/zenml-io/zenml/pull/1780
+* Link E2E example to docs by @avishniakov in https://github.com/zenml-io/zenml/pull/1790
+* Copy step instance before applying configuration by @schustmi in https://github.com/zenml-io/zenml/pull/1798
+* Fix AWS container registry image pushing with service connectors by @fa9r in https://github.com/zenml-io/zenml/pull/1797
+* Make Sagemaker orchestrator work with connectors by @fa9r in https://github.com/zenml-io/zenml/pull/1799
+* Add rebase Pre-requisite to PRs template by @safoinme in https://github.com/zenml-io/zenml/pull/1801
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.1...0.44.2
+
 # 0.44.1
 
 This release brings various improvements over the previous version, mainly 
