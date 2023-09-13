@@ -225,7 +225,7 @@ class DockerZenServer(ContainerService):
         try:
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
-                host="0.0.0.0",
+                host="0.0.0.0",  # nosec
                 port=self.endpoint.config.port or 8000,
                 log_level="info",
             )
