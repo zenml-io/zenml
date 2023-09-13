@@ -148,7 +148,7 @@ Alternatively, you can use
 [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) to get an even more 
 detailed view of all the log messages that were written during the execution of 
 your SageMaker pipeline. To do so, search for 'CloudWatch' in the search bar of
-your AWS terminal, navigate to 'Logs > Log groups' and open the
+your AWS console, navigate to 'Logs > Log groups' and open the
 '/aws/sagemaker/ProcessingJobs' log group. Here you will be able to see one log
 stream per step for each of your SageMaker pipeline executions:
 
