@@ -106,9 +106,10 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
             be used.
         aws_session_token: The AWS session token to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
-        aws_profile: The AWS profile name to use to authenticate to AWS. If not
-            provided, the value from the default AWS config will be used.
-        aws_region: The AWS region to use to authenticate to AWS. If not
+        aws_profile: The AWS profile to use for authentication if not using
+            service connectors or explicit credentials. If not provided, the
+            default profile will be used.
+        region: The AWS region where the processing job will be run. If not
             provided, the value from the default AWS config will be used.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
@@ -122,7 +123,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     aws_secret_access_key: Optional[str] = SecretField()
     aws_session_token: Optional[str] = SecretField()
     aws_profile: Optional[str] = None
-    aws_region: Optional[str] = None
+    region: Optional[str] = None
     bucket: Optional[str] = None
 
     @property

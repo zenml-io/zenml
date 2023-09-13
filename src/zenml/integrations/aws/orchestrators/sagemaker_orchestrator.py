@@ -183,7 +183,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 aws_access_key_id=self.config.aws_access_key_id,
                 aws_secret_access_key=self.config.aws_secret_access_key,
                 aws_session_token=self.config.aws_session_token,
-                region_name=self.config.aws_region,
+                region_name=self.config.region,
                 profile_name=self.config.aws_profile,
             )
         session = sagemaker.Session(
