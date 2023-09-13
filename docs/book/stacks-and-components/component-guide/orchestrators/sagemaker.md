@@ -103,6 +103,20 @@ You can now run any ZenML pipeline using the Sagemaker orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+If all went well, you should now see the following output:
+
+```text
+Steps can take 5-15 minutes to start running when using the Sagemaker Orchestrator.
+Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run will only show up on the ZenML dashboard once the first step has started executing on the remote infrastructure.
+```
+
+{% hint style="warning" %}
+If it is taking more than 15 minutes for your run to show up, it might be that a
+setup error occurred in SageMaker before the pipeline could be started. Checkout 
+the [Debugging SageMaker Pipelines](#debugging-sagemaker-pipelines) section for 
+more information on how to debug this.
+{% endhint %}
+
 ### Sagemaker UI
 
 Sagemaker comes with its own UI that you can use to find further details about 
@@ -118,6 +132,27 @@ Once the Studio UI has launched, click on the 'Pipeline' button on the left
 side. From there you can view the pipelines that have been launched via ZenML:
 
 ![Sagemaker Studio Pipelines](../../../.gitbook/assets/sagemakerUI.png)
+
+### Debugging SageMaker Pipelines
+
+If your SageMaker pipeline failed before the first ZenML step was started, the
+ZenML run will not show up in the ZenML dashboard. In these cases, you need to 
+[use the SageMaker UI](#sagemaker-ui) to view the respective error message and
+logs. To do so, open the corresponding pipeline in the SageMaker UI, then open
+its only execution, then click on the failed step in the pipeline graph and go
+to the 'Output' tab:
+
+![SageMaker Studio Logs](../../../.gitbook/assets/sagemaker-logs.png)
+
+Alternatively, you can use 
+[Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) to get an even more 
+detailed view of all the log messages that were written during the execution of 
+your SageMaker pipeline. To do so, search for 'CloudWatch' in the search bar of
+your AWS terminal, navigate to 'Logs > Log groups' and open the
+'/aws/sagemaker/ProcessingJobs' log group. Here you will be able to see one log
+stream per step for each of your SageMaker pipeline executions:
+
+![SageMaker CloudWatch Logs](../../../.gitbook/assets/sagemaker-cloudwatch-logs.png)
 
 ### Run pipelines on a schedule
 
