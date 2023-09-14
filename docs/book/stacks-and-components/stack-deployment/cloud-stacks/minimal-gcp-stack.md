@@ -2,7 +2,7 @@
 description: A simple guide to quickly set up a minimal stack on GCP.
 ---
 
-# Set up minimal GCP stack
+# Set up a minimal GCP stack
 
 Here's a 7-step guide to get a production-ready GCP stack.
 
@@ -18,7 +18,7 @@ If you don't plan to keep the resources that you create in this procedure, creat
 
 ### 2) Enable GCloud APIs
 
-The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen gcp project.
+The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen GCP project.
 
 * Cloud Functions API
 * Cloud Build API
@@ -33,7 +33,7 @@ The service account should have these following roles.
 * AI Platform Service Agent
 * Storage Object Admin
 
-These roles give permissions for full crud on storage objects and full permissions for compute within vertex.
+These roles give permissions for full CRUD on storage objects and full permissions for compute within VertexAI.
 
 ### 4) Create a JSON Key for your service account
 
@@ -72,7 +72,7 @@ zenml integration install gcp \
 
 #### Artifact Store
 
-Before you run anything within the zenml CLI, head on over to GCP and create a GCS bucket, in case you don't have already one that you can use. Once this is done, you can create the zenml stack component as follows:
+Before you run anything within the ZenML CLI, head on over to GCP and create a GCS bucket, in case you don't already have one that you can use. Once this is done, you can create the ZenML stack component as follows:
 
 {% tabs %}
 {% tab title="CLI" %}
