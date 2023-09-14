@@ -15,6 +15,7 @@
 
 from typing import Dict, Optional
 
+from zenml.exceptions import StepContextError
 from zenml.metadata.metadata_types import MetadataType
 from zenml.new.steps.step_context import get_step_context
 
@@ -31,14 +32,25 @@ def log_artifact_metadata(
             be omitted if there is only one output artifact.
         description: A description of the artifact.
         **kwargs: Other metadata to log.
+
+    Raises:
+        RuntimeError: If the function is called outside of a step.
+        ValueError: If the function is called outside of a step.
     """
     kwargs = kwargs or {}
 
     if description:
         kwargs["description"] = description
 
-    step_context = get_step_context()
-    step_context.add_output_metadata(output_name=output_name, **kwargs)
+    try:
+        step_context = get_step_context()
+    except StepContextError:
+        raise RuntimeError("Cannot log artifact metadata outside of a step.")
+
+    try:
+        step_context.add_output_metadata(output_name=output_name, **kwargs)
+    except StepContextError as e:
+        raise ValueError(e)
 
 
 # TODO: Do we really need this?
