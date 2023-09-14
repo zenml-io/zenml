@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
+
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
