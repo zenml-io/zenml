@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-import re
 from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
@@ -21,6 +20,7 @@ import pkg_resources
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.stack.flavor import Flavor
+from zenml.utils.integration_utils import parse_requirement
 
 logger = get_logger(__name__)
 
@@ -64,12 +64,8 @@ class Integration(metaclass=IntegrationMeta):
         """
         try:
             for r in cls.get_requirements():
-                # Extract the name and extras from the requirement string
-                match = re.match(
-                    r"([a-zA-Z0-9\-_]+)(\[[a-zA-Z0-9\-_,]+\])?", r
-                )
-                if match:
-                    name, extras = match.groups()
+                name, extras = parse_requirement(r)
+                if name:
                     dist = pkg_resources.get_distribution(name)
                     # Check if extras are specified and installed
                     if extras:

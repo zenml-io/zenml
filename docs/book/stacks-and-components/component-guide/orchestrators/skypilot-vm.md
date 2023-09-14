@@ -258,12 +258,12 @@ For additional configuration of the Skypilot orchestrator, you can pass `Skypilo
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal.
 
+**Code Example:**
+
 ```python
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotBaseOrchestratorSettings
 
 skypilot_settings = SkypilotBaseOrchestratorSettings(
-**Code Example:**
-
     cpus="2",
     memory="16",
     accelerators="V100:2",
