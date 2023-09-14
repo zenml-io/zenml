@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ModelStages lists supported stages of a Model Version."""
 
-from enum import StrEnum
+from zenml.utils.enum_utils import StrEnum
 
 
 class ModelStages(StrEnum):
