@@ -15,7 +15,7 @@ a [remote ZenML deployment scenario](/docs/book/deploying-zenml/zenml-self-hoste
 Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
-{% hint style="info" %}
+{% hint style="warning" %}
 SkyPilot VM Orchestrator is currently supported only for Python 3.8 and 3.9.
 {% endhint %}
 
