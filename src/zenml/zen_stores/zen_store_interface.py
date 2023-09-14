@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
+from zenml.model import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -1804,6 +1805,43 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def get_model_version_in_stage(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_stage: Union[str, ModelStages],
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version by stage.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_stage: desired stage of the model version to be retrieved.
+
+        Returns:
+            The model version in given stage.
+
+        Raises:
+            ValueError: if model_stage is not valid
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def get_model_version_latest(
+        self,
+        model_name_or_id: Union[str, UUID],
+    ) -> ModelVersionResponseModel:
+        """Get the latest model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+
+        Returns:
+            The latest model version.
+
+        Raises:
+            RuntimeError: specified ID or name not found.
         """
 
     @abstractmethod

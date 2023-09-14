@@ -5606,6 +5606,69 @@ class SqlZenStore(BaseZenStore):
                 )
             return ModelVersionSchema.to_model(model_version)
 
+    def get_model_version_in_stage(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_stage: Union[str, ModelStages],
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_stage: desired stage of the model version to be retrieved.
+
+        Returns:
+            The model version in given stage.
+
+        Raises:
+            ValueError: if model_stage is not valid
+            KeyError: specified ID or name not found.
+        """
+        stage = getattr(model_stage, "value", model_stage)
+        if stage not in ModelStages._members():
+            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        with Session(self.engine) as session:
+            model = self.get_model(model_name_or_id)
+            query = (
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .where(ModelVersionSchema.stage == stage)
+            )
+            model_version = session.exec(query).first()
+            if model_version is None:
+                raise KeyError(
+                    f"Unable to get model version in stage `{stage}`: "
+                    f"No model version in this stage found."
+                )
+            return ModelVersionSchema.to_model(model_version)
+
+    def get_model_version_latest(
+        self,
+        model_name_or_id: Union[str, UUID],
+    ) -> ModelVersionResponseModel:
+        """Get the latest model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+
+        Returns:
+            The latest model version.
+
+        Raises:
+            RuntimeError: specified ID or name not found.
+        """
+        with Session(self.engine) as session:
+            model = self.get_model(model_name_or_id)
+            query = (
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            )
+            model_version = session.exec(query).first()
+            if model_version is None:
+                raise RuntimeError("No model versions found.")
+            return ModelVersionSchema.to_model(model_version)
+
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilterModel,
@@ -5684,6 +5747,11 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: If there is a model version with target stage, but `force` flag is off
         """
         with Session(self.engine) as session:
+            stage = getattr(
+                model_version_update_model.stage,
+                "value",
+                model_version_update_model.stage,
+            )
             existing_model_version = session.exec(
                 select(ModelVersionSchema)
                 .where(
@@ -5702,17 +5770,14 @@ class SqlZenStore(BaseZenStore):
                     ModelVersionSchema.model_id
                     == model_version_update_model.model
                 )
-                .where(
-                    ModelVersionSchema.stage
-                    == model_version_update_model.stage.value
-                )
+                .where(ModelVersionSchema.stage == stage)
             ).first()
 
             if existing_model_version_in_target_stage is not None:
                 if not model_version_update_model.force:
                     raise RuntimeError(
                         f"Model version {existing_model_version_in_target_stage.version} is "
-                        f"in {model_version_update_model.stage.value}, but `force` flag is False."
+                        f"in {stage}, but `force` flag is False."
                     )
                 else:
                     existing_model_version_in_target_stage.update(
@@ -5725,9 +5790,7 @@ class SqlZenStore(BaseZenStore):
                     logger.info(
                         f"Model version {existing_model_version_in_target_stage.version} has been set to {ModelStages.ARCHIVED.value}."
                     )
-            existing_model_version.update(
-                model_version_update_model.stage.value
-            )
+            existing_model_version.update(stage)
             session.add(existing_model_version)
             session.commit()
             session.refresh(existing_model_version)

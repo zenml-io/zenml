@@ -208,6 +208,8 @@ def delete_model_version(
 def get_model_version(
     model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
+    stage: bool = False,
+    latest: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ModelVersionResponseModel:
     """Get a model version by name or ID.
@@ -215,10 +217,18 @@ def get_model_version(
     Args:
         model_name_or_id: The name or ID of the model containing version.
         model_version_name_or_id: The name or ID of the model version to get.
+        stage: whether model_version_name_or_id a stage name.
+        latest: whether latest version needed.
 
     Returns:
         The model version with the given name or ID.
     """
+    if stage:
+        return zen_store().get_model_version_in_stage(
+            model_name_or_id, str(model_version_name_or_id)
+        )
+    if latest:
+        return zen_store().get_model_version_latest(model_name_or_id)
     return zen_store().get_model_version(
         model_name_or_id, model_version_name_or_id
     )
