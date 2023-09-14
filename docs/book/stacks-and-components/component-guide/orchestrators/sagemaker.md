@@ -85,10 +85,12 @@ the IAM role you have created:
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your sagemaker orchestrator is by
+
+The recommended way to authenticate your SageMaker orchestrator is by
 registering an 
 [AWS Service Connector](../../auth-management/aws-service-connector.md) and
-connecting it to your sagemaker orchestrator:
+connecting it to your SageMaker orchestrator:
+
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
 zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -97,10 +99,13 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
 zenml orchestrator connect <ORCHESTRATOR_NAME> --connector <CONNECTOR_NAME>
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+
 {% endtab %}
 {% tab title="Explicit Authentication" %}
+
 Instead of creating a service connector, you can also configure your AWS
 authentication credentials directly in the orchestrator:
+
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=sagemaker \
@@ -110,14 +115,18 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
     --aws_region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+
 See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor)
 for more information on available configuration options.
+
 {% endtab %}
 {% tab title="Implicit Authentication" %}
+
 If you neither connect your orchestrator to a service connector nor configure
 credentials explicitly, ZenML will try to implicitly authenticate to AWS via
 the `default` profile in your local 
 [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=sagemaker \
@@ -125,6 +134,7 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
+
 {% endtab %}
 {% endtabs %}
 

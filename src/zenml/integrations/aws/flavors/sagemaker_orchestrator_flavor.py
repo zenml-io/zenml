@@ -90,8 +90,8 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 
     There are three ways to authenticate to AWS:
     - By connecting a `ServiceConnector` to the orchestrator,
-    - By configuring explicit AWS credentials (`aws_access_key_id`,
-        `aws_secret_access_key`, `aws_session_token`, `profile_name`, `region`),
+    - By configuring explicit AWS credentials `aws_access_key_id`,
+        `aws_secret_access_key`, and optional `aws_auth_role_arn`,
     - If none of the above are provided, unspecified credentials will be
         loaded from the default AWS config.
 
