@@ -18,7 +18,6 @@ from typing import (
     Any,
     Dict,
     Mapping,
-    NamedTuple,
     Optional,
     Sequence,
     Type,
@@ -31,6 +30,7 @@ from zenml.utils.singleton import SingletonMetaClass
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
@@ -317,7 +317,9 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         from zenml.utils import materializer_utils
 
-        materializer_classes, artifact_uri = self._get_output(output_name)
+        output = self._get_output(output_name)
+        materializer_classes = output.materializer_classes
+        artifact_uri = output.artifact_uri
 
         if custom_materializer_class:
             materializer_class = custom_materializer_class
@@ -346,9 +348,57 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         return self._get_output(output_name).artifact_uri
 
+    def get_output_metadata(
+        self, output_name: Optional[str] = None
+    ) -> Dict[str, "MetadataType"]:
+        """Returns the metadata for a given step output.
 
-class StepContextOutput(NamedTuple):
-    """Tuple containing materializer class and URI for a step output."""
+        Args:
+            output_name: Optional name of the output for which to get the
+                metadata. If no name is given and the step only has a single
+                output, the metadata of this output will be returned. If the
+                step has multiple outputs, an exception will be raised.
+
+        Returns:
+            Metadata for the given output.
+        """
+        return self._get_output(output_name).metadata or {}
+
+    def add_output_metadata(
+        self, output_name: Optional[str] = None, **metadata: "MetadataType"
+    ) -> None:
+        """Adds metadata for a given step output.
+
+        Args:
+            output_name: Optional name of the output for which to add the
+                metadata. If no name is given and the step only has a single
+                output, the metadata of this output will be added. If the
+                step has multiple outputs, an exception will be raised.
+            **metadata: The metadata to add.
+        """
+        output = self._get_output(output_name)
+        if not output.metadata:
+            output.metadata = {}
+        output.metadata.update(**metadata)
+
+
+class StepContextOutput:
+    """Represents a step output in the step context."""
 
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
+    metadata: Optional[Dict[str, "MetadataType"]] = None
+
+    def __init__(
+        self,
+        materializer_classes: Sequence[Type["BaseMaterializer"]],
+        artifact_uri: str,
+    ):
+        """Initialize the step output.
+
+        Args:
+            materializer_classes: The materializer classes for the output.
+            artifact_uri: The artifact URI for the output.
+        """
+        self.materializer_classes = materializer_classes
+        self.artifact_uri = artifact_uri
