@@ -135,22 +135,26 @@ side. From there you can view the pipelines that have been launched via ZenML:
 
 ### Debugging SageMaker Pipelines
 
-If your SageMaker pipeline failed before the first ZenML step was started, the
-ZenML run will not show up in the ZenML dashboard. In these cases, you need to 
-[use the SageMaker UI](#sagemaker-ui) to view the respective error message and
-logs. To do so, open the corresponding pipeline in the SageMaker UI, then open
-its only execution, then click on the failed step in the pipeline graph and go
-to the 'Output' tab:
+If your SageMaker pipeline encounters an error before the first ZenML step 
+starts, the ZenML run will not appear in the ZenML dashboard. In such cases, 
+use the [SageMaker UI](#sagemaker-ui) to review the error message and logs. 
+Here's how:
+* Open the corresponding pipeline in the SageMaker UI as shown in the
+[SageMaker UI Section](#sagemaker-ui),
+* Open the execution,
+* Click on the failed step in the pipeline graph,
+* Go to the 'Output' tab to see the error message or to 'Logs' to see the logs.
 
 ![SageMaker Studio Logs](../../../.gitbook/assets/sagemaker-logs.png)
 
-Alternatively, you can use 
-[Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) to get an even more 
-detailed view of all the log messages that were written during the execution of 
-your SageMaker pipeline. To do so, search for 'CloudWatch' in the search bar of
-your AWS console, navigate to 'Logs > Log groups' and open the
-'/aws/sagemaker/ProcessingJobs' log group. Here you will be able to see one log
-stream per step for each of your SageMaker pipeline executions:
+Alternatively, for a more detailed view of log messages during SageMaker
+pipeline executions, consider using 
+[Amazon CloudWatch](https://aws.amazon.com/cloudwatch/):
+* Search for 'CloudWatch' in the AWS console search bar.
+* Navigate to 'Logs > Log groups.'
+* Open the '/aws/sagemaker/ProcessingJobs' log group.
+* Here, you can find log streams for each step of your SageMaker pipeline 
+executions.
 
 ![SageMaker CloudWatch Logs](../../../.gitbook/assets/sagemaker-cloudwatch-logs.png)
 
