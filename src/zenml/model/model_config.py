@@ -161,7 +161,7 @@ class ModelConfig(ModelBaseModel):
         # else new version requested
         self.version = "running"
         mv_request = ModelVersionRequestModel.parse_obj(
-            self._get_request_params(ModelVersionRequestModel, model=model)
+            self._get_request_params(ModelVersionRequestModel, model=model.id)
         )
         mv = None
         if self.recovery:
