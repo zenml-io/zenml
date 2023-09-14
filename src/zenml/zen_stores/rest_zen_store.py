@@ -2348,6 +2348,12 @@ class RestZenStore(BaseZenStore):
             logger.debug("Authenticated to ZenML server.")
         return self._session
 
+    def clear_session(self) -> None:
+        """Clear the authentication session and any cached API tokens."""
+        self._session = None
+        self._api_token = None
+        self.config.api_token = None
+
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.
@@ -2426,8 +2432,9 @@ class RestZenStore(BaseZenStore):
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try
-            # again
-            self._session = None
+            # again. This will clear any cached token and trigger a new
+            # authentication flow.
+            self.clear_session()
             return self._handle_response(
                 self.session.request(
                     method,

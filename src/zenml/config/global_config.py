@@ -17,7 +17,6 @@ import json
 import os
 import uuid
 from pathlib import Path, PurePath
-from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -48,17 +47,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
-
-
-def generate_jwt_secret_key() -> str:
-    """Generate a random JWT secret key.
-
-    This key is used to sign and verify generated JWT tokens.
-
-    Returns:
-        A random JWT secret key.
-    """
-    return token_hex(32)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -141,7 +129,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
-    jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
@@ -177,6 +164,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
         config_values.update(**kwargs)
+
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):

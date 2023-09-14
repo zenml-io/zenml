@@ -57,7 +57,6 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
-    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import (
     LoggingLevels,
@@ -672,17 +671,6 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
-
-    @property
-    def runs_inside_server(self) -> bool:
-        """Whether the store is running inside a server.
-
-        Returns:
-            Whether the store is running inside a server.
-        """
-        if ENV_ZENML_SERVER_DEPLOYMENT_TYPE in os.environ:
-            return True
-        return False
 
     @property
     def alembic(self) -> Alembic:

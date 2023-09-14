@@ -15,14 +15,16 @@
 
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.param_functions import Form
 
 from zenml.constants import API, LOGIN, VERSION_1
+from zenml.enums import AuthScheme
 from zenml.models import UserRoleAssignmentFilterModel
 from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.utils import zen_store
+from zenml.zen_server.jwt import JWTToken, get_token_authenticator
+from zenml.zen_server.utils import server_config, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -71,55 +73,105 @@ class PasswordRequestForm:
         self.client_secret = client_secret
 
 
-@router.post(
-    LOGIN,
-    responses={401: error_response},
-)
-def token(
-    auth_form_data: PasswordRequestForm = Depends(),
-) -> Dict[str, str]:
-    """Returns an access token for the given user.
+if server_config().auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
 
-    Args:
-        auth_form_data: The authentication form data.
-
-    Returns:
-        An access token.
-
-    Raises:
-        HTTPException: 401 if not authorized to login.
-    """
-    auth_context = authenticate_credentials(
-        user_name_or_id=auth_form_data.username,
-        password=auth_form_data.password,
+    @router.post(
+        LOGIN,
+        responses={401: error_response},
     )
-    if not auth_context:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    def token(
+        response: Response,
+        auth_form_data: PasswordRequestForm = Depends(),
+    ) -> Dict[str, str]:
+        """Returns an access token for the given user.
+
+        Args:
+            response: The response object.
+            auth_form_data: The authentication form data.
+
+        Returns:
+            An access token.
+
+        Raises:
+            HTTPException: 401 if not authorized to login.
+        """
+        auth_context = authenticate_credentials(
+            user_name_or_id=auth_form_data.username,
+            password=auth_form_data.password,
         )
-    role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
-            user_id=auth_context.user.id
+        if not auth_context:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        role_assignments = zen_store().list_user_role_assignments(
+            user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
+                user_id=auth_context.user.id
+            )
         )
-    )
 
-    # TODO: This needs to happen at the sql level now
-    permissions = set().union(
-        *[
-            zen_store().get_role(ra.role.id).permissions
-            for ra in role_assignments.items
-            if ra.role is not None
-        ]
-    )
+        # TODO: This needs to happen at the sql level now
+        permissions = set().union(
+            *[
+                zen_store().get_role(ra.role.id).permissions
+                for ra in role_assignments.items
+                if ra.role is not None
+            ]
+        )
 
-    access_token = auth_context.user.generate_access_token(
-        permissions=[p.value for p in permissions]
+        access_token = get_token_authenticator().encode(
+            JWTToken(
+                user_id=auth_context.user.id,
+                permissions=[p.value for p in permissions],
+            )
+        )
+
+        config = server_config()
+
+        # Also set the access token as an HTTP only cookie in the response
+        response.set_cookie(
+            key=config.auth_cookie_name,
+            value=access_token,
+            httponly=True,
+            samesite="lax",
+            max_age=config.jwt_token_expire_minutes * 60
+            if config.jwt_token_expire_minutes
+            else None,
+            domain=config.auth_cookie_domain,
+        )
+
+        # The response of the token endpoint must be a JSON object with the
+        # following fields:
+        #
+        #   * token_type - the token type (must be "bearer" in our case)
+        #   * access_token - string containing the access token
+        return {"access_token": access_token, "token_type": "bearer"}
+
+elif server_config().auth_scheme == AuthScheme.EXTERNAL:
+
+    @router.get(
+        LOGIN,
+        responses={302: {"description": "Redirects to the external login."}},
     )
-    # The response of the token endpoint must be a JSON object with the
-    # following fields:
-    #
-    #   * token_type - the token type (must be "bearer" in our case)
-    #   * access_token - string containing the access token
-    return {"access_token": access_token, "token_type": "bearer"}
+    def external_login(
+        response: Response,
+        redirect_url: Optional[str] = None,
+    ) -> None:
+        """Redirect the user to the external authentication login endpoint.
+
+        Args:
+            response: The response object.
+            redirect_url: The URL to redirect to after login.
+        """
+        config = server_config()
+
+        assert config.external_authenticator_url is not None
+
+        # Redirect the user to the external authentication login endpoint
+        response.headers["Location"] = (
+            config.external_authenticator_url + LOGIN
+        )
+        if redirect_url:
+            response.headers["Location"] += f"?callback_url={redirect_url}"
+        response.status_code = status.HTTP_302_FOUND

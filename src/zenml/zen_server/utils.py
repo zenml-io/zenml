@@ -22,9 +22,9 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     ENV_ZENML_SERVER,
-    ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
@@ -36,10 +36,6 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
-
-
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
-
 
 _zen_store: Optional["SqlZenStore"] = None
 
@@ -80,6 +76,21 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
+
+
+_server_config: Optional[ServerConfiguration] = None
+
+
+def server_config() -> ServerConfiguration:
+    """Returns the ZenML Server configuration.
+
+    Returns:
+        The ZenML Server configuration.
+    """
+    global _server_config
+    if _server_config is None:
+        _server_config = ServerConfiguration.get_server_config()
+    return _server_config
 
 
 def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:

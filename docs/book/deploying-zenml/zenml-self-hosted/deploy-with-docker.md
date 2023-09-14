@@ -132,7 +132,7 @@ If your custom secrets store implementation requires additional configuration op
 
 These configuration options are not required for most use cases, but can be useful in certain scenarios that require mirroring the same ZenML server configuration across multiple container instances (e.g. a Kubernetes deployment with multiple replicas):
 
-*   **ZENML\_JWT\_SECRET\_KEY**: This is a secret key used to sign JWT tokens used for authentication. If not explicitly set, a random key is generated automatically by the server on startup and stored in the server's global configuration. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
+*   **ZENML\_SERVER\_JWT\_SECRET\_KEY**: This is a secret key used to sign JWT tokens used for authentication. If not explicitly set, a random key is generated automatically by the server on startup and stored in the server's global configuration. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
 
     ```python
     from secrets import token_hex

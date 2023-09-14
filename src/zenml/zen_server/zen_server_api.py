@@ -30,6 +30,7 @@ from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
 from zenml.enums import SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
+from zenml.zen_server.jwt import get_token_authenticator
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -54,7 +55,7 @@ from zenml.zen_server.routers import (
     users_endpoints,
     workspaces_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
+from zenml.zen_server.utils import initialize_zen_store, server_config
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -74,7 +75,7 @@ def relative_path(rel: str) -> str:
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
-    root_path=ROOT_URL_PATH,
+    root_path=server_config().root_url_path,
     default_response_class=ORJSONResponse,
 )
 
@@ -141,9 +142,10 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
-    # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
+    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
+    get_token_authenticator()
 
 
 app.mount(

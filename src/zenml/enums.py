@@ -194,6 +194,15 @@ class PermissionType(StrEnum):
     )
 
 
+class AuthScheme(StrEnum):
+    """The authentication scheme."""
+
+    NO_AUTH = "NO_AUTH"
+    HTTP_BASIC = "HTTP_BASIC"
+    OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
+    EXTERNAL = "OAUTH2_EXTERNAL"
+
+
 class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
