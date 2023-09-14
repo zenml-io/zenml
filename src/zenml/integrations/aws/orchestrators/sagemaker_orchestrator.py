@@ -182,10 +182,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             boto_session = boto3.Session(
                 aws_access_key_id=self.config.aws_access_key_id,
                 aws_secret_access_key=self.config.aws_secret_access_key,
-                aws_session_token=self.config.aws_session_token,
                 region_name=self.config.region,
                 profile_name=self.config.aws_profile,
             )
+            # If a role ARN is provided for authentication, assume the role
+            if self.config.aws_auth_role_arn:
+                sts = boto_session.client("sts")
+                response = sts.assume_role(
+                    RoleArn=self.config.aws_auth_role_arn,
+                    RoleSessionName="zenml-sagemaker-orchestrator",
+                )
+                credentials = response["Credentials"]
+                boto_session = boto3.Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=self.config.region,
+                )
         session = sagemaker.Session(
             boto_session=boto_session, default_bucket=self.config.bucket
         )
