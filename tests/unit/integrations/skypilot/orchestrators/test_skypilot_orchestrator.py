@@ -73,8 +73,9 @@ def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
     )
 
 
+@pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
 def test_skypilot_orchestrator_local_stack(
-    local_artifact_store, s3_artifact_store, remote_container_registry
+    provider, local_artifact_store, s3_artifact_store, remote_container_registry
 ) -> None:
     """Test the SkyPilot VM orchestrator with remote stacks."""
 
