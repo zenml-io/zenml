@@ -2554,7 +2554,7 @@ def test_model_version_delete_not_found():
         with pytest.raises(KeyError):
             zs.delete_model_version(
                 model_name_or_id=model.id,
-                model_version_name="1.0.0",
+                model_version_name_or_id="1.0.0",
             )
 
 
@@ -2571,7 +2571,7 @@ def test_model_version_delete_found():
         )
         zs.delete_model_version(
             model_name_or_id=model.id,
-            model_version_name="great one",
+            model_version_name_or_id="great one",
         )
         with pytest.raises(KeyError):
             zs.get_model_version(
