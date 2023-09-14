@@ -12,68 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ArtifactType, ExecutionStatus
-from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.enums import ExecutionStatus
 from zenml.models.page_model import Page
 from zenml.orchestrators import publish_utils
-
-
-def test_publish_output_artifacts(clean_client):
-    """Test that `register_output_artifacts()` registers new artifacts."""
-    artifact_1 = ArtifactRequestModel(
-        uri="some/uri/abc/",
-        materializer="some_materializer",
-        data_type="np.ndarray",
-        type=ArtifactType.DATA,
-        name="some_name",
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
-    )
-    artifact_2 = ArtifactRequestModel(
-        uri="some/uri/def/",
-        materializer="some_other_materializer",
-        data_type="some data type",
-        type=ArtifactType.DATA,
-        name="some_name",
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
-    )
-    artifact_3 = ArtifactRequestModel(
-        uri="some/uri/ghi/",
-        materializer="some_model_materializer",
-        data_type="some model type",
-        type=ArtifactType.MODEL,
-        name="some_name",
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
-    )
-
-    assert len(clean_client.list_artifacts()) == 0
-    return_val = publish_utils.publish_output_artifacts({"output": artifact_1})
-    assert len(clean_client.list_artifacts()) == 1
-    assert isinstance(return_val, dict)
-    assert len(return_val) == 1
-    assert isinstance(return_val["output"], UUID)
-
-    return_val = publish_utils.publish_output_artifacts({})
-    assert len(clean_client.list_artifacts()) == 1
-
-    assert return_val == {}
-    return_val = publish_utils.publish_output_artifacts(
-        {
-            "arias_data": artifact_2,
-            "arias_model": artifact_3,
-        }
-    )
-    assert len(clean_client.list_artifacts()) == 3
-    assert isinstance(return_val, dict)
-    assert len(return_val) == 2
-    assert isinstance(return_val["arias_data"], UUID)
-    assert isinstance(return_val["arias_model"], UUID)
 
 
 def test_publishing_a_successful_step_run(mocker):
@@ -192,29 +137,6 @@ def test_updating_the_pipeline_run_status(
         _, call_kwargs = mock_update_run.call_args
         call_kwargs["run_id"] == sample_pipeline_run.id
         call_kwargs["run_update"].status == new_status
-
-
-def test_publish_output_artifact_metadata(mocker):
-    """Unit test for `publish_output_artifact_metadata`."""
-    mock_create_run = mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
-    )
-    output_artifact_ids = {
-        "output_name": uuid4(),
-        "output_name_2": uuid4(),
-    }
-    output_artifact_metadata = {
-        "output_name": {
-            "key": "value",
-            "key_2": "value_2",
-        },
-        "output_name_2": {"pi": 3.14},
-    }
-    publish_utils.publish_output_artifact_metadata(
-        output_artifact_ids=output_artifact_ids,
-        output_artifact_metadata=output_artifact_metadata,
-    )
-    assert mock_create_run.call_count == 3  # once per key-value pair
 
 
 def test_publish_pipeline_run_metadata(mocker):
