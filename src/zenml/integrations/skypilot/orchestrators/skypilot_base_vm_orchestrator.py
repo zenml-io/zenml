@@ -123,6 +123,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
         connector = self.get_connector()
+        assert connector is not None
         connector._configure_local_client()
 
     def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
