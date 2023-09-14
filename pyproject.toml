@@ -51,6 +51,7 @@ httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
+psutil = ">=5.0.0"
 pydantic = "<1.11, >=1.9.0"
 pymysql = { version = "~1.0.2" }
 pyparsing = "<3,>=2.4.0"
@@ -58,17 +59,18 @@ python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 python-terraform = { version = "^0.10.1" }
 pyyaml = ">=6.0.1"
-rich = { extras = ["jupyter"], version = "^12.0.0" }
+rich = {extras = ["jupyter"], version = ">=12.0.0"}
 sqlalchemy_utils = "0.38.3"
 sqlmodel = "~0.0.8"
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.75,<0.100", optional = true }
-uvicorn = { extras = ["standard"], version = "~0.17.5", optional = true }
-python-multipart = { version = "~0.0.5", optional = true }
-python-jose = { extras = ["cryptography"], version = "~3.3.0", optional = true }
-fastapi-utils = { version = "~0.2.1", optional = true }
-orjson = { version = "~3.8.3", optional = true }
+uvicorn = { extras = ["standard"], version = ">=0.17.5",  optional = true}
+python-multipart = { version = "~0.0.5", optional = true}
+python-jose = { extras = ["cryptography"], version = "~3.3.0", optional = true}
+fastapi-utils = { version = "~0.2.1", optional = true}
+orjson = { version = "~3.8.3", optional = true}
+Jinja2 = { version = "*", optional = true}
 
 # optional dependencies for stack recipes
 
@@ -165,6 +167,7 @@ server = [
     "python-jose",
     "fastapi-utils",
     "orjson",
+    "Jinja2"
 ]
 templates = ["copier", "jinja2-time", "black", "ruff"]
 secrets-aws = ["boto3"]
