@@ -57,7 +57,11 @@ from zenml.zen_stores.schemas.team_schemas import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
-from zenml.zen_stores.schemas.model_schemas import ModelSchema
+from zenml.zen_stores.schemas.model_schemas import (
+    ModelSchema,
+    ModelVersionSchema,
+    ModelVersionLinkSchema,
+)
 
 __all__ = [
     "ArtifactSchema",
@@ -93,4 +97,6 @@ __all__ = [
     "UserSchema",
     "LogsSchema",
     "ModelSchema",
+    "ModelVersionSchema",
+    "ModelVersionLinkSchema",
 ]

@@ -45,6 +45,7 @@ from zenml.models import (
     ModelFilterModel,
     ModelRequestModel,
     ModelUpdateModel,
+    ModelVersionRequestModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineDeploymentFilterModel,
@@ -509,6 +510,72 @@ class ServiceConnectorContext:
                 pass
 
 
+class ModelVersionContext:
+    def __init__(self, create_version: bool = False):
+        self.workspace = "workspace"
+        self.user = "su"
+        self.model = "su_model"
+        self.model_version = "2.0.0"
+        self.del_ws = False
+        self.del_user = False
+        self.del_model = False
+        self.del_mv = False
+
+        self.create_version = create_version
+
+    def __enter__(self):
+        zs = Client().zen_store
+        try:
+            ws = zs.get_workspace(self.workspace)
+        except KeyError:
+            ws = zs.create_workspace(
+                WorkspaceRequestModel(name=self.workspace)
+            )
+            self.del_ws = True
+        try:
+            user = zs.get_user(self.user)
+        except KeyError:
+            user = zs.create_user(UserRequestModel(name=self.user))
+            self.del_user = True
+        try:
+            model = zs.get_model(self.model)
+        except KeyError:
+            model = zs.create_model(
+                ModelRequestModel(
+                    name=self.model, user=user.id, workspace=ws.id
+                )
+            )
+            self.del_model = True
+        if self.create_version:
+            try:
+                mv = zs.get_model_version(self.model, self.model_version)
+            except KeyError:
+                mv = zs.create_model_version(
+                    ModelVersionRequestModel(
+                        user=user.id,
+                        workspace=ws.id,
+                        model=model.id,
+                        version=self.model_version,
+                    )
+                )
+                self.del_mv = True
+        if self.create_version:
+            return mv
+        else:
+            return model
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        zs = Client().zen_store
+        if self.del_mv:
+            zs.delete_model_version(self.model, self.model_version)
+        if self.del_model:
+            zs.delete_model(self.model)
+        if self.del_user:
+            zs.delete_user(self.user)
+        if self.del_ws:
+            zs.delete_workspace(self.workspace)
+
+
 class CatClawMarks(AuthenticationConfig):
     """Cat claw marks authentication credentials."""
 
@@ -832,6 +899,7 @@ model_crud_test_config = CrudTestConfig(
     ),
     update_model=ModelUpdateModel(
         name=sample_name("updated_sample_service_connector"),
+        description="new_description",
     ),
     filter_model=ModelFilterModel,
     entity_name="model",
