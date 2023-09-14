@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
-
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -145,7 +144,8 @@ class ModelVersionResponseModel(
             force: whether to force archiving of current model version in target stage or raise.
 
         Returns:
-            Dictionary of Model Objects as model_version_name_or_id"""
+            Dictionary of Model Objects as model_version_name_or_id
+        """
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
