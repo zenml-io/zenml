@@ -512,8 +512,9 @@ class ServiceConnectorContext:
 
 class ModelVersionContext:
     def __init__(self, create_version: bool = False):
-        self.workspace = "workspace"
-        self.user = "su"
+        client = Client()
+        self.workspace = client.active_workspace.id
+        self.user = client.active_user.id
         self.model = "su_model"
         self.model_version = "2.0.0"
         self.del_ws = False
