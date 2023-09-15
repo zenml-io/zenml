@@ -512,7 +512,10 @@ class ServiceConnectorContext:
 
 class ModelVersionContext:
     def __init__(
-        self, create_version: bool = False, create_artifact: bool = False
+        self,
+        create_version: bool = False,
+        create_artifacts: int = 0,
+        create_prs: int = 0,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
@@ -524,8 +527,10 @@ class ModelVersionContext:
         self.del_model = False
 
         self.create_version = create_version
-        self.create_artifact = create_artifact
-        self.artifact = None
+        self.create_artifacts = create_artifacts
+        self.artifacts = []
+        self.create_prs = create_prs
+        self.prs = []
 
     def __enter__(self):
         zs = Client().zen_store
@@ -563,26 +568,45 @@ class ModelVersionContext:
                     )
                 )
 
-        if self.create_artifact:
-            artifact = zs.create_artifact(
-                ArtifactRequestModel(
-                    name=sample_name("sample_artifact"),
-                    data_type="module.class",
-                    materializer="module.class",
-                    type=ArtifactType.DATA,
-                    uri="",
-                    user=user.id,
-                    workspace=ws.id,
+        for _ in range(self.create_artifacts):
+            self.artifacts.append(
+                zs.create_artifact(
+                    ArtifactRequestModel(
+                        name=sample_name("sample_artifact"),
+                        data_type="module.class",
+                        materializer="module.class",
+                        type=ArtifactType.DATA,
+                        uri="",
+                        user=user.id,
+                        workspace=ws.id,
+                    )
                 )
             )
-            self.artifact = artifact
-            if self.create_version:
-                return mv, self.artifact
+        for _ in range(self.create_prs):
+            self.prs.append(
+                zs.create_run(
+                    PipelineRunRequestModel(
+                        id=uuid.uuid4(),
+                        name=sample_name("sample_pipeline_run"),
+                        status="running",
+                        config=PipelineConfiguration(name="aria_pipeline"),
+                        user=user.id,
+                        workspace=ws.id,
+                    )
+                )
+            )
+        if self.create_version:
+            if self.create_artifacts:
+                return mv, self.artifacts
+            if self.create_prs:
+                return mv, self.prs
             else:
-                return model, self.artifact
-        else:
-            if self.create_version:
                 return mv
+        else:
+            if self.create_artifacts:
+                return model, self.artifacts
+            if self.create_prs:
+                return model, self.prs
             else:
                 return model
 
@@ -592,8 +616,10 @@ class ModelVersionContext:
             zs.delete_model_version(self.model, self.model_version)
         if self.del_model:
             zs.delete_model(self.model)
-        if self.create_artifact:
-            zs.delete_artifact(self.artifact.id)
+        for artifact in self.artifacts:
+            zs.delete_artifact(artifact.id)
+        for run in self.prs:
+            zs.delete_run(run.id)
         if self.del_user:
             zs.delete_user(self.user)
         if self.del_ws:

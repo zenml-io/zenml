@@ -253,49 +253,45 @@ class ModelVersionUpdateModel(BaseModel):
     )
 
 
-class ModelVersionLinkBaseModel(BaseModel):
-    """Model version links base model."""
+class ModelVersionArtifactBaseModel(BaseModel):
+    """Model version links with artifact base model."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         title="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    artifact: Optional[UUID]
-    pipeline_run: Optional[UUID]
+    artifact: UUID
     model: UUID
     model_version: UUID
     is_model_object: bool = False
     is_deployment: bool = False
 
-    @validator("model_version")
-    def _validate_links(
-        cls, model_version: UUID, values: Dict[str, Any]
-    ) -> UUID:
-        artifact = values.get("artifact", None)
-        pipeline_run = values.get("pipeline_run", None)
-        if (artifact is None and pipeline_run is None) or (
-            artifact is not None and pipeline_run is not None
-        ):
+    @validator("is_deployment")
+    def _validate_is_deployment(
+        cls, is_deployment: bool, values: Dict[str, Any]
+    ) -> bool:
+        is_model_object = values.get("is_model_object", False)
+        if is_model_object and is_deployment:
             raise ValueError(
-                "You must provide only `artifact` or only `pipeline_run`."
+                "Artifact cannot be a model object and deployment at the same time."
             )
-        return model_version
+        return is_deployment
 
 
-class ModelVersionLinkRequestModel(
-    ModelVersionLinkBaseModel, WorkspaceScopedRequestModel
+class ModelVersionArtifactRequestModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedRequestModel
 ):
-    """Model version links request model."""
+    """Model version link with artifact request model."""
 
 
-class ModelVersionLinkResponseModel(
-    ModelVersionLinkBaseModel, WorkspaceScopedResponseModel
+class ModelVersionArtifactResponseModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version links response model."""
+    """Model version link with artifact response model."""
 
 
-class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
-    """Model version links filter model."""
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
 
     model_id: Union[str, UUID] = Field(
         description="The name or ID of the Model",
@@ -316,45 +312,47 @@ class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
     only_artifacts: Optional[bool] = False
     only_model_objects: Optional[bool] = False
     only_deployments: Optional[bool] = False
-    only_pipeline_runs: Optional[bool] = False
-
-    @validator("only_pipeline_runs")
-    def _validate_flags(
-        cls, only_pipeline_runs: bool, values: Dict[str, Any]
-    ) -> bool:
-        s = int(only_pipeline_runs)
-        s += int(values.get("only_artifacts", False))
-        s += int(values.get("only_model_objects", False))
-        s += int(values.get("only_deployments", False))
-        if s > 1:
-            raise ValueError(
-                "Only one of the selection flags can be used at once."
-            )
-        return only_pipeline_runs
 
 
-class ModelConfigBaseModel(BaseModel):
-    """Model Config base model."""
+class ModelVersionPipelineRunBaseModel(BaseModel):
+    """Model version links with pipeline run base model."""
 
-    pass
+    name: Optional[str] = Field(
+        title="The name of the pipeline run inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_run: UUID
+    model: UUID
+    model_version: UUID
 
 
-class ModelConfigRequestModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedRequestModel,
+class ModelVersionPipelineRunRequestModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedRequestModel
 ):
-    """Model Config request model."""
-
-    pass
+    """Model version link with pipeline run request model."""
 
 
-class ModelConfigResponseModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedResponseModel,
+class ModelVersionPipelineRunResponseModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model Config response model."""
+    """Model version link with pipeline run response model."""
 
-    pass
+
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
+
+    model_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model",
+    )
+    model_version_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model Version",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
 
 
 class ModelBaseModel(BaseModel):

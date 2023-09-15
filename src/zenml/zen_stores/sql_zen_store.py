@@ -99,10 +99,13 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
-    ModelVersionLinkFilterModel,
-    ModelVersionLinkRequestModel,
-    ModelVersionLinkResponseModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
@@ -202,7 +205,8 @@ from zenml.zen_stores.schemas import (
     FlavorSchema,
     IdentitySchema,
     ModelSchema,
-    ModelVersionLinkSchema,
+    ModelVersionArtifactSchema,
+    ModelVersionPipelineRunSchema,
     ModelVersionSchema,
     NamedSchema,
     PipelineBuildSchema,
@@ -5734,162 +5738,145 @@ class SqlZenStore(BaseZenStore):
 
             return existing_model_version.to_model()
 
-    #######################
-    # Model Versions Links
-    #######################
+    ###########################
+    # Model Versions Artifacts
+    ###########################
 
-    def create_model_version_link(
-        self, model_version_link: ModelVersionLinkRequestModel
-    ) -> ModelVersionLinkResponseModel:
+    def create_model_version_artifact_link(
+        self, model_version_artifact_link: ModelVersionArtifactRequestModel
+    ) -> ModelVersionArtifactResponseModel:
         """Creates a new model version link.
 
         Args:
-            model_version_link: the Model Version Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link to be created.
 
         Returns:
-            The newly created model version link.
+            The newly created model version to artifact link.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a link with the given name already exists.
         """
         with Session(self.engine) as session:
-            existing_model_version_link = session.exec(
-                select(ModelVersionLinkSchema)
+            existing_model_version_artifact_link = session.exec(
+                select(ModelVersionArtifactSchema)
                 .where(
-                    ModelVersionLinkSchema.model_version_id
-                    == model_version_link.model_version
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version_artifact_link.model_version
                 )
-                .where(ModelVersionLinkSchema.name == model_version_link.name)
+                .where(
+                    or_(
+                        ModelVersionArtifactSchema.name
+                        == model_version_artifact_link.name,
+                        ModelVersionArtifactSchema.artifact_id
+                        == model_version_artifact_link.artifact,
+                    )
+                )
             ).first()
-            if existing_model_version_link is not None:
+            if existing_model_version_artifact_link is not None:
                 raise EntityExistsError(
-                    f"Unable to create model version link {existing_model_version_link.name}: "
-                    f"A model version link with this name already exists in {model_version_link.model_version} model version."
+                    f"Unable to create model version link {existing_model_version_artifact_link.name}: "
+                    f"A model version link with this name already exists in {existing_model_version_artifact_link.model_version} model version."
                 )
 
-            model_version_link_schema = ModelVersionLinkSchema.from_request(
-                model_version_link
+            if model_version_artifact_link.name is None:
+                model_version_artifact_link.name = self.get_artifact(
+                    model_version_artifact_link.artifact
+                ).name
+
+            model_version_artifact_link_schema = (
+                ModelVersionArtifactSchema.from_request(
+                    model_version_artifact_link
+                )
             )
-            session.add(model_version_link_schema)
+            session.add(model_version_artifact_link_schema)
 
             session.commit()
-            mvl = ModelVersionLinkSchema.to_model(model_version_link_schema)
+            mvl = ModelVersionArtifactSchema.to_model(
+                model_version_artifact_link_schema
+            )
         return mvl
 
-    def list_model_version_links(
+    def list_model_version_artifact_links(
         self,
-        model_version_link_filter_model: ModelVersionLinkFilterModel,
-    ) -> Page[ModelVersionLinkResponseModel]:
-        """Get all model version links by filter.
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get all model version to artifact links by filter.
 
         Args:
-            model_version_link_filter_model: All filter parameters including pagination
+            model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
-            A page of all model version links.
+            A page of all model version to artifact links.
         """
         with Session(self.engine) as session:
             # issue: https://github.com/tiangolo/sqlmodel/issues/109
-            if model_version_link_filter_model.only_artifacts:
+            if model_version_artifact_link_filter_model.only_artifacts:
                 query = (
-                    select(ModelVersionLinkSchema)
+                    select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionLinkSchema.is_model_object
+                        ModelVersionArtifactSchema.is_model_object
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionLinkSchema.is_deployment
+                        ModelVersionArtifactSchema.is_deployment
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionLinkSchema.pipeline_run
-                        == None  # noqa: E712, E711
-                    )
-                    .where(
-                        ModelVersionLinkSchema.artifact
+                        ModelVersionArtifactSchema.artifact
                         != None  # noqa: E712, E711
                     )
                 )
-            elif model_version_link_filter_model.only_deployments:
+            elif model_version_artifact_link_filter_model.only_deployments:
                 query = (
-                    select(ModelVersionLinkSchema)
-                    .where(ModelVersionLinkSchema.is_deployment)
+                    select(ModelVersionArtifactSchema)
+                    .where(ModelVersionArtifactSchema.is_deployment)
                     .where(
-                        ModelVersionLinkSchema.is_model_object
+                        ModelVersionArtifactSchema.is_model_object
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionLinkSchema.pipeline_run
-                        == None  # noqa: E712, E711
-                    )
-                    .where(
-                        ModelVersionLinkSchema.artifact
+                        ModelVersionArtifactSchema.artifact
                         != None  # noqa: E712, E711
                     )
                 )
-            elif model_version_link_filter_model.only_model_objects:
+            elif model_version_artifact_link_filter_model.only_model_objects:
                 query = (
-                    select(ModelVersionLinkSchema)
-                    .where(ModelVersionLinkSchema.is_model_object)
+                    select(ModelVersionArtifactSchema)
+                    .where(ModelVersionArtifactSchema.is_model_object)
                     .where(
-                        ModelVersionLinkSchema.is_deployment
+                        ModelVersionArtifactSchema.is_deployment
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionLinkSchema.pipeline_run
-                        == None  # noqa: E712, E711
-                    )
-                    .where(
-                        ModelVersionLinkSchema.artifact
+                        ModelVersionArtifactSchema.artifact
                         != None  # noqa: E712, E711
-                    )
-                )
-            elif model_version_link_filter_model.only_pipeline_runs:
-                query = (
-                    select(ModelVersionLinkSchema)
-                    .where(
-                        ModelVersionLinkSchema.is_model_object
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionLinkSchema.is_deployment
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionLinkSchema.pipeline_run
-                        != None  # noqa: E712, E711
-                    )
-                    .where(
-                        ModelVersionLinkSchema.artifact
-                        == None  # noqa: E712, E711
                     )
                 )
             else:
-                query = select(ModelVersionLinkSchema)
-            model_version_link_filter_model.only_artifacts = None
-            model_version_link_filter_model.only_deployments = None
-            model_version_link_filter_model.only_model_objects = None
-            model_version_link_filter_model.only_pipeline_runs = None
+                query = select(ModelVersionArtifactSchema)
+            model_version_artifact_link_filter_model.only_artifacts = None
+            model_version_artifact_link_filter_model.only_deployments = None
+            model_version_artifact_link_filter_model.only_model_objects = None
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=ModelVersionLinkSchema,
-                filter_model=model_version_link_filter_model,
+                table=ModelVersionArtifactSchema,
+                filter_model=model_version_artifact_link_filter_model,
             )
 
-    def delete_model_version_link(
+    def delete_model_version_artifact_link(
         self,
         model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
-        model_version_link_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
-        """Deletes a model version link.
+        """Deletes a model version to artifact link.
 
         Args:
             model_name_or_id: name or ID of the model containing the model version.
             model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_link_name_or_id: name or ID of the model version link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -5899,26 +5886,154 @@ class SqlZenStore(BaseZenStore):
             model_version = self.get_model_version(
                 model_name_or_id, model_version_name_or_id
             )
-            query = select(ModelVersionLinkSchema).where(
-                ModelVersionLinkSchema.model_version_id == model_version.id
+            query = select(ModelVersionArtifactSchema).where(
+                ModelVersionArtifactSchema.model_version_id == model_version.id
             )
             try:
-                UUID(str(model_version_link_name_or_id))
+                UUID(str(model_version_artifact_link_name_or_id))
                 query = query.where(
-                    ModelVersionLinkSchema.id == model_version_link_name_or_id
+                    ModelVersionArtifactSchema.id
+                    == model_version_artifact_link_name_or_id
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionLinkSchema.name
-                    == model_version_link_name_or_id
+                    ModelVersionArtifactSchema.name
+                    == model_version_artifact_link_name_or_id
                 )
 
-            model_version_link = session.exec(query).first()
-            if model_version_link is None:
+            model_version_artifact_link = session.exec(query).first()
+            if model_version_artifact_link is None:
                 raise KeyError(
-                    f"Unable to delete model version link with name `{model_version_link_name_or_id}`: "
+                    f"Unable to delete model version link with name `{model_version_artifact_link_name_or_id}`: "
                     f"No model version link with this name found."
                 )
 
-            session.delete(model_version_link)
+            session.delete(model_version_artifact_link)
+            session.commit()
+
+    ###############################
+    # Model Versions Pipeline Runs
+    ###############################
+
+    def create_model_version_pipeline_run_link(
+        self,
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    ) -> ModelVersionPipelineRunResponseModel:
+        """Creates a new model version to pipeline run link.
+
+        Args:
+            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+
+        Returns:
+            The newly created model version to pipeline run link.
+
+        Raises:
+            EntityExistsError: If a link with the given ID already exists.
+        """
+        with Session(self.engine) as session:
+            existing_model_version_pipeline_run_link = session.exec(
+                select(ModelVersionPipelineRunSchema)
+                .where(
+                    ModelVersionPipelineRunSchema.model_version_id
+                    == model_version_pipeline_run_link.model_version
+                )
+                .where(
+                    or_(
+                        ModelVersionPipelineRunSchema.pipeline_run_id
+                        == model_version_pipeline_run_link.pipeline_run,
+                        ModelVersionPipelineRunSchema.name
+                        == model_version_pipeline_run_link.name,
+                    )
+                )
+            ).first()
+            if existing_model_version_pipeline_run_link is not None:
+                raise EntityExistsError(
+                    f"Unable to create model version link {existing_model_version_pipeline_run_link.name}: "
+                    f"A model version link with this name already exists in {existing_model_version_pipeline_run_link.model_version} model version."
+                )
+
+            if model_version_pipeline_run_link.name is None:
+                model_version_pipeline_run_link.name = self.get_run(
+                    model_version_pipeline_run_link.pipeline_run
+                ).name
+
+            model_version_pipeline_run_link_schema = (
+                ModelVersionPipelineRunSchema.from_request(
+                    model_version_pipeline_run_link
+                )
+            )
+            session.add(model_version_pipeline_run_link_schema)
+
+            session.commit()
+            mvl = ModelVersionPipelineRunSchema.to_model(
+                model_version_pipeline_run_link_schema
+            )
+        return mvl
+
+    def list_model_version_pipeline_run_links(
+        self,
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        with Session(self.engine) as session:
+            return self.filter_and_paginate(
+                session=session,
+                query=select(ModelVersionPipelineRunSchema),
+                table=ModelVersionPipelineRunSchema,
+                filter_model=model_version_pipeline_run_link_filter_model,
+            )
+
+    def delete_model_version_pipeline_run_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to pipeline run link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+
+        Raises:
+            KeyError: specified ID not found.
+        """
+        with Session(self.engine) as session:
+            self.get_model(model_name_or_id)
+            model_version = self.get_model_version(
+                model_name_or_id, model_version_name_or_id
+            )
+            query = select(ModelVersionPipelineRunSchema).where(
+                ModelVersionPipelineRunSchema.model_version_id
+                == model_version.id
+            )
+            try:
+                UUID(str(model_version_pipeline_run_link_name_or_id))
+                query = query.where(
+                    ModelVersionPipelineRunSchema.id
+                    == model_version_pipeline_run_link_name_or_id
+                )
+            except ValueError:
+                query = query.where(
+                    ModelVersionPipelineRunSchema.name
+                    == model_version_pipeline_run_link_name_or_id
+                )
+
+            model_version_pipeline_run_link = session.exec(query).first()
+            if model_version_pipeline_run_link is None:
+                raise KeyError(
+                    f"Unable to delete model version link with name `{model_version_pipeline_run_link_name_or_id}`: "
+                    f"No model version link with this name found."
+                )
+
+            session.delete(model_version_pipeline_run_link)
             session.commit()
