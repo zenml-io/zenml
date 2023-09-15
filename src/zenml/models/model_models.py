@@ -80,7 +80,7 @@ class ModelVersionResponseModel(
     )
     pipeline_run_ids: Dict[str, UUID] = Field(
         title="Pipeline runs linked to the model version",
-        default=[],
+        default={},
     )
 
     @property
