@@ -4021,7 +4021,7 @@ class SqlZenStore(BaseZenStore):
 
     def create_run_metadata(
         self, run_metadata: RunMetadataRequestModel
-    ) -> RunMetadataResponseModel:
+    ) -> List[RunMetadataResponseModel]:
         """Creates run metadata.
 
         Args:
@@ -4030,11 +4030,25 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
+        return_value: List[RunMetadataResponseModel] = []
         with Session(self.engine) as session:
-            run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
-            session.add(run_metadata_schema)
-            session.commit()
-            return run_metadata_schema.to_model()
+            for key, value in run_metadata.values.items():
+                type_ = run_metadata.types[key]
+                run_metadata_schema = RunMetadataSchema(
+                    workspace_id=run_metadata.workspace,
+                    user_id=run_metadata.user,
+                    pipeline_run_id=run_metadata.pipeline_run_id,
+                    step_run_id=run_metadata.step_run_id,
+                    artifact_id=run_metadata.artifact_id,
+                    stack_component_id=run_metadata.stack_component_id,
+                    key=key,
+                    value=json.dumps(value),
+                    type=type_,
+                )
+                session.add(run_metadata_schema)
+                session.commit()
+                return_value.append(run_metadata_schema.to_model())
+        return return_value
 
     def list_run_metadata(
         self,

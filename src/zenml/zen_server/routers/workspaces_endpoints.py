@@ -834,7 +834,7 @@ def get_or_create_pipeline_run(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUN_METADATA,
-    response_model=RunMetadataResponseModel,
+    response_model=List[RunMetadataResponseModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -844,7 +844,7 @@ def create_run_metadata(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> RunMetadataResponseModel:
+) -> List[RunMetadataResponseModel]:
     """Creates run metadata.
 
     Args:
