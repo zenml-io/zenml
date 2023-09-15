@@ -511,7 +511,9 @@ class ServiceConnectorContext:
 
 
 class ModelVersionContext:
-    def __init__(self, create_version: bool = False):
+    def __init__(
+        self, create_version: bool = False, create_artifact: bool = False
+    ):
         client = Client()
         self.workspace = client.active_workspace.id
         self.user = client.active_user.id
@@ -520,9 +522,10 @@ class ModelVersionContext:
         self.del_ws = False
         self.del_user = False
         self.del_model = False
-        self.del_mv = False
 
         self.create_version = create_version
+        self.create_artifact = create_artifact
+        self.artifact = None
 
     def __enter__(self):
         zs = Client().zen_store
@@ -559,18 +562,38 @@ class ModelVersionContext:
                         version=self.model_version,
                     )
                 )
-                self.del_mv = True
-        if self.create_version:
-            return mv
+
+        if self.create_artifact:
+            artifact = zs.create_artifact(
+                ArtifactRequestModel(
+                    name=sample_name("sample_artifact"),
+                    data_type="module.class",
+                    materializer="module.class",
+                    type=ArtifactType.DATA,
+                    uri="",
+                    user=user.id,
+                    workspace=ws.id,
+                )
+            )
+            self.artifact = artifact
+            if self.create_version:
+                return mv, self.artifact
+            else:
+                return model, self.artifact
         else:
-            return model
+            if self.create_version:
+                return mv
+            else:
+                return model
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         zs = Client().zen_store
-        if self.del_mv:
+        if self.create_version:
             zs.delete_model_version(self.model, self.model_version)
         if self.del_model:
             zs.delete_model(self.model)
+        if self.create_artifact:
+            zs.delete_artifact(self.artifact.id)
         if self.del_user:
             zs.delete_user(self.user)
         if self.del_ws:
