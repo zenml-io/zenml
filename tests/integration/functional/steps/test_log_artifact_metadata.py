@@ -81,7 +81,9 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def log_artifact_metadata_raises_error_if_output_name_unclear(clean_client):
+def test_log_artifact_metadata_raises_error_if_output_name_unclear(
+    clean_client,
+):
     """Test that `log_artifact_metadata` raises an error if the output name is unclear."""
 
     @pipeline
