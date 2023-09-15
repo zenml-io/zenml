@@ -332,7 +332,6 @@ plugins = ["pydantic.mypy"]
 strict = true
 namespace_packages = true
 show_error_codes = true
-warn_unused_ignores = false
 
 # temporary fix for python 3.8 https://github.com/apache/airflow/discussions/19006
 # remove once the issue is solved in airflow
@@ -412,6 +411,7 @@ module = [
     "pyngrok.*",
     "cloudpickle.*",
     "mlstacks.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
