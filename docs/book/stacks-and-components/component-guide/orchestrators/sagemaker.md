@@ -80,7 +80,7 @@ zenml integration install aws s3
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be
   able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
-There are three ways how you can authenticate your orchestrator and link it to
+There are three ways you can authenticate your orchestrator and link it to
 the IAM role you have created:
 
 {% tabs %}
