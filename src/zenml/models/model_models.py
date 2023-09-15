@@ -78,23 +78,10 @@ class ModelVersionResponseModel(
         title="Deployments linked to the model version",
         default={},
     )
-    pipeline_run_ids: List[UUID] = Field(
+    pipeline_run_ids: Dict[str, UUID] = Field(
         title="Pipeline runs linked to the model version",
         default=[],
     )
-
-    @staticmethod
-    def _fetch_artifacts_from_list(
-        artifacts: Dict[str, UUID]
-    ) -> Dict[str, ArtifactResponseModel]:
-        from zenml.client import Client
-
-        if artifacts:
-            return {
-                name: Client().get_artifact(a) for name, a in artifacts.items()
-            }
-        else:
-            return {}
 
     @property
     def model_objects(self) -> Dict[str, ArtifactResponseModel]:
@@ -103,7 +90,12 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Model Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self.model_object_ids)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.model_object_ids.items()
+        }
 
     @property
     def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
@@ -112,7 +104,12 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Artifact Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self.artifact_object_ids)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.artifact_object_ids.items()
+        }
 
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
@@ -121,18 +118,78 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Deployments as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self.deployment_ids)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.deployment_ids.items()
+        }
 
     @property
-    def pipeline_runs(self) -> List[PipelineRunResponseModel]:
+    def pipeline_runs(self) -> Dict[str, PipelineRunResponseModel]:
         """Get all pipeline runs linked to this version.
 
         Returns:
-            List of Pipeline Runs as PipelineRunResponseModel
+            Dictionary of Pipeline Runs as PipelineRunResponseModel
         """
         from zenml.client import Client
 
-        return [Client().get_pipeline_run(pr) for pr in self.pipeline_run_ids]
+        return {
+            name: Client().get_pipeline_run(pr)
+            for name, pr in self.pipeline_run_ids.items()
+        }
+
+    def get_model_object(self, name: str) -> ArtifactResponseModel:
+        """Get model object linked to this version.
+
+        Args:
+            name: The name of the model object to retrieve.
+
+        Returns:
+            Model Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.model_object_ids[name])
+
+    def get_artifact_object(self, name: str) -> ArtifactResponseModel:
+        """Get artifact linked to this version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+
+        Returns:
+            Artifact Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.artifact_object_ids[name])
+
+    def get_deployment(self, name: str) -> ArtifactResponseModel:
+        """Get deployment linked to this version.
+
+        Args:
+            name: The name of the deployment to retrieve.
+
+        Returns:
+            Deployment as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.deployment_ids[name])
+
+    def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
+        """Get pipeline run linked to this version.
+
+        Args:
+            name: The name of the pipeline run to retrieve.
+
+        Returns:
+            PipelineRun as PipelineRunResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
         self, stage: ModelStages, force: bool = False

@@ -2915,12 +2915,19 @@ class TestModelVersionLink:
                 ArtifactResponseModel,
             )
             assert isinstance(
-                mv.pipeline_runs[0],
+                mv.pipeline_runs["link4"],
                 PipelineRunResponseModel,
             )
 
-            assert mv.pipeline_runs[0].id == pipeline_run.id
+            assert mv.pipeline_runs["link4"].id == pipeline_run.id
             assert mv.model_objects["link2"].id == artifact.id
+
+            assert mv.get_model_object("link2") == mv.model_objects["link2"]
+            assert (
+                mv.get_artifact_object("link1") == mv.artifact_objects["link1"]
+            )
+            assert mv.get_deployment("link3") == mv.deployments["link3"]
+            assert mv.get_pipeline_run("link4") == mv.pipeline_runs["link4"]
 
             if pr:
                 zs.delete_run(pipeline_run.id)
