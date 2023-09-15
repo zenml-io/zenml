@@ -22,7 +22,6 @@ from zenml.new.steps.step_context import get_step_context
 
 def log_artifact_metadata(
     output_name: Optional[str] = None,
-    description: Optional[str] = None,  # TODO: Do we really need this?
     **kwargs: MetadataType,
 ) -> None:
     """Log artifact metadata.
@@ -30,17 +29,15 @@ def log_artifact_metadata(
     Args:
         output_name: The output name of the artifact to log metadata for. Can
             be omitted if there is only one output artifact.
-        description: A description of the artifact.
         **kwargs: Other metadata to log.
 
     Raises:
         RuntimeError: If the function is called outside of a step.
-        ValueError: If the function is called outside of a step.
+        ValueError: If no output name is provided and there is more than one
+            output or if the output name is does not exist.
     """
-    kwargs = kwargs or {}
-
-    if description:
-        kwargs["description"] = description
+    if not kwargs:
+        return
 
     try:
         step_context = get_step_context()
@@ -71,13 +68,14 @@ def log_model_object_metadata(
         hyperparameters: The hyperparameters to log.
         **kwargs: Other metadata to log.
     """
+    if description:
+        kwargs["description"] = description
     if metrics:
         kwargs["metrics"] = metrics
     if hyperparameters:
         kwargs["hyperparameters"] = hyperparameters
     log_artifact_metadata(
         output_name=output_name,
-        description=description,
         **kwargs,
     )
 
@@ -104,6 +102,8 @@ def log_deployment_metadata(
         deployer_ui_url: The deployer UI URL of the deployment.
         **kwargs: Other metadata to log.
     """
+    if description:
+        kwargs["description"] = description
     if predict_url:
         kwargs["predict_url"] = predict_url
     if explain_url:
@@ -115,6 +115,5 @@ def log_deployment_metadata(
 
     log_artifact_metadata(
         output_name=output_name,
-        description=description,
         **kwargs,
     )
