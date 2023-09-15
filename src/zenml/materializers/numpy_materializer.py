@@ -151,7 +151,7 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the histogram to.
             arr: The numpy array of which to save the histogram.
         """
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # type: ignore
 
         plt.hist(arr)
         with fileio.open(output_path, "wb") as f:
@@ -183,7 +183,7 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the image to.
             arr: The numpy array to save.
         """
-        from matplotlib.image import imsave
+        from matplotlib.image import imsave  # type: ignore
 
         with fileio.open(output_path, "wb") as f:
             imsave(f, arr)
