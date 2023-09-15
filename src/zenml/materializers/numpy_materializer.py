@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 import numpy as np
 
 from zenml.enums import ArtifactType, VisualizationType
-from zenml.environment import Environment
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -152,11 +151,7 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the histogram to.
             arr: The numpy array of which to save the histogram.
         """
-        # matplotlib is only typed under some 3.11 versions
-        if Environment().python_version() < "3.11":
-            import matplotlib.pyplot as plt  # type: ignore
-        else:
-            import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt
 
         plt.hist(arr)
         with fileio.open(output_path, "wb") as f:
@@ -188,11 +183,7 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the image to.
             arr: The numpy array to save.
         """
-        # matplotlib is only typed under some 3.11 versions
-        if Environment().python_version() < "3.11":
-            from matplotlib.image import imsave  # type: ignore
-        else:
-            from matplotlib.image import imsave
+        from matplotlib.image import imsave
 
         with fileio.open(output_path, "wb") as f:
             imsave(f, arr)
