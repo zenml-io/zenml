@@ -153,7 +153,7 @@ def test_publish_pipeline_run_metadata(mocker):
         pipeline_run_id=pipeline_run_id,
         pipeline_run_metadata=pipeline_run_metadata,
     )
-    assert mock_create_run.call_count == 3  # once per key-value pair
+    assert mock_create_run.call_count == 2  # once per run
 
 
 def test_publish_step_run_metadata(mocker):
@@ -170,4 +170,4 @@ def test_publish_step_run_metadata(mocker):
         step_run_id=step_run_id,
         step_run_metadata=step_run_metadata,
     )
-    assert mock_create_run.call_count == 3  # once per key-value pair
+    assert mock_create_run.call_count == 2  # once per run
