@@ -80,15 +80,63 @@ zenml integration install aws s3
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be
   able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
-We can then register the orchestrator and use it in our active stack:
+There are three ways you can authenticate your orchestrator and link it to
+the IAM role you have created:
+
+{% tabs %}
+{% tab title="Authentication via Service Connector" %}
+
+The recommended way to authenticate your SageMaker orchestrator is by
+registering an 
+[AWS Service Connector](../../auth-management/aws-service-connector.md) and
+connecting it to your SageMaker orchestrator:
+
+```shell
+zenml service-connector register <CONNECTOR_NAME> --type aws -i
+zenml orchestrator register <ORCHESTRATOR_NAME> \
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN>
+zenml orchestrator connect <ORCHESTRATOR_NAME> --connector <CONNECTOR_NAME>
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+
+{% endtab %}
+{% tab title="Explicit Authentication" %}
+
+Instead of creating a service connector, you can also configure your AWS
+authentication credentials directly in the orchestrator:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=sagemaker --execution_role=<YOUR_ROLE_ARN>
-
-# Register and activate a stack with the new orchestrator
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN> \ 
+    --aws_access_key_id=...
+    --aws_secret_access_key=...
+    --aws_region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+
+See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor)
+for more information on available configuration options.
+
+{% endtab %}
+{% tab title="Implicit Authentication" %}
+
+If you neither connect your orchestrator to a service connector nor configure
+credentials explicitly, ZenML will try to implicitly authenticate to AWS via
+the `default` profile in your local 
+[AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+```shell
+zenml orchestrator register <ORCHESTRATOR_NAME> \
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN>
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+python run.py  # Authenticates with `default` profile in `~/.aws/config`
+```
+
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
@@ -100,7 +148,7 @@ more about how ZenML builds these images and how you can customize them.
 You can now run any ZenML pipeline using the Sagemaker orchestrator:
 
 ```shell
-python file_that_runs_a_zenml_pipeline.py
+python run.py
 ```
 
 If all went well, you should now see the following output:
@@ -211,7 +259,7 @@ how to
 specify settings in general.
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
+the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
 .
 
 #### S3 data access in ZenML steps
