@@ -1703,6 +1703,9 @@ class ZenStoreInterface(ABC):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod

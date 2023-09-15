@@ -13,35 +13,76 @@
 #  permissions and limitations under the License.
 from unittest import mock
 
+import pytest
+
 from zenml.client import Client
-from zenml.model import ModelConfig
-from zenml.models import ModelRequestModel
+from zenml.model import ModelConfig, ModelStages
+from zenml.models import ModelRequestModel, ModelVersionRequestModel
+
+MODEL_NAME = "super_model"
+
+
+class ModelContext:
+    def __init__(
+        self,
+        create_model: bool = True,
+        model_version: str = None,
+        stage: str = None,
+    ):
+        client = Client()
+        self.workspace = client.active_workspace.id
+        self.user = client.active_user.id
+        self.create_model = create_model
+        self.model_version = model_version
+        self.stage = stage
+
+    def __enter__(self):
+        zs = Client().zen_store
+        if self.create_model:
+            model = zs.create_model(
+                ModelRequestModel(
+                    name=MODEL_NAME,
+                    user=self.user,
+                    workspace=self.workspace,
+                )
+            )
+            if self.model_version is not None:
+                mv = zs.create_model_version(
+                    ModelVersionRequestModel(
+                        model=model.id,
+                        version=self.model_version,
+                        user=self.user,
+                        workspace=self.workspace,
+                    )
+                )
+                if self.stage is not None:
+                    mv.set_stage(self.stage)
+                return model, mv
+            return model
+        return None
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        zs = Client().zen_store
+        try:
+            zs.delete_model(MODEL_NAME)
+        except KeyError:
+            pass
 
 
 class TestModelConfig:
     def test_model_created_with_warning(self):
-        try:
-            mc = ModelConfig(name="super_model")
+        with ModelContext(create_model=False):
+            mc = ModelConfig(name=MODEL_NAME)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
                 model = mc.get_or_create_model()
                 logger.assert_called_once()
-            assert model.name == "super_model"
-        finally:
-            Client().zen_store.delete_model("super_model")
+            assert model.name == MODEL_NAME
 
     def test_model_exists(self):
-        c = Client()
-        try:
-            model = c.zen_store.create_model(
-                ModelRequestModel(
-                    name="super_model",
-                    user=c.active_user.id,
-                    workspace=c.active_workspace.id,
-                )
-            )
-            mc = ModelConfig(name="super_model")
+        with ModelContext() as model:
+            mc = ModelConfig(name=MODEL_NAME)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
@@ -49,19 +90,127 @@ class TestModelConfig:
                 logger.assert_not_called()
             assert model.name == model2.name
             assert model.id == model2.id
-        finally:
-            c.zen_store.delete_model("super_model")
 
     def test_model_create_model_and_version(self):
-        c = Client()
-        try:
-            mc = ModelConfig(name="super_model", create_new_model_version=True)
+        with ModelContext(create_model=False):
+            mc = ModelConfig(name=MODEL_NAME, create_new_model_version=True)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
             assert mv.version == "running"
-            assert mv.model.name == "super_model"
-        finally:
-            c.zen_store.delete_model("super_model")
+            assert mv.model.name == MODEL_NAME
+
+    def test_model_fetch_model_and_version_by_number(self):
+        with ModelContext(model_version="1.0.0") as (model, mv):
+            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            with mock.patch(
+                "zenml.model.model_config.logger.warning"
+            ) as logger:
+                mv_test = mc.get_or_create_model_version()
+                logger.assert_not_called()
+            assert mv_test.id == mv.id
+            assert mv_test.model.name == model.name
+
+    def test_model_fetch_model_and_version_by_number_not_found(self):
+        with ModelContext():
+            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            with pytest.raises(KeyError):
+                mc.get_or_create_model_version()
+
+    def test_model_fetch_model_and_version_by_stage(self):
+        with ModelContext(
+            model_version="1.0.0", stage=ModelStages.PRODUCTION
+        ) as (model, mv):
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            with mock.patch(
+                "zenml.model.model_config.logger.warning"
+            ) as logger:
+                mv_test = mc.get_or_create_model_version()
+                logger.assert_not_called()
+            assert mv_test.id == mv.id
+            assert mv_test.model.name == model.name
+
+    def test_model_fetch_model_and_version_by_stage_not_found(self):
+        with ModelContext(model_version="1.0.0"):
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            with pytest.raises(KeyError):
+                mc.get_or_create_model_version()
+
+    def test_model_fetch_model_and_version_by_stage_as_string_fails_and_warns(
+        self,
+    ):
+        with ModelContext(model_version="1.0.0", stage=ModelStages.PRODUCTION):
+            with mock.patch(
+                "zenml.model.model_config.logger.warning"
+            ) as logger:
+                mc = ModelConfig(
+                    name=MODEL_NAME,
+                    version=ModelStages.PRODUCTION.value,
+                )
+                logger.assert_called_once()
+
+            with pytest.raises(KeyError):
+                mc.get_or_create_model_version()
+
+    def test_init_create_new_version_with_version_fails(self):
+        with pytest.raises(ValueError):
+            ModelConfig(
+                name=MODEL_NAME,
+                version=ModelStages.PRODUCTION,
+                create_new_model_version=True,
+            )
+
+        mc = ModelConfig(
+            name=MODEL_NAME,
+            create_new_model_version=True,
+        )
+        assert mc.name == MODEL_NAME
+        assert mc.create_new_model_version
+        assert mc.version is None
+
+    def test_init_recovery_without_create_new_version_warns(self):
+        with mock.patch("zenml.model.model_config.logger.warning") as logger:
+            ModelConfig(name=MODEL_NAME, recovery=True)
+            logger.assert_called_once()
+        with mock.patch("zenml.model.model_config.logger.warning") as logger:
+            ModelConfig(
+                name=MODEL_NAME,
+                recovery=True,
+                create_new_model_version=True,
+            )
+            logger.assert_not_called()
+
+    def test_init_stage_logic(self):
+        with mock.patch("zenml.model.model_config.logger.warning") as logger:
+            mc = ModelConfig(
+                name=MODEL_NAME,
+                version=ModelStages.PRODUCTION.value,
+            )
+            logger.assert_called_once()
+            assert mc.version == ModelStages.PRODUCTION.value
+            assert mc._stage is None
+
+        mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+        assert mc.version == ModelStages.PRODUCTION
+        assert mc._stage == ModelStages.PRODUCTION.value
+
+    def test_recovery_flow(self):
+        with ModelContext():
+            mc = ModelConfig(
+                name=MODEL_NAME,
+                create_new_model_version=True,
+                recovery=True,
+            )
+            mv1 = mc.get_or_create_model_version()
+            del mc
+
+            mc = ModelConfig(
+                name=MODEL_NAME,
+                create_new_model_version=True,
+                recovery=True,
+            )
+            mv2 = mc.get_or_create_model_version()
+
+            assert mv1 == mv2

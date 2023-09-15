@@ -40,6 +40,11 @@ class ModelConfig(ModelBaseModel):
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
 
+    class Config:
+        """Configuration of Pydantic."""
+
+        smart_union = True
+
     version: Optional[Union[str, ModelStages]] = Field(
         default=None,
         description="Model version is optional and points model context to a specific version or stage. It can be a version number, stage, ",
@@ -69,6 +74,17 @@ class ModelConfig(ModelBaseModel):
                     "Using `recovery` flag without `create_new_model_version=True` makes no effect"
                 )
         return recovery
+
+    @validator("version")
+    def _validate_version(
+        cls, version: Union[str, ModelStages]
+    ) -> Union[str, ModelStages]:
+        if isinstance(version, str) and version in ModelStages._members():
+            logger.warning(
+                f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
+                "model version by its' stage make sure to pass in instance of `ModelStages`."
+            )
+        return version
 
     @property
     def _stage(self) -> Optional[str]:
