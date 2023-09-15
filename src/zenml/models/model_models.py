@@ -44,22 +44,6 @@ class ModelVersionBaseModel(BaseModel):
         title="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    _model_objects: Dict[str, UUID] = Field(
-        title="Model Objects linked to the model version",
-        default={},
-    )
-    _artifact_objects: Dict[str, UUID] = Field(
-        title="Artifacts linked to the model version",
-        default={},
-    )
-    _deployments: Dict[str, UUID] = Field(
-        title="Deployments linked to the model version",
-        default={},
-    )
-    _pipeline_runs: List[UUID] = Field(
-        title="Pipeline runs linked to the model version",
-        default=[],
-    )
 
 
 class ModelVersionRequestModel(
@@ -82,6 +66,22 @@ class ModelVersionResponseModel(
     model: "ModelResponseModel" = Field(
         title="The model containing version",
     )
+    model_object_ids: Dict[str, UUID] = Field(
+        title="Model Objects linked to the model version",
+        default={},
+    )
+    artifact_object_ids: Dict[str, UUID] = Field(
+        title="Artifacts linked to the model version",
+        default={},
+    )
+    deployment_ids: Dict[str, UUID] = Field(
+        title="Deployments linked to the model version",
+        default={},
+    )
+    pipeline_run_ids: List[UUID] = Field(
+        title="Pipeline runs linked to the model version",
+        default=[],
+    )
 
     @staticmethod
     def _fetch_artifacts_from_list(
@@ -103,7 +103,7 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Model Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._model_objects)
+        return self._fetch_artifacts_from_list(self.model_object_ids)
 
     @property
     def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
@@ -112,7 +112,7 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Artifact Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._artifact_objects)
+        return self._fetch_artifacts_from_list(self.artifact_object_ids)
 
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
@@ -121,7 +121,7 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Deployments as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._deployments)
+        return self._fetch_artifacts_from_list(self.deployment_ids)
 
     @property
     def pipeline_runs(self) -> List[PipelineRunResponseModel]:
@@ -132,7 +132,7 @@ class ModelVersionResponseModel(
         """
         from zenml.client import Client
 
-        return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
+        return [Client().get_pipeline_run(pr) for pr in self.pipeline_run_ids]
 
     def set_stage(
         self, stage: ModelStages, force: bool = False

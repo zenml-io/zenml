@@ -51,6 +51,7 @@ from zenml.exceptions import (
 from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
     ArtifactFilterModel,
+    ArtifactResponseModel,
     ComponentFilterModel,
     ComponentUpdateModel,
     ModelVersionFilterModel,
@@ -60,6 +61,7 @@ from zenml.models import (
     ModelVersionUpdateModel,
     PipelineRunFilterModel,
     PipelineRunRequestModel,
+    PipelineRunResponseModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -2889,6 +2891,36 @@ class TestModelVersionLink:
                 )
             )
             assert len(mvls) == 1 and mvls[0].name == "link4"
+
+            mv = zs.get_model_version(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+            )
+
+            assert len(mv.model_object_ids) == 1
+            assert len(mv.artifact_object_ids) == 1
+            assert len(mv.deployment_ids) == 1
+            assert len(mv.pipeline_run_ids) == 1
+
+            assert isinstance(
+                mv.model_objects["link2"],
+                ArtifactResponseModel,
+            )
+            assert isinstance(
+                mv.artifact_objects["link1"],
+                ArtifactResponseModel,
+            )
+            assert isinstance(
+                mv.deployments["link3"],
+                ArtifactResponseModel,
+            )
+            assert isinstance(
+                mv.pipeline_runs[0],
+                PipelineRunResponseModel,
+            )
+
+            assert mv.pipeline_runs[0].id == pipeline_run.id
+            assert mv.model_objects["link2"].id == artifact.id
 
             if pr:
                 zs.delete_run(pipeline_run.id)
