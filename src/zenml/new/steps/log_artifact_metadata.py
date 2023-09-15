@@ -29,7 +29,7 @@ def log_artifact_metadata(
     Args:
         output_name: The output name of the artifact to log metadata for. Can
             be omitted if there is only one output artifact.
-        **kwargs: Other metadata to log.
+        **kwargs: Metadata to log.
 
     Raises:
         RuntimeError: If the function is called outside of a step.
@@ -50,7 +50,6 @@ def log_artifact_metadata(
         raise ValueError(e)
 
 
-# TODO: Do we really need this?
 def log_model_object_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
@@ -80,7 +79,6 @@ def log_model_object_metadata(
     )
 
 
-# TODO: Do we really need this?
 def log_deployment_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
