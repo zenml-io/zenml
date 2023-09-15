@@ -83,23 +83,6 @@ def list_models(
     )
 
 
-@router.delete(
-    "/{model_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model(
-    model_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Delete a model by name or ID.
-
-    Args:
-        model_name_or_id: The name or ID of the model to delete.
-    """
-    zen_store().delete_model(model_name_or_id)
-
-
 @router.get(
     "/{model_name_or_id}",
     response_model=ModelResponseModel,
@@ -147,6 +130,23 @@ def update_model(
     )
 
 
+@router.delete(
+    "/{model_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_model(
+    model_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete a model by name or ID.
+
+    Args:
+        model_name_or_id: The name or ID of the model to delete.
+    """
+    zen_store().delete_model(model_name_or_id)
+
+
 #################
 # Model Versions
 #################
@@ -175,27 +175,6 @@ def list_model_versions(
     """
     return zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Delete a model by name or ID.
-
-    Args:
-        model_name_or_id: The name or ID of the model containing version.
-        model_version_name_or_id: The name or ID of the model version to delete.
-    """
-    zen_store().delete_model_version(
-        model_name_or_id, model_version_name_or_id
     )
 
 
@@ -247,6 +226,27 @@ def update_model_version(
     return zen_store().update_model_version(
         model_version_id=model_version_id,
         model_version_update_model=model_version_update_model,
+    )
+
+
+@router.delete(
+    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_model_version(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete a model by name or ID.
+
+    Args:
+        model_name_or_id: The name or ID of the model containing version.
+        model_version_name_or_id: The name or ID of the model version to delete.
+    """
+    zen_store().delete_model_version(
+        model_name_or_id, model_version_name_or_id
     )
 
 
