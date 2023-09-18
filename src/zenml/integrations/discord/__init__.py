@@ -40,6 +40,7 @@ class DiscordIntegration(Integration):
             List of new flavors defined by the Discord integration.
         """
         from zenml.integrations.discord.flavors import DiscordAlerterFlavor
+
         return [DiscordAlerterFlavor]
 
 
