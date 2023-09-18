@@ -1305,7 +1305,6 @@ def list_workspace_model_versions(
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
 
-
     Returns:
         The model versions according to query filters.
     """

@@ -351,7 +351,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
     def from_request(
         cls, model_version_artifact_request: ModelVersionArtifactRequestModel
     ) -> "ModelVersionArtifactSchema":
-        """Convert an `ModelVersionArtifactRequestModel` to an `ModelVersionArtifactSchema`.
+        """Convert an `ModelVersionArtifactRequestModel` to a `ModelVersionArtifactSchema`.
 
         Args:
             model_version_artifact_request: The request link to convert.

@@ -350,7 +350,7 @@ def list_model_version_pipeline_run_links(
 
     Args:
         model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            filtering
+            and filtering
 
     Returns:
         The model version to pipeline run links according to query filters.
