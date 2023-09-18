@@ -40,3 +40,43 @@ def test_parse_requirement():
     requirement = "my_package-1[tests]"
     expected_output = ("my_package-1", "[tests]")
     assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 1: Empty string
+    requirement = ""
+    expected_output = (None, None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 2: Just extras without name
+    requirement = "[extra]"
+    expected_output = (None, None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 3: Only digits
+    requirement = "123"
+    expected_output = ("123", None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 5: Non-alphanumeric characters in extras
+    requirement = "package[extra!]"
+    expected_output = ("package", None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 6: Spaces in name
+    requirement = "package name"
+    expected_output = (None, None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Edge Case 7: Spaces in extras
+    requirement = "package[extra 1]"
+    expected_output = (None, None)
+    assert parse_requirement(requirement) == expected_output
+
+    # Test case 8: Multiple extras
+    requirement = "package[extra1,extra2]"
+    expected_output = ("package", "[extra1,extra2]")
+    assert parse_requirement(requirement) == expected_output
+
+    # Test case 9: Leading and trailing whitespaces
+    requirement = " package "
+    expected_output = (None, None)
+    assert parse_requirement(requirement) == expected_output

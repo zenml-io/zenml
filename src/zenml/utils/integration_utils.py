@@ -26,8 +26,8 @@ def parse_requirement(requirement: str) -> Tuple[Optional[str], Optional[str]]:
         A tuple of name and extras.
     """
     if match := re.match(
-        r"([a-zA-Z0-9\-_]+)(\[[a-zA-Z0-9\-_,]+\])?", requirement
+        r"([a-zA-Z0-9\-_]+)(?![^\[]*\s)(\[[a-zA-Z0-9\-_,]+\])?", requirement
     ):
         name, extras = match.groups()
-        return name, extras
+        return (None, None) if " " in requirement else (name, extras)
     return None, None

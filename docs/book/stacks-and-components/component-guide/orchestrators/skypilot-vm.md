@@ -248,17 +248,17 @@ For additional configuration of the Skypilot orchestrator, you can pass `Skypilo
 * `accelerators`: The accelerators required. If a string, must be a string of the form `'V100'` or `'V100:2'`, where the `:2` indicates that the task requires 2 V100 GPUs. If a dict, must be a dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
 * `accelerator_args`: Accelerator-specific arguments. For example, `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
 * `use_spot`: Whether to use spot instances. If None, defaults to False.
-* `spot_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption.
-* `region`: The region to use.
-* `zone`: The zone to use.
+* `spot_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption. Read more about the available strategies [here](https://skypilot.readthedocs.io/en/latest/reference/api.html?highlight=instance_type#resources)
+* `region`: The cloud region to use.
+* `zone`: The cloud zone to use within the region.
 * `image_id`: The image ID to use. If a string, must be a string of the image id from the cloud, such as AWS: `'ami-1234567890abcdef0'`, GCP: `'projects/my-project-id/global/images/my-image-name'`; Or, a image tag provided by SkyPilot, such as AWS: `'skypilot:gpu-ubuntu-2004'`. If a dict, must be a dict mapping from region to image ID.
 * `disk_size`: The size of the OS disk in GiB.
 * `disk_tier`: The disk performance tier to use. If None, defaults to `'medium'`.
-* `cluster_name`: Name of the cluster to create/reuse. If None, auto-generate a name.
+* `cluster_name`: Name of the cluster to create/reuse. If None, auto-generate a name. SkyPilot uses term `cluster` to refer to a group or a single VM that are provisioned to execute the task. The cluster name is used to identify the cluster and to determine whether to reuse an existing cluster or create a new one.
 * `retry_until_up`: Whether to retry launching the cluster until it is up.
 * `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag is equivalent to running `sky.launch(..., detach_run=True, ...)` and then `sky.autostop(idle_minutes=<minutes>)`. If not set, the cluster will not be autostopped.
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
-* `stream_logs`: If True, show the logs in the terminal.
+* `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 
 **Code Example:**
 
