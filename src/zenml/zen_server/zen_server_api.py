@@ -28,9 +28,8 @@ from starlette.responses import FileResponse
 import zenml
 from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
-from zenml.enums import SourceContextTypes
+from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
-from zenml.zen_server.jwt import get_token_authenticator
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -145,7 +144,6 @@ def initialize() -> None:
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
-    get_token_authenticator()
 
 
 app.mount(
@@ -218,7 +216,12 @@ app.include_router(artifacts_endpoints.router)
 app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(users_endpoints.activation_router)
+
+# When the auth scheme is set to EXTERNAL, users cannot be managed via the
+# API.
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
+    app.include_router(users_endpoints.activation_router)
+
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)

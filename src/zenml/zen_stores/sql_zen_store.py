@@ -970,9 +970,23 @@ class SqlZenStore(BaseZenStore):
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
-
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
+        model.id = self.get_deployment_id()
+
+        return model
+
+    def get_deployment_id(self) -> UUID:
+        """Get the ID of the deployment.
+
+        Returns:
+            The ID of the deployment.
+
+        Raises:
+            KeyError: If the deployment ID could not be loaded from the
+                database.
+        """
+        # Fetch the deployment ID from the database
         with Session(self.engine) as session:
             identity = session.exec(select(IdentitySchema)).first()
 
@@ -980,8 +994,7 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(
                     "The deployment ID could not be loaded from the database."
                 )
-            model.id = identity.id
-        return model
+            return identity.id
 
     # ------
     # Stacks

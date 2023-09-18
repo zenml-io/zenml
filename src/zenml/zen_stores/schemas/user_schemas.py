@@ -15,6 +15,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
+from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
@@ -55,6 +56,7 @@ class UserSchema(NamedSchema, table=True):
     activation_token: Optional[str] = Field(nullable=True)
     hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
+    external_user_id: Optional[UUID] = Field(nullable=True)
 
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
@@ -108,6 +110,7 @@ class UserSchema(NamedSchema, table=True):
             active=model.active,
             password=model.create_hashed_password(),
             activation_token=model.create_hashed_activation_token(),
+            external_user_id=model.external_user_id,
         )
 
     def update(self, user_update: UserUpdateModel) -> "UserSchema":
@@ -149,6 +152,7 @@ class UserSchema(NamedSchema, table=True):
         if _block_recursion:
             return UserResponseModel(
                 id=self.id,
+                external_user_id=self.external_user_id,
                 name=self.name,
                 active=self.active,
                 email_opted_in=self.email_opted_in,
@@ -161,6 +165,7 @@ class UserSchema(NamedSchema, table=True):
         else:
             return UserResponseModel(
                 id=self.id,
+                external_user_id=self.external_user_id,
                 name=self.name,
                 active=self.active,
                 email_opted_in=self.email_opted_in,

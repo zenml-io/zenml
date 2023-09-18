@@ -25,6 +25,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
@@ -123,6 +124,10 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         default="",
         title="The email address associated with the account.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
 
@@ -268,15 +273,19 @@ class UserFilterModel(BaseFilterModel):
     )
     email: Optional[str] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Email of the user",
     )
     active: Optional[Union[bool, str]] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Whether the user is active",
     )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Whether the user has opted in to emails",
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
 
@@ -313,6 +322,10 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
     )
     activation_token: Optional[str] = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
     class Config:

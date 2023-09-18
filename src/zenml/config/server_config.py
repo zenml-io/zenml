@@ -59,19 +59,23 @@ class ServerConfiguration(BaseModel):
         jwt_token_expire_minutes: The expiration time of JWT tokens in minutes.
             If not specified, generated JWT tokens will not be set to expire.
         jwt_secret_key: The secret key used to sign and verify JWT tokens. If
-            not specified, a random secret key is generated. If `jwks_uri` is
-            specified, this value is ignored.
-        jwks_uri: The URI of the JWKS endpoint. Used to retrieve the public
-            keys used to verify JWT tokens. If not specified, the value in
-            `jwt_secret_key` is used instead.
-        external_authenticator_url: The URL of the external authenticator
-            service to use with the `EXTERNAL` authentication scheme.
+            not specified, a random secret key is generated.
         auth_cookie_name: The name of the http-only cookie used to store the JWT
             token. If not specified, the cookie name is set to a value computed
             from the ZenML server ID.
         auth_cookie_domain: The domain of the http-only cookie used to store the
             JWT token. If not specified, the cookie will be valid for the
             domain where the ZenML server is running.
+        external_login_url: The login URL of an external authenticator service
+            to use with the `EXTERNAL` authentication scheme.
+        external_logout_url: The logout URL of an external authenticator service
+            to use with the `EXTERNAL` authentication scheme.
+        external_user_info_url: The user info URL of an external authenticator
+            service to use with the `EXTERNAL` authentication scheme.
+        external_cookie_name: The name of the http-only cookie used to store the
+            bearer token used to authenticate with the external authenticator
+            service. Must be specified if the `EXTERNAL` authentication scheme
+            is used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -83,10 +87,13 @@ class ServerConfiguration(BaseModel):
     jwt_token_leeway_seconds: int = DEFAULT_ZENML_JWT_TOKEN_LEEWAY
     jwt_token_expire_minutes: Optional[int] = None
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
-    jwks_uri: Optional[str] = None
-    external_authenticator_url: Optional[str] = None
     auth_cookie_name: str
     auth_cookie_domain: Optional[str] = None
+
+    external_login_url: Optional[str] = None
+    external_logout_url: Optional[str] = None
+    external_user_info_url: Optional[str] = None
+    external_cookie_name: Optional[str] = None
 
     @root_validator(pre=True)
     def _validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -103,19 +110,32 @@ class ServerConfiguration(BaseModel):
         """
         if values.get("auth_scheme") == AuthScheme.EXTERNAL:
             # If the authentication scheme is set to `EXTERNAL`, the
-            # external authenticator URL must be specified.
-            if not values.get("external_authenticator_url"):
+            # external authenticator URLs must be specified.
+            if (
+                not values.get("external_login_url")
+                or not values.get("external_logout_url")
+                or not values.get("external_user_info_url")
+            ):
                 raise ValueError(
-                    "The external authenticator URL must be specified when "
-                    "using the EXTERNAL authentication scheme."
+                    "The external login, logout and user info authenticator "
+                    "URLs must be specified when using the EXTERNAL "
+                    "authentication scheme."
                 )
 
             # If the authentication scheme is set to `EXTERNAL`, the
-            # JWT secret key or JWKS URI must be specified.
-            if not values.get("jwt_secret_key") and not values.get("jwks_uri"):
+            # JWT secret key must be explicitly specified.
+            if not values.get("jwt_secret_key"):
                 raise ValueError(
-                    "Either the JWT secret key or the JWKS URI must be "
-                    "specified when using the EXTERNAL authentication scheme."
+                    "The JWT secret key must be explicitly configured "
+                    "when using the EXTERNAL authentication scheme."
+                )
+
+            # If the authentication scheme is set to `EXTERNAL`, the
+            # external cookie name must be specified.
+            if not values.get("external_cookie_name"):
+                raise ValueError(
+                    "The external cookie name must be specified when "
+                    "using the EXTERNAL authentication scheme."
                 )
 
         if values.get("auth_scheme") in [
@@ -125,15 +145,17 @@ class ServerConfiguration(BaseModel):
         ] and not values.get("auth_cookie_name"):
             from zenml.config.global_config import GlobalConfiguration
 
+            server_id = GlobalConfiguration().zen_store.get_deployment_id()
+
             # If the authentication scheme is set to `OAUTH2_PASSWORD_BEARER`
             # (default) or `EXTERNAL`, an the name of the authentication cookie
             # is not specified, it will be set to a value computed from the
             # ZenML server ID.
-            values["auth_cookie_name"] = cls._get_default_auth_cookie_name()
+            values["auth_cookie_name"] = f"zenml-server-{server_id}"
 
             # If the issuer or audience is not specified, it is set to the
             # ZenML server ID.
-            server_id = GlobalConfiguration().zen_store.get_store_info().id
+            server_id = GlobalConfiguration().zen_store.get_deployment_id()
 
             if not values.get("jwt_token_issuer"):
                 values["jwt_token_issuer"] = str(server_id)
@@ -160,22 +182,6 @@ class ServerConfiguration(BaseModel):
                 ] = v
 
         return ServerConfiguration(**env_server_config)
-
-    @classmethod
-    def _get_default_auth_cookie_name(cls) -> str:
-        """Compute a default name for the authentication cookie.
-
-        Returns:
-            The name of the authentication cookie.
-        """
-        from zenml.config.global_config import GlobalConfiguration
-
-        # If the cookie name is not explicitly configured, it is set
-        # to a value computed from the ZenML server ID.
-
-        server_id = GlobalConfiguration().zen_store.get_store_info().id
-
-        return f"zenml-server-{server_id}"
 
     class Config:
         """Pydantic configuration class."""

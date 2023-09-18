@@ -200,7 +200,7 @@ class AuthScheme(StrEnum):
     NO_AUTH = "NO_AUTH"
     HTTP_BASIC = "HTTP_BASIC"
     OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
-    EXTERNAL = "OAUTH2_EXTERNAL"
+    EXTERNAL = "EXTERNAL"
 
 
 class GenericFilterOps(StrEnum):

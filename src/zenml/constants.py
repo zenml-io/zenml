@@ -16,6 +16,8 @@
 import os
 from typing import Optional
 
+from zenml.enums import AuthScheme
+
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
@@ -97,7 +99,8 @@ ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
-ENV_ZENML_SERVER_DEPLOYMENT_TYPE = "ZENML_SERVER_DEPLOYMENT_TYPE"
+ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
+ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -171,7 +174,7 @@ STEP_SOURCE_PARAMETER_NAME = "step_source"
 # Default server settings
 DEFAULT_ZENML_JWT_TOKEN_LEEWAY = 10
 DEFAULT_ZENML_JWT_TOKEN_ALGORITHM = "HS256"
-DEFAULT_ZENML_AUTH_COOKIE_NAME = "zenml_server"
+DEFAULT_ZENML_AUTH_SCHEME = AuthScheme.OAUTH2_PASSWORD_BEARER
 
 # API Endpoint paths:
 API = "/api"
@@ -225,6 +228,7 @@ SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
+AUTHORIZE = "/authorize"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

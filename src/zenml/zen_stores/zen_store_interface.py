@@ -181,6 +181,14 @@ class ZenStoreInterface(ABC):
             Information about the store.
         """
 
+    @abstractmethod
+    def get_deployment_id(self) -> UUID:
+        """Get the ID of the deployment.
+
+        Returns:
+            The ID of the deployment.
+        """
+
     # ------
     # Stacks
     # ------

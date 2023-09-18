@@ -437,6 +437,14 @@ class RestZenStore(BaseZenStore):
         body = self.get(INFO)
         return ServerModel.parse_obj(body)
 
+    def get_deployment_id(self) -> UUID:
+        """Get the ID of the deployment.
+
+        Returns:
+            The ID of the deployment.
+        """
+        return self.get_store_info().id
+
     # ------
     # Stacks
     # ------
