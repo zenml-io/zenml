@@ -63,6 +63,7 @@ PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
+PARAM_MODEL_CONFIG = "model_config"
 
 logger = get_logger(__name__)
 
@@ -107,7 +108,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -127,7 +128,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -160,7 +161,7 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model: Model(Version) configuration for this step as `ModelConfig` instance.
+        model_config: Model(Version) configuration for this step as `ModelConfig` instance.
 
     Returns:
         The inner decorator which creates the step class based on the
@@ -203,6 +204,7 @@ def step(
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,
                     PARAM_ON_SUCCESS: on_success,
+                    PARAM_MODEL_CONFIG: model_config,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

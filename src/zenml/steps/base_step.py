@@ -134,7 +134,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelConfig"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -163,7 +163,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set["BaseStep"] = set()
@@ -208,11 +208,11 @@ class BaseStep(metaclass=BaseStepMeta):
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
-        if model is not None:
+        if model_config is not None:
             logger.debug(
                 "Step '%s': Is in Model context %s.",
                 name,
-                {"model": model.name, "version": model.version},
+                {"model": model_config.name, "version": model_config.version},
             )
 
         self._configuration = PartialStepConfiguration(
@@ -231,7 +231,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model=model,
+            model_config=model_config,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -640,7 +640,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -678,7 +678,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -751,7 +751,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model": model,
+                "model_config": model_config,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -774,7 +774,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -801,7 +801,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -825,7 +825,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model=model,
+            model_config=model_config,
             merge=merge,
         )
         return step_copy
