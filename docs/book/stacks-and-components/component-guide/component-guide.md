@@ -31,6 +31,6 @@ Each pipeline run that you execute with ZenML will require a **stack** and each 
 ## Writing custom component flavors
 
 You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to
-[the general guide on writing component flavors](writing-custom-components.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
+[the general guide on writing component flavors](../../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
