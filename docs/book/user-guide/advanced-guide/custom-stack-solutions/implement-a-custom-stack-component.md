@@ -4,21 +4,39 @@ description: How to write a custom stack component flavor
 
 # Implement a custom stack component
 
-When building a sophisticated MLOps Platform, you will often need to come up with custom-tailored solutions. Sometimes, this might even require you to use custom components for your infrastructure or tooling.
+When building a sophisticated MLOps Platform, you will often need to come up 
+with custom-tailored solutions for your infrastructure or tooling. 
+ZenML is built on the philosophy of composability and reusability which is why
+the stack component flavors in ZenML are designed to be modular and 
+straightforward to extend.
 
-That is exactly why the stack component flavors in ZenML are designed to be modular and straightforward to extend. Using ZenML's base abstractions, you can create your own stack component flavor and use it in your stack.
+This guide will help you understand what a flavor is, and how you can develop 
+and use your own custom flavors in ZenML.
+
+## Understanding component flavors
+
+In ZenML, a component type is a broad category that defines the functionality of
+a stack component. Each type can have multiple flavors, which are specific 
+implementations of the component type. For instance, the type `artifact_store` 
+can have flavors like `local`, `s3`, etc. Each flavor defines a unique 
+implementation of functionality that an artifact store brings to a stack.
 
 ## Base Abstractions
 
-Before we get into the topic of creating custom stack component flavors, let us briefly discuss some important design choices behind the abstraction of a ZenML flavor. The overall implementation revolves around three base interfaces, namely the `StackComponent`, the `StackComponentConfig`, and the `Flavor`.
+Before we get into the topic of creating custom stack component flavors, let us 
+briefly discuss the three core abstractions related to stack components: the 
+`StackComponent`, the `StackComponentConfig`, and the `Flavor`.
 
 ### Base Abstraction 1: `StackComponent`
 
-The `StackComponent` is utilized as an interface to define the logic behind the functionality of a flavor. For instance, you can take a look at the `BaseArtifactStore` example down below. By inheriting from the `StackComponent`, the `BaseArtifactStore` establishes the interface for all artifact stores. Any flavor of an artifact store needs to follow the standards set by this base class.
+The `StackComponent` is the abstraction that defines the core functionality. 
+As an example, checkout the `BaseArtifactStore` definition below: The 
+`BaseArtifactStore` inhertis from `StackComponent` and establishes the public 
+interface of all artifact stores. Any artifact store flavor needs to follow the 
+standards set by this base class.
 
 ```python
-class StackComponent:
-    """Abstract StackComponent class for all components of a ZenML stack."""
+from zenml.stack import StackComponent
 
 
 class BaseArtifactStore(StackComponent):
@@ -27,26 +45,57 @@ class BaseArtifactStore(StackComponent):
     # --- public interface ---
 
     @abstractmethod
-    def open(self, name: PathType, mode: str = "r") -> Any:
+    def open(self, path, mode = "r"):
         """Open a file at the given path."""
 
     @abstractmethod
-    def exists(self, path: PathType) -> bool:
+    def exists(self, path):
         """Checks if a path exists."""
 
     ...
 ```
 
+As each component defines a different interface, make sure to check out the 
+base class definition of the component type that you want to implement and also
+check out the 
+[documentation on how to extend specific stack components](#extending-specific-stack-components).
+
+{% hint style="info" %}
+If you would like to automatically track some metadata about your custom stack 
+component with each pipeline run, you can do so by defining some additional
+methods in your stack component implementation class as shown in the
+[Tracking Custom Stack Component Metadata](../pipelining-features/fetch-metadata-within-steps.md) 
+section.
+{% endhint %}
+
+See the full code of the base `StackComponent` class
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack_component.py#L301).
+
 ### Base Abstraction 2: `StackComponentConfig`
 
-As its name suggests, the `StackComponentConfig` is used to configure a stack component instance. It is separated from the actual implementation on purpose. This way, ZenML can use this class to validate the configuration of a stack component during its registration/update, without having to import heavy (or even non-installed) dependencies. Let us continue with the same example up above and take a look at the `BaseArtifactStoreConfig`.
+As the name suggests, the `StackComponentConfig` is used to configure a stack 
+component instance. It is separated from the actual implementation on purpose. 
+This way, ZenML can use this class to validate the configuration of a stack 
+component during its registration/update, without having to import heavy 
+(or even non-installed) dependencies. 
+
+{% hint style="info" %}
+
+The `config` and `settings` of a stack component are two separate, yet related 
+entities. The `config` is the static part of your flavor's configuration, 
+defined when you register your flavor. The `settings` are the dynamic part of 
+your flavor's configuration that can be overridden at runtime. 
+
+You can read more about the differences 
+[here](../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+
+{% endhint %}
+
+Let us now continue with the base artifact store example from above and take a 
+look at the `BaseArtifactStoreConfig`:
 
 ```python
-from pydantic import BaseModel
-
-
-class StackComponentConfig(BaseModel):
-    """Base class for all ZenML stack component configs."""
+from zenml.stack import StackComponentConfig
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
@@ -56,55 +105,44 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @root_validator(skip_on_failure=True)
-    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
-        """Validator function for the Artifact Stores.
-
-        Checks whether supported schemes are defined and the given path is
-        supported.
-        """
-        ...
+    ...
 ```
 
-There are a few things to unpack here. Let's talk about Pydantic first. Pydantic is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). By using their `BaseModel` as a base class, ZenML is able to configure and serialize these configuration properties while being able to add a validation layer to each implementation.
+Through the `BaseArtifactStoreConfig`, each artifact store will require users 
+to define a `path` variable. Additionally, the base config requires all artifact
+store flavors to define a `SUPPORTED_SCHEMES` class variable that ZenML will use
+to check if the user-provided `path` is actually supported by the flavor.
 
-If you take a closer look at the example above, you will see that, through the `BaseArtifactStoreConfig`, each artifact store will require users to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using this configuration class, ZenML can check if the given `path` is actually supported.
-
-{% hint style="info" %}
-Similar to the example above, you can use class variables by denoting them with the `ClassVar[..]`, which are also excluded from the serialization.
-{% endhint %}
+See the full code of the base `StackComponentConfig` class
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack_component.py#L44).
 
 ### Base Abstraction 3: `Flavor`
 
-Ultimately, the `Flavor` abstraction is responsible for bringing the implementation of a `StackComponent` together with the corresponding `StackComponentConfig` definition to create a `Flavor`.
+Finally, the `Flavor` abstraction is responsible for bringing the 
+implementation of a `StackComponent` together with the corresponding
+`StackComponentConfig` definition and also defines the `name` and `type` of the
+flavor. As an example, check out the definition of the `local` artifact store
+flavor below:
 
 ```python
-class Flavor:
-    """Base class for ZenML Flavors."""
+from zenml.enums import StackComponentType
+from zenml.stack import Flavor
+
+
+class LocalArtifactStore(BaseArtifactStore):
+    ...
+
+
+class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
+    ...
+
+
+class LocalArtifactStoreFlavor(Flavor):
 
     @property
-    @abstractmethod
     def name(self) -> str:
-        """The name of the flavor."""
-
-    @property
-    @abstractmethod
-    def type(self) -> StackComponentType:
-        """The type of the flavor."""
-
-    @property
-    @abstractmethod
-    def implementation_class(self) -> Type[StackComponent]:
-        """Implementation class for this flavor."""
-
-    @property
-    @abstractmethod
-    def config_class(self) -> Type[StackComponentConfig]:
-        """Configuration class for this flavor."""
-
-
-class BaseArtifactStoreFlavor(Flavor):
-    """Base class for artifact store flavors."""
+        """Returns the name of the flavor."""
+        return "local"
 
     @property
     def type(self) -> StackComponentType:
@@ -112,131 +150,218 @@ class BaseArtifactStoreFlavor(Flavor):
         return StackComponentType.ARTIFACT_STORE
 
     @property
-    def config_class(self) -> Type[StackComponentConfig]:
-        """Config class for this flavor."""
-        return BaseArtifactStoreConfig
+    def config_class(self) -> Type[LocalArtifactStoreConfig]:
+        """Config class of this flavor."""
+        return LocalArtifactStoreConfig
+
+    @property
+    def implementation_class(self) -> Type[LocalArtifactStore]:
+        """Implementation class of this flavor."""
+        return LocalArtifactStore
 ```
 
-Following the same example, the `BaseArtifactStoreFlavor` sets the correct `type` property and introduces the `BaseArtifactStoreConfig` as the default configuration for all ZenML artifact stores.
+See the full code of the base `Flavor` class definition
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/flavor.py#L29).
 
 ## Implementing a Custom Stack Component Flavor
 
-Using all the abstraction layers above, let us create a custom artifact store flavor, starting with the configuration.
+Let's recap what we just learned by reimplementing the `S3ArtifactStore` from 
+the `aws` integration as a custom flavor.
+
+Let's start with the configuration class. Here we need to define the 
+`SUPPORTED_SCHEMES` class variable introduced by the `BaseArtifactStore`. We 
+also define several additional configuration values that users can use to 
+configure how the artifact store will authenticate to AWS:
 
 ```python
 from zenml.artifact_stores import BaseArtifactStoreConfig
+from zenml.utils.secret_utils import SecretField
 
 
-class MyArtifactStoreConfig(BaseArtifactStoreConfig):
-    """Custom artifact store implementation."""
+class MyS3ArtifactStoreConfig(BaseArtifactStoreConfig):
+    """Configuration for the S3 Artifact Store."""
 
-    my_param: int  # Adding a custom parameter on top of the `path` variable
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+
+    key: Optional[str] = SecretField()
+    secret: Optional[str] = SecretField()
+    token: Optional[str] = SecretField()
+    client_kwargs: Optional[Dict[str, Any]] = None
+    config_kwargs: Optional[Dict[str, Any]] = None
+    s3_additional_kwargs: Optional[Dict[str, Any]] = None
 ```
 
-With the configuration defined, we can move on to the logic behind the implementation:
+{% hint style="info" %}
+You can pass sensitive configuration values as 
+[secrets](../secret-management/secret-management.md) by defining them as type
+`SecretField` in the configuration class.
+{% endhint %}
+
+With the configuration defined, we can move on to the implementation class, 
+which will use the S3 file system to implement the abstract methods of the 
+`BaseArtifactStore`:
 
 ```python
-PathType = Union[bytes, str]
+import s3fs
 
 from zenml.artifact_stores import BaseArtifactStore
 
 
-class MyArtifactStore(BaseArtifactStore):
+class MyS3ArtifactStore(BaseArtifactStore):
     """Custom artifact store implementation."""
 
-    def open(self, name: PathType, mode: str = "r") -> Any:
-        """Custom logic goes here."""
-        ...
+    _filesystem: Optional[s3fs.S3FileSystem] = None
 
-    def exists(self, path: PathType) -> bool:
-        """Custom logic goes here."""
-        ...
+    @property
+    def filesystem(self) -> s3fs.S3FileSystem:
+        """Get the underlying S3 file system."""
+        if self._filesystem:
+            return self._filesystem
 
-    def my_custom_method(self):
-        """Custom method here."""
-        print(self.config.path)  # The configuration properties are available 
-        print(self.config.my_param)  # under self.config
+        self._filesystem = s3fs.S3FileSystem(
+            key=self.config.key,
+            secret=self.config.secret,
+            token=self.config.token,
+            client_kwargs=self.config.client_kwargs,
+            config_kwargs=self.config.config_kwargs,
+            s3_additional_kwargs=self.config.s3_additional_kwargs,
+        )
+        return self._filesystem
+
+    def open(self, path, mode: = "r"):
+        """Custom logic goes here."""
+        return self.filesystem.open(path=path, mode=mode)
+
+    def exists(self, path):
+        """Custom logic goes here."""
+        return self.filesystem.exists(path=path)
 ```
 
-Now, let us bring these two classes together through a `Flavor`. Make sure that you give your flavor a unique name here.
+{% hint style="info" %}
+The configuration values defined in the corresponding configuration class are 
+always available in the implementation class under `self.config`.
+{% endhint %}
+
+Finally, let's define a custom flavor that brings these two classes together. 
+Make sure that you give your flavor a globally unique name here.
 
 ```python
 from zenml.artifact_stores import BaseArtifactStoreFlavor
 
 
-class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
+class MyS3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Custom artifact store implementation."""
 
     @property
-    def name(self) -> str:
+    def name(self):
         """The name of the flavor."""
-        return 'my_artifact_store'
+        return 'my_s3_artifact_store'
 
     @property
-    def implementation_class(self) -> Type["BaseArtifactStore"]:
+    def implementation_class(self):
         """Implementation class for this flavor."""
-        from ... import MyArtifactStore
-        return MyArtifactStore
+        from ... import MyS3ArtifactStore
+
+        return MyS3ArtifactStore
 
     @property
-    def config_class(self) -> Type[StackComponentConfig]:
+    def config_class(self):
         """Configuration class for this flavor."""
-        from ... import MyArtifactStoreConfig
-        return MyArtifactStoreConfig
+        from ... import MyS3ArtifactStoreConfig
+
+        return MyS3ArtifactStoreConfig
 ```
+
+{% hint style="info" %}
+For flavors that require additional dependencies, you should make sure to 
+define your implementation, config, and flavor classes in separate Python files 
+and to only import the implementation class inside the `implementation_class` 
+property of the flavor class. Otherwise ZenML will not be able to load and 
+validate your flavor configuration without the dependencies installed.
+{% endhint %}
 
 ## Managing a Custom Stack Component Flavor
 
-Once your implementation is complete, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
+Once you have defined your implementation, config, and flavor classes, you can 
+register your new flavor through the ZenML CLI:
 
 ```shell
-zenml artifact-store flavor register <path.to.MyArtifactStoreFlavor>
+zenml artifact-store flavor register <path.to.MyS3ArtifactStoreFlavor>
 ```
 
-For example, if your flavor class `MyArtifactStoreFlavor` is defined in `flavors/my_flavor.py`, you'd register it by doing:
-
-```shell
-zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
-```
-
-{% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized ZenML (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../starter-guide/follow-best-practices.md) of initializing ZenML at the root of your repository.
-
-If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize ZenML at the root.
+{% hint style="info" %}
+Make sure to point to the flavor class via dot notation!
 {% endhint %}
 
-Afterward, you should see the new custom artifact store flavor in the list of available artifact store flavors:
+For example, if your flavor class `MyS3ArtifactStoreFlavor` is defined in 
+`flavors/my_flavor.py`, you'd register it by doing:
+
+```shell
+zenml artifact-store flavor register flavors.my_flavor.MyS3ArtifactStoreFlavor
+```
+
+Afterwards, you should see the new custom artifact store flavor in the list of 
+available artifact store flavors:
 
 ```shell
 zenml artifact-store flavor list
 ```
 
-And that's it, you now have defined a custom stack component flavor that you can use in any of your stacks just like any other flavor you used before, e.g.:
+And that's it, you now have a custom stack component flavor that you can use in 
+your stacks just like any other flavor you used before, e.g.:
 
 ```shell
 zenml artifact-store register <ARTIFACT_STORE_NAME> \
-    --flavor=my_artifact_store \
+    --flavor=my_s3_artifact_store \
+    --path='some-path' \
     ...
 
 zenml stack register <STACK_NAME> \
     --artifact-store <ARTIFACT_STORE_NAME> \
-    --path='some-path' \
-    --my_param=3 
+    ...
 ```
 
-{% hint style="info" %}
-If you would like to automatically track some metadata about your custom stack component with each pipeline run, check out the [Tracking Custom Stack Component Metadata](../pipelining-features/fetch-metadata-within-steps.md) section.
-{% endhint %}
+## Tips and best practices
 
-Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more information about the registered flavors available to you:
+* ZenML resolves the flavor classes by taking the path where you initialized 
+ZenML (via `zenml init`) as the starting point of resolution. Therefore, you and 
+your team should remember to execute `zenml init` in a consistent manner 
+(usually at the root of the repository where the `.git` folder lives). If the 
+`zenml init` command was not executed, the current working directory is used to 
+find implementation classes, which could lead to unexpected behavior.
 
-{% embed url="https://www.youtube.com/watch?v=CQRVSKbBjtQ" %}
-Describe MLOps Stack Component Flavors
-{% endembed %}
+* You can use the ZenML CLI to find which exact configuration values a specific
+flavor requires. Check out 
+[this 3-minute video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) for more 
+information.
+
+* You can keep changing the `Config` and `Settings` of your flavor after
+registration. ZenML will pick up these "live" changes when running pipelines.
+
+* Note that changing the config in a breaking way requires an update of the
+component (not a flavor). E.g., adding a mandatory name to flavor X field
+will break a registered component of that flavor. This may lead to a
+completely broken state where one should delete the component and
+re-register it.
+
+* Always test your flavor thoroughly before using it in production. Make sure
+it works as expected and handles errors gracefully.
+
+* Keep your flavor code clean and well-documented. This will make it easier
+for others to use and contribute to your flavor.
+
+* Follow best practices for the language and libraries you're using. This will
+help ensure your flavor is efficient, reliable, and easy to maintain.
+
+* We recommend you develop new flavors by using existing flavors as a reference.
+A good starting point are the flavors defined in the
+[officially ZenML intetgrations](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
+
 
 ## Extending Specific Stack Components
 
-If you would like to learn more about how to build a custom stack component flavor for a specific stack component, please check the links below:
+If you would like to learn more about how to build a custom stack component 
+flavor for a specific stack component type, check out the links below:
 
 | **Type of Stack Component**                                                                         | **Description**                                                   |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
