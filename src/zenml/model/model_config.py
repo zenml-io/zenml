@@ -17,14 +17,18 @@ from typing import Any, Dict, Optional, Type, Union
 
 from pydantic import Field, validator
 
+from zenml.client import Client
+from zenml.logger import get_logger
 from zenml.model.model_stages import ModelStages
-from zenml.models.model_models import (
+from zenml.models import (
     ModelBaseModel,
     ModelRequestModel,
     ModelResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
 )
+
+logger = get_logger(__name__)
 
 
 class ModelConfig(ModelBaseModel):
@@ -66,10 +70,6 @@ class ModelConfig(ModelBaseModel):
     ) -> bool:
         if recovery:
             if not values.get("create_new_model_version", False):
-                from zenml.logger import get_logger
-
-                logger = get_logger(__name__)
-
                 logger.warning(
                     "Using `recovery` flag without `create_new_model_version=True` makes no effect"
                 )
@@ -80,10 +80,6 @@ class ModelConfig(ModelBaseModel):
         cls, version: Union[str, ModelStages]
     ) -> Union[str, ModelStages]:
         if isinstance(version, str) and version in ModelStages._members():
-            from zenml.logger import get_logger
-
-            logger = get_logger(__name__)
-
             logger.warning(
                 f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
                 "model version by its' stage make sure to pass in instance of `ModelStages`."
@@ -103,8 +99,6 @@ class ModelConfig(ModelBaseModel):
         ],
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        from zenml.client import Client
-
         zenml_client = Client()
         request_params = {
             k: v
@@ -128,18 +122,12 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model based on configuration.
         """
-        from zenml.client import Client
-
         zenml_client = Client()
         try:
             model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
         except KeyError:
-            from zenml.logger import get_logger
-
-            logger = get_logger(__name__)
-
             model_request = ModelRequestModel.parse_obj(
                 self._get_request_params(ModelRequestModel)
             )
@@ -161,11 +149,6 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model version based on configuration.
         """
-        from zenml.client import Client
-        from zenml.logger import get_logger
-
-        logger = get_logger(__name__)
-
         zenml_client = Client()
         # if specific version requested
         if not self.create_new_model_version:
