@@ -411,6 +411,7 @@ module = [
     "pyngrok.*",
     "cloudpickle.*",
     "mlstacks.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
