@@ -200,6 +200,18 @@ class StepContext(metaclass=SingletonMetaClass):
 
     @property
     def model_config(self) -> "ModelConfig":
+        """Returns configured ModelConfig.
+
+        Order of resolution to search for ModelConfig is:
+            1. ModelConfig from @step
+            2. ModelConfig from @pipeline
+
+        Returns:
+            The `ModelConfig` object associated with the current step.
+
+        Raises:
+            StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
+        """
         if self.step_run.config.model_config is not None:
             return self.step_run.config.model_config
         if self.pipeline_run.config.model_config is not None:
