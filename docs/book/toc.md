@@ -64,7 +64,7 @@
 
 * [📜 Component guide](stacks-and-components/component-guide/component-guide.md)
   * [Integration overview](stacks-and-components/component-guide/integration-overview.md)
-  * [Writing custom components](stacks-and-components/component-guide/writing-custom-components.md)
+  * [Implementing custom components](stacks-and-components/component-guide/writing-custom-components.md)
   * [Orchestrators](stacks-and-components/component-guide/orchestrators/orchestrators.md)
     * [Local Orchestrator](stacks-and-components/component-guide/orchestrators/local.md)
     * [Local Docker Orchestrator](stacks-and-components/component-guide/orchestrators/local-docker.md)

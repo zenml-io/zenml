@@ -6,7 +6,7 @@ description: How to write a custom stack component flavor
 
 When building a sophisticated MLOps Platform, you will often need to come up 
 with custom-tailored solutions for your infrastructure or tooling. 
-ZenML is built on the philosophy of composability and reusability which is why
+ZenML is built around the values of composability and reusability which is why
 the stack component flavors in ZenML are designed to be modular and 
 straightforward to extend.
 
@@ -168,10 +168,10 @@ See the full code of the base `Flavor` class definition
 Let's recap what we just learned by reimplementing the `S3ArtifactStore` from 
 the `aws` integration as a custom flavor.
 
-Let's start with the configuration class. Here we need to define the 
+We can start with the configuration class: here we need to define the 
 `SUPPORTED_SCHEMES` class variable introduced by the `BaseArtifactStore`. We 
 also define several additional configuration values that users can use to 
-configure how the artifact store will authenticate to AWS:
+configure how the artifact store will authenticate with AWS:
 
 ```python
 from zenml.artifact_stores import BaseArtifactStoreConfig
@@ -307,7 +307,7 @@ available artifact store flavors:
 zenml artifact-store flavor list
 ```
 
-And that's it, you now have a custom stack component flavor that you can use in 
+And that's it! You now have a custom stack component flavor that you can use in 
 your stacks just like any other flavor you used before, e.g.:
 
 ```shell
@@ -355,7 +355,7 @@ help ensure your flavor is efficient, reliable, and easy to maintain.
 
 * We recommend you develop new flavors by using existing flavors as a reference.
 A good starting point are the flavors defined in the
-[officially ZenML intetgrations](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
+[official ZenML integrations](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
 
 
 ## Extending Specific Stack Components
