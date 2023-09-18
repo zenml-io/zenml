@@ -30,7 +30,7 @@ class DiscordIntegration(Integration):
     """
 
     NAME = DISCORD
-    REQUIREMENTS = ["discord>=2.3.2", "aiohttp>=3.8.1", "asyncio"]
+    REQUIREMENTS = ["discord.py>=2.3.2", "aiohttp>=3.8.1", "asyncio"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -40,7 +40,6 @@ class DiscordIntegration(Integration):
             List of new flavors defined by the Discord integration.
         """
         from zenml.integrations.discord.flavors import DiscordAlerterFlavor
-
         return [DiscordAlerterFlavor]
 
 
