@@ -50,14 +50,18 @@ from zenml.exceptions import (
 from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
     ArtifactFilterModel,
+    ArtifactResponseModel,
     ComponentFilterModel,
     ComponentUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
     ModelVersionFilterModel,
-    ModelVersionLinkFilterModel,
-    ModelVersionLinkRequestModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
     ModelVersionRequestModel,
     ModelVersionUpdateModel,
     PipelineRunFilterModel,
+    PipelineRunResponseModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -2509,7 +2513,15 @@ class TestModelVersion:
             )
             assert mv1.id == mv2.id
 
-    def test_model_version_in_stage_found(self):
+    def test_model_version_list_empty(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            mvs = zs.list_model_versions(
+                ModelVersionFilterModel(model_id=model.id)
+            )
+            assert len(mvs) == 0
+
+    def test_model_version_list_not_empty(self):
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2518,6 +2530,83 @@ class TestModelVersion:
                     workspace=model.workspace.id,
                     model=model.id,
                     version="great one",
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="and yet another one",
+                )
+            )
+            mvs = zs.list_model_versions(
+                ModelVersionFilterModel(model_id=model.id)
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+    def test_model_version_delete_not_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(KeyError):
+                zs.delete_model_version(
+                    model_name_or_id=model.id,
+                    model_version_name_or_id="1.0.0",
+                )
+
+    def test_model_version_delete_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="great one",
+                )
+            )
+            zs.delete_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id="great one",
+            )
+            with pytest.raises(KeyError):
+                zs.get_model_version(
+                    model_name_or_id=model.id,
+                    model_version_name_or_id="great one",
+                )
+
+    def test_model_version_update_not_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(KeyError):
+                zs.update_model_version(
+                    model_version_id=uuid4(),
+                    model_version_update_model=ModelVersionUpdateModel(
+                        model=model.id,
+                        stage="staging",
+                        force=False,
+                    ),
+                )
+
+    def test_model_version_update_not_forced(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="great one",
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="yet another one",
                 )
             )
             zs.update_model_version(
@@ -2816,38 +2905,44 @@ class TestModelVersion:
         assert mvum.stage == "staging"
 
 
-class TestModelVersionLink:
-    def test_model_version_link_create_pass(self):
-        with ModelVersionContext(True) as model_version:
+class TestModelVersionArtifactLinks:
+    def test_link_create_pass(self):
+        with ModelVersionContext(True, create_artifacts=1) as (
+            model_version,
+            artifacts,
+        ):
             zs = Client().zen_store
-            zs.create_model_version_link(
-                ModelVersionLinkRequestModel(
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
                     name="link",
-                    artifact=uuid4(),
+                    artifact=artifacts[0].id,
                 )
             )
 
-    def test_model_version_link_create_duplicated(self):
-        with ModelVersionContext(True) as model_version:
+    def test_link_create_duplicated(self):
+        with ModelVersionContext(True, create_artifacts=1) as (
+            model_version,
+            artifacts,
+        ):
             zs = Client().zen_store
-            zs.create_model_version_link(
-                ModelVersionLinkRequestModel(
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
                     name="link",
-                    artifact=uuid4(),
+                    artifact=artifacts[0].id,
                 )
             )
-
+            # name collision
             with pytest.raises(EntityExistsError):
-                zs.create_model_version_link(
-                    ModelVersionLinkRequestModel(
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequestModel(
                         user=model_version.user.id,
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
@@ -2856,89 +2951,109 @@ class TestModelVersionLink:
                         artifact=uuid4(),
                     )
                 )
+            # id collision
+            with pytest.raises(EntityExistsError):
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequestModel(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        name="link2",
+                        artifact=artifacts[0].id,
+                    )
+                )
 
-    def test_model_version_link_delete_found(self):
-        with ModelVersionContext(True) as model_version:
+    def test_link_delete_found(self):
+        with ModelVersionContext(True, create_artifacts=1) as (
+            model_version,
+            artifacts,
+        ):
             zs = Client().zen_store
-            zs.create_model_version_link(
-                ModelVersionLinkRequestModel(
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
                     name="link",
-                    artifact=uuid4(),
+                    artifact=artifacts[0].id,
                 )
             )
-            zs.delete_model_version_link(
-                model_version.model.id, model_version.id, "link"
+            zs.delete_model_version_artifact_link(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_name_or_id="link",
             )
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                 )
             )
             assert len(mvls) == 0
 
-    def test_model_version_link_delete_not_found(self):
+    def test_link_delete_not_found(self):
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
             with pytest.raises(KeyError):
-                zs.delete_model_version_link(
-                    model_version.model.id, model_version.id, "link"
+                zs.delete_model_version_artifact_link(
+                    model_name_or_id=model_version.model.id,
+                    model_version_name_or_id=model_version.id,
+                    model_version_artifact_link_name_or_id="link",
                 )
 
-    def test_model_version_link_list_empty(self):
+    def test_link_list_empty(self):
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                 )
             )
             assert len(mvls) == 0
 
-    def test_model_version_link_list_populated(self):
-        with ModelVersionContext(True) as model_version:
+    def test_link_list_populated(self):
+        with ModelVersionContext(True, create_artifacts=3) as (
+            model_version,
+            artifacts,
+        ):
             zs = Client().zen_store
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                 )
             )
             assert len(mvls) == 0
-            for n, mo, dep, pr in [
-                ("link1", False, False, False),
-                ("link2", True, False, False),
-                ("link3", False, True, False),
-                ("link4", False, False, True),
+            for n, mo, dep, artifact in [
+                ("link1", False, False, artifacts[0]),
+                ("link2", True, False, artifacts[1]),
+                ("link3", False, True, artifacts[2]),
             ]:
-                zs.create_model_version_link(
-                    ModelVersionLinkRequestModel(
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequestModel(
                         user=model_version.user.id,
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
                         name=n,
-                        artifact=uuid4() if not pr else None,
-                        pipeline_run=uuid4() if pr else None,
+                        artifact=artifact.id,
                         is_model_object=mo,
                         is_deployment=dep,
                     )
                 )
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                 )
             )
-            assert len(mvls) == 4
+            assert len(mvls) == 3
 
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                     only_artifacts=True,
@@ -2946,8 +3061,8 @@ class TestModelVersionLink:
             )
             assert len(mvls) == 1 and mvls[0].name == "link1"
 
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                     only_model_objects=True,
@@ -2955,8 +3070,8 @@ class TestModelVersionLink:
             )
             assert len(mvls) == 1 and mvls[0].name == "link2"
 
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
+            mvls = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                     only_deployments=True,
@@ -2964,11 +3079,195 @@ class TestModelVersionLink:
             )
             assert len(mvls) == 1 and mvls[0].name == "link3"
 
-            mvls = zs.list_model_version_links(
-                ModelVersionLinkFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                    only_pipeline_runs=True,
+            mv = zs.get_model_version(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+            )
+
+            assert len(mv.model_object_ids) == 1
+            assert len(mv.artifact_object_ids) == 1
+            assert len(mv.deployment_ids) == 1
+
+            assert isinstance(
+                mv.model_objects["link2"],
+                ArtifactResponseModel,
+            )
+            assert isinstance(
+                mv.artifact_objects["link1"],
+                ArtifactResponseModel,
+            )
+            assert isinstance(
+                mv.deployments["link3"],
+                ArtifactResponseModel,
+            )
+
+            assert mv.model_objects["link2"].id == artifacts[1].id
+
+            assert mv.get_model_object("link2") == mv.model_objects["link2"]
+            assert (
+                mv.get_artifact_object("link1") == mv.artifact_objects["link1"]
+            )
+            assert mv.get_deployment("link3") == mv.deployments["link3"]
+
+
+class TestModelVersionPipelineRunLinks:
+    def test_link_create_pass(self):
+        with ModelVersionContext(True, create_prs=1) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    pipeline_run=prs[0].id,
                 )
             )
-            assert len(mvls) == 1 and mvls[0].name == "link4"
+
+    def test_link_create_duplicated(self):
+        with ModelVersionContext(True, create_prs=1) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    pipeline_run=prs[0].id,
+                )
+            )
+            # name collision
+            with pytest.raises(EntityExistsError):
+                zs.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequestModel(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        name="link",
+                        pipeline_run=uuid4(),
+                    )
+                )
+            # id collision
+            with pytest.raises(EntityExistsError):
+                zs.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequestModel(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        name="link",
+                        pipeline_run=prs[0].id,
+                    )
+                )
+
+    def test_link_delete_found(self):
+        with ModelVersionContext(True, create_prs=1) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    pipeline_run=prs[0].id,
+                )
+            )
+            zs.delete_model_version_pipeline_run_link(
+                model_version.model.id, model_version.id, "link"
+            )
+            mvls = zs.list_model_version_pipeline_run_links(
+                ModelVersionPipelineRunFilterModel(
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert len(mvls) == 0
+
+    def test_link_delete_not_found(self):
+        with ModelVersionContext(True) as model_version:
+            zs = Client().zen_store
+            with pytest.raises(KeyError):
+                zs.delete_model_version_pipeline_run_link(
+                    model_version.model.id, model_version.id, "link"
+                )
+
+    def test_link_list_empty(self):
+        with ModelVersionContext(True) as model_version:
+            zs = Client().zen_store
+            mvls = zs.list_model_version_pipeline_run_links(
+                ModelVersionPipelineRunFilterModel(
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert len(mvls) == 0
+
+    def test_link_list_populated(self):
+        with ModelVersionContext(True, create_prs=2) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            mvls = zs.list_model_version_pipeline_run_links(
+                ModelVersionPipelineRunFilterModel(
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert len(mvls) == 0
+            for n, pr in zip(["link4", None], prs):
+                zs.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequestModel(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        name=n,
+                        pipeline_run=pr.id,
+                    )
+                )
+            mvls = zs.list_model_version_pipeline_run_links(
+                ModelVersionPipelineRunFilterModel(
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert len(mvls) == 2
+
+            mv = zs.get_model_version(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+            )
+
+            assert len(mv.pipeline_run_ids) == 2
+
+            assert isinstance(
+                mv.pipeline_runs["link4"],
+                PipelineRunResponseModel,
+            )
+            assert isinstance(
+                mv.pipeline_runs[prs[1].name],
+                PipelineRunResponseModel,
+            )
+
+            assert mv.pipeline_runs["link4"].id == prs[0].id
+            assert mv.pipeline_runs[prs[1].name].id == prs[1].id
+
+            assert mv.get_pipeline_run("link4") == mv.pipeline_runs["link4"]
+            assert (
+                mv.get_pipeline_run(prs[1].name)
+                == mv.pipeline_runs[prs[1].name]
+            )

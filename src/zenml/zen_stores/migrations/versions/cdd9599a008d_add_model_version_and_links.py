@@ -1,8 +1,8 @@
-"""add model_version and links [e8b82e9253a9].
+"""add model_version and links [cdd9599a008d].
 
-Revision ID: e8b82e9253a9
+Revision ID: cdd9599a008d
 Revises: 3b68abe58f44
-Create Date: 2023-09-11 18:05:43.367994
+Create Date: 2023-09-15 17:53:23.963414
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "e8b82e9253a9"
+revision = "cdd9599a008d"
 down_revision = "3b68abe58f44"
 branch_labels = None
 depends_on = None
@@ -53,19 +53,16 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
-        "model_version_links",
+        "model_versions_artifacts",
         sa.Column(
             "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("model_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column(
             "model_version_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
-        sa.Column("model_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column(
-            "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
         sa.Column("is_model_object", sa.BOOLEAN(), nullable=True),
         sa.Column("is_deployment", sa.BOOLEAN(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
@@ -75,37 +72,80 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["artifact_id"],
             ["artifact.id"],
-            name="fk_model_version_links_artifact_id_artifact",
+            name="fk_model_versions_artifacts_artifact_id_artifact",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["model_id"],
             ["model.id"],
-            name="fk_model_version_links_model_id_model",
+            name="fk_model_versions_artifacts_model_id_model",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["model_version_id"],
             ["model_version.id"],
-            name="fk_model_version_links_model_version_id_model_version",
-            ondelete="CASCADE",
-        ),
-        sa.ForeignKeyConstraint(
-            ["pipeline_run_id"],
-            ["pipeline_run.id"],
-            name="fk_model_version_links_run_id_pipeline_run",
+            name="fk_model_versions_artifacts_model_version_id_model_version",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],
-            name="fk_model_version_links_user_id_user",
+            name="fk_model_versions_artifacts_user_id_user",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["workspace_id"],
             ["workspace.id"],
-            name="fk_model_version_links_workspace_id_workspace",
+            name="fk_model_versions_artifacts_workspace_id_workspace",
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "model_versions_runs",
+        sa.Column(
+            "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+        ),
+        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("model_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column(
+            "model_version_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+        ),
+        sa.Column(
+            "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+        ),
+        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("created", sa.DateTime(), nullable=False),
+        sa.Column("updated", sa.DateTime(), nullable=False),
+        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["model_id"],
+            ["model.id"],
+            name="fk_model_versions_runs_model_id_model",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["model_version_id"],
+            ["model_version.id"],
+            name="fk_model_versions_runs_model_version_id_model_version",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["pipeline_run_id"],
+            ["pipeline_run.id"],
+            name="fk_model_versions_runs_run_id_pipeline_run",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["user.id"],
+            name="fk_model_versions_runs_user_id_user",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["workspace_id"],
+            ["workspace.id"],
+            name="fk_model_versions_runs_workspace_id_workspace",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -116,6 +156,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table("model_version_links")
+    op.drop_table("model_versions_runs")
+    op.drop_table("model_versions_artifacts")
     op.drop_table("model_version")
     # ### end Alembic commands ###

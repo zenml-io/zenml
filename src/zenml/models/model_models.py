@@ -46,22 +46,6 @@ class ModelVersionBaseModel(BaseModel):
         title="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    _model_objects: Dict[str, UUID] = Field(
-        title="Model Objects linked to the model version",
-        default={},
-    )
-    _artifact_objects: Dict[str, UUID] = Field(
-        title="Artifacts linked to the model version",
-        default={},
-    )
-    _deployments: Dict[str, UUID] = Field(
-        title="Deployments linked to the model version",
-        default={},
-    )
-    _pipeline_runs: List[UUID] = Field(
-        title="Pipeline runs linked to the model version",
-        default=[],
-    )
 
 
 class ModelVersionRequestModel(
@@ -84,19 +68,22 @@ class ModelVersionResponseModel(
     model: "ModelResponseModel" = Field(
         title="The model containing version",
     )
-
-    @staticmethod
-    def _fetch_artifacts_from_list(
-        artifacts: Dict[str, UUID]
-    ) -> Dict[str, ArtifactResponseModel]:
-        from zenml.client import Client
-
-        if artifacts:
-            return {
-                name: Client().get_artifact(a) for name, a in artifacts.items()
-            }
-        else:
-            return {}
+    model_object_ids: Dict[str, UUID] = Field(
+        title="Model Objects linked to the model version",
+        default={},
+    )
+    artifact_object_ids: Dict[str, UUID] = Field(
+        title="Artifacts linked to the model version",
+        default={},
+    )
+    deployment_ids: Dict[str, UUID] = Field(
+        title="Deployments linked to the model version",
+        default={},
+    )
+    pipeline_run_ids: Dict[str, UUID] = Field(
+        title="Pipeline runs linked to the model version",
+        default={},
+    )
 
     @property
     def model_objects(self) -> Dict[str, ArtifactResponseModel]:
@@ -105,7 +92,12 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Model Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._model_objects)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.model_object_ids.items()
+        }
 
     @property
     def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
@@ -114,7 +106,12 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Artifact Objects as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._artifact_objects)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.artifact_object_ids.items()
+        }
 
     @property
     def deployments(self) -> Dict[str, ArtifactResponseModel]:
@@ -123,18 +120,78 @@ class ModelVersionResponseModel(
         Returns:
             Dictionary of Deployments as ArtifactResponseModel
         """
-        return self._fetch_artifacts_from_list(self._deployments)
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.deployment_ids.items()
+        }
 
     @property
-    def pipeline_runs(self) -> List[PipelineRunResponseModel]:
+    def pipeline_runs(self) -> Dict[str, PipelineRunResponseModel]:
         """Get all pipeline runs linked to this version.
 
         Returns:
-            List of Pipeline Runs as PipelineRunResponseModel
+            Dictionary of Pipeline Runs as PipelineRunResponseModel
         """
         from zenml.client import Client
 
-        return [Client().get_pipeline_run(pr) for pr in self._pipeline_runs]
+        return {
+            name: Client().get_pipeline_run(pr)
+            for name, pr in self.pipeline_run_ids.items()
+        }
+
+    def get_model_object(self, name: str) -> ArtifactResponseModel:
+        """Get model object linked to this version.
+
+        Args:
+            name: The name of the model object to retrieve.
+
+        Returns:
+            Model Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.model_object_ids[name])
+
+    def get_artifact_object(self, name: str) -> ArtifactResponseModel:
+        """Get artifact linked to this version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+
+        Returns:
+            Artifact Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.artifact_object_ids[name])
+
+    def get_deployment(self, name: str) -> ArtifactResponseModel:
+        """Get deployment linked to this version.
+
+        Args:
+            name: The name of the deployment to retrieve.
+
+        Returns:
+            Deployment as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.deployment_ids[name])
+
+    def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
+        """Get pipeline run linked to this version.
+
+        Args:
+            name: The name of the pipeline run to retrieve.
+
+        Returns:
+            PipelineRun as PipelineRunResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
         self, stage: Union[str, "ModelStages"], force: bool = False
@@ -215,49 +272,45 @@ class ModelVersionUpdateModel(BaseModel):
         return stage
 
 
-class ModelVersionLinkBaseModel(BaseModel):
-    """Model version links base model."""
+class ModelVersionArtifactBaseModel(BaseModel):
+    """Model version links with artifact base model."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         title="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    artifact: Optional[UUID]
-    pipeline_run: Optional[UUID]
+    artifact: UUID
     model: UUID
     model_version: UUID
     is_model_object: bool = False
     is_deployment: bool = False
 
-    @validator("model_version")
-    def _validate_links(
-        cls, model_version: UUID, values: Dict[str, Any]
-    ) -> UUID:
-        artifact = values.get("artifact", None)
-        pipeline_run = values.get("pipeline_run", None)
-        if (artifact is None and pipeline_run is None) or (
-            artifact is not None and pipeline_run is not None
-        ):
+    @validator("is_deployment")
+    def _validate_is_deployment(
+        cls, is_deployment: bool, values: Dict[str, Any]
+    ) -> bool:
+        is_model_object = values.get("is_model_object", False)
+        if is_model_object and is_deployment:
             raise ValueError(
-                "You must provide only `artifact` or only `pipeline_run`."
+                "Artifact cannot be a model object and deployment at the same time."
             )
-        return model_version
+        return is_deployment
 
 
-class ModelVersionLinkRequestModel(
-    ModelVersionLinkBaseModel, WorkspaceScopedRequestModel
+class ModelVersionArtifactRequestModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedRequestModel
 ):
-    """Model version links request model."""
+    """Model version link with artifact request model."""
 
 
-class ModelVersionLinkResponseModel(
-    ModelVersionLinkBaseModel, WorkspaceScopedResponseModel
+class ModelVersionArtifactResponseModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version links response model."""
+    """Model version link with artifact response model."""
 
 
-class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
-    """Model version links filter model."""
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
 
     model_id: Union[str, UUID] = Field(
         description="The name or ID of the Model",
@@ -278,45 +331,47 @@ class ModelVersionLinkFilterModel(WorkspaceScopedFilterModel):
     only_artifacts: Optional[bool] = False
     only_model_objects: Optional[bool] = False
     only_deployments: Optional[bool] = False
-    only_pipeline_runs: Optional[bool] = False
-
-    @validator("only_pipeline_runs")
-    def _validate_flags(
-        cls, only_pipeline_runs: bool, values: Dict[str, Any]
-    ) -> bool:
-        s = int(only_pipeline_runs)
-        s += int(values.get("only_artifacts", False))
-        s += int(values.get("only_model_objects", False))
-        s += int(values.get("only_deployments", False))
-        if s > 1:
-            raise ValueError(
-                "Only one of the selection flags can be used at once."
-            )
-        return only_pipeline_runs
 
 
-class ModelConfigBaseModel(BaseModel):
-    """Model Config base model."""
+class ModelVersionPipelineRunBaseModel(BaseModel):
+    """Model version links with pipeline run base model."""
 
-    pass
+    name: Optional[str] = Field(
+        title="The name of the pipeline run inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_run: UUID
+    model: UUID
+    model_version: UUID
 
 
-class ModelConfigRequestModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedRequestModel,
+class ModelVersionPipelineRunRequestModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedRequestModel
 ):
-    """Model Config request model."""
-
-    pass
+    """Model version link with pipeline run request model."""
 
 
-class ModelConfigResponseModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedResponseModel,
+class ModelVersionPipelineRunResponseModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model Config response model."""
+    """Model version link with pipeline run response model."""
 
-    pass
+
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
+
+    model_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model",
+    )
+    model_version_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model Version",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
 
 
 class ModelBaseModel(BaseModel):

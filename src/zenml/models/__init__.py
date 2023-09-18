@@ -151,16 +151,17 @@ from zenml.models.model_models import (
     ModelResponseModel,
     ModelRequestModel,
     ModelUpdateModel,
-    ModelConfigBaseModel,
-    ModelConfigResponseModel,
-    ModelConfigRequestModel,
     ModelVersionBaseModel,
     ModelVersionResponseModel,
     ModelVersionRequestModel,
-    ModelVersionLinkBaseModel,
-    ModelVersionLinkFilterModel,
-    ModelVersionLinkRequestModel,
-    ModelVersionLinkResponseModel,
+    ModelVersionArtifactBaseModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionPipelineRunBaseModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
     ModelVersionFilterModel,
     ModelVersionUpdateModel,
 )
@@ -283,16 +284,6 @@ ModelResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
-ModelConfigRequestModel.update_forward_refs(
-    UserResponseModel=UserResponseModel,
-    WorkspaceResponseModel=WorkspaceResponseModel,
-)
-
-ModelConfigResponseModel.update_forward_refs(
-    UserResponseModel=UserResponseModel,
-    WorkspaceResponseModel=WorkspaceResponseModel,
-)
-
 ModelVersionRequestModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
@@ -303,12 +294,19 @@ ModelVersionResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
-ModelVersionLinkRequestModel.update_forward_refs(
+ModelVersionArtifactRequestModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
-
-ModelVersionLinkResponseModel.update_forward_refs(
+ModelVersionArtifactResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
@@ -418,8 +416,12 @@ __all__ = [
     "ModelVersionRequestModel",
     "ModelVersionResponseModel",
     "ModelVersionUpdateModel",
-    "ModelVersionLinkBaseModel",
-    "ModelVersionLinkFilterModel",
-    "ModelVersionLinkRequestModel",
-    "ModelVersionLinkResponseModel",
+    "ModelVersionArtifactBaseModel",
+    "ModelVersionArtifactFilterModel",
+    "ModelVersionArtifactRequestModel",
+    "ModelVersionArtifactResponseModel",
+    "ModelVersionPipelineRunBaseModel",
+    "ModelVersionPipelineRunFilterModel",
+    "ModelVersionPipelineRunRequestModel",
+    "ModelVersionPipelineRunResponseModel",
 ]

@@ -26,8 +26,10 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
-    ModelVersionLinkRequestModel,
-    ModelVersionLinkResponseModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
 )
@@ -76,7 +78,11 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    objects_links: List["ModelVersionLinkSchema"] = Relationship(
+    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -189,7 +195,11 @@ class ModelVersionSchema(BaseSchema, table=True):
         nullable=False,
     )
     model: "ModelSchema" = Relationship(back_populates="model_versions")
-    objects_links: List["ModelVersionLinkSchema"] = Relationship(
+    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -235,27 +245,25 @@ class ModelVersionSchema(BaseSchema, table=True):
             version=self.version,
             description=self.description,
             stage=self.stage,
-            model_objects={
+            model_object_ids={
                 al.name: al.artifact_id
-                for al in self.objects_links
+                for al in self.artifact_links
                 if al.artifact_id is not None and al.is_model_object
             },
-            deployments={
+            deployment_ids={
                 al.name: al.artifact_id
-                for al in self.objects_links
+                for al in self.artifact_links
                 if al.artifact_id is not None and al.is_deployment
             },
-            artifact_objects={
+            artifact_object_ids={
                 al.name: al.artifact_id
-                for al in self.objects_links
+                for al in self.artifact_links
                 if al.artifact_id is not None
                 and not (al.is_deployment or al.is_model_object)
             },
-            pipeline_runs=[
-                al.artifact_id
-                for al in self.objects_links
-                if al.pipeline_run_id is not None
-            ],
+            pipeline_run_ids={
+                al.name: al.pipeline_run_id for al in self.pipeline_run_links
+            },
         )
 
     def update(
@@ -275,10 +283,10 @@ class ModelVersionSchema(BaseSchema, table=True):
         return self
 
 
-class ModelVersionLinkSchema(NamedSchema, table=True):
-    """SQL Model for linking of Model Versions and Artifacts or Pipeline Runs M:M."""
+class ModelVersionArtifactSchema(NamedSchema, table=True):
+    """SQL Model for linking of Model Versions and Artifacts M:M."""
 
-    __tablename__ = "model_version_links"
+    __tablename__ = "model_versions_artifacts"
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -289,7 +297,7 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         nullable=False,
     )
     workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_version_links"
+        back_populates="model_versions_artifacts_links"
     )
 
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -301,7 +309,7 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(
-        back_populates="model_version_links"
+        back_populates="model_versions_artifacts_links"
     )
 
     model_id: UUID = build_foreign_key_field(
@@ -312,7 +320,7 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model: "ModelSchema" = Relationship(back_populates="objects_links")
+    model: "ModelSchema" = Relationship(back_populates="artifact_links")
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
@@ -322,7 +330,7 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         nullable=False,
     )
     model_version: "ModelVersionSchema" = Relationship(
-        back_populates="objects_links"
+        back_populates="artifact_links"
     )
     artifact_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -333,18 +341,7 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
         nullable=True,
     )
     artifact: Optional["ArtifactSchema"] = Relationship(
-        back_populates="model_version_links"
-    )
-    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
-        source_column="run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
-        back_populates="model_version_links"
+        back_populates="model_versions_artifacts_links"
     )
 
     is_model_object: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
@@ -352,8 +349,8 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, model_version_artifact_request: ModelVersionLinkRequestModel
-    ) -> "ModelVersionLinkSchema":
+        cls, model_version_artifact_request: ModelVersionArtifactRequestModel
+    ) -> "ModelVersionArtifactSchema":
         """Convert an `ModelVersionArtifactRequestModel` to an `ModelVersionArtifactSchema`.
 
         Args:
@@ -369,18 +366,17 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
             model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
             artifact_id=model_version_artifact_request.artifact,
-            pipeline_run_id=model_version_artifact_request.pipeline_run,
             is_model_object=model_version_artifact_request.is_model_object,
             is_deployment=model_version_artifact_request.is_deployment,
         )
 
-    def to_model(self) -> ModelVersionLinkResponseModel:
+    def to_model(self) -> ModelVersionArtifactResponseModel:
         """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponseModel`.
 
         Returns:
             The created `ModelVersionArtifactResponseModel`.
         """
-        return ModelVersionLinkResponseModel(
+        return ModelVersionArtifactResponseModel(
             id=self.id,
             name=self.name,
             user=self.user.to_model() if self.user else None,
@@ -390,7 +386,108 @@ class ModelVersionLinkSchema(NamedSchema, table=True):
             model=self.model_id,
             model_version=self.model_version_id,
             artifact=self.artifact_id,
-            pipeline_run=self.pipeline_run_id,
             is_model_object=self.is_model_object,
             is_deployment=self.is_deployment,
+        )
+
+
+class ModelVersionPipelineRunSchema(NamedSchema, table=True):
+    """SQL Model for linking of Model Versions and Pipeline Runs M:M."""
+
+    __tablename__ = "model_versions_runs"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="model_versions_pipeline_runs_links"
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="model_versions_pipeline_runs_links"
+    )
+
+    model_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelSchema.__tablename__,
+        source_column="model_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model: "ModelSchema" = Relationship(back_populates="pipeline_run_links")
+    model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelVersionSchema.__tablename__,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model_version: "ModelVersionSchema" = Relationship(
+        back_populates="pipeline_run_links"
+    )
+    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
+        back_populates="model_versions_pipeline_runs_links"
+    )
+
+    @classmethod
+    def from_request(
+        cls,
+        model_version_pipeline_run_request: ModelVersionPipelineRunRequestModel,
+    ) -> "ModelVersionPipelineRunSchema":
+        """Convert an `ModelVersionPipelineRunRequestModel` to an `ModelVersionPipelineRunSchema`.
+
+        Args:
+            model_version_pipeline_run_request: The request link to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            workspace_id=model_version_pipeline_run_request.workspace,
+            user_id=model_version_pipeline_run_request.user,
+            name=model_version_pipeline_run_request.name,
+            model_id=model_version_pipeline_run_request.model,
+            model_version_id=model_version_pipeline_run_request.model_version,
+            pipeline_run_id=model_version_pipeline_run_request.pipeline_run,
+        )
+
+    def to_model(self) -> ModelVersionPipelineRunResponseModel:
+        """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponseModel`.
+
+        Returns:
+            The created `ModelVersionPipelineRunResponseModel`.
+        """
+        return ModelVersionPipelineRunResponseModel(
+            id=self.id,
+            name=self.name,
+            user=self.user.to_model() if self.user else None,
+            workspace=self.workspace.to_model(),
+            created=self.created,
+            updated=self.updated,
+            model=self.model_id,
+            model_version=self.model_version_id,
+            pipeline_run=self.pipeline_run_id,
         )

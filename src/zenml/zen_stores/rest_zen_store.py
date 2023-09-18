@@ -49,7 +49,6 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
-    MODEL_VERSION_LINKS,
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
@@ -102,10 +101,13 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
-    ModelVersionLinkFilterModel,
-    ModelVersionLinkRequestModel,
-    ModelVersionLinkResponseModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
@@ -2513,62 +2515,121 @@ class RestZenStore(BaseZenStore):
             response_model=ModelVersionResponseModel,
         )
 
-    #######################
-    # Model Versions Links
-    #######################
+    ###########################
+    # Model Versions Artifacts
+    ###########################
 
-    def create_model_version_link(
-        self, model_version_link: ModelVersionLinkRequestModel
-    ) -> ModelVersionLinkResponseModel:
+    def create_model_version_artifact_link(
+        self, model_version_artifact_link: ModelVersionArtifactRequestModel
+    ) -> ModelVersionArtifactResponseModel:
         """Creates a new model version link.
 
         Args:
-            model_version_link: the Model Version Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link to be created.
 
         Returns:
-            The newly created model version link.
+            The newly created model version to artifact link.
         """
         return self._create_workspace_scoped_resource(
-            resource=model_version_link,
-            response_model=ModelVersionLinkResponseModel,
-            route=f"{MODELS}/{model_version_link.model}{MODEL_VERSIONS}/{model_version_link.model_version}{MODEL_VERSION_LINKS}",
+            resource=model_version_artifact_link,
+            response_model=ModelVersionArtifactResponseModel,
+            route=f"{MODELS}/{model_version_artifact_link.model}{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
         )
 
-    def list_model_version_links(
+    def list_model_version_artifact_links(
         self,
-        model_version_link_filter_model: ModelVersionLinkFilterModel,
-    ) -> Page[ModelVersionLinkResponseModel]:
-        """Get all model version links by filter.
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get all model version to artifact links by filter.
 
         Args:
-            model_version_link_filter_model: All filter parameters including pagination
+            model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
-            A page of all model version links.
+            A page of all model version to artifact links.
         """
         return self._list_paginated_resources(
-            route=f"{MODELS}/{model_version_link_filter_model.model_id}{MODEL_VERSIONS}/{model_version_link_filter_model.model_version_id}{MODEL_VERSION_LINKS}",
-            response_model=ModelVersionLinkResponseModel,
-            filter_model=model_version_link_filter_model,
+            route=f"{MODELS}/{model_version_artifact_link_filter_model.model_id}{MODEL_VERSIONS}/{model_version_artifact_link_filter_model.model_version_id}{ARTIFACTS}",
+            response_model=ModelVersionArtifactResponseModel,
+            filter_model=model_version_artifact_link_filter_model,
         )
 
-    def delete_model_version_link(
+    def delete_model_version_artifact_link(
         self,
         model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
-        model_version_link_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
-        """Deletes a model version link.
+        """Deletes a model version to artifact link.
 
         Args:
             model_name_or_id: name or ID of the model containing the model version.
             model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_link_name_or_id: name or ID of the model version link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
         """
         self._delete_resource(
-            resource_id=model_version_link_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{MODEL_VERSION_LINKS}",
+            resource_id=model_version_artifact_link_name_or_id,
+            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{ARTIFACTS}",
+        )
+
+    ###############################
+    # Model Versions Pipeline Runs
+    ###############################
+
+    def create_model_version_pipeline_run_link(
+        self,
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    ) -> ModelVersionPipelineRunResponseModel:
+        """Creates a new model version to pipeline run link.
+
+        Args:
+            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+
+        Returns:
+            The newly created model version to pipeline run link.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=model_version_pipeline_run_link,
+            response_model=ModelVersionPipelineRunResponseModel,
+            route=f"{MODELS}/{model_version_pipeline_run_link.model}{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
+        )
+
+    def list_model_version_pipeline_run_links(
+        self,
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        return self._list_paginated_resources(
+            route=f"{MODELS}/{model_version_pipeline_run_link_filter_model.model_id}{MODEL_VERSIONS}/{model_version_pipeline_run_link_filter_model.model_version_id}{RUNS}",
+            response_model=ModelVersionPipelineRunResponseModel,
+            filter_model=model_version_pipeline_run_link_filter_model,
+        )
+
+    def delete_model_version_pipeline_run_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to pipeline run link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+        """
+        self._delete_resource(
+            resource_id=model_version_pipeline_run_link_name_or_id,
+            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{RUNS}",
         )
 
     # =======================

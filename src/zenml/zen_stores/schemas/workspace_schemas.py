@@ -30,7 +30,8 @@ if TYPE_CHECKING:
         CodeRepositorySchema,
         FlavorSchema,
         ModelSchema,
-        ModelVersionLinkSchema,
+        ModelVersionArtifactSchema,
+        ModelVersionPipelineRunSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -127,7 +128,15 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_version_links: List["ModelVersionLinkSchema"] = Relationship(
+    model_versions_artifacts_links: List[
+        "ModelVersionArtifactSchema"
+    ] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    model_versions_pipeline_runs_links: List[
+        "ModelVersionPipelineRunSchema"
+    ] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
