@@ -5,7 +5,7 @@ description: Learning how to develop a custom artifact store.
 # Develop a custom artifact store
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 ZenML comes equipped with [Artifact Store implementations](artifact-stores.md#artifact-store-flavors) that you can use
