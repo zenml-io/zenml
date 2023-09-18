@@ -101,11 +101,9 @@ from zenml.models import (
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
     ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
@@ -2478,23 +2476,6 @@ class RestZenStore(BaseZenStore):
     # Model Versions Artifacts
     ###########################
 
-    def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
-        """Creates a new model version link.
-
-        Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
-
-        Returns:
-            The newly created model version to artifact link.
-        """
-        return self._create_workspace_scoped_resource(
-            resource=model_version_artifact_link,
-            response_model=ModelVersionArtifactResponseModel,
-            route=f"{MODELS}/{model_version_artifact_link.model}{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
-        )
-
     def list_model_version_artifact_links(
         self,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
@@ -2514,45 +2495,9 @@ class RestZenStore(BaseZenStore):
             filter_model=model_version_artifact_link_filter_model,
         )
 
-    def delete_model_version_artifact_link(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_artifact_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to artifact link.
-
-        Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
-        """
-        self._delete_resource(
-            resource_id=model_version_artifact_link_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{ARTIFACTS}",
-        )
-
     ###############################
     # Model Versions Pipeline Runs
     ###############################
-
-    def create_model_version_pipeline_run_link(
-        self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
-        """Creates a new model version to pipeline run link.
-
-        Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
-
-        Returns:
-            The newly created model version to pipeline run link.
-        """
-        return self._create_workspace_scoped_resource(
-            resource=model_version_pipeline_run_link,
-            response_model=ModelVersionPipelineRunResponseModel,
-            route=f"{MODELS}/{model_version_pipeline_run_link.model}{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
-        )
 
     def list_model_version_pipeline_run_links(
         self,
@@ -2571,24 +2516,6 @@ class RestZenStore(BaseZenStore):
             route=f"{MODELS}/{model_version_pipeline_run_link_filter_model.model_id}{MODEL_VERSIONS}/{model_version_pipeline_run_link_filter_model.model_version_id}{RUNS}",
             response_model=ModelVersionPipelineRunResponseModel,
             filter_model=model_version_pipeline_run_link_filter_model,
-        )
-
-    def delete_model_version_pipeline_run_link(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to pipeline run link.
-
-        Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
-        """
-        self._delete_resource(
-            resource_id=model_version_pipeline_run_link_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{RUNS}",
         )
 
     # =======================

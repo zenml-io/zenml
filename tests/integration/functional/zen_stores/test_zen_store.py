@@ -2714,11 +2714,13 @@ class TestModelVersion:
 
 class TestModelVersionArtifactLinks:
     def test_link_create_pass(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
@@ -2731,11 +2733,13 @@ class TestModelVersionArtifactLinks:
             )
 
     def test_link_create_duplicated(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
@@ -2772,11 +2776,13 @@ class TestModelVersionArtifactLinks:
                 )
 
     def test_link_delete_found(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
@@ -2801,8 +2807,10 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_delete_not_found(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True) as model_version:
-            zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version_artifact_link(
                     model_name_or_id=model_version.model.id,
@@ -2822,11 +2830,13 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_artifacts=3) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
                     model_id=model_version.model.id,
@@ -2919,11 +2929,13 @@ class TestModelVersionArtifactLinks:
 
 class TestModelVersionPipelineRunLinks:
     def test_link_create_pass(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
-            zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
@@ -2936,11 +2948,13 @@ class TestModelVersionPipelineRunLinks:
             )
 
     def test_link_create_duplicated(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
-            zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
@@ -2977,11 +2991,13 @@ class TestModelVersionPipelineRunLinks:
                 )
 
     def test_link_delete_found(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
-            zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
@@ -3004,8 +3020,10 @@ class TestModelVersionPipelineRunLinks:
             assert len(mvls) == 0
 
     def test_link_delete_not_found(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True) as model_version:
-            zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version_pipeline_run_link(
                     model_version.model.id, model_version.id, "link"
@@ -3023,11 +3041,13 @@ class TestModelVersionPipelineRunLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
+        zs = Client().zen_store
+        if not isinstance(zs, SqlZenStore):
+            pytest.skip("Test only applies to SQL store")
         with ModelVersionContext(True, create_prs=2) as (
             model_version,
             prs,
         ):
-            zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
                 ModelVersionPipelineRunFilterModel(
                     model_id=model_version.model.id,

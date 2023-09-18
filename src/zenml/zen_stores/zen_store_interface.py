@@ -37,11 +37,9 @@ from zenml.models import (
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
     ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
@@ -1849,22 +1847,6 @@ class ZenStoreInterface(ABC):
     ###########################
 
     @abstractmethod
-    def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
-        """Creates a new model version link.
-
-        Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
-
-        Returns:
-            The newly created model version to artifact link.
-
-        Raises:
-            EntityExistsError: If a link with the given name already exists.
-        """
-
-    @abstractmethod
     def list_model_version_artifact_links(
         self,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
@@ -1879,44 +1861,9 @@ class ZenStoreInterface(ABC):
             A page of all model version to artifact links.
         """
 
-    @abstractmethod
-    def delete_model_version_artifact_link(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_artifact_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to artifact link.
-
-        Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
-
-        Raises:
-            KeyError: specified ID or name not found.
-        """
-
     ###############################
     # Model Versions Pipeline Runs
     ###############################
-
-    @abstractmethod
-    def create_model_version_pipeline_run_link(
-        self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
-        """Creates a new model version to pipeline run link.
-
-        Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
-
-        Returns:
-            The newly created model version to pipeline run link.
-
-        Raises:
-            EntityExistsError: If a link with the given ID already exists.
-        """
 
     @abstractmethod
     def list_model_version_pipeline_run_links(
@@ -1931,22 +1878,4 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A page of all model version to pipeline run links.
-        """
-
-    @abstractmethod
-    def delete_model_version_pipeline_run_link(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Deletes a model version to pipeline run link.
-
-        Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
-
-        Raises:
-            KeyError: specified ID not found.
         """

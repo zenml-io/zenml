@@ -287,35 +287,6 @@ def list_model_version_artifact_links(
     )
 
 
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS
-    + "/{model_version_artifact_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_artifact_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_artifact_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
-    """
-    zen_store().delete_model_version_artifact_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_artifact_link_name_or_id,
-    )
-
-
 ##############################
 # Model Version Pipeline Runs
 ##############################
@@ -347,33 +318,4 @@ def list_model_version_pipeline_run_links(
     """
     return zen_store().list_model_version_pipeline_run_links(
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS
-    + "/{model_version_pipeline_run_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_pipeline_run_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_pipeline_run_link_name_or_id: name or ID of the model version link to be deleted.
-    """
-    zen_store().delete_model_version_pipeline_run_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_pipeline_run_link_name_or_id,
     )
