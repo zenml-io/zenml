@@ -1745,7 +1745,7 @@ class RestZenStore(BaseZenStore):
 
     def create_run_metadata(
         self, run_metadata: RunMetadataRequestModel
-    ) -> RunMetadataResponseModel:
+    ) -> List[RunMetadataResponseModel]:
         """Creates run metadata.
 
         Args:
@@ -1754,11 +1754,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return self._create_workspace_scoped_resource(
-            resource=run_metadata,
-            response_model=RunMetadataResponseModel,
-            route=RUN_METADATA,
-        )
+        route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
+        response_body = self.post(f"{route}", body=run_metadata)
+        result: List[RunMetadataResponseModel] = []
+        if isinstance(response_body, list):
+            for metadata in response_body or []:
+                result.append(RunMetadataResponseModel.parse_obj(metadata))
+        return result
 
     def list_run_metadata(
         self,

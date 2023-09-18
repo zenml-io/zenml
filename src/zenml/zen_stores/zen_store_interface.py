@@ -1347,7 +1347,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_run_metadata(
         self, run_metadata: RunMetadataRequestModel
-    ) -> RunMetadataResponseModel:
+    ) -> List[RunMetadataResponseModel]:
         """Creates run metadata.
 
         Args:
