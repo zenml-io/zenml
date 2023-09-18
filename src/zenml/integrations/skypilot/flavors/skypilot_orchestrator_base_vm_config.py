@@ -28,17 +28,17 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     Attributes:
         instance_type: the instance type to use.
         cpus: the number of CPUs required for the task.
-            If a str, must be a string of the form ``'2'`` or ``'2+'``, where
-            the ``+`` indicates that the task requires at least 2 CPUs.
+            If a str, must be a string of the form `'2'` or `'2+'`, where
+            the `+` indicates that the task requires at least 2 CPUs.
         memory: the amount of memory in GiB required. If a
-            str, must be a string of the form ``'16'`` or ``'16+'``, where
-            the ``+`` indicates that the task requires at least 16 GB of memory.
+            str, must be a string of the form `'16'` or `'16+'`, where
+            the `+` indicates that the task requires at least 16 GB of memory.
         accelerators: the accelerators required. If a str, must be
-            a string of the form ``'V100'`` or ``'V100:2'``, where the ``:2``
+            a string of the form `'V100'` or `'V100:2'`, where the `:2`
             indicates that the task requires 2 V100 GPUs. If a dict, must be a
-            dict of the form ``{'V100': 2}`` or ``{'tpu-v2-8': 1}``.
+            dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
         accelerator_args: accelerator-specific arguments. For example,
-            ``{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}`` for TPUs.
+            `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
         use_spot: whether to use spot instances. If None, defaults to
             False.
         spot_recovery: the spot recovery strategy to use for the managed

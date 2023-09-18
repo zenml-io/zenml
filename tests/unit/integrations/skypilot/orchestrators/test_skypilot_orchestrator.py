@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import random
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -29,7 +28,9 @@ if TYPE_CHECKING:
     )
 
 
-def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
+def _get_skypilot_orchestrator(
+    provider, **kwargs
+) -> "SkypilotBaseOrchestrator":
     """Helper function to get a SkyPilot VM orchestrator."""
     from zenml.integrations.skypilot.flavors import (
         SkypilotAWSOrchestratorConfig,
@@ -42,23 +43,31 @@ def _get_skypilot_orchestrator(**kwargs) -> "SkypilotBaseOrchestrator":
         SkypilotGCPOrchestrator,
     )
 
-    # Create a list of orchestrator classes and corresponding flavors
-    orchestrators = [
-        (SkypilotAWSOrchestrator, SkypilotAWSOrchestratorConfig, "vm_aws"),
-        (SkypilotGCPOrchestrator, SkypilotGCPOrchestratorConfig, "vm_gcp"),
-        (
+    # Mapping of providers to orchestrator classes and flavors
+    orchestrator_map = {
+        "aws": (
+            SkypilotAWSOrchestrator,
+            SkypilotAWSOrchestratorConfig,
+            "vm_aws",
+        ),
+        "azure": (
             SkypilotAzureOrchestrator,
             SkypilotAzureOrchestratorConfig,
             "vm_azure",
         ),
-    ]
+        "gcp": (
+            SkypilotGCPOrchestrator,
+            SkypilotGCPOrchestratorConfig,
+            "vm_gcp",
+        ),
+    }
 
-    # Randomly select an orchestrator class and flavor
+    # Get the orchestrator class and flavor based on the provider
     (
         selected_orchestrator_class,
         selected_config_class,
         selected_flavor,
-    ) = random.choice(orchestrators)
+    ) = orchestrator_map.get(provider)
 
     return selected_orchestrator_class(
         name="",
@@ -83,7 +92,7 @@ def test_skypilot_orchestrator_local_stack(
     """Test the SkyPilot VM orchestrator with remote stacks."""
 
     # Test missing container registry
-    orchestrator = _get_skypilot_orchestrator()
+    orchestrator = _get_skypilot_orchestrator(provider)
     with does_not_raise():
         Stack(
             id=uuid4(),
