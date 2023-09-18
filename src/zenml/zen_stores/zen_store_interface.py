@@ -36,6 +36,16 @@ from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
     ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -1686,7 +1696,7 @@ class ZenStoreInterface(ABC):
             The newly created model.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a model with the given name already exists.
         """
 
     @abstractmethod
@@ -1724,6 +1734,9 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The model of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod
@@ -1739,4 +1752,201 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A page of all models.
+        """
+
+    #################
+    # Model Versions
+    #################
+
+    @abstractmethod
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+
+        Raises:
+            EntityExistsError: If a model version with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be retrieved.
+
+        Returns:
+            The model version of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def list_model_versions(
+        self,
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get all model versions by filter.
+
+        Args:
+            model_version_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model versions.
+        """
+
+    @abstractmethod
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+
+        Raises:
+            KeyError: If the model version not found
+            RuntimeError: If there is a model version with target stage, but `force` flag is off
+        """
+
+    ###########################
+    # Model Versions Artifacts
+    ###########################
+
+    @abstractmethod
+    def create_model_version_artifact_link(
+        self, model_version_artifact_link: ModelVersionArtifactRequestModel
+    ) -> ModelVersionArtifactResponseModel:
+        """Creates a new model version link.
+
+        Args:
+            model_version_artifact_link: the Model Version to Artifact Link to be created.
+
+        Returns:
+            The newly created model version to artifact link.
+
+        Raises:
+            EntityExistsError: If a link with the given name already exists.
+        """
+
+    @abstractmethod
+    def list_model_version_artifact_links(
+        self,
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get all model version to artifact links by filter.
+
+        Args:
+            model_version_artifact_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to artifact links.
+        """
+
+    @abstractmethod
+    def delete_model_version_artifact_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to artifact link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    ###############################
+    # Model Versions Pipeline Runs
+    ###############################
+
+    @abstractmethod
+    def create_model_version_pipeline_run_link(
+        self,
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    ) -> ModelVersionPipelineRunResponseModel:
+        """Creates a new model version to pipeline run link.
+
+        Args:
+            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+
+        Returns:
+            The newly created model version to pipeline run link.
+
+        Raises:
+            EntityExistsError: If a link with the given ID already exists.
+        """
+
+    @abstractmethod
+    def list_model_version_pipeline_run_links(
+        self,
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+
+    @abstractmethod
+    def delete_model_version_pipeline_run_link(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to pipeline run link.
+
+        Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+
+        Raises:
+            KeyError: specified ID not found.
         """

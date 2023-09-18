@@ -32,6 +32,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.model_schemas import (
+        ModelVersionArtifactSchema,
+    )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import (
         StepRunInputArtifactSchema,
@@ -91,6 +94,12 @@ class ArtifactSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     visualizations: List["ArtifactVisualizationSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    model_versions_artifacts_links: List[
+        "ModelVersionArtifactSchema"
+    ] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )

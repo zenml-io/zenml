@@ -13,23 +13,37 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
+from zenml.model import ModelStages
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
-    pass
+    version: str = Field(
+        title="The name of the model version",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: Optional[str] = Field(
+        title="The description of the model version",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    stage: Optional[str] = Field(
+        title="The stage of the model version",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 class ModelVersionRequestModel(
@@ -38,7 +52,9 @@ class ModelVersionRequestModel(
 ):
     """Model Version request model."""
 
-    pass
+    model: UUID = Field(
+        title="The ID of the model containing version",
+    )
 
 
 class ModelVersionResponseModel(
@@ -47,31 +63,296 @@ class ModelVersionResponseModel(
 ):
     """Model Version response model."""
 
-    pass
+    model: "ModelResponseModel" = Field(
+        title="The model containing version",
+    )
+    model_object_ids: Dict[str, UUID] = Field(
+        title="Model Objects linked to the model version",
+        default={},
+    )
+    artifact_object_ids: Dict[str, UUID] = Field(
+        title="Artifacts linked to the model version",
+        default={},
+    )
+    deployment_ids: Dict[str, UUID] = Field(
+        title="Deployments linked to the model version",
+        default={},
+    )
+    pipeline_run_ids: Dict[str, UUID] = Field(
+        title="Pipeline runs linked to the model version",
+        default={},
+    )
+
+    @property
+    def model_objects(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all model objects linked to this version.
+
+        Returns:
+            Dictionary of Model Objects as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.model_object_ids.items()
+        }
+
+    @property
+    def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all artifacts linked to this version.
+
+        Returns:
+            Dictionary of Artifact Objects as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.artifact_object_ids.items()
+        }
+
+    @property
+    def deployments(self) -> Dict[str, ArtifactResponseModel]:
+        """Get all deployments linked to this version.
+
+        Returns:
+            Dictionary of Deployments as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return {
+            name: Client().get_artifact(a)
+            for name, a in self.deployment_ids.items()
+        }
+
+    @property
+    def pipeline_runs(self) -> Dict[str, PipelineRunResponseModel]:
+        """Get all pipeline runs linked to this version.
+
+        Returns:
+            Dictionary of Pipeline Runs as PipelineRunResponseModel
+        """
+        from zenml.client import Client
+
+        return {
+            name: Client().get_pipeline_run(pr)
+            for name, pr in self.pipeline_run_ids.items()
+        }
+
+    def get_model_object(self, name: str) -> ArtifactResponseModel:
+        """Get model object linked to this version.
+
+        Args:
+            name: The name of the model object to retrieve.
+
+        Returns:
+            Model Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.model_object_ids[name])
+
+    def get_artifact_object(self, name: str) -> ArtifactResponseModel:
+        """Get artifact linked to this version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+
+        Returns:
+            Artifact Object as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.artifact_object_ids[name])
+
+    def get_deployment(self, name: str) -> ArtifactResponseModel:
+        """Get deployment linked to this version.
+
+        Args:
+            name: The name of the deployment to retrieve.
+
+        Returns:
+            Deployment as ArtifactResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_artifact(self.deployment_ids[name])
+
+    def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
+        """Get pipeline run linked to this version.
+
+        Args:
+            name: The name of the pipeline run to retrieve.
+
+        Returns:
+            PipelineRun as PipelineRunResponseModel
+        """
+        from zenml.client import Client
+
+        return Client().get_pipeline_run(self.pipeline_run_ids[name])
+
+    def set_stage(
+        self, stage: ModelStages, force: bool = False
+    ) -> "ModelVersionResponseModel":
+        """Sets this Model Version to a desired stage.
+
+        Args:
+            stage: the target stage for model version.
+            force: whether to force archiving of current model version in target stage or raise.
+
+        Returns:
+            Dictionary of Model Objects as model_version_name_or_id
+        """
+        from zenml.client import Client
+
+        return Client().zen_store.update_model_version(
+            model_version_id=self.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=self.model.id,
+                stage=stage,
+                force=force,
+            ),
+        )
+
+    # TODO in https://zenml.atlassian.net/browse/OSS-2433
+    # def generate_model_card(self, template_name: str) -> str:
+    #     """Return HTML/PDF based on input template"""
 
 
-class ModelConfigBaseModel(BaseModel):
-    """Model Config base model."""
+class ModelVersionFilterModel(WorkspaceScopedFilterModel):
+    """Filter Model for Model Version."""
 
-    pass
+    model_id: Union[str, UUID] = Field(
+        description="The ID of the Model",
+    )
+    version: Optional[Union[str, UUID]] = Field(
+        default=None,
+        description="The name of the Model Version",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
 
 
-class ModelConfigRequestModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedRequestModel,
+class ModelVersionUpdateModel(BaseModel):
+    """Update Model for Model Version."""
+
+    model: UUID = Field(
+        title="The ID of the model containing version",
+    )
+    stage: ModelStages = Field(
+        title="Target model version stage to be set",
+    )
+    force: bool = Field(
+        title="Whether existing model version in target stage should be silently archived "
+        "or an error should be raised.",
+        default=False,
+    )
+
+
+class ModelVersionArtifactBaseModel(BaseModel):
+    """Model version links with artifact base model."""
+
+    name: Optional[str] = Field(
+        title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    artifact: UUID
+    model: UUID
+    model_version: UUID
+    is_model_object: bool = False
+    is_deployment: bool = False
+
+    @validator("is_deployment")
+    def _validate_is_deployment(
+        cls, is_deployment: bool, values: Dict[str, Any]
+    ) -> bool:
+        is_model_object = values.get("is_model_object", False)
+        if is_model_object and is_deployment:
+            raise ValueError(
+                "Artifact cannot be a model object and deployment at the same time."
+            )
+        return is_deployment
+
+
+class ModelVersionArtifactRequestModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedRequestModel
 ):
-    """Model Config request model."""
-
-    pass
+    """Model version link with artifact request model."""
 
 
-class ModelConfigResponseModel(
-    ModelConfigBaseModel,
-    WorkspaceScopedResponseModel,
+class ModelVersionArtifactResponseModel(
+    ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model Config response model."""
+    """Model version link with artifact response model."""
 
-    pass
+
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
+
+    model_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model",
+    )
+    model_version_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model Version",
+    )
+    name: Optional[str] = Field(
+        title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
+    only_artifacts: Optional[bool] = False
+    only_model_objects: Optional[bool] = False
+    only_deployments: Optional[bool] = False
+
+
+class ModelVersionPipelineRunBaseModel(BaseModel):
+    """Model version links with pipeline run base model."""
+
+    name: Optional[str] = Field(
+        title="The name of the pipeline run inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_run: UUID
+    model: UUID
+    model_version: UUID
+
+
+class ModelVersionPipelineRunRequestModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedRequestModel
+):
+    """Model version link with pipeline run request model."""
+
+
+class ModelVersionPipelineRunResponseModel(
+    ModelVersionPipelineRunBaseModel, WorkspaceScopedResponseModel
+):
+    """Model version link with pipeline run response model."""
+
+
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
+    """Model version pipeline run links filter model."""
+
+    model_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model",
+    )
+    model_version_id: Union[str, UUID] = Field(
+        description="The name or ID of the Model Version",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The workspace of the Model Version"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="The user of the Model Version"
+    )
 
 
 class ModelBaseModel(BaseModel):

@@ -28,6 +28,9 @@ if TYPE_CHECKING:
         CodeRepositorySchema,
         FlavorSchema,
         ModelSchema,
+        ModelVersionArtifactSchema,
+        ModelVersionPipelineRunSchema,
+        ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -95,6 +98,15 @@ class UserSchema(NamedSchema, table=True):
     models: List["ModelSchema"] = Relationship(
         back_populates="user",
     )
+    model_versions: List["ModelVersionSchema"] = Relationship(
+        back_populates="user",
+    )
+    model_versions_artifacts_links: List[
+        "ModelVersionArtifactSchema"
+    ] = Relationship(back_populates="user")
+    model_versions_pipeline_runs_links: List[
+        "ModelVersionPipelineRunSchema"
+    ] = Relationship(back_populates="user")
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":
