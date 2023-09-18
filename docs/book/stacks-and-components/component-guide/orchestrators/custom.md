@@ -220,15 +220,13 @@ class MyOrchestrator(ContainerizedOrchestrator):
             # each step only runs after all its upstream steps finished
             upstream_steps = step.spec.upstream_steps
 
-            # You can get the config your orchestrator like so.
-            # The config is the "static" part of your orchestrators config, defined
-            # when you register your orchestrator
-            step_config = step.config  # Defined in `MyOrchestratorConfig`
-
             # You can get the settings your orchestrator like so.
             # The settings are the "dynamic" part of your orchestrators config,
             # optionally defined when you register your orchestrator but can be
             # overridden at runtime.
+            # In contrast, the "static" part of your orchestrators config is
+            # always defined when you register the orchestrator and can be
+            # accessed via `self.config`.
             step_settings = cast(
                 MyOrchestratorSettings, self.get_settings(step)
             )
