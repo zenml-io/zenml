@@ -67,6 +67,7 @@ class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
+    stack_spec_path: Optional[str]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -137,6 +138,7 @@ class StackSchema(ShareableSchema, table=True):
         return StackResponseModel(
             id=self.id,
             name=self.name,
+            stack_spec_path=self.stack_spec_path,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             is_shared=self.is_shared,

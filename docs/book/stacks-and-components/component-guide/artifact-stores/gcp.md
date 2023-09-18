@@ -63,12 +63,12 @@ to [authentication](gcp.md#authentication-methods) to match your deployment scen
 A GCS Artifact Store can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml artifact-store deploy gcs_artifact_store --flavor=gcp ...
+zenml artifact-store deploy gcs_artifact_store --flavor=gcp --provider=gcp ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
 a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
-dedicated documentation section.
+[dedicated documentation section](../../stack-deployment/stack-deployment.md).
 
 #### Authentication Methods
 

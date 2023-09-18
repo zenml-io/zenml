@@ -95,7 +95,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             RuntimeError: If the repository is not public.
         """
         url = f"https://api.github.com/repos/{owner}/{repo}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=7)
 
         try:
             if response.status_code == 200:

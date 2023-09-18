@@ -43,7 +43,7 @@ The only other thing necessary to use the ZenML Sagemaker orchestrator is enabli
 particular role.
 
 In order to quickly enable APIs, and create other resources necessary for to use this integration, we will soon provide
-a Sagemaker stack recipe via [our `mlstacks` recipe repository](https://github.com/zenml-io/mlstacks), which
+a Sagemaker stack recipe via [our `mlstacks` repository](https://github.com/zenml-io/mlstacks), which
 will help you set up the infrastructure with one click.
 
 ### Infrastructure Deployment
@@ -51,7 +51,7 @@ will help you set up the infrastructure with one click.
 A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker ...
+zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker --provider=aws ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
@@ -80,15 +80,63 @@ zenml integration install aws s3
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be
   able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
-We can then register the orchestrator and use it in our active stack:
+There are three ways you can authenticate your orchestrator and link it to
+the IAM role you have created:
+
+{% tabs %}
+{% tab title="Authentication via Service Connector" %}
+
+The recommended way to authenticate your SageMaker orchestrator is by
+registering an 
+[AWS Service Connector](../../auth-management/aws-service-connector.md) and
+connecting it to your SageMaker orchestrator:
+
+```shell
+zenml service-connector register <CONNECTOR_NAME> --type aws -i
+zenml orchestrator register <ORCHESTRATOR_NAME> \
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN>
+zenml orchestrator connect <ORCHESTRATOR_NAME> --connector <CONNECTOR_NAME>
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+```
+
+{% endtab %}
+{% tab title="Explicit Authentication" %}
+
+Instead of creating a service connector, you can also configure your AWS
+authentication credentials directly in the orchestrator:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=sagemaker --execution_role=<YOUR_ROLE_ARN>
-
-# Register and activate a stack with the new orchestrator
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN> \ 
+    --aws_access_key_id=...
+    --aws_secret_access_key=...
+    --aws_region=...
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+
+See the [`SagemakerOrchestratorConfig` SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor)
+for more information on available configuration options.
+
+{% endtab %}
+{% tab title="Implicit Authentication" %}
+
+If you neither connect your orchestrator to a service connector nor configure
+credentials explicitly, ZenML will try to implicitly authenticate to AWS via
+the `default` profile in your local 
+[AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+```shell
+zenml orchestrator register <ORCHESTRATOR_NAME> \
+    --flavor=sagemaker \
+    --execution_role=<YOUR_IAM_ROLE_ARN>
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+python run.py  # Authenticates with `default` profile in `~/.aws/config`
+```
+
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
@@ -100,8 +148,22 @@ more about how ZenML builds these images and how you can customize them.
 You can now run any ZenML pipeline using the Sagemaker orchestrator:
 
 ```shell
-python file_that_runs_a_zenml_pipeline.py
+python run.py
 ```
+
+If all went well, you should now see the following output:
+
+```text
+Steps can take 5-15 minutes to start running when using the Sagemaker Orchestrator.
+Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run will only show up on the ZenML dashboard once the first step has started executing on the remote infrastructure.
+```
+
+{% hint style="warning" %}
+If it is taking more than 15 minutes for your run to show up, it might be that a
+setup error occurred in SageMaker before the pipeline could be started. Checkout 
+the [Debugging SageMaker Pipelines](#debugging-sagemaker-pipelines) section for 
+more information on how to debug this.
+{% endhint %}
 
 ### Sagemaker UI
 
@@ -118,6 +180,31 @@ Once the Studio UI has launched, click on the 'Pipeline' button on the left
 side. From there you can view the pipelines that have been launched via ZenML:
 
 ![Sagemaker Studio Pipelines](../../../.gitbook/assets/sagemakerUI.png)
+
+### Debugging SageMaker Pipelines
+
+If your SageMaker pipeline encounters an error before the first ZenML step 
+starts, the ZenML run will not appear in the ZenML dashboard. In such cases, 
+use the [SageMaker UI](#sagemaker-ui) to review the error message and logs. 
+Here's how:
+* Open the corresponding pipeline in the SageMaker UI as shown in the
+[SageMaker UI Section](#sagemaker-ui),
+* Open the execution,
+* Click on the failed step in the pipeline graph,
+* Go to the 'Output' tab to see the error message or to 'Logs' to see the logs.
+
+![SageMaker Studio Logs](../../../.gitbook/assets/sagemaker-logs.png)
+
+Alternatively, for a more detailed view of log messages during SageMaker
+pipeline executions, consider using 
+[Amazon CloudWatch](https://aws.amazon.com/cloudwatch/):
+* Search for 'CloudWatch' in the AWS console search bar.
+* Navigate to 'Logs > Log groups.'
+* Open the '/aws/sagemaker/ProcessingJobs' log group.
+* Here, you can find log streams for each step of your SageMaker pipeline 
+executions.
+
+![SageMaker CloudWatch Logs](../../../.gitbook/assets/sagemaker-cloudwatch-logs.png)
 
 ### Run pipelines on a schedule
 
@@ -172,7 +259,7 @@ how to
 specify settings in general.
 
 For more information and a full list of configurable attributes of the Sagemaker orchestrator, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
+the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker\_orchestrator.SagemakerOrchestrator)
 .
 
 #### S3 data access in ZenML steps

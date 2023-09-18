@@ -17,33 +17,23 @@ You can refer to the [`CONTRIBUTING.md`](https://github.com/zenml-io/mlstacks/bl
 * If you want to enable users to set any configuration parameters through the CLI, add those variables to the `variables.tf` file. You can take a look at existing variables like `mlflow_bucket` to get an idea of how to do this.
 * Now, add a variable that allows the user to enable this service, to the `variables.tf` file. The format for the name is `enable_<STACK_COMPONENT>_<FLAVOR>`
 * You also need to populate the `outputs.tf` file with information that a stack component registration for your new component might need. This is used by the stack component deploy CLI.
-* Add a block to the `output_file.tf` file that corresponds to your component. This is the file that gets generated on a successful `stack recipe deploy` event and can be imported as a ZenML stack.
+* Add a block to the `output_file.tf` file that corresponds to your component. This is the file that gets generated on a successful `stack deploy` event and can be imported as a ZenML stack.
 * Finally, contribute a PR back to `develop`! 🥳
 
-Once merged, this should allow other people to use your new component while deploying through the `zenml stack recipe deploy ..-modular` flow. To enable integration with the stack component deploy CLI, you need to also contribute to the `zenml-io/zenml` repo.
+Once merged, this should allow other people to use your new component while deploying through the `zenml stack deploy` flow. To enable integration with the stack component deploy CLI, you need to also contribute to the `zenml-io/zenml` repo.
 
 ## Enabling the stack component deploy CLI
 
-To enable the stack component deploy CLI to work with your new component, you need to add a new flag to the [`deploy_stack_component_command`](https://github.com/zenml-io/zenml/blob/6265248f7c268deb2ac6d5a268763a9d287ac845/src/zenml/cli/stack\_components.py#L1114) in the `src/zenml/cli/stack_components.py` file.
+To enable the stack component deploy CLI to work with your new component, you
+need to add a new flag to the `deploy_stack_component_command` in the
+`src/zenml/cli/stack_components.py` file.
 
-Specifically, you can edit the following [dictionary](https://github.com/zenml-io/zenml/blob/6265248f7c268deb2ac6d5a268763a9d287ac845/src/zenml/cli/stack\_components.py#L1114) to include your flavor and stack component information.
+From the `mlstacks` side, this will also require an update to
+the validation logic inside the `mlstacks` repository, starting with updating
+enums and constants in the base of the `src/mlstacks` directory.
 
-{% code overflow="wrap" %}
-```
-allowed_flavors = {
-            "experiment_tracker": ["mlflow"],
-            "model_deployer": ["seldon"],
-            "artifact_store": ["s3", "gcp", "minio"],
-            "container_registry": ["gcp", "aws"],
-            "orchestrator": ["kubernetes", "kubeflow", ...],
-            "step_operator": ["sagemaker", "vertex"],
-        }
-```
-{% endcode %}
-
-This should make the ZenML CLI aware of your new contribution.
-
-Happy contributing! 🥰
+If you have any further questions or need help navigating changes that are
+required, [please do reach out to us on Slack](https://zenml.io/slack-invite)! Happy contributing! 🥰
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

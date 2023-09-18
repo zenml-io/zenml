@@ -30,7 +30,7 @@ You should use the SageMaker step operator if:
 A Sagemaker step operator can be deployed directly from the ZenML CLI:
 
 ```shell
-zenml orchestrator deploy sagemaker_step_operator --flavor=sagemaker ...
+zenml orchestrator deploy sagemaker_step_operator --flavor=sagemaker --provider=aws ...
 ```
 
 You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
