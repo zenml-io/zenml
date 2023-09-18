@@ -14,9 +14,7 @@
 """Initialization of the Skypilot integration for ZenML.
 
 The Skypilot integration sub-module powers an alternative to the local
-orchestrator for a remote orchestration of ZenML pipelines.
-You can enable it by registering the Skypilot orchestrator with
-the CLI tool.
+orchestrator for a remote orchestration of ZenML pipelines on VMs.
 """
 from typing import List, Type
 

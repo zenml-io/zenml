@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot based GCP VM orchestrator."""
+"""Implementation of the a Skypilot-based GCP VM orchestrator."""
 
 from typing import TYPE_CHECKING, Optional, Type, cast
 
@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 class SkypilotGCPOrchestrator(
     SkypilotBaseOrchestrator, GoogleCredentialsMixin
 ):
-    """Orchestrator responsible for running pipelines remotely in a VM.
+    """Orchestrator responsible for running pipelines remotely in a VM on GCP.
 
     This orchestrator does not support running on a schedule.
     """

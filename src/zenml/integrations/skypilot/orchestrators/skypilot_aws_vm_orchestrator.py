@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 
 
 class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
-    """Orchestrator responsible for running pipelines remotely in a VM.
+    """Orchestrator responsible for running pipelines remotely in a VM on AWS.
 
     This orchestrator does not support running on a schedule.
     """

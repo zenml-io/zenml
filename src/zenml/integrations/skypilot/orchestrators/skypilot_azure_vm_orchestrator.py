@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 
 class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
-    """Orchestrator responsible for running pipelines remotely in a VM.
+    """Orchestrator responsible for running pipelines remotely in a VM on Azure.
 
     This orchestrator does not support running on a schedule.
     """

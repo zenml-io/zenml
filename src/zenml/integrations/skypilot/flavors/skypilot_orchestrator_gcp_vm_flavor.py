@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 
 class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings."""
+    """Skypilot orchestrator settings for GCP."""
 
 
 class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -45,11 +45,11 @@ class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/
     GoogleCredentialsConfigMixin,
     SkypilotGCPOrchestratorSettings,
 ):
-    """Skypilot orchestrator config."""
+    """Skypilot orchestrator config for GCP."""
 
 
 class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot orchestrator."""
+    """Flavor for the Skypilot orchestrator for GCP."""
 
     @property
     def name(self) -> str:

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot based AWS VM orchestrator."""
+"""Implementation of the a Skypilot base VM orchestrator."""
 
 import os
 import time
@@ -48,7 +48,7 @@ ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID = "ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID"
 
 
 class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running pipelines remotely in a VM.
+    """Base class for Orchestrator responsible for running pipelines remotely in a VM.
 
     This orchestrator does not support running on a schedule.
     """

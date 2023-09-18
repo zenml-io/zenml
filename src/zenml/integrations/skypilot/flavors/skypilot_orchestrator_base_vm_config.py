@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 class SkypilotBaseOrchestratorSettings(BaseSettings):
-    """Skypilot orchestrator settings.
+    """Skypilot orchestrator base settings.
 
     Attributes:
         instance_type: the instance type to use.
@@ -111,7 +111,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
 class SkypilotBaseOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, SkypilotBaseOrchestratorSettings
 ):
-    """Skypilot orchestrator config."""
+    """Skypilot orchestrator base config."""
 
     @property
     def is_local(self) -> bool:

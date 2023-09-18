@@ -34,17 +34,17 @@ logger = get_logger(__name__)
 
 
 class SkypilotAzureOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings."""
+    """Skypilot orchestrator settings for Azure."""
 
 
 class SkypilotAzureOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     SkypilotBaseOrchestratorConfig, SkypilotAzureOrchestratorSettings
 ):
-    """Skypilot orchestrator config."""
+    """Skypilot orchestrator config for Azure."""
 
 
 class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot orchestrator."""
+    """Flavor for the Skypilot orchestrator for Azure."""
 
     @property
     def name(self) -> str:

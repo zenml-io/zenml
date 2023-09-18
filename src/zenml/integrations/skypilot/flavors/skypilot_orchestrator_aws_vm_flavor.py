@@ -44,7 +44,7 @@ class SkypilotAWSOrchestratorConfig(  # type: ignore[misc] # https://github.com/
 
 
 class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot orchestrator."""
+    """Flavor for the Skypilot AWS orchestrator."""
 
     @property
     def name(self) -> str:
