@@ -143,7 +143,7 @@ class DiscordAlerter(BaseAlerter):
 
     def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
-    ) -> Embed:
+    ) -> Optional[Embed]:
         """Helper function to create discord blocks.
 
         Args:
@@ -153,13 +153,14 @@ class DiscordAlerter(BaseAlerter):
         Returns:
             Discord embed object.
         """
-        embed = Embed(title="Pipeline Alert", color=0x00FF00)
+        blocks_response = None
         if (
             isinstance(params, DiscordAlerterParameters)
             and hasattr(params, "payload")
             and params.payload is not None
         ):
             payload = params.payload
+            embed = Embed()
             embed.set_thumbnail(
                 url="https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png"
             )
@@ -185,7 +186,8 @@ class DiscordAlerter(BaseAlerter):
             embed.add_field(
                 name=":email: *Message:*", value=f"\n{message}", inline=False
             )
-        return embed
+            blocks_response = embed
+        return blocks_response
 
     def start_client(self, client: Client) -> None:
         """Helper function to start discord client.
@@ -240,7 +242,7 @@ class DiscordAlerter(BaseAlerter):
                 if channel:
 
                     # Send the message
-                    await channel.send(embed=embed_blocks)
+                    await channel.send(content=message, embed=embed_blocks)
                     message_sent = True
                 else:
                     logger.error(
@@ -282,7 +284,7 @@ class DiscordAlerter(BaseAlerter):
                 if channel:
 
                     # Send the message
-                    await channel.send(embed=embed_blocks)
+                    await channel.send(content=message, embed=embed_blocks)
 
                     def check(message) -> bool:
                         if message.channel == channel:
@@ -308,7 +310,7 @@ class DiscordAlerter(BaseAlerter):
                     )
 
             except DiscordException as error:
-                logger.error(f"DiscordAlerter.post() failed: {error}")
+                logger.error(f"DiscordAlerter.ask() failed: {error}")
             finally:
                 await client.close()
 
