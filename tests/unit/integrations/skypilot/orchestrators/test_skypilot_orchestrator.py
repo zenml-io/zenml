@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.skipif(
-    sys.version_info > (3, 10),
+    sys.version_info >= (3, 10),
     reason="SkyPilot can not be installed in Python 3.10 or higher.",
 )
 def _get_skypilot_orchestrator(
