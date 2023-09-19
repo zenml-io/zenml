@@ -25,9 +25,11 @@ from typing import (
     Type,
     Union,
 )
+from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel
+from requests import ConnectionError
 
 import zenml
 from zenml.analytics.utils import analytics_disabler
@@ -133,6 +135,25 @@ class BaseZenStore(
 
         try:
             self._initialize()
+
+        # Handle cases where the ZenML server is not available
+        except ConnectionError as e:
+            error_message = (
+                "Cannot connect to the ZenML database because the ZenML server "
+                f"at {self.url} is not running."
+            )
+            if urlparse(self.url).hostname in ["localhost", "127.0.0.1"]:
+                recommendation = (
+                    "Please run `zenml down` and `zenml up` to restart the "
+                    "server."
+                )
+            else:
+                recommendation = (
+                    "Please run `zenml disconnect` and `zenml connect --url "
+                    f"{self.url}` to reconnect to the server."
+                )
+            raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
         except Exception as e:
             raise RuntimeError(
                 f"Error initializing {self.type.value} store with URL "
