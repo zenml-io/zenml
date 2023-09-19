@@ -15,8 +15,9 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
-from pydantic import Field, validator
+from pydantic import Field, PrivateAttr, validator
 
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.logger import get_logger
 from zenml.model.base_model import ModelBaseModel
 from zenml.model.model_stages import ModelStages
@@ -40,18 +41,30 @@ class ModelConfig(ModelBaseModel):
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
 
-    class Config:
-        """Configuration of Pydantic."""
-
-        smart_union = True
-
-    version: Optional[Union[str, ModelStages]] = Field(
+    version: Optional[str] = Field(
         default=None,
-        description="Model version is optional and points model context to a specific version or stage. It can be a version number, stage, ",
+        description="Model version is optional and points model context to a specific version.",
+    )
+    stage: Optional[ModelStages] = Field(
+        default=None,
+        description="Model stage is optional and points model context to a specific stage.",
     )
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
     recovery: bool = False
+
+    _model: Optional["ModelResponseModel"] = PrivateAttr(default=None)
+    _model_version: Optional["ModelVersionResponseModel"] = PrivateAttr(
+        default=None
+    )
+
+    @validator("stage")
+    def _validate_stage(
+        cls, stage: ModelStages, values: Dict[str, Any]
+    ) -> ModelStages:
+        if stage is not None and values.get("version", None) is not None:
+            raise ValueError("Cannot set both `version` and `stage`.")
+        return stage
 
     @validator("create_new_model_version")
     def _validate_create_new_model_version(
@@ -61,6 +74,10 @@ class ModelConfig(ModelBaseModel):
             if values.get("version", None) is not None:
                 raise ValueError(
                     "`version` cannot be used with `create_new_model_version`."
+                )
+            if values.get("stage", None) is not None:
+                raise ValueError(
+                    "`stage` cannot be used with `create_new_model_version`."
                 )
         return create_new_model_version
 
@@ -75,22 +92,15 @@ class ModelConfig(ModelBaseModel):
                 )
         return recovery
 
-    @validator("version")
-    def _validate_version(
-        cls, version: Union[str, ModelStages]
-    ) -> Union[str, ModelStages]:
-        if isinstance(version, str) and version in ModelStages._members():
+    @validator("save_models_to_registry")
+    def _validate_save_models_to_registry(
+        cls, save_models_to_registry: bool
+    ) -> bool:
+        if save_models_to_registry:
             logger.warning(
-                f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
-                "model version by its' stage make sure to pass in instance of `ModelStages`."
+                "`save_models_to_registry` is not yet supported - no effect on pipeline execution."
             )
-        return version
-
-    @property
-    def _stage(self) -> Optional[str]:
-        if isinstance(self.version, ModelStages):
-            return self.version.value
-        return None
+        return save_models_to_registry
 
     def _get_request_params(
         self,
@@ -124,6 +134,9 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model based on configuration.
         """
+        if self._model is not None:
+            return self._model
+
         from zenml.client import Client
         from zenml.models.model_models import ModelRequestModel
 
@@ -138,6 +151,7 @@ class ModelConfig(ModelBaseModel):
             )
             model = zenml_client.zen_store.create_model(model=model_request)
             logger.warning(f"New model `{self.name}` was created implicitly.")
+        self._model = model
         return model
 
     def _get_or_create_model_version(
@@ -154,6 +168,9 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model version based on configuration.
         """
+        if self._model_version is not None:
+            return self._model_version
+
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
 
@@ -161,11 +178,11 @@ class ModelConfig(ModelBaseModel):
         # if specific version requested
         if not self.create_new_model_version:
             # by stage
-            if self._stage is not None:
+            if self.stage is not None:
                 # raise if not found
                 return zenml_client.zen_store.get_model_version_in_stage(
                     model_name_or_id=self.name,
-                    model_stage=self._stage,
+                    model_stage=self.stage,
                 )
             # by version
             else:
@@ -183,14 +200,14 @@ class ModelConfig(ModelBaseModel):
                         model_version_name_or_id=self.version,
                     )
         # else new version requested
-        self.version = "running"
+        self.version = RUNNING_MODEL_VERSION
         mv_request = ModelVersionRequestModel.parse_obj(
             self._get_request_params(ModelVersionRequestModel, model=model.id)
         )
         mv = None
         if self.recovery:
             try:
-                return zenml_client.zen_store.get_model_version(
+                mv = zenml_client.zen_store.get_model_version(
                     model_name_or_id=self.name,
                     model_version_name_or_id=self.version,
                 )
@@ -203,7 +220,7 @@ class ModelConfig(ModelBaseModel):
                 model_version=mv_request
             )
             logger.warning(f"New model version `{self.name}` was created.")
-
+        self._model_version = mv
         return mv
 
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":

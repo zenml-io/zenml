@@ -40,6 +40,7 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml.client import Client
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
@@ -2722,6 +2723,7 @@ class TestModelVersion:
                     model=model.id,
                     stage="staging",
                     force=True,
+                    version="I changed that...",
                 ),
             )
 
@@ -2735,9 +2737,16 @@ class TestModelVersion:
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv2.version,
+                    model_version_name_or_id=mv2.id,
                 ).stage
                 == "staging"
+            )
+            assert (
+                zs.get_model_version(
+                    model_name_or_id=model.id,
+                    model_version_name_or_id=mv2.id,
+                ).version
+                == "I changed that..."
             )
 
     def test_model_version_update_public_interface(self):
@@ -2748,7 +2757,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    version=RUNNING_MODEL_VERSION,
                 )
             )
             assert (
@@ -2765,6 +2774,15 @@ class TestModelVersion:
                     model_version_name_or_id=mv1.version,
                 ).stage
                 == "staging"
+            )
+
+            mv1.assign_version_to_running()
+            assert (
+                zs.get_model_version(
+                    model_name_or_id=model.id,
+                    model_version_name_or_id=mv1.id,
+                ).version
+                == "1"
             )
 
     def test_model_version_update_public_interface_bad_stage(self):
@@ -2809,7 +2827,111 @@ class TestModelVersionArtifactLinks:
                 )
             )
 
-    def test_link_create_duplicated(self):
+    def test_link_create_versioned(self):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            al1 = zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    artifact=artifacts[0].id,
+                )
+            )
+            assert al1.version == 1
+            assert al1.artifact == artifacts[0].id
+            al2 = zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    artifact=artifacts[1].id,
+                )
+            )
+            assert al2.version == 2
+            assert al2.artifact == artifacts[1].id
+
+            assert al1.name == al2.name
+
+    def test_link_create_overwrite_not_deleted(self):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            al1 = zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    artifact=artifacts[0].id,
+                    overwrite=True,
+                )
+            )
+            assert al1.version == 1
+            assert al1.artifact == artifacts[0].id
+            with pytest.raises(EntityExistsError):
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequestModel(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        name="link",
+                        artifact=artifacts[1].id,
+                        overwrite=True,
+                    )
+                )
+
+    def test_link_create_overwrite_deleted(self):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            al1 = zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    artifact=artifacts[0].id,
+                    overwrite=True,
+                )
+            )
+            assert al1.version == 1
+            assert al1.artifact == artifacts[0].id
+            zs.delete_model_version_artifact_link(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_name_or_id=al1.id,
+            )
+            al2 = zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    artifact=artifacts[1].id,
+                    overwrite=True,
+                )
+            )
+            assert al2.version == 1
+            assert al2.artifact == artifacts[1].id
+            assert al1.id != al2.id
+
+    def test_link_create_duplicated_by_id(self):
         with ModelVersionContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
@@ -2825,18 +2947,6 @@ class TestModelVersionArtifactLinks:
                     artifact=artifacts[0].id,
                 )
             )
-            # name collision
-            with pytest.raises(EntityExistsError):
-                zs.create_model_version_artifact_link(
-                    ModelVersionArtifactRequestModel(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
-                        model_version=model_version.id,
-                        name="link",
-                        artifact=uuid4(),
-                    )
-                )
             # id collision
             with pytest.raises(EntityExistsError):
                 zs.create_model_version_artifact_link(

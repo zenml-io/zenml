@@ -33,6 +33,7 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
+    OutputSignature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -133,7 +134,7 @@ class EntrypointFunctionDefinition(NamedTuple):
     """
 
     inputs: Dict[str, inspect.Parameter]
-    outputs: Dict[str, Any]
+    outputs: Dict[str, OutputSignature]
     context: Optional[inspect.Parameter]
     legacy_params: Optional[inspect.Parameter]
 

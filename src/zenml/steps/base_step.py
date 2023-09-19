@@ -1006,13 +1006,16 @@ class BaseStep(metaclass=BaseStepMeta):
                     continue
 
                 if is_union(
-                    get_origin(output_annotation) or output_annotation
+                    get_origin(output_annotation.resolved_annotation)
+                    or output_annotation.resolved_annotation
                 ):
                     output_types = tuple(
                         type(None)
                         if is_none_type(output_type)
                         else output_type
-                        for output_type in get_args(output_annotation)
+                        for output_type in get_args(
+                            output_annotation.resolved_annotation
+                        )
                     )
                 else:
                     output_types = (output_annotation,)
@@ -1020,7 +1023,9 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer_sources = []
 
                 for output_type in output_types:
-                    materializer_class = materializer_registry[output_type]
+                    materializer_class = materializer_registry[
+                        output_type.resolved_annotation
+                    ]
                     materializer_sources.append(
                         source_utils.resolve(materializer_class)
                     )

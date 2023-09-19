@@ -16,6 +16,7 @@ from unittest import mock
 import pytest
 
 from zenml.client import Client
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.model import ModelConfig, ModelStages
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
@@ -99,7 +100,7 @@ class TestModelConfig:
             ) as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
-            assert mv.version == "running"
+            assert mv.version == RUNNING_MODEL_VERSION
             assert mv.model.name == MODEL_NAME
 
     def test_model_fetch_model_and_version_by_number(self):
@@ -123,7 +124,7 @@ class TestModelConfig:
         with ModelContext(
             model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            mc = ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
@@ -134,23 +135,7 @@ class TestModelConfig:
 
     def test_model_fetch_model_and_version_by_stage_not_found(self):
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
-            with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
-
-    def test_model_fetch_model_and_version_by_stage_as_string_fails_and_warns(
-        self,
-    ):
-        with ModelContext(model_version="1.0.0", stage=ModelStages.PRODUCTION):
-            with mock.patch(
-                "zenml.model.model_config.logger.warning"
-            ) as logger:
-                mc = ModelConfig(
-                    name=MODEL_NAME,
-                    version=ModelStages.PRODUCTION.value,
-                )
-                logger.assert_called_once()
-
+            mc = ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
                 mc.get_or_create_model_version()
 
@@ -158,7 +143,7 @@ class TestModelConfig:
         with pytest.raises(ValueError):
             ModelConfig(
                 name=MODEL_NAME,
-                version=ModelStages.PRODUCTION,
+                stage=ModelStages.PRODUCTION,
                 create_new_model_version=True,
             )
 
@@ -182,20 +167,6 @@ class TestModelConfig:
             )
             logger.assert_not_called()
 
-    def test_init_stage_logic(self):
-        with mock.patch("zenml.model.model_config.logger.warning") as logger:
-            mc = ModelConfig(
-                name=MODEL_NAME,
-                version=ModelStages.PRODUCTION.value,
-            )
-            logger.assert_called_once()
-            assert mc.version == ModelStages.PRODUCTION.value
-            assert mc._stage is None
-
-        mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
-        assert mc.version == ModelStages.PRODUCTION
-        assert mc._stage == ModelStages.PRODUCTION.value
-
     def test_recovery_flow(self):
         with ModelContext():
             mc = ModelConfig(
@@ -214,3 +185,12 @@ class TestModelConfig:
             mv2 = mc.get_or_create_model_version()
 
             assert mv1 == mv2
+
+    def test_both_stage_and_version_fail(self):
+        with ModelContext():
+            with pytest.raises(ValueError):
+                ModelConfig(
+                    name=MODEL_NAME,
+                    stage=ModelStages.PRODUCTION,
+                    version="1.0.0",
+                )

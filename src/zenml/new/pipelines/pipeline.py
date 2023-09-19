@@ -50,6 +50,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
@@ -651,6 +652,7 @@ class Pipeline:
             )
 
             if runs.items:
+                self.register_running_versions(runs.items[0])
                 run_url = dashboard_utils.get_run_url(runs[0])
                 if run_url:
                     logger.info(f"Dashboard URL: {run_url}")
@@ -738,6 +740,50 @@ class Pipeline:
                     )
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
+
+    def register_running_versions(
+        self, pipeline: PipelineRunResponseModel
+    ) -> None:
+        """Registers the running versions of the models used in the given pipeline run.
+
+        Args:
+            pipeline: The pipeline run response model.
+
+        Raises:
+            KeyError: No running model version found for @step model configs.
+        """
+        models_to_register = set()
+        pipeline_model_name = None
+        for step_name, step in pipeline.steps.items():
+            if (
+                step.config.model_config
+                and step.config.model_config.create_new_model_version
+            ):
+                models_to_register.add(step.config.model_config.name)
+        if (
+            pipeline.config.model_config
+            and pipeline.config.model_config.create_new_model_version
+        ):
+            pipeline_model_name = pipeline.config.model_config.name
+            models_to_register.add(pipeline.config.model_config.name)
+        zs = Client().zen_store
+        for model_name in models_to_register:
+            try:
+                mv = zs.get_model_version(
+                    model_name_or_id=model_name,
+                    model_version_name_or_id=RUNNING_MODEL_VERSION,
+                )
+                mv.assign_version_to_running()
+            except KeyError as e:
+                if model_name == pipeline_model_name:
+                    logger.warning(
+                        f"Failed to register stable model version of `{model_name}` model. "
+                        f"No `{RUNNING_MODEL_VERSION}` found. "
+                        "Most probable root cause: you set ModelConfig on pipeline level and "
+                        "override it in all steps inside that pipeline."
+                    )
+                else:
+                    raise e
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.

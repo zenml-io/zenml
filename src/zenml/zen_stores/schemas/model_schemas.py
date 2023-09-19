@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import BOOLEAN, TEXT, Column
+from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -268,17 +268,22 @@ class ModelVersionSchema(BaseSchema, table=True):
 
     def update(
         self,
-        target_stage: str,
+        target_stage: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> "ModelVersionSchema":
         """Updates a `ModelVersionSchema` to a target stage.
 
         Args:
             target_stage: The stage to be updated.
+            version: The version number to be updated.
 
         Returns:
             The updated `ModelVersionSchema`.
         """
-        self.stage = target_stage
+        if target_stage is not None:
+            self.stage = target_stage
+        if version is not None:
+            self.version = version
         self.updated = datetime.utcnow()
         return self
 
@@ -346,15 +351,19 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
 
     is_model_object: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
     is_deployment: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
+    version: int = Field(sa_column=Column(INTEGER, nullable=False))
 
     @classmethod
     def from_request(
-        cls, model_version_artifact_request: ModelVersionArtifactRequestModel
+        cls,
+        model_version_artifact_request: ModelVersionArtifactRequestModel,
+        version: int,
     ) -> "ModelVersionArtifactSchema":
         """Convert an `ModelVersionArtifactRequestModel` to a `ModelVersionArtifactSchema`.
 
         Args:
             model_version_artifact_request: The request link to convert.
+            version: The version of versioned link.
 
         Returns:
             The converted schema.
@@ -368,6 +377,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             artifact_id=model_version_artifact_request.artifact,
             is_model_object=model_version_artifact_request.is_model_object,
             is_deployment=model_version_artifact_request.is_deployment,
+            version=version,
         )
 
     def to_model(self) -> ModelVersionArtifactResponseModel:
@@ -388,6 +398,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             artifact=self.artifact_id,
             is_model_object=self.is_model_object,
             is_deployment=self.is_deployment,
+            version=self.version,
         )
 
 

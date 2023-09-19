@@ -24,13 +24,11 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
-    # technical stages
-    RUNNING = "running"
 
     @classmethod
     def _members(cls) -> List[str]:
         values = getattr(cls, "_value2member_map_", None)
         if values is None:
-            return ["none", "staging", "production", "archived", "running"]
+            return ["none", "staging", "production", "archived"]
         else:
             return list(values.keys())
