@@ -4,13 +4,21 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 
 # Set up a minimal GCP stack
 
-Here's a 7-step guide to get a production-ready GCP stack.
-
+This page aims to quickly set up a minimal production stack on gcp. With just a 
+few simple steps you will set up a service account with specifically scoped 
+permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 
 ### 1) Choose a GCP project&#x20;
 
-In the Google Cloud console, on the project selector page, select or [create a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
+In the Google Cloud console, on the project selector page, select or 
+[create a Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
+Make sure a billing account is attached to this project to allow the use of 
+some APIs.
+
+```bash
+gcloud projects create <PROJECT_ID> --billing-project=<BILLING_PROJECT>
+```
 
 {% hint style="info" %}
 If you don't plan to keep the resources that you create in this procedure, create a new project. After you finish these steps, you can delete the project, thereby removing all resources associated with the project.
@@ -22,9 +30,9 @@ The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=clou
 
 * Cloud Functions API
 * Cloud Build API
-* Artifact Registry API
 * Cloud Run Admin API
-* Cloud Logging API
+* Artifact Registry API
+* Cloud Logging API 
 
 ### 3) Create a dedicated service account
 
@@ -45,7 +53,8 @@ export JSON_KEY_FILE_PATH=<JSON_KEY_FILE_PATH>
 
 ### 5) Create a Service Connector within ZenML
 
-The service connector will allow ZenML and other ZenML components to authenticate themselves with GCP.&#x20;
+The service connector will allow ZenML and other ZenML components to 
+authenticate themselves with GCP.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -54,7 +63,7 @@ zenml integration install gcp \
 && zenml service-connector register gcp_connector \
 --type gcp \
 --auth-method service-account \
---service_account_json=@<FILE_PATH> \
+--service_account_json=@${JSON_KEY_FILE_PATH} \
 --project_id=<GCP_PROJECT_ID>
 ```
 {% endtab %}
@@ -88,7 +97,7 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn more about the registration of an artifact store.
+Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn more about artifact stores and how to configure them.
 {% endhint %}
 {% endtab %}
 
@@ -100,6 +109,11 @@ Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn 
 {% endtabs %}
 
 #### Orchestrator
+
+As the orchestrator this guide will use Vertex AI to run the pipelines. As a 
+serverless service Vertex is a great choice for quick prototyping of your MLOps 
+stack. THe orchestrator can be switched out at any point in the future for a 
+more use-case and budget appropriate solution.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -115,7 +129,7 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to learn more about the registration of an orchestrator.
+Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
 
@@ -140,7 +154,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/container-registries/gcp.md) to learn more about the registration of a container registry.
+Head on over to our [docs](../../component-guide/container-registries/gcp.md) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 
@@ -177,3 +191,13 @@ In case you want to also add any other stack components to this stack, feel free
 ## And you're already done!
 
 Just like that, you now have a fully working GCP stack ready to go. Feel free to take it for a spin by running a pipeline on it.
+
+
+## Cleanup
+
+If you do not want to use any of the created resources in the future, simply 
+delete the project you created. 
+
+```bash
+gcloud project delete <PROJECT_ID_OR_NUMBER>
+```
