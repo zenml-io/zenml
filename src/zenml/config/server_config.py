@@ -68,8 +68,6 @@ class ServerConfiguration(BaseModel):
             domain where the ZenML server is running.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
-        external_logout_url: The logout URL of an external authenticator service
-            to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
             service to use with the `EXTERNAL` authentication scheme.
         external_cookie_name: The name of the http-only cookie used to store the
@@ -91,7 +89,6 @@ class ServerConfiguration(BaseModel):
     auth_cookie_domain: Optional[str] = None
 
     external_login_url: Optional[str] = None
-    external_logout_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
 
@@ -111,13 +108,11 @@ class ServerConfiguration(BaseModel):
         if values.get("auth_scheme") == AuthScheme.EXTERNAL:
             # If the authentication scheme is set to `EXTERNAL`, the
             # external authenticator URLs must be specified.
-            if (
-                not values.get("external_login_url")
-                or not values.get("external_logout_url")
-                or not values.get("external_user_info_url")
+            if not values.get("external_login_url") or not values.get(
+                "external_user_info_url"
             ):
                 raise ValueError(
-                    "The external login, logout and user info authenticator "
+                    "The external login and user info authenticator "
                     "URLs must be specified when using the EXTERNAL "
                     "authentication scheme."
                 )

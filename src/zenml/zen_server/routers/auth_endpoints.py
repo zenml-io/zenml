@@ -23,7 +23,7 @@ from fastapi.param_functions import Form
 from pydantic import BaseModel
 from starlette.requests import Request
 
-from zenml.constants import API, AUTHORIZE, LOGIN, VERSION_1
+from zenml.constants import API, LOGIN, LOGOUT, VERSION_1
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
 from zenml.models import UserRoleAssignmentFilterModel
@@ -190,11 +190,11 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
             # ignore arbitrary fields
             extra = "ignore"
 
-    @router.get(
-        AUTHORIZE,
+    @router.post(
+        LOGIN,
         response_model=AuthenticationResponse,
     )
-    def authorize(
+    def login(
         request: Request,
         response: Response,
         redirect_url: Optional[str] = None,
@@ -399,3 +399,26 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
         return AuthenticationResponse(
             access_token=access_token, token_type="bearer"
         )
+
+
+@router.get(
+    LOGOUT,
+    response_model=AuthenticationResponse,
+)
+def logout(
+    response: Response,
+) -> None:
+    """Logs out the user.
+
+    Args:
+        response: The response object.
+    """
+    config = server_config()
+
+    # Remove the HTTP only cookie even if it does not exist
+    response.delete_cookie(
+        key=config.auth_cookie_name,
+        httponly=True,
+        samesite="lax",
+        domain=config.auth_cookie_domain,
+    )

@@ -219,8 +219,8 @@ def http_authentication(
     return auth_context
 
 
-class CookieOAuth2PasswordBearer(OAuth2PasswordBearer):
-    """OAuth2 password bearer authentication scheme that uses a cookie."""
+class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
+    """OAuth2 token bearer authentication scheme that uses a cookie."""
 
     async def __call__(self, request: Request) -> Optional[str]:
         """Extract the bearer token from the request.
@@ -245,7 +245,7 @@ class CookieOAuth2PasswordBearer(OAuth2PasswordBearer):
 def oauth2_authentication(
     security_scopes: SecurityScopes,
     token: str = Depends(
-        CookieOAuth2PasswordBearer(
+        CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
             scopes={
                 "read": "Read permissions on all entities",
