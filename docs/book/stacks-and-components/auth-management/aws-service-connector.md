@@ -26,6 +26,12 @@ $ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
+{% hint style="info" %}
+This service connector will not be able to work if [Multi-Factor Authentication (MFA)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_cliapi.html) is enabled on the role used by the AWS CLI. When MFA is enabled, the AWS CLI generates temporary credentials that are valid for a limited time. These temporary credentials cannot be used by the ZenML AWS Service Connector, as it requires long-lived credentials to authenticate and access AWS resources.
+
+To use the AWS Service Connector with ZenML, you will need to use a different AWS CLI profile that does not have MFA enabled. You can do this by setting the `AWS_PROFILE` environment variable to the name of the profile you want to use before running the ZenML CLI commands.
+{% endhint %}
+
 ## Prerequisites
 
 The AWS Service Connector is part of the AWS ZenML integration. You can either install the entire integration or use a PyPI extra to install it independently of the integration:
