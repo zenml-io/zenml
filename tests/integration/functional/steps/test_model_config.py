@@ -4,6 +4,7 @@ from zenml.model.model_config import ModelConfig
 
 @step
 def _assert_that_model_config_set(name="foo", version="bar"):
+    """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_config.name == name
     assert get_step_context().model_config.version == version
 
