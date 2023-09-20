@@ -3085,25 +3085,31 @@ class TestModelVersionArtifactLinks:
             assert len(mv.deployment_ids) == 1
 
             assert isinstance(
-                mv.model_objects["link2"],
+                mv.get_model_object("link2")["1"],
                 ArtifactResponseModel,
             )
             assert isinstance(
-                mv.artifact_objects["link1"],
+                mv.get_artifact_object("link1")["1"],
                 ArtifactResponseModel,
             )
             assert isinstance(
-                mv.deployments["link3"],
+                mv.get_deployment("link3")["1"],
                 ArtifactResponseModel,
             )
 
-            assert mv.model_objects["link2"].id == artifacts[1].id
+            assert mv.model_objects["link2"]["1"].id == artifacts[1].id
 
-            assert mv.get_model_object("link2") == mv.model_objects["link2"]
             assert (
-                mv.get_artifact_object("link1") == mv.artifact_objects["link1"]
+                mv.get_model_object("link2")["1"]
+                == mv.model_objects["link2"]["1"]
             )
-            assert mv.get_deployment("link3") == mv.deployments["link3"]
+            assert (
+                mv.get_artifact_object("link1")["1"]
+                == mv.artifacts["link1"]["1"]
+            )
+            assert (
+                mv.get_deployment("link3")["1"] == mv.deployments["link3"]["1"]
+            )
 
 
 class TestModelVersionPipelineRunLinks:

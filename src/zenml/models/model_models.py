@@ -70,15 +70,16 @@ class ModelVersionResponseModel(
     model: "ModelResponseModel" = Field(
         title="The model containing version",
     )
-    model_object_ids: Dict[str, UUID] = Field(
+    # TODO: rework to Dict[str,Dict[UUID]] and so on
+    model_object_ids: Dict[str, Dict[str, UUID]] = Field(
         title="Model Objects linked to the model version",
         default={},
     )
-    artifact_object_ids: Dict[str, UUID] = Field(
+    artifact_object_ids: Dict[str, Dict[str, UUID]] = Field(
         title="Artifacts linked to the model version",
         default={},
     )
-    deployment_ids: Dict[str, UUID] = Field(
+    deployment_ids: Dict[str, Dict[str, UUID]] = Field(
         title="Deployments linked to the model version",
         default={},
     )
@@ -88,45 +89,54 @@ class ModelVersionResponseModel(
     )
 
     @property
-    def model_objects(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all model objects linked to this version.
+    def model_objects(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+        """Get all model objects linked to this model version.
 
         Returns:
-            Dictionary of Model Objects as ArtifactResponseModel
+            Dictionary of Model Objects with versions as Dict[str, ArtifactResponseModel]
         """
         from zenml.client import Client
 
         return {
-            name: Client().get_artifact(a)
-            for name, a in self.model_object_ids.items()
+            name: {
+                version: Client().get_artifact(a)
+                for version, a in self.model_object_ids[name].items()
+            }
+            for name in self.model_object_ids
         }
 
     @property
-    def artifact_objects(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all artifacts linked to this version.
+    def artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+        """Get all artifacts linked to this model version.
 
         Returns:
-            Dictionary of Artifact Objects as ArtifactResponseModel
+            Dictionary of Artifacts with versions as Dict[str, ArtifactResponseModel]
         """
         from zenml.client import Client
 
         return {
-            name: Client().get_artifact(a)
-            for name, a in self.artifact_object_ids.items()
+            name: {
+                version: Client().get_artifact(a)
+                for version, a in self.artifact_object_ids[name].items()
+            }
+            for name in self.artifact_object_ids
         }
 
     @property
-    def deployments(self) -> Dict[str, ArtifactResponseModel]:
-        """Get all deployments linked to this version.
+    def deployments(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+        """Get all deployments linked to this model version.
 
         Returns:
-            Dictionary of Deployments as ArtifactResponseModel
+            Dictionary of Deployments with versions as Dict[str, ArtifactResponseModel]
         """
         from zenml.client import Client
 
         return {
-            name: Client().get_artifact(a)
-            for name, a in self.deployment_ids.items()
+            name: {
+                version: Client().get_artifact(a)
+                for version, a in self.deployment_ids[name].items()
+            }
+            for name in self.deployment_ids
         }
 
     @property
@@ -143,44 +153,55 @@ class ModelVersionResponseModel(
             for name, pr in self.pipeline_run_ids.items()
         }
 
-    def get_model_object(self, name: str) -> ArtifactResponseModel:
-        """Get model object linked to this version.
+    def get_model_object(self, name: str) -> Dict[str, ArtifactResponseModel]:
+        """Get model object linked to this model version.
 
         Args:
             name: The name of the model object to retrieve.
 
         Returns:
-            Model Object as ArtifactResponseModel
+            Dictionary of versioned Model Objects
         """
         from zenml.client import Client
 
-        return Client().get_artifact(self.model_object_ids[name])
+        return {
+            version: Client().get_artifact(artifact)
+            for version, artifact in self.model_object_ids[name].items()
+        }
 
-    def get_artifact_object(self, name: str) -> ArtifactResponseModel:
-        """Get artifact linked to this version.
+    def get_artifact_object(
+        self, name: str
+    ) -> Dict[str, ArtifactResponseModel]:
+        """Get artifact linked to this model version.
 
         Args:
             name: The name of the artifact to retrieve.
 
         Returns:
-            Artifact Object as ArtifactResponseModel
+            Dictionary of versioned Artifacts
         """
         from zenml.client import Client
 
-        return Client().get_artifact(self.artifact_object_ids[name])
+        return {
+            version: Client().get_artifact(artifact)
+            for version, artifact in self.artifact_object_ids[name].items()
+        }
 
-    def get_deployment(self, name: str) -> ArtifactResponseModel:
-        """Get deployment linked to this version.
+    def get_deployment(self, name: str) -> Dict[str, ArtifactResponseModel]:
+        """Get deployment linked to this model version.
 
         Args:
             name: The name of the deployment to retrieve.
 
         Returns:
-            Deployment as ArtifactResponseModel
+            Dictionary of versioned Deployments
         """
         from zenml.client import Client
 
-        return Client().get_artifact(self.deployment_ids[name])
+        return {
+            version: Client().get_artifact(artifact)
+            for version, artifact in self.deployment_ids[name].items()
+        }
 
     def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
         """Get pipeline run linked to this version.
