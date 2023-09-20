@@ -467,15 +467,6 @@ def print_stack_configuration(
         declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
-def print_mlstacks_stack_outputs(stack: "StackResponseModel") -> None:
-    """Prints outputs for stacks deployed with mlstacks.
-
-    Args:
-        stack: Instance of a stack model.
-    """
-    pass
-
-
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
