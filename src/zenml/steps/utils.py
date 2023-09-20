@@ -104,9 +104,13 @@ def parse_return_type_annotations(
             "outputs."
         )
         return {
-            output_name: resolve_type_annotation(output_type)
+            output_name: OutputSignature(
+                resolved_annotation=resolve_type_annotation(output_type),
+                artifact_config=None,
+            )
             for output_name, output_type in return_annotation.items()
         }
+
     elif pydantic_typing.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
 
