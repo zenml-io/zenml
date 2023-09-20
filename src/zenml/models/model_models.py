@@ -460,21 +460,15 @@ class ModelResponseModel(
             The requested model version.
         """
         from zenml.client import Client
-        from zenml.model import ModelStages
 
         zs = Client().zen_store
 
         if version is None:
-            return zs.get_model_version_latest(model_name_or_id=self.name)
-        elif isinstance(version, ModelStages):
-            return zs.get_model_version_in_stage(
-                model_name_or_id=self.name,
-                model_stage=version.value,
-            )
+            return zs.get_model_version(model_name_or_id=self.name)
         else:
             return zs.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=version,
+                model_version_name_or_id=getattr(version, "value", version),
             )
 
 
