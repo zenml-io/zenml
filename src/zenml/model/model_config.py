@@ -204,18 +204,19 @@ class ModelConfig(ModelBaseModel):
         mv_request = ModelVersionRequestModel.parse_obj(
             self._get_request_params(ModelVersionRequestModel, model=model.id)
         )
-        mv = None
-        if self.recovery:
-            try:
-                mv = zenml_client.zen_store.get_model_version(
-                    model_name_or_id=self.name,
-                    model_version_name_or_id=self.version,
-                )
-            except KeyError:
+        try:
+            # trying to get existing `running` version
+            # if recovery is disable it can be only a version from current run
+            # if it exists - it was created in previous steps
+            mv = zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_id=self.version,
+            )
+        except KeyError:
+            if self.recovery:
                 logger.warning(
                     f"Recovery mode: No `{self.version}` model version found."
                 )
-        if mv is None:
             mv = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )

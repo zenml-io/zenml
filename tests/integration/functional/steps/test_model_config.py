@@ -228,13 +228,20 @@ def _this_step_produces_output() -> (
 
 @step
 def _this_step_tries_to_recover(run_number: int):
-    mv = get_step_context().model_config.get_or_create_model_version()
-    assert len(mv.get_artifact_object("data")) == run_number
+    zs = Client().zen_store
+    mv = zs.get_model_version(
+        model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
+    )
+    assert (
+        len(mv.get_artifact_object("data")) == run_number
+    ), "this is under control"
 
     raise Exception("make pipeline fail")
 
 
 def test_recovery_of_steps():
+    """Test that model config can recover states after previous fails."""
+
     @pipeline(
         name="bar",
         enable_cache=False,
@@ -259,3 +266,46 @@ def test_recovery_of_steps():
             _this_pipeline_will_recover(2)
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_recover(3)
+
+        model = zs.get_model("foo")
+        mv = zs.get_model_version(
+            model_name_or_id=model.id,
+            model_version_name_or_id=RUNNING_MODEL_VERSION,
+        )
+        assert mv.version == RUNNING_MODEL_VERSION
+        assert len(mv.artifact_object_ids) == 1
+        assert len(mv.artifact_object_ids["data"]) == 3
+
+
+def test_clean_up_after_failure():
+    """Test that hanging `running` versions are cleaned-up after failure."""
+
+    @pipeline(
+        name="bar",
+        enable_cache=False,
+        model_config=ModelConfig(
+            name="foo", create_new_model_version=True, recovery=False
+        ),
+    )
+    def _this_pipeline_will_not_recover(run_number: int):
+        _this_step_produces_output()
+        _this_step_tries_to_recover(
+            run_number, after=["_this_step_produces_output"]
+        )
+
+    with model_killer("foo"):
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.get_model("foo")
+
+        with pytest.raises(Exception, match="make pipeline fail"):
+            _this_pipeline_will_not_recover(1)
+        with pytest.raises(AssertionError, match="this is under control"):
+            _this_pipeline_will_not_recover(2)
+
+        model = zs.get_model("foo")
+        with pytest.raises(KeyError):
+            zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id=RUNNING_MODEL_VERSION,
+            )
