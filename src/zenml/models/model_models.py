@@ -212,7 +212,7 @@ class ModelVersionResponseModel(
 
         stage = getattr(stage, "value", stage)
         if stage not in [stage.value for stage in ModelStages]:
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
@@ -268,7 +268,7 @@ class ModelVersionUpdateModel(BaseModel):
 
         stage = getattr(stage, "value", stage)
         if stage not in [stage.value for stage in ModelStages]:
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         return stage
 
 
