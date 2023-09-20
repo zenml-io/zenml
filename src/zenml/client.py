@@ -146,7 +146,7 @@ from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.metadata.metadata_types import MetadataType
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -3422,7 +3422,7 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> Dict[str, RunMetadataResponseModel]:
+    ) -> List[RunMetadataResponseModel]:
         """Create run metadata.
 
         Args:
@@ -3465,7 +3465,8 @@ class Client(metaclass=ClientMetaClass):
                 "`step_run_id` or only an `artifact_id`."
             )
 
-        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        values: Dict[str, "MetadataType"] = {}
+        types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -3474,7 +3475,6 @@ class Client(metaclass=ClientMetaClass):
                     "stored in the database. Skipping."
                 )
                 continue
-
             # Skip metadata that is not of a supported type.
             try:
                 metadata_type = get_metadata_type(value)
@@ -3484,21 +3484,20 @@ class Client(metaclass=ClientMetaClass):
                     f"type. Skipping. Full error: {e}"
                 )
                 continue
+            values[key] = value
+            types[key] = metadata_type
 
-            run_metadata = RunMetadataRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-                artifact_id=artifact_id,
-                stack_component_id=stack_component_id,
-                key=key,
-                value=value,
-                type=metadata_type,
-            )
-            metadata_model = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata[key] = metadata_model
-        return created_metadata
+        run_metadata = RunMetadataRequestModel(
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            values=values,
+            types=types,
+        )
+        return self.zen_store.create_run_metadata(run_metadata)
 
     def list_run_metadata(
         self,
