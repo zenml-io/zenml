@@ -17,7 +17,7 @@
 import asyncio
 from typing import List, Optional, cast
 
-from discord import Client, DiscordException, Embed, Intents
+from discord import Client, DiscordException, Embed, Intents, Message
 from pydantic import BaseModel
 
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
@@ -284,7 +284,7 @@ class DiscordAlerter(BaseAlerter):
                     # Send the message
                     await channel.send(content=message, embed=embed_blocks)
 
-                    def check(message) -> bool:
+                    def check(message: Message) -> bool:
                         if message.channel == channel:
                             if (
                                 message.content
