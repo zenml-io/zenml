@@ -253,7 +253,7 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: str = Field(
+    stage: Union[str, ModelStages] = Field(
         title="Target model version stage to be set",
     )
     force: bool = Field(
