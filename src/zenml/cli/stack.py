@@ -1683,27 +1683,14 @@ def connect_stack(
     interactive: bool = False,
     no_verify: bool = False,
 ) -> None:
-    """Connect a service-connector to a stack components.
+    """Connect a service-connector to all components of a stack.
 
-    The stack command `connect` does not connect a service-connector to a
-    stack entity directly, as stack are only a collection of stack components
-    that can be updated or deleted. Instead, the `connect` command is used to
-    connect a service-connector to a stack component iteratively by going
-    through all stack components and trying to connect the service-connector
-    to each of them.
-
-    For this reason, the `connect` command does not save the state of the
-    connection to the stack component. Instead, the state is saved to the
-    service-connector resource. This means that the `connect` should be run
-    every time a stack component is added to a stack, if the same service-
-    connector is used for all stack components.
-
-    The advantage of this approach is that the service-connector resource
-    can be used to connect to multiple stack components in one go, without
-    having to run the `connect` command multiple times.
+    Note that this only connects the service-connector to the current 
+    components of the stack and not to the stack itself, which means that 
+    you need to rerun the command after adding new components to the stack.
 
     Args:
-        stack_name_or_id: Name of the stack for which to register secrets.
+        stack_name_or_id: Name of the stack to connect.
         connector: The name, ID or prefix of the connector to use.
         interactive: Configure a service connector resource interactively.
         no_verify: Skip verification of the connector resource.
