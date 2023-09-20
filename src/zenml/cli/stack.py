@@ -51,6 +51,7 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilterModel
+from zenml.models.stack_models import StackResponseModel
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -802,7 +803,9 @@ def describe_stack(
 
     with console.status("Describing the stack...\n"):
         try:
-            stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+            stack_: StackResponseModel = client.get_stack(
+                name_id_or_prefix=stack_name_or_id
+            )
         except KeyError as err:
             cli_utils.error(str(err))
 
