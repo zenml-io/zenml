@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Union
 
 from pydantic import Field, validator
 
@@ -34,6 +34,7 @@ logger = get_logger(__name__)
 class ModelConfig(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
+    version: points model context to a specific version or stage.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
@@ -47,7 +48,7 @@ class ModelConfig(ModelBaseModel):
 
     version: Optional[Union[str, ModelStages]] = Field(
         default=None,
-        description="Model version is optional and points model context to a specific version or stage. It can be a version number, stage, ",
+        description="Model version is optional and points model context to a specific version or stage.",
     )
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
@@ -94,28 +95,6 @@ class ModelConfig(ModelBaseModel):
             return self.version.value
         return None
 
-    def _get_request_params(
-        self,
-        request_model: Union[
-            Type[ModelRequestModel], Type[ModelVersionRequestModel]
-        ],
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        zenml_client = Client()
-        request_params = {
-            k: v
-            for k, v in self.dict().items()
-            if k in request_model.schema()["properties"]
-        }
-        request_params.update(kwargs)
-        request_params.update(
-            {
-                "user": zenml_client.active_user.id,
-                "workspace": zenml_client.active_workspace.id,
-            }
-        )
-        return request_params
-
     def get_or_create_model(self) -> ModelResponseModel:
         """This method should get or create a model from Model WatchTower.
 
@@ -130,9 +109,20 @@ class ModelConfig(ModelBaseModel):
                 model_name_or_id=self.name
             )
         except KeyError:
-            model_request = ModelRequestModel.parse_obj(
-                self._get_request_params(ModelRequestModel)
+            model_request = ModelRequestModel(
+                name=self.name,
+                license=self.license,
+                description=self.description,
+                audience=self.audience,
+                use_cases=self.use_cases,
+                limitations=self.limitations,
+                trade_offs=self.trade_offs,
+                ethic=self.ethic,
+                tags=self.tags,
+                user=zenml_client.active_user.id,
+                workspace=zenml_client.active_workspace.id,
             )
+            model_request = ModelRequestModel.parse_obj(model_request)
             model = zenml_client.zen_store.create_model(model=model_request)
             logger.warning(f"New model `{self.name}` was created implicitly.")
         return model
@@ -178,9 +168,13 @@ class ModelConfig(ModelBaseModel):
                     )
         # else new version requested
         self.version = "running"
-        mv_request = ModelVersionRequestModel.parse_obj(
-            self._get_request_params(ModelVersionRequestModel, model=model.id)
+        model_version_request = ModelVersionRequestModel(
+            user=zenml_client.active_user.id,
+            workspace=zenml_client.active_workspace.id,
+            version=self.version,
+            model=model.id,
         )
+        mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         mv = None
         if self.recovery:
             try:
