@@ -33,6 +33,7 @@ def model_killer(model_name):
 
 @step
 def _assert_that_model_config_set(name="foo", version=RUNNING_MODEL_VERSION):
+    """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_config.name == name
     assert get_step_context().model_config.version == version
 
