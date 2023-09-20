@@ -81,7 +81,7 @@ class ModelConfig(ModelBaseModel):
     def _validate_version(
         cls, version: Union[str, ModelStages]
     ) -> Union[str, ModelStages]:
-        if isinstance(version, str) and version in [
+        if version in [
             stage.value for stage in ModelStages
         ]:
             logger.info(
@@ -127,7 +127,7 @@ class ModelConfig(ModelBaseModel):
                 model = zenml_client.zen_store.create_model(
                     model=model_request
                 )
-                logger.warning(
+                logger.info(
                     f"New model `{self.name}` was created implicitly."
                 )
             except EntityExistsError:
