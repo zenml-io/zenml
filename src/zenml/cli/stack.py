@@ -1285,7 +1285,7 @@ def _get_deployment_params_interactively(
     """Get deployment values from command line arguments.
 
     Args:
-        params: Required and pre-existing values.
+        click_params: Required and pre-existing values.
 
     Returns:
         Full deployment arguments.
