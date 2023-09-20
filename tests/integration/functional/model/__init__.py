@@ -11,15 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-"""Initialization of ZenML model.
-ZenML model support Model WatchTower feature.
-"""
-
-from zenml.model.model_config import ModelConfig
-from zenml.model.model_stages import ModelStages
-
-__all__ = [
-    "ModelConfig",
-    "ModelStages",
-]

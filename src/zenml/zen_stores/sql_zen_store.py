@@ -5588,13 +5588,14 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be retrieved.
+            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5607,15 +5608,24 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            try:
-                UUID(str(model_version_name_or_id))
+            if model_version_name_or_id == "__latest__":
+                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            elif model_version_name_or_id in [
+                stage.value for stage in ModelStages
+            ]:
                 query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
+                    ModelVersionSchema.stage == model_version_name_or_id
                 )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.version == model_version_name_or_id
-                )
+            else:
+                try:
+                    UUID(str(model_version_name_or_id))
+                    query = query.where(
+                        ModelVersionSchema.id == model_version_name_or_id
+                    )
+                except ValueError:
+                    query = query.where(
+                        ModelVersionSchema.version == model_version_name_or_id
+                    )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
@@ -5702,6 +5712,11 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: If there is a model version with target stage, but `force` flag is off
         """
         with Session(self.engine) as session:
+            stage = getattr(
+                model_version_update_model.stage,
+                "value",
+                model_version_update_model.stage,
+            )
             existing_model_version = session.exec(
                 select(ModelVersionSchema)
                 .where(
@@ -5720,17 +5735,14 @@ class SqlZenStore(BaseZenStore):
                     ModelVersionSchema.model_id
                     == model_version_update_model.model
                 )
-                .where(
-                    ModelVersionSchema.stage
-                    == model_version_update_model.stage.value
-                )
+                .where(ModelVersionSchema.stage == stage)
             ).first()
 
             if existing_model_version_in_target_stage is not None:
                 if not model_version_update_model.force:
                     raise RuntimeError(
                         f"Model version {existing_model_version_in_target_stage.version} is "
-                        f"in {model_version_update_model.stage.value}, but `force` flag is False."
+                        f"in {stage}, but `force` flag is False."
                     )
                 else:
                     existing_model_version_in_target_stage.update(
@@ -5743,9 +5755,7 @@ class SqlZenStore(BaseZenStore):
                     logger.info(
                         f"Model version {existing_model_version_in_target_stage.version} has been set to {ModelStages.ARCHIVED.value}."
                     )
-            existing_model_version.update(
-                model_version_update_model.stage.value
-            )
+            existing_model_version.update(stage)
             session.add(existing_model_version)
             session.commit()
             session.refresh(existing_model_version)

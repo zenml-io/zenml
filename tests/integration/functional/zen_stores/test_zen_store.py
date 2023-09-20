@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import time
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
@@ -48,6 +49,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logging.step_logging import prepare_logs_uri
+from zenml.model.model_stages import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactResponseModel,
@@ -2499,7 +2501,7 @@ class TestModelVersion:
     def test_model_version_get_found(self):
         with ModelVersionContext() as model:
             zs = Client().zen_store
-            zs.create_model_version(
+            mv1 = zs.create_model_version(
                 ModelVersionRequestModel(
                     user=model.user.id,
                     workspace=model.workspace.id,
@@ -2507,10 +2509,11 @@ class TestModelVersion:
                     version="great one",
                 )
             )
-            zs.get_model_version(
+            mv2 = zs.get_model_version(
                 model_name_or_id=model.id,
                 model_version_name_or_id="great one",
             )
+            assert mv1.id == mv2.id
 
     def test_model_version_list_empty(self):
         with ModelVersionContext() as model:
@@ -2616,15 +2619,67 @@ class TestModelVersion:
                     force=False,
                 ),
             )
-            with pytest.raises(RuntimeError):
-                zs.update_model_version(
-                    model_version_id=mv2.id,
-                    model_version_update_model=ModelVersionUpdateModel(
-                        model=model.id,
-                        stage="staging",
-                        force=False,
-                    ),
+            mv2 = zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id="staging",
+            )
+            assert mv1.id == mv2.id
+            mv3 = zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id=ModelStages.STAGING,
+            )
+            assert mv1.id == mv3.id
+
+    def test_model_version_in_stage_not_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="great one",
                 )
+            )
+
+            with pytest.raises(KeyError):
+                zs.get_model_version(
+                    model_name_or_id=model.id,
+                    model_version_name_or_id=ModelStages.STAGING,
+                )
+
+    def test_model_version_latest_not_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            with pytest.raises(KeyError):
+                zs.get_model_version(
+                    model_name_or_id=model.id,
+                )
+
+    def test_model_version_latest_found(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="great one",
+                )
+            )
+            time.sleep(1)  # thanks to MySQL way of storing datetimes
+            latest = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="yet another one",
+                )
+            )
+            found_latest = zs.get_model_version(
+                model_name_or_id=model.id,
+            )
+            assert latest.id == found_latest.id
 
     def test_model_version_update_forced(self):
         with ModelVersionContext() as model:
@@ -2710,6 +2765,29 @@ class TestModelVersion:
                 ).stage
                 == "staging"
             )
+
+    def test_model_version_update_public_interface_bad_stage(self):
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    version="great one",
+                )
+            )
+
+            with pytest.raises(ValueError):
+                mv1.set_stage("my_super_stage")
+
+    def test_model_version_model_bad_stage(self):
+        with pytest.raises(ValueError):
+            ModelVersionUpdateModel(model=uuid4(), stage="my_super_stage")
+
+    def test_model_version_model_ok_stage(self):
+        mvum = ModelVersionUpdateModel(model=uuid4(), stage="staging")
+        assert mvum.stage == "staging"
 
 
 class TestModelVersionArtifactLinks:

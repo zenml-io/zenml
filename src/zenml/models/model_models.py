@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
-from zenml.model import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -27,6 +26,9 @@ from zenml.models.base_models import (
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
+
+if TYPE_CHECKING:
+    from zenml.model.model_stages import ModelStages
 
 
 class ModelVersionBaseModel(BaseModel):
@@ -192,7 +194,7 @@ class ModelVersionResponseModel(
         return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
-        self, stage: ModelStages, force: bool = False
+        self, stage: Union[str, "ModelStages"], force: bool = False
     ) -> "ModelVersionResponseModel":
         """Sets this Model Version to a desired stage.
 
@@ -202,7 +204,15 @@ class ModelVersionResponseModel(
 
         Returns:
             Dictionary of Model Objects as model_version_name_or_id
+
+        Raises:
+            ValueError: if model_stage is not valid.
         """
+        from zenml.model.model_stages import ModelStages
+
+        stage = getattr(stage, "value", stage)
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
@@ -243,7 +253,7 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: ModelStages = Field(
+    stage: Union[str, "ModelStages"] = Field(
         title="Target model version stage to be set",
     )
     force: bool = Field(
@@ -251,6 +261,15 @@ class ModelVersionUpdateModel(BaseModel):
         "or an error should be raised.",
         default=False,
     )
+
+    @validator("stage")
+    def _validate_stage(cls, stage: str) -> str:
+        from zenml.model.model_stages import ModelStages
+
+        stage = getattr(stage, "value", stage)
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
+        return stage
 
 
 class ModelVersionArtifactBaseModel(BaseModel):
@@ -411,17 +430,46 @@ class ModelResponseModel(
     """Model response model."""
 
     @property
-    def versions(self) -> List[ModelVersionResponseModel]:  # type: ignore[empty-body]
-        """List all versions of the model."""
-        pass
+    def versions(self) -> List[ModelVersionResponseModel]:
+        """List all versions of the model.
 
-    def get_version(self, version: Optional[str] = None) -> ModelVersionResponseModel:  # type: ignore[empty-body]
+        Returns:
+            The list of all model version.
+        """
+        from zenml.client import Client
+
+        return (
+            Client()
+            .zen_store.list_model_versions(
+                ModelVersionFilterModel(
+                    model_id=self.id, workspace_id=self.workspace
+                )
+            )
+            .items
+        )
+
+    def get_version(
+        self, version: Optional[Union[str, "ModelStages"]] = None
+    ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
         Args:
             version: version number, stage or None for latest version.
+
+        Returns:
+            The requested model version.
         """
-        pass
+        from zenml.client import Client
+
+        zs = Client().zen_store
+
+        if version is None:
+            return zs.get_model_version(model_name_or_id=self.name)
+        else:
+            return zs.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_id=getattr(version, "value", version),
+            )
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):
