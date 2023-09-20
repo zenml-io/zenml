@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Union
 from pydantic import Field, validator
 
 from zenml.client import Client
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.model.model_stages import ModelStages
 from zenml.models import (
@@ -83,9 +84,8 @@ class ModelConfig(ModelBaseModel):
         if isinstance(version, str) and version in [
             stage.value for stage in ModelStages
         ]:
-            logger.warning(
-                f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
-                "model version by its' stage make sure to pass in instance of `ModelStages`."
+            logger.info(
+                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
             )
         return version
 
@@ -123,8 +123,18 @@ class ModelConfig(ModelBaseModel):
                 workspace=zenml_client.active_workspace.id,
             )
             model_request = ModelRequestModel.parse_obj(model_request)
-            model = zenml_client.zen_store.create_model(model=model_request)
-            logger.warning(f"New model `{self.name}` was created implicitly.")
+            try:
+                model = zenml_client.zen_store.create_model(
+                    model=model_request
+                )
+                logger.warning(
+                    f"New model `{self.name}` was created implicitly."
+                )
+            except EntityExistsError:
+                # this is backup logic, if model was created somehow in between get and create calls
+                model = zenml_client.zen_store.get_model(
+                    model_name_or_id=self.name
+                )
         return model
 
     def _create_model_version(
