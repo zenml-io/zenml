@@ -73,7 +73,7 @@ class ModelConfig(ModelBaseModel):
         if recovery:
             if not values.get("create_new_model_version", False):
                 logger.warning(
-                    "Using `recovery` flag without `create_new_model_version=True` makes no effect"
+                    "Using `recovery` flag without `create_new_model_version=True` has no effect."
                 )
         return recovery
 
