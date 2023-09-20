@@ -750,7 +750,7 @@ class Pipeline:
             pipeline: The pipeline run response model.
 
         Raises:
-            KeyError: No running model version found for @step model configs.
+            KeyError: No running model version found for @step `model_config`s.
         """
         models_to_register = set()
         pipeline_model_name = None
