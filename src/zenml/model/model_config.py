@@ -13,27 +13,29 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import Field, validator
 
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.model.base_model import ModelBaseModel
 from zenml.model.model_stages import ModelStages
 
 if TYPE_CHECKING:
     from zenml.models.model_models import (
-        ModelRequestModel,
         ModelResponseModel,
         ModelVersionRequestModel,
         ModelVersionResponseModel,
     )
+
 logger = get_logger(__name__)
 
 
 class ModelConfig(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
+    version: points model context to a specific version or stage.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
@@ -47,7 +49,7 @@ class ModelConfig(ModelBaseModel):
 
     version: Optional[Union[str, ModelStages]] = Field(
         default=None,
-        description="Model version is optional and points model context to a specific version or stage. It can be a version number, stage, ",
+        description="Model version is optional and points model context to a specific version or stage.",
     )
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
@@ -71,7 +73,7 @@ class ModelConfig(ModelBaseModel):
         if recovery:
             if not values.get("create_new_model_version", False):
                 logger.warning(
-                    "Using `recovery` flag without `create_new_model_version=True` makes no effect"
+                    "Using `recovery` flag without `create_new_model_version=True` has no effect."
                 )
         return recovery
 
@@ -79,10 +81,9 @@ class ModelConfig(ModelBaseModel):
     def _validate_version(
         cls, version: Union[str, ModelStages]
     ) -> Union[str, ModelStages]:
-        if isinstance(version, str) and version in ModelStages._members():
-            logger.warning(
-                f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
-                "model version by its' stage make sure to pass in instance of `ModelStages`."
+        if version in [stage.value for stage in ModelStages]:
+            logger.info(
+                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
             )
         return version
 
@@ -92,31 +93,7 @@ class ModelConfig(ModelBaseModel):
             return self.version.value
         return None
 
-    def _get_request_params(
-        self,
-        request_model: Union[
-            Type["ModelRequestModel"], Type["ModelVersionRequestModel"]
-        ],
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        from zenml.client import Client
-
-        zenml_client = Client()
-        request_params = {
-            k: v
-            for k, v in self.dict().items()
-            if k in request_model.schema()["properties"]
-        }
-        request_params.update(kwargs)
-        request_params.update(
-            {
-                "user": zenml_client.active_user.id,
-                "workspace": zenml_client.active_workspace.id,
-            }
-        )
-        return request_params
-
-    def get_or_create_model(self) -> "ModelResponseModel":
+    def get_or_create_model(self) -> ModelResponseModel:
         """This method should get or create a model from Model WatchTower.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -133,20 +110,36 @@ class ModelConfig(ModelBaseModel):
                 model_name_or_id=self.name
             )
         except KeyError:
-            model_request = ModelRequestModel.parse_obj(
-                self._get_request_params(ModelRequestModel)
+            model_request = ModelRequestModel(
+                name=self.name,
+                license=self.license,
+                description=self.description,
+                audience=self.audience,
+                use_cases=self.use_cases,
+                limitations=self.limitations,
+                trade_offs=self.trade_offs,
+                ethic=self.ethic,
+                tags=self.tags,
+                user=zenml_client.active_user.id,
+                workspace=zenml_client.active_workspace.id,
             )
-            model = zenml_client.zen_store.create_model(model=model_request)
-            logger.warning(f"New model `{self.name}` was created implicitly.")
+            model_request = ModelRequestModel.parse_obj(model_request)
+            try:
+                model = zenml_client.zen_store.create_model(
+                    model=model_request
+                )
+                logger.info(f"New model `{self.name}` was created implicitly.")
+            except EntityExistsError:
+                # this is backup logic, if model was created somehow in between get and create calls
+                model = zenml_client.zen_store.get_model(
+                    model_name_or_id=self.name
+                )
         return model
 
-    def _get_or_create_model_version(
-        self, model: "ModelResponseModel"
-    ) -> "ModelVersionResponseModel":
-        """This method should get or create a model version from Model WatchTower.
-
-        New version will be created if `create_new_model_version`, otherwise
-        will try to fetch based on `version`.
+    def _create_model_version(
+        self, model: ModelResponseModel
+    ) -> ModelVersionResponseModel:
+        """This method creates a model version for Model WatchTower.
 
         Args:
             model: The model containing the model version.
@@ -154,59 +147,56 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model version based on configuration.
         """
-        from zenml.client import Client
-        from zenml.models.model_models import ModelVersionRequestModel
-
         zenml_client = Client()
-        # if specific version requested
-        if not self.create_new_model_version:
-            # by stage
-            if self._stage is not None:
-                # raise if not found
-                return zenml_client.zen_store.get_model_version_in_stage(
-                    model_name_or_id=self.name,
-                    model_stage=self._stage,
-                )
-            # by version
-            else:
-                # latest version requested
-                if self.version is None:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version_latest(
-                        model_name_or_id=self.name
-                    )
-                # specific version requested
-                else:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version(
-                        model_name_or_id=self.name,
-                        model_version_name_or_id=self.version,
-                    )
-        # else new version requested
         self.version = "running"
-        mv_request = ModelVersionRequestModel.parse_obj(
-            self._get_request_params(ModelVersionRequestModel, model=model.id)
+        model_version_request = ModelVersionRequestModel(
+            user=zenml_client.active_user.id,
+            workspace=zenml_client.active_workspace.id,
+            version=self.version,
+            model=model.id,
         )
-        mv = None
-        if self.recovery:
-            try:
-                return zenml_client.zen_store.get_model_version(
-                    model_name_or_id=self.name,
-                    model_version_name_or_id=self.version,
-                )
-            except KeyError:
+        mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
+        try:
+            return zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_id=self.version,
+            )
+        except KeyError:
+            if self.recovery:
                 logger.warning(
                     f"Recovery mode: No `{self.version}` model version found."
                 )
-        if mv is None:
             mv = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
             logger.warning(f"New model version `{self.name}` was created.")
 
-        return mv
+            return mv
 
-    def get_or_create_model_version(self) -> "ModelVersionResponseModel":
+    def _get_model_version(
+        self, model: ModelResponseModel
+    ) -> ModelVersionResponseModel:
+        """This method gets a model version from Model WatchTower.
+
+        Args:
+            model: The model containing the model version.
+
+        Returns:
+            The model version based on configuration.
+        """
+        zenml_client = Client()
+        if self.version is None:
+            # raise if not found
+            return zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name
+            )
+        # by version name or stage
+        # raise if not found
+        return zenml_client.zen_store.get_model_version(
+            model_name_or_id=self.name, model_version_name_or_id=self.version
+        )
+
+    def get_or_create_model_version(self) -> ModelVersionResponseModel:
         """This method should get or create a model and a model version from Model WatchTower.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -218,5 +208,8 @@ class ModelConfig(ModelBaseModel):
             The model version based on configuration.
         """
         model = self.get_or_create_model()
-        mv = self._get_or_create_model_version(model)
+        if self.create_new_model_version:
+            mv = self._create_model_version(model)
+        else:
+            mv = self._get_model_version(model)
         return mv

@@ -5588,13 +5588,14 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be retrieved.
+            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5607,15 +5608,24 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            try:
-                UUID(str(model_version_name_or_id))
+            if model_version_name_or_id == "__latest__":
+                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            elif model_version_name_or_id in [
+                stage.value for stage in ModelStages
+            ]:
                 query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
+                    ModelVersionSchema.stage == model_version_name_or_id
                 )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.version == model_version_name_or_id
-                )
+            else:
+                try:
+                    UUID(str(model_version_name_or_id))
+                    query = query.where(
+                        ModelVersionSchema.id == model_version_name_or_id
+                    )
+                except ValueError:
+                    query = query.where(
+                        ModelVersionSchema.version == model_version_name_or_id
+                    )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(

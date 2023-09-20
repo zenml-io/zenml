@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ModelStages lists supported stages of a Model Version."""
-from typing import List
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -24,13 +23,3 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
-    # technical stages
-    RUNNING = "running"
-
-    @classmethod
-    def _members(cls) -> List[str]:
-        values = getattr(cls, "_value2member_map_", None)
-        if values is None:
-            return ["none", "staging", "production", "archived", "running"]
-        else:
-            return list(values.keys())
