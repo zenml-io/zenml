@@ -138,22 +138,6 @@ class TestModelConfig:
             with pytest.raises(KeyError):
                 mc.get_or_create_model_version()
 
-    def test_model_fetch_model_and_version_by_stage_as_string_fails_and_warns(
-        self,
-    ):
-        with ModelContext(model_version="1.0.0", stage=ModelStages.PRODUCTION):
-            with mock.patch(
-                "zenml.model.model_config.logger.warning"
-            ) as logger:
-                mc = ModelConfig(
-                    name=MODEL_NAME,
-                    version=ModelStages.PRODUCTION.value,
-                )
-                logger.assert_called_once()
-
-            with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
-
     def test_init_create_new_version_with_version_fails(self):
         with pytest.raises(ValueError):
             ModelConfig(

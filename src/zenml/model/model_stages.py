@@ -23,5 +23,3 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
-    # technical stages
-    RUNNING = "running"

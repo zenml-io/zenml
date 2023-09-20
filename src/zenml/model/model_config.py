@@ -127,13 +127,10 @@ class ModelConfig(ModelBaseModel):
             logger.warning(f"New model `{self.name}` was created implicitly.")
         return model
 
-    def _get_or_create_model_version(
+    def _create_model_version(
         self, model: ModelResponseModel
     ) -> ModelVersionResponseModel:
-        """This method should get or create a model version from Model WatchTower.
-
-        New version will be created if `create_new_model_version`, otherwise
-        will try to fetch based on `version`.
+        """This method creates a model version for Model WatchTower.
 
         Args:
             model: The model containing the model version.
@@ -142,31 +139,6 @@ class ModelConfig(ModelBaseModel):
             The model version based on configuration.
         """
         zenml_client = Client()
-        # if specific version requested
-        if not self.create_new_model_version:
-            # by stage
-            if self._stage is not None:
-                # raise if not found
-                return zenml_client.zen_store.get_model_version_in_stage(
-                    model_name_or_id=self.name,
-                    model_stage=self._stage,
-                )
-            # by version
-            else:
-                # latest version requested
-                if self.version is None:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version_latest(
-                        model_name_or_id=self.name
-                    )
-                # specific version requested
-                else:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version(
-                        model_name_or_id=self.name,
-                        model_version_name_or_id=self.version,
-                    )
-        # else new version requested
         self.version = "running"
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
@@ -175,24 +147,45 @@ class ModelConfig(ModelBaseModel):
             model=model.id,
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
-        mv = None
-        if self.recovery:
-            try:
-                return zenml_client.zen_store.get_model_version(
-                    model_name_or_id=self.name,
-                    model_version_name_or_id=self.version,
-                )
-            except KeyError:
+        try:
+            return zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_id=self.version,
+            )
+        except KeyError:
+            if self.recovery:
                 logger.warning(
                     f"Recovery mode: No `{self.version}` model version found."
                 )
-        if mv is None:
             mv = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
             logger.warning(f"New model version `{self.name}` was created.")
 
-        return mv
+            return mv
+
+    def _get_model_version(
+        self, model: ModelResponseModel
+    ) -> ModelVersionResponseModel:
+        """This method gets a model version from Model WatchTower.
+
+        Args:
+            model: The model containing the model version.
+
+        Returns:
+            The model version based on configuration.
+        """
+        zenml_client = Client()
+        if self.version is None:
+            # raise if not found
+            return zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name
+            )
+        # by version name or stage
+        # raise if not found
+        return zenml_client.zen_store.get_model_version(
+            model_name_or_id=self.name, model_version_name_or_id=self.version
+        )
 
     def get_or_create_model_version(self) -> ModelVersionResponseModel:
         """This method should get or create a model and a model version from Model WatchTower.
@@ -206,5 +199,8 @@ class ModelConfig(ModelBaseModel):
             The model version based on configuration.
         """
         model = self.get_or_create_model()
-        mv = self._get_or_create_model_version(model)
+        if self.create_new_model_version:
+            mv = self._create_model_version(model)
+        else:
+            mv = self._get_model_version(model)
         return mv
