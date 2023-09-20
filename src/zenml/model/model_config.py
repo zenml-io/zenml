@@ -19,8 +19,8 @@ from pydantic import Field, validator
 
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.model.base_model import ModelBaseModel
 from zenml.model.model_stages import ModelStages
+from zenml.models.model_base_model import ModelBaseModel
 
 if TYPE_CHECKING:
     from zenml.models.model_models import (

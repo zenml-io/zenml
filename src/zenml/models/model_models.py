@@ -18,7 +18,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
-from zenml.model.base_model import ModelBaseModel
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -26,6 +25,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 if TYPE_CHECKING:
