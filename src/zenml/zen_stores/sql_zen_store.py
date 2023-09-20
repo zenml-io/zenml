@@ -5643,7 +5643,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID or name not found.
         """
         stage = getattr(model_stage, "value", model_stage)
-        if stage not in ModelStages._members():
+        if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"Model stage `{stage}`  is not a valid one.")
         with Session(self.engine) as session:
             model = self.get_model(model_name_or_id)

@@ -79,7 +79,9 @@ class ModelConfig(ModelBaseModel):
     def _validate_version(
         cls, version: Union[str, ModelStages]
     ) -> Union[str, ModelStages]:
-        if isinstance(version, str) and version in ModelStages._members():
+        if isinstance(version, str) and version in [
+            stage.value for stage in ModelStages
+        ]:
             logger.warning(
                 f"Version `{version}` matches one of the possible `ModelStages`, if you want to fetch "
                 "model version by its' stage make sure to pass in instance of `ModelStages`."
