@@ -238,7 +238,6 @@ class DiscordAlerter(BaseAlerter):
             try:
                 channel = client.get_channel(int(discord_channel_id))
                 if channel:
-
                     # Send the message
                     await channel.send(embed=embed_blocks)
                     message_sent = True
@@ -280,7 +279,6 @@ class DiscordAlerter(BaseAlerter):
             try:
                 channel = client.get_channel(int(discord_channel_id))
                 if channel:
-
                     # Send the message
                     await channel.send(embed=embed_blocks)
 
