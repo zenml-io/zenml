@@ -397,6 +397,8 @@ def print_stack_outputs(stack: "StackResponseModel") -> None:
     Args:
         stack: Instance of a stack model.
     """
+    verify_mlstacks_prerequisites_installation()
+
     if not stack.stack_spec_path:
         declare("No stack spec path is set for this stack.")
         return
