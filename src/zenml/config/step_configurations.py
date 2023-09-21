@@ -149,6 +149,9 @@ class StepConfigurationUpdate(StrictBaseModel):
         """Gets a ModelConfig object out of the model config model.
 
         This is a technical circular import resolver.
+
+        Returns:
+            The model config object, if configured.
         """
         if self.model_config_model is None:
             return None

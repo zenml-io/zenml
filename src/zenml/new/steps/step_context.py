@@ -439,7 +439,11 @@ class StepContext(metaclass=SingletonMetaClass):
             )
 
     def _get_output_annotations(self) -> Dict[str, "OutputSignature"]:
-        """Returns the output annotations of the step."""
+        """Returns the output annotations of the step.
+
+        Returns:
+            The output annotations of the step.
+        """
         return {
             output_name: output.output_annotation
             for output_name, output in self._outputs.items()
