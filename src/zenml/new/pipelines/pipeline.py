@@ -88,6 +88,7 @@ from zenml.utils import (
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
+    from zenml.model.model_config import ModelConfig
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -120,6 +121,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -140,6 +142,7 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -156,6 +159,7 @@ class Pipeline:
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model_config=model_config,
         )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -278,6 +282,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the pipeline.
@@ -312,6 +317,7 @@ class Pipeline:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -336,6 +342,7 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "model_config": model_config,
             }
         )
         config = PipelineConfigurationUpdate(**values)

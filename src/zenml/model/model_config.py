@@ -13,21 +13,20 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import Field, validator
 
-from zenml.client import Client
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.model.model_stages import ModelStages
-from zenml.models import (
-    ModelBaseModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-)
+from zenml.models.model_base_model import ModelBaseModel
+
+if TYPE_CHECKING:
+    from zenml.models.model_models import (
+        ModelResponseModel,
+        ModelVersionResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -93,7 +92,7 @@ class ModelConfig(ModelBaseModel):
             return self.version.value
         return None
 
-    def get_or_create_model(self) -> ModelResponseModel:
+    def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model WatchTower.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -101,6 +100,9 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model based on configuration.
         """
+        from zenml.client import Client
+        from zenml.models.model_models import ModelRequestModel
+
         zenml_client = Client()
         try:
             model = zenml_client.zen_store.get_model(
@@ -134,8 +136,8 @@ class ModelConfig(ModelBaseModel):
         return model
 
     def _create_model_version(
-        self, model: ModelResponseModel
-    ) -> ModelVersionResponseModel:
+        self, model: "ModelResponseModel"
+    ) -> "ModelVersionResponseModel":
         """This method creates a model version for Model WatchTower.
 
         Args:
@@ -144,6 +146,9 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model version based on configuration.
         """
+        from zenml.client import Client
+        from zenml.models.model_models import ModelVersionRequestModel
+
         zenml_client = Client()
         self.version = "running"
         model_version_request = ModelVersionRequestModel(
@@ -171,8 +176,8 @@ class ModelConfig(ModelBaseModel):
             return mv
 
     def _get_model_version(
-        self, model: ModelResponseModel
-    ) -> ModelVersionResponseModel:
+        self, model: "ModelResponseModel"
+    ) -> "ModelVersionResponseModel":
         """This method gets a model version from Model WatchTower.
 
         Args:
@@ -181,6 +186,8 @@ class ModelConfig(ModelBaseModel):
         Returns:
             The model version based on configuration.
         """
+        from zenml.client import Client
+
         zenml_client = Client()
         if self.version is None:
             # raise if not found
@@ -193,7 +200,7 @@ class ModelConfig(ModelBaseModel):
             model_name_or_id=self.name, model_version_name_or_id=self.version
         )
 
-    def get_or_create_model_version(self) -> ModelVersionResponseModel:
+    def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model WatchTower.
 
         New model is created implicitly, if missing, otherwise fetched.

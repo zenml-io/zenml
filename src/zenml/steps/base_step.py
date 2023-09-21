@@ -37,12 +37,6 @@ from uuid import UUID
 from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.config.source import Source
-from zenml.config.step_configurations import (
-    PartialArtifactConfiguration,
-    PartialStepConfiguration,
-    StepConfiguration,
-    StepConfigurationUpdate,
-)
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
@@ -68,6 +62,13 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.step_configurations import (
+        PartialArtifactConfiguration,
+        PartialStepConfiguration,
+        StepConfiguration,
+        StepConfigurationUpdate,
+    )
+    from zenml.model import ModelConfig
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -133,6 +134,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -161,8 +163,11 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             **kwargs: Keyword arguments passed to the step.
         """
+        from zenml.config.step_configurations import PartialStepConfiguration
+
         self._upstream_steps: Set["BaseStep"] = set()
         self.entrypoint_definition = validate_entrypoint_function(
             self.entrypoint, reserved_arguments=["after", "id"]
@@ -200,12 +205,17 @@ class BaseStep(metaclass=BaseStepMeta):
             if enable_artifact_visualization is not False
             else "disabled",
         )
-
         logger.debug(
             "Step '%s': logs %s.",
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
+        if model_config is not None:
+            logger.debug(
+                "Step '%s': Is in Model context %s.",
+                name,
+                {"model": model_config.name, "version": model_config.version},
+            )
 
         self._configuration = PartialStepConfiguration(
             name=name,
@@ -223,6 +233,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model_config=model_config,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -606,7 +617,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.enable_cache
 
     @property
-    def configuration(self) -> PartialStepConfiguration:
+    def configuration(self) -> "PartialStepConfiguration":
         """The configuration of the step.
 
         Returns:
@@ -631,6 +642,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -668,6 +680,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -677,6 +690,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The step instance that this method was called on.
         """
+        from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
 
         if name:
@@ -740,6 +754,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "model_config": model_config,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -762,6 +777,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -788,6 +804,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -811,6 +828,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model_config=model_config,
             merge=merge,
         )
         return step_copy
@@ -825,7 +843,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _apply_configuration(
         self,
-        config: StepConfigurationUpdate,
+        config: "StepConfigurationUpdate",
         merge: bool = True,
     ) -> None:
         """Applies an update to the step configuration.
@@ -845,7 +863,9 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.debug("Updated step configuration:")
         logger.debug(self._configuration)
 
-    def _validate_configuration(self, config: StepConfigurationUpdate) -> None:
+    def _validate_configuration(
+        self, config: "StepConfigurationUpdate"
+    ) -> None:
         """Validates a configuration update.
 
         Args:
@@ -881,7 +901,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
     def _validate_outputs(
-        self, outputs: Mapping[str, PartialArtifactConfiguration]
+        self, outputs: Mapping[str, "PartialArtifactConfiguration"]
     ) -> None:
         """Validates the step output configuration.
 
@@ -945,7 +965,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self,
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, UUID],
-    ) -> StepConfiguration:
+    ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
         Once the step was called, we know the outputs of previous steps
@@ -960,6 +980,12 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The finalized step configuration.
         """
+        from zenml.config.step_configurations import (
+            PartialArtifactConfiguration,
+            StepConfiguration,
+            StepConfigurationUpdate,
+        )
+
         outputs: Dict[
             str, Dict[str, Union[Source, Tuple[Source, ...]]]
         ] = defaultdict(dict)

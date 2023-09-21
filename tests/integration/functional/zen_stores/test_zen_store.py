@@ -49,7 +49,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logging.step_logging import prepare_logs_uri
-from zenml.model.model_stages import ModelStages
+from zenml.model import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactResponseModel,

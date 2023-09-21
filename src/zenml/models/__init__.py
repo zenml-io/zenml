@@ -146,7 +146,6 @@ from zenml.models.logs_models import (
     LogsResponseModel,
 )
 from zenml.models.model_models import (
-    ModelBaseModel,
     ModelFilterModel,
     ModelResponseModel,
     ModelRequestModel,
@@ -403,7 +402,6 @@ __all__ = [
     "LogsBaseModel",
     "LogsRequestModel",
     "LogsResponseModel",
-    "ModelBaseModel",
     "ModelFilterModel",
     "ModelRequestModel",
     "ModelResponseModel",

@@ -73,14 +73,12 @@ class TestModelConfig:
     def test_model_created_with_warning(self):
         """Test if the model is created with a warning.
 
-        It then checks if a warning is logged during the creation process.
-        Warning is expected because the model is not yet created.
+        It then checks if an info is logged during the creation process.
+        Info is expected because the model is not yet created.
         """
         with ModelContext(create_model=False):
             mc = ModelConfig(name=MODEL_NAME)
-            with mock.patch(
-                "zenml.model.model_config.logger.warning"
-            ) as logger:
+            with mock.patch("zenml.model.model_config.logger.info") as logger:
                 model = mc.get_or_create_model()
                 logger.assert_called_once()
             assert model.name == MODEL_NAME

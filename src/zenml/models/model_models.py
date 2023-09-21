@@ -25,6 +25,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 if TYPE_CHECKING:
@@ -371,46 +372,6 @@ class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
-    )
-
-
-class ModelBaseModel(BaseModel):
-    """Model base model."""
-
-    name: str = Field(
-        title="The name of the model",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    license: Optional[str] = Field(
-        title="The license model created under",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    description: Optional[str] = Field(
-        title="The description of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    audience: Optional[str] = Field(
-        title="The target audience of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    use_cases: Optional[str] = Field(
-        title="The use cases of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    limitations: Optional[str] = Field(
-        title="The know limitations of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    trade_offs: Optional[str] = Field(
-        title="The trade offs of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    ethic: Optional[str] = Field(
-        title="The ethical implications of the model",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    tags: Optional[List[str]] = Field(
-        title="Tags associated with the model",
     )
 
 

@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.model.model_config import ModelConfig
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
@@ -195,6 +196,29 @@ class StepContext(metaclass=SingletonMetaClass):
             f"Unable to get pipeline in step '{self.step_name}' of pipeline "
             f"run '{self.pipeline_run.id}': This pipeline run does not have "
             f"a pipeline associated with it."
+        )
+
+    @property
+    def model_config(self) -> "ModelConfig":
+        """Returns configured ModelConfig.
+
+        Order of resolution to search for ModelConfig is:
+            1. ModelConfig from @step
+            2. ModelConfig from @pipeline
+
+        Returns:
+            The `ModelConfig` object associated with the current step.
+
+        Raises:
+            StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
+        """
+        if self.step_run.config.model_config is not None:
+            return self.step_run.config.model_config
+        if self.pipeline_run.config.model_config is not None:
+            return self.pipeline_run.config.model_config
+        raise StepContextError(
+            f"Unable to get ModelConfig in step '{self.step_name}' of pipeline "
+            f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
         )
 
     @property
