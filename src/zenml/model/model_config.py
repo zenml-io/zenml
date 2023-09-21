@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import Field, PrivateAttr, validator
 
@@ -41,13 +41,10 @@ class ModelConfig(ModelBaseModel):
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
 
-    version: Optional[str] = Field(
+    version: Optional[Union[ModelStages, str]] = Field(
         default=None,
-        description="Model version is optional and points model context to a specific version.",
-    )
-    stage: Optional[ModelStages] = Field(
-        default=None,
-        description="Model stage is optional and points model context to a specific stage.",
+        description="Model version or stage is optional and points model context to a specific version/stage, "
+        "if skipped and `create_new_model_version` is False - latest model version will be used.",
     )
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
@@ -58,14 +55,6 @@ class ModelConfig(ModelBaseModel):
         default=None
     )
 
-    @validator("stage")
-    def _validate_stage(
-        cls, stage: ModelStages, values: Dict[str, Any]
-    ) -> ModelStages:
-        if stage is not None and values.get("version", None) is not None:
-            raise ValueError("Cannot set both `version` and `stage`.")
-        return stage
-
     @validator("create_new_model_version")
     def _validate_create_new_model_version(
         cls, create_new_model_version: bool, values: Dict[str, Any]
@@ -74,10 +63,6 @@ class ModelConfig(ModelBaseModel):
             if values.get("version", None) is not None:
                 raise ValueError(
                     "`version` cannot be used with `create_new_model_version`."
-                )
-            if values.get("stage", None) is not None:
-                raise ValueError(
-                    "`stage` cannot be used with `create_new_model_version`."
                 )
         return create_new_model_version
 
@@ -91,6 +76,16 @@ class ModelConfig(ModelBaseModel):
                     "Using `recovery` flag without `create_new_model_version=True` has no effect."
                 )
         return recovery
+
+    @validator("version")
+    def _validate_version(
+        cls, version: Union[str, ModelStages]
+    ) -> Union[str, ModelStages]:
+        if version in [stage.value for stage in ModelStages]:
+            logger.info(
+                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
+            )
+        return version
 
     @validator("save_models_to_registry")
     def _validate_save_models_to_registry(
@@ -187,7 +182,7 @@ class ModelConfig(ModelBaseModel):
             mv = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
-            logger.warning(f"New model version `{self.name}` was created.")
+            logger.info(f"New model version `{self.name}` was created.")
 
             return mv
 

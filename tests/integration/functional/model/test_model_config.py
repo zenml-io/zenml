@@ -100,9 +100,7 @@ class TestModelConfig:
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
             mc = ModelConfig(name=MODEL_NAME, create_new_model_version=True)
-            with mock.patch(
-                "zenml.model.model_config.logger.warning"
-            ) as logger:
+            with mock.patch("zenml.model.model_config.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
             assert mv.version == RUNNING_MODEL_VERSION
@@ -144,7 +142,7 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_stage_not_found(self):
         """Test model and model version retrieval fails by exact stage number, if version in stage missing."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION)
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
                 mc.get_or_create_model_version()
 
@@ -161,7 +159,7 @@ class TestModelConfig:
         with pytest.raises(ValueError):
             ModelConfig(
                 name=MODEL_NAME,
-                stage=ModelStages.PRODUCTION,
+                version=ModelStages.PRODUCTION,
                 create_new_model_version=True,
             )
 
@@ -195,11 +193,9 @@ class TestModelConfig:
             )
             logger.assert_called_once()
             assert mc.version == ModelStages.PRODUCTION.value
-            assert mc._stage is None
 
         mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
         assert mc.version == ModelStages.PRODUCTION
-        assert mc._stage == ModelStages.PRODUCTION.value
 
     def test_recovery_flow(self):
         """Test that model context can recover same version after failure."""
@@ -220,12 +216,3 @@ class TestModelConfig:
             mv2 = mc.get_or_create_model_version()
 
             assert mv1 == mv2
-
-    def test_both_stage_and_version_fail(self):
-        with ModelContext():
-            with pytest.raises(ValueError):
-                ModelConfig(
-                    name=MODEL_NAME,
-                    stage=ModelStages.PRODUCTION,
-                    version="1.0.0",
-                )

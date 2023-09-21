@@ -60,7 +60,7 @@ def test_link_minimalistic():
 
         model = zs.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version_latest(MODEL_NAME)
+        mv = zs.get_model_version(MODEL_NAME)
         assert mv.version == "1"
         al = zs.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
@@ -104,7 +104,7 @@ def test_link_multiple_named_outputs():
 
         model = zs.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version_latest(MODEL_NAME)
+        mv = zs.get_model_version(MODEL_NAME)
         assert mv.version == "1"
         al = zs.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
@@ -147,7 +147,7 @@ def test_link_multiple_named_outputs_without_links():
 
         model = zs.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version_latest(MODEL_NAME)
+        mv = zs.get_model_version(MODEL_NAME)
         assert mv.version == "1"
         al = zs.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(

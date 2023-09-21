@@ -297,8 +297,8 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: Union[str, "ModelStages"] = Field(
-        title="Target model version stage to be set",
+    stage: Optional[Union[str, "ModelStages"]] = Field(
+        title="Target model version stage to be set", default=None
     )
     force: bool = Field(
         title="Whether existing model version in target stage should be silently archived "

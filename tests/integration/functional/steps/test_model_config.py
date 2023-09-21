@@ -149,20 +149,20 @@ def test_create_new_versions_both_pipeline_and_step():
 
             foo = zs.get_model("foo")
             assert foo.name == "foo"
-            foo_version = zs.get_model_version_latest("foo")
+            foo_version = zs.get_model_version("foo")
             assert foo_version.version == "1"
 
             bar = zs.get_model("bar")
             assert bar.name == "bar"
-            bar_version = zs.get_model_version_latest("bar")
+            bar_version = zs.get_model_version("bar")
             assert bar_version.version == "1"
 
             _this_pipeline_creates_a_version()
 
-            foo_version = zs.get_model_version_latest("foo")
+            foo_version = zs.get_model_version("foo")
             assert foo_version.version == "2"
 
-            bar_version = zs.get_model_version_latest("bar")
+            bar_version = zs.get_model_version("bar")
             assert bar_version.version == "2"
 
 
@@ -181,12 +181,12 @@ def test_create_new_version_only_in_step():
 
         bar = zs.get_model("foo")
         assert bar.name == "foo"
-        bar_version = zs.get_model_version_latest("foo")
+        bar_version = zs.get_model_version("foo")
         assert bar_version.version == "1"
 
         _this_pipeline_does_not_create_a_version()
 
-        bar_version = zs.get_model_version_latest("foo")
+        bar_version = zs.get_model_version("foo")
         assert bar_version.version == "2"
 
 
@@ -208,10 +208,10 @@ def test_create_new_version_only_in_pipeline():
 
         foo = zs.get_model("bar")
         assert foo.name == "bar"
-        foo_version = zs.get_model_version_latest("bar")
+        foo_version = zs.get_model_version("bar")
         assert foo_version.version == "1"
 
         _this_pipeline_creates_a_version()
 
-        foo_version = zs.get_model_version_latest("bar")
+        foo_version = zs.get_model_version("bar")
         assert foo_version.version == "2"
