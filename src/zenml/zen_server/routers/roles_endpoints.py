@@ -28,11 +28,7 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.utils import (
-    handle_exceptions,
-    make_dependable,
-    zen_store,
-)
+from zenml.zen_server.utils import handle_exceptions, make_dependable, rbac
 
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
@@ -62,7 +58,7 @@ def list_roles(
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles(role_filter_model=role_filter_model)
+    return rbac().list_roles(role_filter_model=role_filter_model)
 
 
 @router.post(
@@ -85,7 +81,7 @@ def create_role(
     Returns:
         The created role.
     """
-    return zen_store().create_role(role=role)
+    return rbac().create_role(role=role)
 
 
 @router.get(
@@ -106,7 +102,7 @@ def get_role(
     Returns:
         A specific role.
     """
-    return zen_store().get_role(role_name_or_id=role_name_or_id)
+    return rbac().get_role(role_name_or_id=role_name_or_id)
 
 
 @router.put(
@@ -131,7 +127,7 @@ def update_role(
     Returns:
         The created role.
     """
-    return zen_store().update_role(role_id=role_id, role_update=role_update)
+    return rbac().update_role(role_id=role_id, role_update=role_update)
 
 
 @router.delete(
@@ -148,4 +144,4 @@ def delete_role(
     Args:
         role_name_or_id: Name or ID of the role.
     """
-    zen_store().delete_role(role_name_or_id=role_name_or_id)
+    rbac().delete_role(role_name_or_id=role_name_or_id)

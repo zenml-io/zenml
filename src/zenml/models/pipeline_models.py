@@ -23,7 +23,6 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
-    update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
@@ -187,6 +186,9 @@ class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
 # ------ #
 
 
-@update_model
-class PipelineUpdateModel(PipelineRequestModel):
+class PipelineUpdateModel(BaseModel):
     """Pipeline update model."""
+
+    # None of the pipeline attributes should be updated ATM, but this model
+    # and the corresponding endpoint might be useful once we allow adding
+    # tags/descriptions and updating them from the dashboard

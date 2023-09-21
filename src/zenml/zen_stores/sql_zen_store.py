@@ -28,6 +28,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -108,10 +109,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
     ScheduleRequestModel,
@@ -133,20 +130,10 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
     UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
     UserUpdateModel,
     WorkspaceFilterModel,
     WorkspaceRequestModel,
@@ -171,8 +158,6 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
-    DEFAULT_ADMIN_ROLE,
-    DEFAULT_GUEST_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
     DEFAULT_STACK_NAME,
     BaseZenStore,
@@ -194,8 +179,6 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
-    RolePermissionSchema,
-    RoleSchema,
     RunMetadataSchema,
     ScheduleSchema,
     ServiceConnectorSchema,
@@ -206,9 +189,6 @@ from zenml.zen_stores.schemas import (
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
-    TeamRoleAssignmentSchema,
-    TeamSchema,
-    UserRoleAssignmentSchema,
     UserSchema,
     WorkspaceSchema,
 )
@@ -235,6 +215,9 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+ZENML_CLOUD_ONLY_FEATURE_ERROR_MESSAGE = (
+    "This feature is only available in ZenML cloud."
+)
 
 
 def _is_mysql_missing_database_error(error: OperationalError) -> bool:
@@ -719,6 +702,7 @@ class SqlZenStore(BaseZenStore):
                 List[AnySchema],
             ]
         ] = None,
+        resource_ids: Optional[Set[UUID]] = None,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -746,6 +730,9 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
+
+        if resource_ids:
+            query = query.where(table.id.in_(resource_ids))
 
         # Get the total amount of items in the database for a given query
         if custom_fetch:
@@ -2009,597 +1996,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(user)
             session.commit()
-
-    # -----
-    # Teams
-    # -----
-
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if team with the given name already exists
-            existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.name == team.name)
-            ).first()
-            if existing_team is not None:
-                raise EntityExistsError(
-                    f"Unable to create team with name '{team.name}': "
-                    f"Found existing team with this name."
-                )
-
-            defined_users = []
-            if team.users:
-                # Get the Schemas of all users mentioned
-                filters = [
-                    (UserSchema.id == user_id) for user_id in team.users
-                ]
-
-                defined_users = session.exec(
-                    select(UserSchema).where(or_(*filters))
-                ).all()
-
-            # Create the team
-            new_team = TeamSchema(name=team.name, users=defined_users)
-            session.add(new_team)
-            session.commit()
-
-            return new_team.to_model()
-
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            return team.to_model()
-
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TeamSchema,
-                filter_model=team_filter_model,
-            )
-
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
-        """
-        with Session(self.engine) as session:
-            existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.id == team_id)
-            ).first()
-
-            if existing_team is None:
-                raise KeyError(
-                    f"Unable to update team with id "
-                    f"'{team_id}': Found no"
-                    f"existing teams with this id."
-                )
-
-            # Update the team
-            existing_team.update(team_update=team_update)
-            existing_team.users = []
-            if "users" in team_update.__fields_set__ and team_update.users:
-                for user in team_update.users:
-                    existing_team.users.append(
-                        self._get_user_schema(
-                            user_name_or_id=user, session=session
-                        )
-                    )
-
-            session.add(existing_team)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_team)
-            return existing_team.to_model()
-
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            session.delete(team)
-            session.commit()
-
-    # -----
-    # Roles
-    # -----
-
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if role with the given name already exists
-            existing_role = session.exec(
-                select(RoleSchema).where(RoleSchema.name == role.name)
-            ).first()
-            if existing_role is not None:
-                raise EntityExistsError(
-                    f"Unable to create role '{role.name}': Role already exists."
-                )
-
-            # Create role
-            role_schema = RoleSchema.from_request(role)
-            session.add(role_schema)
-            session.commit()
-            # Add all permissions
-            for p in role.permissions:
-                session.add(
-                    RolePermissionSchema(name=p, role_id=role_schema.id)
-                )
-
-            session.commit()
-            return role_schema.to_model()
-
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            return role.to_model()
-
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(RoleSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RoleSchema,
-                filter_model=role_filter_model,
-            )
-
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            KeyError: if the role does not exist.
-            IllegalOperationError: if the role is a system role.
-        """
-        with Session(self.engine) as session:
-            existing_role = session.exec(
-                select(RoleSchema).where(RoleSchema.id == role_id)
-            ).first()
-
-            if existing_role is None:
-                raise KeyError(
-                    f"Unable to update role with id "
-                    f"'{role_id}': Found no"
-                    f"existing roles with this id."
-                )
-
-            if existing_role.name in [DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE]:
-                raise IllegalOperationError(
-                    f"The built-in role '{existing_role.name}' cannot be "
-                    f"updated."
-                )
-
-            # The relationship table for roles behaves different from the other
-            #  ones. As such the required updates on the permissions have to be
-            #  done manually.
-            if "permissions" in role_update.__fields_set__:
-                existing_permissions = {
-                    p.name for p in existing_role.permissions
-                }
-
-                diff = existing_permissions.symmetric_difference(
-                    role_update.permissions
-                )
-
-                for permission in diff:
-                    if permission not in role_update.permissions:
-                        permission_to_delete = session.exec(
-                            select(RolePermissionSchema)
-                            .where(RolePermissionSchema.name == permission)
-                            .where(
-                                RolePermissionSchema.role_id
-                                == existing_role.id
-                            )
-                        ).one_or_none()
-                        session.delete(permission_to_delete)
-
-                    elif permission not in existing_permissions:
-                        session.add(
-                            RolePermissionSchema(
-                                name=permission, role_id=existing_role.id
-                            )
-                        )
-
-            # Update the role
-            existing_role.update(role_update=role_update)
-            session.add(existing_role)
-            session.commit()
-
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_role)
-            return existing_role.to_model()
-
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            IllegalOperationError: If the role is still assigned to users or
-                the role is one of the built-in roles.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            if role.name in [DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE]:
-                raise IllegalOperationError(
-                    f"The built-in role '{role.name}' cannot be deleted."
-                )
-            user_role = session.exec(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.role_id == role.id
-                )
-            ).all()
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.role_id == role.id
-                )
-            ).all()
-
-            if len(user_role) > 0 or len(team_role) > 0:
-                raise IllegalOperationError(
-                    f"Role `{role.name}` of type cannot be "
-                    f"deleted as it is in use by multiple users and teams. "
-                    f"Before deleting this role make sure to remove all "
-                    f"instances where this role is used."
-                )
-            else:
-                # Delete role
-                session.delete(role)
-                session.commit()
-
-    # ----------------
-    # Role assignments
-    # ----------------
-
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(UserRoleAssignmentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserRoleAssignmentSchema,
-                filter_model=user_role_assignment_filter_model,
-            )
-
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific workspace.
-
-        Args:
-            user_role_assignment: The role assignment to create.
-
-        Returns:
-            The created role assignment.
-
-        Raises:
-            EntityExistsError: if the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(
-                user_role_assignment.role, session=session
-            )
-            workspace: Optional[WorkspaceSchema] = None
-            if user_role_assignment.workspace:
-                workspace = self._get_workspace_schema(
-                    user_role_assignment.workspace, session=session
-                )
-            user = self._get_user_schema(
-                user_role_assignment.user, session=session
-            )
-            query = select(UserRoleAssignmentSchema).where(
-                UserRoleAssignmentSchema.user_id == user.id,
-                UserRoleAssignmentSchema.role_id == role.id,
-            )
-            if workspace is not None:
-                query = query.where(
-                    UserRoleAssignmentSchema.workspace_id == workspace.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to user "
-                    f"'{user.name}': Role already assigned in this workspace."
-                )
-            role_assignment = UserRoleAssignmentSchema(
-                role_id=role.id,
-                user_id=user.id,
-                workspace_id=workspace.id if workspace else None,
-                role=role,
-                user=user,
-                workspace=workspace,
-            )
-            session.add(role_assignment)
-            session.commit()
-            return role_assignment.to_model()
-
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Gets a role assignment by ID.
-
-        Args:
-            user_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The role assignment.
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            user_role = session.exec(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
-
-            if user_role:
-                return user_role.to_model()
-            else:
-                raise KeyError(
-                    f"Unable to get user role assignment with ID "
-                    f"'{user_role_assignment_id}': No user role assignment "
-                    f"with this ID found."
-                )
-
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment.
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            user_role = session.exec(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
-            if not user_role:
-                raise KeyError(
-                    f"No user role assignment with id "
-                    f"{user_role_assignment_id} exists."
-                )
-
-            session.delete(user_role)
-
-            session.commit()
-
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
-
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(
-                team_role_assignment.role, session=session
-            )
-            workspace: Optional[WorkspaceSchema] = None
-            if team_role_assignment.workspace:
-                workspace = self._get_workspace_schema(
-                    team_role_assignment.workspace, session=session
-                )
-            team = self._get_team_schema(
-                team_role_assignment.team, session=session
-            )
-            query = select(UserRoleAssignmentSchema).where(
-                UserRoleAssignmentSchema.user_id == team.id,
-                UserRoleAssignmentSchema.role_id == role.id,
-            )
-            if workspace is not None:
-                query = query.where(
-                    UserRoleAssignmentSchema.workspace_id == workspace.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to team "
-                    f"'{team.name}': Role already assigned in this workspace."
-                )
-            role_assignment = TeamRoleAssignmentSchema(
-                role_id=role.id,
-                team_id=team.id,
-                workspace_id=workspace.id if workspace else None,
-                role=role,
-                team=team,
-                workspace=workspace,
-            )
-            session.add(role_assignment)
-            session.commit()
-            return role_assignment.to_model()
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == team_role_assignment_id
-                )
-            ).one_or_none()
-
-            if team_role:
-                return team_role.to_model()
-            else:
-                raise KeyError(
-                    f"Unable to get team role assignment with ID "
-                    f"'{team_role_assignment_id}': No team role assignment "
-                    f"with this ID found."
-                )
-
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == team_role_assignment_id
-                )
-            ).one_or_none()
-            if not team_role:
-                raise KeyError(
-                    f"No team role assignment with id "
-                    f"{team_role_assignment_id} exists."
-                )
-
-            session.delete(team_role)
-
-            session.commit()
-
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamRoleAssignmentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TeamRoleAssignmentSchema,
-                filter_model=team_role_assignment_filter_model,
-            )
 
     # --------
     # Workspaces
@@ -5241,53 +4637,53 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _get_team_schema(
-        self,
-        team_name_or_id: Union[str, UUID],
-        session: Session,
-    ) -> TeamSchema:
-        """Gets a team schema by name or ID.
+    # def _get_team_schema(
+    #     self,
+    #     team_name_or_id: Union[str, UUID],
+    #     session: Session,
+    # ) -> TeamSchema:
+    #     """Gets a team schema by name or ID.
 
-        This is a helper method that is used in various places to find a team
-        by its name or ID.
+    #     This is a helper method that is used in various places to find a team
+    #     by its name or ID.
 
-        Args:
-            team_name_or_id: The name or ID of the team to get.
-            session: The database session to use.
+    #     Args:
+    #         team_name_or_id: The name or ID of the team to get.
+    #         session: The database session to use.
 
-        Returns:
-            The team schema.
-        """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=team_name_or_id,
-            schema_class=TeamSchema,
-            schema_name="team",
-            session=session,
-        )
+    #     Returns:
+    #         The team schema.
+    #     """
+    #     return self._get_schema_by_name_or_id(
+    #         object_name_or_id=team_name_or_id,
+    #         schema_class=TeamSchema,
+    #         schema_name="team",
+    #         session=session,
+    #     )
 
-    def _get_role_schema(
-        self,
-        role_name_or_id: Union[str, UUID],
-        session: Session,
-    ) -> RoleSchema:
-        """Gets a role schema by name or ID.
+    # def _get_role_schema(
+    #     self,
+    #     role_name_or_id: Union[str, UUID],
+    #     session: Session,
+    # ) -> RoleSchema:
+    #     """Gets a role schema by name or ID.
 
-        This is a helper method that is used in various places to find a role
-        by its name or ID.
+    #     This is a helper method that is used in various places to find a role
+    #     by its name or ID.
 
-        Args:
-            role_name_or_id: The name or ID of the role to get.
-            session: The database session to use.
+    #     Args:
+    #         role_name_or_id: The name or ID of the role to get.
+    #         session: The database session to use.
 
-        Returns:
-            The role schema.
-        """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=role_name_or_id,
-            schema_class=RoleSchema,
-            schema_name="role",
-            session=session,
-        )
+    #     Returns:
+    #         The role schema.
+    #     """
+    #     return self._get_schema_by_name_or_id(
+    #         object_name_or_id=role_name_or_id,
+    #         schema_class=RoleSchema,
+    #         schema_name="role",
+    #         session=session,
+    #     )
 
     def _get_run_schema(
         self,

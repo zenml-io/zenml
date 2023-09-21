@@ -19,10 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
 
 from zenml.constants import API, LOGIN, VERSION_1
-from zenml.models import UserRoleAssignmentFilterModel
 from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.utils import zen_store
+from zenml.zen_server.utils import rbac
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -99,20 +98,8 @@ def token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
-            user_id=auth_context.user.id
-        )
-    )
 
-    # TODO: This needs to happen at the sql level now
-    permissions = set().union(
-        *[
-            zen_store().get_role(ra.role.id).permissions
-            for ra in role_assignments.items
-            if ra.role is not None
-        ]
-    )
+    permissions = rbac().get_all_permissions(user=auth_context.user.id)
 
     access_token = auth_context.user.generate_access_token(
         permissions=[p.value for p in permissions]

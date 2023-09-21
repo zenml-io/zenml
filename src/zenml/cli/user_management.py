@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import click
 
@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import TeamFilterModel, UserFilterModel
+from zenml.models import UserFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -120,18 +120,8 @@ def list_users(ctx: click.Context, **kwargs: Any) -> None:
     required=False,
     type=str,
 )
-@click.option(
-    "--role",
-    "-r",
-    "initial_role",
-    help="Give the user an initial role.",
-    required=False,
-    type=str,
-    default="admin",
-)
 def create_user(
     user_name: str,
-    initial_role: str = "admin",
     password: Optional[str] = None,
 ) -> None:
     """Create a new user.
@@ -139,7 +129,6 @@ def create_user(
     Args:
         user_name: The name of the user to create.
         password: The password of the user to create.
-        initial_role: Give the user an initial role
     """
     client = Client()
     if not password:
@@ -157,9 +146,7 @@ def create_user(
             )
 
     try:
-        new_user = client.create_user(
-            name=user_name, password=password, initial_role=initial_role
-        )
+        new_user = client.create_user(name=user_name, password=password)
 
         cli_utils.declare(f"Created user '{new_user.name}'.")
     except EntityExistsError as err:
@@ -242,140 +229,3 @@ def delete_user(user_name_or_id: str) -> None:
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted user '{user_name_or_id}'.")
-
-
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
-def team() -> None:
-    """Commands for team management."""
-
-
-@team.command("list")
-@list_options(TeamFilterModel)
-def list_teams(**kwargs: Any) -> None:
-    """List all teams that fulfill the filter requirements.
-
-    Args:
-        kwargs: The filter options.
-    """
-    client = Client()
-
-    with console.status("Listing teams...\n"):
-        teams = client.list_teams(**kwargs)
-
-        if not teams:
-            cli_utils.declare("No teams found with the given filter.")
-            return
-
-        cli_utils.print_pydantic_models(
-            teams,
-            exclude_columns=["id", "created", "updated"],
-        )
-
-
-@team.command("describe", help="List all users in a team.")
-@click.argument("team_name_or_id", type=str, required=True)
-def describe_team(team_name_or_id: str) -> None:
-    """List all users in a team.
-
-    Args:
-        team_name_or_id: The name or ID of the team to describe.
-    """
-    try:
-        team_ = Client().get_team(name_id_or_prefix=team_name_or_id)
-    except KeyError as err:
-        cli_utils.error(str(err))
-    else:
-        cli_utils.print_pydantic_models(
-            [team_],
-            exclude_columns=[
-                "created",
-                "updated",
-            ],
-        )
-
-
-@team.command("create", help="Create a new team.")
-@click.argument("team_name", type=str, required=True)
-@click.option(
-    "--user",
-    "-u",
-    "users",
-    type=str,
-    multiple=True,
-    help="Name of users to add to this team.",
-)
-def create_team(team_name: str, users: Optional[List[str]] = None) -> None:
-    """Create a new team.
-
-    Args:
-        team_name: Name of the team to create.
-        users: Users to add to this team
-    """
-    try:
-        Client().create_team(name=team_name, users=users)
-    except EntityExistsError as err:
-        cli_utils.error(str(err))
-    cli_utils.declare(f"Created team '{team_name}'.")
-
-
-@team.command("update", help="Update an existing team.")
-@click.argument("team_name", type=str, required=True)
-@click.option(
-    "--name", "-n", "new_name", type=str, required=False, help="New team name."
-)
-@click.option(
-    "--remove-user",
-    "-r",
-    "remove_users",
-    type=str,
-    multiple=True,
-    help="Name or Id of users to remove.",
-)
-@click.option(
-    "--add-user",
-    "-a",
-    "add_users",
-    type=str,
-    multiple=True,
-    help="Name or Id of users to add.",
-)
-def update_team(
-    team_name: str,
-    new_name: Optional[str] = None,
-    remove_users: Optional[List[str]] = None,
-    add_users: Optional[List[str]] = None,
-) -> None:
-    """Update an existing team.
-
-    Args:
-        team_name: The name of the team.
-        new_name: The new name of the team.
-        remove_users: Users to remove from the team
-        add_users: Users to add to the team.
-    """
-    try:
-        team_ = Client().update_team(
-            name_id_or_prefix=team_name,
-            new_name=new_name,
-            remove_users=remove_users,
-            add_users=add_users,
-        )
-    except (EntityExistsError, KeyError) as err:
-        cli_utils.error(str(err))
-    else:
-        cli_utils.declare(f"Updated team '{team_.name}'.")
-
-
-@team.command("delete", help="Delete a team.")
-@click.argument("team_name_or_id", type=str, required=True)
-def delete_team(team_name_or_id: str) -> None:
-    """Delete a team.
-
-    Args:
-        team_name_or_id: The name or ID of the team to delete.
-    """
-    try:
-        Client().delete_team(team_name_or_id)
-    except KeyError as err:
-        cli_utils.error(str(err))
-    cli_utils.declare(f"Deleted team '{team_name_or_id}'.")

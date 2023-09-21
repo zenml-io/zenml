@@ -29,12 +29,6 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.role_schemas import (
-    RolePermissionSchema,
-    RoleSchema,
-    TeamRoleAssignmentSchema,
-    UserRoleAssignmentSchema,
-)
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
@@ -50,10 +44,6 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
-)
-from zenml.zen_stores.schemas.team_schemas import (
-    TeamAssignmentSchema,
-    TeamSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -72,8 +62,6 @@ __all__ = [
     "PipelineRunSchema",
     "PipelineSchema",
     "WorkspaceSchema",
-    "RoleSchema",
-    "RolePermissionSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
@@ -85,10 +73,6 @@ __all__ = [
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "TeamRoleAssignmentSchema",
-    "TeamSchema",
-    "TeamAssignmentSchema",
-    "UserRoleAssignmentSchema",
     "UserSchema",
     "LogsSchema",
 ]

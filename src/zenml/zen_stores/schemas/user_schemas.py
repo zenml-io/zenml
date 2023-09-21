@@ -20,7 +20,6 @@ from sqlmodel import Field, Relationship
 
 from zenml.models import UserRequestModel, UserResponseModel, UserUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -38,8 +37,6 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
-        TeamSchema,
-        UserRoleAssignmentSchema,
     )
 
 
@@ -56,12 +53,6 @@ class UserSchema(NamedSchema, table=True):
     hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
 
-    teams: List["TeamSchema"] = Relationship(
-        back_populates="users", link_model=TeamAssignmentSchema
-    )
-    assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
-    )
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
@@ -166,9 +157,7 @@ class UserSchema(NamedSchema, table=True):
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
-                teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
-                roles=[ra.role.to_model() for ra in self.assigned_roles],
             )

@@ -21,7 +21,7 @@ from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
 from zenml.models.page_model import Page
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import AuthContext, authorize, verify_permissions
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -67,12 +67,19 @@ def list_stacks(
 @router.get(
     "/{stack_id}",
     response_model=StackResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        403: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> StackResponseModel:
     """Returns the requested stack.
 
@@ -82,6 +89,14 @@ def get_stack(
     Returns:
         The requested stack.
     """
+    from zenml.zen_server.rbac_interface import Action, ResourceType
+
+    verify_permissions(
+        resource_type=ResourceType.STACK,
+        action=Action.READ,
+        resource_id=stack_id,
+    )
+
     return zen_store().get_stack(stack_id)
 
 

@@ -52,7 +52,6 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
-    ROLES,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
@@ -64,9 +63,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STEPS,
-    TEAM_ROLE_ASSIGNMENTS,
-    TEAMS,
-    USER_ROLE_ASSIGNMENTS,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -108,10 +104,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
     ScheduleRequestModel,
@@ -131,17 +123,9 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
     UserUpdateModel,
     WorkspaceFilterModel,
     WorkspaceRequestModel,
@@ -157,7 +141,6 @@ from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
-from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -784,308 +767,6 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=user_name_or_id,
             route=USERS,
-        )
-
-    # -----
-    # Teams
-    # -----
-
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-        return self._create_resource(
-            resource=team,
-            route=TEAMS,
-            response_model=TeamResponseModel,
-        )
-
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        return self._get_resource(
-            resource_id=team_name_or_id,
-            route=TEAMS,
-            response_model=TeamResponseModel,
-        )
-
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TEAMS,
-            response_model=TeamResponseModel,
-            filter_model=team_filter_model,
-        )
-
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-        """
-        return self._update_resource(
-            resource_id=team_id,
-            resource_update=team_update,
-            route=TEAMS,
-            response_model=TeamResponseModel,
-        )
-
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-        """
-        self._delete_resource(
-            resource_id=team_name_or_id,
-            route=TEAMS,
-        )
-
-    # -----
-    # Roles
-    # -----
-
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-        """
-        return self._create_resource(
-            resource=role,
-            route=ROLES,
-            response_model=RoleResponseModel,
-        )
-
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        return self._get_resource(
-            resource_id=role_name_or_id,
-            route=ROLES,
-            response_model=RoleResponseModel,
-        )
-
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=ROLES,
-            response_model=RoleResponseModel,
-            filter_model=role_filter_model,
-        )
-
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-        """
-        return self._update_resource(
-            resource_id=role_id,
-            resource_update=role_update,
-            route=ROLES,
-            response_model=RoleResponseModel,
-        )
-
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-        """
-        self._delete_resource(
-            resource_id=role_name_or_id,
-            route=ROLES,
-        )
-
-    # ----------------
-    # Role assignments
-    # ----------------
-
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
-            filter_model=user_role_assignment_filter_model,
-        )
-
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Get an existing role assignment by name or ID.
-
-        Args:
-            user_role_assignment_id: Name or ID of the role assignment to get.
-
-        Returns:
-            The requested workspace.
-        """
-        return self._get_resource(
-            resource_id=user_role_assignment_id,
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
-        )
-
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment
-        """
-        self._delete_resource(
-            resource_id=user_role_assignment_id,
-            route=USER_ROLE_ASSIGNMENTS,
-        )
-
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Creates a new role assignment.
-
-        Args:
-            user_role_assignment: The role assignment to create.
-
-        Returns:
-            The newly created workspace.
-        """
-        return self._create_resource(
-            resource=user_role_assignment,
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
-        )
-
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
-
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-        return self._create_resource(
-            resource=team_role_assignment,
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
-        )
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-        """
-        return self._get_resource(
-            resource_id=team_role_assignment_id,
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
-        )
-
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-        """
-        self._delete_resource(
-            resource_id=team_role_assignment_id,
-            route=TEAM_ROLE_ASSIGNMENTS,
-        )
-
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
-            filter_model=team_role_assignment_filter_model,
         )
 
     # --------

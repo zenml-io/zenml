@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
+import os
+
 from fastapi import APIRouter
 
 import zenml
@@ -50,4 +52,8 @@ def server_info() -> ServerModel:
     Returns:
         Information about the server.
     """
-    return zen_store().get_store_info()
+    info = zen_store().get_store_info()
+    if "ZENML_CLOUD" in os.environ:
+        info.zenml_cloud = True
+
+    return info

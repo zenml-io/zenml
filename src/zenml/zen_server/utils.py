@@ -33,6 +33,7 @@ from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
@@ -42,6 +43,7 @@ ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
 _zen_store: Optional["SqlZenStore"] = None
+_rbac: Optional[RBACInterface] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -57,6 +59,29 @@ def zen_store() -> "SqlZenStore":
     if _zen_store is None:
         raise RuntimeError("ZenML Store not initialized")
     return _zen_store
+
+
+def rbac() -> RBACInterface:
+    """Return the initialized RBAC component.
+
+    Raises:
+        RuntimeError: If the RBAC component is not initialized.
+
+    Returns:
+        The RBAC component.
+    """
+    global _rbac
+    if _rbac is None:
+        raise RuntimeError("RBAC component not initialized")
+    return _rbac
+
+
+def initialize_rbac() -> None:
+    """Initialize the RBAC component."""
+    from zenml.zen_server.cloud_rbac import CloudRBAC
+
+    global _rbac
+    _rbac = CloudRBAC()
 
 
 def initialize_zen_store() -> None:

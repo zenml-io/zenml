@@ -27,7 +27,7 @@ from zenml.models import (
     PipelineUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import AuthContext, authorize, verify_permissions
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -45,14 +45,21 @@ router = APIRouter(
 @router.get(
     "",
     response_model=Page[PipelineResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        403: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @handle_exceptions
 def list_pipelines(
     pipeline_filter_model: PipelineFilterModel = Depends(
         make_dependable(PipelineFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
@@ -71,12 +78,19 @@ def list_pipelines(
 @router.get(
     "/{pipeline_id}",
     response_model=PipelineResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        403: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> PipelineResponseModel:
     """Gets a specific pipeline using its unique id.
 
@@ -86,6 +100,14 @@ def get_pipeline(
     Returns:
         A specific pipeline object.
     """
+    from zenml.zen_server.rbac_interface import Action, ResourceType
+
+    verify_permissions(
+        resource_type=ResourceType.PIPELINE,
+        action=Action.READ,
+        resource_id=pipeline_id,
+    )
+
     return zen_store().get_pipeline(pipeline_id=pipeline_id)
 
 

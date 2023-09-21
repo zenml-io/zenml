@@ -34,7 +34,8 @@ from zenml.logger import get_logger
 from zenml.models import UserResponseModel
 from zenml.models.user_models import JWTToken, JWTTokenType, UserAuthModel
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
+from zenml.zen_server.rbac_interface import Resource
+from zenml.zen_server.utils import ROOT_URL_PATH, rbac, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -223,28 +224,20 @@ def oauth2_password_bearer_authentication(
         HTTPException: If the JWT token could not be authorized.
     """
     if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+        pass
     else:
-        authenticate_value = "Bearer"
+        pass
     auth_context = authenticate_credentials(access_token=token)
 
     try:
-        access_token = JWTToken.decode(
-            token_type=JWTTokenType.ACCESS_TOKEN, token=token
-        )
+        JWTToken.decode(token_type=JWTTokenType.ACCESS_TOKEN, token=token)
     except AuthorizationException:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    for scope in security_scopes.scopes:
-        if scope not in access_token.permissions:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
+
     if auth_context is None:
         # We have to return an additional WWW-Authenticate header here with the
         # value Bearer to be compliant with the OAuth2 spec.
@@ -253,6 +246,7 @@ def oauth2_password_bearer_authentication(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     return auth_context
 
 
@@ -300,3 +294,62 @@ def authentication_provider() -> Callable[..., AuthContext]:
 
 
 authorize = authentication_provider()
+
+
+def verify_permissions(
+    resource_type: str,
+    action: str,
+    resource_id: Optional[UUID] = None,
+) -> None:
+    """Verifies if a user has permissions to perform an action on a resource.
+
+    Args:
+        resource: The resource type the user wants to perform the action on.
+        action: The action the user wants to perform.
+        resource_id: ID of the resource the user wants to perform the action on.
+
+    Raises:
+        HTTPException: If the user is not allowed to perform the action.
+    """
+    if "ZENML_CLOUD" not in os.environ:
+        return
+
+    user_id = get_auth_context().user.id
+    resource = Resource(type=resource_type, id=resource_id)
+
+    if not rbac().has_permission(
+        user=user_id, resource=resource, action=action
+    ):
+        raise HTTPException(status_code=403)
+
+
+def get_allowed_resource_ids(
+    resource_type: str,
+    action: str,
+) -> Optional[List[UUID]]:
+    """Get all resource IDs of a resource type that a user can access.
+
+    Args:
+        resource_type: The resource type.
+        action: The action the user wants to perform on the resource.
+
+    Returns:
+        A list of resource IDs or `None` if the user has full access to the
+        all instances of the resource.
+    """
+    if "ZENML_CLOUD" not in os.environ:
+        # Full access in any case
+        return None
+
+    user_id = get_auth_context().user.id
+    (
+        has_full_resource_access,
+        allowed_ids,
+    ) = rbac().list_allowed_resource_ids(
+        user=user_id, resource=Resource(type=resource_type), action=action
+    )
+
+    if has_full_resource_access:
+        return None
+
+    return [UUID(id) for id in allowed_ids]

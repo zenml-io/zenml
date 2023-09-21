@@ -43,7 +43,6 @@ from zenml.constants import (
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
-    PermissionType,
     SecretsStoreType,
     StackComponentType,
     StoreType,
@@ -51,19 +50,14 @@ from zenml.enums import (
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentRequestModel,
     WorkspaceRequestModel,
     WorkspaceResponseModel,
 )
-from zenml.models.page_model import Page
 from zenml.models.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
@@ -87,8 +81,6 @@ DEFAULT_PASSWORD = ""
 DEFAULT_WORKSPACE_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 DEFAULT_STACK_COMPONENT_NAME = "default"
-DEFAULT_ADMIN_ROLE = "admin"
-DEFAULT_GUEST_ROLE = "guest"
 
 
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
@@ -306,14 +298,6 @@ class BaseZenStore(
         except KeyError:
             default_workspace = self._create_default_workspace()
         try:
-            assert self._admin_role
-        except KeyError:
-            self._create_admin_role()
-        try:
-            assert self._guest_role
-        except KeyError:
-            self._create_guest_role()
-        try:
             default_user = self._default_user
         except KeyError:
             default_user = self._create_default_user()
@@ -465,6 +449,7 @@ class BaseZenStore(
             ),
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
+            zenml_cloud=False,
             secrets_store_type=self.secrets_store.type
             if self.secrets_store
             else SecretsStoreType.NONE,
@@ -636,62 +621,6 @@ class BaseZenStore(
         return default_stacks.items[0]
 
     # -----
-    # Roles
-    # -----
-    @property
-    def _admin_role(self) -> RoleResponseModel:
-        """Get the admin role.
-
-        Returns:
-            The default admin role.
-        """
-        return self.get_role(DEFAULT_ADMIN_ROLE)
-
-    def _create_admin_role(self) -> RoleResponseModel:
-        """Creates the admin role.
-
-        Returns:
-            The admin role
-        """
-        logger.info(f"Creating '{DEFAULT_ADMIN_ROLE}' role ...")
-        return self.create_role(
-            RoleRequestModel(
-                name=DEFAULT_ADMIN_ROLE,
-                permissions={
-                    PermissionType.READ,
-                    PermissionType.WRITE,
-                    PermissionType.ME,
-                },
-            )
-        )
-
-    @property
-    def _guest_role(self) -> RoleResponseModel:
-        """Get the guest role.
-
-        Returns:
-            The guest role.
-        """
-        return self.get_role(DEFAULT_GUEST_ROLE)
-
-    def _create_guest_role(self) -> RoleResponseModel:
-        """Creates the guest role.
-
-        Returns:
-            The guest role
-        """
-        logger.info(f"Creating '{DEFAULT_GUEST_ROLE}' role ...")
-        return self.create_role(
-            RoleRequestModel(
-                name=DEFAULT_GUEST_ROLE,
-                permissions={
-                    PermissionType.READ,
-                    PermissionType.ME,
-                },
-            )
-        )
-
-    # -----
     # Users
     # -----
 
@@ -721,7 +650,7 @@ class BaseZenStore(
             raise KeyError(f"The default user '{user_name}' is not configured")
 
     def _create_default_user(self) -> UserResponseModel:
-        """Creates a default user with the admin role.
+        """Creates a default user.
 
         Returns:
             The default user.
@@ -739,27 +668,7 @@ class BaseZenStore(
                 password=user_password,
             )
         )
-        self.create_user_role_assignment(
-            UserRoleAssignmentRequestModel(
-                role=self._admin_role.id,
-                user=new_user.id,
-                workspace=None,
-            )
-        )
         return new_user
-
-    # -----
-    # Roles
-    # -----
-
-    @property
-    def roles(self) -> Page[RoleResponseModel]:
-        """All existing roles.
-
-        Returns:
-            A list of all existing roles.
-        """
-        return self.list_roles(RoleFilterModel())
 
     # --------
     # Workspaces

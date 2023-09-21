@@ -38,8 +38,6 @@ from zenml.zen_server.routers import (
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
     pipelines_endpoints,
-    role_assignments_endpoints,
-    roles_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -49,12 +47,14 @@ from zenml.zen_server.routers import (
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
-    team_role_assignments_endpoints,
-    teams_endpoints,
     users_endpoints,
     workspaces_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
+from zenml.zen_server.utils import (
+    ROOT_URL_PATH,
+    initialize_rbac,
+    initialize_zen_store,
+)
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -144,6 +144,7 @@ def initialize() -> None:
     # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
+    initialize_rbac()
 
 
 app.mount(
@@ -198,9 +199,6 @@ app.include_router(auth_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
-app.include_router(roles_endpoints.router)
-app.include_router(role_assignments_endpoints.router)
-app.include_router(team_role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
@@ -213,7 +211,6 @@ app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(artifacts_endpoints.router)
-app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)

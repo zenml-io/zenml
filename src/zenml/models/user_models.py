@@ -33,7 +33,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import BaseFilterModel, RoleResponseModel
+from zenml.models import BaseFilterModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -45,7 +45,6 @@ from zenml.utils.enum_utils import StrEnum
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
 
-    from zenml.models.team_models import TeamResponseModel
 logger = get_logger(__name__)
 
 
@@ -223,12 +222,6 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     activation_token: Optional[str] = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
-    teams: Optional[List["TeamResponseModel"]] = Field(
-        default=None, title="The list of teams for this user."
-    )
-    roles: Optional[List["RoleResponseModel"]] = Field(
-        default=None, title="The list of roles for this user."
-    )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account.",
@@ -264,9 +257,6 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
-    teams: Optional[List["TeamResponseModel"]] = Field(
-        default=None, title="The list of teams for this user."
-    )
 
     def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.

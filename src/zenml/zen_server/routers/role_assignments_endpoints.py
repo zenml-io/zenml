@@ -26,11 +26,7 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.utils import (
-    handle_exceptions,
-    make_dependable,
-    zen_store,
-)
+from zenml.zen_server.utils import handle_exceptions, make_dependable, rbac
 
 router = APIRouter(
     prefix=API + VERSION_1 + USER_ROLE_ASSIGNMENTS,
@@ -59,7 +55,7 @@ def list_user_role_assignments(
     Returns:
         List of all role assignments.
     """
-    return zen_store().list_user_role_assignments(
+    return rbac().list_user_role_assignments(
         user_role_assignment_filter_model=user_role_assignment_filter_model
     )
 
@@ -84,7 +80,7 @@ def create_role_assignment(
     Returns:
         The created role assignment.
     """
-    return zen_store().create_user_role_assignment(
+    return rbac().create_user_role_assignment(
         user_role_assignment=role_assignment
     )
 
@@ -107,7 +103,7 @@ def get_role_assignment(
     Returns:
         A specific role assignment.
     """
-    return zen_store().get_user_role_assignment(
+    return rbac().get_user_role_assignment(
         user_role_assignment_id=role_assignment_id
     )
 
@@ -126,6 +122,6 @@ def delete_role_assignment(
     Args:
         role_assignment_id: The ID of the role assignment.
     """
-    zen_store().delete_user_role_assignment(
+    rbac().delete_user_role_assignment(
         user_role_assignment_id=role_assignment_id
     )

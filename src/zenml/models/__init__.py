@@ -61,12 +61,6 @@ from zenml.models.workspace_models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
-from zenml.models.role_models import (
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-)
 from zenml.models.run_metadata_models import (
     RunMetadataFilterModel,
     RunMetadataRequestModel,
@@ -109,28 +103,12 @@ from zenml.models.step_run_models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
-from zenml.models.team_models import (
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamUpdateModel,
-)
-from zenml.models.team_role_assignment_models import (
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-)
 from zenml.models.user_models import (
     UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
-)
-from zenml.models.user_role_assignment_models import (
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
 )
 from zenml.models.code_repository_models import (
     CodeRepositoryFilterModel,
@@ -161,23 +139,6 @@ FlavorResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
-UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
-
-TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
-
-UserRoleAssignmentResponseModel.update_forward_refs(
-    RoleResponseModel=RoleResponseModel,
-    TeamResponseModel=TeamResponseModel,
-    UserResponseModel=UserResponseModel,
-    WorkspaceResponseModel=WorkspaceResponseModel,
-)
-
-TeamRoleAssignmentResponseModel.update_forward_refs(
-    RoleResponseModel=RoleResponseModel,
-    TeamResponseModel=TeamResponseModel,
-    UserResponseModel=UserResponseModel,
-    WorkspaceResponseModel=WorkspaceResponseModel,
-)
 
 PipelineResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -294,16 +255,6 @@ __all__ = [
     "WorkspaceResponseModel",
     "WorkspaceUpdateModel",
     "WorkspaceFilterModel",
-    "UserRoleAssignmentRequestModel",
-    "UserRoleAssignmentResponseModel",
-    "UserRoleAssignmentFilterModel",
-    "TeamRoleAssignmentRequestModel",
-    "TeamRoleAssignmentResponseModel",
-    "TeamRoleAssignmentFilterModel",
-    "RoleRequestModel",
-    "RoleResponseModel",
-    "RoleUpdateModel",
-    "RoleFilterModel",
     "RunMetadataFilterModel",
     "RunMetadataRequestModel",
     "RunMetadataResponseModel",
@@ -334,10 +285,6 @@ __all__ = [
     "StepRunResponseModel",
     "StepRunUpdateModel",
     "StepRunFilterModel",
-    "TeamRequestModel",
-    "TeamResponseModel",
-    "TeamUpdateModel",
-    "TeamFilterModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",
