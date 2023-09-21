@@ -165,20 +165,21 @@ class ArtifactConfig(BaseModel):
                 only_model_objects=is_model_object,
             )
         )
-        if len(existing_links) and self.overwrite:
-            # delete all model version artifact links by name
-            logger.warning(
-                f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
-            )
-            client.zen_store.delete_model_version_artifact_link(
-                model_name_or_id=self.model.id,
-                model_version_name_or_id=self.model_version.id,
-                model_version_artifact_link_name_or_id=artifact_name,
-            )
-        else:
-            logger.info(
-                f"Artifact link `{artifact_name}` already exists, adding new version."
-            )
+        if len(existing_links):
+            if self.overwrite:
+                # delete all model version artifact links by name
+                logger.warning(
+                    f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
+                )
+                client.zen_store.delete_model_version_artifact_link(
+                    model_name_or_id=self.model.id,
+                    model_version_name_or_id=self.model_version.id,
+                    model_version_artifact_link_name_or_id=artifact_name,
+                )
+            else:
+                logger.info(
+                    f"Artifact link `{artifact_name}` already exists, adding new version."
+                )
         client.zen_store.create_model_version_artifact_link(request)
 
     def link_to_model(

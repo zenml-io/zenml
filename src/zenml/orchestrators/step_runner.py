@@ -613,9 +613,30 @@ class StepRunner:
             artifact_ids: The IDs of the published output artifacts.
             output_annotations: The output annotations of the step.
         """
+        from zenml.model.artifact_config import ArtifactConfig
+
+        try:
+            mc = get_step_context().model_config
+
+        except StepContextError:
+            mc = None
+            logger.warning(
+                "No model context found, unable to auto-link artifacts."
+            )
+
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
             output_signature = output_annotations[artifact_name]
+            if output_signature.artifact_config is None and mc is not None:
+                output_signature.artifact_config = ArtifactConfig(
+                    model_name=mc.name,
+                    model_version_name=mc.version,
+                    artifact_name=artifact_name,
+                )
+                logger.info(
+                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
+                )
+
             if output_signature.artifact_config is not None:
                 artifact_config = output_signature.artifact_config
                 artifact_config.artifact_name = (
