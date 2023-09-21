@@ -31,7 +31,6 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
-        PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
@@ -39,7 +38,6 @@ if TYPE_CHECKING:
         ServiceConnectorSchema,
         StackComponentSchema,
         StackSchema,
-        StepRunSchema,
         TeamRoleAssignmentSchema,
         UserRoleAssignmentSchema,
     )
@@ -77,14 +75,6 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     schedules: List["ScheduleSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    step_runs: List["StepRunSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
