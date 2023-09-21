@@ -28,13 +28,15 @@ Note: Ensure you have OCI support enabled in your Helm client and that you are a
 
 ## Configuration
 
-This chart offers a multitude of configuration options. For detailed information, check the default [`values.yaml`](values.yaml) file.
+This chart offers a multitude of configuration options. For detailed
+information, check the default [`values.yaml`](values.yaml) file. For full
+details of the configuration options, refer to the [ZenML documentation](https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm).
 
 ### Basic Options
 
 - `zenml.replicaCount`: Number of ZenML server replicas.
-- `zenml.image.repository`: ZenML server image repository.
-- `zenml.authType`: Authentication type (e.g., `NO_AUTH`, `HTTP_BASIC`, `OAUTH2_PASSWORD_BEARER`).
+- `zenml.defaultUsername`: Default username to use for the server.
+- `zenml.defaultPassword`: Default password to use for the server.
 
 ### Advanced Options
 
