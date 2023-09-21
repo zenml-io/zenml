@@ -113,7 +113,7 @@ class ModelConfig(ModelBaseModel):
 
         zenml_client = Client()
         try:
-            model = zenml_client.zen_store.get_model(
+            self._model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
         except KeyError:
@@ -132,16 +132,17 @@ class ModelConfig(ModelBaseModel):
             )
             model_request = ModelRequestModel.parse_obj(model_request)
             try:
-                model = zenml_client.zen_store.create_model(
+                self._model = zenml_client.zen_store.create_model(
                     model=model_request
                 )
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
-                model = zenml_client.zen_store.get_model(
+                self._model = zenml_client.zen_store.get_model(
                     model_name_or_id=self.name
                 )
-        return model
+
+        return self._model
 
     def _create_model_version(
         self, model: "ModelResponseModel"
@@ -170,7 +171,7 @@ class ModelConfig(ModelBaseModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            return zenml_client.zen_store.get_model_version(
+            self._model_version = zenml_client.zen_store.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
@@ -179,12 +180,12 @@ class ModelConfig(ModelBaseModel):
                 logger.warning(
                     f"Recovery mode: No `{self.version}` model version found."
                 )
-            mv = zenml_client.zen_store.create_model_version(
+            self._model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
             logger.info(f"New model version `{self.name}` was created.")
 
-            return mv
+        return self._model_version
 
     def _get_model_version(
         self, model: "ModelResponseModel"
