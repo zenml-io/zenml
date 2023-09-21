@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineBuildSchema,
         PipelineDeploymentSchema,
-        PipelineRunSchema,
         StackComponentSchema,
     )
 
@@ -93,7 +92,6 @@ class StackSchema(ShareableSchema, table=True):
         back_populates="stacks",
         link_model=StackCompositionSchema,
     )
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="stack",
