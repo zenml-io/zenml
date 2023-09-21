@@ -169,7 +169,7 @@ class TestModelConfig:
         )
         assert mc.name == MODEL_NAME
         assert mc.create_new_model_version
-        assert mc.version is None
+        assert mc.version == RUNNING_MODEL_VERSION
 
     def test_init_recovery_without_create_new_version_warns(self):
         """Test that use of `recovery` warn on `create_new_model_version` set to False."""

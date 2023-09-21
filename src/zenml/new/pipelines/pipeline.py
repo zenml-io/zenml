@@ -324,6 +324,10 @@ class Pipeline:
         Returns:
             The pipeline instance that this method was called on.
         """
+        from zenml.model.model_stages import ModelStages
+
+        ModelConfigModel.update_forward_refs(ModelStages=ModelStages)
+
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this pipeline

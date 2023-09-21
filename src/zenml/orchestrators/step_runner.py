@@ -598,6 +598,7 @@ class StepRunner:
         try:
             model_config = get_step_context().model_config
             model_config.get_or_create_model_version()
+
         except StepContextError:
             return
 

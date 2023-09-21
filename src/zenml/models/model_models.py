@@ -212,6 +212,8 @@ class ModelVersionResponseModel(
         """
         from zenml.model.model_stages import ModelStages
 
+        ModelVersionUpdateModel.update_forward_refs(ModelStages=ModelStages)
+
         stage = getattr(stage, "value", stage)
         if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")

@@ -50,11 +50,15 @@ class ModelConfig(ModelConfigModel):
     def _validate_create_new_model_version(
         cls, create_new_model_version: bool, values: Dict[str, Any]
     ) -> bool:
+        from zenml.constants import RUNNING_MODEL_VERSION
+
         if create_new_model_version:
-            if values.get("version", None) is not None:
+            version = values.get("version", RUNNING_MODEL_VERSION)
+            if version != RUNNING_MODEL_VERSION and version is not None:
                 raise ValueError(
                     "`version` cannot be used with `create_new_model_version`."
                 )
+            values["version"] = RUNNING_MODEL_VERSION
         return create_new_model_version
 
     @validator("recovery")
@@ -150,10 +154,11 @@ class ModelConfig(ModelConfigModel):
             return self._model_version
 
         from zenml.client import Client
+        from zenml.constants import RUNNING_MODEL_VERSION
         from zenml.models.model_models import ModelVersionRequestModel
 
         zenml_client = Client()
-        self.version = "running"
+        self.version = RUNNING_MODEL_VERSION
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
