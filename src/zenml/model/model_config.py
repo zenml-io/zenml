@@ -81,9 +81,7 @@ class ModelConfig(ModelBaseModel):
     def _validate_version(
         cls, version: Union[str, ModelStages]
     ) -> Union[str, ModelStages]:
-        if version in [
-            stage.value for stage in ModelStages
-        ]:
+        if version in [stage.value for stage in ModelStages]:
             logger.info(
                 f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
             )
@@ -127,9 +125,7 @@ class ModelConfig(ModelBaseModel):
                 model = zenml_client.zen_store.create_model(
                     model=model_request
                 )
-                logger.info(
-                    f"New model `{self.name}` was created implicitly."
-                )
+                logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
                 model = zenml_client.zen_store.get_model(
