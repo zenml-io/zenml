@@ -2,7 +2,7 @@
 description: Orchestrating your pipelines to run on VMs using SkyPilot.
 ---
 
-# AWS Sagemaker Orchestrator
+# SkyPilot VM Orchestrator
 
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to
 provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html).
