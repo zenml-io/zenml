@@ -113,7 +113,7 @@ Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn 
 As the orchestrator this guide will use Vertex AI to run the pipelines. As a 
 serverless service Vertex is a great choice for quick prototyping of your MLOps 
 stack. THe orchestrator can be switched out at any point in the future for a 
-more use-case and budget appropriate solution.
+more use-case- and budget-appropriate solution.
 
 {% tabs %}
 {% tab title="CLI" %}
