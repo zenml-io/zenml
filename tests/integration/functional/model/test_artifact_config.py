@@ -12,13 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import contextmanager
-from typing import Annotated, Tuple
+from typing import Annotated, Callable, Tuple
 
 import pytest
 
 from zenml import pipeline, step
 from zenml.client import Client
-from zenml.model import ArtifactConfig, ModelConfig, ModelStages
+from zenml.exceptions import EntityExistsError
+from zenml.model import (
+    ArtifactConfig,
+    ModelConfig,
+    ModelStages,
+    link_output_to_model,
+)
 from zenml.models import (
     ModelRequestModel,
     ModelVersionArtifactFilterModel,
@@ -129,6 +135,7 @@ def multi_named_output_step_not_tracked() -> (
         Annotated[int, "3"],
     ]
 ):
+    """Here links would be implicitly created based on step ModelConfig."""
     return 1, 2, 3
 
 
@@ -149,7 +156,7 @@ def test_link_multiple_named_outputs_without_links():
         assert model.name == MODEL_NAME
         mv = zs.get_model_version(MODEL_NAME)
         assert mv.version == "1"
-        al = zs.list_model_version_artifact_links(
+        artifact_links = zs.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -157,7 +164,8 @@ def test_link_multiple_named_outputs_without_links():
                 model_version_id=mv.id,
             )
         )
-        assert al.size == 0
+        assert artifact_links.size == 3
+        assert {al.name for al in artifact_links} == {"1", "2", "3"}
 
 
 @step
@@ -263,6 +271,7 @@ def multi_named_output_step_mixed_linkage() -> (
         ],
     ]
 ):
+    """Artifact "2"&"3" has own configs."""
     return 2, 3
 
 
@@ -273,16 +282,19 @@ def pipeline_configuration_is_used_here() -> (
         Annotated[str, "4"],
     ]
 ):
+    """Artifact "1" has own config, but "4" can be implicitly tracked with pipeline config."""
     return 1, "foo"
 
 
 @step
 def some_plain_outputs():
+    """This artifact can be implicitly tracked with pipeline config as a single tuple."""
     return "bar", 42.0
 
 
 @step
 def and_some_typed_outputs() -> int:
+    """This artifact can be implicitly tracked with pipeline config."""
     return 1
 
 
@@ -341,10 +353,17 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                         )
                     )
 
-                for artifact_link in artifact_links:
-                    assert artifact_link.size == 1
+                assert artifact_links[0].size == 4
+                assert artifact_links[1].size == 1
+                assert artifact_links[2].size == 1
 
-                assert artifact_links[0][0].name == "custom_name"
+                # TODO: this test highlights an issue: artifact "output" tracked twice as
+                # separate versions under one name
+                assert {al.name for al in artifact_links[0]} == {
+                    "custom_name",
+                    "4",
+                    "output",
+                }
                 assert artifact_links[1][0].name == "2"
                 assert artifact_links[2][0].name == "3"
 
@@ -479,3 +498,157 @@ def test_link_with_versioning():
         assert al2[0].name == al2[1].name
         assert al2[0].id != al2[1].id
         assert al1[0].id == al1[0].id
+
+
+@step
+def step_with_manual_linkage() -> (
+    Tuple[Annotated[int, "1"], Annotated[int, "2"]]
+):
+    link_output_to_model(ArtifactConfig(), "1")
+    link_output_to_model(
+        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+    )
+    return 1, 2
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name=MODEL_NAME),
+)
+def simple_pipeline_with_manual_linkage():
+    step_with_manual_linkage()
+
+
+@step
+def step_with_manual_and_implicit_linkage() -> (
+    Tuple[Annotated[int, "1"], Annotated[int, "2"]]
+):
+    link_output_to_model(
+        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+    )
+    return 1, 2
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name=MODEL_NAME),
+)
+def simple_pipeline_with_manual_and_implicit_linkage():
+    step_with_manual_and_implicit_linkage()
+
+
+@pytest.mark.parametrize(
+    "pipeline",
+    (
+        simple_pipeline_with_manual_linkage,
+        simple_pipeline_with_manual_and_implicit_linkage,
+    ),
+    ids=("manual_linkage_only", "manual_and_implicit"),
+)
+def test_link_with_manual_linkage(pipeline: Callable):
+    with model_killer():
+        with model_killer("bar"):
+            zs = Client().zen_store
+            user = Client().active_user.id
+            ws = Client().active_workspace.id
+
+            # manual creation needed, as we work with specific versions
+            model = zs.create_model(
+                ModelRequestModel(
+                    name=MODEL_NAME,
+                    user=user,
+                    workspace=ws,
+                )
+            )
+            model2 = zs.create_model(
+                ModelRequestModel(
+                    name="bar",
+                    user=user,
+                    workspace=ws,
+                )
+            )
+            mv = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=user,
+                    workspace=ws,
+                    version="good_one",
+                    model=model.id,
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=user,
+                    workspace=ws,
+                    version="bar",
+                    model=model2.id,
+                )
+            )
+
+            pipeline()
+
+            al1 = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=model.id,
+                    model_version_id=mv.id,
+                )
+            )
+            assert al1.size == 1
+            assert al1[0].version == 1
+            assert al1[0].name == "1"
+
+            al2 = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=model2.id,
+                    model_version_id=mv2.id,
+                )
+            )
+            assert al2.size == 1
+            assert al2[0].version == 1
+            assert al2[0].name == "2"
+
+
+@step
+def step_with_manual_linkage_fail_on_override() -> (
+    Annotated[int, "1", ArtifactConfig()]
+):
+    with pytest.raises(EntityExistsError):
+        link_output_to_model(ArtifactConfig(), "1")
+    return 1
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name=MODEL_NAME),
+)
+def simple_pipeline_with_manual_linkage_fail_on_override():
+    step_with_manual_linkage_fail_on_override()
+
+
+def test_link_with_manual_linkage_fail_on_override():
+    with model_killer():
+        zs = Client().zen_store
+        user = Client().active_user.id
+        ws = Client().active_workspace.id
+
+        # manual creation needed, as we work with specific versions
+        model = zs.create_model(
+            ModelRequestModel(
+                name=MODEL_NAME,
+                user=user,
+                workspace=ws,
+            )
+        )
+        zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="good_one",
+                model=model.id,
+            )
+        )
+
+        simple_pipeline_with_manual_linkage_fail_on_override()

@@ -19,7 +19,7 @@ import pytest
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model.model_config import ModelConfig
+from zenml.model import ModelConfig
 
 
 @contextmanager
