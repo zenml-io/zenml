@@ -87,6 +87,10 @@ def _get_skypilot_orchestrator(
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 9),
+    reason="SkyPilot can not be installed in Python 3.8 or 3.9",
+)
 @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
 def test_skypilot_orchestrator_local_stack(
     provider,

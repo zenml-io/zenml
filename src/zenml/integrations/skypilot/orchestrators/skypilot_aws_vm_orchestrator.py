@@ -84,7 +84,7 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
         """
         return SkypilotAWSOrchestratorSettings
 
-    def prepare_environement_variable(self, set: bool = True) -> None:
+    def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
 
         Args:
@@ -97,6 +97,8 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
                 "that is compatible with this orchestrator."
             )
         if set:
+            # The AWS connector creates a local configuration profile with the name computed from
+            # the first 8 digits of its UUID.
             aws_profile = f"zenml-{str(connector.id)[:8]}"
             os.environ[ENV_AWS_PROFILE] = aws_profile
         else:

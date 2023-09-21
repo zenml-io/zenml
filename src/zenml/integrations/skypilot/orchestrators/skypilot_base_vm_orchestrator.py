@@ -238,7 +238,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         )
 
             # Set the service connector AWS profile ENV variable
-            self.prepare_environement_variable(set=True)
+            self.prepare_environment_variable(set=True)
             # Launch the cluster
             sky.launch(
                 task,
@@ -248,10 +248,13 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 down=settings.down,
                 stream_logs=settings.stream_logs,
             )
-            # Unset the service connector AWS profile ENV variable
-            self.prepare_environement_variable(set=False)
+
         except Exception as e:
             raise e
+
+        finally:
+            # Unset the service connector AWS profile ENV variable
+            self.prepare_environment_variable(set=False)
 
         run_duration = time.time() - start_time
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(

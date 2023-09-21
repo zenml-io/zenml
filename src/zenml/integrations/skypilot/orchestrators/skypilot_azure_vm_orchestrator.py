@@ -67,7 +67,7 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
         """
         return SkypilotAzureOrchestratorSettings
 
-    def prepare_environement_variable(self, set: bool = True) -> None:
+    def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
 
         Args:
