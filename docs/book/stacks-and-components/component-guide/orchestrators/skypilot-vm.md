@@ -41,7 +41,7 @@ also includes an optimizer that automatically selects the cheapest VM/zone/regio
 Finally, the orchestrator includes an autostop feature that cleans up idle clusters, preventing unnecessary cloud costs.
 
 {% hint style="warning" %}
-The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs)
+The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
 {% endhint %}
 
 

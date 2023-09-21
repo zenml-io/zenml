@@ -97,7 +97,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/azure.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azure-skypilot.png"
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:

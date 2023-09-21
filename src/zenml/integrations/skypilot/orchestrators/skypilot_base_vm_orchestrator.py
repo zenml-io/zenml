@@ -137,6 +137,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         """
         return None
 
+    @abstractmethod
+    def prepare_environement_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the orchestrator.
+
+        Args:
+            set: Whether to set the environment variables or not.
+        """
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponseModel",
@@ -193,6 +201,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         self.setup_credentials()
 
         # Run the entire pipeline
+
         try:
             task = sky.Task(
                 run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
@@ -228,6 +237,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                             f"Found existing cluster {cluster_name}. Reusing..."
                         )
 
+            # Set the service connector AWS profile ENV variable
+            self.prepare_environement_variable(set=True)
+            breakpoint()
+            # Launch the cluster
             sky.launch(
                 task,
                 cluster_name,
@@ -236,9 +249,11 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 down=settings.down,
                 stream_logs=settings.stream_logs,
             )
-
+            breakpoint()
+            # Unset the service connector AWS profile ENV variable
+            self.prepare_environement_variable(set=False)
         except Exception as e:
-            raise RuntimeError(e)
+            raise e
 
         run_duration = time.time() - start_time
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(

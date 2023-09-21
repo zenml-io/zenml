@@ -102,7 +102,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/gcp.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/gcp-skypilot.png"
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:

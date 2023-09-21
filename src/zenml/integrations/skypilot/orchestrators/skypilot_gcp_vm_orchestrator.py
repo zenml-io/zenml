@@ -71,3 +71,11 @@ class SkypilotGCPOrchestrator(
             The settings class.
         """
         return SkypilotGCPOrchestratorSettings
+
+    def prepare_environement_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the orchestrator.
+
+        Args:
+            set: Whether to set the environment variables or not.
+        """
+        pass

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the a Skypilot based AWS VM orchestrator."""
 
+import os
 from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+ENV_AWS_PROFILE = "AWS_PROFILE"
 
 
 class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
@@ -80,3 +83,21 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
             The settings class.
         """
         return SkypilotAWSOrchestratorSettings
+
+    def prepare_environement_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the orchestrator.
+
+        Args:
+            set: Whether to set the environment variables or not.
+        """
+        connector = self.get_connector()
+        if connector is None:
+            raise ValueError(
+                "No service connector found. Please make sure to set up a connector "
+                "that is compatible with this orchestrator."
+            )
+        if set:
+            aws_profile = f"zenml-{str(connector.id)[:8]}"
+            os.environ[ENV_AWS_PROFILE] = aws_profile
+        else:
+            os.environ.pop(ENV_AWS_PROFILE, None)
