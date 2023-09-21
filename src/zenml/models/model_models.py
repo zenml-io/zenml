@@ -19,7 +19,6 @@ from uuid import UUID
 from pydantic import BaseModel, Field, validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model.base_model import ModelBaseModel
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -27,6 +26,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 if TYPE_CHECKING:
@@ -213,8 +213,8 @@ class ModelVersionResponseModel(
         from zenml.model.model_stages import ModelStages
 
         stage = getattr(stage, "value", stage)
-        if stage not in ModelStages._members():
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
@@ -297,8 +297,8 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: Optional[str] = Field(
-        title="Target model version stage to be set", default=None
+    stage: Union[str, "ModelStages"] = Field(
+        title="Target model version stage to be set",
     )
     force: bool = Field(
         title="Whether existing model version in target stage should be silently archived "
@@ -314,8 +314,8 @@ class ModelVersionUpdateModel(BaseModel):
         from zenml.model.model_stages import ModelStages
 
         stage = getattr(stage, "value", stage)
-        if stage not in ModelStages._members():
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         return stage
 
 
@@ -471,21 +471,15 @@ class ModelResponseModel(
             The requested model version.
         """
         from zenml.client import Client
-        from zenml.model import ModelStages
 
         zs = Client().zen_store
 
         if version is None:
-            return zs.get_model_version_latest(model_name_or_id=self.name)
-        elif isinstance(version, ModelStages):
-            return zs.get_model_version_in_stage(
-                model_name_or_id=self.name,
-                model_stage=version.value,
-            )
+            return zs.get_model_version(model_name_or_id=self.name)
         else:
             return zs.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=version,
+                model_version_name_or_id=getattr(version, "value", version),
             )
 
 

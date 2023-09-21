@@ -76,7 +76,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
-from zenml.model import ModelStages
+from zenml.model.model_stages import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -5588,13 +5588,14 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be retrieved.
+            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5607,84 +5608,30 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            try:
-                UUID(str(model_version_name_or_id))
+            if model_version_name_or_id == "__latest__":
+                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            elif model_version_name_or_id in [
+                stage.value for stage in ModelStages
+            ]:
                 query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
+                    ModelVersionSchema.stage == model_version_name_or_id
                 )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.version == model_version_name_or_id
-                )
+            else:
+                try:
+                    UUID(str(model_version_name_or_id))
+                    query = query.where(
+                        ModelVersionSchema.id == model_version_name_or_id
+                    )
+                except ValueError:
+                    query = query.where(
+                        ModelVersionSchema.version == model_version_name_or_id
+                    )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
                     f"Unable to get model version with name `{model_version_name_or_id}`: "
                     f"No model version with this name found."
                 )
-            return ModelVersionSchema.to_model(model_version)
-
-    def get_model_version_in_stage(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_stage: Union[str, ModelStages],
-    ) -> ModelVersionResponseModel:
-        """Get an existing model version.
-
-        Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_stage: desired stage of the model version to be retrieved.
-
-        Returns:
-            The model version in given stage.
-
-        Raises:
-            ValueError: if model_stage is not valid
-            KeyError: specified ID or name not found.
-        """
-        stage = getattr(model_stage, "value", model_stage)
-        if stage not in ModelStages._members():
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
-        with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
-            query = (
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .where(ModelVersionSchema.stage == stage)
-            )
-            model_version = session.exec(query).first()
-            if model_version is None:
-                raise KeyError(
-                    f"Unable to get model version in stage `{stage}`: "
-                    f"No model version in this stage found."
-                )
-            return ModelVersionSchema.to_model(model_version)
-
-    def get_model_version_latest(
-        self,
-        model_name_or_id: Union[str, UUID],
-    ) -> ModelVersionResponseModel:
-        """Get the latest model version.
-
-        Args:
-            model_name_or_id: name or id of the model containing the model version.
-
-        Returns:
-            The latest model version.
-
-        Raises:
-            RuntimeError: specified ID or name not found.
-        """
-        with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
-            query = (
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
-            )
-            model_version = session.exec(query).first()
-            if model_version is None:
-                raise RuntimeError("No model versions found.")
             return ModelVersionSchema.to_model(model_version)
 
     def list_model_versions(

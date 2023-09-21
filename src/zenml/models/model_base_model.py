@@ -17,8 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-STR_FIELD_MAX_LENGTH = 255
-TEXT_FIELD_MAX_LENGTH = 65535
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 
 
 class ModelBaseModel(BaseModel):
