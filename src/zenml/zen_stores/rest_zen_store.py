@@ -79,7 +79,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model import ModelStages
+from zenml.model.model_stages import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,

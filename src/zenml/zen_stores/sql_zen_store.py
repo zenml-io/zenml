@@ -76,7 +76,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
-from zenml.model import ModelStages
+from zenml.model.model_stages import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
