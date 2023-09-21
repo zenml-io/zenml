@@ -216,14 +216,12 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
     def login(
         request: Request,
         response: Response,
-        redirect_url: Optional[str] = None,
     ) -> AuthenticationResponse:
         """Authorize a user through the external authenticator service.
 
         Args:
             request: The request object.
             response: The response object.
-            redirect_url: The URL to redirect to after successful login.
 
         Returns:
             An authentication response with an access token or an external
@@ -236,14 +234,6 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
         assert config.external_user_info_url is not None
 
         authorization_url = config.external_login_url
-        query_params = dict()
-        if redirect_url:
-            # If a redirect URL is specified, add it to the query params
-            # formatted as a URL-encoded string
-            query_params["redirect_url"] = redirect_url
-
-        if query_params:
-            authorization_url += f"/?{urlencode(query_params)}"
 
         # First, try to get the external access token from the external cookie
         external_access_token = request.cookies.get(
@@ -397,7 +387,6 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
 
 @router.get(
     LOGOUT,
-    response_model=AuthenticationResponse,
 )
 def logout(
     response: Response,

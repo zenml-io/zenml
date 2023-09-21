@@ -111,6 +111,8 @@ class UserSchema(NamedSchema, table=True):
             password=model.create_hashed_password(),
             activation_token=model.create_hashed_activation_token(),
             external_user_id=model.external_user_id,
+            email_opted_in=model.email_opted_in,
+            email=model.email,
         )
 
     def update(self, user_update: UserUpdateModel) -> "UserSchema":

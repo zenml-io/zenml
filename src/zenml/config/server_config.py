@@ -15,7 +15,7 @@
 
 import os
 from secrets import token_hex
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
@@ -66,6 +66,8 @@ class ServerConfiguration(BaseModel):
         auth_cookie_domain: The domain of the http-only cookie used to store the
             JWT token. If not specified, the cookie will be valid for the
             domain where the ZenML server is running.
+        cors_allow_origins: The origins allowed to make cross-origin requests
+            to the ZenML server. If not specified, all origins are allowed.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
@@ -87,6 +89,7 @@ class ServerConfiguration(BaseModel):
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
     auth_cookie_name: str
     auth_cookie_domain: Optional[str] = None
+    cors_allow_origins: Optional[List[str]] = None
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
@@ -157,6 +160,12 @@ class ServerConfiguration(BaseModel):
 
             if not values.get("jwt_token_audience"):
                 values["jwt_token_audience"] = str(server_id)
+
+        if cors_allow_origins := values.get("cors_allow_origins"):
+            origins = cors_allow_origins.split(",")
+            values["cors_allow_origins"] = origins
+        else:
+            values["cors_allow_origins"] = ["*"]
 
         return values
 
