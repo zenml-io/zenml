@@ -138,7 +138,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         return None
 
     @abstractmethod
-    def prepare_environement_variable(self, set: bool = True) -> None:
+    def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
 
         Args:
@@ -239,7 +239,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             # Set the service connector AWS profile ENV variable
             self.prepare_environement_variable(set=True)
-            breakpoint()
             # Launch the cluster
             sky.launch(
                 task,
@@ -249,7 +248,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 down=settings.down,
                 stream_logs=settings.stream_logs,
             )
-            breakpoint()
             # Unset the service connector AWS profile ENV variable
             self.prepare_environement_variable(set=False)
         except Exception as e:
