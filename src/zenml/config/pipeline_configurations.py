@@ -49,6 +49,10 @@ class PipelineConfigurationUpdate(StrictBaseModel):
 
     @property
     def model_config(self) -> Optional["ModelConfig"]:
+        """Gets a ModelConfig object out of the model config model.
+
+        This is a technical circular import resolver.
+        """
         if self.model_config_model is None:
             return None
 

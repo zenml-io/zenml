@@ -36,8 +36,8 @@ if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
-    from zenml.orchestrators.step_runner import OutputSignature
     from zenml.stack.stack import Stack
+    from zenml.steps.utils import OutputSignature
 
 logger = get_logger(__name__)
 
@@ -94,7 +94,7 @@ class StepContext(metaclass=SingletonMetaClass):
         output_artifact_uris: Mapping[str, str],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
-        output_annotations: Optional[Dict[str, "OutputSignature"]] = None,
+        output_annotations: Dict[str, "OutputSignature"],
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -452,13 +452,13 @@ class StepContextOutput:
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
     metadata: Optional[Dict[str, "MetadataType"]] = None
-    output_annotation: Optional["OutputSignature"] = None
+    output_annotation: "OutputSignature"
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
-        output_annotation: Optional["OutputSignature"] = None,
+        output_annotation: "OutputSignature",
     ):
         """Initialize the step output.
 
