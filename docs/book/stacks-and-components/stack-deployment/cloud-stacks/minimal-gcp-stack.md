@@ -16,6 +16,7 @@ In the Google Cloud console, on the project selector page, select or
 Make sure a billing account is attached to this project to allow the use of 
 some APIs.
 
+This is how you would do it from the CLI if this is preferred.
 ```bash
 gcloud projects create <PROJECT_ID> --billing-project=<BILLING_PROJECT>
 ```
@@ -28,11 +29,11 @@ If you don't plan to keep the resources that you create in this procedure, creat
 
 The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen GCP project.
 
-* Cloud Functions API
-* Cloud Build API
-* Cloud Run Admin API
-* Artifact Registry API
-* Cloud Logging API 
+* Cloud Functions API  # For the vertex orchestrator
+* Cloud Run Admin API  # For the vertex orchestrator
+* Cloud Build API  # For the container registry
+* Artifact Registry API  # For the container registry
+* Cloud Logging API  # Generally needed
 
 ### 3) Create a dedicated service account
 
