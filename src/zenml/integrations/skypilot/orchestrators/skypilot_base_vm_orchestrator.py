@@ -160,7 +160,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If a step fails.
+            Exception: If the pipeline run fails.
         """
         if deployment.schedule:
             logger.warning(

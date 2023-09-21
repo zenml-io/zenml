@@ -981,6 +981,8 @@ class AzureServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the connector instance does not support
+                local configuration for the configured authentication method.
         """
         resource_type = self.resource_type
 

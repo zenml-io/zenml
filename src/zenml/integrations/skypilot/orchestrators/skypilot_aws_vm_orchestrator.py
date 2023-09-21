@@ -89,6 +89,9 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
 
         Args:
             set: Whether to set the environment variables or not.
+
+        Raises:
+            ValueError: If no service connector is found.
         """
         connector = self.get_connector()
         if connector is None:
