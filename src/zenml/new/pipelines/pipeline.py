@@ -64,6 +64,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
+from zenml.models.model_base_model import ModelConfigModel
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
@@ -343,7 +344,11 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config": model_config,
+                "model_config_model": ModelConfigModel.parse_obj(
+                    model_config.dict()
+                )
+                if model_config is not None
+                else None,
             }
         )
         config = PipelineConfigurationUpdate(**values)

@@ -23,7 +23,7 @@ from typing import (
     Type,
 )
 
-from zenml.exceptions import StepContextError
+from zenml.exceptions import EntityExistsError, StepContextError
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -31,10 +31,12 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.model.artifact_config import ArtifactConfig
     from zenml.model.model_config import ModelConfig
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.orchestrators.step_runner import OutputSignature
     from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
@@ -92,6 +94,7 @@ class StepContext(metaclass=SingletonMetaClass):
         output_artifact_uris: Mapping[str, str],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
+        output_annotations: Optional[Dict[str, "OutputSignature"]] = None,
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -101,6 +104,8 @@ class StepContext(metaclass=SingletonMetaClass):
             output_materializers: The output materializers of the step that
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
+                context is used in.
+            output_annotations: The output annotations of the step that this
                 context is used in.
             step_run_info: (Deprecated) info about the currently running step.
             cache_enabled: (Deprecated) Whether caching is enabled for the step.
@@ -131,7 +136,9 @@ class StepContext(metaclass=SingletonMetaClass):
             )
         self._outputs = {
             key: StepContextOutput(
-                output_materializers[key], output_artifact_uris[key]
+                output_materializers[key],
+                output_artifact_uris[key],
+                output_annotation=output_annotations[key],
             )
             for key in output_materializers.keys()
         }
@@ -405,6 +412,39 @@ class StepContext(metaclass=SingletonMetaClass):
             output.metadata = {}
         output.metadata.update(**metadata)
 
+    def _set_artifact_config(
+        self,
+        artifact_config: "ArtifactConfig",
+        output_name: Optional[str] = None,
+    ) -> None:
+        """Adds artifact config for a given step output.
+
+        Args:
+            artifact_config: The artifact config of the output to set.
+            output_name: Optional name of the output for which to set the
+                output signature. If no name is given and the step only has a single
+                output, the metadata of this output will be added. If the
+                step has multiple outputs, an exception will be raised.
+
+        Raises:
+            EntityExistsError: If the output already has an output signature.
+        """
+        output = self._get_output(output_name)
+
+        if output.output_annotation.artifact_config is None:
+            output.output_annotation.artifact_config = artifact_config
+        else:
+            raise EntityExistsError(
+                f"Output with name '{output_name}' already has artifact config."
+            )
+
+    def _get_output_annotations(self) -> Dict[str, "OutputSignature"]:
+        """Returns the output annotations of the step."""
+        return {
+            output_name: output.output_annotation
+            for output_name, output in self._outputs.items()
+        }
+
 
 class StepContextOutput:
     """Represents a step output in the step context."""
@@ -412,17 +452,21 @@ class StepContextOutput:
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
     metadata: Optional[Dict[str, "MetadataType"]] = None
+    output_annotation: Optional["OutputSignature"] = None
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
+        output_annotation: Optional["OutputSignature"] = None,
     ):
         """Initialize the step output.
 
         Args:
             materializer_classes: The materializer classes for the output.
             artifact_uri: The artifact URI for the output.
+            output_annotation: The output annotation of the output.
         """
         self.materializer_classes = materializer_classes
         self.artifact_uri = artifact_uri
+        self.output_annotation = output_annotation

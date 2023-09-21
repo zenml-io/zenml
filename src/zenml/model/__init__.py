@@ -23,6 +23,8 @@ from zenml.model.artifact_config import (
     ModelArtifactConfig,
     DeploymentArtifactConfig,
 )
+from zenml.model.link_output_to_model import link_output_to_model
+
 
 __all__ = [
     "ArtifactConfig",
@@ -30,4 +32,5 @@ __all__ = [
     "ModelArtifactConfig",
     "ModelConfig",
     "ModelStages",
+    "link_output_to_model",
 ]

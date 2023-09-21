@@ -156,6 +156,9 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_cache,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
             )
+            output_annotations = parse_return_type_annotations(
+                func=step_instance.entrypoint
+            )
             with StepEnvironment(
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
@@ -171,6 +174,7 @@ class StepRunner:
                     output_artifact_uris=output_artifact_uris,
                     step_run_info=step_run_info,
                     cache_enabled=cache_enabled,
+                    output_annotations=output_annotations,
                 )
                 # Prepare Model Context
                 self._prepare_model_context_for_step()
@@ -222,9 +226,6 @@ class StepRunner:
                             )
 
                         # Store and publish the output artifacts of the step function.
-                        output_annotations = parse_return_type_annotations(
-                            func=step_instance.entrypoint
-                        )
                         output_data = self._validate_outputs(
                             return_values, output_annotations
                         )

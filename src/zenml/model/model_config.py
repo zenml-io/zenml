@@ -15,12 +15,12 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from pydantic import Field, PrivateAttr, validator
+from pydantic import PrivateAttr, validator
 
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.model.model_stages import ModelStages
-from zenml.models.model_base_model import ModelBaseModel
+from zenml.models.model_base_model import ModelConfigModel
 
 if TYPE_CHECKING:
     from zenml.models.model_models import (
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModelConfig(ModelBaseModel):
+class ModelConfig(ModelConfigModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
     version: points model context to a specific version or stage.
@@ -40,15 +40,6 @@ class ModelConfig(ModelBaseModel):
         if available in active stack.
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
-
-    version: Optional[Union[ModelStages, str]] = Field(
-        default=None,
-        description="Model version or stage is optional and points model context to a specific version/stage, "
-        "if skipped and `create_new_model_version` is False - latest model version will be used.",
-    )
-    create_new_model_version: bool = False
-    save_models_to_registry: bool = True
-    recovery: bool = False
 
     _model: Optional["ModelResponseModel"] = PrivateAttr(default=None)
     _model_version: Optional["ModelVersionResponseModel"] = PrivateAttr(
