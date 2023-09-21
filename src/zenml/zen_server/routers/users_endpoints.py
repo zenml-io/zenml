@@ -425,27 +425,35 @@ def get_current_user(
     return auth_context.user
 
 
-@current_user_router.put(
-    "/current-user",
-    response_model=UserResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def update_myself(
-    user: UserUpdateModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.ME]
-    ),
-) -> UserResponseModel:
-    """Updates a specific user.
+# When the auth scheme is set to EXTERNAL, users cannot be managed via the
+# API.
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
-    Args:
-        user: the user to use for the update.
-        auth_context: The authentication context.
-
-    Returns:
-        The updated user.
-    """
-    return zen_store().update_user(
-        user_id=auth_context.user.id, user_update=user
+    @current_user_router.put(
+        "/current-user",
+        response_model=UserResponseModel,
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
     )
+    @handle_exceptions
+    def update_myself(
+        user: UserUpdateModel,
+        auth_context: AuthContext = Security(
+            authorize, scopes=[PermissionType.ME]
+        ),
+    ) -> UserResponseModel:
+        """Updates a specific user.
+
+        Args:
+            user: the user to use for the update.
+            auth_context: The authentication context.
+
+        Returns:
+            The updated user.
+        """
+        return zen_store().update_user(
+            user_id=auth_context.user.id, user_update=user
+        )

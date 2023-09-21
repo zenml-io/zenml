@@ -196,12 +196,7 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
 
         id: UUID
         email: str
-        oauth_provider: str
-        oauth_id: str
         name: Optional[str] = None
-        avatar_url: Optional[str] = None
-        company: Optional[str] = None
-        job_title: Optional[str] = None
 
         class Config:
             """Pydantic configuration."""
