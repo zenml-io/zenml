@@ -4,8 +4,8 @@ description: A simple guide to quickly set up a minimal stack on GCP.
 
 # Set up a minimal GCP stack
 
-This page aims to quickly set up a minimal production stack on gcp. With just a 
-few simple steps you will set up a service account with specifically scoped 
+This page aims to quickly set up a minimal production stack on GCP. With just a 
+few simple steps you will set up a service account with specifically-scoped 
 permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 
@@ -110,9 +110,9 @@ Head on over to our [docs](../../component-guide/artifact-stores/gcp/) to learn 
 
 #### Orchestrator
 
-As the orchestrator this guide will use Vertex AI to run the pipelines. As a 
+This guide will use Vertex AI as the orchestrator to run the pipelines. As a 
 serverless service Vertex is a great choice for quick prototyping of your MLOps 
-stack. THe orchestrator can be switched out at any point in the future for a 
+stack. The orchestrator can be switched out at any point in the future for a 
 more use-case- and budget-appropriate solution.
 
 {% tabs %}
