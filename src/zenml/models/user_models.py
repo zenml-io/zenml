@@ -23,7 +23,6 @@ from typing import (
     List,
     Optional,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -39,7 +38,7 @@ from zenml.models.base_models import (
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
-    from passlib.context import CryptContext  # type: ignore[import]
+    from passlib.context import CryptContext
 
     from zenml.models.team_models import TeamResponseModel
 
@@ -178,7 +177,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         if cls._is_hashed_secret(secret):
             return secret.get_secret_value()
         pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret.get_secret_value()))
+        return pwd_context.hash(secret.get_secret_value())
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -222,11 +221,11 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # even when the user or password is not set, we still want to execute
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        password_hash: Optional[str] = None
+        password_hash: str = ""
         if user is not None and user.password is not None:  # and user.active:
-            password_hash = user.get_hashed_password()
+            password_hash = user.get_hashed_password() or ""
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(plain_password, password_hash))
+        return pwd_context.verify(plain_password, password_hash)
 
     @classmethod
     def verify_activation_token(
@@ -244,15 +243,15 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # even when the user or token is not set, we still want to execute the
         # token hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
+        token_hash: str = ""
         if (
             user is not None
             and user.activation_token is not None
             and not user.active
         ):
-            token_hash = user.get_hashed_activation_token()
+            token_hash = user.get_hashed_activation_token() or ""
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(activation_token, token_hash))
+        return pwd_context.verify(activation_token, token_hash)
 
 
 # ------ #
@@ -352,7 +351,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         if secret is None:
             return None
         pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret))
+        return pwd_context.hash(secret)
 
     def create_hashed_password(self) -> Optional[str]:
         """Hashes the password.
