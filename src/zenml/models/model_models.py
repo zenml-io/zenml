@@ -205,7 +205,7 @@ class ModelVersionResponseModel(
             force: whether to force archiving of current model version in target stage or raise.
 
         Returns:
-            ModelVersionResponseModel
+            Model Version as a response model.
 
         Raises:
             ValueError: if model_stage is not valid.
@@ -230,7 +230,7 @@ class ModelVersionResponseModel(
         """Sets a version to this running Model Version.
 
         Returns:
-            ModelVersionResponseModel
+            Model Version as a response model.
 
         Raises:
             RuntimeError: if this is not a running Model Version.
