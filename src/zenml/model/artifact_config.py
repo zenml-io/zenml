@@ -77,9 +77,9 @@ class ArtifactConfig(BaseModel):
                 or @pipeline or built on the fly from fields of this class.
         """
         try:
-            context = get_step_context().model_config
+            model_config = get_step_context().model_config
         except StepContextError:
-            context = None
+            model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
         if (
             self.model_name is not None
@@ -87,7 +87,7 @@ class ArtifactConfig(BaseModel):
                 self.model_version_name is not None
                 or self.model_stage is not None
             )
-        ) and (context is None or context.name != self.model_name):
+        ) and (model_config is None or model_config.name != self.model_name):
             # Create a new ModelConfig instance with the provided model name and version
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
@@ -97,14 +97,14 @@ class ArtifactConfig(BaseModel):
             )
             return on_the_fly_config
 
-        if context is None:
+        if model_config is None:
             raise RuntimeError(
                 "No model configuration found in @step or @pipeline. "
                 "You can configure ModelConfig inside ArtifactConfig as well, but "
                 "`model_name` and (`model_version_name` or `model_stage`) must be provided."
             )
         # Return the model from the context
-        return context
+        return model_config
 
     @property
     def model(self) -> "ModelResponseModel":
