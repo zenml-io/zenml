@@ -1639,7 +1639,11 @@ def destroy(
 
 
 @stack.command(
-    "connect", help="Connect a service-connector to a stack's components."
+    "connect",
+    help="Connect a service-connector to a stack's components. "
+    "Note that this only connects the service-connector to the current "
+    "components of the stack and not to the stack itself, which means that "
+    "you need to rerun the command after adding new components to the stack.",
 )
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.option(
@@ -1674,10 +1678,6 @@ def connect_stack(
     no_verify: bool = False,
 ) -> None:
     """Connect a service-connector to all components of a stack.
-
-    Note that this only connects the service-connector to the current 
-    components of the stack and not to the stack itself, which means that 
-    you need to rerun the command after adding new components to the stack.
 
     Args:
         stack_name_or_id: Name of the stack to connect.
