@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
+from zenml.enums import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -28,9 +29,6 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
-
-if TYPE_CHECKING:
-    from zenml.model.model_stages import ModelStages
 
 
 class ModelVersionBaseModel(BaseModel):
@@ -196,7 +194,7 @@ class ModelVersionResponseModel(
         return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
-        self, stage: Union[str, "ModelStages"], force: bool = False
+        self, stage: Union[str, ModelStages], force: bool = False
     ) -> "ModelVersionResponseModel":
         """Sets this Model Version to a desired stage.
 
@@ -210,8 +208,6 @@ class ModelVersionResponseModel(
         Raises:
             ValueError: if model_stage is not valid.
         """
-        from zenml.model.model_stages import ModelStages
-
         stage = getattr(stage, "value", stage)
         if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
@@ -302,7 +298,7 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: Optional[Union[str, "ModelStages"]] = Field(
+    stage: Optional[Union[str, ModelStages]] = Field(
         title="Target model version stage to be set", default=None
     )
     force: bool = Field(
@@ -316,8 +312,6 @@ class ModelVersionUpdateModel(BaseModel):
 
     @validator("stage")
     def _validate_stage(cls, stage: str) -> str:
-        from zenml.model.model_stages import ModelStages
-
         stage = getattr(stage, "value", stage)
         if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
@@ -484,7 +478,7 @@ class ModelResponseModel(
         )
 
     def get_version(
-        self, version: Optional[Union[str, "ModelStages"]] = None
+        self, version: Optional[Union[str, ModelStages]] = None
     ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
@@ -533,3 +527,23 @@ class ModelUpdateModel(BaseModel):
     trade_offs: Optional[str]
     ethic: Optional[str]
     tags: Optional[List[str]]
+
+
+class ModelConfigModel(ModelBaseModel):
+    """ModelConfig class to pass into pipeline or step to set it into a model context.
+
+    version: points model context to a specific version or stage.
+    create_new_model_version: Whether to create a new model version during execution
+    save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
+        if available in active stack.
+    recovery: Whether to keep failed runs with new versions for later recovery from it.
+    """
+
+    version: Optional[Union[ModelStages, str]] = Field(
+        default=None,
+        description="Model version or stage is optional and points model context to a specific version/stage, "
+        "if skipped and `create_new_model_version` is False - latest model version will be used.",
+    )
+    create_new_model_version: bool = False
+    save_models_to_registry: bool = True
+    recovery: bool = False

@@ -18,10 +18,10 @@ from uuid import UUID
 from pydantic import BaseModel, PrivateAttr, validator
 
 from zenml import get_step_context
+from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.model.model_config import ModelConfig
-from zenml.model.model_stages import ModelStages
 from zenml.models.model_models import (
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,

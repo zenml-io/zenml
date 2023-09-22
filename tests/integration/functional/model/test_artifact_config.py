@@ -19,13 +19,13 @@ from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.client import Client
+from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.model import (
     ArtifactConfig,
     DeploymentArtifactConfig,
     ModelArtifactConfig,
     ModelConfig,
-    ModelStages,
     link_output_to_model,
 )
 from zenml.models import (

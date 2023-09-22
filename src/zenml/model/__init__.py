@@ -17,7 +17,6 @@ ZenML model support Model WatchTower feature.
 """
 
 from zenml.model.model_config import ModelConfig
-from zenml.model.model_stages import ModelStages
 from zenml.model.artifact_config import (
     ArtifactConfig,
     ModelArtifactConfig,
@@ -31,6 +30,5 @@ __all__ = [
     "DeploymentArtifactConfig",
     "ModelArtifactConfig",
     "ModelConfig",
-    "ModelStages",
     "link_output_to_model",
 ]

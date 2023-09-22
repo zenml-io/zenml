@@ -42,7 +42,7 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import SecretScope, StackComponentType, StoreType
+from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
@@ -50,7 +50,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logging.step_logging import prepare_logs_uri
-from zenml.model import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactResponseModel,

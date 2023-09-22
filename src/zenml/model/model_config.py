@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import PrivateAttr, validator
 
+from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.model.model_stages import ModelStages
 from zenml.models.model_base_model import ModelConfigModel
 
 if TYPE_CHECKING:
