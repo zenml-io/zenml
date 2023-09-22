@@ -165,6 +165,10 @@ from zenml.models.model_models import (
     ModelVersionUpdateModel,
 )
 
+from zenml.models.model_base_model import ModelConfigModel
+
+from zenml.model.model_stages import ModelStages
+
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
@@ -309,6 +313,9 @@ ModelVersionPipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
+
+ModelVersionUpdateModel.update_forward_refs(ModelStages=ModelStages)
+ModelConfigModel.update_forward_refs(ModelStages=ModelStages)
 
 __all__ = [
     "ArtifactRequestModel",

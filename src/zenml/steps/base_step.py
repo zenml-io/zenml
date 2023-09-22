@@ -692,10 +692,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
-        from zenml.model.model_stages import ModelStages
         from zenml.models.model_base_model import ModelConfigModel
-
-        ModelConfigModel.update_forward_refs(ModelStages=ModelStages)
 
         if name:
             logger.warning("Configuring the name of a step is deprecated.")
