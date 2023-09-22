@@ -95,7 +95,7 @@ multiple configurations.
 If you would like to be guided through the deployment process, you can use the
 `zenml stack deploy` command with the `--interactive` flag. You will still need
 to provide the `provider`, `name` and `region` options as described above but
-for the rest you will get prompts in the CLI as to which components you would
+for the rest, you will get prompts in the CLI as to which components you would
 like to deploy. For example, using GCP as the provider you might type:
 
 ```bash
