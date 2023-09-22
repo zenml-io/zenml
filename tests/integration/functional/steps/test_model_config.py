@@ -128,6 +128,8 @@ def _this_step_does_not_create_a_version():
 
 
 def test_create_new_versions_both_pipeline_and_step():
+    """Test that model config on step and pipeline levels can create new model versions at the same time."""
+
     @pipeline(
         name="bar",
         model_config=ModelConfig(name="bar", create_new_model_version=True),
@@ -167,6 +169,8 @@ def test_create_new_versions_both_pipeline_and_step():
 
 
 def test_create_new_version_only_in_step():
+    """Test that model config on step level only can create new model version."""
+
     @pipeline(name="bar", enable_cache=False)
     def _this_pipeline_does_not_create_a_version():
         _this_step_creates_a_version()
@@ -191,6 +195,8 @@ def test_create_new_version_only_in_step():
 
 
 def test_create_new_version_only_in_pipeline():
+    """Test that model config on pipeline level only can create new model version."""
+
     @pipeline(
         name="bar",
         model_config=ModelConfig(name="bar", create_new_model_version=True),
