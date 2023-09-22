@@ -352,6 +352,8 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
     is_model_object: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
     is_deployment: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
     version: int = Field(sa_column=Column(INTEGER, nullable=False))
+    pipeline_name: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_name: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
     def from_request(
@@ -370,6 +372,8 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
         """
         return cls(
             name=model_version_artifact_request.name,
+            pipeline_name=model_version_artifact_request.pipeline_name,
+            step_name=model_version_artifact_request.step_name,
             workspace_id=model_version_artifact_request.workspace,
             user_id=model_version_artifact_request.user,
             model_id=model_version_artifact_request.model,
@@ -389,6 +393,8 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
         return ModelVersionArtifactResponseModel(
             id=self.id,
             name=self.name,
+            pipeline_name=self.pipeline_name,
+            step_name=self.step_name,
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model(),
             created=self.created,

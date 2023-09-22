@@ -328,6 +328,14 @@ class ModelVersionArtifactBaseModel(BaseModel):
         title="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    pipeline_name: Optional[str] = Field(
+        title="The name of the pipeline creating this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    step_name: Optional[str] = Field(
+        title="The name of the step creating this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     artifact: UUID
     model: UUID
     model_version: UUID
@@ -373,6 +381,14 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     )
     name: Optional[str] = Field(
         title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_name: Optional[str] = Field(
+        title="The name of the pipeline creating this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    step_name: Optional[str] = Field(
+        title="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(

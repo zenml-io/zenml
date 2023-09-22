@@ -47,7 +47,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, create_engine, or_, select
+from sqlmodel import Session, and_, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -5793,8 +5793,14 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     or_(
-                        ModelVersionArtifactSchema.name
-                        == model_version_artifact_link.name,
+                        and_(
+                            ModelVersionArtifactSchema.name
+                            == model_version_artifact_link.name,
+                            ModelVersionArtifactSchema.pipeline_name
+                            == model_version_artifact_link.pipeline_name,
+                            ModelVersionArtifactSchema.step_name
+                            == model_version_artifact_link.step_name,
+                        ),
                         ModelVersionArtifactSchema.artifact_id
                         == model_version_artifact_link.artifact,
                     )
@@ -5812,10 +5818,25 @@ class SqlZenStore(BaseZenStore):
                     "with the same name. It has to be deleted first."
                 )
 
-            if model_version_artifact_link.name is None:
-                model_version_artifact_link.name = self.get_artifact(
+            if (
+                model_version_artifact_link.name is None
+                or model_version_artifact_link.pipeline_name is None
+                or model_version_artifact_link.step_name is None
+            ):
+                artifact = self.get_artifact(
                     model_version_artifact_link.artifact
-                ).name
+                )
+                model_version_artifact_link.name = (
+                    model_version_artifact_link.name or artifact.name
+                )
+                model_version_artifact_link.pipeline_name = (
+                    model_version_artifact_link.pipeline_name
+                    or artifact.run.pipeline.name
+                )
+
+                model_version_artifact_link.step_name = (
+                    model_version_artifact_link.step_name or artifact.step.name
+                )
 
             version = 1
             if existing_model_version_artifact_link is not None:

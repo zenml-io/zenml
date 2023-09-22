@@ -642,6 +642,10 @@ class StepRunner:
                 artifact_config.artifact_name = (
                     artifact_config.artifact_name or artifact_name
                 )
+                artifact_config._pipeline_name = (
+                    get_step_context().pipeline.name
+                )
+                artifact_config._step_name = get_step_context().step_run.name
                 artifact_config.link_to_model(artifact_uuid=artifact_uuid)
 
     def load_and_run_hook(

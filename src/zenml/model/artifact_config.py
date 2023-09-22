@@ -15,7 +15,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, PrivateAttr, validator
 
 from zenml import get_step_context
 from zenml.exceptions import StepContextError
@@ -41,6 +41,9 @@ class ArtifactConfig(BaseModel):
     model_stage: Optional[ModelStages]
     artifact_name: Optional[str]
     overwrite: bool = False
+
+    _pipeline_name: str = PrivateAttr()
+    _step_name: str = PrivateAttr()
 
     @validator("model_stage")
     def _validate_stage(
@@ -150,6 +153,8 @@ class ArtifactConfig(BaseModel):
             is_model_object=is_model_object,
             is_deployment=is_deployment,
             overwrite=self.overwrite,
+            pipeline_name=self._pipeline_name,
+            step_name=self._step_name,
         )
 
         # Create the model version artifact link using the ZenML client
