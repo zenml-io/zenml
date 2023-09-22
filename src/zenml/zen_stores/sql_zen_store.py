@@ -5725,12 +5725,8 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(f"Model version {model_version_id} not found.")
 
             stage = None
-            if model_version_update_model.stage is not None:
-                stage = getattr(
-                    model_version_update_model.stage,
-                    "value",
-                    model_version_update_model.stage,
-                )
+            if (stage_ := model_version_update_model.stage) is not None:
+                stage = getattr(stage_, "value", stage_)
 
                 existing_model_version_in_target_stage = session.exec(
                     select(ModelVersionSchema)
