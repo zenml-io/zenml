@@ -78,7 +78,7 @@ def test_link_minimalistic():
             )
         )
         assert al.size == 1
-        assert al[0].version == 1
+        assert al[0].link_version == 1
         assert al[0].name == "output"
 
 
@@ -122,7 +122,9 @@ def test_link_multiple_named_outputs():
             )
         )
         assert al.size == 3
-        assert al[0].version + al[1].version + al[2].version == 3
+        assert (
+            al[0].link_version + al[1].link_version + al[2].link_version == 3
+        )
         assert al[0].name == "1"
         assert al[1].name == "2"
         assert al[2].name == "3"
@@ -412,7 +414,7 @@ def test_link_no_versioning():
             )
         )
         assert al1.size == 1
-        assert al1[0].version == 1
+        assert al1[0].link_version == 1
         assert al1[0].name == "output"
 
         simple_pipeline_no_versioning()
@@ -426,7 +428,7 @@ def test_link_no_versioning():
             )
         )
         assert al2.size == 1
-        assert al2[0].version == 1
+        assert al2[0].link_version == 1
         assert al2[0].name == "output"
         assert al1[0].id != al2[0].id
 
@@ -481,7 +483,7 @@ def test_link_with_versioning():
             )
         )
         assert al1.size == 1
-        assert al1[0].version == 1
+        assert al1[0].link_version == 1
         assert al1[0].name == "predictions"
 
         simple_pipeline_with_versioning()
@@ -495,8 +497,8 @@ def test_link_with_versioning():
             )
         )
         assert al2.size == 2
-        assert al2[0].version == 1
-        assert al2[1].version == 2
+        assert al2[0].link_version == 1
+        assert al2[1].link_version == 2
         assert al2[0].name == al2[1].name
         assert al2[0].id != al2[1].id
         assert al1[0].id == al1[0].id
@@ -597,7 +599,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
                 )
             )
             assert al1.size == 1
-            assert al1[0].version == 1
+            assert al1[0].link_version == 1
             assert al1[0].name == "1"
 
             al2 = zs.list_model_version_artifact_links(
@@ -609,7 +611,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
                 )
             )
             assert al2.size == 1
-            assert al2[0].version == 1
+            assert al2[0].link_version == 1
             assert al2[0].name == "2"
 
 

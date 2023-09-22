@@ -368,9 +368,12 @@ class ModelVersionArtifactRequestModel(
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version link with artifact response model."""
+    """Model version link with artifact response model.
 
-    version: int
+    link_version: The version of the link (always 1 for not versioned links).
+    """
+
+    link_version: int
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):

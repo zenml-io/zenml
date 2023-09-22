@@ -2846,7 +2846,7 @@ class TestModelVersionArtifactLinks:
                     step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
@@ -2860,7 +2860,7 @@ class TestModelVersionArtifactLinks:
                     step_name="step",
                 )
             )
-            assert al2.version == 2
+            assert al2.link_version == 2
             assert al2.artifact == artifacts[1].id
 
             assert al1.name == al2.name
@@ -2884,7 +2884,7 @@ class TestModelVersionArtifactLinks:
                     step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             with pytest.raises(EntityExistsError):
                 zs.create_model_version_artifact_link(
@@ -2920,7 +2920,7 @@ class TestModelVersionArtifactLinks:
                     step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             zs.delete_model_version_artifact_link(
                 model_name_or_id=model_version.model.id,
@@ -2940,7 +2940,7 @@ class TestModelVersionArtifactLinks:
                     step_name="step",
                 )
             )
-            assert al2.version == 1
+            assert al2.link_version == 1
             assert al2.artifact == artifacts[1].id
             assert al1.id != al2.id
 
@@ -3020,7 +3020,7 @@ class TestModelVersionArtifactLinks:
                     model_version_id=model_version.id,
                 )
             )
-            assert links[0].version == links[1].version == 1
+            assert links[0].link_version == links[1].link_version == 1
             assert len(links) == 2
 
     def test_link_delete_found(self):

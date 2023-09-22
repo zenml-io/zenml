@@ -404,7 +404,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             artifact=self.artifact_id,
             is_model_object=self.is_model_object,
             is_deployment=self.is_deployment,
-            version=self.version,
+            link_version=self.version,
         )
 
 
