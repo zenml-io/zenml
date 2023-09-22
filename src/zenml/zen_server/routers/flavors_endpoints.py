@@ -169,3 +169,19 @@ def delete_flavor(
         flavor_id: ID of the flavor.
     """
     zen_store().delete_flavor(flavor_id)
+
+
+@router.patch(
+    "/sync",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def sync_flavors(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Purge all in-built and integration flavors from the DB and sync.
+
+    Returns:
+        None if successful. Raises an exception otherwise.
+    """
+    return zen_store()._sync_flavors()
