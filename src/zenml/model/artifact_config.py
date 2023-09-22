@@ -208,6 +208,16 @@ class ModelArtifactConfig(ArtifactConfig):
 
     save_to_model_registry: bool = True
 
+    @validator("save_to_model_registry")
+    def _validate_save_to_model_registry(
+        cls, save_to_model_registry: bool
+    ) -> bool:
+        if save_to_model_registry:
+            logger.warning(
+                "`save_to_model_registry` is not yet supported - no effect on pipeline execution."
+            )
+        return save_to_model_registry
+
     def link_to_model(
         self,
         artifact_uuid: UUID,
