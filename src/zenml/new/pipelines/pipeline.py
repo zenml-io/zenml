@@ -779,7 +779,7 @@ class Pipeline:
                     model_name_or_id=model_name,
                     model_version_name_or_id=RUNNING_MODEL_VERSION,
                 )
-                mv.assign_version_to_running()
+                mv._assign_version_to_running()
             except KeyError as e:
                 if model_name == pipeline_model_name:
                     logger.warning(

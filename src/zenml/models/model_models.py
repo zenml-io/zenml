@@ -226,8 +226,13 @@ class ModelVersionResponseModel(
             ),
         )
 
-    def assign_version_to_running(self) -> "ModelVersionResponseModel":
+    def _assign_version_to_running(self) -> "ModelVersionResponseModel":
         """Sets a version to this running Model Version.
+
+        Running version is an intermediate version create if ModelContext of
+        pipeline or a step requested to do so. Running version after pipeline
+        finished can resolve into a new stable version on success or get deleted
+        on failure or kept as is on failure with recovery option.
 
         Returns:
             Model Version as a response model.
