@@ -48,6 +48,7 @@ def model_killer(model_name: str = MODEL_NAME):
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
+    """Untyped single output linked as Artifact from step context."""
     return 1
 
 
@@ -55,6 +56,7 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 def single_output_step_from_context_model() -> (
     Annotated[int, ModelArtifactConfig(save_to_model_registry=True)]
 ):
+    """Untyped single output linked as Model Object from step context."""
     return 1
 
 
@@ -62,11 +64,13 @@ def single_output_step_from_context_model() -> (
 def single_output_step_from_context_deployment() -> (
     Annotated[int, DeploymentArtifactConfig()]
 ):
+    """Untyped single output linked as Deployment from step context."""
     return 1
 
 
 @pipeline(enable_cache=False)
 def simple_pipeline():
+    """Run 3 untyped single output linked from step context."""
     single_output_step_from_context()
     single_output_step_from_context_model(
         after=["single_output_step_from_context"]
@@ -77,6 +81,7 @@ def simple_pipeline():
 
 
 def test_link_minimalistic():
+    """Test simple explicit linking from step context for 3 artifact types."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -116,15 +121,18 @@ def multi_named_output_step_from_context() -> (
         Annotated[int, "3", ArtifactConfig()],
     ]
 ):
+    """3 typed output step with explicit linking from step context."""
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
 def multi_named_pipeline():
+    """3 typed output step with explicit linking from step context."""
     multi_named_output_step_from_context()
 
 
 def test_link_multiple_named_outputs():
+    """Test multiple typed output step with explicit linking from step context."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -170,10 +178,12 @@ def multi_named_output_step_not_tracked() -> (
 
 @pipeline(enable_cache=False)
 def multi_named_pipeline_not_tracked():
+    """Here links would be implicitly created based on step ModelConfig."""
     multi_named_output_step_not_tracked()
 
 
 def test_link_multiple_named_outputs_without_links():
+    """Test multi output step implicit linking based on step context."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -217,15 +227,18 @@ def multi_named_output_step_from_self() -> (
         ],
     ]
 ):
+    """Multi output linking from Annotated."""
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
 def multi_named_pipeline_from_self():
+    """Multi output linking from Annotated."""
     multi_named_output_step_from_self()
 
 
 def test_link_multiple_named_outputs_with_self_context():
+    """Test multi output linking with context defined in Annotated."""
     with model_killer():
         with model_killer("bar"):
             zs = Client().zen_store
@@ -300,7 +313,7 @@ def multi_named_output_step_mixed_linkage() -> (
         ],
     ]
 ):
-    """Artifact "2"&"3" has own configs."""
+    """Artifact "2"&"3" has own configs, but 2 will get step context and 3 defines own."""
     return 2, 3
 
 
@@ -311,19 +324,19 @@ def pipeline_configuration_is_used_here() -> (
         Annotated[str, "4"],
     ]
 ):
-    """Artifact "1" has own config, but "4" can be implicitly tracked with pipeline config."""
+    """Artifact "1" has own config and overrides name, but "4" will be implicitly tracked with pipeline config."""
     return 1, "foo"
 
 
 @step
 def some_plain_outputs():
-    """This artifact can be implicitly tracked with pipeline config as a single tuple."""
+    """This artifact will be implicitly tracked with pipeline config as a single tuple."""
     return "bar", 42.0
 
 
-@step
+@step(model_config=ModelConfig(name="step", version="step"))
 def and_some_typed_outputs() -> int:
-    """This artifact can be implicitly tracked with pipeline config."""
+    """This artifact can be implicitly tracked with step config."""
     return 1
 
 
@@ -332,6 +345,7 @@ def and_some_typed_outputs() -> int:
     model_config=ModelConfig(name="pipe", version="pipe"),
 )
 def multi_named_pipeline_mixed_linkage():
+    """Mixed linking cases, see steps description."""
     pipeline_configuration_is_used_here()
     multi_named_output_step_mixed_linkage()
     some_plain_outputs()
@@ -339,7 +353,7 @@ def multi_named_pipeline_mixed_linkage():
 
 
 def test_link_multiple_named_outputs_with_mixed_linkage():
-    """In this test a mixed linkage of artifacts is verified."""
+    """In this test a mixed linkage of artifacts is verified. See steps description."""
     with model_killer("pipe"):
         with model_killer("step"):
             with model_killer("artifact"):
@@ -382,8 +396,8 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                         )
                     )
 
-                assert artifact_links[0].size == 4
-                assert artifact_links[1].size == 1
+                assert artifact_links[0].size == 3
+                assert artifact_links[1].size == 2
                 assert artifact_links[2].size == 1
 
                 assert {al.name for al in artifact_links[0]} == {
@@ -391,26 +405,35 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                     "4",
                     "output",
                 }
+                assert {al.name for al in artifact_links[1]} == {
+                    "2",
+                    "output",
+                }
+                assert artifact_links[2][0].name == "3"
                 assert {al.link_version for al in artifact_links[0]} == {
                     1
                 }, "some artifacts tracked as higher versions, while all should be version 1"
-                assert artifact_links[1][0].name == "2"
-                assert artifact_links[2][0].name == "3"
+                assert {al.link_version for al in artifact_links[1]} == {
+                    1
+                }, "some artifacts tracked as higher versions, while all should be version 1"
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, version="good_one"))
 def single_output_step_no_versioning() -> (
     Annotated[int, ArtifactConfig(overwrite=True)]
 ):
+    """Single output with overwrite and step context."""
     return 1
 
 
 @pipeline(enable_cache=False)
 def simple_pipeline_no_versioning():
+    """Single output with overwrite and step context."""
     single_output_step_no_versioning()
 
 
 def test_link_no_versioning():
+    """Test that not versioned artifact is properly overwritten and no new versions created."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -463,6 +486,7 @@ def test_link_no_versioning():
 def single_output_step_with_versioning() -> (
     Annotated[int, "predictions", ArtifactConfig(overwrite=False)]
 ):
+    """Single output with overwrite disabled and step context."""
     return 1
 
 
@@ -471,10 +495,12 @@ def single_output_step_with_versioning() -> (
     model_config=ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION),
 )
 def simple_pipeline_with_versioning():
+    """Single output with overwrite disabled and step context."""
     single_output_step_with_versioning()
 
 
 def test_link_with_versioning():
+    """Test that versioned artifact is properly linked and new versions created."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -534,6 +560,7 @@ def test_link_with_versioning():
 def step_with_manual_linkage() -> (
     Tuple[Annotated[int, "1"], Annotated[int, "2"]]
 ):
+    """Multi output linking by function."""
     link_output_to_model(ArtifactConfig(), "1")
     link_output_to_model(
         ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
@@ -546,6 +573,7 @@ def step_with_manual_linkage() -> (
     model_config=ModelConfig(name=MODEL_NAME),
 )
 def simple_pipeline_with_manual_linkage():
+    """Multi output linking by function."""
     step_with_manual_linkage()
 
 
@@ -553,6 +581,7 @@ def simple_pipeline_with_manual_linkage():
 def step_with_manual_and_implicit_linkage() -> (
     Tuple[Annotated[int, "1"], Annotated[int, "2"]]
 ):
+    """Multi output: 2 is linked by function, 1 is linked implicitly."""
     link_output_to_model(
         ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
     )
@@ -564,6 +593,7 @@ def step_with_manual_and_implicit_linkage() -> (
     model_config=ModelConfig(name=MODEL_NAME),
 )
 def simple_pipeline_with_manual_and_implicit_linkage():
+    """Multi output: 2 is linked by function, 1 is linked implicitly."""
     step_with_manual_and_implicit_linkage()
 
 
@@ -576,6 +606,7 @@ def simple_pipeline_with_manual_and_implicit_linkage():
     ids=("manual_linkage_only", "manual_and_implicit"),
 )
 def test_link_with_manual_linkage(pipeline: Callable):
+    """Test manual linking by function call in 2 setting: only manual and manual+implicit"""
     with model_killer():
         with model_killer("bar"):
             zs = Client().zen_store
@@ -645,6 +676,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
 def step_with_manual_linkage_fail_on_override() -> (
     Annotated[int, "1", ArtifactConfig()]
 ):
+    """Should fail on manual linkage, cause Annotated provided."""
     with pytest.raises(EntityExistsError):
         link_output_to_model(ArtifactConfig(), "1")
     return 1
@@ -655,10 +687,12 @@ def step_with_manual_linkage_fail_on_override() -> (
     model_config=ModelConfig(name=MODEL_NAME),
 )
 def simple_pipeline_with_manual_linkage_fail_on_override():
+    """Should fail on manual linkage, cause Annotated provided."""
     step_with_manual_linkage_fail_on_override()
 
 
 def test_link_with_manual_linkage_fail_on_override():
+    """Test that step fails on manual linkage, cause Annotated provided."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
@@ -688,6 +722,7 @@ def test_link_with_manual_linkage_fail_on_override():
 def step_with_manual_linkage_flexible_config(
     artifact_config: ArtifactConfig,
 ) -> Annotated[int, "1"]:
+    """Flexible manual linkage based on input arg."""
     link_output_to_model(artifact_config, "1")
     return 1
 
@@ -696,6 +731,7 @@ def step_with_manual_linkage_flexible_config(
 def simple_pipeline_with_manual_linkage_flexible_config(
     artifact_config: ArtifactConfig,
 ):
+    """Flexible manual linkage based on input arg."""
     step_with_manual_linkage_flexible_config(artifact_config)
 
 
@@ -713,6 +749,7 @@ def simple_pipeline_with_manual_linkage_flexible_config(
 def test_link_with_manual_linkage_flexible_config(
     artifact_config: ArtifactConfig,
 ):
+    """Test that linking using ArtifactConfig is possible for exact version, stage and latest versions."""
     with model_killer():
         zs = Client().zen_store
         user = Client().active_user.id
