@@ -324,7 +324,6 @@ class Pipeline:
         Returns:
             The pipeline instance that this method was called on.
         """
-
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this pipeline

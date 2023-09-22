@@ -625,7 +625,7 @@ class StepRunner:
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
             artifact_config = (
-                StepContext()._get_output(artifact_name).artifact_config
+                get_step_context()._get_output(artifact_name).artifact_config
             )
             if artifact_config is None and mc is not None:
                 artifact_config = ArtifactConfig(

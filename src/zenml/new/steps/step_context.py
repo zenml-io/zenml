@@ -450,14 +450,14 @@ class StepContextOutput:
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
-        artifact_config: "ArtifactConfig",
+        artifact_config: Optional["ArtifactConfig"],
     ):
         """Initialize the step output.
 
         Args:
             materializer_classes: The materializer classes for the output.
             artifact_uri: The artifact URI for the output.
-            output_annotation: The output annotation of the output.
+            artifact_config: The ArtifactConfig object of the output.
         """
         self.materializer_classes = materializer_classes
         self.artifact_uri = artifact_uri

@@ -184,6 +184,7 @@ class ArtifactConfig(BaseModel):
         artifact_uuid: UUID,
     ) -> None:
         """Link artifact to the model version.
+
         Args:
             artifact_uuid (UUID): The UUID of the artifact to link.
         """
