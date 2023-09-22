@@ -784,7 +784,7 @@ class Pipeline:
                 if model_name == pipeline_model_name:
                     logger.warning(
                         f"Failed to register stable model version of `{model_name}` model. "
-                        f"No `{RUNNING_MODEL_VERSION}` found. "
+                        f"No `{RUNNING_MODEL_VERSION}` version found. "
                         "Most probable root cause: you set ModelConfig on pipeline level and "
                         "override it in all steps inside that pipeline."
                     )
