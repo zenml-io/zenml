@@ -113,9 +113,6 @@ class JWTToken(BaseModel):
 
         Encodes, signs and returns a JWT access token.
 
-        Args:
-            token: The token to encode.
-
         Returns:
             The generated access token.
         """

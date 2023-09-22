@@ -23,7 +23,13 @@ from fastapi.param_functions import Form
 from pydantic import BaseModel
 from starlette.requests import Request
 
-from zenml.constants import API, LOGIN, LOGOUT, VERSION_1
+from zenml.constants import (
+    API,
+    EXTERNAL_AUTHENTICATOR_TIMEOUT,
+    LOGIN,
+    LOGOUT,
+    VERSION_1,
+)
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
 from zenml.models import UserRoleAssignmentFilterModel
@@ -221,6 +227,9 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
         Returns:
             An authentication response with an access token or an external
             authorization URL.
+
+        Raises:
+            HTTPException: 401 if not authorized to login.
         """
         config = server_config()
         store = zen_store()
@@ -270,6 +279,7 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
                 user_info_url,
                 headers=headers,
                 params=urlencode(query_params),
+                timeout=EXTERNAL_AUTHENTICATOR_TIMEOUT,
             )
         except Exception as e:
             logger.exception(

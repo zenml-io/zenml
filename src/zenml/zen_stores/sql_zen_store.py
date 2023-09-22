@@ -962,10 +962,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             Information about the store.
-
-        Raises:
-            KeyError: If the deployment ID could not be loaded from the
-                database.
         """
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
