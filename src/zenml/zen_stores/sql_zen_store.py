@@ -5829,14 +5829,6 @@ class SqlZenStore(BaseZenStore):
                 model_version_artifact_link.name = (
                     model_version_artifact_link.name or artifact.name
                 )
-                model_version_artifact_link.pipeline_name = (
-                    model_version_artifact_link.pipeline_name
-                    or artifact.run.pipeline.name
-                )
-
-                model_version_artifact_link.step_name = (
-                    model_version_artifact_link.step_name or artifact.step.name
-                )
 
             version = 1
             if existing_model_version_artifact_link is not None:
