@@ -22,6 +22,8 @@ from zenml.client import Client
 from zenml.exceptions import EntityExistsError
 from zenml.model import (
     ArtifactConfig,
+    DeploymentArtifactConfig,
+    ModelArtifactConfig,
     ModelConfig,
     ModelStages,
     link_output_to_model,
@@ -49,9 +51,29 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
     return 1
 
 
+@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+def single_output_step_from_context_model() -> (
+    Annotated[int, ModelArtifactConfig(save_to_model_registry=True)]
+):
+    return 1
+
+
+@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+def single_output_step_from_context_deployment() -> (
+    Annotated[int, DeploymentArtifactConfig()]
+):
+    return 1
+
+
 @pipeline(enable_cache=False)
 def simple_pipeline():
     single_output_step_from_context()
+    single_output_step_from_context_model(
+        after=["single_output_step_from_context"]
+    )
+    single_output_step_from_context_deployment(
+        after=["single_output_step_from_context_model"]
+    )
 
 
 def test_link_minimalistic():
@@ -69,7 +91,7 @@ def test_link_minimalistic():
         assert model.name == MODEL_NAME
         mv = zs.get_model_version(MODEL_NAME)
         assert mv.version == "1"
-        al = zs.list_model_version_artifact_links(
+        links = zs.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -77,9 +99,13 @@ def test_link_minimalistic():
                 model_version_id=mv.id,
             )
         )
-        assert al.size == 1
-        assert al[0].link_version == 1
-        assert al[0].name == "output"
+        assert links.size == 3
+        for link in links:
+            assert link.link_version == 1
+            assert link.name == "output"
+        assert not (links[0].is_deployment or links[0].is_model_object)
+        assert not links[1].is_deployment and links[1].is_model_object
+        assert links[2].is_deployment and not links[2].is_model_object
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model WatchTower feature."""
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, validator
@@ -51,6 +51,8 @@ class ArtifactConfig(BaseModel):
 
     _pipeline_name: str = PrivateAttr()
     _step_name: str = PrivateAttr()
+    IS_MODEL_ARTIFACT: ClassVar[bool] = False
+    IS_DEPLOYMENT_ARTIFACT: ClassVar[bool] = False
 
     @validator("model_stage")
     def _validate_stage(
@@ -199,14 +201,13 @@ class ArtifactConfig(BaseModel):
         artifact_uuid: UUID,
     ) -> None:
         """Link artifact to the model version.
-
         Args:
             artifact_uuid (UUID): The UUID of the artifact to link.
         """
         self._link_to_model_version(
             artifact_uuid,
-            is_model_object=False,
-            is_deployment=False,
+            is_model_object=self.IS_MODEL_ARTIFACT,
+            is_deployment=self.IS_DEPLOYMENT_ARTIFACT,
         )
 
 
@@ -217,6 +218,7 @@ class ModelArtifactConfig(ArtifactConfig):
     """
 
     save_to_model_registry: bool = True
+    IS_MODEL_ARTIFACT = True
 
     @validator("save_to_model_registry")
     def _validate_save_to_model_registry(
@@ -228,36 +230,8 @@ class ModelArtifactConfig(ArtifactConfig):
             )
         return save_to_model_registry
 
-    def link_to_model(
-        self,
-        artifact_uuid: UUID,
-    ) -> None:
-        """Link model object to the model version.
-
-        Args:
-            artifact_uuid (UUID): The UUID of the artifact to link.
-        """
-        self._link_to_model_version(
-            artifact_uuid,
-            is_model_object=True,
-            is_deployment=False,
-        )
-
 
 class DeploymentArtifactConfig(ArtifactConfig):
     """Used to link a Deployment to the model version."""
 
-    def link_to_model(
-        self,
-        artifact_uuid: UUID,
-    ) -> None:
-        """Link deployment to the model version.
-
-        Args:
-            artifact_uuid (UUID): The UUID of the artifact to link.
-        """
-        self._link_to_model_version(
-            artifact_uuid,
-            is_model_object=False,
-            is_deployment=True,
-        )
+    IS_DEPLOYMENT_ARTIFACT = True
