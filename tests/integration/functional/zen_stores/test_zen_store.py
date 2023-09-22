@@ -2823,6 +2823,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
 
@@ -2840,6 +2842,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             assert al1.version == 1
@@ -2852,6 +2856,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[1].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             assert al2.version == 2
@@ -2874,6 +2880,8 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             assert al1.version == 1
@@ -2888,6 +2896,8 @@ class TestModelVersionArtifactLinks:
                         name="link",
                         artifact=artifacts[1].id,
                         overwrite=True,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
 
@@ -2906,6 +2916,8 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             assert al1.version == 1
@@ -2924,6 +2936,8 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[1].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             assert al2.version == 1
@@ -2944,6 +2958,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             # id collision
@@ -2956,8 +2972,56 @@ class TestModelVersionArtifactLinks:
                         model_version=model_version.id,
                         name="link2",
                         artifact=artifacts[0].id,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
+
+    def test_link_create_single_version_of_same_output_name_from_different_steps(
+        self,
+    ):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="output",
+                    artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step1",
+                    overwrite=False,
+                )
+            )
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="output",
+                    artifact=artifacts[1].id,
+                    pipeline_name="pipeline",
+                    step_name="step2",
+                    overwrite=False,
+                )
+            )
+
+            links = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    pipeline_name="pipeline",
+                    name="output",
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert links[0].version == links[1].version == 1
+            assert len(links) == 2
 
     def test_link_delete_found(self):
         with ModelVersionContext(True, create_artifacts=1) as (
@@ -2973,6 +3037,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             zs.delete_model_version_artifact_link(
@@ -3037,6 +3103,8 @@ class TestModelVersionArtifactLinks:
                         artifact=artifact.id,
                         is_model_object=mo,
                         is_deployment=dep,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
