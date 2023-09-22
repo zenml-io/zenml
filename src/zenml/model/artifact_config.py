@@ -34,7 +34,14 @@ logger = get_logger(__name__)
 
 
 class ArtifactConfig(BaseModel):
-    """Used to link a generic Artifact to the model version."""
+    """Used to link a generic Artifact to the model version.
+
+    model_name: The name of the model to link artifact to.
+    model_version_name: The name of the model version to link artifact to.
+    model_stage: The stage of the model version to link artifact to.
+    artifact_name: The override name of a link instead of an artifact name.
+    overwrite: Whether to overwrite an existing link or create new versions.
+    """
 
     model_name: Optional[str]
     model_version_name: Optional[str]
@@ -204,7 +211,10 @@ class ArtifactConfig(BaseModel):
 
 
 class ModelArtifactConfig(ArtifactConfig):
-    """Used to link a Model Object to the model version."""
+    """Used to link a Model Object to the model version.
+
+    save_to_model_registry: Whether to save the model object to the model registry.
+    """
 
     save_to_model_registry: bool = True
 
