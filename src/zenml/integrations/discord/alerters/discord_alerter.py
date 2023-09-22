@@ -241,7 +241,10 @@ class DiscordAlerter(BaseAlerter):
                 channel = client.get_channel(int(discord_channel_id))
                 if channel:
                     # Send the message
-                    await channel.send(content=message, embed=embed_blocks)
+                    if embed_blocks:
+                        await channel.send(embed=embed_blocks)  # type: ignore
+                    else:
+                        await channel.send(content=message)  # type: ignore
                     message_sent = True
                 else:
                     logger.error(
@@ -282,7 +285,10 @@ class DiscordAlerter(BaseAlerter):
                 channel = client.get_channel(int(discord_channel_id))
                 if channel:
                     # Send the message
-                    await channel.send(content=message, embed=embed_blocks)
+                    if embed_blocks:
+                        await channel.send(embed=embed_blocks)  # type: ignore
+                    else:
+                        await channel.send(content=message)  # type: ignore
 
                     def check(message: Message) -> bool:
                         if message.channel == channel:
