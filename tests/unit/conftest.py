@@ -60,6 +60,7 @@ from zenml.stack.stack_component import (
 from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
 from zenml.steps.entrypoint_function_utils import StepArtifact
+from zenml.steps.utils import OutputSignature
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -351,6 +352,7 @@ def step_context_with_no_output(
         cache_enabled=True,
         output_materializers={},
         output_artifact_uris={},
+        output_annotations={},
     )
 
 
@@ -362,7 +364,7 @@ def step_context_with_single_output(
 ) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
-
+    annotations = {"output_1": OutputSignature(resolved_annotation=int)}
     StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
@@ -371,6 +373,7 @@ def step_context_with_single_output(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_annotations=annotations,
     )
 
 
@@ -388,6 +391,10 @@ def step_context_with_two_outputs(
         "output_1": "",
         "output_2": "",
     }
+    annotations = {
+        "output_1": OutputSignature(resolved_annotation=int),
+        "output_2": OutputSignature(resolved_annotation=int),
+    }
 
     StepContext._clear()
     return StepContext(
@@ -397,6 +404,7 @@ def step_context_with_two_outputs(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_annotations=annotations,
     )
 
 

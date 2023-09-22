@@ -20,6 +20,7 @@ from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import StepContext
+from zenml.steps.utils import OutputSignature
 
 
 def test_step_context_is_singleton(step_context_with_no_output):
@@ -47,6 +48,11 @@ def test_initialize_step_context_with_mismatched_keys(
     """Tests that initializing a step context with mismatched keys for materializers and artifacts raises an Exception."""
     materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_different_output_name": ""}
+    annotations = {
+        "some_yet_another_output_name": OutputSignature(
+            resolved_annotation=int
+        )
+    }
 
     with pytest.raises(StepContextError):
         StepContext._clear()
@@ -57,6 +63,7 @@ def test_initialize_step_context_with_mismatched_keys(
             cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
+            output_annotations=annotations,
         )
 
 
@@ -68,6 +75,9 @@ def test_initialize_step_context_with_matching_keys(
     """Tests that initializing a step context with matching keys for materializers and artifacts works."""
     materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_output_name": ""}
+    annotations = {
+        "some_output_name": OutputSignature(resolved_annotation=int)
+    }
 
     with does_not_raise():
         StepContext._clear()
@@ -78,6 +88,7 @@ def test_initialize_step_context_with_matching_keys(
             cache_enabled=True,
             output_materializers=materializers,
             output_artifact_uris=artifact_uris,
+            output_annotations=annotations,
         )
 
 
