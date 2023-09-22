@@ -1651,3 +1651,66 @@ def destroy(
                 f"Spec directory for stack '{stack_name}' successfully deleted."
             )
         cli_utils.declare(f"Stack '{stack_name}' successfully destroyed.")
+
+
+@stack.command(
+    "connect",
+    help="Connect a service-connector to a stack's components. "
+    "Note that this only connects the service-connector to the current "
+    "components of the stack and not to the stack itself, which means that "
+    "you need to rerun the command after adding new components to the stack.",
+)
+@click.argument("stack_name_or_id", type=str, required=False)
+@click.option(
+    "--connector",
+    "-c",
+    "connector",
+    help="The name, ID or prefix of the connector to use.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    default=False,
+    help="Configure a service connector resource interactively.",
+    type=click.BOOL,
+)
+@click.option(
+    "--no-verify",
+    "no_verify",
+    is_flag=True,
+    default=False,
+    help="Skip verification of the connector resource.",
+    type=click.BOOL,
+)
+def connect_stack(
+    stack_name_or_id: Optional[str] = None,
+    connector: Optional[str] = None,
+    interactive: bool = False,
+    no_verify: bool = False,
+) -> None:
+    """Connect a service-connector to all components of a stack.
+
+    Args:
+        stack_name_or_id: Name of the stack to connect.
+        connector: The name, ID or prefix of the connector to use.
+        interactive: Configure a service connector resource interactively.
+        no_verify: Skip verification of the connector resource.
+    """
+    from zenml.cli.stack_components import (
+        connect_stack_component_with_service_connector,
+    )
+
+    client = Client()
+    stack_to_connect = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    for component in stack_to_connect.components.values():
+        connect_stack_component_with_service_connector(
+            component_type=component[0].type,
+            name_id_or_prefix=component[0].name,
+            connector=connector,
+            interactive=interactive,
+            no_verify=no_verify,
+        )
