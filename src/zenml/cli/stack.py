@@ -1639,7 +1639,7 @@ def destroy(
 
 
 @stack.command(
-    "connect", help="Connect a service-connector to a stack components."
+    "connect", help="Connect a service-connector to a stack's components."
 )
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.option(
@@ -1647,16 +1647,6 @@ def destroy(
     "-c",
     "connector",
     help="The name, ID or prefix of the connector to use.",
-    required=False,
-    type=str,
-)
-@click.option(
-    "--resource-id",
-    "-r",
-    "resource_id",
-    help="The resource ID to use with the connector. Only required for "
-    "multi-instance connectors that are not already configured with a "
-    "particular resource ID.",
     required=False,
     type=str,
 )
