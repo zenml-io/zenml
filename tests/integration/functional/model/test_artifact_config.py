@@ -365,7 +365,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                     "4",
                     "output",
                 }
-                assert {al.version for al in artifact_links[0]} == {
+                assert {al.link_version for al in artifact_links[0]} == {
                     1
                 }, "some artifacts tracked as higher versions, while all should be version 1"
                 assert artifact_links[1][0].name == "2"
