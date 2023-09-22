@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model WatchTower feature."""
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, validator
@@ -38,14 +38,15 @@ class ArtifactConfig(BaseModel):
 
     model_name: The name of the model to link artifact to.
     model_version_name: The name of the model version to link artifact to.
+        It can be exact version ("23"), stage (ModelStages.PRODUCTION) or None
+        for the latest version.
     model_stage: The stage of the model version to link artifact to.
     artifact_name: The override name of a link instead of an artifact name.
     overwrite: Whether to overwrite an existing link or create new versions.
     """
 
     model_name: Optional[str]
-    model_version_name: Optional[str]
-    model_stage: Optional[ModelStages]
+    model_version_name: Optional[Union[ModelStages, str]]
     artifact_name: Optional[str]
     overwrite: bool = False
 
@@ -53,19 +54,6 @@ class ArtifactConfig(BaseModel):
     _step_name: str = PrivateAttr()
     IS_MODEL_ARTIFACT: ClassVar[bool] = False
     IS_DEPLOYMENT_ARTIFACT: ClassVar[bool] = False
-
-    @validator("model_stage")
-    def _validate_stage(
-        cls, model_stage: ModelStages, values: Dict[str, Any]
-    ) -> ModelStages:
-        if (
-            model_stage is not None
-            and values.get("model_version_name", None) is not None
-        ):
-            raise ValueError(
-                "Cannot set both `model_version_name` and `model_stage`."
-            )
-        return model_stage
 
     @property
     def _model_config(self) -> ModelConfig:
@@ -83,18 +71,13 @@ class ArtifactConfig(BaseModel):
         except StepContextError:
             model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
-        if (
-            self.model_name is not None
-            and (
-                self.model_version_name is not None
-                or self.model_stage is not None
-            )
-        ) and (model_config is None or model_config.name != self.model_name):
+        if (self.model_name is not None) and (
+            model_config is None or model_config.name != self.model_name
+        ):
             # Create a new ModelConfig instance with the provided model name and version
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
                 version=self.model_version_name,
-                stage=self.model_stage,
                 create_new_model_version=False,
             )
             return on_the_fly_config

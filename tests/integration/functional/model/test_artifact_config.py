@@ -682,3 +682,70 @@ def test_link_with_manual_linkage_fail_on_override():
         )
 
         simple_pipeline_with_manual_linkage_fail_on_override()
+
+
+@step
+def step_with_manual_linkage_flexible_config(
+    artifact_config: ArtifactConfig,
+) -> Annotated[int, "1"]:
+    link_output_to_model(artifact_config, "1")
+    return 1
+
+
+@pipeline(enable_cache=False)
+def simple_pipeline_with_manual_linkage_flexible_config(
+    artifact_config: ArtifactConfig,
+):
+    step_with_manual_linkage_flexible_config(artifact_config)
+
+
+@pytest.mark.parametrize(
+    "artifact_config",
+    (
+        ArtifactConfig(model_name=MODEL_NAME, model_version_name="good_one"),
+        ArtifactConfig(
+            model_name=MODEL_NAME, model_version_name=ModelStages.PRODUCTION
+        ),
+        ArtifactConfig(model_name=MODEL_NAME),
+    ),
+    ids=("exact_version", "exact_stage", "latest_version"),
+)
+def test_link_with_manual_linkage_flexible_config(
+    artifact_config: ArtifactConfig,
+):
+    with model_killer():
+        zs = Client().zen_store
+        user = Client().active_user.id
+        ws = Client().active_workspace.id
+
+        # manual creation needed, as we work with specific versions
+        model = zs.create_model(
+            ModelRequestModel(
+                name=MODEL_NAME,
+                user=user,
+                workspace=ws,
+            )
+        )
+        mv = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="good_one",
+                model=model.id,
+            )
+        )
+        mv.set_stage(ModelStages.PRODUCTION)
+
+        simple_pipeline_with_manual_linkage_flexible_config(artifact_config)
+
+        links = zs.list_model_version_artifact_links(
+            ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+                model_id=model.id,
+                model_version_id=mv.id,
+            )
+        )
+        assert len(links) == 1
+        assert links[0].link_version == 1
+        assert links[0].name == "1"
