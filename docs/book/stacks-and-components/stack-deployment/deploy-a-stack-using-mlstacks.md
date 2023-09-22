@@ -102,6 +102,18 @@ like to deploy. For example, using GCP as the provider you might type:
 zenml stack deploy -p gcp -n my_new_stack -r us-east1 --interactive
 ```
 
+## Displaying Terraform outputs for stacks deployed with mlstacks
+
+If you want to view any of the Terraform-generated outputs for a stack deployed
+with `mlstacks`, you can do so with the following command:
+
+```bash
+zenml stack describe -o <STACK_NAME>
+```
+
+This will print any available outputs to the console if you have deployed a
+stack with `mlstacks` via ZenML.
+
 ## Deleting / destroying resources
 
 🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud.
