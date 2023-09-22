@@ -70,7 +70,7 @@ class ModelConfigModel(ModelBaseModel):
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    recovery: Whether to keep failed runs with new versions for later recovery from it.
+    recovery: Whether to keep new model versions from failed runs for later recovery.
     """
 
     version: Optional[Union["ModelStages", str]] = Field(
