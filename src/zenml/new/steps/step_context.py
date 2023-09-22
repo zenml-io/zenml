@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
     from zenml.stack.stack import Stack
-    from zenml.steps.utils import OutputSignature
 
 logger = get_logger(__name__)
 
@@ -92,9 +91,9 @@ class StepContext(metaclass=SingletonMetaClass):
         step_run: "StepRunResponseModel",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
+        output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
-        output_annotations: Dict[str, "OutputSignature"],
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -105,7 +104,7 @@ class StepContext(metaclass=SingletonMetaClass):
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
                 context is used in.
-            output_annotations: The output annotations of the step that this
+            output_artifact_configs: The outputs' ArtifactConfigs of the step that this
                 context is used in.
             step_run_info: (Deprecated) info about the currently running step.
             cache_enabled: (Deprecated) Whether caching is enabled for the step.
@@ -136,9 +135,9 @@ class StepContext(metaclass=SingletonMetaClass):
             )
         self._outputs = {
             key: StepContextOutput(
-                output_materializers[key],
-                output_artifact_uris[key],
-                output_annotation=output_annotations[key],
+                materializer_classes=output_materializers[key],
+                artifact_uri=output_artifact_uris[key],
+                artifact_config=output_artifact_configs[key],
             )
             for key in output_materializers.keys()
         }
@@ -431,23 +430,12 @@ class StepContext(metaclass=SingletonMetaClass):
         """
         output = self._get_output(output_name)
 
-        if output.output_annotation.artifact_config is None:
-            output.output_annotation.artifact_config = artifact_config
+        if output.artifact_config is None:
+            output.artifact_config = artifact_config
         else:
             raise EntityExistsError(
                 f"Output with name '{output_name}' already has artifact config."
             )
-
-    def _get_output_annotations(self) -> Dict[str, "OutputSignature"]:
-        """Returns the output annotations of the step.
-
-        Returns:
-            The output annotations of the step.
-        """
-        return {
-            output_name: output.output_annotation
-            for output_name, output in self._outputs.items()
-        }
 
 
 class StepContextOutput:
@@ -456,13 +444,13 @@ class StepContextOutput:
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
     metadata: Optional[Dict[str, "MetadataType"]] = None
-    output_annotation: "OutputSignature"
+    artifact_config: Optional["ArtifactConfig"]
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
-        output_annotation: "OutputSignature",
+        artifact_config: "ArtifactConfig",
     ):
         """Initialize the step output.
 
@@ -473,4 +461,4 @@ class StepContextOutput:
         """
         self.materializer_classes = materializer_classes
         self.artifact_uri = artifact_uri
-        self.output_annotation = output_annotation
+        self.artifact_config = artifact_config
