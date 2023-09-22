@@ -51,6 +51,7 @@ from zenml.exceptions import (
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
 from zenml.models import StackFilterModel
+from zenml.models.stack_models import StackResponseModel
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -782,17 +783,29 @@ def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     type=click.STRING,
     required=False,
 )
-def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
+@click.option(
+    "--outputs",
+    "-o",
+    is_flag=True,
+    default=False,
+    help="Include the outputs from mlstacks deployments.",
+)
+def describe_stack(
+    stack_name_or_id: Optional[str] = None, outputs: bool = False
+) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
         stack_name_or_id: Name of the stack to describe.
+        outputs: Include the outputs from mlstacks deployments.
     """
     client = Client()
 
     with console.status("Describing the stack...\n"):
         try:
-            stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+            stack_: StackResponseModel = client.get_stack(
+                name_id_or_prefix=stack_name_or_id
+            )
         except KeyError as err:
             cli_utils.error(str(err))
 
@@ -800,6 +813,8 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
             stack=stack_,
             active=stack_.id == client.active_stack_model.id,
         )
+        if outputs:
+            cli_utils.print_stack_outputs(stack_)
 
     print_model_url(get_stack_url(stack_))
 
