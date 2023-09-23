@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
+        PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
         ServiceConnectorSchema,
         StackComponentSchema,
         StackSchema,
+        StepRunSchema,
         TeamSchema,
         UserRoleAssignmentSchema,
     )
@@ -69,6 +71,8 @@ class UserSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="user",
     )
+    runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     run_metadata: List["RunMetadataSchema"] = Relationship(
