@@ -162,7 +162,6 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     Args:
         pipeline_run: The model of the current pipeline run.
     """
-    assert pipeline_run.num_steps is not None
     client = Client()
     steps_in_current_run = depaginate(
         partial(client.list_run_steps, pipeline_run_id=pipeline_run.id)
@@ -170,7 +169,7 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
 
     new_status = get_pipeline_run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run],
-        num_steps=pipeline_run.num_steps,
+        num_steps=len(pipeline_run.steps),
     )
 
     if new_status != pipeline_run.status:
