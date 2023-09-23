@@ -210,7 +210,7 @@ PipelineDeploymentResponseModel.update_forward_refs(
 )
 
 PipelineDeploymentRequestModel.update_forward_refs(
-    CodeReferenceRequestModel=CodeReferenceRequestModel
+    CodeReferenceRequestModel=CodeReferenceRequestModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -220,8 +220,12 @@ PipelineRunResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
-    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
     StepRunResponseModel=StepRunResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
+    CodeReferenceResponseModel=CodeReferenceResponseModel,
+)
+PipelineRunRequestModel.update_forward_refs(
+    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
@@ -229,6 +233,9 @@ StepRunResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
+)
+StepRunRequestModel.update_forward_refs(
+    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(
