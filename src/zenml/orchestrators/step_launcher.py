@@ -151,7 +151,6 @@ class StepLauncher:
         # Enable or disable step logs storage
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
-
         else:
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
@@ -197,8 +196,7 @@ class StepLauncher:
                 step_run = StepRunRequestModel(
                     name=self._step_name,
                     pipeline_run_id=pipeline_run.id,
-                    config=self._step.config,
-                    spec=self._step.spec,
+                    deployment=self._deployment,
                     status=ExecutionStatus.RUNNING,
                     docstring=docstring,
                     source_code=source_code,
@@ -299,25 +297,9 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            stack=self._deployment.stack.id
-            if self._deployment.stack
-            else None,
-            pipeline=self._deployment.pipeline.id
-            if self._deployment.pipeline
-            else None,
-            build=self._deployment.build.id
-            if self._deployment.build
-            else None,
-            deployment=self._deployment.id,
-            schedule_id=self._deployment.schedule.id
-            if self._deployment.schedule
-            else None,
+            deployment=self._deployment,
             status=ExecutionStatus.RUNNING,
-            config=self._deployment.pipeline_configuration,
-            num_steps=len(self._deployment.step_configurations),
-            client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
-            server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
