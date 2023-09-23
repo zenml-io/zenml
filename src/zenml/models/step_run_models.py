@@ -32,6 +32,7 @@ from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
 if TYPE_CHECKING:
     from zenml.models import (
         ArtifactResponseModel,
+        PipelineDeploymentResponseModel,
         PipelineRunResponseModel,
         RunMetadataResponseModel,
     )
@@ -49,22 +50,22 @@ class StepRunBaseModel(BaseModel):
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    config: StepConfiguration = Field(title="The configuration of the step.")
-    spec: StepSpec = Field(title="The spec of the step.")
-    pipeline_run_id: UUID = Field(
-        title="The ID of the pipeline run that this step run belongs to.",
+    start_time: Optional[datetime] = Field(
+        title="The start time of the step run.",
+        default=None,
     )
-    original_step_run_id: Optional[UUID] = Field(
-        title="The ID of the original step run if this step was cached.",
+    end_time: Optional[datetime] = Field(
+        title="The end time of the step run.",
         default=None,
     )
     status: ExecutionStatus = Field(title="The status of the step.")
-    parent_step_ids: List[UUID] = Field(
-        title="The IDs of the parent steps of this step run.",
-        default_factory=list,
-    )
     cache_key: Optional[str] = Field(
         title="The cache key of the step run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    code_hash: Optional[str] = Field(
+        title="The code hash of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -78,13 +79,17 @@ class StepRunBaseModel(BaseModel):
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    start_time: Optional[datetime] = Field(
-        title="The start time of the step run.",
+    pipeline_run_id: UUID = Field(
+        title="The ID of the pipeline run that this step run belongs to.",
+    )
+
+    original_step_run_id: Optional[UUID] = Field(
+        title="The ID of the original step run if this step was cached.",
         default=None,
     )
-    end_time: Optional[datetime] = Field(
-        title="The end time of the step run.",
-        default=None,
+    parent_step_ids: List[UUID] = Field(
+        title="The IDs of the parent steps of this step run.",
+        default_factory=list,
     )
 
 
@@ -111,6 +116,12 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     logs: Optional["LogsResponseModel"] = Field(
         title="Logs associated with this step run.",
         default=None,
+    )
+    config: "StepConfiguration" = Field(title="The configuration of the step.")
+    spec: "StepSpec" = Field(title="The spec of the step.")
+
+    deployment_id: UUID = Field(
+        title="The deployment associated with the step run."
     )
 
     @property
@@ -248,6 +259,7 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
         title="Logs associated with this step run.",
         default=None,
     )
+    deployment: "PipelineDeploymentResponseModel"
 
 
 # ------ #
