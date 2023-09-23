@@ -200,7 +200,7 @@ class StepRunSchema(NamedSchema, table=True):
             original_step_run_id=self.original_step_run_id,
             parent_step_ids=[p.parent_id for p in self.parents],
             # Attributes from the WorkspaceScopedResponseModel
-            user=self.deployment.user.to_model()
+            user=self.deployment.user.to_model(_block_recursion=True)
             if self.deployment.user
             else None,
             workspace=self.deployment.workspace.to_model(),
