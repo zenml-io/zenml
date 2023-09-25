@@ -20,6 +20,7 @@ import pkg_resources
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.stack.flavor import Flavor
+from zenml.utils.integration_utils import parse_requirement
 
 logger = get_logger(__name__)
 
@@ -63,7 +64,34 @@ class Integration(metaclass=IntegrationMeta):
         """
         try:
             for r in cls.get_requirements():
-                pkg_resources.get_distribution(r)
+                name, extras = parse_requirement(r)
+                if name:
+                    dist = pkg_resources.get_distribution(name)
+                    # Check if extras are specified and installed
+                    if extras:
+                        extra_list = extras[1:-1].split(",")
+                        for extra in extra_list:
+                            try:
+                                requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
+                            except pkg_resources.UnknownExtra as e:
+                                logger.debug("Unknown extra: " + str(e))
+                                return False
+
+                            for ri in requirements:
+                                try:
+                                    pkg_resources.get_distribution(ri)
+                                except IndexError:
+                                    logger.debug(
+                                        f"Unable to find required extra '{ri.project_name}' for "
+                                        f"requirements '{name}' coming from integration '{cls.NAME}'."
+                                    )
+                                    return False
+                else:
+                    logger.debug(
+                        f"Invalid requirement format '{r}' for integration {cls.NAME}."
+                    )
+                    return False
+
             logger.debug(
                 f"Integration {cls.NAME} is installed correctly with "
                 f"requirements {cls.get_requirements()}."

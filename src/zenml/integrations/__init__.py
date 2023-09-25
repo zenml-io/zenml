@@ -55,6 +55,9 @@ from zenml.integrations.s3 import S3Integration  # noqa
 from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
+from zenml.integrations.skypilot import SkypilotAWSIntegration  # noqa
+from zenml.integrations.skypilot import SkypilotGCPIntegration  # noqa
+from zenml.integrations.skypilot import SkypilotAzureIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
