@@ -23,7 +23,7 @@ from zenml.integrations.discord.steps.discord_alerter_post_step import (
 )
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def discord_post_pipeline():
     """Train and evaluate a model and post the test accuracy to Discord."""
     X_train, X_test, y_train, y_test = digits_data_loader()
