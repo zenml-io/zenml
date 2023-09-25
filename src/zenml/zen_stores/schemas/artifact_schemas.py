@@ -149,7 +149,9 @@ class ArtifactSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
-            user=self.user.to_model(_block_recursion=True) if self.user else None,
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
+            else None,
             workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
