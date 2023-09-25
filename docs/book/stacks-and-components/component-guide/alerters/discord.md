@@ -65,19 +65,35 @@ zenml alerter register discord_alerter \
     --default_discord_channel_id=<DISCORD_CHANNEL_ID>
 ```
 
-Here is where you can find the required parameters:
-
-* `<DISCORD_CHANNEL_ID>`: Open the discord server, then right-click on the text channel and click on the 'Copy Channel ID' 
-option.
-* `<DISCORD_TOKEN>`: This is the Discord token of your bot. You can find the instructions to set up and copy token 
-[here](https://discordpy.readthedocs.io/en/latest/discord.html).
-
-
 After you have registered the `discord_alerter`, you can add it to your stack like this:
 
 ```shell
 zenml stack register ... -al discord_alerter
 ```
+
+Here is where you can find the required parameters:
+
+#### DISCORD_CHANNEL_ID
+
+Open the discord server, then right-click on the text channel and click on the 
+'Copy Channel ID' option.
+
+{% hint style="info" %}
+If you don't see any 'Copy Channel ID' option for your channel, go to "User Settings" > "Advanced" and make sure "Developer Mode" is active.
+{% endhint %}
+
+#### DISCORD_TOKEN
+
+This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token
+[here](https://discordpy.readthedocs.io/en/latest/discord.html).
+
+{% hint style="warning" %}
+When inviting the bot to your channel, make sure it has at least the following
+permissions: 
+* Read Messages/View Channels
+* Send Messages
+* Send Messages in Threads
+{% endhint %}
 
 ### How to Use the Discord Alerter
 
