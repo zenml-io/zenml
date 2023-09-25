@@ -176,6 +176,12 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Pipeline associated with the Pipeline Run"
     )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Pipeline Run"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created the Pipeline Run"
+    )
     stack_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
