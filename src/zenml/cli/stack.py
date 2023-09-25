@@ -35,11 +35,13 @@ from zenml.cli.utils import (
     print_model_url,
     print_page_info,
     print_stacks_table,
+    verify_mlstacks_prerequisites_installation,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.constants import (
     ALPHA_MESSAGE,
+    MLSTACKS_SUPPORTED_STACK_COMPONENTS,
     STACK_RECIPE_MODULAR_RECIPES,
 )
 from zenml.enums import CliCategories, StackComponentType
@@ -1292,6 +1294,105 @@ def register_secrets(
         secrets_manager.update_secret(secret)
 
 
+def _get_deployment_params_interactively(
+    click_params: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Get deployment values from command line arguments.
+
+    Args:
+        click_params: Required and pre-existing values.
+
+    Returns:
+        Full deployment arguments.
+    """
+    deployment_values = {
+        "provider": click_params["provider"],
+        "stack_name": click_params["stack_name"],
+        "region": click_params["region"],
+    }
+    for component_type in MLSTACKS_SUPPORTED_STACK_COMPONENTS:
+        verify_mlstacks_prerequisites_installation()
+        from mlstacks.constants import ALLOWED_FLAVORS
+
+        if (
+            click.prompt(
+                f"Enable {component_type}?",
+                type=click.Choice(["y", "n"]),
+                default="n",
+            )
+            == "y"
+        ):
+            component_flavor = click.prompt(
+                f"  Enter {component_type} flavor",
+                type=click.Choice(ALLOWED_FLAVORS[component_type]),
+            )
+            deployment_values[component_type] = component_flavor
+
+    if (
+        click.prompt(
+            "Deploy using debug_mode?",
+            type=click.Choice(["y", "n"]),
+            default="n",
+        )
+        == "y"
+    ):
+        deployment_values["debug_mode"] = True
+
+    extra_config = []
+    # use click.prompt to populate extra_config until someone just hits enter
+    while True:
+        declare(
+            "\nAdd to extra_config for stack deployment -->\n",
+            bold=True,
+        )
+        key = click.prompt(
+            "Enter `extra_config` key or hit enter to skip",
+            type=str,
+            default="",
+        )
+        if key == "":
+            break
+        value = click.prompt(
+            f"Enter value for '{key}'",
+            type=str,
+        )
+        extra_config.append(f"{key}={value}")
+
+    # get mandatory GCP project_id if provider is GCP
+    # skip if project_id already specified in extra_config
+    if click_params["provider"] == "gcp" and not any(
+        s.startswith("project_id=") for s in extra_config
+    ):
+        project_id = click.prompt("What is your GCP project_id?", type=str)
+        extra_config.append(f"project_id={project_id}")
+        declare(f"Project ID '{project_id}' added to extra_config.")
+
+    deployment_values["extra_config"] = extra_config
+
+    tags = []
+    # use click.prompt to populate tags until someone just hits enter
+    while True:
+        declare(
+            "\nAdd to tags for stack deployment -->\n",
+            bold=True,
+        )
+        tag = click.prompt(
+            "Enter `tags` key or hit enter to skip",
+            type=str,
+            default="",
+        )
+        if tag == "":
+            break
+        value = click.prompt(
+            f"Enter value for '{tag}'",
+            type=str,
+        )
+        tags.append(f"{tag}={value}")
+    deployment_values["tags"] = tags
+
+    return deployment_values
+
+
 @stack.command(help="Deploy a stack using mlstacks.")
 @click.option(
     "--provider",
@@ -1416,6 +1517,14 @@ def register_secrets(
     help="Pass one or more tags.",
     multiple=True,
 )
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    default=False,
+    help="Deploy the stack interactively.",
+)
 @click.pass_context
 def deploy(
     ctx: click.Context,
@@ -1434,6 +1543,7 @@ def deploy(
     debug_mode: bool = False,
     tags: Optional[List[str]] = None,
     extra_config: Optional[List[str]] = None,
+    interactive: bool = False,
 ) -> None:
     """Deploy a stack with mlstacks.
 
@@ -1464,6 +1574,7 @@ def deploy(
             deployment.
         mlops_platform: The flavor of MLOps platform to use.
         region: The region to deploy the stack to.
+        interactive: Deploy the stack interactively.
     """
     with track_handler(
         event=AnalyticsEvent.DEPLOY_STACK,
@@ -1485,6 +1596,8 @@ def deploy(
 
         if not file:
             cli_params: Dict[str, Any] = ctx.params
+            if interactive:
+                cli_params = _get_deployment_params_interactively(cli_params)
             stack, components = convert_click_params_to_mlstacks_primitives(
                 cli_params
             )
