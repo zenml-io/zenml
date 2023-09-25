@@ -1012,7 +1012,7 @@ class BaseStep(metaclass=BaseStepMeta):
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
-                if output_annotation is Any:
+                if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name][
                         "default_materializer_source"
