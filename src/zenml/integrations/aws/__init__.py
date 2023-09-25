@@ -37,6 +37,7 @@ class AWSIntegration(Integration):
     REQUIREMENTS = [
         "sagemaker==2.117.0",
         "kubernetes",
+        "aws-profile-manager",
     ]
 
     @staticmethod
