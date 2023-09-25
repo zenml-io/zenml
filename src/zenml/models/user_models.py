@@ -221,9 +221,9 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # even when the user or password is not set, we still want to execute
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        password_hash: str = ""
+        password_hash: Optional[str] = None
         if user is not None and user.password is not None:  # and user.active:
-            password_hash = user.get_hashed_password() or ""
+            password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
         return pwd_context.verify(plain_password, password_hash)
 

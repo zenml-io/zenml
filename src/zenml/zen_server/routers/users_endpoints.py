@@ -203,11 +203,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             user_update=user_update,
         )
 
-
-# When the auth scheme is set to EXTERNAL, users cannot be managed via the
-# API.
-if server_config().auth_scheme != AuthScheme.EXTERNAL:
-
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
         response_model=UserResponseModel,

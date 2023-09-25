@@ -660,8 +660,14 @@ def connect(
     from zenml.config.store_config import StoreConfiguration
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    # Raise an error if a local server is running when trying to connect.
-    if get_active_deployment(local=True):
+    # Raise an error if a local server is running when trying to connect to
+    # another server
+    active_deployment = get_active_deployment(local=True)
+    if (
+        active_deployment
+        and active_deployment.status
+        and active_deployment.status.url != url
+    ):
         cli_utils.error(
             "You're trying to connect to a remote ZenML server but already "
             "have a local server running. This can lead to unexpected "
