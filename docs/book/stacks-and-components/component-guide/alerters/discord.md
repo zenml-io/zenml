@@ -49,7 +49,7 @@ Then, you need to [create a Discord App with a bot in your server](https://disco
 
 {% hint style="info" %}
 Note in the bot token copy step, if you don't find the copy button then click on reset token to reset the bot 
-,and you will get a new token which you can use. Also, make sure you give necessary permissions to the bot 
+and you will get a new token which you can use. Also, make sure you give necessary permissions to the bot 
 required for sending and receiving messages.
 {% endhint %}
 
