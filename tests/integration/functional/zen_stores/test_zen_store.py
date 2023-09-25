@@ -1037,10 +1037,11 @@ def test_list_runs_is_ordered():
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-        pipelines = store.list_runs(
-            PipelineRunFilterModel(size=num_pipelines_before + num_runs)
-        ).items
-        assert len(pipelines) == num_pipelines_before + num_runs
+        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        assert (
+            store.list_runs(PipelineRunFilterModel()).total
+            == num_pipelines_before + num_runs
+        )
         assert all(
             pipelines[i].created <= pipelines[i + 1].created
             for i in range(len(pipelines) - 1)
@@ -1121,7 +1122,8 @@ def test_deleting_run_deletes_steps():
         run_id = runs[0].id
         store.delete_run(run_id)
         assert (
-            len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+            store.list_run_steps(StepRunFilterModel()).total
+            == num_steps_before
         )
 
 
