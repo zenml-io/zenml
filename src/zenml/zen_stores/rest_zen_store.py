@@ -73,13 +73,12 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import SecretsStoreType, StoreType
+from zenml.enums import ModelStages, SecretsStoreType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model.model_stages import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,

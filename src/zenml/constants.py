@@ -293,3 +293,6 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "mlops_platform",
     "step_operator",
 ]
+
+# Model WatchTower constants
+RUNNING_MODEL_VERSION = "running"
