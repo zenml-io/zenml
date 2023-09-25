@@ -1034,14 +1034,12 @@ class BaseStep(metaclass=BaseStepMeta):
                         )
                     )
                 else:
-                    output_types = (output_annotation,)
+                    output_types = (output_annotation.resolved_annotation,)
 
                 materializer_sources = []
 
                 for output_type in output_types:
-                    materializer_class = materializer_registry[
-                        output_type.resolved_annotation
-                    ]
+                    materializer_class = materializer_registry[output_type]
                     materializer_sources.append(
                         source_utils.resolve(materializer_class)
                     )
