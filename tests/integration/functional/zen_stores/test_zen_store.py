@@ -1037,7 +1037,9 @@ def test_list_runs_is_ordered():
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        pipelines = store.list_runs(
+            PipelineRunFilterModel(size=num_pipelines_before + num_runs)
+        ).items
         assert len(pipelines) == num_pipelines_before + num_runs
         assert all(
             pipelines[i].created <= pipelines[i + 1].created
