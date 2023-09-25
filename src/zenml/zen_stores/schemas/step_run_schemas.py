@@ -288,6 +288,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+
+    # Relationships
+    step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
     artifact: "ArtifactSchema" = Relationship()
 
 
@@ -309,6 +312,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target="artifact",  # TODO: Find a way for ArtifactSchema.__tablename__
@@ -318,4 +322,9 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    artifact: "ArtifactSchema" = Relationship()
+
+    # Relationship
+    step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
+    artifact: "ArtifactSchema" = Relationship(
+        back_populates="output_of_step_runs"
+    )

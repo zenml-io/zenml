@@ -36,7 +36,6 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -67,7 +66,6 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
@@ -84,9 +82,7 @@ class ArtifactSchema(NamedSchema, table=True):
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    output_to_step_runs: List["StepRunSchema"] = Relationship(
-        link_model=StepRunOutputArtifactSchema,
-    )
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship()
     visualizations: List["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -140,9 +136,9 @@ class ArtifactSchema(NamedSchema, table=True):
 
         producer_step_run_id = None
 
-        for step_run in self.output_to_step_runs:
-            if step_run.status == ExecutionStatus.COMPLETED:
-                producer_step_run_id = step_run.id
+        for step_run in self.output_of_step_runs:
+            if step_run.step_run.status == ExecutionStatus.COMPLETED:
+                producer_step_run_id = step_run.step_run.id
                 break
 
         return ArtifactResponseModel(
