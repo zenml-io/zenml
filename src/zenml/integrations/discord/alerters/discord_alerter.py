@@ -196,6 +196,12 @@ class DiscordAlerter(BaseAlerter):
 
         """
         loop = asyncio.get_event_loop()
+
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop = asyncio.get_event_loop()
+
         timeout_seconds = 60
         # Run the bot with a timeout
         try:
