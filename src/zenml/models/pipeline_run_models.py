@@ -207,10 +207,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     end_time: Optional[Union[datetime, str]] = Field(
         default=None, description="End time for this run"
     )
-    num_steps: Optional[int] = Field(
-        default=None,
-        description="Amount of steps in the Pipeline Run",
-    )
     unlisted: Optional[bool] = None
 
     def generate_filter(
@@ -241,12 +237,13 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
 
             base_filter = operator(base_filter, unlisted_filter)
 
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+        )
+
         if self.code_repository_id:
-            from zenml.zen_stores.schemas import (
-                CodeReferenceSchema,
-                PipelineDeploymentSchema,
-                PipelineRunSchema,
-            )
+            from zenml.zen_stores.schemas import CodeReferenceSchema
 
             code_repo_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
@@ -255,8 +252,37 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
             )
-
             base_filter = operator(base_filter, code_repo_filter)
+
+        if self.stack_id:
+            from zenml.zen_stores.schemas import StackSchema
+
+            stack_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                StackSchema.id == self.stack_id,
+            )
+            base_filter = operator(base_filter, stack_filter)
+
+        if self.schedule_id:
+            from zenml.zen_stores.schemas import ScheduleSchema
+
+            schedule_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
+                ScheduleSchema.id == self.schedule_id,
+            )
+            base_filter = operator(base_filter, schedule_filter)
+
+        if self.build_id:
+            from zenml.zen_stores.schemas import PipelineBuildSchema
+
+            pipeline_build_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
+                PipelineBuildSchema.id == self.build_id,
+            )
+            base_filter = operator(base_filter, pipeline_build_filter)
 
         return base_filter
 

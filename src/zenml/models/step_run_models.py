@@ -199,10 +199,6 @@ class StepRunFilterModel(WorkspaceScopedFilterModel):
         default=None,
         description="Name of the step run",
     )
-    entrypoint_name: Optional[str] = Field(
-        default=None,
-        description="Entrypoint name of the step run",
-    )
     code_hash: Optional[str] = Field(
         default=None,
         description="Code hash for this step run",
@@ -232,10 +228,6 @@ class StepRunFilterModel(WorkspaceScopedFilterModel):
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of this step run"
-    )
-    num_outputs: Optional[int] = Field(
-        default=None,
-        description="Amount of outputs for this Step Run",
     )
 
 
