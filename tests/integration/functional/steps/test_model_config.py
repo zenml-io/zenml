@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import contextmanager
+from unittest import mock
 
 import pytest
 from typing_extensions import Annotated
@@ -319,3 +320,88 @@ def test_clean_up_after_failure():
                 model_name_or_id=model.id,
                 model_version_name_or_id=RUNNING_MODEL_VERSION,
             )
+
+
+@step(model_config=ModelConfig(name="foo", create_new_model_version=True))
+def _new_version_step():
+    return 1
+
+
+@step
+def _no_model_config_step():
+    return 1
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name="foo", create_new_model_version=True),
+)
+def _new_version_pipeline_overridden_warns():
+    _new_version_step()
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name="foo", create_new_model_version=True),
+)
+def _new_version_pipeline_not_warns():
+    _no_model_config_step()
+
+
+@pipeline(enable_cache=False)
+def _no_new_version_pipeline_not_warns():
+    _new_version_step()
+
+
+@pipeline(enable_cache=False)
+def _no_new_version_pipeline_warns_on_steps():
+    _new_version_step()
+    _new_version_step()
+
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(name="foo", create_new_model_version=True),
+)
+def _new_version_pipeline_warns_on_steps():
+    _new_version_step()
+    _no_model_config_step()
+
+
+@pytest.mark.parametrize(
+    "pipeline, expected_warning",
+    [
+        (
+            _new_version_pipeline_overridden_warns,
+            "is overridden in all steps",
+        ),
+        (_new_version_pipeline_not_warns, ""),
+        (_no_new_version_pipeline_not_warns, ""),
+        (
+            _no_new_version_pipeline_warns_on_steps,
+            "`create_new_model_version` is configured only in one",
+        ),
+        (
+            _new_version_pipeline_warns_on_steps,
+            "`create_new_model_version` is configured only in one",
+        ),
+    ],
+    ids=[
+        "Pipeline with one step, which overrides model_config - warns that pipeline conf is useless.",
+        "Configuration in pipeline only - not warns.",
+        "Configuration in step only - not warns.",
+        "Two steps ask to create new versions - warning to keep it in one place.",
+        "Pipeline and one of the steps ask to create new versions - warning to keep it in one place.",
+    ],
+)
+def test_multiple_definitions_create_new_version_warns(
+    pipeline, expected_warning
+):
+    """Test that setting conflicting model configurations are raise warnings to user."""
+    with mock.patch("zenml.new.pipelines.pipeline.logger.warning") as logger:
+        pipeline()
+        if expected_warning:
+            logger.assert_called_once()
+            assert expected_warning in logger.call_args[0][0]
+        else:
+            logger.assert_not_called()
