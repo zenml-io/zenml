@@ -762,7 +762,7 @@ class Pipeline:
         Returns:
             A dict of dicts containing requestors of new version and if it should be kept on failure.
         """
-        new_version_requests: Dict[str, Dict[str, Any]] = {}
+        new_versions_requested: Dict[str, Dict[str, Any]] = {}
         all_steps_have_own_config = True
         for step_invocation in self.invocations.values():
             step_model_config = (
@@ -778,14 +778,16 @@ class Pipeline:
                 and step_model_config.create_new_model_version
             ):
                 model_name = step_model_config.name
-                new_version_requests[model_name] = new_version_requests.get(
+                new_versions_requested[
+                    model_name
+                ] = new_versions_requested.get(
                     model_name,
                     {"requesters": [], "delete_new_version_on_failure": True},
                 )
-                new_version_requests[model_name]["requesters"].append(
+                new_versions_requested[model_name]["requesters"].append(
                     f"Step: {step_invocation.step.name}"
                 )
-                new_version_requests[model_name][
+                new_versions_requested[model_name][
                     "delete_new_version_on_failure"
                 ] &= step_model_config.delete_new_version_on_failure
         if not all_steps_have_own_config:
@@ -794,23 +796,23 @@ class Pipeline:
                 pipeline_model_config
                 and pipeline_model_config.create_new_model_version
             ):
-                new_version_requests[
+                new_versions_requested[
                     pipeline_model_config.name
-                ] = new_version_requests.get(
+                ] = new_versions_requested.get(
                     pipeline_model_config.name,
                     {"requesters": [], "delete_new_version_on_failure": True},
                 )
-                new_version_requests[pipeline_model_config.name][
+                new_versions_requested[pipeline_model_config.name][
                     "requesters"
                 ].append(f"Pipeline: {self.name}")
-                new_version_requests[pipeline_model_config.name][
+                new_versions_requested[pipeline_model_config.name][
                     "delete_new_version_on_failure"
                 ] &= pipeline_model_config.delete_new_version_on_failure
         elif self.configuration.model_config_model is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
-        for model_name, data in new_version_requests.items():
+        for model_name, data in new_versions_requested.items():
             if len(data["requesters"]) > 1:
                 logger.warning(
                     f"New version of model `{model_name}` requested in multiple decorators:\n"
@@ -818,7 +820,7 @@ class Pipeline:
                     "only in one place of the pipeline."
                 )
 
-        return new_version_requests
+        return new_versions_requested
 
     def register_running_versions(
         self, new_version_requests: Dict[str, Dict[str, Any]]
