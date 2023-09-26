@@ -15,11 +15,13 @@
 from contextlib import contextmanager
 
 import pytest
+from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ModelConfig
+from zenml.model.artifact_config import ArtifactConfig
+from zenml.model.model_config import ModelConfig
 
 
 @contextmanager
@@ -221,3 +223,99 @@ def test_create_new_version_only_in_pipeline():
 
         foo_version = zs.get_model_version("bar")
         assert foo_version.version == "2"
+
+
+@step
+def _this_step_produces_output() -> (
+    Annotated[int, "data", ArtifactConfig(overwrite=False)]
+):
+    return 1
+
+
+@step
+def _this_step_tries_to_recover(run_number: int):
+    zs = Client().zen_store
+    mv = zs.get_model_version(
+        model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
+    )
+    assert (
+        len(mv.artifact_object_ids["data"]) == run_number
+    ), "expected AssertionError"
+
+    raise Exception("make pipeline fail")
+
+
+def test_recovery_of_steps():
+    """Test that model config can recover states after previous fails."""
+
+    @pipeline(
+        name="bar",
+        enable_cache=False,
+        model_config=ModelConfig(
+            name="foo",
+            create_new_model_version=True,
+            delete_new_version_on_failure=False,
+        ),
+    )
+    def _this_pipeline_will_recover(run_number: int):
+        _this_step_produces_output()
+        _this_step_tries_to_recover(
+            run_number, after=["_this_step_produces_output"]
+        )
+
+    with model_killer("foo"):
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.get_model("foo")
+
+        with pytest.raises(Exception, match="make pipeline fail"):
+            _this_pipeline_will_recover(1)
+        with pytest.raises(Exception, match="make pipeline fail"):
+            _this_pipeline_will_recover(2)
+        with pytest.raises(Exception, match="make pipeline fail"):
+            _this_pipeline_will_recover(3)
+
+        model = zs.get_model("foo")
+        mv = zs.get_model_version(
+            model_name_or_id=model.id,
+            model_version_name_or_id=RUNNING_MODEL_VERSION,
+        )
+        assert mv.version == RUNNING_MODEL_VERSION
+        assert len(mv.artifact_object_ids) == 1
+        assert len(mv.artifact_object_ids["data"]) == 3
+
+
+def test_clean_up_after_failure():
+    """Test that hanging `running` versions are cleaned-up after failure."""
+
+    @pipeline(
+        name="bar",
+        enable_cache=False,
+        model_config=ModelConfig(
+            name="foo",
+            create_new_model_version=True,
+            delete_new_version_on_failure=True,
+        ),
+    )
+    def _this_pipeline_will_not_recover(run_number: int):
+        _this_step_produces_output()
+        _this_step_tries_to_recover(
+            run_number, after=["_this_step_produces_output"]
+        )
+
+    with model_killer("foo"):
+        zs = Client().zen_store
+        with pytest.raises(KeyError):
+            zs.get_model("foo")
+
+        with pytest.raises(Exception, match="make pipeline fail"):
+            _this_pipeline_will_not_recover(1)
+        with pytest.raises(AssertionError, match="expected AssertionError"):
+            _this_pipeline_will_not_recover(2)
+
+        model = zs.get_model("foo")
+        with pytest.raises(KeyError):
+            zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id=RUNNING_MODEL_VERSION,
+            )

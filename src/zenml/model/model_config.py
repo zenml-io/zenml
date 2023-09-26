@@ -38,7 +38,7 @@ class ModelConfig(ModelConfigModel):
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    recovery: Whether to keep failed runs with new versions for later recovery from it.
+    delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
     """
 
     _model: Optional["ModelResponseModel"] = PrivateAttr(default=None)
@@ -61,16 +61,16 @@ class ModelConfig(ModelConfigModel):
             values["version"] = RUNNING_MODEL_VERSION
         return create_new_model_version
 
-    @validator("recovery")
+    @validator("delete_new_version_on_failure")
     def _validate_recovery(
-        cls, recovery: bool, values: Dict[str, Any]
+        cls, delete_new_version_on_failure: bool, values: Dict[str, Any]
     ) -> bool:
-        if recovery:
+        if not delete_new_version_on_failure:
             if not values.get("create_new_model_version", False):
                 logger.warning(
-                    "Using `recovery` flag without `create_new_model_version=True` has no effect."
+                    "Using `delete_new_version_on_failure=False` without `create_new_model_version=True` has no effect."
                 )
-        return recovery
+        return delete_new_version_on_failure
 
     @validator("version")
     def _validate_version(
@@ -161,16 +161,8 @@ class ModelConfig(ModelConfigModel):
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
-            if not self.recovery:
-                raise RuntimeError(
-                    f"Model version `{self.version}` already exists, but recovery is disabled."
-                )
             self._model_version = mv
         except KeyError:
-            if self.recovery:
-                logger.warning(
-                    f"Recovery mode: No `{self.version}` model version found."
-                )
             self._model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )

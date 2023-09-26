@@ -801,6 +801,51 @@ class Pipeline:
                 else:
                     raise e
 
+    def delete_running_versions_without_recovery(
+        self, pipeline: PipelineRunResponseModel
+    ) -> None:
+        """Delete the running versions of the models without `restore` after fail.
+
+        Args:
+            pipeline: The pipeline run response model.
+
+        Raises:
+            KeyError: No running model version found for @step model configs.
+        """
+        models_to_register = set()
+        pipeline_model_name = None
+        for step_name, step in pipeline.steps.items():
+            if (
+                step.config.model_config
+                and step.config.model_config.create_new_model_version
+                and step.config.model_config.delete_new_version_on_failure
+            ):
+                models_to_register.add(step.config.model_config.name)
+        if (
+            pipeline.config.model_config
+            and pipeline.config.model_config.create_new_model_version
+            and pipeline.config.model_config.delete_new_version_on_failure
+        ):
+            pipeline_model_name = pipeline.config.model_config.name
+            models_to_register.add(pipeline.config.model_config.name)
+        zs = Client().zen_store
+        for model_name in models_to_register:
+            try:
+                zs.delete_model_version(
+                    model_name_or_id=model_name,
+                    model_version_name_or_id=RUNNING_MODEL_VERSION,
+                )
+            except KeyError as e:
+                if model_name == pipeline_model_name:
+                    logger.warning(
+                        f"Failed to register stable model version of `{model_name}` model. "
+                        f"No `{RUNNING_MODEL_VERSION}` found. "
+                        "Most probable root cause: you set ModelConfig on pipeline level and "
+                        "override it in all steps inside that pipeline."
+                    )
+                else:
+                    raise e
+
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.
 

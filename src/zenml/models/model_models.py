@@ -68,7 +68,6 @@ class ModelVersionResponseModel(
     model: "ModelResponseModel" = Field(
         title="The model containing version",
     )
-    # TODO: rework to Dict[str,Dict[UUID]] and so on
     model_object_ids: Dict[str, Dict[str, UUID]] = Field(
         title="Model Objects linked to the model version",
         default={},
@@ -393,8 +392,6 @@ class ModelVersionArtifactResponseModel(
     """
 
     link_version: int
-
-    version: int
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):

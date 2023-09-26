@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import contextmanager
-from typing import Annotated, Callable, Tuple
+from typing import Callable, Tuple
 
 import pytest
 from typing_extensions import Annotated
@@ -26,7 +26,6 @@ from zenml.model import (
     DeploymentArtifactConfig,
     ModelArtifactConfig,
     ModelConfig,
-    ModelStages,
     link_output_to_model,
 )
 from zenml.models import (
