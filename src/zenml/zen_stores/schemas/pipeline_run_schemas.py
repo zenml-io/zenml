@@ -115,7 +115,6 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
         return cls(
