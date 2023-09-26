@@ -5052,7 +5052,11 @@ class Client(metaclass=ClientMetaClass):
         if entity.total == 1:
             return entity.items[0]
 
-        entity_label = get_method.__name__.replace("get_", "") + "s"
+        irregular_plurals = {"code_repository": "code_repositories"}
+        entity_label = irregular_plurals.get(
+            get_method.__name__.replace("get_", ""),
+            get_method.__name__.replace("get_", "") + "s",
+        )
 
         prefix_description = (
             "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"

@@ -1631,7 +1631,7 @@ def generate_stack_component_connect_command(
     Returns:
         A function that can be used as a `click` command.
     """
-    display_name = _component_display_name(component_type)
+    _component_display_name(component_type)
 
     @click.argument(
         "name_id_or_prefix",
@@ -1691,216 +1691,14 @@ def generate_stack_component_connect_command(
             interactive: Configure a service connector resource interactively.
             no_verify: Do not verify whether the resource is accessible.
         """
-        if component_type == StackComponentType.SECRETS_MANAGER:
-            warn_deprecated_secrets_manager()
-
-        if not connector and not interactive:
-            cli_utils.error(
-                "Please provide either a connector ID or set the interactive "
-                "flag."
-            )
-
-        if connector and interactive:
-            cli_utils.error(
-                "Please provide either a connector ID or set the interactive "
-                "flag, not both."
-            )
-
-        client = Client()
-
-        try:
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
-        except KeyError as err:
-            cli_utils.error(str(err))
-
-        try:
-            flavor_model = client.get_flavor_by_name_and_type(
-                name=component_model.flavor, component_type=component_type
-            )
-        except KeyError as err:
-            cli_utils.error(
-                f"Could not find flavor '{component_model.flavor}' for "
-                f"{display_name} '{name_id_or_prefix}': {str(err)}"
-            )
-
-        requirements = flavor_model.connector_requirements
-
-        if not requirements:
-            cli_utils.error(
-                f"The '{component_model.name}' {display_name} implementation "
-                "does not support using a service connector to connect to "
-                "resources."
-            )
-
-        resource_type = requirements.resource_type
-        if requirements.resource_id_attr is not None:
-            # Check if an attribute is set in the component configuration
-            resource_id = component_model.configuration.get(
-                requirements.resource_id_attr
-            )
-
-        if interactive:
-            # Fetch the list of connectors that have resources compatible with
-            # the stack component's flavor's resource requirements
-            with console.status(
-                "Finding all resources matching the stack component "
-                "requirements (this could take a while)...\n"
-            ):
-                resource_list = client.list_service_connector_resources(
-                    connector_type=requirements.connector_type,
-                    resource_type=resource_type,
-                    resource_id=resource_id,
-                )
-
-            resource_list = [
-                resource
-                for resource in resource_list
-                if resource.resources[0].resource_ids
-            ]
-
-            error_resource_list = [
-                resource
-                for resource in resource_list
-                if not resource.resources[0].resource_ids
-            ]
-
-            if not resource_list:
-                # No compatible resources were found
-                additional_info = ""
-                if error_resource_list:
-                    additional_info = (
-                        f"{len(error_resource_list)} connectors can be used "
-                        f"to gain access to {resource_type} resources required "
-                        "for the stack component, but they are in an error "
-                        "state or they didn't list any matching resources. "
-                    )
-                command_args = ""
-                if requirements.connector_type:
-                    command_args += (
-                        f" --connector-type {requirements.connector_type}"
-                    )
-                command_args += (
-                    f" --resource-type {requirements.resource_type}"
-                )
-                if resource_id:
-                    command_args += f" --resource-id {resource_id}"
-
-                cli_utils.error(
-                    f"No compatible valid resources were found for the "
-                    f"'{component_model.name}' {display_name} in your "
-                    f"workspace. {additional_info}You can create a new "
-                    "connector using the 'zenml service-connector register' "
-                    "command or list the compatible resources using the "
-                    f"'zenml service-connector list-resources{command_args}' "
-                    "command."
-                )
-
-            # Prompt the user to select a connector and a resource ID, if
-            # applicable
-            connector_id, resource_id = prompt_select_resource(resource_list)
-            no_verify = False
-        else:
-            # Non-interactive mode: we need to fetch the connector model first
-
-            assert connector is not None
-            try:
-                connector_model = client.get_service_connector(connector)
-            except KeyError as err:
-                cli_utils.error(
-                    f"Could not find a connector '{connector}': " f"{str(err)}"
-                )
-
-            connector_id = connector_model.id
-
-            satisfied, msg = requirements.is_satisfied_by(
-                connector_model, component_model
-            )
-            if not satisfied:
-                cli_utils.error(
-                    f"The connector with ID {connector_id} does not match the "
-                    f"component's connector requirements: {msg}. Please pick "
-                    "a connector that is compatible with the component "
-                    "flavor and try again, or use the interactive mode to "
-                    "select a compatible connector."
-                )
-
-            if not resource_id:
-                if connector_model.resource_id:
-                    resource_id = connector_model.resource_id
-                elif connector_model.supports_instances:
-                    cli_utils.error(
-                        f"Multiple {resource_type} resources are available for "
-                        "the selected connector. Please use the "
-                        "`--resource-id` command line argument to configure a "
-                        f"{resource_type} resource or use the interactive mode "
-                        "to select a resource interactively."
-                    )
-
-        connector_resources: Optional[ServiceConnectorResourcesModel] = None
-        if not no_verify:
-            with console.status(
-                "Validating service connector resource configuration...\n"
-            ):
-                try:
-                    connector_resources = client.verify_service_connector(
-                        connector_id,
-                        resource_type=requirements.resource_type,
-                        resource_id=resource_id,
-                    )
-                except (
-                    KeyError,
-                    ValueError,
-                    IllegalOperationError,
-                    NotImplementedError,
-                    AuthorizationException,
-                ) as e:
-                    cli_utils.error(
-                        f"Access to the resource could not be verified: {e}"
-                    )
-            resources = connector_resources.resources[0]
-            if resources.resource_ids:
-                if len(resources.resource_ids) > 1:
-                    cli_utils.error(
-                        f"Multiple {resource_type} resources are available for "
-                        "the selected connector. Please use the "
-                        "`--resource-id` command line argument to configure a "
-                        f"{resource_type} resource or use the interactive mode "
-                        "to select a resource interactively."
-                    )
-                else:
-                    resource_id = resources.resource_ids[0]
-
-        with console.status(
-            f"Updating {display_name} '{name_id_or_prefix}'...\n"
-        ):
-            try:
-                client.update_stack_component(
-                    name_id_or_prefix=name_id_or_prefix,
-                    component_type=component_type,
-                    connector_id=connector_id,
-                    connector_resource_id=resource_id,
-                )
-            except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
-
-        if connector_resources is not None:
-            cli_utils.declare(
-                f"Successfully connected {display_name} "
-                f"`{component_model.name}` to the following resources:"
-            )
-
-            cli_utils.print_service_connector_resource_table(
-                [connector_resources]
-            )
-
-        else:
-            cli_utils.declare(
-                f"Successfully connected {display_name} "
-                f"`{component_model.name}` to resource."
-            )
+        connect_stack_component_with_service_connector(
+            component_type=component_type,
+            name_id_or_prefix=name_id_or_prefix,
+            connector=connector,
+            resource_id=resource_id,
+            interactive=interactive,
+            no_verify=no_verify,
+        )
 
     return connect_stack_component_command
 
@@ -2106,6 +1904,234 @@ def register_all_stack_component_cli_commands() -> None:
     for component_type in StackComponentType:
         register_single_stack_component_cli_commands(
             component_type, parent_group=cli
+        )
+
+
+def connect_stack_component_with_service_connector(
+    component_type: StackComponentType,
+    name_id_or_prefix: Optional[str] = None,
+    connector: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    interactive: bool = False,
+    no_verify: bool = False,
+) -> None:
+    """Connect the stack component to a resource through a service connector.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+        name_id_or_prefix: The name of the stack component to connect.
+        connector: The name, ID or prefix of the connector to use.
+        resource_id: The resource ID to use connect to. Only
+            required for multi-instance connectors that are not already
+            configured with a particular resource ID.
+        interactive: Configure a service connector resource interactively.
+        no_verify: Do not verify whether the resource is accessible.
+    """
+    display_name = _component_display_name(component_type)
+
+    if component_type == StackComponentType.SECRETS_MANAGER:
+        warn_deprecated_secrets_manager()
+
+    if not connector and not interactive:
+        cli_utils.error(
+            "Please provide either a connector ID or set the interactive "
+            "flag."
+        )
+
+    if connector and interactive:
+        cli_utils.error(
+            "Please provide either a connector ID or set the interactive "
+            "flag, not both."
+        )
+
+    client = Client()
+
+    try:
+        component_model = client.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
+            component_type=component_type,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    try:
+        flavor_model = client.get_flavor_by_name_and_type(
+            name=component_model.flavor, component_type=component_type
+        )
+    except KeyError as err:
+        cli_utils.error(
+            f"Could not find flavor '{component_model.flavor}' for "
+            f"{display_name} '{name_id_or_prefix}': {str(err)}"
+        )
+
+    requirements = flavor_model.connector_requirements
+
+    if not requirements:
+        cli_utils.error(
+            f"The '{component_model.name}' {display_name} implementation "
+            "does not support using a service connector to connect to "
+            "resources."
+        )
+
+    resource_type = requirements.resource_type
+    if requirements.resource_id_attr is not None:
+        # Check if an attribute is set in the component configuration
+        resource_id = component_model.configuration.get(
+            requirements.resource_id_attr
+        )
+
+    if interactive:
+        # Fetch the list of connectors that have resources compatible with
+        # the stack component's flavor's resource requirements
+        with console.status(
+            "Finding all resources matching the stack component "
+            "requirements (this could take a while)...\n"
+        ):
+            resource_list = client.list_service_connector_resources(
+                connector_type=requirements.connector_type,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+
+        resource_list = [
+            resource
+            for resource in resource_list
+            if resource.resources[0].resource_ids
+        ]
+
+        error_resource_list = [
+            resource
+            for resource in resource_list
+            if not resource.resources[0].resource_ids
+        ]
+
+        if not resource_list:
+            # No compatible resources were found
+            additional_info = ""
+            if error_resource_list:
+                additional_info = (
+                    f"{len(error_resource_list)} connectors can be used "
+                    f"to gain access to {resource_type} resources required "
+                    "for the stack component, but they are in an error "
+                    "state or they didn't list any matching resources. "
+                )
+            command_args = ""
+            if requirements.connector_type:
+                command_args += (
+                    f" --connector-type {requirements.connector_type}"
+                )
+            command_args += f" --resource-type {requirements.resource_type}"
+            if resource_id:
+                command_args += f" --resource-id {resource_id}"
+
+            cli_utils.error(
+                f"No compatible valid resources were found for the "
+                f"'{component_model.name}' {display_name} in your "
+                f"workspace. {additional_info}You can create a new "
+                "connector using the 'zenml service-connector register' "
+                "command or list the compatible resources using the "
+                f"'zenml service-connector list-resources{command_args}' "
+                "command."
+            )
+
+        # Prompt the user to select a connector and a resource ID, if
+        # applicable
+        connector_id, resource_id = prompt_select_resource(resource_list)
+        no_verify = False
+    else:
+        # Non-interactive mode: we need to fetch the connector model first
+
+        assert connector is not None
+        try:
+            connector_model = client.get_service_connector(connector)
+        except KeyError as err:
+            cli_utils.error(
+                f"Could not find a connector '{connector}': " f"{str(err)}"
+            )
+
+        connector_id = connector_model.id
+
+        satisfied, msg = requirements.is_satisfied_by(
+            connector_model, component_model
+        )
+        if not satisfied:
+            cli_utils.error(
+                f"The connector with ID {connector_id} does not match the "
+                f"component's `{name_id_or_prefix}` of type `{component_type}`"
+                f" connector requirements: {msg}. Please pick a connector that is"
+                "compatible with the component flavor and try again, or use "
+                "the interactive mode to select a compatible connector."
+            )
+
+        if not resource_id:
+            if connector_model.resource_id:
+                resource_id = connector_model.resource_id
+            elif connector_model.supports_instances:
+                cli_utils.error(
+                    f"Multiple {resource_type} resources are available for "
+                    "the selected connector. Please use the "
+                    "`--resource-id` command line argument to configure a "
+                    f"{resource_type} resource or use the interactive mode "
+                    "to select a resource interactively."
+                )
+
+    connector_resources: Optional[ServiceConnectorResourcesModel] = None
+    if not no_verify:
+        with console.status(
+            "Validating service connector resource configuration...\n"
+        ):
+            try:
+                connector_resources = client.verify_service_connector(
+                    connector_id,
+                    resource_type=requirements.resource_type,
+                    resource_id=resource_id,
+                )
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.error(
+                    f"Access to the resource could not be verified: {e}"
+                )
+        resources = connector_resources.resources[0]
+        if resources.resource_ids:
+            if len(resources.resource_ids) > 1:
+                cli_utils.error(
+                    f"Multiple {resource_type} resources are available for "
+                    "the selected connector. Please use the "
+                    "`--resource-id` command line argument to configure a "
+                    f"{resource_type} resource or use the interactive mode "
+                    "to select a resource interactively."
+                )
+            else:
+                resource_id = resources.resource_ids[0]
+
+    with console.status(f"Updating {display_name} '{name_id_or_prefix}'...\n"):
+        try:
+            client.update_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                connector_id=connector_id,
+                connector_resource_id=resource_id,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
+
+    if connector_resources is not None:
+        cli_utils.declare(
+            f"Successfully connected {display_name} "
+            f"`{component_model.name}` to the following resources:"
+        )
+
+        cli_utils.print_service_connector_resource_table([connector_resources])
+
+    else:
+        cli_utils.declare(
+            f"Successfully connected {display_name} "
+            f"`{component_model.name}` to resource."
         )
 
 
