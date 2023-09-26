@@ -42,7 +42,7 @@ class JWTToken(BaseModel):
         claims: The original token claims.
     """
 
-    user_id: Union[UUID, str]
+    user_id: UUID
     permissions: List[str]
     claims: Dict[str, Any] = {}
 
@@ -92,13 +92,15 @@ class JWTToken(BaseModel):
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
             )
-        permissions: List[str] = claims.get("permissions", [])
 
-        user_id: Union[UUID, str] = subject
         try:
             user_id = UUID(subject)
         except ValueError:
-            pass
+            raise AuthorizationException(
+                "Invalid JWT token: the subject claim is not a valid UUID"
+            )
+
+        permissions: List[str] = claims.get("permissions", [])
 
         return JWTToken(
             user_id=user_id,

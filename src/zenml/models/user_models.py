@@ -283,7 +283,7 @@ class UserFilterModel(BaseFilterModel):
         default=None,
         description="Whether the user has opted in to emails",
     )
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: Optional[Union[UUID, str]] = Field(
         default=None,
         title="The external user ID associated with the account.",
     )

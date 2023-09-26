@@ -2360,7 +2360,11 @@ class RestZenStore(BaseZenStore):
         """Clear the authentication session and any cached API tokens."""
         self._session = None
         self._api_token = None
-        self.config.api_token = None
+        if (
+            self.config.username is not None
+            and self.config.password is not None
+        ):
+            self.config.api_token = None
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:

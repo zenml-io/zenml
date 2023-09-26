@@ -93,6 +93,62 @@ class AuthenticationResponse(BaseModel):
     token_type: Optional[str] = None
 
 
+def generate_access_token(
+    user_id: UUID, response: Response
+) -> AuthenticationResponse:
+    """Generates an access token for the given user.
+
+    Args:
+        user_id: The ID of the user.
+        response: The FastAPI response object.
+
+    Returns:
+        An authentication response with an access token.
+    """
+    role_assignments = zen_store().list_user_role_assignments(
+        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
+            user_id=user_id
+        )
+    )
+
+    # TODO: This needs to happen at the sql level now
+    permissions = set().union(
+        *[
+            zen_store().get_role(ra.role.id).permissions
+            for ra in role_assignments.items
+            if ra.role is not None
+        ]
+    )
+
+    access_token = JWTToken(
+        user_id=user_id,
+        permissions=[p.value for p in permissions],
+    ).encode()
+
+    config = server_config()
+
+    # Also set the access token as an HTTP only cookie in the response
+    response.set_cookie(
+        key=config.auth_cookie_name,
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=config.jwt_token_expire_minutes * 60
+        if config.jwt_token_expire_minutes
+        else None,
+        domain=config.auth_cookie_domain,
+    )
+
+    # The response of the token endpoint must be a JSON object with the
+    # following fields:
+    #
+    #   * token_type - the token type (must be "bearer" in our case)
+    #   * access_token - string containing the access token
+    return AuthenticationResponse(
+        access_token=access_token, token_type="bearer"
+    )
+
+
 if server_config().auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
 
     @router.post(
@@ -126,47 +182,10 @@ if server_config().auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        role_assignments = zen_store().list_user_role_assignments(
-            user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
-                user_id=auth_context.user.id
-            )
-        )
 
-        # TODO: This needs to happen at the sql level now
-        permissions = set().union(
-            *[
-                zen_store().get_role(ra.role.id).permissions
-                for ra in role_assignments.items
-                if ra.role is not None
-            ]
-        )
-
-        access_token = JWTToken(
+        return generate_access_token(
             user_id=auth_context.user.id,
-            permissions=[p.value for p in permissions],
-        ).encode()
-
-        config = server_config()
-
-        # Also set the access token as an HTTP only cookie in the response
-        response.set_cookie(
-            key=config.auth_cookie_name,
-            value=access_token,
-            httponly=True,
-            samesite="lax",
-            max_age=config.jwt_token_expire_minutes * 60
-            if config.jwt_token_expire_minutes
-            else None,
-            domain=config.auth_cookie_domain,
-        )
-
-        # The response of the token endpoint must be a JSON object with the
-        # following fields:
-        #
-        #   * token_type - the token type (must be "bearer" in our case)
-        #   * access_token - string containing the access token
-        return AuthenticationResponse(
-            access_token=access_token, token_type="bearer"
+            response=response,
         )
 
 
@@ -226,22 +245,35 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
         if query_params:
             authorization_url += f"/?{urlencode(query_params)}"
 
-        # Try to get the external access token from the external cookie
+        # First, try to get the external access token from the external cookie
         external_access_token = request.cookies.get(
             config.external_cookie_name
         )
         if not external_access_token:
+            # Next, try to get the external access token from the authorization
+            # header
+            authorization_header = request.headers.get("Authorization")
+            if authorization_header:
+                scheme, _, token = authorization_header.partition(" ")
+                if token and scheme.lower() == "bearer":
+                    external_access_token = token
+                    logger.info(
+                        "External access token found in authorization header."
+                    )
+        else:
+            logger.info("External access token found in cookie.")
+
+        if not external_access_token:
             logger.info(
-                "External access token not found in cookie. Redirecting to "
+                "External access token not found. Redirecting to "
                 "external authenticator."
             )
 
             # Redirect the user to the external authentication login endpoint
             return AuthenticationResponse(authorization_url=authorization_url)
 
-        # If an external access token was found in the cookie, use it to
-        # extract the user information and permissions
-        logger.info("External access token found in cookie.")
+        # If an external access token was found, use it to extract the user
+        # information and permissions
 
         # Get the user information from the external authenticator
         user_info_url = config.external_user_info_url
@@ -357,47 +389,9 @@ if server_config().auth_scheme == AuthScheme.EXTERNAL:
                 )
             )
 
-        role_assignments = store.list_user_role_assignments(
-            user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
-                user_id=user.id
-            )
-        )
-
-        # TODO: This needs to happen at the sql level now
-        permissions = set().union(
-            *[
-                zen_store().get_role(ra.role.id).permissions
-                for ra in role_assignments.items
-                if ra.role is not None
-            ]
-        )
-
-        access_token = JWTToken(
+        return generate_access_token(
             user_id=user.id,
-            permissions=[p.value for p in permissions],
-        ).encode()
-
-        config = server_config()
-
-        # Also set the access token as an HTTP only cookie in the response
-        response.set_cookie(
-            key=config.auth_cookie_name,
-            value=access_token,
-            httponly=True,
-            samesite="lax",
-            max_age=config.jwt_token_expire_minutes * 60
-            if config.jwt_token_expire_minutes
-            else None,
-            domain=config.auth_cookie_domain,
-        )
-
-        # The response of the token endpoint must be a JSON object with the
-        # following fields:
-        #
-        #   * token_type - the token type (must be "bearer" in our case)
-        #   * access_token - string containing the access token
-        return AuthenticationResponse(
-            access_token=access_token, token_type="bearer"
+            response=response,
         )
 
 
