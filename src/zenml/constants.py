@@ -289,7 +289,6 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "experiment_tracker",
     "orchestrator",
     "model_deployer",
-    "model_registry",
     "mlops_platform",
     "step_operator",
 ]
