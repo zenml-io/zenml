@@ -147,6 +147,8 @@ from zenml.models import (
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
+    ServiceAccountRequestModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -1892,7 +1894,8 @@ class SqlZenStore(BaseZenStore):
             The newly created user.
 
         Raises:
-            EntityExistsError: If a user with the given name already exists.
+            EntityExistsError: If a user or service account with the given name
+                already exists.
         """
         with Session(self.engine) as session:
             # Check if user with the given name already exists
@@ -1902,15 +1905,49 @@ class SqlZenStore(BaseZenStore):
             if existing_user is not None:
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
-                    f"Found existing user with this name."
+                    f"Found existing user or service account with this name."
                 )
 
             # Create the user
-            new_user = UserSchema.from_request(user)
+            new_user = UserSchema.from_user_request(user)
             session.add(new_user)
             session.commit()
 
             return new_user.to_model()
+
+    def create_service_account(
+        self, account: ServiceAccountRequestModel
+    ) -> UserResponseModel:
+        """Creates a new service account.
+
+        Args:
+            account: Service account to be created.
+
+        Returns:
+            The newly created service account
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if user with the given name already exists
+            existing_user = session.exec(
+                select(UserSchema).where(UserSchema.name == account.name)
+            ).first()
+            if existing_user is not None:
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{account.name}': Found existing user or service account "
+                    "with this name."
+                )
+
+            # Create the service account
+            new_account = UserSchema.from_service_account_request(account)
+            session.add(new_account)
+            session.commit()
+
+            return new_account.to_model()
 
     def get_user(
         self,
@@ -1959,6 +1996,7 @@ class SqlZenStore(BaseZenStore):
                 updated=user.updated,
                 password=user.password,
                 activation_token=user.activation_token,
+                service_account=user.service_account,
             )
 
     def list_users(
@@ -2010,7 +2048,7 @@ class SqlZenStore(BaseZenStore):
                     "The username of the default user account cannot be "
                     "changed."
                 )
-            existing_user.update(user_update=user_update)
+            existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
 
@@ -6085,16 +6123,13 @@ class SqlZenStore(BaseZenStore):
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_deployments:
@@ -6102,12 +6137,10 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_deployment)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_model_objects:
@@ -6115,12 +6148,10 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_model_object)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             else:

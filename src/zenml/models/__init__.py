@@ -147,6 +147,8 @@ from zenml.models.team_role_assignment_models import (
 )
 from zenml.models.user_models import (
     ExternalUserModel,
+    ServiceAccountRequestModel,
+    ServiceAccountUpdateModel,
     UserAuthModel,
     UserFilterModel,
     UserRequestModel,
@@ -427,6 +429,8 @@ __all__ = [
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "ServiceAccountRequestModel",
+    "ServiceAccountUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
     "ServiceConnectorBaseModel",

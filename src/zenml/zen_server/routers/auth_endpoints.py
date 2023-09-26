@@ -87,7 +87,8 @@ class OAuthLoginRequestForm:
     This form allows multiple grant types to be used with the same endpoint:
     * standard OAuth2 password grant type
     * standard  OAuth2 device authorization grant type
-    * ZenML External Authenticator grant type
+    * ZenML service account + API key grant type (proprietary)
+    * ZenML External Authenticator grant type (proprietary)
     """
 
     def __init__(
@@ -115,6 +116,8 @@ class OAuthLoginRequestForm:
             # Detect the grant type from the form data
             if username is not None:
                 self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            elif password:
+                self.grant_type = OAuthGrantTypes.ZENML_API_KEY
             elif device_code:
                 self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
             else:
@@ -166,7 +169,13 @@ class OAuthLoginRequestForm:
                     detail="Invalid request: invalid client ID.",
                 )
             self.device_code = device_code
-
+        elif self.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+            if not password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="API key is required.",
+                )
+            self.api_key = password
         elif self.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
             if config.auth_scheme != AuthScheme.EXTERNAL:
                 logger.info(
@@ -286,6 +295,10 @@ def token(
         auth_context = authenticate_device(
             client_id=auth_form_data.client_id,
             device_code=auth_form_data.device_code,
+        )
+    elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+        auth_context = authenticate_credentials(
+            api_key=auth_form_data.api_key,
         )
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:

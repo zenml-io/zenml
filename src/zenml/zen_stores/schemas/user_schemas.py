@@ -19,7 +19,13 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from zenml.models import UserRequestModel, UserResponseModel, UserUpdateModel
+from zenml.models import (
+    ServiceAccountRequestModel,
+    ServiceAccountUpdateModel,
+    UserRequestModel,
+    UserResponseModel,
+    UserUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
@@ -54,6 +60,7 @@ class UserSchema(NamedSchema, table=True):
 
     __tablename__ = "user"
 
+    service_account: bool = Field(default=False)
     full_name: str
     email: Optional[str] = Field(nullable=True)
     active: bool
@@ -116,7 +123,7 @@ class UserSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, model: UserRequestModel) -> "UserSchema":
+    def from_user_request(cls, model: UserRequestModel) -> "UserSchema":
         """Create a `UserSchema` from a `UserModel`.
 
         Args:
@@ -134,9 +141,32 @@ class UserSchema(NamedSchema, table=True):
             external_user_id=model.external_user_id,
             email_opted_in=model.email_opted_in,
             email=model.email,
+            service_account=False,
         )
 
-    def update(self, user_update: UserUpdateModel) -> "UserSchema":
+    @classmethod
+    def from_service_account_request(
+        cls, model: ServiceAccountRequestModel
+    ) -> "UserSchema":
+        """Create a `UserSchema` from a Service Account request.
+
+        Args:
+            model: The `ServiceAccountRequestModel` from which to create the
+                schema.
+
+        Returns:
+            The created `UserSchema`.
+        """
+        return cls(
+            name=model.name,
+            full_name=model.full_name,
+            active=model.active,
+            email_opted_in=False,
+            email=None,
+            service_account=True,
+        )
+
+    def update_user(self, user_update: UserUpdateModel) -> "UserSchema":
         """Update a `UserSchema` from a `UserUpdateModel`.
 
         Args:
@@ -154,6 +184,25 @@ class UserSchema(NamedSchema, table=True):
                 )
             else:
                 setattr(self, field, value)
+
+        self.updated = datetime.utcnow()
+        return self
+
+    def update_service_account(
+        self, service_account_update: ServiceAccountUpdateModel
+    ) -> "UserSchema":
+        """Update a `UserSchema` from a `ServiceAccountUpdateModel`.
+
+        Args:
+            service_account_update: The `ServiceAccountUpdateModel` from which
+                to update the schema.
+
+        Returns:
+            The updated `UserSchema`.
+        """
+        for field, value in service_account_update.dict(exclude_unset=True).items():
+            if field in ["email_opted_in", "hub_token"]:
+            setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self

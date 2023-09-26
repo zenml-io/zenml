@@ -77,7 +77,12 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import ModelStages, SecretsStoreType, StoreType
+from zenml.enums import (
+    ModelStages,
+    OAuthGrantTypes,
+    SecretsStoreType,
+    StoreType,
+)
 from zenml.exceptions import (
     AuthorizationException,
 )
@@ -212,6 +217,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
             store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
+        api_key: The service account API key to use to connect to the Zen
+            server.
+        api_token: The API token to use to connect to the Zen server. Generated
+            by the client and stored in the configuration file on the first
+            login and every time the API key is refreshed.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
@@ -225,6 +235,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     username: Optional[str] = None
     password: Optional[str] = None
+    api_key: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
@@ -2752,14 +2763,28 @@ class RestZenStore(BaseZenStore):
             elif (
                 self.config.username is not None
                 and self.config.password is not None
+                or self.config.api_key is not None
             ):
+                data: Optional[Dict[str, str]] = None
+                if self.config.api_key is not None:
+                    data = {
+                        "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
+                        "password": self.config.api_key,
+                    }
+                elif (
+                    self.config.username is not None
+                    and self.config.password is not None
+                ):
+                    data = {
+                        "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
+                        "username": self.config.username,
+                        "password": self.config.password,
+                    }
+
                 response = self._handle_response(
                     requests.post(
                         self.url + API + VERSION_1 + LOGIN,
-                        data={
-                            "username": self.config.username,
-                            "password": self.config.password,
-                        },
+                        data=data,
                         verify=self.config.verify_ssl,
                         timeout=self.config.http_timeout,
                     )
@@ -2776,9 +2801,9 @@ class RestZenStore(BaseZenStore):
                 self.config.api_token = self._api_token
             else:
                 raise ValueError(
-                    "No API token or username/password provided. Please "
-                    "provide either a token or a username and password in "
-                    "the ZenStore config."
+                    "No API token, API key or username/password provided. "
+                    "Please provide either a token or a username and password "
+                    "in the ZenML config."
                 )
         return self._api_token
 
@@ -2807,10 +2832,12 @@ class RestZenStore(BaseZenStore):
         self._session = None
         self._api_token = None
         # Clear the configured API token only if it's possible to fetch a new
-        # one from the server using other credentials (username/password).
+        # one from the server using other credentials (username/password or
+        # service account API key).
         if (
             self.config.username is not None
             and self.config.password is not None
+            or self.config.api_key is not None
         ):
             self.config.api_token = None
 

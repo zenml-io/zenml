@@ -122,6 +122,7 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         "full_name",
         "active",
         "email_opted_in",
+        "service_account",
     ]
 
     activation_token: Optional[str] = Field(
@@ -142,6 +143,10 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         default=None,
         title="The external user ID associated with the account.",
     )
+    service_account: bool = Field(
+        title="Indicates whether this is a service account or a regular user "
+        "account."
+    )
 
 
 class UserAuthModel(UserBaseModel, BaseResponseModel):
@@ -152,6 +157,10 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
     """
 
     active: bool = Field(default=False, title="Active account.")
+    service_account: bool = Field(
+        title="Indicates whether this is a service account or a regular user "
+        "account."
+    )
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
@@ -292,6 +301,10 @@ class UserFilterModel(BaseFilterModel):
         default=None,
         description="Whether the user is active",
     )
+    service_account: Optional[Union[bool, str]] = Field(
+        default=None,
+        title="Whether the account is a service account or a regular user.",
+    )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user has opted in to emails",
@@ -305,6 +318,25 @@ class UserFilterModel(BaseFilterModel):
 # ------- #
 # REQUEST #
 # ------- #
+
+
+class ServiceAccountRequestModel(UserBaseModel, BaseRequestModel):
+    """Request model for service accounts.
+
+    This model is used to create a service account.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "active",
+    ]
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        extra = "ignore"
 
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
@@ -396,6 +428,13 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
 # ------ #
 # UPDATE #
 # ------ #
+
+
+@update_model
+class ServiceAccountUpdateModel(ServiceAccountRequestModel):
+    """Update model for service accounts."""
+
+    pass
 
 
 @update_model
