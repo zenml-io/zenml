@@ -157,10 +157,15 @@ class ModelConfig(ModelConfigModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            self._model_version = zenml_client.zen_store.get_model_version(
+            mv = zenml_client.zen_store.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
+            if not self.recovery:
+                raise RuntimeError(
+                    f"Model version `{self.version}` already exists, but recovery is disabled."
+                )
+            self._model_version = mv
         except KeyError:
             if self.recovery:
                 logger.warning(
