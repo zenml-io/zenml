@@ -151,55 +151,59 @@ class ModelVersionResponseModel(
             for name, pr in self.pipeline_run_ids.items()
         }
 
-    def get_model_object(self, name: str) -> Dict[str, ArtifactResponseModel]:
+    def get_model_object(
+        self, name: str, version: Optional[str] = None
+    ) -> ArtifactResponseModel:
         """Get model object linked to this model version.
 
         Args:
             name: The name of the model object to retrieve.
+            version: The version of the model object to retrieve (None for latest/non-versioned)
 
         Returns:
-            Dictionary of versioned Model Objects
+            Specific version of Model Object
         """
         from zenml.client import Client
 
-        return {
-            version: Client().get_artifact(artifact)
-            for version, artifact in self.model_object_ids[name].items()
-        }
+        if version is None:
+            version = max(self.model_object_ids[name].keys())
+        return Client().get_artifact(self.model_object_ids[name][version])
 
     def get_artifact_object(
-        self, name: str
-    ) -> Dict[str, ArtifactResponseModel]:
+        self, name: str, version: Optional[str] = None
+    ) -> ArtifactResponseModel:
         """Get artifact linked to this model version.
 
         Args:
             name: The name of the artifact to retrieve.
+            version: The version of the model object to retrieve (None for latest/non-versioned)
 
         Returns:
-            Dictionary of versioned Artifacts
+            Specific version of Artifact
         """
         from zenml.client import Client
 
-        return {
-            version: Client().get_artifact(artifact)
-            for version, artifact in self.artifact_object_ids[name].items()
-        }
+        if version is None:
+            version = max(self.artifact_object_ids[name].keys())
+        return Client().get_artifact(self.artifact_object_ids[name][version])
 
-    def get_deployment(self, name: str) -> Dict[str, ArtifactResponseModel]:
+    def get_deployment(
+        self, name: str, version: Optional[str] = None
+    ) -> ArtifactResponseModel:
         """Get deployment linked to this model version.
 
         Args:
             name: The name of the deployment to retrieve.
+            version: The version of the model object to retrieve (None for latest/non-versioned)
 
         Returns:
-            Dictionary of versioned Deployments
+            Specific version of Deployment
         """
         from zenml.client import Client
 
-        return {
-            version: Client().get_artifact(artifact)
-            for version, artifact in self.deployment_ids[name].items()
-        }
+        if version is None:
+            version = max(self.deployment_ids[name].keys())
+        return Client().get_artifact(self.deployment_ids[name][version])
 
     def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
         """Get pipeline run linked to this version.
