@@ -194,7 +194,6 @@ if server_config().auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
             response=response,
         )
 
-
 elif server_config().auth_scheme == AuthScheme.EXTERNAL:
 
     class ExternalUser(BaseModel):

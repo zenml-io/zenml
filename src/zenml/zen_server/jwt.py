@@ -18,7 +18,6 @@ from typing import (
     Any,
     Dict,
     List,
-    Union,
     cast,
 )
 from uuid import UUID
