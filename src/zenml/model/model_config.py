@@ -82,16 +82,6 @@ class ModelConfig(ModelConfigModel):
             )
         return version
 
-    @validator("save_models_to_registry")
-    def _validate_save_models_to_registry(
-        cls, save_models_to_registry: bool
-    ) -> bool:
-        if save_models_to_registry:
-            logger.warning(
-                "`save_models_to_registry` is not yet supported - no effect on pipeline execution."
-            )
-        return save_models_to_registry
-
     def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model WatchTower.
 

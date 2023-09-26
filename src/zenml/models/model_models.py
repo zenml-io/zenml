@@ -527,23 +527,3 @@ class ModelUpdateModel(BaseModel):
     trade_offs: Optional[str]
     ethic: Optional[str]
     tags: Optional[List[str]]
-
-
-class ModelConfigModel(ModelBaseModel):
-    """ModelConfig class to pass into pipeline or step to set it into a model context.
-
-    version: points model context to a specific version or stage.
-    create_new_model_version: Whether to create a new model version during execution
-    save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
-        if available in active stack.
-    recovery: Whether to keep failed runs with new versions for later recovery from it.
-    """
-
-    version: Optional[Union[ModelStages, str]] = Field(
-        default=None,
-        description="Model version or stage is optional and points model context to a specific version/stage, "
-        "if skipped and `create_new_model_version` is False - latest model version will be used.",
-    )
-    create_new_model_version: bool = False
-    save_models_to_registry: bool = True
-    recovery: bool = False

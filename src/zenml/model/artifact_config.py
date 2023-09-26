@@ -15,7 +15,7 @@
 from typing import TYPE_CHECKING, ClassVar, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, PrivateAttr, validator
+from pydantic import BaseModel, PrivateAttr
 
 from zenml import get_step_context
 from zenml.enums import ModelStages
@@ -203,16 +203,6 @@ class ModelArtifactConfig(ArtifactConfig):
 
     save_to_model_registry: bool = True
     IS_MODEL_ARTIFACT = True
-
-    @validator("save_to_model_registry")
-    def _validate_save_to_model_registry(
-        cls, save_to_model_registry: bool
-    ) -> bool:
-        if save_to_model_registry:
-            logger.warning(
-                "`save_to_model_registry` is not yet supported - no effect on pipeline execution."
-            )
-        return save_to_model_registry
 
 
 class DeploymentArtifactConfig(ArtifactConfig):
