@@ -3079,7 +3079,7 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
-        with ModelVersionContext(True, create_artifacts=3) as (
+        with ModelVersionContext(True, create_artifacts=4) as (
             model_version,
             artifacts,
         ):
@@ -3095,6 +3095,7 @@ class TestModelVersionArtifactLinks:
                 ("link1", False, False, artifacts[0]),
                 ("link2", True, False, artifacts[1]),
                 ("link3", False, True, artifacts[2]),
+                ("link1", False, False, artifacts[3]),
             ]:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequestModel(
@@ -3116,7 +3117,7 @@ class TestModelVersionArtifactLinks:
                     model_version_id=model_version.id,
                 )
             )
-            assert len(mvls) == 3
+            assert len(mvls) == len(artifacts)
 
             mvls = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
@@ -3125,7 +3126,11 @@ class TestModelVersionArtifactLinks:
                     only_artifacts=True,
                 )
             )
-            assert len(mvls) == 1 and mvls[0].name == "link1"
+            assert (
+                len(mvls) == 2
+                and mvls[0].name == "link1"
+                and mvls[1].name == "link1"
+            )
 
             mvls = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
@@ -3155,25 +3160,40 @@ class TestModelVersionArtifactLinks:
             assert len(mv.deployment_ids) == 1
 
             assert isinstance(
-                mv.model_objects["link2"],
+                mv.get_model_object("link2", "1"),
                 ArtifactResponseModel,
             )
             assert isinstance(
-                mv.artifact_objects["link1"],
+                mv.get_artifact_object("link1", "1"),
                 ArtifactResponseModel,
             )
             assert isinstance(
-                mv.deployments["link3"],
+                mv.get_deployment("link3", "1"),
                 ArtifactResponseModel,
             )
 
-            assert mv.model_objects["link2"].id == artifacts[1].id
+            assert mv.model_objects["link2"]["1"].id == artifacts[1].id
 
-            assert mv.get_model_object("link2") == mv.model_objects["link2"]
             assert (
-                mv.get_artifact_object("link1") == mv.artifact_objects["link1"]
+                mv.get_model_object("link2", "1")
+                == mv.model_objects["link2"]["1"]
             )
-            assert mv.get_deployment("link3") == mv.deployments["link3"]
+            assert (
+                mv.get_deployment("link3", "1") == mv.deployments["link3"]["1"]
+            )
+
+            # check how versioned artifacts retrieved
+            assert (
+                mv.get_artifact_object("link1", "1")
+                == mv.artifacts["link1"]["1"]
+            )
+            assert (
+                mv.get_artifact_object("link1", "2")
+                == mv.artifacts["link1"]["2"]
+            )
+            assert (
+                mv.get_artifact_object("link1") == mv.artifacts["link1"]["2"]
+            )
 
 
 class TestModelVersionPipelineRunLinks:

@@ -5634,6 +5634,69 @@ class SqlZenStore(BaseZenStore):
                 )
             return ModelVersionSchema.to_model(model_version)
 
+    def get_model_version_in_stage(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_stage: Union[str, ModelStages],
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_stage: desired stage of the model version to be retrieved.
+
+        Returns:
+            The model version in given stage.
+
+        Raises:
+            ValueError: if model_stage is not valid
+            KeyError: specified ID or name not found.
+        """
+        stage = getattr(model_stage, "value", model_stage)
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        with Session(self.engine) as session:
+            model = self.get_model(model_name_or_id)
+            query = (
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .where(ModelVersionSchema.stage == stage)
+            )
+            model_version = session.exec(query).first()
+            if model_version is None:
+                raise KeyError(
+                    f"Unable to get model version in stage `{stage}`: "
+                    f"No model version in this stage found."
+                )
+            return ModelVersionSchema.to_model(model_version)
+
+    def get_model_version_latest(
+        self,
+        model_name_or_id: Union[str, UUID],
+    ) -> ModelVersionResponseModel:
+        """Get the latest model version.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+
+        Returns:
+            The latest model version.
+
+        Raises:
+            RuntimeError: specified ID or name not found.
+        """
+        with Session(self.engine) as session:
+            model = self.get_model(model_name_or_id)
+            query = (
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            )
+            model_version = session.exec(query).first()
+            if model_version is None:
+                raise RuntimeError("No model versions found.")
+            return ModelVersionSchema.to_model(model_version)
+
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilterModel,

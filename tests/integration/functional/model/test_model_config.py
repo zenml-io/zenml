@@ -175,12 +175,12 @@ class TestModelConfig:
     def test_init_recovery_without_create_new_version_warns(self):
         """Test that use of `recovery` warn on `create_new_model_version` set to False."""
         with mock.patch("zenml.model.model_config.logger.warning") as logger:
-            ModelConfig(name=MODEL_NAME, recovery=True)
+            ModelConfig(name=MODEL_NAME, delete_new_version_on_failure=False)
             logger.assert_called_once()
         with mock.patch("zenml.model.model_config.logger.warning") as logger:
             ModelConfig(
                 name=MODEL_NAME,
-                recovery=True,
+                delete_new_version_on_failure=False,
                 create_new_model_version=True,
             )
             logger.assert_not_called()
@@ -204,7 +204,7 @@ class TestModelConfig:
             mc = ModelConfig(
                 name=MODEL_NAME,
                 create_new_model_version=True,
-                recovery=True,
+                delete_new_version_on_failure=False,
             )
             mv1 = mc.get_or_create_model_version()
             del mc
@@ -212,8 +212,8 @@ class TestModelConfig:
             mc = ModelConfig(
                 name=MODEL_NAME,
                 create_new_model_version=True,
-                recovery=True,
+                delete_new_version_on_failure=False,
             )
             mv2 = mc.get_or_create_model_version()
 
-            assert mv1 == mv2
+            assert mv1.id == mv2.id
