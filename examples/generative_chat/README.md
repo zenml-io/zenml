@@ -97,8 +97,8 @@ zenml integration install langchain llama_index
 # install additional dependencies for this example
 pip install -r requirements.txt
 
-# make your API keys available in the environment
-export SLACK_API_TOKEN=<your slack api token>
+# make your API key and token available in the environment
+export SLACK_BOT_TOKEN=<your slack api token>
 export OPENAI_API_KEY=<your openai api key>
 
 # pull example
