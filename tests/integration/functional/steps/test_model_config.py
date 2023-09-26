@@ -12,25 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from contextlib import contextmanager
 from unittest import mock
 
 import pytest
+from tests.integration.functional.steps.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.model import ArtifactConfig, ModelConfig
-
-
-@contextmanager
-def model_killer(model_name):
-    try:
-        yield
-    finally:
-        zs = Client().zen_store
-        zs.delete_model(model_name)
 
 
 @step

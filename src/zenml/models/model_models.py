@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
+import re
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -150,59 +151,120 @@ class ModelVersionResponseModel(
             for name, pr in self.pipeline_run_ids.items()
         }
 
+    def _get_linked_object(
+        self,
+        collection: Dict[str, Dict[str, UUID]],
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional[ArtifactResponseModel]:
+        """Get model object linked to this model version.
+
+        Args:
+            collection: The collection to search in.
+            name: The name of the model object to retrieve.
+            version: The version of the model object to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
+
+        Returns:
+            Specific version of object from collection or None
+
+        Raises:
+            RuntimeError: If more than one object is found by given keys
+        """
+        from zenml.client import Client
+
+        search_pattern = re.compile(
+            (pipeline_name or r"(.*)")
+            + r"::"
+            + (step_name or r"(.*)")
+            + r"::"
+            + name
+        )
+        names = []
+        for key in collection:
+            if search_pattern.match(key):
+                names.append(key)
+        if len(names) > 1:
+            raise RuntimeError(
+                f"Found more than one artifact linked to this model version using "
+                f"filter: pipeline_name `{pipeline_name}`, step_name `{step_name}`, name `{name}`.\n"
+                + str(names)
+            )
+        if len(names) == 0:
+            return None
+        name = names[0]
+        if version is None:
+            version = max(collection[name].keys())
+        return Client().get_artifact(collection[name][version])
+
     def get_model_object(
-        self, name: str, version: Optional[str] = None
-    ) -> ArtifactResponseModel:
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional[ArtifactResponseModel]:
         """Get model object linked to this model version.
 
         Args:
             name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
 
         Returns:
-            Specific version of Model Object
+            Specific version of Model Object or None
         """
-        from zenml.client import Client
-
-        if version is None:
-            version = max(self.model_object_ids[name].keys())
-        return Client().get_artifact(self.model_object_ids[name][version])
+        return self._get_linked_object(
+            self.model_object_ids, name, version, pipeline_name, step_name
+        )
 
     def get_artifact_object(
-        self, name: str, version: Optional[str] = None
-    ) -> ArtifactResponseModel:
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional[ArtifactResponseModel]:
         """Get artifact linked to this model version.
 
         Args:
-            name: The name of the artifact to retrieve.
+            name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
 
         Returns:
-            Specific version of Artifact
+            Specific version of Artifact or None
         """
-        from zenml.client import Client
-
-        if version is None:
-            version = max(self.artifact_object_ids[name].keys())
-        return Client().get_artifact(self.artifact_object_ids[name][version])
+        return self._get_linked_object(
+            self.artifact_object_ids, name, version, pipeline_name, step_name
+        )
 
     def get_deployment(
-        self, name: str, version: Optional[str] = None
-    ) -> ArtifactResponseModel:
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional[ArtifactResponseModel]:
         """Get deployment linked to this model version.
 
         Args:
-            name: The name of the deployment to retrieve.
+            name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
 
         Returns:
-            Specific version of Deployment
+            Specific version of Deployment or None
         """
-        from zenml.client import Client
-
-        if version is None:
-            version = max(self.deployment_ids[name].keys())
-        return Client().get_artifact(self.deployment_ids[name][version])
+        return self._get_linked_object(
+            self.deployment_ids, name, version, pipeline_name, step_name
+        )
 
     def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
         """Get pipeline run linked to this version.

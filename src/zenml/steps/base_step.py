@@ -32,7 +32,6 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
@@ -477,7 +476,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, ExternalArtifact):
                 external_artifacts[key] = value
-                if not value._id:
+                if not value.id:
                     # If the external artifact references a fixed artifact by
                     # ID, caching behaves as expected.
                     logger.warning(
@@ -943,7 +942,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_inputs(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
+        external_artifacts: Dict[str, "ExternalArtifact"],
     ) -> None:
         """Validates the step inputs.
 
@@ -969,7 +968,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _finalize_configuration(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
+        external_artifacts: Dict[str, "ExternalArtifact"],
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 

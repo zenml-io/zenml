@@ -52,6 +52,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.model.model_config import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -209,7 +210,9 @@ class StepLauncher:
                 )
                 try:
                     execution_needed, step_run = self._prepare(
-                        step_run=step_run
+                        step_run=step_run,
+                        model_config=step_run.config.model_config
+                        or pipeline_run.config.model_config,
                     )
                 except:  # noqa: E722
                     logger.error(
@@ -323,19 +326,24 @@ class StepLauncher:
         return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
-        self, step_run: StepRunRequestModel
+        self,
+        step_run: StepRunRequestModel,
+        model_config: Optional["ModelConfig"],
     ) -> Tuple[bool, StepRunRequestModel]:
         """Prepares running the step.
 
         Args:
             step_run: The step to run.
+            model_config: The model config of the step (from step or pipeline).
 
         Returns:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
-            step=self._step, run_id=step_run.pipeline_run_id
+            step=self._step,
+            run_id=step_run.pipeline_run_id,
+            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id

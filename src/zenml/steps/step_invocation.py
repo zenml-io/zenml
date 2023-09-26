@@ -127,11 +127,7 @@ class StepInvocation:
         }
         self.step.configure(parameters=parameters_to_apply)
 
-        external_artifact_ids = {}
-        for key, artifact in self.external_artifacts.items():
-            external_artifact_ids[key] = artifact.upload_if_necessary()
-
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts,
-            external_artifacts=external_artifact_ids,
+            external_artifacts=self.external_artifacts,
         )

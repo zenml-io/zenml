@@ -760,7 +760,7 @@ class Pipeline:
         """Get the running versions of the models that are used in the pipeline run.
 
         Returns:
-            A dict of dicts containing requestors of new version and if it should be kept on failure.
+            A dict of dicts containing requesters of new version and if it should be kept on failure.
         """
         new_version_requests: Dict[str, Dict[str, Any]] = {}
         all_steps_have_own_config = True

@@ -23,7 +23,6 @@ from typing import (
     Tuple,
     Union,
 )
-from uuid import UUID
 
 from pydantic import root_validator, validator
 
@@ -33,6 +32,7 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.models.model_base_model import ModelConfigModel
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
@@ -166,7 +166,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    external_input_artifacts: Mapping[str, UUID] = {}
+    external_input_artifacts: Mapping[str, ExternalArtifact] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the
