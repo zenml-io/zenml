@@ -156,6 +156,9 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_cache,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
             )
+            output_annotations = parse_return_type_annotations(
+                func=step_instance.entrypoint
+            )
             with StepEnvironment(
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
@@ -171,6 +174,10 @@ class StepRunner:
                     output_artifact_uris=output_artifact_uris,
                     step_run_info=step_run_info,
                     cache_enabled=cache_enabled,
+                    output_artifact_configs={
+                        k: v.artifact_config
+                        for k, v in output_annotations.items()
+                    },
                 )
                 # Prepare Model Context
                 self._prepare_model_context_for_step()
@@ -222,9 +229,6 @@ class StepRunner:
                             )
 
                         # Store and publish the output artifacts of the step function.
-                        output_annotations = parse_return_type_annotations(
-                            func=step_instance.entrypoint
-                        )
                         output_data = self._validate_outputs(
                             return_values, output_annotations
                         )
@@ -244,8 +248,7 @@ class StepRunner:
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
                         self._link_artifacts_to_model(
-                            artifact_ids=output_artifact_ids,
-                            output_annotations=output_annotations,
+                            artifact_ids=output_artifact_ids
                         )
                     StepContext._clear()  # Remove the step context singleton
 
@@ -603,22 +606,45 @@ class StepRunner:
     def _link_artifacts_to_model(
         self,
         artifact_ids: Dict[str, "UUID"],
-        output_annotations: Dict[str, OutputSignature],
     ) -> None:
         """Links the output artifacts of the step to the model.
 
         Args:
             artifact_ids: The IDs of the published output artifacts.
-            output_annotations: The output annotations of the step.
         """
+        from zenml.model.artifact_config import ArtifactConfig
+
+        try:
+            mc = get_step_context().model_config
+        except StepContextError:
+            mc = None
+            logger.warning(
+                "No model context found, unable to auto-link artifacts."
+            )
+
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
-            output_signature = output_annotations[artifact_name]
-            if output_signature.artifact_config is not None:
-                artifact_config = output_signature.artifact_config
+            artifact_config = (
+                get_step_context()._get_output(artifact_name).artifact_config
+            )
+            if artifact_config is None and mc is not None:
+                artifact_config = ArtifactConfig(
+                    model_name=mc.name,
+                    model_version_name=mc.version,
+                    artifact_name=artifact_name,
+                )
+                logger.info(
+                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
+                )
+
+            if artifact_config is not None:
                 artifact_config.artifact_name = (
                     artifact_config.artifact_name or artifact_name
                 )
+                artifact_config._pipeline_name = (
+                    get_step_context().pipeline.name
+                )
+                artifact_config._step_name = get_step_context().step_run.name
                 artifact_config.link_to_model(artifact_uuid=artifact_uuid)
 
     def load_and_run_hook(

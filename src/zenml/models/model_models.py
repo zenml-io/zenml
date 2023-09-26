@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model WatchTower feature."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model.base_model import ModelBaseModel
+from zenml.enums import ModelStages
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -27,10 +27,8 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
-
-if TYPE_CHECKING:
-    from zenml.model.model_stages import ModelStages
 
 
 class ModelVersionBaseModel(BaseModel):
@@ -217,7 +215,7 @@ class ModelVersionResponseModel(
         return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
-        self, stage: Union[str, "ModelStages"], force: bool = False
+        self, stage: Union[str, ModelStages], force: bool = False
     ) -> "ModelVersionResponseModel":
         """Sets this Model Version to a desired stage.
 
@@ -226,16 +224,14 @@ class ModelVersionResponseModel(
             force: whether to force archiving of current model version in target stage or raise.
 
         Returns:
-            ModelVersionResponseModel
+            Model Version as a response model.
 
         Raises:
             ValueError: if model_stage is not valid.
         """
-        from zenml.model.model_stages import ModelStages
-
         stage = getattr(stage, "value", stage)
-        if stage not in ModelStages._members():
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         from zenml.client import Client
 
         return Client().zen_store.update_model_version(
@@ -247,11 +243,16 @@ class ModelVersionResponseModel(
             ),
         )
 
-    def assign_version_to_running(self) -> "ModelVersionResponseModel":
+    def _assign_version_to_running(self) -> "ModelVersionResponseModel":
         """Sets a version to this running Model Version.
 
+        Running version is an intermediate version create if ModelContext of
+        pipeline or a step requested to do so. Running version after pipeline
+        finished can resolve into a new stable version on success or get deleted
+        on failure or kept as is on failure with recovery option.
+
         Returns:
-            ModelVersionResponseModel
+            Model Version as a response model.
 
         Raises:
             RuntimeError: if this is not a running Model Version.
@@ -318,7 +319,7 @@ class ModelVersionUpdateModel(BaseModel):
     model: UUID = Field(
         title="The ID of the model containing version",
     )
-    stage: Optional[str] = Field(
+    stage: Optional[Union[str, ModelStages]] = Field(
         title="Target model version stage to be set", default=None
     )
     force: bool = Field(
@@ -332,11 +333,9 @@ class ModelVersionUpdateModel(BaseModel):
 
     @validator("stage")
     def _validate_stage(cls, stage: str) -> str:
-        from zenml.model.model_stages import ModelStages
-
         stage = getattr(stage, "value", stage)
-        if stage not in ModelStages._members():
-            raise ValueError(f"Model stage `{stage}`  is not a valid one.")
+        if stage not in [stage.value for stage in ModelStages]:
+            raise ValueError(f"`{stage}` is not a valid model stage.")
         return stage
 
 
@@ -345,6 +344,14 @@ class ModelVersionArtifactBaseModel(BaseModel):
 
     name: Optional[str] = Field(
         title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_name: Optional[str] = Field(
+        title="The name of the pipeline creating this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    step_name: Optional[str] = Field(
+        title="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     artifact: UUID
@@ -376,7 +383,12 @@ class ModelVersionArtifactRequestModel(
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version link with artifact response model."""
+    """Model version link with artifact response model.
+
+    link_version: The version of the link (always 1 for not versioned links).
+    """
+
+    link_version: int
 
     version: int
 
@@ -392,6 +404,14 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     )
     name: Optional[str] = Field(
         title="The name of the artifact inside model version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_name: Optional[str] = Field(
+        title="The name of the pipeline creating this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    step_name: Optional[str] = Field(
+        title="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -481,7 +501,7 @@ class ModelResponseModel(
         )
 
     def get_version(
-        self, version: Optional[Union[str, "ModelStages"]] = None
+        self, version: Optional[Union[str, ModelStages]] = None
     ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
@@ -492,21 +512,15 @@ class ModelResponseModel(
             The requested model version.
         """
         from zenml.client import Client
-        from zenml.model import ModelStages
 
         zs = Client().zen_store
 
         if version is None:
-            return zs.get_model_version_latest(model_name_or_id=self.name)
-        elif isinstance(version, ModelStages):
-            return zs.get_model_version_in_stage(
-                model_name_or_id=self.name,
-                model_stage=version.value,
-            )
+            return zs.get_model_version(model_name_or_id=self.name)
         else:
             return zs.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=version,
+                model_version_name_or_id=getattr(version, "value", version),
             )
 
 

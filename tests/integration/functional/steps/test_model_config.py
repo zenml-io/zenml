@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 
 from contextlib import contextmanager
-from typing import Annotated
 
 import pytest
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model.artifact_config import ArtifactConfig
-from zenml.model.model_config import ModelConfig
+from zenml.model import ModelConfig
 
 
 @contextmanager
@@ -130,6 +128,8 @@ def _this_step_does_not_create_a_version():
 
 
 def test_create_new_versions_both_pipeline_and_step():
+    """Test that model config on step and pipeline levels can create new model versions at the same time."""
+
     @pipeline(
         name="bar",
         model_config=ModelConfig(name="bar", create_new_model_version=True),
@@ -151,24 +151,26 @@ def test_create_new_versions_both_pipeline_and_step():
 
             foo = zs.get_model("foo")
             assert foo.name == "foo"
-            foo_version = zs.get_model_version_latest("foo")
+            foo_version = zs.get_model_version("foo")
             assert foo_version.version == "1"
 
             bar = zs.get_model("bar")
             assert bar.name == "bar"
-            bar_version = zs.get_model_version_latest("bar")
+            bar_version = zs.get_model_version("bar")
             assert bar_version.version == "1"
 
             _this_pipeline_creates_a_version()
 
-            foo_version = zs.get_model_version_latest("foo")
+            foo_version = zs.get_model_version("foo")
             assert foo_version.version == "2"
 
-            bar_version = zs.get_model_version_latest("bar")
+            bar_version = zs.get_model_version("bar")
             assert bar_version.version == "2"
 
 
 def test_create_new_version_only_in_step():
+    """Test that model config on step level only can create new model version."""
+
     @pipeline(name="bar", enable_cache=False)
     def _this_pipeline_does_not_create_a_version():
         _this_step_creates_a_version()
@@ -183,16 +185,18 @@ def test_create_new_version_only_in_step():
 
         bar = zs.get_model("foo")
         assert bar.name == "foo"
-        bar_version = zs.get_model_version_latest("foo")
+        bar_version = zs.get_model_version("foo")
         assert bar_version.version == "1"
 
         _this_pipeline_does_not_create_a_version()
 
-        bar_version = zs.get_model_version_latest("foo")
+        bar_version = zs.get_model_version("foo")
         assert bar_version.version == "2"
 
 
 def test_create_new_version_only_in_pipeline():
+    """Test that model config on pipeline level only can create new model version."""
+
     @pipeline(
         name="bar",
         model_config=ModelConfig(name="bar", create_new_model_version=True),
@@ -210,102 +214,10 @@ def test_create_new_version_only_in_pipeline():
 
         foo = zs.get_model("bar")
         assert foo.name == "bar"
-        foo_version = zs.get_model_version_latest("bar")
+        foo_version = zs.get_model_version("bar")
         assert foo_version.version == "1"
 
         _this_pipeline_creates_a_version()
 
-        foo_version = zs.get_model_version_latest("bar")
+        foo_version = zs.get_model_version("bar")
         assert foo_version.version == "2"
-
-
-@step
-def _this_step_produces_output() -> (
-    Annotated[int, "data", ArtifactConfig(overwrite=False)]
-):
-    return 1
-
-
-@step
-def _this_step_tries_to_recover(run_number: int):
-    zs = Client().zen_store
-    mv = zs.get_model_version(
-        model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
-    )
-    assert (
-        len(mv.get_artifact_object("data")) == run_number
-    ), "this is under control"
-
-    raise Exception("make pipeline fail")
-
-
-def test_recovery_of_steps():
-    """Test that model config can recover states after previous fails."""
-
-    @pipeline(
-        name="bar",
-        enable_cache=False,
-        model_config=ModelConfig(
-            name="foo", create_new_model_version=True, recovery=True
-        ),
-    )
-    def _this_pipeline_will_recover(run_number: int):
-        _this_step_produces_output()
-        _this_step_tries_to_recover(
-            run_number, after=["_this_step_produces_output"]
-        )
-
-    with model_killer("foo"):
-        zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("foo")
-
-        with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(1)
-        with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(2)
-        with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(3)
-
-        model = zs.get_model("foo")
-        mv = zs.get_model_version(
-            model_name_or_id=model.id,
-            model_version_name_or_id=RUNNING_MODEL_VERSION,
-        )
-        assert mv.version == RUNNING_MODEL_VERSION
-        assert len(mv.artifact_object_ids) == 1
-        assert len(mv.artifact_object_ids["data"]) == 3
-
-
-def test_clean_up_after_failure():
-    """Test that hanging `running` versions are cleaned-up after failure."""
-
-    @pipeline(
-        name="bar",
-        enable_cache=False,
-        model_config=ModelConfig(
-            name="foo", create_new_model_version=True, recovery=False
-        ),
-    )
-    def _this_pipeline_will_not_recover(run_number: int):
-        _this_step_produces_output()
-        _this_step_tries_to_recover(
-            run_number, after=["_this_step_produces_output"]
-        )
-
-    with model_killer("foo"):
-        zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("foo")
-
-        with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_not_recover(1)
-        with pytest.raises(AssertionError, match="this is under control"):
-            _this_pipeline_will_not_recover(2)
-
-        model = zs.get_model("foo")
-        with pytest.raises(KeyError):
-            zs.get_model_version(
-                model_name_or_id=model.id,
-                model_version_name_or_id=RUNNING_MODEL_VERSION,
-            )

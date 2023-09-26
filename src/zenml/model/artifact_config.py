@@ -12,16 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model WatchTower feature."""
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, PrivateAttr
 
 from zenml import get_step_context
+from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.model.model_config import ModelConfig
-from zenml.model.model_stages import ModelStages
 from zenml.models.model_models import (
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
@@ -34,26 +34,26 @@ logger = get_logger(__name__)
 
 
 class ArtifactConfig(BaseModel):
-    """Used to link a generic Artifact to the model version."""
+    """Used to link a generic Artifact to the model version.
+
+    model_name: The name of the model to link artifact to.
+    model_version_name: The name of the model version to link artifact to.
+        It can be exact version ("23"), stage (ModelStages.PRODUCTION) or None
+        for the latest version.
+    model_stage: The stage of the model version to link artifact to.
+    artifact_name: The override name of a link instead of an artifact name.
+    overwrite: Whether to overwrite an existing link or create new versions.
+    """
 
     model_name: Optional[str]
-    model_version_name: Optional[str]
-    model_stage: Optional[ModelStages]
+    model_version_name: Optional[Union[ModelStages, str]]
     artifact_name: Optional[str]
     overwrite: bool = False
 
-    @validator("model_stage")
-    def _validate_stage(
-        cls, model_stage: ModelStages, values: Dict[str, Any]
-    ) -> ModelStages:
-        if (
-            model_stage is not None
-            and values.get("model_version_name", None) is not None
-        ):
-            raise ValueError(
-                "Cannot set both `model_version_name` and `model_stage`."
-            )
-        return model_stage
+    _pipeline_name: str = PrivateAttr()
+    _step_name: str = PrivateAttr()
+    IS_MODEL_ARTIFACT: ClassVar[bool] = False
+    IS_DEPLOYMENT_ARTIFACT: ClassVar[bool] = False
 
     @property
     def _model_config(self) -> ModelConfig:
@@ -64,37 +64,32 @@ class ArtifactConfig(BaseModel):
 
         Raises:
             RuntimeError: If model configuration cannot be acquired from @step
-                or @pipeline or build on the fly from fields of this class.
+                or @pipeline or built on the fly from fields of this class.
         """
         try:
-            context = get_step_context().model_config
+            model_config = get_step_context().model_config
         except StepContextError:
-            context = None
+            model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
-        if (
-            self.model_name is not None
-            and (
-                self.model_version_name is not None
-                or self.model_stage is not None
-            )
-        ) and (context is None or context.name != self.model_name):
+        if (self.model_name is not None) and (
+            model_config is None or model_config.name != self.model_name
+        ):
             # Create a new ModelConfig instance with the provided model name and version
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
                 version=self.model_version_name,
-                stage=self.model_stage,
                 create_new_model_version=False,
             )
             return on_the_fly_config
 
-        if context is None:
+        if model_config is None:
             raise RuntimeError(
                 "No model configuration found in @step or @pipeline. "
                 "You can configure ModelConfig inside ArtifactConfig as well, but "
                 "`model_name` and (`model_version_name` or `model_stage`) must be provided."
             )
         # Return the model from the context
-        return context
+        return model_config
 
     @property
     def model(self) -> "ModelResponseModel":
@@ -150,6 +145,8 @@ class ArtifactConfig(BaseModel):
             is_model_object=is_model_object,
             is_deployment=is_deployment,
             overwrite=self.overwrite,
+            pipeline_name=self._pipeline_name,
+            step_name=self._step_name,
         )
 
         # Create the model version artifact link using the ZenML client
@@ -165,20 +162,21 @@ class ArtifactConfig(BaseModel):
                 only_model_objects=is_model_object,
             )
         )
-        if len(existing_links) and self.overwrite:
-            # delete all model version artifact links by name
-            logger.warning(
-                f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
-            )
-            client.zen_store.delete_model_version_artifact_link(
-                model_name_or_id=self.model.id,
-                model_version_name_or_id=self.model_version.id,
-                model_version_artifact_link_name_or_id=artifact_name,
-            )
-        else:
-            logger.info(
-                f"Artifact link `{artifact_name}` already exists, adding new version."
-            )
+        if len(existing_links):
+            if self.overwrite:
+                # delete all model version artifact links by name
+                logger.warning(
+                    f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
+                )
+                client.zen_store.delete_model_version_artifact_link(
+                    model_name_or_id=self.model.id,
+                    model_version_name_or_id=self.model_version.id,
+                    model_version_artifact_link_name_or_id=artifact_name,
+                )
+            else:
+                logger.info(
+                    f"Artifact link `{artifact_name}` already exists, adding new version."
+                )
         client.zen_store.create_model_version_artifact_link(request)
 
     def link_to_model(
@@ -192,46 +190,22 @@ class ArtifactConfig(BaseModel):
         """
         self._link_to_model_version(
             artifact_uuid,
-            is_model_object=False,
-            is_deployment=False,
+            is_model_object=self.IS_MODEL_ARTIFACT,
+            is_deployment=self.IS_DEPLOYMENT_ARTIFACT,
         )
 
 
 class ModelArtifactConfig(ArtifactConfig):
-    """Used to link a Model Object to the model version."""
+    """Used to link a Model Object to the model version.
+
+    save_to_model_registry: Whether to save the model object to the model registry.
+    """
 
     save_to_model_registry: bool = True
-
-    def link_to_model(
-        self,
-        artifact_uuid: UUID,
-    ) -> None:
-        """Link model object to the model version.
-
-        Args:
-            artifact_uuid (UUID): The UUID of the artifact to link.
-        """
-        self._link_to_model_version(
-            artifact_uuid,
-            is_model_object=True,
-            is_deployment=False,
-        )
+    IS_MODEL_ARTIFACT = True
 
 
 class DeploymentArtifactConfig(ArtifactConfig):
     """Used to link a Deployment to the model version."""
 
-    def link_to_model(
-        self,
-        artifact_uuid: UUID,
-    ) -> None:
-        """Link deployment to the model version.
-
-        Args:
-            artifact_uuid (UUID): The UUID of the artifact to link.
-        """
-        self._link_to_model_version(
-            artifact_uuid,
-            is_model_object=False,
-            is_deployment=True,
-        )
+    IS_DEPLOYMENT_ARTIFACT = True

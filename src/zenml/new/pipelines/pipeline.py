@@ -64,6 +64,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
+from zenml.models.model_base_model import ModelConfigModel
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
@@ -343,7 +344,11 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config": model_config,
+                "model_config_model": ModelConfigModel.parse_obj(
+                    model_config.dict()
+                )
+                if model_config is not None
+                else None,
             }
         )
         config = PipelineConfigurationUpdate(**values)
@@ -761,7 +766,7 @@ class Pipeline:
             pipeline: The pipeline run response model.
 
         Raises:
-            KeyError: No running model version found for @step model configs.
+            KeyError: No running model version found for @step `model_config`s.
         """
         models_to_register = set()
         pipeline_model_name = None
@@ -784,57 +789,12 @@ class Pipeline:
                     model_name_or_id=model_name,
                     model_version_name_or_id=RUNNING_MODEL_VERSION,
                 )
-                mv.assign_version_to_running()
+                mv._assign_version_to_running()
             except KeyError as e:
                 if model_name == pipeline_model_name:
                     logger.warning(
                         f"Failed to register stable model version of `{model_name}` model. "
-                        f"No `{RUNNING_MODEL_VERSION}` found. "
-                        "Most probable root cause: you set ModelConfig on pipeline level and "
-                        "override it in all steps inside that pipeline."
-                    )
-                else:
-                    raise e
-
-    def delete_running_versions_without_recovery(
-        self, pipeline: PipelineRunResponseModel
-    ) -> None:
-        """Delete the running versions of the models without `restore` after fail.
-
-        Args:
-            pipeline: The pipeline run response model.
-
-        Raises:
-            KeyError: No running model version found for @step model configs.
-        """
-        models_to_register = set()
-        pipeline_model_name = None
-        for step_name, step in pipeline.steps.items():
-            if (
-                step.config.model_config
-                and step.config.model_config.create_new_model_version
-                and not step.config.model_config.recovery
-            ):
-                models_to_register.add(step.config.model_config.name)
-        if (
-            pipeline.config.model_config
-            and pipeline.config.model_config.create_new_model_version
-            and not pipeline.config.model_config.recovery
-        ):
-            pipeline_model_name = pipeline.config.model_config.name
-            models_to_register.add(pipeline.config.model_config.name)
-        zs = Client().zen_store
-        for model_name in models_to_register:
-            try:
-                zs.delete_model_version(
-                    model_name_or_id=model_name,
-                    model_version_name_or_id=RUNNING_MODEL_VERSION,
-                )
-            except KeyError as e:
-                if model_name == pipeline_model_name:
-                    logger.warning(
-                        f"Failed to register stable model version of `{model_name}` model. "
-                        f"No `{RUNNING_MODEL_VERSION}` found. "
+                        f"No `{RUNNING_MODEL_VERSION}` version found. "
                         "Most probable root cause: you set ModelConfig on pipeline level and "
                         "override it in all steps inside that pipeline."
                     )

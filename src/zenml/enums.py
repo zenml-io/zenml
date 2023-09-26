@@ -255,3 +255,12 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+
+
+class ModelStages(StrEnum):
+    """All possible stages of a Model Version."""
+
+    NONE = "none"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    ARCHIVED = "archived"

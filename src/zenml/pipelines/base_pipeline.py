@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Mapping, Optional, Union
 from uuid import UUID
 
 from zenml.config.schedule import Schedule
-from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.new.pipelines.pipeline import Pipeline
@@ -29,6 +28,7 @@ from zenml.utils import dict_utils, source_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
+    from zenml.config.step_configurations import StepConfigurationUpdate
     from zenml.models.pipeline_build_models import (
         PipelineBuildBaseModel,
     )

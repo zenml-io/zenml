@@ -47,7 +47,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, create_engine, or_, select
+from sqlmodel import Session, and_, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -62,6 +62,7 @@ from zenml.constants import (
 from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
+    ModelStages,
     SecretScope,
     SorterOps,
     StackComponentType,
@@ -76,7 +77,6 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
-from zenml.model import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -5588,13 +5588,14 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be retrieved.
+            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5607,15 +5608,24 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            try:
-                UUID(str(model_version_name_or_id))
+            if model_version_name_or_id == "__latest__":
+                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            elif model_version_name_or_id in [
+                stage.value for stage in ModelStages
+            ]:
                 query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
+                    ModelVersionSchema.stage == model_version_name_or_id
                 )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.version == model_version_name_or_id
-                )
+            else:
+                try:
+                    UUID(str(model_version_name_or_id))
+                    query = query.where(
+                        ModelVersionSchema.id == model_version_name_or_id
+                    )
+                except ValueError:
+                    query = query.where(
+                        ModelVersionSchema.version == model_version_name_or_id
+                    )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
@@ -5778,12 +5788,8 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(f"Model version {model_version_id} not found.")
 
             stage = None
-            if model_version_update_model.stage is not None:
-                stage = getattr(
-                    model_version_update_model.stage,
-                    "value",
-                    model_version_update_model.stage,
-                )
+            if (stage_ := model_version_update_model.stage) is not None:
+                stage = getattr(stage_, "value", stage_)
 
                 existing_model_version_in_target_stage = session.exec(
                     select(ModelVersionSchema)
@@ -5846,8 +5852,14 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     or_(
-                        ModelVersionArtifactSchema.name
-                        == model_version_artifact_link.name,
+                        and_(
+                            ModelVersionArtifactSchema.name
+                            == model_version_artifact_link.name,
+                            ModelVersionArtifactSchema.pipeline_name
+                            == model_version_artifact_link.pipeline_name,
+                            ModelVersionArtifactSchema.step_name
+                            == model_version_artifact_link.step_name,
+                        ),
                         ModelVersionArtifactSchema.artifact_id
                         == model_version_artifact_link.artifact,
                     )
@@ -5865,10 +5877,21 @@ class SqlZenStore(BaseZenStore):
                     "with the same name. It has to be deleted first."
                 )
 
-            if model_version_artifact_link.name is None:
-                model_version_artifact_link.name = self.get_artifact(
+            if (
+                model_version_artifact_link.name is None
+                or model_version_artifact_link.pipeline_name is None
+                or model_version_artifact_link.step_name is None
+            ):
+                artifact = self.get_artifact(
                     model_version_artifact_link.artifact
-                ).name
+                )
+                model_version_artifact_link.name = (
+                    model_version_artifact_link.name or artifact.name
+                )
+
+            version = 1
+            if existing_model_version_artifact_link is not None:
+                version = existing_model_version_artifact_link.version + 1
 
             version = 1
             if existing_model_version_artifact_link is not None:

@@ -13,72 +13,52 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from pydantic import Field, PrivateAttr, validator
+from pydantic import PrivateAttr, validator
 
-from zenml.constants import RUNNING_MODEL_VERSION
+from zenml.enums import ModelStages
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.model.base_model import ModelBaseModel
-from zenml.model.model_stages import ModelStages
+from zenml.models.model_base_model import ModelConfigModel
 
 if TYPE_CHECKING:
     from zenml.models.model_models import (
-        ModelRequestModel,
         ModelResponseModel,
-        ModelVersionRequestModel,
         ModelVersionResponseModel,
     )
+
 logger = get_logger(__name__)
 
 
-class ModelConfig(ModelBaseModel):
+class ModelConfig(ModelConfigModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
+    version: points model context to a specific version or stage.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     recovery: Whether to keep failed runs with new versions for later recovery from it.
     """
 
-    version: Optional[str] = Field(
-        default=None,
-        description="Model version is optional and points model context to a specific version.",
-    )
-    stage: Optional[ModelStages] = Field(
-        default=None,
-        description="Model stage is optional and points model context to a specific stage.",
-    )
-    create_new_model_version: bool = False
-    save_models_to_registry: bool = True
-    recovery: bool = False
-
     _model: Optional["ModelResponseModel"] = PrivateAttr(default=None)
     _model_version: Optional["ModelVersionResponseModel"] = PrivateAttr(
         default=None
     )
 
-    @validator("stage")
-    def _validate_stage(
-        cls, stage: ModelStages, values: Dict[str, Any]
-    ) -> ModelStages:
-        if stage is not None and values.get("version", None) is not None:
-            raise ValueError("Cannot set both `version` and `stage`.")
-        return stage
-
     @validator("create_new_model_version")
     def _validate_create_new_model_version(
         cls, create_new_model_version: bool, values: Dict[str, Any]
     ) -> bool:
+        from zenml.constants import RUNNING_MODEL_VERSION
+
         if create_new_model_version:
-            if values.get("version", None) is not None:
+            version = values.get("version", RUNNING_MODEL_VERSION)
+            if version != RUNNING_MODEL_VERSION and version is not None:
                 raise ValueError(
                     "`version` cannot be used with `create_new_model_version`."
                 )
-            if values.get("stage", None) is not None:
-                raise ValueError(
-                    "`stage` cannot be used with `create_new_model_version`."
-                )
+            values["version"] = RUNNING_MODEL_VERSION
         return create_new_model_version
 
     @validator("recovery")
@@ -88,43 +68,19 @@ class ModelConfig(ModelBaseModel):
         if recovery:
             if not values.get("create_new_model_version", False):
                 logger.warning(
-                    "Using `recovery` flag without `create_new_model_version=True` makes no effect"
+                    "Using `recovery` flag without `create_new_model_version=True` has no effect."
                 )
         return recovery
 
-    @validator("save_models_to_registry")
-    def _validate_save_models_to_registry(
-        cls, save_models_to_registry: bool
-    ) -> bool:
-        if save_models_to_registry:
-            logger.warning(
-                "`save_models_to_registry` is not yet supported - no effect on pipeline execution."
+    @validator("version")
+    def _validate_version(
+        cls, version: Union[str, ModelStages]
+    ) -> Union[str, ModelStages]:
+        if version in [stage.value for stage in ModelStages]:
+            logger.info(
+                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
             )
-        return save_models_to_registry
-
-    def _get_request_params(
-        self,
-        request_model: Union[
-            Type["ModelRequestModel"], Type["ModelVersionRequestModel"]
-        ],
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        from zenml.client import Client
-
-        zenml_client = Client()
-        request_params = {
-            k: v
-            for k, v in self.dict().items()
-            if k in request_model.schema()["properties"]
-        }
-        request_params.update(kwargs)
-        request_params.update(
-            {
-                "user": zenml_client.active_user.id,
-                "workspace": zenml_client.active_workspace.id,
-            }
-        )
-        return request_params
+        return version
 
     def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model WatchTower.
@@ -142,25 +98,41 @@ class ModelConfig(ModelBaseModel):
 
         zenml_client = Client()
         try:
-            model = zenml_client.zen_store.get_model(
+            self._model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
         except KeyError:
-            model_request = ModelRequestModel.parse_obj(
-                self._get_request_params(ModelRequestModel)
+            model_request = ModelRequestModel(
+                name=self.name,
+                license=self.license,
+                description=self.description,
+                audience=self.audience,
+                use_cases=self.use_cases,
+                limitations=self.limitations,
+                trade_offs=self.trade_offs,
+                ethic=self.ethic,
+                tags=self.tags,
+                user=zenml_client.active_user.id,
+                workspace=zenml_client.active_workspace.id,
             )
-            model = zenml_client.zen_store.create_model(model=model_request)
-            logger.warning(f"New model `{self.name}` was created implicitly.")
-        self._model = model
-        return model
+            model_request = ModelRequestModel.parse_obj(model_request)
+            try:
+                self._model = zenml_client.zen_store.create_model(
+                    model=model_request
+                )
+                logger.info(f"New model `{self.name}` was created implicitly.")
+            except EntityExistsError:
+                # this is backup logic, if model was created somehow in between get and create calls
+                self._model = zenml_client.zen_store.get_model(
+                    model_name_or_id=self.name
+                )
 
-    def _get_or_create_model_version(
+        return self._model
+
+    def _create_model_version(
         self, model: "ModelResponseModel"
     ) -> "ModelVersionResponseModel":
-        """This method should get or create a model version from Model WatchTower.
-
-        New version will be created if `create_new_model_version`, otherwise
-        will try to fetch based on `version`.
+        """This method creates a model version for Model WatchTower.
 
         Args:
             model: The model containing the model version.
@@ -172,43 +144,20 @@ class ModelConfig(ModelBaseModel):
             return self._model_version
 
         from zenml.client import Client
+        from zenml.constants import RUNNING_MODEL_VERSION
         from zenml.models.model_models import ModelVersionRequestModel
 
         zenml_client = Client()
-        # if specific version requested
-        if not self.create_new_model_version:
-            # by stage
-            if self.stage is not None:
-                # raise if not found
-                return zenml_client.zen_store.get_model_version_in_stage(
-                    model_name_or_id=self.name,
-                    model_stage=self.stage,
-                )
-            # by version
-            else:
-                # latest version requested
-                if self.version is None:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version_latest(
-                        model_name_or_id=self.name
-                    )
-                # specific version requested
-                else:
-                    # raise if not found
-                    return zenml_client.zen_store.get_model_version(
-                        model_name_or_id=self.name,
-                        model_version_name_or_id=self.version,
-                    )
-        # else new version requested
         self.version = RUNNING_MODEL_VERSION
-        mv_request = ModelVersionRequestModel.parse_obj(
-            self._get_request_params(ModelVersionRequestModel, model=model.id)
+        model_version_request = ModelVersionRequestModel(
+            user=zenml_client.active_user.id,
+            workspace=zenml_client.active_workspace.id,
+            version=self.version,
+            model=model.id,
         )
+        mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            # trying to get existing `running` version
-            # if recovery is disable it can be only a version from current run
-            # if it exists - it was created in previous steps
-            mv = zenml_client.zen_store.get_model_version(
+            self._model_version = zenml_client.zen_store.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
@@ -217,12 +166,37 @@ class ModelConfig(ModelBaseModel):
                 logger.warning(
                     f"Recovery mode: No `{self.version}` model version found."
                 )
-            mv = zenml_client.zen_store.create_model_version(
+            self._model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
-            logger.warning(f"New model version `{self.name}` was created.")
-        self._model_version = mv
-        return mv
+            logger.info(f"New model version `{self.name}` was created.")
+
+        return self._model_version
+
+    def _get_model_version(
+        self, model: "ModelResponseModel"
+    ) -> "ModelVersionResponseModel":
+        """This method gets a model version from Model WatchTower.
+
+        Args:
+            model: The model containing the model version.
+
+        Returns:
+            The model version based on configuration.
+        """
+        from zenml.client import Client
+
+        zenml_client = Client()
+        if self.version is None:
+            # raise if not found
+            return zenml_client.zen_store.get_model_version(
+                model_name_or_id=self.name
+            )
+        # by version name or stage
+        # raise if not found
+        return zenml_client.zen_store.get_model_version(
+            model_name_or_id=self.name, model_version_name_or_id=self.version
+        )
 
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model WatchTower.
@@ -236,5 +210,8 @@ class ModelConfig(ModelBaseModel):
             The model version based on configuration.
         """
         model = self.get_or_create_model()
-        mv = self._get_or_create_model_version(model)
+        if self.create_new_model_version:
+            mv = self._create_model_version(model)
+        else:
+            mv = self._get_model_version(model)
         return mv

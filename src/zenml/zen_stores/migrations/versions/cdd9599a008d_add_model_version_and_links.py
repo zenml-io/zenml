@@ -69,6 +69,13 @@ def upgrade() -> None:
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "pipeline_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
+        sa.Column(
+            "step_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
+        sa.Column("version", sa.INTEGER(), nullable=False),
         sa.ForeignKeyConstraint(
             ["artifact_id"],
             ["artifact.id"],

@@ -222,6 +222,8 @@ def get_output_name_from_annotation_metadata(
                 artifact_config = metadata_instance
             else:
                 msg += "Annotation metadata can not contain multiple `ArtifactConfig` instances.\n"
+        else:
+            msg += "Annotation metadata can only contain `str` and `ArtifactConfig` instances.\n"
 
     if msg:
         raise ValueError(msg)

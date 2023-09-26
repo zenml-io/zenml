@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import time
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
@@ -41,7 +42,7 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import SecretScope, StackComponentType, StoreType
+from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
@@ -1037,7 +1038,10 @@ def test_list_runs_is_ordered():
     num_runs = 5
     with PipelineRunContext(num_runs):
         pipelines = store.list_runs(PipelineRunFilterModel()).items
-        assert len(pipelines) == num_pipelines_before + num_runs
+        assert (
+            store.list_runs(PipelineRunFilterModel()).total
+            == num_pipelines_before + num_runs
+        )
         assert all(
             pipelines[i].created <= pipelines[i + 1].created
             for i in range(len(pipelines) - 1)
@@ -1118,7 +1122,8 @@ def test_deleting_run_deletes_steps():
         run_id = runs[0].id
         store.delete_run(run_id)
         assert (
-            len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+            store.list_run_steps(StepRunFilterModel()).total
+            == num_steps_before
         )
 
 
@@ -2618,11 +2623,16 @@ class TestModelVersion:
                     force=False,
                 ),
             )
-            mv2 = zs.get_model_version_in_stage(
+            mv2 = zs.get_model_version(
                 model_name_or_id=model.id,
-                model_stage="staging",
+                model_version_name_or_id="staging",
             )
             assert mv1.id == mv2.id
+            mv3 = zs.get_model_version(
+                model_name_or_id=model.id,
+                model_version_name_or_id=ModelStages.STAGING,
+            )
+            assert mv1.id == mv3.id
 
     def test_model_version_in_stage_not_found(self):
         with ModelVersionContext() as model:
@@ -2637,25 +2647,16 @@ class TestModelVersion:
             )
 
             with pytest.raises(KeyError):
-                zs.get_model_version_in_stage(
+                zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_stage="staging",
-                )
-
-    def test_model_version_in_stage_bad_stage(self):
-        with ModelVersionContext() as model:
-            zs = Client().zen_store
-            with pytest.raises(ValueError):
-                zs.get_model_version_in_stage(
-                    model_name_or_id=model.id,
-                    model_stage="my_super_stage",
+                    model_version_name_or_id=ModelStages.STAGING,
                 )
 
     def test_model_version_latest_not_found(self):
         with ModelVersionContext() as model:
             zs = Client().zen_store
-            with pytest.raises(RuntimeError):
-                zs.get_model_version_latest(
+            with pytest.raises(KeyError):
+                zs.get_model_version(
                     model_name_or_id=model.id,
                 )
 
@@ -2670,6 +2671,7 @@ class TestModelVersion:
                     version="great one",
                 )
             )
+            time.sleep(1)  # thanks to MySQL way of storing datetimes
             latest = zs.create_model_version(
                 ModelVersionRequestModel(
                     user=model.user.id,
@@ -2678,7 +2680,7 @@ class TestModelVersion:
                     version="yet another one",
                 )
             )
-            found_latest = zs.get_model_version_latest(
+            found_latest = zs.get_model_version(
                 model_name_or_id=model.id,
             )
             assert latest.id == found_latest.id
@@ -2776,7 +2778,7 @@ class TestModelVersion:
                 == "staging"
             )
 
-            mv1.assign_version_to_running()
+            mv1._assign_version_to_running()
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
@@ -2824,6 +2826,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
 
@@ -2841,9 +2845,11 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
@@ -2853,9 +2859,11 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[1].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
-            assert al2.version == 2
+            assert al2.link_version == 2
             assert al2.artifact == artifacts[1].id
 
             assert al1.name == al2.name
@@ -2875,9 +2883,11 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             with pytest.raises(EntityExistsError):
                 zs.create_model_version_artifact_link(
@@ -2889,6 +2899,8 @@ class TestModelVersionArtifactLinks:
                         name="link",
                         artifact=artifacts[1].id,
                         overwrite=True,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
 
@@ -2907,9 +2919,11 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
-            assert al1.version == 1
+            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             zs.delete_model_version_artifact_link(
                 model_name_or_id=model_version.model.id,
@@ -2925,9 +2939,11 @@ class TestModelVersionArtifactLinks:
                     name="link",
                     artifact=artifacts[1].id,
                     overwrite=True,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
-            assert al2.version == 1
+            assert al2.link_version == 1
             assert al2.artifact == artifacts[1].id
             assert al1.id != al2.id
 
@@ -2945,6 +2961,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             # id collision
@@ -2957,8 +2975,56 @@ class TestModelVersionArtifactLinks:
                         model_version=model_version.id,
                         name="link2",
                         artifact=artifacts[0].id,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
+
+    def test_link_create_single_version_of_same_output_name_from_different_steps(
+        self,
+    ):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="output",
+                    artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step1",
+                    overwrite=False,
+                )
+            )
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="output",
+                    artifact=artifacts[1].id,
+                    pipeline_name="pipeline",
+                    step_name="step2",
+                    overwrite=False,
+                )
+            )
+
+            links = zs.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    pipeline_name="pipeline",
+                    name="output",
+                    model_id=model_version.model.id,
+                    model_version_id=model_version.id,
+                )
+            )
+            assert links[0].link_version == links[1].link_version == 1
+            assert len(links) == 2
 
     def test_link_delete_found(self):
         with ModelVersionContext(True, create_artifacts=1) as (
@@ -2974,6 +3040,8 @@ class TestModelVersionArtifactLinks:
                     model_version=model_version.id,
                     name="link",
                     artifact=artifacts[0].id,
+                    pipeline_name="pipeline",
+                    step_name="step",
                 )
             )
             zs.delete_model_version_artifact_link(
@@ -3038,6 +3106,8 @@ class TestModelVersionArtifactLinks:
                         artifact=artifact.id,
                         is_model_object=mo,
                         is_deployment=dep,
+                        pipeline_name="pipeline",
+                        step_name="step",
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
