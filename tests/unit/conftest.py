@@ -351,6 +351,7 @@ def step_context_with_no_output(
         cache_enabled=True,
         output_materializers={},
         output_artifact_uris={},
+        output_artifact_configs={},
     )
 
 
@@ -362,7 +363,7 @@ def step_context_with_single_output(
 ) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
-
+    artifact_configs = {"output_1": None}
     StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
@@ -371,6 +372,7 @@ def step_context_with_single_output(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
     )
 
 
@@ -388,6 +390,7 @@ def step_context_with_two_outputs(
         "output_1": "",
         "output_2": "",
     }
+    artifact_configs = {"output_1": None, "output_2": None}
 
     StepContext._clear()
     return StepContext(
@@ -397,6 +400,7 @@ def step_context_with_two_outputs(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
     )
 
 

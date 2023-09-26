@@ -26,8 +26,7 @@ from zenml.constants import (
     RUNS,
     VERSION_1,
 )
-from zenml.enums import PermissionType
-from zenml.model.model_stages import ModelStages
+from zenml.enums import ModelStages, PermissionType
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,

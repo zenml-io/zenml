@@ -165,6 +165,7 @@ from zenml.models.model_models import (
     ModelVersionUpdateModel,
 )
 
+
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
@@ -406,9 +407,6 @@ __all__ = [
     "ModelRequestModel",
     "ModelResponseModel",
     "ModelUpdateModel",
-    "ModelConfigBaseModel",
-    "ModelConfigRequestModel",
-    "ModelConfigResponseModel",
     "ModelVersionBaseModel",
     "ModelVersionFilterModel",
     "ModelVersionRequestModel",

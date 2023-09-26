@@ -692,6 +692,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
+        from zenml.models.model_base_model import ModelConfigModel
 
         if name:
             logger.warning("Configuring the name of a step is deprecated.")
@@ -754,7 +755,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config": model_config,
+                "model_config_model": ModelConfigModel.parse_obj(
+                    model_config.dict()
+                )
+                if model_config is not None
+                else None,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -1007,7 +1012,7 @@ class BaseStep(metaclass=BaseStepMeta):
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
-                if output_annotation is Any:
+                if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name][
                         "default_materializer_source"
@@ -1017,16 +1022,19 @@ class BaseStep(metaclass=BaseStepMeta):
                     continue
 
                 if is_union(
-                    get_origin(output_annotation) or output_annotation
+                    get_origin(output_annotation.resolved_annotation)
+                    or output_annotation.resolved_annotation
                 ):
                     output_types = tuple(
                         type(None)
                         if is_none_type(output_type)
                         else output_type
-                        for output_type in get_args(output_annotation)
+                        for output_type in get_args(
+                            output_annotation.resolved_annotation
+                        )
                     )
                 else:
-                    output_types = (output_annotation,)
+                    output_types = (output_annotation.resolved_annotation,)
 
                 materializer_sources = []
 

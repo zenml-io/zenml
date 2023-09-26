@@ -23,7 +23,7 @@ from typing import (
     Type,
 )
 
-from zenml.exceptions import StepContextError
+from zenml.exceptions import EntityExistsError, StepContextError
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.model.artifact_config import ArtifactConfig
     from zenml.model.model_config import ModelConfig
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
@@ -90,6 +91,7 @@ class StepContext(metaclass=SingletonMetaClass):
         step_run: "StepRunResponseModel",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
+        output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
     ) -> None:
@@ -101,6 +103,8 @@ class StepContext(metaclass=SingletonMetaClass):
             output_materializers: The output materializers of the step that
                 this context is used in.
             output_artifact_uris: The output artifacts of the step that this
+                context is used in.
+            output_artifact_configs: The outputs' ArtifactConfigs of the step that this
                 context is used in.
             step_run_info: (Deprecated) info about the currently running step.
             cache_enabled: (Deprecated) Whether caching is enabled for the step.
@@ -131,7 +135,9 @@ class StepContext(metaclass=SingletonMetaClass):
             )
         self._outputs = {
             key: StepContextOutput(
-                output_materializers[key], output_artifact_uris[key]
+                materializer_classes=output_materializers[key],
+                artifact_uri=output_artifact_uris[key],
+                artifact_config=output_artifact_configs[key],
             )
             for key in output_materializers.keys()
         }
@@ -405,6 +411,32 @@ class StepContext(metaclass=SingletonMetaClass):
             output.metadata = {}
         output.metadata.update(**metadata)
 
+    def _set_artifact_config(
+        self,
+        artifact_config: "ArtifactConfig",
+        output_name: Optional[str] = None,
+    ) -> None:
+        """Adds artifact config for a given step output.
+
+        Args:
+            artifact_config: The artifact config of the output to set.
+            output_name: Optional name of the output for which to set the
+                output signature. If no name is given and the step only has a single
+                output, the metadata of this output will be added. If the
+                step has multiple outputs, an exception will be raised.
+
+        Raises:
+            EntityExistsError: If the output already has an output signature.
+        """
+        output = self._get_output(output_name)
+
+        if output.artifact_config is None:
+            output.artifact_config = artifact_config
+        else:
+            raise EntityExistsError(
+                f"Output with name '{output_name}' already has artifact config."
+            )
+
 
 class StepContextOutput:
     """Represents a step output in the step context."""
@@ -412,17 +444,21 @@ class StepContextOutput:
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
     metadata: Optional[Dict[str, "MetadataType"]] = None
+    artifact_config: Optional["ArtifactConfig"]
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
+        artifact_config: Optional["ArtifactConfig"],
     ):
         """Initialize the step output.
 
         Args:
             materializer_classes: The materializer classes for the output.
             artifact_uri: The artifact URI for the output.
+            artifact_config: The ArtifactConfig object of the output.
         """
         self.materializer_classes = materializer_classes
         self.artifact_uri = artifact_uri
+        self.artifact_config = artifact_config

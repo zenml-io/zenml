@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.model.model_stages import ModelStages
+from zenml.enums import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
