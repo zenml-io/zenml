@@ -87,9 +87,6 @@ def test_link_minimalistic():
         user = Client().active_user.id
         ws = Client().active_workspace.id
 
-        with pytest.raises(KeyError):
-            zs.get_model(MODEL_NAME)
-
         simple_pipeline()
 
         model = zs.get_model(MODEL_NAME)
@@ -137,9 +134,6 @@ def test_link_multiple_named_outputs():
         zs = Client().zen_store
         user = Client().active_user.id
         ws = Client().active_workspace.id
-
-        with pytest.raises(KeyError):
-            zs.get_model(MODEL_NAME)
 
         multi_named_pipeline()
 

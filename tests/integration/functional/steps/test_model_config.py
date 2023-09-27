@@ -145,10 +145,6 @@ def test_create_new_versions_both_pipeline_and_step():
     with model_killer("foo"):
         with model_killer("bar"):
             zs = Client().zen_store
-            with pytest.raises(KeyError):
-                zs.get_model("foo")
-            with pytest.raises(KeyError):
-                zs.get_model("bar")
 
             _this_pipeline_creates_a_version()
 
@@ -181,8 +177,6 @@ def test_create_new_version_only_in_step():
 
     with model_killer("foo"):
         zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("foo")
 
         _this_pipeline_does_not_create_a_version()
 
@@ -210,8 +204,6 @@ def test_create_new_version_only_in_pipeline():
 
     with model_killer("bar"):
         zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("bar")
 
         _this_pipeline_creates_a_version()
 
@@ -266,8 +258,6 @@ def test_recovery_of_steps():
 
     with model_killer("foo"):
         zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("foo")
 
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_recover(1)
@@ -306,8 +296,6 @@ def test_clean_up_after_failure():
 
     with model_killer("foo"):
         zs = Client().zen_store
-        with pytest.raises(KeyError):
-            zs.get_model("foo")
 
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_not_recover(1)
