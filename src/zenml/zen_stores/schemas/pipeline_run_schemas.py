@@ -49,7 +49,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
-    status: ExecutionStatus = Field(nullable=True)
+    status: ExecutionStatus = Field(nullable=False)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )

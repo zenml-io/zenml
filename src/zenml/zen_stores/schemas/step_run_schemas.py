@@ -72,7 +72,7 @@ class StepRunSchema(NamedSchema, table=True):
         source_column="deployment_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=True,
+        nullable=False,
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,

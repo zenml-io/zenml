@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import Column, String
+from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
@@ -68,7 +68,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             nullable=False,
         )
     )
-    client_environment: str = Field(nullable=False)
+    client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=False)
     server_version: str = Field(nullable=False)
