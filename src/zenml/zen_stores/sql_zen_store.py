@@ -5830,10 +5830,6 @@ class SqlZenStore(BaseZenStore):
             if existing_model_version_artifact_link is not None:
                 version = existing_model_version_artifact_link.version + 1
 
-            version = 1
-            if existing_model_version_artifact_link is not None:
-                version = existing_model_version_artifact_link.version + 1
-
             model_version_artifact_link_schema = (
                 ModelVersionArtifactSchema.from_request(
                     model_version_artifact_request=model_version_artifact_link,
