@@ -198,10 +198,13 @@ class ModelConfig(ModelConfigModel):
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model WatchTower.
 
-        New model is created implicitly, if missing, otherwise fetched.
+        New model is created implicitly, if missing, otherwise existing model is fetched.
 
-        New version will be created if `create_new_model_version`, otherwise
-        will try to fetch based on `model_version`.
+        New model version is only created if `create_new_model_version` is True, but if there is an
+        existing model version left over from previous failed run with `delete_new_version_on_failure`
+        is set to False, it will be fetched without creating a new one or deleting the old one.
+
+        If `create_new_model_version` is set to False, a new model version will be fetched based on `version`.
 
         Returns:
             The model version based on configuration.
