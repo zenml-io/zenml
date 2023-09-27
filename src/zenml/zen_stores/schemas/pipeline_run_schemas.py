@@ -126,7 +126,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status,
-            deployment_id=request.deployment.id,
+            deployment_id=request.deployment,
         )
 
     def to_model(self) -> PipelineRunResponseModel:

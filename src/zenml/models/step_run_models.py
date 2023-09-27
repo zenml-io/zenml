@@ -32,7 +32,6 @@ from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
 if TYPE_CHECKING:
     from zenml.models import (
         ArtifactResponseModel,
-        PipelineDeploymentResponseModel,
         PipelineRunResponseModel,
         RunMetadataResponseModel,
     )
@@ -251,7 +250,10 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
         title="Logs associated with this step run.",
         default=None,
     )
-    deployment: "PipelineDeploymentResponseModel"
+    deployment: UUID = Field(
+        title="The deployment associated with the step run."
+    )
+    code_hash: Optional[str]
 
 
 # ------ #

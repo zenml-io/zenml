@@ -23,6 +23,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -193,10 +194,15 @@ class StepLauncher:
                     docstring,
                     source_code,
                 ) = self._get_step_docstring_and_source_code()
+
+                code_hash = self._deployment.step_configurations[
+                    self._step_name
+                ].config.caching_parameters.get(STEP_SOURCE_PARAMETER_NAME)
                 step_run = StepRunRequestModel(
                     name=self._step_name,
                     pipeline_run_id=pipeline_run.id,
-                    deployment=self._deployment,
+                    deployment=self._deployment.id,
+                    code_hash=code_hash,
                     status=ExecutionStatus.RUNNING,
                     docstring=docstring,
                     source_code=source_code,
@@ -297,7 +303,7 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            deployment=self._deployment,
+            deployment=self._deployment.id,
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=datetime.utcnow(),

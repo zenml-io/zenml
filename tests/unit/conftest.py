@@ -424,9 +424,7 @@ def sample_workspace_model() -> WorkspaceResponseModel:
 
 
 @pytest.fixture
-def sample_step_request_model(
-    sample_deployment_response_model,
-) -> StepRunRequestModel:
+def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
     spec = StepSpec.parse_obj(
         {
@@ -447,7 +445,7 @@ def sample_step_request_model(
         config=config,
         workspace=uuid4(),
         user=uuid4(),
-        deployment=sample_deployment_response_model,
+        deployment=uuid4(),
     )
 
 
@@ -493,9 +491,7 @@ def sample_pipeline_deployment_request_model() -> (
 
 
 @pytest.fixture
-def sample_pipeline_run_request_model(
-    sample_deployment_response_model,
-) -> PipelineRunRequestModel:
+def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequestModel(
         id=uuid4(),
@@ -505,7 +501,7 @@ def sample_pipeline_run_request_model(
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         workspace=uuid4(),
-        deployment=sample_deployment_response_model,
+        deployment=uuid4(),
     )
 
 

@@ -224,18 +224,12 @@ PipelineRunResponseModel.update_forward_refs(
     ScheduleResponseModel=ScheduleResponseModel,
     CodeReferenceResponseModel=CodeReferenceResponseModel,
 )
-PipelineRunRequestModel.update_forward_refs(
-    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
-)
 
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
-)
-StepRunRequestModel.update_forward_refs(
-    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(

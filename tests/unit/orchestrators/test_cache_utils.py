@@ -242,8 +242,8 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     deployment_response = clean_client.zen_store.create_deployment(
         sample_pipeline_deployment_request_model
     )
-    sample_pipeline_run_request_model.deployment = deployment_response
-    sample_step_request_model.deployment = deployment_response
+    sample_pipeline_run_request_model.deployment = deployment_response.id
+    sample_step_request_model.deployment = deployment_response.id
 
     clean_client.zen_store.create_run(sample_pipeline_run_request_model)
     sample_step_request_model.pipeline_run_id = (

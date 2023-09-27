@@ -21,7 +21,6 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
-from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.enums import ExecutionStatus
 from zenml.models.step_run_models import (
     StepRunRequestModel,
@@ -136,9 +135,6 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The step run schema.
         """
-        step_config = request.deployment.step_configurations[
-            request.name
-        ].config
         return cls(
             name=request.name,
             workspace_id=request.workspace,
@@ -148,12 +144,10 @@ class StepRunSchema(NamedSchema, table=True):
             status=request.status,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
-            deployment_id=request.deployment.id,
+            deployment_id=request.deployment,
             docstring=request.docstring,
             cache_key=request.cache_key,
-            code_hash=step_config.caching_parameters.get(
-                STEP_SOURCE_PARAMETER_NAME
-            ),
+            code_hash=request.code_hash,
             source_code=request.source_code,
         )
 
