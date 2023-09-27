@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 
 
-from typing import Annotated
-
 import pytest
 from tests.integration.functional.utils import model_killer
+from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.model import ArtifactConfig, ModelConfig
