@@ -39,8 +39,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 # Install requirements & integrations
 make setup
-# Optionally, provision default local stack
-make install-stack
 # Start the ZenML UI locally (recommended, but optional);
 # the default username is "admin" with an empty password
 zenml up
