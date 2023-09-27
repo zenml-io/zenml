@@ -37,6 +37,7 @@ from zenml.models import (
     ArtifactResponseModel,
     CodeRepositoryResponseModel,
     PipelineBuildResponseModel,
+    PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
@@ -472,6 +473,22 @@ def sample_pipeline_run(
         updated=datetime.now(),
         user=sample_user_model,
         workspace=sample_workspace_model,
+    )
+
+
+@pytest.fixture
+def sample_pipeline_deployment_request_model() -> (
+    PipelineDeploymentRequestModel
+):
+    """Return sample pipeline deployment request for testing purposes."""
+    return PipelineDeploymentRequestModel(
+        user=uuid4(),
+        workspace=uuid4(),
+        run_name_template="aria-blupus",
+        pipeline_configuration=PipelineConfiguration(name="axls-pipeline"),
+        client_version="0.12.3",
+        server_version="0.12.3",
+        stack=uuid4(),
     )
 
 

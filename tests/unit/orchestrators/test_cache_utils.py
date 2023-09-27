@@ -208,17 +208,43 @@ def test_fetching_cached_step_run_queries_cache_candidates(
 
 
 def test_fetching_cached_step_run_uses_latest_candidate(
-    clean_client, sample_pipeline_run_request_model, sample_step_request_model
+    clean_client,
+    sample_pipeline_deployment_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
 ):
     """Tests that the latest step run with the same cache key is used for
     caching."""
     sample_step_request_model.cache_key = "cache_key"
     sample_step_request_model.workspace = clean_client.active_workspace.id
+    sample_pipeline_deployment_request_model.workspace = (
+        clean_client.active_workspace.id
+    )
     sample_pipeline_run_request_model.workspace = (
         clean_client.active_workspace.id
     )
 
-    # Create a pipeline run and step run
+    sample_step = Step.parse_obj(
+        {
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
+            "config": {"name": "sample_step"},
+        }
+    )
+    sample_pipeline_deployment_request_model.step_configurations = {
+        "sample_step": sample_step
+    }
+
+    # Create a pipeline deployment, pipeline run and step run
+    deployment_response = clean_client.zen_store.create_deployment(
+        sample_pipeline_deployment_request_model
+    )
+    sample_pipeline_run_request_model.deployment = deployment_response
+    sample_step_request_model.deployment = deployment_response
+
     clean_client.zen_store.create_run(sample_pipeline_run_request_model)
     sample_step_request_model.pipeline_run_id = (
         sample_pipeline_run_request_model.id
