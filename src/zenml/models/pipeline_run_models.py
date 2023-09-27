@@ -238,13 +238,15 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             base_filter = operator(base_filter, unlisted_filter)
 
         from zenml.zen_stores.schemas import (
+            CodeReferenceSchema,
+            PipelineBuildSchema,
             PipelineDeploymentSchema,
             PipelineRunSchema,
+            ScheduleSchema,
+            StackSchema,
         )
 
         if self.code_repository_id:
-            from zenml.zen_stores.schemas import CodeReferenceSchema
-
             code_repo_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
@@ -255,8 +257,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             base_filter = operator(base_filter, code_repo_filter)
 
         if self.stack_id:
-            from zenml.zen_stores.schemas import StackSchema
-
             stack_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
@@ -265,8 +265,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             base_filter = operator(base_filter, stack_filter)
 
         if self.schedule_id:
-            from zenml.zen_stores.schemas import ScheduleSchema
-
             schedule_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
@@ -275,8 +273,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             base_filter = operator(base_filter, schedule_filter)
 
         if self.build_id:
-            from zenml.zen_stores.schemas import PipelineBuildSchema
-
             pipeline_build_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
