@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import contextmanager
 from typing import Callable, Tuple
 
 import pytest
 from typing_extensions import Annotated
 
+from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
@@ -35,15 +35,6 @@ from zenml.models import (
 )
 
 MODEL_NAME = "foo"
-
-
-@contextmanager
-def model_killer(model_name: str = MODEL_NAME):
-    try:
-        yield
-    finally:
-        zs = Client().zen_store
-        zs.delete_model(model_name)
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
@@ -234,60 +225,59 @@ def multi_named_pipeline_from_self():
 def test_link_multiple_named_outputs_with_self_context():
     """Test multi output linking with context defined in Annotated."""
     with model_killer():
-        with model_killer("bar"):
-            zs = Client().zen_store
-            user = Client().active_user.id
-            ws = Client().active_workspace.id
+        zs = Client().zen_store
+        user = Client().active_user.id
+        ws = Client().active_workspace.id
 
-            # manual creation needed, as we work with specific versions
-            m1 = ModelConfig(
-                name=MODEL_NAME,
-            ).get_or_create_model()
-            m2 = ModelConfig(
-                name="bar",
-            ).get_or_create_model()
+        # manual creation needed, as we work with specific versions
+        m1 = ModelConfig(
+            name=MODEL_NAME,
+        ).get_or_create_model()
+        m2 = ModelConfig(
+            name="bar",
+        ).get_or_create_model()
 
-            mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
-                    user=user,
-                    workspace=ws,
-                    version="bar",
-                    model=m1.id,
-                )
+        mv1 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="bar",
+                model=m1.id,
             )
-            mv2 = zs.create_model_version(
-                ModelVersionRequestModel(
-                    user=user,
-                    workspace=ws,
-                    version="foo",
-                    model=m2.id,
-                )
+        )
+        mv2 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="foo",
+                model=m2.id,
             )
+        )
 
-            multi_named_pipeline_from_self()
+        multi_named_pipeline_from_self()
 
-            al1 = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                    model_id=mv1.model.id,
-                    model_version_id=mv1.id,
-                )
+        al1 = zs.list_model_version_artifact_links(
+            ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+                model_id=mv1.model.id,
+                model_version_id=mv1.id,
             )
-            al2 = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                    model_id=mv2.model.id,
-                    model_version_id=mv2.id,
-                )
+        )
+        al2 = zs.list_model_version_artifact_links(
+            ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+                model_id=mv2.model.id,
+                model_version_id=mv2.id,
             )
-            assert al1.size == 2
-            assert al2.size == 1
+        )
+        assert al1.size == 2
+        assert al2.size == 1
 
-            assert al1[0].name == "1"
-            assert al1[1].name == "2"
-            assert al2[0].name == "3"
+        assert al1[0].name == "1"
+        assert al1[1].name == "2"
+        assert al2[0].name == "3"
 
 
 @step(model_config=ModelConfig(name="step", version="step"))
@@ -348,68 +338,66 @@ def multi_named_pipeline_mixed_linkage():
 
 def test_link_multiple_named_outputs_with_mixed_linkage():
     """In this test a mixed linkage of artifacts is verified. See steps description."""
-    with model_killer("pipe"):
-        with model_killer("step"):
-            with model_killer("artifact"):
-                zs = Client().zen_store
-                user = Client().active_user.id
-                ws = Client().active_workspace.id
+    with model_killer():
+        zs = Client().zen_store
+        user = Client().active_user.id
+        ws = Client().active_workspace.id
 
-                # manual creation needed, as we work with specific versions
-                models = []
-                mvs = []
-                for n in ["pipe", "step", "artifact"]:
-                    models.append(
-                        ModelConfig(
-                            name=n,
-                        ).get_or_create_model()
+        # manual creation needed, as we work with specific versions
+        models = []
+        mvs = []
+        for n in ["pipe", "step", "artifact"]:
+            models.append(
+                ModelConfig(
+                    name=n,
+                ).get_or_create_model()
+            )
+            mvs.append(
+                zs.create_model_version(
+                    ModelVersionRequestModel(
+                        user=user,
+                        workspace=ws,
+                        version=n,
+                        model=models[-1].id,
                     )
-                    mvs.append(
-                        zs.create_model_version(
-                            ModelVersionRequestModel(
-                                user=user,
-                                workspace=ws,
-                                version=n,
-                                model=models[-1].id,
-                            )
-                        )
+                )
+            )
+
+        multi_named_pipeline_mixed_linkage()
+
+        artifact_links = []
+        for mv in mvs:
+            artifact_links.append(
+                zs.list_model_version_artifact_links(
+                    ModelVersionArtifactFilterModel(
+                        user_id=user,
+                        workspace_id=ws,
+                        model_id=mv.model.id,
+                        model_version_id=mv.id,
                     )
+                )
+            )
 
-                multi_named_pipeline_mixed_linkage()
+        assert artifact_links[0].size == 3
+        assert artifact_links[1].size == 2
+        assert artifact_links[2].size == 1
 
-                artifact_links = []
-                for mv in mvs:
-                    artifact_links.append(
-                        zs.list_model_version_artifact_links(
-                            ModelVersionArtifactFilterModel(
-                                user_id=user,
-                                workspace_id=ws,
-                                model_id=mv.model.id,
-                                model_version_id=mv.id,
-                            )
-                        )
-                    )
-
-                assert artifact_links[0].size == 3
-                assert artifact_links[1].size == 2
-                assert artifact_links[2].size == 1
-
-                assert {al.name for al in artifact_links[0]} == {
-                    "custom_name",
-                    "4",
-                    "output",
-                }
-                assert {al.name for al in artifact_links[1]} == {
-                    "2",
-                    "output",
-                }
-                assert artifact_links[2][0].name == "3"
-                assert {al.link_version for al in artifact_links[0]} == {
-                    1
-                }, "some artifacts tracked as higher versions, while all should be version 1"
-                assert {al.link_version for al in artifact_links[1]} == {
-                    1
-                }, "some artifacts tracked as higher versions, while all should be version 1"
+        assert {al.name for al in artifact_links[0]} == {
+            "custom_name",
+            "4",
+            "output",
+        }
+        assert {al.name for al in artifact_links[1]} == {
+            "2",
+            "output",
+        }
+        assert artifact_links[2][0].name == "3"
+        assert {al.link_version for al in artifact_links[0]} == {
+            1
+        }, "some artifacts tracked as higher versions, while all should be version 1"
+        assert {al.link_version for al in artifact_links[1]} == {
+            1
+        }, "some artifacts tracked as higher versions, while all should be version 1"
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, version="good_one"))
@@ -602,68 +590,67 @@ def simple_pipeline_with_manual_and_implicit_linkage():
 def test_link_with_manual_linkage(pipeline: Callable):
     """Test manual linking by function call in 2 setting: only manual and manual+implicit"""
     with model_killer():
-        with model_killer("bar"):
-            zs = Client().zen_store
-            user = Client().active_user.id
-            ws = Client().active_workspace.id
+        zs = Client().zen_store
+        user = Client().active_user.id
+        ws = Client().active_workspace.id
 
-            # manual creation needed, as we work with specific versions
-            model = zs.create_model(
-                ModelRequestModel(
-                    name=MODEL_NAME,
-                    user=user,
-                    workspace=ws,
-                )
+        # manual creation needed, as we work with specific versions
+        model = zs.create_model(
+            ModelRequestModel(
+                name=MODEL_NAME,
+                user=user,
+                workspace=ws,
             )
-            model2 = zs.create_model(
-                ModelRequestModel(
-                    name="bar",
-                    user=user,
-                    workspace=ws,
-                )
+        )
+        model2 = zs.create_model(
+            ModelRequestModel(
+                name="bar",
+                user=user,
+                workspace=ws,
             )
-            mv = zs.create_model_version(
-                ModelVersionRequestModel(
-                    user=user,
-                    workspace=ws,
-                    version="good_one",
-                    model=model.id,
-                )
+        )
+        mv = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="good_one",
+                model=model.id,
             )
-            mv2 = zs.create_model_version(
-                ModelVersionRequestModel(
-                    user=user,
-                    workspace=ws,
-                    version="bar",
-                    model=model2.id,
-                )
+        )
+        mv2 = zs.create_model_version(
+            ModelVersionRequestModel(
+                user=user,
+                workspace=ws,
+                version="bar",
+                model=model2.id,
             )
+        )
 
-            pipeline()
+        pipeline()
 
-            al1 = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                    model_id=model.id,
-                    model_version_id=mv.id,
-                )
+        al1 = zs.list_model_version_artifact_links(
+            ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+                model_id=model.id,
+                model_version_id=mv.id,
             )
-            assert al1.size == 1
-            assert al1[0].link_version == 1
-            assert al1[0].name == "1"
+        )
+        assert al1.size == 1
+        assert al1[0].link_version == 1
+        assert al1[0].name == "1"
 
-            al2 = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                    model_id=model2.id,
-                    model_version_id=mv2.id,
-                )
+        al2 = zs.list_model_version_artifact_links(
+            ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+                model_id=model2.id,
+                model_version_id=mv2.id,
             )
-            assert al2.size == 1
-            assert al2[0].link_version == 1
-            assert al2[0].name == "2"
+        )
+        assert al2.size == 1
+        assert al2[0].link_version == 1
+        assert al2[0].name == "2"
 
 
 @step

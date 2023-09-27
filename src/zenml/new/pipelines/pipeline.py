@@ -593,7 +593,7 @@ class Pipeline:
 
             stack = Client().active_stack
 
-            new_version_requests = self.get_new_version_requests()
+            new_version_requests = self.get_new_version_requests(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -756,22 +756,24 @@ class Pipeline:
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
-    def get_new_version_requests(self) -> Dict[str, Dict[str, Any]]:
+    def get_new_version_requests(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> Dict[str, Dict[str, Any]]:
         """Get the running versions of the models that are used in the pipeline run.
+
+        Args:
+            deployment: The pipeline deployment configuration.
 
         Returns:
             A dict of dicts containing requesters of new version and if it should be kept on failure.
         """
         new_versions_requested: Dict[str, Dict[str, Any]] = {}
         all_steps_have_own_config = True
-        for step_invocation in self.invocations.values():
-            step_model_config = (
-                step_invocation.step.configuration.model_config_model
-            )
+        for step in deployment.step_configurations.values():
+            step_model_config = step.config.model_config_model
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step_invocation.step.configuration.model_config_model
-                is not None
+                and step.config.model_config_model is not None
             )
             if (
                 step_model_config
@@ -785,13 +787,15 @@ class Pipeline:
                     {"requesters": [], "delete_new_version_on_failure": True},
                 )
                 new_versions_requested[model_name]["requesters"].append(
-                    f"Step: {step_invocation.step.name}"
+                    f"Step: {step.config.name}"
                 )
                 new_versions_requested[model_name][
                     "delete_new_version_on_failure"
                 ] &= step_model_config.delete_new_version_on_failure
         if not all_steps_have_own_config:
-            pipeline_model_config = self.configuration.model_config_model
+            pipeline_model_config = (
+                deployment.pipeline_configuration.model_config_model
+            )
             if (
                 pipeline_model_config
                 and pipeline_model_config.create_new_model_version
@@ -808,7 +812,7 @@ class Pipeline:
                 new_versions_requested[pipeline_model_config.name][
                     "delete_new_version_on_failure"
                 ] &= pipeline_model_config.delete_new_version_on_failure
-        elif self.configuration.model_config_model is not None:
+        elif deployment.pipeline_configuration.model_config_model is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )

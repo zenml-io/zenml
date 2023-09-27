@@ -15,7 +15,7 @@
 from unittest import mock
 
 import pytest
-from tests.integration.functional.steps.utils import model_killer
+from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
@@ -42,7 +42,7 @@ def test_model_config_passed_to_step_context_via_step():
             ),
         )()
 
-    with model_killer("foo"):
+    with model_killer():
         _simple_step_pipeline()
 
 
@@ -57,7 +57,7 @@ def test_model_config_passed_to_step_context_via_pipeline():
     def _simple_step_pipeline():
         _assert_that_model_config_set()
 
-    with model_killer("foo"):
+    with model_killer():
         _simple_step_pipeline()
 
 
@@ -76,7 +76,7 @@ def test_model_config_passed_to_step_context_via_step_and_pipeline():
             ),
         )()
 
-    with model_killer("foo"):
+    with model_killer():
         _simple_step_pipeline()
 
 
@@ -104,10 +104,8 @@ def test_model_config_passed_to_step_context_and_switches():
             ),
         )(name="foobar")
 
-    with model_killer("foo"):
-        with model_killer("bar"):
-            with model_killer("foobar"):
-                _simple_step_pipeline()
+    with model_killer():
+        _simple_step_pipeline()
 
 
 @step(model_config=ModelConfig(name="foo", create_new_model_version=True))
@@ -132,29 +130,28 @@ def test_create_new_versions_both_pipeline_and_step():
         _this_step_creates_a_version()
         _this_step_does_not_create_a_version()
 
-    with model_killer("foo"):
-        with model_killer("bar"):
-            zs = Client().zen_store
+    with model_killer():
+        zs = Client().zen_store
 
-            _this_pipeline_creates_a_version()
+        _this_pipeline_creates_a_version()
 
-            foo = zs.get_model("foo")
-            assert foo.name == "foo"
-            foo_version = zs.get_model_version("foo")
-            assert foo_version.version == "1"
+        foo = zs.get_model("foo")
+        assert foo.name == "foo"
+        foo_version = zs.get_model_version("foo")
+        assert foo_version.version == "1"
 
-            bar = zs.get_model("bar")
-            assert bar.name == "bar"
-            bar_version = zs.get_model_version("bar")
-            assert bar_version.version == "1"
+        bar = zs.get_model("bar")
+        assert bar.name == "bar"
+        bar_version = zs.get_model_version("bar")
+        assert bar_version.version == "1"
 
-            _this_pipeline_creates_a_version()
+        _this_pipeline_creates_a_version()
 
-            foo_version = zs.get_model_version("foo")
-            assert foo_version.version == "2"
+        foo_version = zs.get_model_version("foo")
+        assert foo_version.version == "2"
 
-            bar_version = zs.get_model_version("bar")
-            assert bar_version.version == "2"
+        bar_version = zs.get_model_version("bar")
+        assert bar_version.version == "2"
 
 
 def test_create_new_version_only_in_step():
@@ -165,7 +162,7 @@ def test_create_new_version_only_in_step():
         _this_step_creates_a_version()
         _this_step_does_not_create_a_version()
 
-    with model_killer("foo"):
+    with model_killer():
         zs = Client().zen_store
 
         _this_pipeline_does_not_create_a_version()
@@ -192,7 +189,7 @@ def test_create_new_version_only_in_pipeline():
     def _this_pipeline_creates_a_version():
         _this_step_does_not_create_a_version()
 
-    with model_killer("bar"):
+    with model_killer():
         zs = Client().zen_store
 
         _this_pipeline_creates_a_version()
@@ -246,7 +243,7 @@ def test_recovery_of_steps():
             run_number, after=["_this_step_produces_output"]
         )
 
-    with model_killer("foo"):
+    with model_killer():
         zs = Client().zen_store
 
         with pytest.raises(Exception, match="make pipeline fail"):
@@ -284,7 +281,7 @@ def test_clean_up_after_failure():
             run_number, after=["_this_step_produces_output"]
         )
 
-    with model_killer("foo"):
+    with model_killer():
         zs = Client().zen_store
 
         with pytest.raises(Exception, match="make pipeline fail"):
@@ -376,10 +373,13 @@ def test_multiple_definitions_create_new_version_warns(
     pipeline, expected_warning
 ):
     """Test that setting conflicting model configurations are raise warnings to user."""
-    with mock.patch("zenml.new.pipelines.pipeline.logger.warning") as logger:
-        pipeline()
-        if expected_warning:
-            logger.assert_called_once()
-            assert expected_warning in logger.call_args[0][0]
-        else:
-            logger.assert_not_called()
+    with model_killer():
+        with mock.patch(
+            "zenml.new.pipelines.pipeline.logger.warning"
+        ) as logger:
+            pipeline()
+            if expected_warning:
+                logger.assert_called_once()
+                assert expected_warning in logger.call_args[0][0]
+            else:
+                logger.assert_not_called()
