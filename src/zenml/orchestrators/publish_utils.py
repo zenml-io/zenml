@@ -169,7 +169,7 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
 
     new_status = get_pipeline_run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run],
-        num_steps=len(pipeline_run.steps),
+        num_steps=len(pipeline_run.pipeline.spec.steps),
     )
 
     if new_status != pipeline_run.status:
