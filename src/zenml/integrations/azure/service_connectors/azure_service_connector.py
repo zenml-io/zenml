@@ -14,6 +14,7 @@
 """Azure Service Connector."""
 import datetime
 import re
+import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -980,13 +981,52 @@ class AzureServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the connector instance does not support
+                local configuration for the configured authentication method.
         """
         resource_type = self.resource_type
 
         if resource_type in [AZURE_RESOURCE_TYPE, BLOB_RESOURCE_TYPE]:
+            if (
+                self.auth_method
+                == AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            ):
+                # Use the service principal credentials to configure the local
+                # Azure CLI
+                assert isinstance(self.config, AzureServicePrincipalConfig)
+
+                command = [
+                    "az",
+                    "login",
+                    "--service-principal",
+                    "-u",
+                    str(self.config.client_id),
+                    "-p",
+                    self.config.client_secret.get_secret_value(),
+                    "--tenant",
+                    str(self.config.tenant_id),
+                ]
+
+                try:
+                    subprocess.run(command, check=True)
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to update the local Azure CLI with the "
+                        f"connector service principal credentials: {e}"
+                    ) from e
+
+                logger.info(
+                    "Updated the local Azure CLI configuration with the "
+                    "connector's service principal credentials."
+                )
+
+                return
+
             raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+                f"Local Azure client configuration for resource type "
+                f"{resource_type} is only supported if the "
+                f"'{AzureAuthenticationMethods.SERVICE_PRINCIPAL}' "
+                f"authentication method is used."
             )
 
         raise NotImplementedError(

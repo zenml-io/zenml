@@ -90,6 +90,18 @@ component deployment documentation](deploy-a-stack-component.md)) can be passed
 in with the `-x` option. This option can be used multiple times to pass in
 multiple configurations.
 
+### Interactive stack deployment
+
+If you would like to be guided through the deployment process, you can use the
+`zenml stack deploy` command with the `--interactive` flag. You will still need
+to provide the `provider`, `name` and `region` options as described above but
+for the rest, you will get prompts in the CLI as to which components you would
+like to deploy. For example, using GCP as the provider you might type:
+
+```bash
+zenml stack deploy -p gcp -n my_new_stack -r us-east1 --interactive
+```
+
 ## Displaying Terraform outputs for stacks deployed with mlstacks
 
 If you want to view any of the Terraform-generated outputs for a stack deployed

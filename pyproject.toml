@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.44.2"
+version = "0.44.3"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -397,6 +397,8 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
+    "azure-mgmt-resource.*",
+    "azure.mgmt.resource.*",
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
@@ -406,6 +408,7 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
+    "sky.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",
