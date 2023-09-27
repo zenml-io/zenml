@@ -18,7 +18,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -286,9 +286,7 @@ class BaseModelRegistry(StackComponent, ABC):
         version: Optional[str] = None,
         model_source_uri: Optional[str] = None,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         **kwargs: Any,
     ) -> ModelVersion:
         """Registers a model version in the model registry.
@@ -332,9 +330,7 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         version: str,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
@@ -361,9 +357,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         stage: Optional[ModelVersionStage] = None,
         count: Optional[int] = None,
         created_after: Optional[datetime] = None,

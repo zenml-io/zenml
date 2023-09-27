@@ -40,7 +40,6 @@ def inference_get_current_version() -> Annotated[str, "model_version"]:
 
     current_version = model_registry.list_model_versions(
         name=MetaConfig.mlflow_model_name,
-        metadata={},
         stage=MetaConfig.target_env,
     )[0].version
     logger.info(
