@@ -22,7 +22,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus, VisualizationType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.models.visualization_models import VisualizationModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -136,10 +136,9 @@ class ArtifactSchema(NamedSchema, table=True):
 
         producer_step_run_id = None
 
-        for step_run in self.output_of_step_runs:
-            if step_run.step_run.status == ExecutionStatus.COMPLETED:
-                producer_step_run_id = step_run.step_run.id
-                break
+        if self.output_of_step_runs:
+            step_run = self.output_of_step_runs[0].step_run
+            producer_step_run_id = step_run.original_step_run_id
 
         return ArtifactResponseModel(
             id=self.id,
