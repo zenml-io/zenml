@@ -16,7 +16,7 @@
 from typing import Annotated
 
 import pytest
-from tests.integration.functional.steps.utils import model_killer
+from tests.integration.functional.utils import model_killer
 
 from zenml import pipeline, step
 from zenml.model import ArtifactConfig, ModelConfig
@@ -74,7 +74,7 @@ def two_step_producer_pipeline():
 
 def test_exchange_of_model_artifacts_between_pipelines():
     """Test that model config was passed to step context via step."""
-    with model_killer("foo"):
+    with model_killer():
         producer_pipeline.with_options(
             model_config=ModelConfig(name="foo", create_new_model_version=True)
         )(1)
@@ -87,7 +87,7 @@ def test_exchange_of_model_artifacts_between_pipelines():
 
 def test_external_artifact_fails_on_name_collision_without_pipeline_and_step():
     """Test that model config was passed to step context via step."""
-    with model_killer("foo"):
+    with model_killer():
         two_step_producer_pipeline()
         with pytest.raises(
             RuntimeError,
@@ -98,7 +98,7 @@ def test_external_artifact_fails_on_name_collision_without_pipeline_and_step():
 
 def test_external_artifact_fails_on_name_collision_without_step():
     """Test that model config was passed to step context via step."""
-    with model_killer("foo"):
+    with model_killer():
         two_step_producer_pipeline()
         with pytest.raises(
             RuntimeError,
@@ -109,7 +109,7 @@ def test_external_artifact_fails_on_name_collision_without_step():
 
 def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
     """Test that model config was passed to step context via step."""
-    with model_killer("foo"):
+    with model_killer():
         two_step_producer_pipeline()
         consumer_pipeline(
             1,
