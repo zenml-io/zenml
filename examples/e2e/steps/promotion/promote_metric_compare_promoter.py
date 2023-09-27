@@ -88,11 +88,13 @@ def promote_metric_compare_promoter(
                 name=MetaConfig.mlflow_model_name,
                 version=current_version,
                 stage=ModelVersionStage.ARCHIVED,
+                metadata={},
             )
         model_registry.update_model_version(
             name=MetaConfig.mlflow_model_name,
             version=latest_version,
             stage=MetaConfig.target_env,
+            metadata={},
         )
         promoted_version = latest_version
 
