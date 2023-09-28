@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 from tests.integration.functional.utils import model_killer
@@ -21,7 +23,9 @@ from typing_extensions import Annotated
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ArtifactConfig, ModelConfig
+from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
+from zenml.models import ModelRequestModel, ModelVersionRequestModel
+from zenml.steps.external_artifact import ExternalArtifact
 
 
 @step
@@ -383,3 +387,276 @@ def test_multiple_definitions_create_new_version_warns(
                 assert expected_warning in logger.call_args[0][0]
             else:
                 logger.assert_not_called()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_pipeline_context_single_step():
+    _this_step_produces_output()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_pipeline_context_multiple_steps():
+    _this_step_produces_output()
+    _this_step_produces_output()
+
+
+@pytest.mark.parametrize(
+    "pipeline",
+    (
+        _pipeline_run_link_attached_from_pipeline_context_single_step,
+        _pipeline_run_link_attached_from_pipeline_context_multiple_steps,
+    ),
+    ids=["Single step pipeline", "Multiple steps pipeline"],
+)
+def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
+    """Tests that current pipeline run information is attached to model version by pipeline context."""
+    with model_killer():
+        zs = Client().zen_store
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+            model_config=ModelConfig(
+                name="foo",
+                create_new_model_version=True,
+                delete_new_version_on_failure=True,
+            ),
+        )()
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+            model_config=ModelConfig(
+                name="foo",
+            ),
+        )()
+
+        model = zs.get_model("foo")
+        mv = zs.get_model_version(
+            model_name_or_id=model.id,
+        )
+
+        assert len(mv.pipeline_run_ids) == 2
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            run_name_1,
+            run_name_2,
+        }
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_step_context_single_step(mc: ModelConfig):
+    _this_step_produces_output.with_options(model_config=mc)()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_step_context_multiple_step(
+    mc: ModelConfig,
+):
+    _this_step_produces_output.with_options(model_config=mc)()
+    _this_step_produces_output.with_options(model_config=mc)()
+
+
+@pytest.mark.parametrize(
+    "pipeline",
+    (
+        _pipeline_run_link_attached_from_step_context_single_step,
+        _pipeline_run_link_attached_from_step_context_multiple_step,
+    ),
+    ids=["Single step pipeline", "Multiple steps pipeline"],
+)
+def test_pipeline_run_link_attached_from_step_context(pipeline):
+    """Tests that current pipeline run information is attached to model version by step context."""
+    with model_killer():
+        zs = Client().zen_store
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+        )(
+            ModelConfig(
+                name="foo",
+                create_new_model_version=True,
+                delete_new_version_on_failure=True,
+            )
+        )
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+        )(
+            ModelConfig(
+                name="foo",
+            )
+        )
+
+        model = zs.get_model("foo")
+        mv = zs.get_model_version(
+            model_name_or_id=model.id,
+        )
+
+        assert len(mv.pipeline_run_ids) == 2
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            run_name_1,
+            run_name_2,
+        }
+
+
+@step
+def _this_step_has_model_config_on_artifact_level() -> (
+    Tuple[
+        Annotated[
+            int, "declarative_link", ArtifactConfig(model_name="declarative")
+        ],
+        Annotated[int, "functional_link"],
+    ]
+):
+    link_output_to_model(
+        ArtifactConfig(model_name="functional"), output_name="functional_link"
+    )
+    return 1, 2
+
+
+@pipeline(enable_cache=False)
+def _pipeline_run_link_attached_from_artifact_context_single_step():
+    _this_step_has_model_config_on_artifact_level()
+
+
+@pipeline(enable_cache=False)
+def _pipeline_run_link_attached_from_artifact_context_multiple_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_config_on_artifact_level()
+
+
+@pipeline(enable_cache=False, model_config=ModelConfig(name="pipeline"))
+def _pipeline_run_link_attached_from_mixed_context_single_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+
+
+@pipeline(enable_cache=False, model_config=ModelConfig(name="pipeline"))
+def _pipeline_run_link_attached_from_mixed_context_multiple_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+
+
+@pytest.mark.parametrize(
+    "pipeline,model_names",
+    (
+        (
+            _pipeline_run_link_attached_from_artifact_context_single_step,
+            ["declarative", "functional"],
+        ),
+        (
+            _pipeline_run_link_attached_from_artifact_context_multiple_step,
+            ["declarative", "functional"],
+        ),
+        (
+            _pipeline_run_link_attached_from_mixed_context_single_step,
+            ["declarative", "functional", "step", "pipeline"],
+        ),
+        (
+            _pipeline_run_link_attached_from_mixed_context_multiple_step,
+            ["declarative", "functional", "step", "pipeline"],
+        ),
+    ),
+    ids=[
+        "Single step pipeline (declarative+functional)",
+        "Multiple steps pipeline (declarative+functional)",
+        "Single step pipeline (declarative+functional+step+pipeline)",
+        "Multiple steps pipeline (declarative+functional+step+pipeline)",
+    ],
+)
+def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
+    """Tests that current pipeline run information is attached to model version by artifact context.
+
+    Here we use 2 models and Artifacts has different configs to link there.
+    """
+    with model_killer():
+        zs = Client().zen_store
+
+        models = []
+        for model_name in model_names:
+            models.append(
+                zs.create_model(
+                    ModelRequestModel(
+                        name=model_name,
+                        user=Client().active_user.id,
+                        workspace=Client().active_workspace.id,
+                    )
+                )
+            )
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    model=models[-1].id,
+                    version="good_one",
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                )
+            )
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+        )()
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+        )()
+
+        for model in models:
+            mv = zs.get_model_version(
+                model_name_or_id=model.id,
+            )
+            assert len(mv.pipeline_run_ids) == 2
+            assert {run_name for run_name in mv.pipeline_run_ids} == {
+                run_name_1,
+                run_name_2,
+            }
+
+
+@step(model_config=ModelConfig(name="step"))
+def _consumer_step(a: int):
+    assert a == 1
+
+
+@step(model_config=ModelConfig(name="step", create_new_model_version=True))
+def _producer_step() -> int:
+    return 1
+
+
+@pipeline
+def _consumer_pipeline():
+    _consumer_step(
+        ExternalArtifact(model_artifact_name="output", model_name="step")
+    )
+
+
+@pipeline
+def _producer_pipeline():
+    _producer_step()
+
+
+def test_that_consumption_also_registers_run_in_model_version():
+    with model_killer():
+        _producer_pipeline.with_options(run_name="producer_run")()
+        _consumer_pipeline.with_options(run_name="consumer_run")()
+
+        zs = Client().zen_store
+        model = zs.get_model(model_name_or_id="step")
+        mv = zs.get_model_version(
+            model_name_or_id=model.id,
+        )
+        assert len(mv.pipeline_run_ids) == 2
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            "producer_run",
+            "consumer_run",
+        }

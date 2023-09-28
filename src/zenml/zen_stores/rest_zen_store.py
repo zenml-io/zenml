@@ -2549,7 +2549,8 @@ class RestZenStore(BaseZenStore):
             model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
 
         Returns:
-            The newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns the existing link.
+            - Otherwise, returns the newly created model version to pipeline run link.
         """
         return self._create_workspace_scoped_resource(
             resource=model_version_pipeline_run_link,

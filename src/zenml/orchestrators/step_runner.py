@@ -250,6 +250,10 @@ class StepRunner:
                         self._link_artifacts_to_model(
                             artifact_ids=output_artifact_ids
                         )
+                        self._link_pipeline_run_to_model(
+                            pipeline_run=pipeline_run,
+                            artifact_names=list(output_artifact_ids.keys()),
+                        )
                     StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
@@ -646,6 +650,65 @@ class StepRunner:
                 )
                 artifact_config._step_name = get_step_context().step_run.name
                 artifact_config.link_to_model(artifact_uuid=artifact_uuid)
+
+    def _link_pipeline_run_to_model(
+        self,
+        pipeline_run: "PipelineRunResponseModel",
+        artifact_names: List[str],
+    ) -> None:
+        """Links the pipeline run to the model version.
+
+        Args:
+            pipeline_run: The response model of current pipeline run.
+            artifact_names: The name of the published output artifacts.
+        """
+        from zenml.models.model_models import (
+            ModelVersionPipelineRunRequestModel,
+        )
+
+        zs = Client().zen_store
+
+        for artifact_name in artifact_names:
+            artifact_config = (
+                get_step_context()._get_output(artifact_name).artifact_config
+            )
+            if artifact_config is not None:
+                try:
+                    model_id = (
+                        artifact_config._model_config.get_or_create_model().id
+                    )
+                    model_version_id = (
+                        artifact_config._model_config._get_model_version().id
+                    )
+                except RuntimeError:
+                    break
+                else:
+                    zs.create_model_version_pipeline_run_link(
+                        ModelVersionPipelineRunRequestModel(
+                            user=Client().active_user.id,
+                            workspace=Client().active_workspace.id,
+                            name=pipeline_run.name,
+                            pipeline_run=pipeline_run.id,
+                            model=model_id,
+                            model_version=model_version_id,
+                        )
+                    )
+
+        try:
+            mc = get_step_context().model_config
+        except StepContextError:
+            return
+
+        zs.create_model_version_pipeline_run_link(
+            ModelVersionPipelineRunRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                name=pipeline_run.name,
+                pipeline_run=pipeline_run.id,
+                model=mc.get_or_create_model().id,
+                model_version=mc._get_model_version().id,
+            )
+        )
 
     def load_and_run_hook(
         self,

@@ -1917,10 +1917,8 @@ class ZenStoreInterface(ABC):
             model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
 
         Returns:
-            The newly created model version to pipeline run link.
-
-        Raises:
-            EntityExistsError: If a link with the given ID already exists.
+            - If Model Version to Pipeline Run Link already exists - returns the existing link.
+            - Otherwise, returns the newly created model version to pipeline run link.
         """
 
     @abstractmethod
