@@ -23,7 +23,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.client import Client
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model_config import ModelConfig
@@ -143,11 +142,6 @@ class ExternalArtifact(BaseModel):
             )
         return values
 
-    def _import_client(self) -> Type["Client"]:
-        from zenml.client import Client
-
-        return Client
-
     def _upload_by_value(self) -> UUID:
         """Uploads the artifact by value.
 
@@ -157,9 +151,10 @@ class ExternalArtifact(BaseModel):
         Raises:
             RuntimeError: If artifact URI already exists.
         """
+        from zenml.client import Client
         from zenml.utils.artifact_utils import upload_artifact
 
-        client = self._import_client()()
+        client = Client()
 
         artifact_store_id = client.active_stack.artifact_store.id
 
@@ -205,7 +200,9 @@ class ExternalArtifact(BaseModel):
         Raises:
             RuntimeError: If artifact was not found in pipeline run.
         """
-        client = self._import_client()()
+        from zenml.client import Client
+
+        client = Client()
 
         response = None
         pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
@@ -243,9 +240,10 @@ class ExternalArtifact(BaseModel):
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
                 model configuration is missing in @step and @pipeline.
         """
+        from zenml.client import Client
         from zenml.model.model_config import ModelConfig
 
-        client = self._import_client()()
+        client = Client()
 
         if self.model_name is None:
             if model_config is None:
@@ -316,7 +314,9 @@ class ExternalArtifact(BaseModel):
             RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
                 artifact name group is provided when creating an external artifact.
         """
-        client = self._import_client()()
+        from zenml.client import Client
+
+        client = Client()
 
         if self.value:
             self.id = self._upload_by_value()

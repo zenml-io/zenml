@@ -14,7 +14,7 @@
 """Model implementation to support Model WatchTower feature."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -32,7 +32,7 @@ from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 if TYPE_CHECKING:
-    from zenml.client import Client
+    pass
 
 
 class ModelVersionBaseModel(BaseModel):
@@ -154,11 +154,6 @@ class ModelVersionResponseModel(
             for name, pr in self.pipeline_run_ids.items()
         }
 
-    def _import_client(self) -> Type["Client"]:
-        from zenml.client import Client
-
-        return Client
-
     def _get_linked_object(
         self,
         collection: Dict[str, Dict[str, UUID]],
@@ -182,7 +177,9 @@ class ModelVersionResponseModel(
         Raises:
             RuntimeError: If more than one object is found by given keys
         """
-        client = self._import_client()()
+        from zenml.client import Client
+
+        client = Client()
 
         search_pattern = re.compile(
             (pipeline_name or r"(.*)")

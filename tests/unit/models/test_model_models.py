@@ -18,7 +18,7 @@ from uuid import uuid4
 
 import pytest
 
-from tests.unit.steps.test_external_artifact import MockClient
+from tests.unit.steps.test_external_artifact import MockZenmlClient
 from zenml.models.model_models import (
     ModelResponseModel,
     ModelVersionResponseModel,
@@ -128,9 +128,7 @@ ARTIFACT_IDS = [uuid4(), uuid4()]
         "Not found",
     ],
 )
-@patch("zenml.models.model_models.ModelVersionResponseModel._import_client")
 def test_getters(
-    mocked_client,
     artifact_object_ids,
     query_name,
     query_pipe,
@@ -140,39 +138,44 @@ def test_getters(
     sample_workspace_model,
 ):
     """Test that the getters work as expected."""
-    mocked_client.return_value = MockClient
-    model = ModelResponseModel(
-        id=uuid4(),
-        name="model",
-        workspace=sample_workspace_model,
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-    mv = ModelVersionResponseModel(
-        version="foo",
-        model=model,
-        workspace=sample_workspace_model,
-        created=datetime.now(),
-        updated=datetime.now(),
-        id=uuid4(),
-        artifact_object_ids=artifact_object_ids,
-    )
-    if expected != "RuntimeError":
-        got = mv.get_artifact_object(
-            name=query_name,
-            pipeline_name=query_pipe,
-            step_name=query_step,
-            version=query_version,
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        model = ModelResponseModel(
+            id=uuid4(),
+            name="model",
+            workspace=sample_workspace_model,
+            created=datetime.now(),
+            updated=datetime.now(),
         )
-        if got is not None:
-            assert got.id == expected
-        else:
-            assert expected is None
-    else:
-        with pytest.raises(RuntimeError):
-            mv.get_artifact_object(
+        mv = ModelVersionResponseModel(
+            version="foo",
+            model=model,
+            workspace=sample_workspace_model,
+            created=datetime.now(),
+            updated=datetime.now(),
+            id=uuid4(),
+            artifact_object_ids=artifact_object_ids,
+        )
+        if expected != "RuntimeError":
+            got = mv.get_artifact_object(
                 name=query_name,
                 pipeline_name=query_pipe,
                 step_name=query_step,
                 version=query_version,
             )
+            if got is not None:
+                assert got.id == expected
+            else:
+                assert expected is None
+        else:
+            with pytest.raises(RuntimeError):
+                mv.get_artifact_object(
+                    name=query_name,
+                    pipeline_name=query_pipe,
+                    step_name=query_step,
+                    version=query_version,
+                )
