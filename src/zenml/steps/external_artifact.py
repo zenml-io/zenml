@@ -20,7 +20,6 @@ from pydantic import BaseModel, root_validator
 
 from zenml.config.source import Source
 from zenml.enums import ModelStages
-from zenml.exceptions import ArtifactInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -157,11 +156,6 @@ class ExternalArtifact(BaseModel):
         Args:
             model_config: The model config of the step (from step or pipeline).
 
-        Raises:
-            RuntimeError: If the artifact store of the referenced artifact
-                is not the same as the one in the active stack.
-            RuntimeError: If the URI of the artifact already exists.
-
         Returns:
             The artifact ID.
         """
@@ -191,6 +185,8 @@ class ExternalArtifact(BaseModel):
             RuntimeError: If the artifact store of the referenced artifact
                 is not the same as the one in the active stack.
             RuntimeError: If the URI of the artifact already exists.
+            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
+                model configuration is missing in @step and @pipeline.
 
         Returns:
             The artifact ID.
@@ -257,7 +253,7 @@ class ExternalArtifact(BaseModel):
 
                 if self.model_name is None:
                     if model_config is None:
-                        raise ArtifactInterfaceError(
+                        raise RuntimeError(
                             "ExternalArtifact initiated with `model_artifact_name`, "
                             "but no model config was provided and missing in @step or "
                             "@pipeline definitions."

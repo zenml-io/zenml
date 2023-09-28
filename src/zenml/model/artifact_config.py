@@ -67,7 +67,6 @@ class ArtifactConfig(BaseModel):
             RuntimeError: If model configuration cannot be acquired from @step
                 or @pipeline or built on the fly from fields of this class.
         """
-
         try:
             model_config = get_step_context().model_config
         except StepContextError:
