@@ -42,7 +42,7 @@ class ExternalArtifact(BaseModel):
     can be used to provide any value as input to a step without needing to
     write an additional step that returns this value.
 
-    This class can be configured using following parameters:
+    This class can be configured using the following parameters:
     - value: The artifact value (any python object), that will be uploaded to the
         artifact store.
     - id: The ID of an artifact that is already registered in ZenML.
@@ -52,11 +52,10 @@ class ExternalArtifact(BaseModel):
         model, model version, model artifact and artifact version to search.
 
     Args:
-        value: The artifact value. Either this or an artifact ID must be
-            provided.
+        value: The artifact value.
 
         id: The ID of an artifact that should be referenced by this external
-            artifact. Either this or an artifact value must be provided.
+            artifact.
 
         pipeline_name: Name of a pipeline to search for artifact in latest run.
         artifact_name: Name of an artifact to be searched in latest pipeline run.
@@ -90,7 +89,7 @@ class ExternalArtifact(BaseModel):
     ```
     """
 
-    value: Any = None
+    value: Optional[Any] = None
     id: Optional[UUID] = None
     pipeline_name: Optional[str] = None
     artifact_name: Optional[str] = None
@@ -133,7 +132,7 @@ class ExternalArtifact(BaseModel):
         ):
             raise ValueError(
                 "Either a value, an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group can be "
+                "model name/model version/model artifact name group must be "
                 "provided when creating an external artifact."
             )
         elif (pipeline_name is None) != (artifact_name is None):
