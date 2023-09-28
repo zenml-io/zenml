@@ -170,7 +170,7 @@ class ModelVersionResponseModel(
         """Get model object linked to this model version.
 
         Args:
-            collection: The collection to search in.
+            collection: The collection to search in (one of self.model_object_ids, self.artifact_object_ids, self.deployment_ids)
             name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
             pipeline_name: The name of the pipeline generated artifact.
