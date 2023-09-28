@@ -142,6 +142,11 @@ class ExternalArtifact(BaseModel):
             )
         return values
 
+    def _import_client(self) -> Type["Client"]:
+        from zenml.client import Client
+
+        return Client
+
     def upload_if_necessary(
         self, model_config: Optional["ModelConfig"] = None
     ) -> UUID:
@@ -158,39 +163,10 @@ class ExternalArtifact(BaseModel):
         Returns:
             The artifact ID.
         """
-        from zenml.client import Client
-        from zenml.utils import artifact_utils
+        from zenml.utils.artifact_utils import upload_artifact
 
-        return self._testable_upload_if_necessary(
-            Client, artifact_utils, model_config
-        )
+        client = self._import_client()()
 
-    def _testable_upload_if_necessary(
-        self,
-        _client: Type["Client"],
-        _artifact_utils: Any,
-        model_config: Optional["ModelConfig"] = None,
-    ) -> UUID:
-        """Uploads the artifact if necessary.
-
-        This just a testable wrapper taking into modules causing cyclic imports.
-
-        Args:
-            _client: zenml.client.Client
-            _artifact_utils: zenml.utils.artifact_utils
-            model_config: The model config of the step (from step or pipeline).
-
-        Raises:
-            RuntimeError: If the artifact store of the referenced artifact
-                is not the same as the one in the active stack.
-            RuntimeError: If the URI of the artifact already exists.
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
-
-        Returns:
-            The artifact ID.
-        """
-        client: "Client" = _client()
         artifact_store_id = client.active_stack.artifact_store.id
 
         if self.value:
@@ -209,7 +185,7 @@ class ExternalArtifact(BaseModel):
 
             materializer = materializer_class(uri)
 
-            artifact_id: UUID = _artifact_utils.upload_artifact(
+            artifact_id: UUID = upload_artifact(
                 name=artifact_name,
                 data=self.value,
                 materializer=materializer,

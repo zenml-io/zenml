@@ -136,58 +136,80 @@ def test_external_artifact_init(
 
 
 @patch("zenml.steps.external_artifact.fileio")
+@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_value(
+    mocked_client,
     mocked_fileio,
 ):
+    mocked_client.return_value = MockClient
     mocked_fileio.exists.return_value = False
     ea = ExternalArtifact(value=1)
     assert ea.id is None
-    ea._testable_upload_if_necessary(MockClient, MagicMock())
+    with patch.dict(
+        "sys.modules", {"zenml.utils.artifact_utils": MagicMock()}
+    ):
+        ea.upload_if_necessary()
     assert ea.id is not None
     assert ea.value is None
     assert ea.pipeline_name is None
     assert ea.artifact_name is None
 
 
-def test_upload_if_necessary_by_id():
+@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+def test_upload_if_necessary_by_id(mocked_client):
+    mocked_client.return_value = MockClient
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
     assert ea.value is None
     assert ea.pipeline_name is None
     assert ea.artifact_name is None
     assert ea.id is not None
-    assert (
-        ea._testable_upload_if_necessary(MockClient, MagicMock())
-        == GLOBAL_ARTIFACT_ID
-    )
+    with patch.dict(
+        "sys.modules", {"zenml.utils.artifact_utils": MagicMock()}
+    ):
+        assert ea.upload_if_necessary() == GLOBAL_ARTIFACT_ID
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact():
+@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+def test_upload_if_necessary_by_pipeline_and_artifact(mocked_client):
+    mocked_client.return_value = MockClient
     ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
     assert ea.value is None
     assert ea.pipeline_name is not None
     assert ea.artifact_name is not None
     assert ea.id is None
-    assert (
-        ea._testable_upload_if_necessary(MockClient, MagicMock())
-        == GLOBAL_ARTIFACT_ID
-    )
+    with patch.dict(
+        "sys.modules", {"zenml.utils.artifact_utils": MagicMock()}
+    ):
+        assert ea.upload_if_necessary() == GLOBAL_ARTIFACT_ID
     assert ea.id == GLOBAL_ARTIFACT_ID
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store():
+@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store(
+    mocked_client,
+):
+    mocked_client.return_value = lambda: MockClient(artifact_store_id=45)
     with pytest.raises(
         RuntimeError,
         match=r"The artifact bar \(ID: " + str(GLOBAL_ARTIFACT_ID) + r"\)",
     ):
-        ExternalArtifact(
-            pipeline_name="foo", artifact_name="bar"
-        )._testable_upload_if_necessary(
-            lambda: MockClient(artifact_store_id=45), MagicMock()
-        )
+        with patch.dict(
+            "sys.modules", {"zenml.utils.artifact_utils": MagicMock()}
+        ):
+            ExternalArtifact(
+                pipeline_name="foo", artifact_name="bar"
+            ).upload_if_necessary()
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found():
+@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found(
+    mocked_client,
+):
+    mocked_client.return_value = MockClient
     with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
-        ExternalArtifact(
-            pipeline_name="foo", artifact_name="foobar"
-        )._testable_upload_if_necessary(MockClient, MagicMock())
+        with patch.dict(
+            "sys.modules", {"zenml.utils.artifact_utils": MagicMock()}
+        ):
+            ExternalArtifact(
+                pipeline_name="foo", artifact_name="foobar"
+            ).upload_if_necessary()
