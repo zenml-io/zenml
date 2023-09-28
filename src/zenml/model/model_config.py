@@ -38,7 +38,7 @@ class ModelConfig(ModelConfigModel):
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    recovery: Whether to keep failed runs with new versions for later recovery from it.
+    delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
     """
 
     _model: Optional["ModelResponseModel"] = PrivateAttr(default=None)
@@ -61,16 +61,16 @@ class ModelConfig(ModelConfigModel):
             values["version"] = RUNNING_MODEL_VERSION
         return create_new_model_version
 
-    @validator("recovery")
+    @validator("delete_new_version_on_failure")
     def _validate_recovery(
-        cls, recovery: bool, values: Dict[str, Any]
+        cls, delete_new_version_on_failure: bool, values: Dict[str, Any]
     ) -> bool:
-        if recovery:
+        if not delete_new_version_on_failure:
             if not values.get("create_new_model_version", False):
                 logger.warning(
-                    "Using `recovery` flag without `create_new_model_version=True` has no effect."
+                    "Using `delete_new_version_on_failure=False` without `create_new_model_version=True` has no effect."
                 )
-        return recovery
+        return delete_new_version_on_failure
 
     @validator("version")
     def _validate_version(
@@ -157,15 +157,12 @@ class ModelConfig(ModelConfigModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            self._model_version = zenml_client.zen_store.get_model_version(
+            mv = zenml_client.zen_store.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
+            self._model_version = mv
         except KeyError:
-            if self.recovery:
-                logger.warning(
-                    f"Recovery mode: No `{self.version}` model version found."
-                )
             self._model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
@@ -201,10 +198,18 @@ class ModelConfig(ModelConfigModel):
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model WatchTower.
 
-        New model is created implicitly, if missing, otherwise fetched.
+        A new model is created implicitly if missing, otherwise existing model is fetched. Model
+        name is controlled by the `name` parameter.
 
-        New version will be created if `create_new_model_version`, otherwise
-        will try to fetch based on `model_version`.
+        Model Version returned by this method is resolved based on model configuration:
+        - If there is an existing model version leftover from the previous failed run with
+        `delete_new_version_on_failure` is set to False and `create_new_model_version` is True,
+        leftover model version will be reused.
+        - Otherwise if `create_new_model_version` is True, a new model version is created.
+        - If `create_new_model_version` is False a model version will be fetched based on the version:
+            - If `version` is not set, the latest model version will be fetched.
+            - If `version` is set to a string, the model version with the matching version will be fetched.
+            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
 
         Returns:
             The model version based on configuration.

@@ -246,23 +246,34 @@ class ModelVersionSchema(BaseSchema, table=True):
             description=self.description,
             stage=self.stage,
             model_object_ids={
-                al.name: al.artifact_id
+                al.name: {
+                    al.version: al.artifact_id
+                    for al in self.artifact_links
+                    if al.is_model_object
+                }
                 for al in self.artifact_links
-                if al.artifact_id is not None and al.is_model_object
+                if al.is_model_object
             },
             deployment_ids={
-                al.name: al.artifact_id
+                al.name: {
+                    al.version: al.artifact_id
+                    for al in self.artifact_links
+                    if al.is_deployment
+                }
                 for al in self.artifact_links
-                if al.artifact_id is not None and al.is_deployment
+                if al.is_deployment
             },
             artifact_object_ids={
-                al.name: al.artifact_id
+                al.name: {
+                    al.version: al.artifact_id
+                    for al in self.artifact_links
+                    if not (al.is_deployment or al.is_model_object)
+                }
                 for al in self.artifact_links
-                if al.artifact_id is not None
-                and not (al.is_deployment or al.is_model_object)
+                if not (al.is_deployment or al.is_model_object)
             },
             pipeline_run_ids={
-                al.name: al.pipeline_run_id for al in self.pipeline_run_links
+                pr.name: pr.pipeline_run_id for pr in self.pipeline_run_links
             },
         )
 

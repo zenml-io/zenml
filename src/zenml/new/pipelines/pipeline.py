@@ -508,6 +508,9 @@ class Pipeline:
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
             prevent_build_reuse: Whether to prevent the reuse of a build.
+
+        Raises:
+            Exception: bypass any exception from pipeline up.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -590,6 +593,8 @@ class Pipeline:
 
             stack = Client().active_stack
 
+            new_version_requests = self.get_new_version_requests(deployment)
+
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
             )
@@ -647,6 +652,11 @@ class Pipeline:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
                 stack.deploy_pipeline(deployment=deployment_model)
+            except Exception as e:
+                self.delete_running_versions_without_recovery(
+                    new_version_requests
+                )
+                raise e
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
@@ -657,7 +667,7 @@ class Pipeline:
             )
 
             if runs.items:
-                self.register_running_versions(runs.items[0])
+                self.register_running_versions(new_version_requests)
                 run_url = dashboard_utils.get_run_url(runs[0])
                 if run_url:
                     logger.info(f"Dashboard URL: {run_url}")
@@ -746,49 +756,108 @@ class Pipeline:
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
+    def get_new_version_requests(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> Dict[str, Dict[str, Any]]:
+        """Get the running versions of the models that are used in the pipeline run.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+
+        Returns:
+            A dict of dicts containing requesters of new version and if it should be kept on failure.
+        """
+        new_versions_requested: Dict[str, Dict[str, Any]] = {}
+        all_steps_have_own_config = True
+        for step in deployment.step_configurations.values():
+            step_model_config = step.config.model_config_model
+            all_steps_have_own_config = (
+                all_steps_have_own_config
+                and step.config.model_config_model is not None
+            )
+            if (
+                step_model_config
+                and step_model_config.create_new_model_version
+            ):
+                model_name = step_model_config.name
+                new_versions_requested[
+                    model_name
+                ] = new_versions_requested.get(
+                    model_name,
+                    {"requesters": [], "delete_new_version_on_failure": True},
+                )
+                new_versions_requested[model_name]["requesters"].append(
+                    f"Step: {step.config.name}"
+                )
+                new_versions_requested[model_name][
+                    "delete_new_version_on_failure"
+                ] &= step_model_config.delete_new_version_on_failure
+        if not all_steps_have_own_config:
+            pipeline_model_config = (
+                deployment.pipeline_configuration.model_config_model
+            )
+            if (
+                pipeline_model_config
+                and pipeline_model_config.create_new_model_version
+            ):
+                new_versions_requested[
+                    pipeline_model_config.name
+                ] = new_versions_requested.get(
+                    pipeline_model_config.name,
+                    {"requesters": [], "delete_new_version_on_failure": True},
+                )
+                new_versions_requested[pipeline_model_config.name][
+                    "requesters"
+                ].append(f"Pipeline: {self.name}")
+                new_versions_requested[pipeline_model_config.name][
+                    "delete_new_version_on_failure"
+                ] &= pipeline_model_config.delete_new_version_on_failure
+        elif deployment.pipeline_configuration.model_config_model is not None:
+            logger.warning(
+                f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
+            )
+        for model_name, data in new_versions_requested.items():
+            if len(data["requesters"]) > 1:
+                logger.warning(
+                    f"New version of model `{model_name}` requested in multiple decorators:\n"
+                    f"{data['requesters']}\n We recommend that `create_new_model_version` is configured "
+                    "only in one place of the pipeline."
+                )
+
+        return new_versions_requested
+
     def register_running_versions(
-        self, pipeline: PipelineRunResponseModel
+        self, new_version_requests: Dict[str, Dict[str, Any]]
     ) -> None:
         """Registers the running versions of the models used in the given pipeline run.
 
         Args:
-            pipeline: The pipeline run response model.
-
-        Raises:
-            KeyError: No running model version found for @step `model_config`s.
+            new_version_requests: Dict of models requesting new versions and their definition points.
         """
-        models_to_register = set()
-        pipeline_model_name = None
-        for step_name, step in pipeline.steps.items():
-            if (
-                step.config.model_config
-                and step.config.model_config.create_new_model_version
-            ):
-                models_to_register.add(step.config.model_config.name)
-        if (
-            pipeline.config.model_config
-            and pipeline.config.model_config.create_new_model_version
-        ):
-            pipeline_model_name = pipeline.config.model_config.name
-            models_to_register.add(pipeline.config.model_config.name)
         zs = Client().zen_store
-        for model_name in models_to_register:
-            try:
+        for model_name, requesters in new_version_requests.items():
+            if requesters["delete_new_version_on_failure"]:
                 mv = zs.get_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_id=RUNNING_MODEL_VERSION,
                 )
                 mv._assign_version_to_running()
-            except KeyError as e:
-                if model_name == pipeline_model_name:
-                    logger.warning(
-                        f"Failed to register stable model version of `{model_name}` model. "
-                        f"No `{RUNNING_MODEL_VERSION}` version found. "
-                        "Most probable root cause: you set ModelConfig on pipeline level and "
-                        "override it in all steps inside that pipeline."
-                    )
-                else:
-                    raise e
+
+    def delete_running_versions_without_recovery(
+        self, new_version_requests: Dict[str, Dict[str, Any]]
+    ) -> None:
+        """Delete the running versions of the models without `restore` after fail.
+
+        Args:
+            new_version_requests: Dict of models requesting new versions and their definition points.
+        """
+        zs = Client().zen_store
+        for model_name, requesters in new_version_requests.items():
+            if requesters["delete_new_version_on_failure"]:
+                zs.delete_model_version(
+                    model_name_or_id=model_name,
+                    model_version_name_or_id=RUNNING_MODEL_VERSION,
+                )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.
