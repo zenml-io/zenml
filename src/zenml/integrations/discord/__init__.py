@@ -11,38 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Feast integration.
+"""Discord integration for alerter components."""
 
-The Feast integration offers a way to connect to a Feast Feature Store. ZenML
-implements a dedicated stack component that you can access as part of your ZenML
-steps in the usual ways.
-"""
 from typing import List, Type
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import FEAST
+from zenml.integrations.constants import DISCORD
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-FEAST_FEATURE_STORE_FLAVOR = "feast"
+DISCORD_ALERTER_FLAVOR = "discord"
 
 
-class FeastIntegration(Integration):
-    """Definition of Feast integration for ZenML."""
+class DiscordIntegration(Integration):
+    """Definition of a Discord integration for ZenML.
 
-    NAME = FEAST
-    REQUIREMENTS = ["feast[redis]>=0.26.0", "redis-server>=6.0.9"]
+    Implemented using [Discord API Wrapper](https://pypi.org/project/discord.py/).
+    """
+
+    NAME = DISCORD
+    REQUIREMENTS = ["discord.py>=2.3.2", "aiohttp>=3.8.1", "asyncio"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Feast integration.
+        """Declare the stack component flavors for the Discord integration.
 
         Returns:
-            List of stack component flavors for this integration.
+            List of new flavors defined by the Discord integration.
         """
-        from zenml.integrations.feast.flavors import FeastFeatureStoreFlavor
+        from zenml.integrations.discord.flavors import DiscordAlerterFlavor
 
-        return [FeastFeatureStoreFlavor]
+        return [DiscordAlerterFlavor]
 
 
-FeastIntegration.check_installation()
+DiscordIntegration.check_installation()
