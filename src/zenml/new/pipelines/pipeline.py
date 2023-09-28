@@ -40,7 +40,6 @@ from pydantic import ValidationError
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -88,6 +87,7 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.model.model_config import ModelConfig
@@ -1143,7 +1143,7 @@ class Pipeline:
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
-        external_artifacts: Dict[str, ExternalArtifact],
+        external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
         upstream_steps: Set[str],
         custom_id: Optional[str] = None,

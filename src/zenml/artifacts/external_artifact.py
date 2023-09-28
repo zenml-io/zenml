@@ -18,17 +18,17 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, root_validator
 
+from zenml.config.source import Source
 from zenml.enums import ModelStages
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
+
+MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
-    from zenml.config.source import Source
-    from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model_config import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
-
-    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
 
 
 logger = get_logger(__name__)
@@ -95,11 +95,11 @@ class ExternalArtifact(BaseModel):
     artifact_name: Optional[str] = None
     model_name: Optional[str] = None
     model_version: Optional[str] = None
-    model_artifact_name: Optional[Union[str, "ModelStages"]] = None
+    model_artifact_name: Optional[Union[str, ModelStages]] = None
     model_artifact_version: Optional[str] = None
     model_artifact_pipeline_name: Optional[str] = None
     model_artifact_step_name: Optional[str] = None
-    materializer: Optional["MaterializerClassOrSource"] = None
+    materializer: Optional[MaterializerClassOrSource] = None
     store_artifact_metadata: bool = True
     store_artifact_visualizations: bool = True
 
@@ -348,7 +348,7 @@ class ExternalArtifact(BaseModel):
 
         return self.id
 
-    def _get_materializer_class(self, value: Any) -> Type["BaseMaterializer"]:
+    def _get_materializer_class(self, value: Any) -> Type[BaseMaterializer]:
         """Gets a materializer class for a value.
 
         If a custom materializer is defined for this artifact it will be
@@ -362,7 +362,6 @@ class ExternalArtifact(BaseModel):
         Returns:
             The materializer class.
         """
-        from zenml.materializers.base_materializer import BaseMaterializer
         from zenml.materializers.materializer_registry import (
             materializer_registry,
         )
