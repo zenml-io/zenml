@@ -148,8 +148,15 @@ class ExternalArtifact(BaseModel):
 
         return Client
 
-    def _upload_by_value(self) -> None:
-        """Uploads the artifact by value."""
+    def _upload_by_value(self) -> UUID:
+        """Uploads the artifact by value.
+
+        Returns:
+            The uploaded artifact ID.
+
+        Raises:
+            RuntimeError: If artifact URI already exists.
+        """
         from zenml.utils.artifact_utils import upload_artifact
 
         client = self._import_client()()
@@ -187,6 +194,8 @@ class ExternalArtifact(BaseModel):
         self.value = None
         logger.info("Finished uploading external artifact %s.", artifact_id)
 
+        return self.id
+
     def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
         """Get artifact from pipeline run.
 
@@ -199,7 +208,7 @@ class ExternalArtifact(BaseModel):
         client = self._import_client()()
 
         response = None
-        pipeline = client.get_pipeline(self.pipeline_name)
+        pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
         for artifact in pipeline.last_successful_run.artifacts:
             if artifact.name == self.artifact_name:
                 response = artifact
@@ -260,7 +269,7 @@ class ExternalArtifact(BaseModel):
             model_version.get_deployment,
         ]:
             response = artifact_getter(
-                name=self.model_artifact_name,
+                name=self.model_artifact_name,  # type: ignore [arg-type]
                 version=self.model_artifact_version,
                 pipeline_name=self.model_artifact_pipeline_name,
                 step_name=self.model_artifact_step_name,
@@ -307,11 +316,10 @@ class ExternalArtifact(BaseModel):
             RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
                 artifact name group is provided when creating an external artifact.
         """
-
         client = self._import_client()()
 
         if self.value:
-            self._upload_by_value()
+            self.id = self._upload_by_value()
         else:
             if self.id:
                 response = client.get_artifact(artifact_id=self.id)
