@@ -18,17 +18,17 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from zenml.steps.external_artifact import ExternalArtifact
+from zenml.artifacts.external_artifact import ExternalArtifact
 
 GLOBAL_ARTIFACT_ID = uuid4()
 
 
 class MockClient:
     class MockArtifactResponse:
-        def __init__(self, name):
+        def __init__(self, name, id=GLOBAL_ARTIFACT_ID):
             self.artifact_store_id = 42
             self.name = name
-            self.id = GLOBAL_ARTIFACT_ID
+            self.id = id
 
     class MockPipelineResponse:
         def __init__(self):
@@ -44,7 +44,10 @@ class MockClient:
         self.active_stack.artifact_store.path = "foo"
 
     def get_artifact(self, *args, **kwargs):
-        return MockClient.MockArtifactResponse("foo")
+        if len(args):
+            return MockClient.MockArtifactResponse("foo", args[0])
+        else:
+            return MockClient.MockArtifactResponse("foo")
 
     def get_pipeline(self, *args, **kwargs):
         return MockClient.MockPipelineResponse()
@@ -135,8 +138,8 @@ def test_external_artifact_init(
         )
 
 
-@patch("zenml.steps.external_artifact.fileio")
-@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+@patch("zenml.artifacts.external_artifact.fileio")
+@patch("zenml.artifacts.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_value(
     mocked_client,
     mocked_fileio,
@@ -155,7 +158,7 @@ def test_upload_if_necessary_by_value(
     assert ea.artifact_name is None
 
 
-@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+@patch("zenml.artifacts.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_id(mocked_client):
     mocked_client.return_value = MockClient
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
@@ -169,7 +172,7 @@ def test_upload_if_necessary_by_id(mocked_client):
         assert ea.upload_if_necessary() == GLOBAL_ARTIFACT_ID
 
 
-@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+@patch("zenml.artifacts.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_pipeline_and_artifact(mocked_client):
     mocked_client.return_value = MockClient
     ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
@@ -184,7 +187,7 @@ def test_upload_if_necessary_by_pipeline_and_artifact(mocked_client):
     assert ea.id == GLOBAL_ARTIFACT_ID
 
 
-@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+@patch("zenml.artifacts.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store(
     mocked_client,
 ):
@@ -201,7 +204,7 @@ def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store(
             ).upload_if_necessary()
 
 
-@patch("zenml.steps.external_artifact.ExternalArtifact._import_client")
+@patch("zenml.artifacts.external_artifact.ExternalArtifact._import_client")
 def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found(
     mocked_client,
 ):

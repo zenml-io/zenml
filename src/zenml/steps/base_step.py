@@ -47,7 +47,6 @@ from zenml.steps.entrypoint_function_utils import (
     get_step_entrypoint_signature,
     validate_entrypoint_function,
 )
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
     resolve_type_annotation,
 )
@@ -60,6 +59,7 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
         PartialArtifactConfiguration,
@@ -450,6 +450,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The artifacts, external artifacts and parameters for the step.
         """
+        from zenml.artifacts.external_artifact import ExternalArtifact
+
         signature = get_step_entrypoint_signature(step=self)
 
         try:

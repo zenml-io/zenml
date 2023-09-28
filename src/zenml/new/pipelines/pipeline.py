@@ -40,6 +40,7 @@ from pydantic import ValidationError
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -75,7 +76,6 @@ from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
 )
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,

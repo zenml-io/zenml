@@ -26,13 +26,13 @@ from typing import (
 
 from pydantic import root_validator, validator
 
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.models.model_base_model import ModelConfigModel
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:

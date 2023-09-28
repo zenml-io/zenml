@@ -18,7 +18,7 @@ are most often used to handle the input or output of ZenML steps, and can be
 extended by building on the `BaseMaterializer` class.
 """
 
-
+from typing import Union, Type
 from zenml.materializers.built_in_materializer import (
     BuiltInContainerMaterializer,
     BuiltInMaterializer,
@@ -35,6 +35,14 @@ from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.materializers.base_materializer import BaseMaterializer
+
+from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.config.source import Source
+
+ExternalArtifact.update_forward_refs(
+    MaterializerClassOrSource=Union[str, Source, Type[BaseMaterializer]]
+)
 
 __all__ = [
     "BuiltInContainerMaterializer",

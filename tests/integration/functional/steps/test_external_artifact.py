@@ -18,8 +18,8 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model import ArtifactConfig, ModelConfig
-from zenml.steps.external_artifact import ExternalArtifact
 
 
 @step
