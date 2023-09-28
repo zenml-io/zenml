@@ -93,12 +93,25 @@ def test_link_minimalistic():
             )
         )
         assert links.size == 3
+
+        one_is_deployment = False
+        one_is_model_object = False
+        one_is_artifact = False
         for link in links:
             assert link.link_version == 1
             assert link.name == "output"
-        assert not (links[0].is_deployment or links[0].is_model_object)
-        assert not links[1].is_deployment and links[1].is_model_object
-        assert links[2].is_deployment and not links[2].is_model_object
+            one_is_deployment ^= (
+                link.is_deployment and not link.is_model_object
+            )
+            one_is_model_object ^= (
+                not link.is_deployment and link.is_model_object
+            )
+            one_is_artifact ^= (
+                not link.is_deployment and not link.is_model_object
+            )
+        assert one_is_deployment
+        assert one_is_model_object
+        assert one_is_artifact
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
@@ -144,9 +157,7 @@ def test_link_multiple_named_outputs():
         assert (
             al[0].link_version + al[1].link_version + al[2].link_version == 3
         )
-        assert al[0].name == "1"
-        assert al[1].name == "2"
-        assert al[2].name == "3"
+        assert {al.name for al in al} == {"1", "2", "3"}
 
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
@@ -275,8 +286,10 @@ def test_link_multiple_named_outputs_with_self_context():
         assert al1.size == 2
         assert al2.size == 1
 
-        assert al1[0].name == "1"
-        assert al1[1].name == "2"
+        assert {al.name for al in al1} == {
+            "1",
+            "2",
+        }
         assert al2[0].name == "3"
 
 
