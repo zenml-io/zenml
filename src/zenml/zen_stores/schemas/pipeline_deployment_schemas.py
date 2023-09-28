@@ -140,8 +140,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     build: Optional["PipelineBuildSchema"] = Relationship()
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
 
-    pipeline_runs: List["PipelineRunSchema"] = Relationship()
-    step_runs: List["StepRunSchema"] = Relationship()
+    pipeline_runs: List["PipelineRunSchema"] = Relationship(
+        sa_relationship_kwargs={"cascade": "delete"}
+    )
+    step_runs: List["StepRunSchema"] = Relationship(
+        sa_relationship_kwargs={"cascade": "delete"}
+    )
 
     @classmethod
     def from_request(

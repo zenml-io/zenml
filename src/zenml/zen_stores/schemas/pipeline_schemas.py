@@ -85,14 +85,13 @@ class PipelineSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship(
-        sa_relationship_kwargs={"cascade": "delete"}
-    )
+    runs: List["PipelineRunSchema"] = Relationship()
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
-        back_populates="pipeline"
+        back_populates="pipeline",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod

@@ -30,6 +30,7 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunOutputArtifactSchema,
+StepRunInputArtifactSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -82,7 +83,14 @@ class ArtifactSchema(NamedSchema, table=True):
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship()
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    input_of_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     visualizations: List["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
