@@ -646,6 +646,7 @@ def _producer_pipeline():
 
 
 def test_that_consumption_also_registers_run_in_model_version():
+    """Test that consumption scenario also registers run in model version."""
     with model_killer():
         _producer_pipeline.with_options(run_name="producer_run")()
         _consumer_pipeline.with_options(run_name="consumer_run")()
