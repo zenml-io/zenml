@@ -26,8 +26,17 @@ from zenml.integrations.label_studio.label_config_generators import (
     generate_text_classification_label_config,
 )
 
+HYPOTHESIS_MAX_TEXT_SIZE = 20
+HYPOTHESIS_MAX_LIST_SIZE = 20
 
-@given(label_list=lists(text(min_size=1), min_size=1))
+
+@given(
+    label_list=lists(
+        text(min_size=1, max_size=HYPOTHESIS_MAX_TEXT_SIZE),
+        min_size=1,
+        max_size=HYPOTHESIS_MAX_LIST_SIZE,
+    )
+)
 def test_text_classification_label_config_generator(label_list: List[str]):
     (
         label_config,
@@ -39,7 +48,13 @@ def test_text_classification_label_config_generator(label_list: List[str]):
     assert label_config is not None
 
 
-@given(label_list=lists(text(min_size=1), min_size=1))
+@given(
+    label_list=lists(
+        text(min_size=1, max_size=HYPOTHESIS_MAX_TEXT_SIZE),
+        min_size=1,
+        max_size=HYPOTHESIS_MAX_LIST_SIZE,
+    )
+)
 def test_image_classification_label_config_generator(label_list: List[str]):
     (
         label_config,
@@ -51,7 +66,13 @@ def test_image_classification_label_config_generator(label_list: List[str]):
     assert label_config is not None
 
 
-@given(label_list=lists(text(min_size=1), min_size=1))
+@given(
+    label_list=lists(
+        text(min_size=1, max_size=HYPOTHESIS_MAX_TEXT_SIZE),
+        min_size=1,
+        max_size=HYPOTHESIS_MAX_LIST_SIZE,
+    )
+)
 def test_object_detection_label_config_generator(label_list: List[str]):
     (
         label_config,
@@ -63,7 +84,13 @@ def test_object_detection_label_config_generator(label_list: List[str]):
     assert label_config is not None
 
 
-@given(label_list=lists(text(min_size=1), min_size=1))
+@given(
+    label_list=lists(
+        text(min_size=1, max_size=HYPOTHESIS_MAX_TEXT_SIZE),
+        min_size=1,
+        max_size=HYPOTHESIS_MAX_LIST_SIZE,
+    )
+)
 def test_ocr_label_config_generator(label_list: List[str]):
     (label_config, label_config_type) = generate_basic_ocr_label_config(
         label_list

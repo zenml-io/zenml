@@ -2,7 +2,7 @@ name: "CodeQL vulnerability check"
 
 on:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: ["develop"]
