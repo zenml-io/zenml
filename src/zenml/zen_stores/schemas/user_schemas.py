@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         ArtifactSchema,
         CodeRepositorySchema,
         FlavorSchema,
+        OAuthDeviceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -92,6 +93,10 @@ class UserSchema(NamedSchema, table=True):
     )
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
+    )
+    auth_devices: List["OAuthDeviceSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod

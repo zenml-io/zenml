@@ -19,6 +19,8 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -27,6 +29,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
 )
 from zenml.enums import ServerProviderType
+from zenml.exceptions import OAuthError
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
@@ -204,6 +207,14 @@ def handle_exceptions(func: F) -> F:
 
         try:
             return func(*args, **kwargs)
+        except OAuthError as error:
+            # The OAuthError is special because it needs to have a JSON response
+            return JSONResponse(
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
         except Exception as error:
             logger.exception("API error")
             http_exception = http_exception_from_error(error)

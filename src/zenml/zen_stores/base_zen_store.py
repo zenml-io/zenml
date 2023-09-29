@@ -43,6 +43,7 @@ from zenml.constants import (
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
+    AuthScheme,
     PermissionType,
     SecretsStoreType,
     StackComponentType,
@@ -313,20 +314,25 @@ class BaseZenStore(
             assert self._guest_role
         except KeyError:
             self._create_guest_role()
-        try:
-            default_user = self._default_user
-        except KeyError:
-            default_user = self._create_default_user()
-        try:
-            self._get_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
-        except KeyError:
-            self._create_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
+
+        config = ServerConfiguration.get_server_config()
+        # If the auth scheme is external, don't create the default user and
+        # stack
+        if config.auth_scheme != AuthScheme.EXTERNAL:
+            try:
+                default_user = self._default_user
+            except KeyError:
+                default_user = self._create_default_user()
+            try:
+                self._get_default_stack(
+                    workspace_name_or_id=default_workspace.id,
+                    user_name_or_id=default_user.id,
+                )
+            except KeyError:
+                self._create_default_stack(
+                    workspace_name_or_id=default_workspace.id,
+                    user_name_or_id=default_user.id,
+                )
 
     @property
     def url(self) -> str:

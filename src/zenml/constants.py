@@ -171,11 +171,15 @@ ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
 STEP_SOURCE_PARAMETER_NAME = "step_source"
 
-# Default server settings
+# Server settings
 DEFAULT_ZENML_JWT_TOKEN_LEEWAY = 10
 DEFAULT_ZENML_JWT_TOKEN_ALGORITHM = "HS256"
 DEFAULT_ZENML_AUTH_SCHEME = AuthScheme.OAUTH2_PASSWORD_BEARER
 EXTERNAL_AUTHENTICATOR_TIMEOUT = 10  # seconds
+DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS = 3
+DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT = 60 * 5  # 5 minutes
+DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
+DEFAULT_HTTP_TIMEOUT = 30
 
 # API Endpoint paths:
 API = "/api"
@@ -229,6 +233,9 @@ SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
+DEVICES = "/devices"
+DEVICE_AUTHORIZATION = "/device_authorization"
+DEVICE_VERIFICATION = "/device_verification"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

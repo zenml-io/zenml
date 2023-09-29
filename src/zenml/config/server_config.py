@@ -22,6 +22,9 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
+    DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -68,6 +71,29 @@ class ServerConfiguration(BaseModel):
             domain where the ZenML server is running.
         cors_allow_origins: The origins allowed to make cross-origin requests
             to the ZenML server. If not specified, all origins are allowed.
+        max_failed_device_auth_attempts: The maximum number of failed OAuth 2.0
+            device authentication attempts before the device is locked.
+        device_auth_timeout: The timeout in seconds after which a pending OAuth
+            2.0 device authorization request expires.
+        device_auth_polling_interval: The polling interval in seconds used to
+            poll the OAuth 2.0 device authorization endpoint.
+        dashboard_url: The URL where the ZenML dashboard is hosted. Used to
+            construct the OAuth 2.0 device authorization endpoint. If not set,
+            a partial URL is returned to the client which is used to construct
+            the full URL based on the server's root URL path.
+        device_expiration: The time in minutes that an OAuth 2.0 device is
+            allowed to be used to authenticate with the ZenML server. If not
+            set or if `jwt_token_expire_minutes` is not set, the devices are
+            allowed to be used indefinitely. This controls the expiration time
+            of the JWT tokens issued to clients after they have authenticated
+            with the ZenML server using an OAuth 2.0 device.
+        trusted_device_expiration: The time in minutes that a trusted OAuth 2.0
+            device is allowed to be used to authenticate with the ZenML server.
+            If not set or if `jwt_token_expire_minutes` is not set, the devices
+            are allowed to be used indefinitely. This controls the expiration
+            time of the JWT tokens issued to clients after they have
+            authenticated with the ZenML server using an OAuth 2.0 device
+            that has been marked as trusted.
         external_login_url: The login URL of an external authenticator service
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
@@ -90,6 +116,16 @@ class ServerConfiguration(BaseModel):
     auth_cookie_name: str
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
+    max_failed_device_auth_attempts: int = (
+        DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
+    )
+    device_auth_timeout: int = DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT
+    device_auth_polling_interval: int = (
+        DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
+    )
+    dashboard_url: Optional[str] = None
+    device_expiration_minutes: Optional[int] = None
+    trusted_device_expiration_minutes: Optional[int] = None
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None

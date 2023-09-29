@@ -13,34 +13,43 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
-import requests
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.param_functions import Form
-from pydantic import BaseModel
 from starlette.requests import Request
 
 from zenml.constants import (
     API,
-    EXTERNAL_AUTHENTICATOR_TIMEOUT,
+    DEVICE_AUTHORIZATION,
+    DEVICE_VERIFICATION,
     LOGIN,
     LOGOUT,
     VERSION_1,
 )
-from zenml.enums import AuthScheme
+from zenml.enums import AuthScheme, OAuthDeviceStatus, OAuthGrantTypes
 from zenml.logger import get_logger
-from zenml.models import UserRoleAssignmentFilterModel
-from zenml.models.user_models import UserRequestModel, UserUpdateModel
-from zenml.models.user_role_assignment_models import (
-    UserRoleAssignmentRequestModel,
+from zenml.models import (
+    OAuthDeviceAuthorizationResponse,
+    OAuthDeviceInternalRequestModel,
+    OAuthDeviceInternalResponseModel,
+    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceUserAgentHeader,
+    OAuthRedirectResponse,
+    OAuthTokenResponse,
+    UserRoleAssignmentFilterModel,
 )
-from zenml.zen_server.auth import authenticate_credentials
+from zenml.zen_server.auth import (
+    authenticate_credentials,
+    authenticate_device,
+    authenticate_external_user,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
-from zenml.zen_server.utils import server_config, zen_store
+from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
 
 logger = get_logger(__name__)
 
@@ -51,62 +60,114 @@ router = APIRouter(
 )
 
 
-class PasswordRequestForm:
-    """OAuth2 password grant type request form.
+class OAuthLoginRequestForm:
+    """OAuth2 grant type request form.
 
-    This form is similar to `fastapi.security.OAuth2PasswordRequestForm`, with
-    the single difference being that it also allows an empty password.
+    This form allows multiple grant types to be used with the same endpoint:
+    * standard OAuth2 password grant type
+    * standard  OAuth2 device authorization grant type
+    * ZenML External Authenticator grant type
     """
 
     def __init__(
         self,
-        grant_type: str = Form(None, regex="password"),
-        username: str = Form(...),
-        password: Optional[str] = Form(""),
-        scope: str = Form(""),
+        grant_type: Optional[str] = Form(None),
+        username: Optional[str] = Form(None),
+        password: Optional[str] = Form(None),
         client_id: Optional[str] = Form(None),
-        client_secret: Optional[str] = Form(None),
+        device_code: Optional[str] = Form(None),
     ):
         """Initializes the form.
 
         Args:
             grant_type: The grant type.
-            username: The username.
-            password: The password.
-            scope: The scope.
+            username: The username. Only used for the password grant type.
+            password: The password. Only used for the password grant type.
             client_id: The client ID.
-            client_secret: The client secret.
+            device_code: The device code. Only used for the device authorization
+                grant type.
+
+        Raises:
+            HTTPException: If the request is invalid.
         """
-        self.grant_type = grant_type
-        self.username = username
-        self.password = password
-        self.scope = scope
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.grant_type = grant_type
-        self.username = username
-        self.password = password
-        self.scopes = scope.split()
-        self.client_id = client_id
-        self.client_secret = client_secret
+        if not grant_type:
+            # Detect the grant type from the form data
+            if username is not None:
+                self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            elif device_code:
+                self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
+            else:
+                self.grant_type = OAuthGrantTypes.ZENML_EXTERNAL
+        else:
+            if grant_type not in OAuthGrantTypes.values():
+                logger.info(
+                    f"Request with unsupported grant type: {grant_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unsupported grant type: {grant_type}",
+                )
+            self.grant_type = OAuthGrantTypes(grant_type)
 
+        config = server_config()
 
-class AuthenticationResponse(BaseModel):
-    """Authentication response."""
+        if self.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
+            if config.auth_scheme != AuthScheme.OAUTH2_PASSWORD_BEARER:
+                logger.info(
+                    f"Request with unsupported grant type: {self.grant_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unsupported grant type: {self.grant_type}.",
+                )
+            if not username:
+                logger.info("Request with missing username")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request: username is required.",
+                )
+            self.username = username
+            self.password = password or ""
+        elif self.grant_type == OAuthGrantTypes.OAUTH_DEVICE_CODE:
+            if not device_code or not client_id:
+                logger.info("Request with missing device code or client ID")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request: device code and client ID are "
+                    "required.",
+                )
+            try:
+                self.client_id = UUID(client_id)
+            except ValueError:
+                logger.info(f"Request with invalid client ID: {client_id}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid request: invalid client ID.",
+                )
+            self.device_code = device_code
 
-    authorization_url: Optional[str] = None
-    access_token: Optional[str] = None
-    token_type: Optional[str] = None
+        elif self.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
+            if config.auth_scheme != AuthScheme.EXTERNAL:
+                logger.info(
+                    f"Request with unsupported grant type: {self.grant_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unsupported grant type: {self.grant_type}.",
+                )
 
 
 def generate_access_token(
-    user_id: UUID, response: Response
-) -> AuthenticationResponse:
+    user_id: UUID,
+    response: Response,
+    device: Optional[OAuthDeviceInternalResponseModel] = None,
+) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
     Args:
         user_id: The ID of the user.
         response: The FastAPI response object.
+        device: The device used for authentication.
 
     Returns:
         An authentication response with an access token.
@@ -126,115 +187,91 @@ def generate_access_token(
         ]
     )
 
-    access_token = JWTToken(
-        user_id=user_id,
-        permissions=[p.value for p in permissions],
-    ).encode()
-
     config = server_config()
 
-    # Also set the access token as an HTTP only cookie in the response
-    response.set_cookie(
-        key=config.auth_cookie_name,
-        value=access_token,
-        httponly=True,
-        samesite="lax",
-        max_age=config.jwt_token_expire_minutes * 60
-        if config.jwt_token_expire_minutes
-        else None,
-        domain=config.auth_cookie_domain,
+    # The JWT tokens are set to expire according to the values configured
+    # in the server config. Device tokens are handled separately from regular
+    # user tokens.
+    expires: Optional[datetime] = None
+    expires_in: Optional[int] = None
+    if device:
+        # If a device was used for authentication, the token will expire
+        # at the same time as the device.
+        expires = device.expires
+        if expires:
+            expires_in = max(
+                int(expires.timestamp() - datetime.utcnow().timestamp()), 0
+            )
+    elif config.jwt_token_expire_minutes:
+        expires = datetime.utcnow() + timedelta(
+            minutes=config.jwt_token_expire_minutes
+        )
+        expires_in = config.jwt_token_expire_minutes * 60
+
+    access_token = JWTToken(
+        user_id=user_id,
+        device_id=device.id if device else None,
+        permissions=[p.value for p in permissions],
+    ).encode(expires=expires)
+
+    if not device:
+        # Also set the access token as an HTTP only cookie in the response
+        response.set_cookie(
+            key=config.auth_cookie_name,
+            value=access_token,
+            httponly=True,
+            samesite="lax",
+            max_age=config.jwt_token_expire_minutes * 60
+            if config.jwt_token_expire_minutes
+            else None,
+            domain=config.auth_cookie_domain,
+        )
+
+    return OAuthTokenResponse(
+        access_token=access_token, expires_in=expires_in, token_type="bearer"
     )
 
-    # The response of the token endpoint must be a JSON object with the
-    # following fields:
-    #
-    #   * token_type - the token type (must be "bearer" in our case)
-    #   * access_token - string containing the access token
-    return AuthenticationResponse(
-        access_token=access_token, token_type="bearer"
-    )
 
+@router.post(
+    LOGIN,
+    response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
+)
+@handle_exceptions
+def token(
+    request: Request,
+    response: Response,
+    auth_form_data: OAuthLoginRequestForm = Depends(),
+) -> Union[OAuthTokenResponse, OAuthRedirectResponse]:
+    """OAuth2 token endpoint.
 
-if server_config().auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
+    Args:
+        request: The request object.
+        response: The response object.
+        auth_form_data: The OAuth 2.0 authentication form data.
 
-    @router.post(
-        LOGIN,
-        responses={401: error_response},
-        response_model=AuthenticationResponse,
-    )
-    def token(
-        response: Response,
-        auth_form_data: PasswordRequestForm = Depends(),
-    ) -> AuthenticationResponse:
-        """Returns an access token for the given user.
+    Returns:
+        An access token or a redirect response.
 
-        Args:
-            response: The response object.
-            auth_form_data: The authentication form data.
-
-        Returns:
-            An access token.
-
-        Raises:
-            HTTPException: 401 if not authorized to login.
-        """
+    Raises:
+        ValueError: If the grant type is invalid.
+    """
+    if auth_form_data.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
         auth_context = authenticate_credentials(
             user_name_or_id=auth_form_data.username,
             password=auth_form_data.password,
         )
-        if not auth_context:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
 
-        return generate_access_token(
-            user_id=auth_context.user.id,
-            response=response,
+    elif auth_form_data.grant_type == OAuthGrantTypes.OAUTH_DEVICE_CODE:
+        auth_context = authenticate_device(
+            client_id=auth_form_data.client_id,
+            device_code=auth_form_data.device_code,
         )
 
-elif server_config().auth_scheme == AuthScheme.EXTERNAL:
-
-    class ExternalUser(BaseModel):
-        """External user model."""
-
-        id: UUID
-        email: str
-        name: Optional[str] = None
-
-        class Config:
-            """Pydantic configuration."""
-
-            # ignore arbitrary fields
-            extra = "ignore"
-
-    @router.post(
-        LOGIN,
-        response_model=AuthenticationResponse,
-    )
-    def login(
-        request: Request,
-        response: Response,
-    ) -> AuthenticationResponse:
-        """Authorize a user through the external authenticator service.
-
-        Args:
-            request: The request object.
-            response: The response object.
-
-        Returns:
-            An authentication response with an access token or an external
-            authorization URL.
-
-        Raises:
-            HTTPException: 401 if not authorized to login.
-        """
+    elif auth_form_data.grant_type != OAuthGrantTypes.ZENML_EXTERNAL:
         config = server_config()
-        store = zen_store()
+
         assert config.external_cookie_name is not None
         assert config.external_login_url is not None
-        assert config.external_user_info_url is not None
 
         authorization_url = config.external_login_url
 
@@ -263,130 +300,21 @@ elif server_config().auth_scheme == AuthScheme.EXTERNAL:
             )
 
             # Redirect the user to the external authentication login endpoint
-            return AuthenticationResponse(authorization_url=authorization_url)
+            return OAuthRedirectResponse(authorization_url=authorization_url)
 
-        # If an external access token was found, use it to extract the user
-        # information and permissions
-
-        # Get the user information from the external authenticator
-        user_info_url = config.external_user_info_url
-        headers = {"Authorization": "Bearer " + external_access_token}
-        query_params = dict(server_id=str(zen_store().get_deployment_id()))
-
-        try:
-            auth_response = requests.get(
-                user_info_url,
-                headers=headers,
-                params=urlencode(query_params),
-                timeout=EXTERNAL_AUTHENTICATOR_TIMEOUT,
-            )
-        except Exception as e:
-            logger.exception(
-                f"Error fetching user information from external authenticator: "
-                f"{e}"
-            )
-
-            # Redirect the user to the external authentication login endpoint
-            return AuthenticationResponse(authorization_url=authorization_url)
-
-        external_user: Optional[ExternalUser] = None
-
-        if 200 <= auth_response.status_code < 300:
-            try:
-                payload = auth_response.json()
-            except requests.exceptions.JSONDecodeError:
-                logger.exception(
-                    "Error decoding JSON response from external authenticator."
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Unknown external authenticator error.",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            if isinstance(payload, dict):
-                try:
-                    external_user = ExternalUser.parse_obj(payload)
-                except Exception as e:
-                    logger.exception(
-                        f"Error parsing user information from external "
-                        f"authenticator: {e}"
-                    )
-                    pass
-
-        elif auth_response.status_code == 401:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authorized to access this server.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        else:
-            logger.error(
-                f"Error fetching user information from external authenticator. "
-                f"Status code: {auth_response.status_code}, "
-                f"Response: {auth_response.text}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unknown external authenticator error.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        if not external_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unknown external authenticator error.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # With an external user object, we can now authenticate the user against
-        # the ZenML server
-
-        # Check if the external user already exists in the ZenML server database
-        # If not, create a new user. If yes, update the existing user.
-        try:
-            user = store.get_external_user(user_id=external_user.id)
-
-            # Update the user information
-            user = store.update_user(
-                user_id=user.id,
-                user_update=UserUpdateModel(
-                    name=external_user.name or external_user.email,
-                    full_name=external_user.name or "",
-                    email_opted_in=True,
-                    active=True,
-                    email=external_user.email,
-                ),
-            )
-        except KeyError:
-            logger.info(
-                f"External user with ID {external_user.id} not found in ZenML "
-                f"server database. Creating a new user."
-            )
-            user = store.create_user(
-                UserRequestModel(
-                    name=external_user.name or external_user.email,
-                    full_name=external_user.name or "",
-                    external_user_id=external_user.id,
-                    email_opted_in=True,
-                    active=True,
-                    email=external_user.email,
-                )
-            )
-
-            # Create a new user role assignment for the new user
-            store.create_user_role_assignment(
-                UserRoleAssignmentRequestModel(
-                    role=store._admin_role.id,
-                    user=user.id,
-                    workspace=None,
-                )
-            )
-
-        return generate_access_token(
-            user_id=user.id,
-            response=response,
+        auth_context = authenticate_external_user(
+            external_access_token=external_access_token
         )
+
+    else:
+        # Shouldn't happen, because we verify all grants in the form data
+        raise ValueError("Invalid grant type.")
+
+    return generate_access_token(
+        user_id=auth_context.user.id,
+        response=response,
+        device=auth_context.device,
+    )
 
 
 @router.get(
@@ -408,4 +336,107 @@ def logout(
         httponly=True,
         samesite="lax",
         domain=config.auth_cookie_domain,
+    )
+
+
+@router.post(
+    DEVICE_AUTHORIZATION,
+    response_model=OAuthDeviceAuthorizationResponse,
+)
+def device_authorization(
+    request: Request,
+    client_id: UUID = Form(...),
+) -> OAuthDeviceAuthorizationResponse:
+    """OAuth2 device authorization endpoint.
+
+    This endpoint implements the OAuth2 device authorization grant flow as
+    defined in https://tools.ietf.org/html/rfc8628. It is called to initiate
+    the device authorization flow by requesting a device and user code for a
+    given client ID.
+
+    For a new client ID, a new OAuth device is created, stored in the DB and
+    returned to the client along with a pair of newly generated device and user
+    codes. If a device for the given client ID already exists, the existing
+    DB entry is reused and new device and user codes are generated.
+
+    Args:
+        request: The request object.
+        client_id: The client ID.
+
+    Returns:
+        The device authorization response.
+    """
+    config = server_config()
+    store = zen_store()
+
+    # Use this opportunity to delete expired devices
+    store.delete_expired_authorized_devices()
+
+    # Fetch additional details about the client from the user-agent header
+    user_agent_header = request.headers.get("User-Agent")
+    if user_agent_header:
+        device_details = OAuthDeviceUserAgentHeader.decode(user_agent_header)
+    else:
+        device_details = OAuthDeviceUserAgentHeader()
+
+    # Fetch the IP address of the client
+    ip_address: str = ""
+    if request.client and request.client.host:
+        ip_address = request.client.host
+
+    # Check if a device is already registered for the same client ID.
+    try:
+        device_model = store.get_internal_authorized_device(
+            client_id=client_id
+        )
+    except KeyError:
+        device_model = store.create_authorized_device(
+            OAuthDeviceInternalRequestModel(
+                client_id=client_id,
+                expires_in=config.device_auth_timeout,
+                ip_address=ip_address,
+                **device_details.dict(exclude_none=True),
+            )
+        )
+    else:
+        # Put the device into pending state and generate new codes. This
+        # effectively invalidates the old codes and the device cannot be used
+        # for authentication anymore.
+        device_model = store.update_internal_authorized_device(
+            device_id=device_model.id,
+            update=OAuthDeviceInternalUpdateModel(
+                trusted_device=False,
+                expires_in=config.device_auth_timeout,
+                status=OAuthDeviceStatus.PENDING,
+                failed_auth_attempts=0,
+                generate_new_codes=True,
+                ip_address=ip_address,
+                **device_details.dict(exclude_none=True),
+            ),
+        )
+
+    if config.dashboard_url:
+        verification_uri = (
+            config.dashboard_url.lstrip("/") + DEVICE_VERIFICATION
+        )
+    else:
+        verification_uri = DEVICE_VERIFICATION
+
+    verification_uri_complete = (
+        verification_uri
+        + "?"
+        + urlencode(
+            dict(
+                device_id=str(device_model.id),
+                user_code=str(device_model.user_code),
+            )
+        )
+    )
+    return OAuthDeviceAuthorizationResponse(
+        device_code=device_model.device_code,
+        user_code=device_model.user_code,
+        expires_in=config.device_auth_timeout,
+        interval=config.device_auth_polling_interval,
+        verification_uri=verification_uri,
+        verification_uri_complete=verification_uri_complete,
     )

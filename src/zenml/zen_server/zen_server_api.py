@@ -34,6 +34,7 @@ from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
+    devices_endpoints,
     flavors_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
@@ -195,6 +196,7 @@ def dashboard(request: Request) -> Any:
 
 
 app.include_router(auth_endpoints.router)
+app.include_router(devices_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)

@@ -25,31 +25,126 @@ zenml:
   # Example values are "local", "kubernetes", "aws", "gcp", "azure".
   deploymentType:
 
-  # The ZenML authentication scheme. Use one of:
-  # 
-  # NO_AUTH - No authentication
-  # HTTP_BASIC - HTTP Basic authentication
-  # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer with JWT tokens
-  authType: OAUTH2_PASSWORD_BEARER
+  # Authentication settings that control how the ZenML server authenticates
+  # its users.
+  auth:
 
-  # The secret key used to sign JWT tokens. Only relevant if the
-  # OAUTH2_PASSWORD_BEARER authentication scheme is used. This should be set to
-  # a random string with a recommended length of at least 32 characters, e.g.:
-  #
-  #   ```python
-  #   from secrets import token_hex
-  #   token_hex(32)
-  #   ```
-  #   
-  # or:
-  #
-  #   ```shell
-  #   openssl rand -hex 32
-  #   ```
-  #
-  # If not explicitly set, a random key will be generated when the helm
-  # chart is installed and reused for all subsequent upgrades.
-  jwtSecretKey:
+    # The ZenML authentication scheme. Use one of:
+    # 
+    # NO_AUTH - No authentication
+    # HTTP_BASIC - HTTP Basic authentication
+    # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer
+    # EXTERNAL - External authentication (e.g. via a remote authenticator)
+    authType: OAUTH2_PASSWORD_BEARER
+
+    # The secret key used to sign JWT tokens. This should be set to
+    # a random string with a recommended length of at least 32 characters, e.g.:
+    #
+    #   ```python
+    #   from secrets import token_hex
+    #   token_hex(32)
+    #   ```
+    #   
+    # or:
+    #
+    #   ```shell
+    #   openssl rand -hex 32
+    #   ```
+    #
+    # If not explicitly set, a random key will be generated when the helm
+    # chart is installed and reused for all subsequent upgrades.
+    jwtSecretKey:
+
+    # The JWT token algorithm to use. Use one of:
+    # 
+    # HS256 - HMAC using SHA-256 hash algorithm
+    # HS384 - HMAC using SHA-384 hash algorithm
+    # HS512 - HMAC using SHA-512 hash algorithm
+    jwtTokenAlgorithm: HS256
+
+    # The issuer of the JWT tokens. If not specified, the issuer is set to the
+    # ZenML Server ID.
+    jwtTokenIssuer:
+
+
+    # The audience of the JWT tokens. If not specified, the audience is set to
+    # the ZenML Server ID.
+    jwtTokenAudience:
+    
+    # The leeway in seconds allowed when verifying the expiration time of JWT
+    # tokens.
+    jwtTokenLeewaySeconds: 10
+
+    # The expiration time of JWT tokens in minutes. If not specified, generated
+    # JWT tokens will not be set to expire.
+    jwtTokenExpireMinutes: 
+
+    # The name of the http-only cookie used to store the JWT tokens used to
+    # authenticate web clients. If not specified, the cookie name is set to a
+    # value computed from the ZenML server ID.
+    authCookieName:
+
+    # The domain of the http-only cookie used to store the JWT tokens used to
+    # authenticate web clients. If not specified, the cookie domain is set to
+    # the domain of the ZenML server.
+    authCookieDomain:
+
+    # The origins allowed to make cross-origin requests to the ZenML server. If
+    # not specified, all origins are allowed. Set this when the ZenML dashboard
+    # is hosted on a different domain than the ZenML server.
+    corsAllowOrigins:
+      - "*"
+
+    # The maximum number of failed authentication attempts allowed for an OAuth
+    # 2.0 device before the device is locked.
+    maxFailedDeviceAuthAttempts: 3
+
+    # The timeout in seconds after which a pending OAuth 2.0 device
+    # authorization request expires.
+    deviceAuthTimeout: 300
+
+    # The polling interval in seconds used by clients to poll the OAuth 2.0
+    # device authorization endpoint for the status of a pending device
+    # authorization request.
+    deviceAuthPollingInterval: 5
+
+    # The URL where the ZenML dashboard is hosted. Used to construct the OAuth
+    # 2.0 device authorization endpoint. If not set, a partial URL is returned
+    # to the client which is used to construct the full URL based on the
+    # server's root URL path.
+    dashboardURL:
+
+    # The time in minutes that an OAuth 2.0 device is allowed to be used to
+    # authenticate with the ZenML server. If not set or if
+    # `zenml.auth.jwtTokenExpireMinutes` is not set, the devices are allowed to
+    # be used indefinitely. This controls the expiration time of the JWT tokens
+    # issued to clients after they have authenticated with the ZenML server
+    # using an OAuth 2.0 device.
+    deviceExpirationMinutes:
+
+    # The time in minutes that a trusted OAuth 2.0 device is allowed to be used
+    # to authenticate with the ZenML server. If not set or if
+    # `zenml.auth.jwtTokenExpireMinutes` is not set, the devices are allowed to
+    # be used indefinitely. This controls the expiration time of the JWT tokens
+    # issued to clients after they have authenticated with the ZenML server
+    # using an OAuth 2.0 device that was previously trusted by the user.
+    trustedDeviceExpirationMinutes:
+
+    # The login URL of an external authenticator service to use with the
+    # `EXTERNAL` authentication scheme. Only relevant if `zenml.auth.authType`
+    # is set to `EXTERNAL`.
+    externalLoginURL:
+
+    # The user info URL of an external authenticator service to use with the
+    # `EXTERNAL` authentication scheme. Only relevant if `zenml.auth.authType`
+    # is set to `EXTERNAL`.
+    externalUserInfoURL:
+
+    # The name of the http-only cookie used to store the bearer token used to
+    # authenticate with the external authenticator service. Only relevant if
+    # `zenml.auth.authType` is set to `EXTERNAL`.
+    externalCookieName:
+
 
   # The root URL path to use when behind a proxy. This is useful when the
   # `rewrite-target` annotation is used in the ingress controller, e.g.:
@@ -66,6 +161,8 @@ zenml:
   #   path: /zenml/?(.*)
   # ```
   rootUrlPath:
+
+
 
   defaultProject: default
   defaultUsername: default

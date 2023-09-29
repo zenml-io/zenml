@@ -16,7 +16,7 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi import APIRouter, Depends, Security
 
 from zenml.analytics.utils import email_opt_int
 from zenml.constants import (
@@ -225,21 +225,13 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Returns:
             The updated user.
-
-        Raises:
-            HTTPException: If the user is not authorized to activate the user.
         """
         user = zen_store().get_user(user_name_or_id)
 
-        auth_context = authenticate_credentials(
+        authenticate_credentials(
             user_name_or_id=user_name_or_id,
             activation_token=user_update.activation_token,
         )
-        if auth_context is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-            )
         user_update.active = True
         user_update.activation_token = None
         return zen_store().update_user(

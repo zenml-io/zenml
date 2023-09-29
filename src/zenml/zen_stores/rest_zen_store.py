@@ -43,6 +43,7 @@ from zenml.constants import (
     ARTIFACTS,
     CODE_REPOSITORIES,
     CURRENT_USER,
+    DEFAULT_HTTP_TIMEOUT,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
@@ -177,9 +178,6 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-
-
-DEFAULT_HTTP_TIMEOUT = 30
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -2360,6 +2358,8 @@ class RestZenStore(BaseZenStore):
         """Clear the authentication session and any cached API tokens."""
         self._session = None
         self._api_token = None
+        # Clear the configured API token only if it's possible to fetch a new
+        # one from the server using other credentials (username/password).
         if (
             self.config.username is not None
             and self.config.password is not None
@@ -2447,6 +2447,11 @@ class RestZenStore(BaseZenStore):
             # again. This will clear any cached token and trigger a new
             # authentication flow.
             self.clear_session()
+            logger.info(
+                "Authentication token expired; refreshing..."
+            )
+
+        try:
             return self._handle_response(
                 self.session.request(
                     method,
@@ -2457,6 +2462,11 @@ class RestZenStore(BaseZenStore):
                     **kwargs,
                 )
             )
+        except AuthorizationException:
+            logger.info(
+                "Your authentication token has expired. Please re-authenticate."
+            )
+            raise
 
     def get(
         self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any

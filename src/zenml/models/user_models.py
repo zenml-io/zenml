@@ -94,6 +94,20 @@ class UserBaseModel(BaseModel):
 # -------- #
 
 
+class ExternalUserModel(BaseModel):
+    """External user model."""
+
+    id: UUID
+    email: str
+    name: Optional[str] = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        # ignore arbitrary fields
+        extra = "ignore"
+
+
 class UserResponseModel(UserBaseModel, BaseResponseModel):
     """Response model for users.
 

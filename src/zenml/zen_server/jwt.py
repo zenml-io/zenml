@@ -18,6 +18,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     cast,
 )
 from uuid import UUID
@@ -37,12 +38,14 @@ class JWTToken(BaseModel):
 
     Attributes:
         user_id: The id of the authenticated User.
+        device_id: The id of the authenticated device.
         permissions: The permissions scope of the authenticated user.
         claims: The original token claims.
     """
 
     user_id: UUID
     permissions: List[str]
+    device_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -99,18 +102,33 @@ class JWTToken(BaseModel):
                 "Invalid JWT token: the subject claim is not a valid UUID"
             )
 
+        device_id: Optional[UUID] = None
+        if "device_id" in claims:
+            try:
+                device_id = UUID(claims["device_id"])
+            except ValueError:
+                raise AuthorizationException(
+                    "Invalid JWT token: the device_id claim is not a valid "
+                    "UUID"
+                )
+
         permissions: List[str] = claims.get("permissions", [])
 
         return JWTToken(
             user_id=user_id,
+            device_id=device_id,
             permissions=list(set(permissions)),
             claims=claims,
         )
 
-    def encode(self) -> str:
+    def encode(self, expires: Optional[datetime] = None) -> str:
         """Creates a JWT access token.
 
         Encodes, signs and returns a JWT access token.
+
+        Args:
+            expires: Datetime after which the token will expire. If not
+                provided, the JWT token will not be set to expire.
 
         Returns:
             The generated access token.
@@ -125,11 +143,11 @@ class JWTToken(BaseModel):
             claims["iss"] = config.jwt_token_issuer
         if config.jwt_token_audience:
             claims["aud"] = config.jwt_token_audience
-        if config.jwt_token_expire_minutes:
-            expire = datetime.utcnow() + timedelta(
-                minutes=config.jwt_token_expire_minutes
-            )
-            claims["exp"] = expire
+
+        if expires:
+            claims["exp"] = expires
+        if self.device_id:
+            claims["device_id"] = str(self.device_id)
 
         # Apply custom claims
         claims.update(self.claims)
