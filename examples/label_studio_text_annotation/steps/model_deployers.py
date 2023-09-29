@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.materializers import UnmaterializedArtifact
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.steps import step
 
 

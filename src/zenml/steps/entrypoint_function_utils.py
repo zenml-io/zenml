@@ -154,7 +154,9 @@ class EntrypointFunctionDefinition(NamedTuple):
                 serializable.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
-        from zenml.materializers import UnmaterializedArtifact
+        from zenml.artifacts.unmaterialized_artifact import (
+            UnmaterializedArtifact,
+        )
 
         if key not in self.inputs:
             raise KeyError(
