@@ -19,7 +19,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 logger.warning(
     "The `ExternalArtifact` object was moved to `zenml.artifacts.external_artifact`. "
-    "This import path is going to be deprecated, please consider updating your "
+    "This import path is going to be deprecated. Please consider updating your "
     "code to use `from zenml.artifacts.external_artifact import ExternalArtifact`."
 )
 
