@@ -239,8 +239,8 @@ class ModelVersionResponseModel(
         Args:
             name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            pipeline_name: The name of the pipeline-generated artifact.
+            step_name: The name of the step-generated artifact.
 
         Returns:
             Specific version of Artifact or None
