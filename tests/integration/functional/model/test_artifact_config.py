@@ -74,17 +74,17 @@ def simple_pipeline():
 def test_link_minimalistic():
     """Test simple explicit linking from step context for 3 artifact types."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         simple_pipeline()
 
-        model = zs.get_model(MODEL_NAME)
+        model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME)
         assert mv.version == "1"
-        links = zs.list_model_version_artifact_links(
+        links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -135,17 +135,17 @@ def multi_named_pipeline():
 def test_link_multiple_named_outputs():
     """Test multiple typed output step with explicit linking from step context."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         multi_named_pipeline()
 
-        model = zs.get_model(MODEL_NAME)
+        model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME)
         assert mv.version == "1"
-        al = zs.list_model_version_artifact_links(
+        al = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -181,17 +181,17 @@ def multi_named_pipeline_not_tracked():
 def test_link_multiple_named_outputs_without_links():
     """Test multi output step implicit linking based on step context."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         multi_named_pipeline_not_tracked()
 
-        model = zs.get_model(MODEL_NAME)
+        model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = zs.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME)
         assert mv.version == "1"
-        artifact_links = zs.list_model_version_artifact_links(
+        artifact_links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -236,9 +236,9 @@ def multi_named_pipeline_from_self():
 def test_link_multiple_named_outputs_with_self_context():
     """Test multi output linking with context defined in Annotated."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
         m1 = ModelConfig(
@@ -248,7 +248,7 @@ def test_link_multiple_named_outputs_with_self_context():
             name="bar",
         ).get_or_create_model()
 
-        mv1 = zs.create_model_version(
+        mv1 = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -256,7 +256,7 @@ def test_link_multiple_named_outputs_with_self_context():
                 model=m1.id,
             )
         )
-        mv2 = zs.create_model_version(
+        mv2 = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -267,7 +267,7 @@ def test_link_multiple_named_outputs_with_self_context():
 
         multi_named_pipeline_from_self()
 
-        al1 = zs.list_model_version_artifact_links(
+        al1 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -275,7 +275,7 @@ def test_link_multiple_named_outputs_with_self_context():
                 model_version_id=mv1.id,
             )
         )
-        al2 = zs.list_model_version_artifact_links(
+        al2 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -352,9 +352,9 @@ def multi_named_pipeline_mixed_linkage():
 def test_link_multiple_named_outputs_with_mixed_linkage():
     """In this test a mixed linkage of artifacts is verified. See steps description."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
         models = []
@@ -366,7 +366,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                 ).get_or_create_model()
             )
             mvs.append(
-                zs.create_model_version(
+                client.create_model_version(
                     ModelVersionRequestModel(
                         user=user,
                         workspace=ws,
@@ -381,7 +381,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         artifact_links = []
         for mv in mvs:
             artifact_links.append(
-                zs.list_model_version_artifact_links(
+                client.list_model_version_artifact_links(
                     ModelVersionArtifactFilterModel(
                         user_id=user,
                         workspace_id=ws,
@@ -430,15 +430,15 @@ def simple_pipeline_no_versioning():
 def test_link_no_versioning():
     """Test that not versioned artifact is properly overwritten and no new versions created."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
         model = ModelConfig(
             name=MODEL_NAME,
         ).get_or_create_model()
-        mv = zs.create_model_version(
+        mv = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -449,7 +449,7 @@ def test_link_no_versioning():
 
         simple_pipeline_no_versioning()
 
-        al1 = zs.list_model_version_artifact_links(
+        al1 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -463,7 +463,7 @@ def test_link_no_versioning():
 
         simple_pipeline_no_versioning()
 
-        al2 = zs.list_model_version_artifact_links(
+        al2 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -497,19 +497,19 @@ def simple_pipeline_with_versioning():
 def test_link_with_versioning():
     """Test that versioned artifact is properly linked and new versions created."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
-        model = zs.create_model(
+        model = client.create_model(
             ModelRequestModel(
                 name=MODEL_NAME,
                 user=user,
                 workspace=ws,
             )
         )
-        mv = zs.create_model_version(
+        mv = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -521,7 +521,7 @@ def test_link_with_versioning():
 
         simple_pipeline_with_versioning()
 
-        al1 = zs.list_model_version_artifact_links(
+        al1 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -535,7 +535,7 @@ def test_link_with_versioning():
 
         simple_pipeline_with_versioning()
 
-        al2 = zs.list_model_version_artifact_links(
+        al2 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -603,26 +603,26 @@ def simple_pipeline_with_manual_and_implicit_linkage():
 def test_link_with_manual_linkage(pipeline: Callable):
     """Test manual linking by function call in 2 setting: only manual and manual+implicit"""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
-        model = zs.create_model(
+        model = client.create_model(
             ModelRequestModel(
                 name=MODEL_NAME,
                 user=user,
                 workspace=ws,
             )
         )
-        model2 = zs.create_model(
+        model2 = client.create_model(
             ModelRequestModel(
                 name="bar",
                 user=user,
                 workspace=ws,
             )
         )
-        mv = zs.create_model_version(
+        mv = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -630,7 +630,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
                 model=model.id,
             )
         )
-        mv2 = zs.create_model_version(
+        mv2 = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -641,7 +641,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
 
         pipeline()
 
-        al1 = zs.list_model_version_artifact_links(
+        al1 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -653,7 +653,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
         assert al1[0].link_version == 1
         assert al1[0].name == "1"
 
-        al2 = zs.list_model_version_artifact_links(
+        al2 = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -688,19 +688,19 @@ def simple_pipeline_with_manual_linkage_fail_on_override():
 def test_link_with_manual_linkage_fail_on_override():
     """Test that step fails on manual linkage, cause Annotated provided."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
-        model = zs.create_model(
+        model = client.create_model(
             ModelRequestModel(
                 name=MODEL_NAME,
                 user=user,
                 workspace=ws,
             )
         )
-        zs.create_model_version(
+        client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -745,19 +745,19 @@ def test_link_with_manual_linkage_flexible_config(
 ):
     """Test that linking using ArtifactConfig is possible for exact version, stage and latest versions."""
     with model_killer():
-        zs = Client().zen_store
-        user = Client().active_user.id
-        ws = Client().active_workspace.id
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
-        model = zs.create_model(
+        model = client.create_model(
             ModelRequestModel(
                 name=MODEL_NAME,
                 user=user,
                 workspace=ws,
             )
         )
-        mv = zs.create_model_version(
+        mv = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
@@ -769,7 +769,7 @@ def test_link_with_manual_linkage_flexible_config(
 
         simple_pipeline_with_manual_linkage_flexible_config(artifact_config)
 
-        links = zs.list_model_version_artifact_links(
+        links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,

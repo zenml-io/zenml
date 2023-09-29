@@ -15,10 +15,10 @@ def model_killer():
     try:
         yield
     finally:
-        zs = Client().zen_store
-        models = zs.list_models(ModelFilterModel(size=999))
+        client = Client()
+        models = client.list_models(ModelFilterModel(size=999))
         for model in models:
             try:
-                zs.delete_model(model.name)
+                client.delete_model(model.name)
             except KeyError:
                 pass

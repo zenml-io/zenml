@@ -237,7 +237,7 @@ class ModelVersionResponseModel(
             raise ValueError(f"`{stage}` is not a valid model stage.")
         from zenml.client import Client
 
-        return Client().zen_store.update_model_version(
+        return Client().update_model_version(
             model_version_id=self.id,
             model_version_update_model=ModelVersionUpdateModel(
                 model=self.model.id,
@@ -267,11 +267,10 @@ class ModelVersionResponseModel(
 
         from zenml.client import Client
 
-        zs = Client().zen_store
         page = 1
         total_pages = float("inf")
         while page < total_pages:
-            versions = zs.list_model_versions(
+            versions = Client().list_model_versions(
                 ModelVersionFilterModel(
                     sort_by="desc:version", model_id=self.model.id, page=page
                 )
@@ -286,7 +285,7 @@ class ModelVersionResponseModel(
                     total_pages = 0
                     break
 
-        return Client().zen_store.update_model_version(
+        return Client().update_model_version(
             model_version_id=self.id,
             model_version_update_model=ModelVersionUpdateModel(
                 model=self.model.id, version=to_set_version
@@ -493,7 +492,7 @@ class ModelResponseModel(
 
         return (
             Client()
-            .zen_store.list_model_versions(
+            .list_model_versions(
                 ModelVersionFilterModel(
                     model_id=self.id, workspace_id=self.workspace
                 )
@@ -514,12 +513,10 @@ class ModelResponseModel(
         """
         from zenml.client import Client
 
-        zs = Client().zen_store
-
         if version is None:
-            return zs.get_model_version(model_name_or_id=self.name)
+            return Client().get_model_version(model_name_or_id=self.name)
         else:
-            return zs.get_model_version(
+            return Client().get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=getattr(version, "value", version),
             )

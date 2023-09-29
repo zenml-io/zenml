@@ -39,9 +39,9 @@ class ModelContext:
         self.stage = stage
 
     def __enter__(self):
-        zs = Client().zen_store
+        client = Client()
         if self.create_model:
-            model = zs.create_model(
+            model = client.create_model(
                 ModelRequestModel(
                     name=MODEL_NAME,
                     user=self.user,
@@ -49,7 +49,7 @@ class ModelContext:
                 )
             )
             if self.model_version is not None:
-                mv = zs.create_model_version(
+                mv = client.create_model_version(
                     ModelVersionRequestModel(
                         model=model.id,
                         version=self.model_version,
@@ -64,9 +64,8 @@ class ModelContext:
         return None
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        zs = Client().zen_store
         try:
-            zs.delete_model(MODEL_NAME)
+            Client().delete_model(MODEL_NAME)
         except KeyError:
             pass
 
