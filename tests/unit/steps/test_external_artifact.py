@@ -145,6 +145,7 @@ def test_external_artifact_init(
 
 @patch("zenml.artifacts.external_artifact.fileio")
 def test_upload_if_necessary_by_value(mocked_fileio):
+    """Tests that `upload_if_necessary` works as expected for `value`."""
     mocked_fileio.exists.return_value = False
     ea = ExternalArtifact(value=1)
     assert ea.id is None
@@ -163,6 +164,7 @@ def test_upload_if_necessary_by_value(mocked_fileio):
 
 
 def test_upload_if_necessary_by_id():
+    """Tests that `upload_if_necessary` works as expected for `id`."""
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
     assert ea.value is None
     assert ea.pipeline_name is None
@@ -179,6 +181,7 @@ def test_upload_if_necessary_by_id():
 
 
 def test_upload_if_necessary_by_pipeline_and_artifact():
+    """Tests that `upload_if_necessary` works as expected for pipeline lookup."""
     ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
     assert ea.value is None
     assert ea.pipeline_name is not None
@@ -196,7 +199,7 @@ def test_upload_if_necessary_by_pipeline_and_artifact():
 
 
 def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store():
-    # mocked_client.return_value = lambda: MockClient(artifact_store_id=45)
+    """Tests that `upload_if_necessary` raises in case of mismatch between artifact stores (found vs active)."""
     with pytest.raises(
         RuntimeError,
         match=r"The artifact bar \(ID: " + str(GLOBAL_ARTIFACT_ID) + r"\)",
@@ -219,6 +222,7 @@ def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store():
 
 
 def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found():
+    """Tests that `upload_if_necessary` raises in case artifact not found in pipeline."""
     with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
         with patch.dict(
             "sys.modules",
