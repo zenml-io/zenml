@@ -29,6 +29,7 @@ from typing import (
 
 from pydantic.typing import get_origin, is_union
 
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -41,7 +42,6 @@ from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -421,21 +421,6 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            # >>> this block solves tests/unit/orchestrators/test_step_runner.py::test_loading_unmaterialized_input_artifact
-            # - pydantic.errors.ConfigError: field "user" not yet prepared so type is still a ForwardRef, you might
-            # need to call UnmaterializedArtifact.update_forward_refs().
-            from zenml.models import (
-                RunMetadataResponseModel,
-                UserResponseModel,
-                WorkspaceResponseModel,
-            )
-
-            UnmaterializedArtifact.update_forward_refs(
-                UserResponseModel=UserResponseModel,
-                WorkspaceResponseModel=WorkspaceResponseModel,
-                RunMetadataResponseModel=RunMetadataResponseModel,
-            )
-            # >>> end of workaround block
             return UnmaterializedArtifact.parse_obj(artifact)
 
         if data_type is Any or is_union(get_origin(data_type)):
