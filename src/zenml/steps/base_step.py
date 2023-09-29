@@ -60,6 +60,9 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
         PartialArtifactConfiguration,
@@ -944,7 +947,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_inputs(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifact"],
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
     ) -> None:
         """Validates the step inputs.
 
@@ -970,7 +973,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _finalize_configuration(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifact"],
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 

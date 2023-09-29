@@ -13,28 +13,26 @@
 #  permissions and limitations under the License.
 """External artifact definition."""
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, root_validator
+from pydantic import root_validator
 
+from zenml.artifacts.external_artifact_config import (
+    ExternalArtifactConfiguration,
+)
 from zenml.config.source import Source
-from zenml.enums import ModelStages
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
 MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
-if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
-    from zenml.models.artifact_models import ArtifactResponseModel
-
 
 logger = get_logger(__name__)
 
 
-class ExternalArtifact(BaseModel):
+class ExternalArtifact(ExternalArtifactConfiguration):
     """External artifacts can be used to provide values as input to ZenML steps.
 
     ZenML steps accept either artifacts (=outputs of other steps), parameters
@@ -90,15 +88,6 @@ class ExternalArtifact(BaseModel):
     """
 
     value: Optional[Any] = None
-    id: Optional[UUID] = None
-    pipeline_name: Optional[str] = None
-    artifact_name: Optional[str] = None
-    model_name: Optional[str] = None
-    model_version: Optional[str] = None
-    model_artifact_name: Optional[Union[str, ModelStages]] = None
-    model_artifact_version: Optional[str] = None
-    model_artifact_pipeline_name: Optional[str] = None
-    model_artifact_step_name: Optional[str] = None
     materializer: Optional[MaterializerClassOrSource] = None
     store_artifact_metadata: bool = True
     store_artifact_visualizations: bool = True
@@ -142,7 +131,7 @@ class ExternalArtifact(BaseModel):
             )
         return values
 
-    def _upload_by_value(self) -> UUID:
+    def upload_by_value(self) -> UUID:
         """Uploads the artifact by value.
 
         Returns:
@@ -191,162 +180,24 @@ class ExternalArtifact(BaseModel):
 
         return self.id
 
-    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
-        """Get artifact from pipeline run.
+    @property
+    def config(self) -> ExternalArtifactConfiguration:
+        """Returns the lightweight config without hard for JSON properties.
 
         Returns:
-            The fetched Artifact.
-
-        Raises:
-            RuntimeError: If artifact was not found in pipeline run.
+            The config object to be evaluated in runtime by step interface.
         """
-        from zenml.client import Client
-
-        client = Client()
-
-        response = None
-        pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
-        for artifact in pipeline.last_successful_run.artifacts:
-            if artifact.name == self.artifact_name:
-                response = artifact
-                break
-
-        if response is None:
-            raise RuntimeError(
-                f"Artifact with name `{self.artifact_name}` was not found "
-                f"in last successful run of pipeline `{self.pipeline_name}`. "
-                "Please check your inputs and try again."
-            )
-
-        # clean-up state after id found
-        self.pipeline_name = None
-        self.artifact_name = None
-
-        return response
-
-    def _get_artifact_from_model(
-        self, model_config: Optional["ModelConfig"] = None
-    ) -> "ArtifactResponseModel":
-        """Get artifact from Model WatchTower.
-
-        Args:
-            model_config: The model containing the model version.
-
-        Returns:
-            The fetched Artifact.
-
-        Raises:
-            RuntimeError: If artifact was not found in model version
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
-        """
-        from zenml.client import Client
-        from zenml.model.model_config import ModelConfig
-
-        client = Client()
-
-        if self.model_name is None:
-            if model_config is None:
-                raise RuntimeError(
-                    "ExternalArtifact initiated with `model_artifact_name`, "
-                    "but no model config was provided and missing in @step or "
-                    "@pipeline definitions."
-                )
-            self.model_name = model_config.name
-            self.model_version = model_config.version
-
-        _model_config = ModelConfig(
-            name=self.model_name, version=self.model_version
+        return ExternalArtifactConfiguration(
+            id=self.id,
+            pipeline_name=self.pipeline_name,
+            artifact_name=self.artifact_name,
+            model_name=self.model_name,
+            model_version=self.model_version,
+            model_artifact_name=self.model_artifact_name,
+            model_artifact_version=self.model_artifact_version,
+            model_artifact_pipeline_name=self.model_artifact_pipeline_name,
+            model_artifact_step_name=self.model_artifact_step_name,
         )
-        model = client.zen_store.get_model(model_name_or_id=self.model_name)
-        model_version = _model_config._get_model_version(model)
-
-        for artifact_getter in [
-            model_version.get_artifact_object,
-            model_version.get_model_object,
-            model_version.get_deployment,
-        ]:
-            response = artifact_getter(
-                name=self.model_artifact_name,  # type: ignore [arg-type]
-                version=self.model_artifact_version,
-                pipeline_name=self.model_artifact_pipeline_name,
-                step_name=self.model_artifact_step_name,
-            )
-            if response is not None:
-                break
-
-        if response is None:
-            raise RuntimeError(
-                f"Artifact with name `{self.model_artifact_name}` was not found "
-                f"in model `{self.model_name}` version `{self.model_version}`. "
-                "Please check your inputs and try again."
-            )
-
-        # clean-up state after id found
-        self.model_name = None
-        self.model_version = None
-        self.model_artifact_name = None
-
-        return response
-
-    def upload_if_necessary(
-        self, model_config: Optional["ModelConfig"] = None
-    ) -> UUID:
-        """Uploads the artifact if necessary.
-
-        This method does one of two things:
-        - If an artifact is referenced by ID, it will verify that the artifact
-          exists and is in the correct artifact store.
-        - Otherwise, the artifact value will be uploaded and published.
-
-        Args:
-            model_config: The model config of the step (from step or pipeline).
-
-        Returns:
-            The artifact ID.
-
-        Raises:
-            RuntimeError: If the artifact store of the referenced artifact
-                is not the same as the one in the active stack.
-            RuntimeError: If the URI of the artifact already exists.
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
-            RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
-                artifact name group is provided when creating an external artifact.
-        """
-        from zenml.client import Client
-
-        client = Client()
-
-        if self.value:
-            self.id = self._upload_by_value()
-        else:
-            if self.id:
-                response = client.get_artifact(artifact_id=self.id)
-            elif self.pipeline_name and self.artifact_name:
-                response = self._get_artifact_from_pipeline_run()
-            elif self.model_artifact_name:
-                response = self._get_artifact_from_model(model_config)
-            else:
-                raise RuntimeError(
-                    "Either a value, an ID, pipeline/artifact name pair or "
-                    "model name/model version/model artifact name group can be "
-                    "provided when creating an external artifact."
-                )
-
-            artifact_store_id = client.active_stack.artifact_store.id
-            if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError(
-                    f"The artifact {response.name} (ID: {response.id}) "
-                    "referenced by an external artifact is not stored in the "
-                    "artifact store of the active stack. This will lead to "
-                    "issues loading the artifact. Please make sure to only "
-                    "reference artifacts stored in your active artifact store."
-                )
-
-            self.id = response.id
-
-        return self.id
 
     def _get_materializer_class(self, value: Any) -> Type[BaseMaterializer]:
         """Gets a materializer class for a value.

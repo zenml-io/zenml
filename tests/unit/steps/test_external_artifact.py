@@ -144,8 +144,8 @@ def test_external_artifact_init(
 
 
 @patch("zenml.artifacts.external_artifact.fileio")
-def test_upload_if_necessary_by_value(mocked_fileio):
-    """Tests that `upload_if_necessary` works as expected for `value`."""
+def test_upload_by_value(mocked_fileio):
+    """Tests that `upload_by_value` works as expected for `value`."""
     mocked_fileio.exists.return_value = False
     ea = ExternalArtifact(value=1)
     assert ea.id is None
@@ -156,15 +156,30 @@ def test_upload_if_necessary_by_value(mocked_fileio):
             "zenml.client": MockZenmlClient,
         },
     ):
-        ea.upload_if_necessary()
+        ea.upload_by_value()
     assert ea.id is not None
     assert ea.value is None
     assert ea.pipeline_name is None
     assert ea.artifact_name is None
 
 
-def test_upload_if_necessary_by_id():
-    """Tests that `upload_if_necessary` works as expected for `id`."""
+def test_get_artifact_by_value_before_upload_raises():
+    """Tests that `get_artifact` raises if called without `upload_by_value` for `value`."""
+    ea = ExternalArtifact(value=1)
+    assert ea.id is None
+    with pytest.raises(RuntimeError):
+        with patch.dict(
+            "sys.modules",
+            {
+                "zenml.utils.artifact_utils": MagicMock(),
+                "zenml.client": MockZenmlClient,
+            },
+        ):
+            ea.get_artifact()
+
+
+def test_get_artifact_by_id():
+    """Tests that `get_artifact` works as expected for `id`."""
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
     assert ea.value is None
     assert ea.pipeline_name is None
@@ -177,11 +192,11 @@ def test_upload_if_necessary_by_id():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.upload_if_necessary() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact() == GLOBAL_ARTIFACT_ID
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact():
-    """Tests that `upload_if_necessary` works as expected for pipeline lookup."""
+def test_get_artifact_by_pipeline_and_artifact():
+    """Tests that `get_artifact` works as expected for pipeline lookup."""
     ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
     assert ea.value is None
     assert ea.pipeline_name is not None
@@ -194,12 +209,12 @@ def test_upload_if_necessary_by_pipeline_and_artifact():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.upload_if_necessary() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact() == GLOBAL_ARTIFACT_ID
     assert ea.id == GLOBAL_ARTIFACT_ID
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store():
-    """Tests that `upload_if_necessary` raises in case of mismatch between artifact stores (found vs active)."""
+def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
+    """Tests that `get_artifact` raises in case of mismatch between artifact stores (found vs active)."""
     with pytest.raises(
         RuntimeError,
         match=r"The artifact bar \(ID: " + str(GLOBAL_ARTIFACT_ID) + r"\)",
@@ -216,13 +231,13 @@ def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store():
             ):
                 ExternalArtifact(
                     pipeline_name="foo", artifact_name="bar"
-                ).upload_if_necessary()
+                ).get_artifact()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
 
 
-def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found():
-    """Tests that `upload_if_necessary` raises in case artifact not found in pipeline."""
+def test_get_artifact_by_pipeline_and_artifact_name_not_found():
+    """Tests that `get_artifact` raises in case artifact not found in pipeline."""
     with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
         with patch.dict(
             "sys.modules",
@@ -233,4 +248,4 @@ def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found():
         ):
             ExternalArtifact(
                 pipeline_name="foo", artifact_name="foobar"
-            ).upload_if_necessary()
+            ).get_artifact()
