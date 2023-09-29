@@ -237,8 +237,8 @@ class ModelVersionResponseModel(
         """Get artifact linked to this model version.
 
         Args:
-            name: The name of the model object to retrieve.
-            version: The version of the model object to retrieve (None for latest/non-versioned)
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
             pipeline_name: The name of the pipeline generated artifact.
             step_name: The name of the step generated artifact.
 
@@ -259,8 +259,8 @@ class ModelVersionResponseModel(
         """Get deployment linked to this model version.
 
         Args:
-            name: The name of the model object to retrieve.
-            version: The version of the model object to retrieve (None for latest/non-versioned)
+            name: The name of the deployment to retrieve.
+            version: The version of the deployment to retrieve (None for latest/non-versioned)
             pipeline_name: The name of the pipeline generated artifact.
             step_name: The name of the step generated artifact.
 
