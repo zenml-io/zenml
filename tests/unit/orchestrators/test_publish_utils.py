@@ -184,7 +184,7 @@ def test_updating_the_pipeline_run_status(
     )
 
     sample_pipeline_run.status = old_status
-    publish_utils.update_pipeline_run_status(sample_pipeline_run)
+    publish_utils.update_pipeline_run_status(sample_pipeline_run, 1)
 
     if old_status == new_status:
         mock_update_run.assert_not_called()

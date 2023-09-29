@@ -156,11 +156,14 @@ def get_pipeline_run_status(
     return ExecutionStatus.COMPLETED
 
 
-def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
+def update_pipeline_run_status(
+    pipeline_run: PipelineRunResponseModel, num_steps: int
+) -> None:
     """Updates the status of the current pipeline run.
 
     Args:
         pipeline_run: The model of the current pipeline run.
+        num_steps: The number of steps to be executed.
     """
     client = Client()
     steps_in_current_run = depaginate(
@@ -169,7 +172,7 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
 
     new_status = get_pipeline_run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run],
-        num_steps=len(pipeline_run.pipeline.spec.steps),
+        num_steps=num_steps,
     )
 
     if new_status != pipeline_run.status:
