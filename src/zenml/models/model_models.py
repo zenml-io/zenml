@@ -168,8 +168,8 @@ class ModelVersionResponseModel(
             collection: The collection to search in (one of self.model_object_ids, self.artifact_object_ids, self.deployment_ids)
             name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            pipeline_name: The name of the pipeline-generated artifact.
+            step_name: The name of the step-generated artifact.
 
         Returns:
             Specific version of object from collection or None
