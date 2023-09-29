@@ -72,7 +72,7 @@ def two_step_producer_pipeline():
 
 
 def test_exchange_of_model_artifacts_between_pipelines():
-    """Test that model config was passed to step context via step."""
+    """Test that ExternalArtifact helps to exchange data from Model between pipelines."""
     with model_killer():
         producer_pipeline.with_options(
             model_config=ModelConfig(name="foo", create_new_model_version=True)
@@ -85,7 +85,11 @@ def test_exchange_of_model_artifacts_between_pipelines():
 
 
 def test_external_artifact_fails_on_name_collision_without_pipeline_and_step():
-    """Test that model config was passed to step context via step."""
+    """Test that ExternalArtifact will raise in case there is a naming collision not
+    resolved with given arguments (here only name and version).
+
+    Two step producer pipeline produces two artifacts with the same name, but from different steps.
+    """
     with model_killer():
         two_step_producer_pipeline()
         with pytest.raises(
@@ -96,7 +100,11 @@ def test_external_artifact_fails_on_name_collision_without_pipeline_and_step():
 
 
 def test_external_artifact_fails_on_name_collision_without_step():
-    """Test that model config was passed to step context via step."""
+    """Test that ExternalArtifact will raise in case there is a naming collision not
+    resolved with given arguments (here only name, version and pipeline).
+
+    Two step producer pipeline produces two artifacts with the same name, but from different steps.
+    """
     with model_killer():
         two_step_producer_pipeline()
         with pytest.raises(
@@ -107,7 +115,10 @@ def test_external_artifact_fails_on_name_collision_without_step():
 
 
 def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
-    """Test that model config was passed to step context via step."""
+    """Test that ExternalArtifact will resolve collision smoothly by full set of arguments.
+
+    Two step producer pipeline produces two artifacts with the same name, but from different steps.
+    """
     with model_killer():
         two_step_producer_pipeline()
         consumer_pipeline(
