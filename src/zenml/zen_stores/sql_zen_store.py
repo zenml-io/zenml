@@ -61,7 +61,6 @@ from zenml.constants import (
 )
 from zenml.enums import (
     LoggingLevels,
-    OAuthDeviceStatus,
     SecretScope,
     SorterOps,
     StackComponentType,
@@ -5240,13 +5239,10 @@ class SqlZenStore(BaseZenStore):
         """Deletes all expired OAuth 2.0 authorized devices."""
         with Session(self.engine) as session:
             expired_devices = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.status == OAuthDeviceStatus.PENDING
-                )
+                select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
             ).all()
             for device in expired_devices:
-                # Delete devices that have never completed the authorization
-                # flow and have expired
+                # Delete devices that have have expired
                 if (
                     device.expires is not None
                     and device.expires < datetime.now()

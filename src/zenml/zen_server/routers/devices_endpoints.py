@@ -160,7 +160,7 @@ def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
     auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
+        authorize, scopes=[PermissionType.READ]
     ),
 ) -> OAuthDeviceResponseModel:
     """Verifies a specific OAuth2 authorized device using its unique ID.

@@ -153,17 +153,25 @@ class OAuthDeviceInternalResponseModel(OAuthDeviceResponseModel):
 class OAuthDeviceFilterModel(UserScopedFilterModel):
     """Model to enable advanced filtering of OAuth2 devices."""
 
-    user_id: Union[UUID, str, None] = Field(
-        description="User that owns the OAuth2 device."
-    )
-    expires: Optional[Union[datetime, str]] = Field(
-        description="The expiration date of the OAuth2 device."
+    expires: Optional[Union[datetime, str, None]] = Field(
+        default=None, description="The expiration date of the OAuth2 device."
     )
     client_id: Union[UUID, str, None] = Field(
-        description="The client ID of the OAuth2 device."
+        default=None, description="The client ID of the OAuth2 device."
     )
     status: Union[OAuthDeviceStatus, str, None] = Field(
-        description="The status of the OAuth2 device."
+        default=None, description="The status of the OAuth2 device."
+    )
+    trusted_device: Union[bool, str, None] = Field(
+        default=None,
+        description="Whether the OAuth2 device was marked as trusted.",
+    )
+    failed_auth_attempts: Union[int, str, None] = Field(
+        default=None,
+        description="The number of failed authentication attempts.",
+    )
+    last_login: Optional[Union[datetime, str, None]] = Field(
+        default=None, description="The date of the last successful login."
     )
 
 
@@ -211,11 +219,6 @@ class OAuthDeviceUpdateModel(BaseModel):
         description="Whether to lock or unlock the OAuth2 device. A locked "
         "device cannot be used for authentication.",
     )
-    trusted_device: Optional[bool] = Field(
-        default=None,
-        description="Whether to mark the OAuth2 device as trusted. A trusted "
-        "device has a much longer validity time.",
-    )
 
 
 class OAuthDeviceInternalUpdateModel(OAuthDeviceUpdateModel):
@@ -235,6 +238,11 @@ class OAuthDeviceInternalUpdateModel(OAuthDeviceUpdateModel):
     failed_auth_attempts: Optional[int] = Field(
         default=None,
         description="Set the number of failed authentication attempts.",
+    )
+    trusted_device: Optional[bool] = Field(
+        default=None,
+        description="Whether to mark the OAuth2 device as trusted. A trusted "
+        "device has a much longer validity time.",
     )
     update_last_login: bool = Field(
         default=False, description="Whether to update the last login date."

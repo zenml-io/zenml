@@ -44,6 +44,7 @@ from zenml.constants import (
     CODE_REPOSITORIES,
     CURRENT_USER,
     DEFAULT_HTTP_TIMEOUT,
+    DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
@@ -95,6 +96,9 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -2282,6 +2286,72 @@ class RestZenStore(BaseZenStore):
                 connector_type
             )
 
+    # ------------------
+    # Authorized Devices
+    # ------------------
+
+    def get_authorized_device(
+        self, device_id: UUID
+    ) -> OAuthDeviceResponseModel:
+        """Gets a specific OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to get.
+
+        Returns:
+            The requested device, if it was found.
+        """
+        return self._get_resource(
+            resource_id=device_id,
+            route=DEVICES,
+            response_model=OAuthDeviceResponseModel,
+        )
+
+    def list_authorized_devices(
+        self, filter_model: OAuthDeviceFilterModel
+    ) -> Page[OAuthDeviceResponseModel]:
+        """List all OAuth 2.0 authorized devices for a user.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all matching OAuth 2.0 authorized devices.
+        """
+        return self._list_paginated_resources(
+            route=DEVICES,
+            response_model=OAuthDeviceResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceUpdateModel
+    ) -> OAuthDeviceResponseModel:
+        """Updates an existing OAuth 2.0 authorized device for internal use.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+        """
+        return self._update_resource(
+            resource_id=device_id,
+            resource_update=update,
+            response_model=OAuthDeviceResponseModel,
+            route=DEVICES,
+        )
+
+    def delete_authorized_device(self, device_id: UUID) -> None:
+        """Deletes an OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to delete.
+        """
+        self._delete_resource(resource_id=device_id, route=DEVICES)
+
     # =======================
     # Internal helper methods
     # =======================
@@ -2447,9 +2517,7 @@ class RestZenStore(BaseZenStore):
             # again. This will clear any cached token and trigger a new
             # authentication flow.
             self.clear_session()
-            logger.info(
-                "Authentication token expired; refreshing..."
-            )
+            logger.info("Authentication token expired; refreshing...")
 
         try:
             return self._handle_response(
