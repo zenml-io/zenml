@@ -72,7 +72,8 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="0.43.0",
+        # TODO: make this a proper release before merging to develop!
+        github_tag="feature/OSS-2300-model-watch-tower",
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/zenml-project-templates",
