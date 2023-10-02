@@ -5993,7 +5993,9 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
             if existing_model_version_pipeline_run_link is not None:
-                return existing_model_version_pipeline_run_link
+                return ModelVersionPipelineRunSchema.to_model(
+                    existing_model_version_pipeline_run_link
+                )
 
             if model_version_pipeline_run_link.name is None:
                 model_version_pipeline_run_link.name = self.get_run(

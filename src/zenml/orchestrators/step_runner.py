@@ -702,7 +702,10 @@ class StepRunner:
                         )
                     )
         for external_artifact in external_artifacts:
-            if external_artifact.model_artifact_name is not None:
+            if (
+                external_artifact.model_artifact_name is not None
+                and external_artifact.model_name is not None
+            ):
                 if external_artifact.model_version is not None:
                     model_version = zs.get_model_version(
                         model_name_or_id=external_artifact.model_name,

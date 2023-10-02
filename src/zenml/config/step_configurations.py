@@ -150,7 +150,14 @@ class StepConfigurationUpdate(StrictBaseModel):
     def _disable_cache_if_new_model_version_requested(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Disables cache if new model version is requested."""
+        """Disables cache if new model version is requested.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict with updated cache settings.
+        """
         model_config_model = values.get("model_config_model", None)
         if (
             model_config_model is not None
