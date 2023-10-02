@@ -219,7 +219,8 @@ def _this_step_tries_to_recover(run_number: int):
         model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
     )
     assert (
-        len(mv.artifact_object_ids["data"]) == run_number
+        len(mv.artifact_object_ids["bar::_this_step_produces_output::data"])
+        == run_number
     ), "expected AssertionError"
 
     raise Exception("make pipeline fail")
@@ -260,7 +261,12 @@ def test_recovery_of_steps():
         )
         assert mv.version == RUNNING_MODEL_VERSION
         assert len(mv.artifact_object_ids) == 1
-        assert len(mv.artifact_object_ids["data"]) == 3
+        assert (
+            len(
+                mv.artifact_object_ids["bar::_this_step_produces_output::data"]
+            )
+            == 3
+        )
 
 
 def test_clean_up_after_failure():

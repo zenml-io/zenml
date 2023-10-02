@@ -246,7 +246,7 @@ class ModelVersionSchema(BaseSchema, table=True):
             description=self.description,
             stage=self.stage,
             model_object_ids={
-                al.name: {
+                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
                     al.version: al.artifact_id
                     for al in self.artifact_links
                     if al.is_model_object
@@ -255,7 +255,7 @@ class ModelVersionSchema(BaseSchema, table=True):
                 if al.is_model_object
             },
             deployment_ids={
-                al.name: {
+                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
                     al.version: al.artifact_id
                     for al in self.artifact_links
                     if al.is_deployment
@@ -264,7 +264,7 @@ class ModelVersionSchema(BaseSchema, table=True):
                 if al.is_deployment
             },
             artifact_object_ids={
-                al.name: {
+                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
                     al.version: al.artifact_id
                     for al in self.artifact_links
                     if not (al.is_deployment or al.is_model_object)

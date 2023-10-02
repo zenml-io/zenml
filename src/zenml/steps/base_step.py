@@ -32,7 +32,6 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
@@ -48,7 +47,6 @@ from zenml.steps.entrypoint_function_utils import (
     get_step_entrypoint_signature,
     validate_entrypoint_function,
 )
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
     resolve_type_annotation,
 )
@@ -61,6 +59,10 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
         PartialArtifactConfiguration,
@@ -451,6 +453,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The artifacts, external artifacts and parameters for the step.
         """
+        from zenml.artifacts.external_artifact import ExternalArtifact
+
         signature = get_step_entrypoint_signature(step=self)
 
         try:
@@ -477,7 +481,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, ExternalArtifact):
                 external_artifacts[key] = value
-                if not value._id:
+                if not value.id:
                     # If the external artifact references a fixed artifact by
                     # ID, caching behaves as expected.
                     logger.warning(
@@ -943,7 +947,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_inputs(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
     ) -> None:
         """Validates the step inputs.
 
@@ -969,7 +973,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _finalize_configuration(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
