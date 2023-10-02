@@ -1106,25 +1106,12 @@ def test_deleting_run_deletes_steps():
     """Tests deleting run deletes its steps."""
     client = Client()
     store = client.zen_store
-
-    # Just in case the test db is not in a clean state we compare relative
-    num_steps_before = store.list_run_steps(StepRunFilterModel()).total
-    num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
-
-    num_runs = 1
-
-    with PipelineRunContext(num_runs) as runs:
-        steps = store.list_run_steps(StepRunFilterModel())
-
-        assert steps.total == num_steps_before + num_runs * 2
-        pipelines = store.list_runs(PipelineRunFilterModel())
-        assert pipelines.total == num_pipelines_before + num_runs
+    with PipelineRunContext(num_runs=1) as runs:
         run_id = runs[0].id
+        filter_model = StepRunFilterModel(pipeline_run_id=run_id)
+        assert store.list_run_steps(filter_model).total == 2
         store.delete_run(run_id)
-        assert (
-            store.list_run_steps(StepRunFilterModel()).total
-            == num_steps_before
-        )
+        assert store.list_run_steps(filter_model).total == 0
 
 
 # .--------------------.
