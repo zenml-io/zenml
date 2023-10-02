@@ -23,8 +23,8 @@ import click
 from config import MetaConfig
 from pipelines import e2e_use_case_batch_inference, e2e_use_case_training
 
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.logger import get_logger
-from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 
@@ -196,7 +196,7 @@ def main(
     logger.info(
         "Batch inference pipeline finished successfully! "
         "You can find predictions in Artifact Store using ID: "
-        f"`{str(artifact.upload_if_necessary())}`."
+        f"`{str(artifact.id)}`."
     )
 
 
