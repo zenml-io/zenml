@@ -416,7 +416,7 @@ def _pipeline_run_link_attached_from_pipeline_context_multiple_steps():
 def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
     """Tests that current pipeline run information is attached to model version by pipeline context."""
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         run_name_1 = f"bar_run_{uuid4()}"
         pipeline.with_options(
@@ -435,8 +435,8 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             ),
         )()
 
-        model = zs.get_model("foo")
-        mv = zs.get_model_version(
+        model = client.get_model("foo")
+        mv = client.get_model_version(
             model_name_or_id=model.id,
         )
 
@@ -471,7 +471,7 @@ def _pipeline_run_link_attached_from_step_context_multiple_step(
 def test_pipeline_run_link_attached_from_step_context(pipeline):
     """Tests that current pipeline run information is attached to model version by step context."""
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         run_name_1 = f"bar_run_{uuid4()}"
         pipeline.with_options(
@@ -492,8 +492,8 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
             )
         )
 
-        model = zs.get_model("foo")
-        mv = zs.get_model_version(
+        model = client.get_model("foo")
+        mv = client.get_model_version(
             model_name_or_id=model.id,
         )
 
@@ -586,12 +586,12 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
     Here we use 2 models and Artifacts has different configs to link there.
     """
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         models = []
         for model_name in model_names:
             models.append(
-                zs.create_model(
+                client.create_model(
                     ModelRequestModel(
                         name=model_name,
                         user=Client().active_user.id,
@@ -599,7 +599,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
                     )
                 )
             )
-            zs.create_model_version(
+            client.create_model_version(
                 ModelVersionRequestModel(
                     model=models[-1].id,
                     version="good_one",
@@ -618,7 +618,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
         )()
 
         for model in models:
-            mv = zs.get_model_version(
+            mv = client.get_model_version(
                 model_name_or_id=model.id,
             )
             assert len(mv.pipeline_run_ids) == 2
@@ -682,9 +682,9 @@ def test_that_consumption_also_registers_run_in_model_version():
             run_name=consumer_run_3
         )()
 
-        zs = Client().zen_store
-        model = zs.get_model(model_name_or_id="step")
-        mv = zs.get_model_version(
+        client = Client()
+        model = client.get_model(model_name_or_id="step")
+        mv = client.get_model_version(
             model_name_or_id=model.id,
         )
         assert len(mv.pipeline_run_ids) == 4
