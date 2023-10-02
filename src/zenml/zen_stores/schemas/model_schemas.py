@@ -246,31 +246,40 @@ class ModelVersionSchema(BaseSchema, table=True):
             description=self.description,
             stage=self.stage,
             model_object_ids={
-                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
-                    al.version: al.artifact_id
-                    for al in self.artifact_links
-                    if al.is_model_object
+                f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
+                    al2.version: al2.artifact_id
+                    for al2 in self.artifact_links
+                    if al2.is_model_object
+                    and al1.name == al2.name
+                    and al1.step_name == al2.step_name
+                    and al1.pipeline_name == al2.pipeline_name
                 }
-                for al in self.artifact_links
-                if al.is_model_object
+                for al1 in self.artifact_links
+                if al1.is_model_object
             },
             deployment_ids={
-                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
-                    al.version: al.artifact_id
-                    for al in self.artifact_links
-                    if al.is_deployment
+                f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
+                    al2.version: al2.artifact_id
+                    for al2 in self.artifact_links
+                    if al2.is_deployment
+                    and al1.name == al2.name
+                    and al1.step_name == al2.step_name
+                    and al1.pipeline_name == al2.pipeline_name
                 }
-                for al in self.artifact_links
-                if al.is_deployment
+                for al1 in self.artifact_links
+                if al1.is_deployment
             },
             artifact_object_ids={
-                f"{al.pipeline_name}::{al.step_name}::{al.name}": {
-                    al.version: al.artifact_id
-                    for al in self.artifact_links
-                    if not (al.is_deployment or al.is_model_object)
+                f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
+                    al2.version: al2.artifact_id
+                    for al2 in self.artifact_links
+                    if not (al2.is_deployment or al2.is_model_object)
+                    and al1.name == al2.name
+                    and al1.step_name == al2.step_name
+                    and al1.pipeline_name == al2.pipeline_name
                 }
-                for al in self.artifact_links
-                if not (al.is_deployment or al.is_model_object)
+                for al1 in self.artifact_links
+                if not (al1.is_deployment or al1.is_model_object)
             },
             pipeline_run_ids={
                 pr.name: pr.pipeline_run_id for pr in self.pipeline_run_links
