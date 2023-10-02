@@ -102,7 +102,7 @@ jobs:
 
       - name: Get template ref
         run: |
-          ref_template=$(python3 -c "from zenml.cli.base import ZENML_PROJECT_TEMPLATES; print(ZENML_PROJECT_TEMPLATES['e2e_batch'].github_tag);")
+          ref_template=$(ZENML_LOGGING_VERBOSITY=INFO && python3 -c "from zenml.cli.base import ZENML_PROJECT_TEMPLATES; print(ZENML_PROJECT_TEMPLATES['e2e_batch'].github_tag);")
           echo "REF_TEMPLATE=$ref_template" >> $GITHUB_ENV
 
       - name: Run template tests for zenml-io/template-e2e-batch
