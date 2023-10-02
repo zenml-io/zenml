@@ -48,7 +48,6 @@ def promote_get_versions() -> (
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     none_versions = model_registry.list_model_versions(
         name=MetaConfig.mlflow_model_name,
-        metadata={},
         stage=None,
     )
     latest_versions = none_versions[0].version
@@ -56,7 +55,6 @@ def promote_get_versions() -> (
 
     target_versions = model_registry.list_model_versions(
         name=MetaConfig.mlflow_model_name,
-        metadata={},
         stage=MetaConfig.target_env,
     )
     current_version = latest_versions
