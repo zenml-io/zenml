@@ -72,7 +72,7 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="0.43.0",
+        github_tag="0.43.0",  # Make sure it is aligned with .github/workflows/update-e2e-template.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/zenml-project-templates",
