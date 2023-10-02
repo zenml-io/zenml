@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -29,10 +28,6 @@ if TYPE_CHECKING:
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 9),
-    reason="SkyPilot can not be installed in Python 3.8 or 3.9",
-)
 def _get_skypilot_orchestrator(
     provider, **kwargs
 ) -> "SkypilotBaseOrchestrator":
@@ -87,8 +82,7 @@ def _get_skypilot_orchestrator(
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 9),
+@pytest.mark.skip(
     reason="SkyPilot can not be installed in Python 3.8 or 3.9",
 )
 @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
