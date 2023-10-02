@@ -3207,12 +3207,13 @@ class TestModelVersionPipelineRunLinks:
             )
 
     def test_link_create_duplicated(self):
+        """Test that model version pipeline run links are not duplicated with collisions."""
         with ModelVersionContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
             zs = Client().zen_store
-            zs.create_model_version_pipeline_run_link(
+            link_1 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
@@ -3223,29 +3224,29 @@ class TestModelVersionPipelineRunLinks:
                 )
             )
             # name collision
-            with pytest.raises(EntityExistsError):
-                zs.create_model_version_pipeline_run_link(
-                    ModelVersionPipelineRunRequestModel(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
-                        model_version=model_version.id,
-                        name="link",
-                        pipeline_run=uuid4(),
-                    )
+            link_2 = zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    pipeline_run=uuid4(),
                 )
+            )
+            assert link_1.id == link_2.id
             # id collision
-            with pytest.raises(EntityExistsError):
-                zs.create_model_version_pipeline_run_link(
-                    ModelVersionPipelineRunRequestModel(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
-                        model_version=model_version.id,
-                        name="link",
-                        pipeline_run=prs[0].id,
-                    )
+            link_3 = zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    name="link",
+                    pipeline_run=prs[0].id,
                 )
+            )
+            assert link_1.id == link_3.id
 
     def test_link_delete_found(self):
         with ModelVersionContext(True, create_prs=1) as (
