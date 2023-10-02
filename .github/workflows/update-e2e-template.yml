@@ -100,18 +100,13 @@ jobs:
       #         body: 'E2E template updates in `examples/e2e` have been pushed.'
       #       })
 
-      - name: Get template ref
-        run: |
-          ref_template=$(ZENML_LOGGING_VERBOSITY=INFO && python3 -c "from zenml.cli.base import ZENML_PROJECT_TEMPLATES; print(ZENML_PROJECT_TEMPLATES['e2e_batch'].github_tag);")
-          echo "REF_TEMPLATE=$ref_template" >> $GITHUB_ENV
-
       - name: Run template tests for zenml-io/template-e2e-batch
         uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: ${{ env.REF_TEMPLATE }}
+          ref-template: 0.43.0 # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
 
       - name: message-on-error
         if: failure()
