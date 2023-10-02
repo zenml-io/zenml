@@ -17,7 +17,6 @@ from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
-from pydantic import Field
 
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
@@ -88,9 +87,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
         version: Optional[str] = None,
         model_source_uri: Optional[str] = None,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         **kwargs: Any,
     ) -> ModelVersion:
         pass
@@ -107,9 +104,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
         name: str,
         version: str,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
@@ -119,9 +114,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         stage: Optional[ModelVersionStage] = None,
         count: Optional[int] = None,
         created_after: Optional[datetime] = None,
