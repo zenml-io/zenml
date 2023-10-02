@@ -834,10 +834,9 @@ class Pipeline:
         Args:
             new_version_requests: Dict of models requesting new versions and their definition points.
         """
-        zs = Client().zen_store
         for model_name, requesters in new_version_requests.items():
             if requesters["delete_new_version_on_failure"]:
-                mv = zs.get_model_version(
+                mv = Client().get_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_id=RUNNING_MODEL_VERSION,
                 )
@@ -851,10 +850,9 @@ class Pipeline:
         Args:
             new_version_requests: Dict of models requesting new versions and their definition points.
         """
-        zs = Client().zen_store
         for model_name, requesters in new_version_requests.items():
             if requesters["delete_new_version_on_failure"]:
-                zs.delete_model_version(
+                Client().delete_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_id=RUNNING_MODEL_VERSION,
                 )
