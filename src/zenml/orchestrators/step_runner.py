@@ -59,6 +59,9 @@ from zenml.utils import artifact_utils, materializer_utils, source_utils
 if TYPE_CHECKING:
     from uuid import UUID
 
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -253,6 +256,9 @@ class StepRunner:
                         self._link_pipeline_run_to_model(
                             pipeline_run=pipeline_run,
                             artifact_names=list(output_artifact_ids.keys()),
+                            external_artifacts=list(
+                                step_run.config.external_input_artifacts.values()
+                            ),
                         )
                     StepContext._clear()  # Remove the step context singleton
 
@@ -655,12 +661,14 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponseModel",
         artifact_names: List[str],
+        external_artifacts: List["ExternalArtifactConfiguration"],
     ) -> None:
         """Links the pipeline run to the model version.
 
         Args:
             pipeline_run: The response model of current pipeline run.
             artifact_names: The name of the published output artifacts.
+            external_artifacts: The external artifacts of the step.
         """
         from zenml.models.model_models import (
             ModelVersionPipelineRunRequestModel,
@@ -693,6 +701,27 @@ class StepRunner:
                             model_version=model_version_id,
                         )
                     )
+        for external_artifact in external_artifacts:
+            if external_artifact.model_artifact_name is not None:
+                if external_artifact.model_version is not None:
+                    model_version = zs.get_model_version(
+                        model_name_or_id=external_artifact.model_name,
+                        model_version_name_or_id=external_artifact.model_version,
+                    )
+                else:
+                    model_version = zs.get_model_version(
+                        model_name_or_id=external_artifact.model_name
+                    )
+                zs.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequestModel(
+                        user=Client().active_user.id,
+                        workspace=Client().active_workspace.id,
+                        name=pipeline_run.name,
+                        pipeline_run=pipeline_run.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                    )
+                )
 
         try:
             mc = get_step_context().model_config
