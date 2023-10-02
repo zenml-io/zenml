@@ -106,7 +106,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2023-09-28 # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
+          ref-template: '2023.09.28' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
 
       - name: message-on-error
         if: failure()
