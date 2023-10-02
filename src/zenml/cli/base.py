@@ -73,7 +73,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
         # TODO: make this a proper release before merging to develop!
-        github_tag="feature/OSS-2300-model-watch-tower",
+        github_tag="feature/OSS-2300-model-watch-tower",  # Make sure it is aligned with .github/workflows/update-e2e-template.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/zenml-project-templates",
