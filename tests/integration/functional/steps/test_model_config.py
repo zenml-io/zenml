@@ -135,26 +135,26 @@ def test_create_new_versions_both_pipeline_and_step():
         _this_step_does_not_create_a_version()
 
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         _this_pipeline_creates_a_version()
 
-        foo = zs.get_model("foo")
+        foo = client.get_model("foo")
         assert foo.name == "foo"
-        foo_version = zs.get_model_version("foo")
+        foo_version = client.get_model_version("foo")
         assert foo_version.version == "1"
 
-        bar = zs.get_model("bar")
+        bar = client.get_model("bar")
         assert bar.name == "bar"
-        bar_version = zs.get_model_version("bar")
+        bar_version = client.get_model_version("bar")
         assert bar_version.version == "1"
 
         _this_pipeline_creates_a_version()
 
-        foo_version = zs.get_model_version("foo")
+        foo_version = client.get_model_version("foo")
         assert foo_version.version == "2"
 
-        bar_version = zs.get_model_version("bar")
+        bar_version = client.get_model_version("bar")
         assert bar_version.version == "2"
 
 
@@ -167,18 +167,18 @@ def test_create_new_version_only_in_step():
         _this_step_does_not_create_a_version()
 
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         _this_pipeline_does_not_create_a_version()
 
-        bar = zs.get_model("foo")
+        bar = client.get_model("foo")
         assert bar.name == "foo"
-        bar_version = zs.get_model_version("foo")
+        bar_version = client.get_model_version("foo")
         assert bar_version.version == "1"
 
         _this_pipeline_does_not_create_a_version()
 
-        bar_version = zs.get_model_version("foo")
+        bar_version = client.get_model_version("foo")
         assert bar_version.version == "2"
 
 
@@ -194,18 +194,18 @@ def test_create_new_version_only_in_pipeline():
         _this_step_does_not_create_a_version()
 
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         _this_pipeline_creates_a_version()
 
-        foo = zs.get_model("bar")
+        foo = client.get_model("bar")
         assert foo.name == "bar"
-        foo_version = zs.get_model_version("bar")
+        foo_version = client.get_model_version("bar")
         assert foo_version.version == "1"
 
         _this_pipeline_creates_a_version()
 
-        foo_version = zs.get_model_version("bar")
+        foo_version = client.get_model_version("bar")
         assert foo_version.version == "2"
 
 
@@ -218,8 +218,7 @@ def _this_step_produces_output() -> (
 
 @step
 def _this_step_tries_to_recover(run_number: int):
-    zs = Client().zen_store
-    mv = zs.get_model_version(
+    mv = Client().get_model_version(
         model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
     )
     assert (
@@ -249,7 +248,7 @@ def test_recovery_of_steps():
         )
 
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_recover(1)
@@ -258,8 +257,8 @@ def test_recovery_of_steps():
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_recover(3)
 
-        model = zs.get_model("foo")
-        mv = zs.get_model_version(
+        model = client.get_model("foo")
+        mv = client.get_model_version(
             model_name_or_id=model.id,
             model_version_name_or_id=RUNNING_MODEL_VERSION,
         )
@@ -292,16 +291,16 @@ def test_clean_up_after_failure():
         )
 
     with model_killer():
-        zs = Client().zen_store
+        client = Client()
 
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_not_recover(1)
         with pytest.raises(AssertionError, match="expected AssertionError"):
             _this_pipeline_will_not_recover(2)
 
-        model = zs.get_model("foo")
+        model = client.get_model("foo")
         with pytest.raises(KeyError):
-            zs.get_model_version(
+            client.get_model_version(
                 model_name_or_id=model.id,
                 model_version_name_or_id=RUNNING_MODEL_VERSION,
             )

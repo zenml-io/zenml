@@ -98,9 +98,7 @@ class ModelConfig(ModelConfigModel):
 
         zenml_client = Client()
         try:
-            self._model = zenml_client.zen_store.get_model(
-                model_name_or_id=self.name
-            )
+            self._model = zenml_client.get_model(model_name_or_id=self.name)
         except KeyError:
             model_request = ModelRequestModel(
                 name=self.name,
@@ -117,13 +115,11 @@ class ModelConfig(ModelConfigModel):
             )
             model_request = ModelRequestModel.parse_obj(model_request)
             try:
-                self._model = zenml_client.zen_store.create_model(
-                    model=model_request
-                )
+                self._model = zenml_client.create_model(model=model_request)
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
-                self._model = zenml_client.zen_store.get_model(
+                self._model = zenml_client.get_model(
                     model_name_or_id=self.name
                 )
 
@@ -157,13 +153,13 @@ class ModelConfig(ModelConfigModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            mv = zenml_client.zen_store.get_model_version(
+            mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )
             self._model_version = mv
         except KeyError:
-            self._model_version = zenml_client.zen_store.create_model_version(
+            self._model_version = zenml_client.create_model_version(
                 model_version=mv_request
             )
             logger.info(f"New model version `{self.name}` was created.")
@@ -184,13 +180,13 @@ class ModelConfig(ModelConfigModel):
         zenml_client = Client()
         if self.version is None:
             # raise if not found
-            self._model_version = zenml_client.zen_store.get_model_version(
+            self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name
             )
         else:
             # by version name or stage
             # raise if not found
-            self._model_version = zenml_client.zen_store.get_model_version(
+            self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_id=self.version,
             )

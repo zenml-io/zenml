@@ -522,9 +522,6 @@ class ModelVersionContext:
         self.user = client.active_user.id
         self.model = "su_model"
         self.model_version = "2.0.0"
-        self.del_ws = False
-        self.del_user = False
-        self.del_model = False
 
         self.create_version = create_version
         self.create_artifacts = create_artifacts
@@ -533,33 +530,22 @@ class ModelVersionContext:
         self.prs = []
 
     def __enter__(self):
-        zs = Client().zen_store
+        client = Client()
+        ws = client.get_workspace(self.workspace)
+        user = client.get_user(self.user)
         try:
-            ws = zs.get_workspace(self.workspace)
+            model = client.get_model(self.model)
         except KeyError:
-            ws = zs.create_workspace(
-                WorkspaceRequestModel(name=self.workspace)
-            )
-            self.del_ws = True
-        try:
-            user = zs.get_user(self.user)
-        except KeyError:
-            user = zs.create_user(UserRequestModel(name=self.user))
-            self.del_user = True
-        try:
-            model = zs.get_model(self.model)
-        except KeyError:
-            model = zs.create_model(
+            model = client.create_model(
                 ModelRequestModel(
                     name=self.model, user=user.id, workspace=ws.id
                 )
             )
-            self.del_model = True
         if self.create_version:
             try:
-                mv = zs.get_model_version(self.model, self.model_version)
+                mv = client.get_model_version(self.model, self.model_version)
             except KeyError:
-                mv = zs.create_model_version(
+                mv = client.create_model_version(
                     ModelVersionRequestModel(
                         user=user.id,
                         workspace=ws.id,
@@ -570,7 +556,7 @@ class ModelVersionContext:
 
         for _ in range(self.create_artifacts):
             self.artifacts.append(
-                zs.create_artifact(
+                client.zen_store.create_artifact(
                     ArtifactRequestModel(
                         name=sample_name("sample_artifact"),
                         data_type="module.class",
@@ -584,7 +570,7 @@ class ModelVersionContext:
             )
         for _ in range(self.create_prs):
             self.prs.append(
-                zs.create_run(
+                client.zen_store.create_run(
                     PipelineRunRequestModel(
                         id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
@@ -611,19 +597,15 @@ class ModelVersionContext:
                 return model
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        zs = Client().zen_store
-        if self.create_version:
-            zs.delete_model_version(self.model, self.model_version)
-        if self.del_model:
-            zs.delete_model(self.model)
+        client = Client()
+        try:
+            client.delete_model(self.model)
+        except KeyError:
+            pass
         for artifact in self.artifacts:
-            zs.delete_artifact(artifact.id)
+            client.delete_artifact(artifact.id)
         for run in self.prs:
-            zs.delete_run(run.id)
-        if self.del_user:
-            zs.delete_user(self.user)
-        if self.del_ws:
-            zs.delete_workspace(self.workspace)
+            client.zen_store.delete_run(run.id)
 
 
 class CatClawMarks(AuthenticationConfig):
