@@ -21,14 +21,15 @@ from zenml import get_step_context
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
 from zenml.models.model_models import (
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
 )
 
 if TYPE_CHECKING:
+    from zenml.model.model_config import ModelConfig
     from zenml.models import ModelResponseModel, ModelVersionResponseModel
+
 
 logger = get_logger(__name__)
 
@@ -56,7 +57,7 @@ class ArtifactConfig(BaseModel):
     IS_DEPLOYMENT_ARTIFACT: ClassVar[bool] = False
 
     @property
-    def _model_config(self) -> ModelConfig:
+    def _model_config(self) -> "ModelConfig":
         """Property that returns the model configuration.
 
         Returns:
@@ -75,6 +76,8 @@ class ArtifactConfig(BaseModel):
             model_config is None or model_config.name != self.model_name
         ):
             # Create a new ModelConfig instance with the provided model name and version
+            from zenml.model.model_config import ModelConfig
+
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
                 version=self.model_version_name,

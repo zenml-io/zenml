@@ -31,7 +31,6 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -154,7 +153,10 @@ class EntrypointFunctionDefinition(NamedTuple):
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
-        from zenml.materializers import UnmaterializedArtifact
+        from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.artifacts.unmaterialized_artifact import (
+            UnmaterializedArtifact,
+        )
 
         if key not in self.inputs:
             raise KeyError(

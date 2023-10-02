@@ -1106,25 +1106,12 @@ def test_deleting_run_deletes_steps():
     """Tests deleting run deletes its steps."""
     client = Client()
     store = client.zen_store
-
-    # Just in case the test db is not in a clean state we compare relative
-    num_steps_before = store.list_run_steps(StepRunFilterModel()).total
-    num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
-
-    num_runs = 1
-
-    with PipelineRunContext(num_runs) as runs:
-        steps = store.list_run_steps(StepRunFilterModel())
-
-        assert steps.total == num_steps_before + num_runs * 2
-        pipelines = store.list_runs(PipelineRunFilterModel())
-        assert pipelines.total == num_pipelines_before + num_runs
+    with PipelineRunContext(num_runs=1) as runs:
         run_id = runs[0].id
+        filter_model = StepRunFilterModel(pipeline_run_id=run_id)
+        assert store.list_run_steps(filter_model).total == 2
         store.delete_run(run_id)
-        assert (
-            store.list_run_steps(StepRunFilterModel()).total
-            == num_steps_before
-        )
+        assert store.list_run_steps(filter_model).total == 0
 
 
 # .--------------------.
@@ -3172,27 +3159,32 @@ class TestModelVersionArtifactLinks:
                 ArtifactResponseModel,
             )
 
-            assert mv.model_objects["link2"]["1"].id == artifacts[1].id
+            assert (
+                mv.model_objects["pipeline::step::link2"]["1"].id
+                == artifacts[1].id
+            )
 
             assert (
                 mv.get_model_object("link2", "1")
-                == mv.model_objects["link2"]["1"]
+                == mv.model_objects["pipeline::step::link2"]["1"]
             )
             assert (
-                mv.get_deployment("link3", "1") == mv.deployments["link3"]["1"]
+                mv.get_deployment("link3", "1")
+                == mv.deployments["pipeline::step::link3"]["1"]
             )
 
             # check how versioned artifacts retrieved
             assert (
                 mv.get_artifact_object("link1", "1")
-                == mv.artifacts["link1"]["1"]
+                == mv.artifacts["pipeline::step::link1"]["1"]
             )
             assert (
                 mv.get_artifact_object("link1", "2")
-                == mv.artifacts["link1"]["2"]
+                == mv.artifacts["pipeline::step::link1"]["2"]
             )
             assert (
-                mv.get_artifact_object("link1") == mv.artifacts["link1"]["2"]
+                mv.get_artifact_object("link1")
+                == mv.artifacts["pipeline::step::link1"]["2"]
             )
 
 

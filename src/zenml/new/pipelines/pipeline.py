@@ -75,7 +75,6 @@ from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
 )
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
@@ -88,6 +87,7 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.model.model_config import ModelConfig
@@ -1141,7 +1141,7 @@ class Pipeline:
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
-        external_artifacts: Dict[str, ExternalArtifact],
+        external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
         upstream_steps: Set[str],
         custom_id: Optional[str] = None,
