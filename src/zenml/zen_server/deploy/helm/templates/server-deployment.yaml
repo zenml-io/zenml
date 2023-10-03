@@ -208,6 +208,10 @@ spec:
             - name: ZENML_SERVER_EXTERNAL_COOKIE_NAME
               value: {{ .Values.zenml.auth.externalCookieName | quote }}
             {{- end }}
+            {{- if .Values.zenml.auth.externalServerID }}
+            - name: ZENML_SERVER_EXTERNAL_SERVER_ID
+              value: {{ .Values.zenml.auth.externalServerID | quote }}
+            {{- end }}
             {{- if .Values.zenml.rootUrlPath }}
             - name: ZENML_SERVER_ROOT_URL_PATH
               value: {{ .Values.zenml.rootUrlPath | quote }}

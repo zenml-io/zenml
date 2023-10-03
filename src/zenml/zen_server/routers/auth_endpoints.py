@@ -217,7 +217,7 @@ def generate_access_token(
     if not device:
         # Also set the access token as an HTTP only cookie in the response
         response.set_cookie(
-            key=config.auth_cookie_name,
+            key=config.get_auth_cookie_name(),
             value=access_token,
             httponly=True,
             samesite="lax",
@@ -267,7 +267,7 @@ def token(
             device_code=auth_form_data.device_code,
         )
 
-    elif auth_form_data.grant_type != OAuthGrantTypes.ZENML_EXTERNAL:
+    elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
         config = server_config()
 
         assert config.external_cookie_name is not None
@@ -332,7 +332,7 @@ def logout(
 
     # Remove the HTTP only cookie even if it does not exist
     response.delete_cookie(
-        key=config.auth_cookie_name,
+        key=config.get_auth_cookie_name(),
         httponly=True,
         samesite="lax",
         domain=config.auth_cookie_domain,

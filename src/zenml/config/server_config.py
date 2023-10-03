@@ -16,6 +16,7 @@
 import os
 from secrets import token_hex
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
@@ -102,6 +103,9 @@ class ServerConfiguration(BaseModel):
             bearer token used to authenticate with the external authenticator
             service. Must be specified if the `EXTERNAL` authentication scheme
             is used.
+        external_server_id: The ID of the ZenML server to use with the
+            `EXTERNAL` authentication scheme. If not specified, the regular
+            ZenML server ID is used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -113,7 +117,7 @@ class ServerConfiguration(BaseModel):
     jwt_token_leeway_seconds: int = DEFAULT_ZENML_JWT_TOKEN_LEEWAY
     jwt_token_expire_minutes: Optional[int] = None
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
-    auth_cookie_name: str
+    auth_cookie_name: Optional[str] = None
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
     max_failed_device_auth_attempts: int = (
@@ -130,6 +134,9 @@ class ServerConfiguration(BaseModel):
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
+    external_server_id: Optional[UUID] = None
+
+    _deployment_id: Optional[UUID] = None
 
     @root_validator(pre=True)
     def _validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -157,45 +164,12 @@ class ServerConfiguration(BaseModel):
                 )
 
             # If the authentication scheme is set to `EXTERNAL`, the
-            # JWT secret key must be explicitly specified.
-            if not values.get("jwt_secret_key"):
-                raise ValueError(
-                    "The JWT secret key must be explicitly configured "
-                    "when using the EXTERNAL authentication scheme."
-                )
-
-            # If the authentication scheme is set to `EXTERNAL`, the
             # external cookie name must be specified.
             if not values.get("external_cookie_name"):
                 raise ValueError(
                     "The external cookie name must be specified when "
                     "using the EXTERNAL authentication scheme."
                 )
-
-        if values.get("auth_scheme") in [
-            None,
-            AuthScheme.OAUTH2_PASSWORD_BEARER,
-            AuthScheme.EXTERNAL,
-        ] and not values.get("auth_cookie_name"):
-            from zenml.config.global_config import GlobalConfiguration
-
-            server_id = GlobalConfiguration().zen_store.get_deployment_id()
-
-            # If the authentication scheme is set to `OAUTH2_PASSWORD_BEARER`
-            # (default) or `EXTERNAL`, an the name of the authentication cookie
-            # is not specified, it will be set to a value computed from the
-            # ZenML server ID.
-            values["auth_cookie_name"] = f"zenml-server-{server_id}"
-
-            # If the issuer or audience is not specified, it is set to the
-            # ZenML server ID.
-            server_id = GlobalConfiguration().zen_store.get_deployment_id()
-
-            if not values.get("jwt_token_issuer"):
-                values["jwt_token_issuer"] = str(server_id)
-
-            if not values.get("jwt_token_audience"):
-                values["jwt_token_audience"] = str(server_id)
 
         if cors_allow_origins := values.get("cors_allow_origins"):
             origins = cors_allow_origins.split(",")
@@ -204,6 +178,85 @@ class ServerConfiguration(BaseModel):
             values["cors_allow_origins"] = ["*"]
 
         return values
+
+    @property
+    def deployment_id(self) -> UUID:
+        """Get the ZenML server deployment ID.
+
+        Returns:
+            The ZenML server deployment ID.
+        """
+        from zenml.config.global_config import GlobalConfiguration
+
+        if self._deployment_id:
+            return self._deployment_id
+
+        self._deployment_id = (
+            GlobalConfiguration().zen_store.get_deployment_id()
+        )
+
+        return self._deployment_id
+
+    def get_jwt_token_issuer(self) -> str:
+        """Get the JWT token issuer.
+
+        If not configured, the issuer is set to the ZenML Server ID.
+
+        Returns:
+            The JWT token issuer.
+        """
+        if self.jwt_token_issuer:
+            return self.jwt_token_issuer
+
+        self.jwt_token_issuer = str(self.deployment_id)
+
+        return self.jwt_token_issuer
+
+    def get_jwt_token_audience(self) -> str:
+        """Get the JWT token audience.
+
+        If not configured, the audience is set to the ZenML Server ID.
+
+        Returns:
+            The JWT token audience.
+        """
+        if self.jwt_token_audience:
+            return self.jwt_token_audience
+
+        self.jwt_token_audience = str(self.deployment_id)
+
+        return self.jwt_token_audience
+
+    def get_auth_cookie_name(self) -> str:
+        """Get the authentication cookie name.
+
+        If not configured, the cookie name is set to a value computed from the
+        ZenML server ID.
+
+        Returns:
+            The authentication cookie name.
+        """
+        if self.auth_cookie_name:
+            return self.auth_cookie_name
+
+        self.auth_cookie_name = f"zenml-server-{self.deployment_id}"
+
+        return self.auth_cookie_name
+
+    def get_external_server_id(self) -> UUID:
+        """Get the external server ID.
+
+        If not configured, the regular ZenML server ID is used.
+
+        Returns:
+            The external server ID.
+        """
+        if self.external_server_id:
+            return self.external_server_id
+
+        self.external_server_id = self.deployment_id
+
+        return self.external_server_id
 
     @classmethod
     def get_server_config(cls) -> "ServerConfiguration":
@@ -226,9 +279,6 @@ class ServerConfiguration(BaseModel):
     class Config:
         """Pydantic configuration class."""
 
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
         # Allow extra attributes from configs of previous ZenML versions to
         # permit downgrading
         extra = "allow"

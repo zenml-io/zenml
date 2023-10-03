@@ -397,7 +397,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
 
     update = OAuthDeviceInternalUpdateModel(
         status=OAuthDeviceStatus.ACTIVE,
-        expires_in=expires_in,
+        expires_in=expires_in * 60,
     )
     device_model = zen_store().update_internal_authorized_device(
         device_id=device_model.id,
@@ -435,7 +435,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
     # Get the user information from the external authenticator
     user_info_url = config.external_user_info_url
     headers = {"Authorization": "Bearer " + external_access_token}
-    query_params = dict(server_id=str(zen_store().get_deployment_id()))
+    query_params = dict(server_id=str(config.get_external_server_id()))
 
     try:
         auth_response = requests.get(
@@ -476,8 +476,12 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 )
                 pass
 
-    elif auth_response.status_code == 401:
+    elif auth_response.status_code in [401, 403]:
         raise AuthorizationException("Not authorized to access this server.")
+    elif auth_response.status_code == 404:
+        raise AuthorizationException(
+            "External authenticator did not recognize this server."
+        )
     else:
         logger.error(
             f"Error fetching user information from external authenticator. "
@@ -579,7 +583,9 @@ class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
             The bearer token extracted from the request cookie or header.
         """
         # First, try to get the token from the cookie
-        authorization = request.cookies.get(server_config().auth_cookie_name)
+        authorization = request.cookies.get(
+            server_config().get_auth_cookie_name()
+        )
         if authorization:
             logger.info("Got token from cookie")
             return authorization

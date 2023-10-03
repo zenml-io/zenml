@@ -145,6 +145,10 @@ zenml:
     # `zenml.auth.authType` is set to `EXTERNAL`.
     externalCookieName:
 
+    # The UUID of the ZenML server to use with the `EXTERNAL` authentication
+    # scheme. If not specified, the regular ZenML server ID (deployment ID) is
+    # used.
+    externalServerID:
 
   # The root URL path to use when behind a proxy. This is useful when the
   # `rewrite-target` annotation is used in the ingress controller, e.g.:

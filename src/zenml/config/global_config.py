@@ -32,6 +32,7 @@ from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SECRETS_STORE_PREFIX,
+    ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -399,6 +400,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         This method is called to ensure that the active stack and workspace
         are set to their default values, if possible.
         """
+        # If running in a ZenML server environment, the active stack and
+        # workspace are not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return
         active_workspace, active_stack = self.zen_store.validate_active_config(
             self.active_workspace_name,
             self.active_stack_id,

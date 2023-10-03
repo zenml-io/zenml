@@ -76,8 +76,8 @@ class JWTToken(BaseModel):
                 token,
                 config.jwt_secret_key,
                 algorithms=[config.jwt_token_algorithm],
-                audience=config.jwt_token_audience,
-                issuer=config.jwt_token_issuer,
+                audience=config.get_jwt_token_audience(),
+                issuer=config.get_jwt_token_issuer(),
                 verify=verify,
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
@@ -139,10 +139,8 @@ class JWTToken(BaseModel):
             sub=str(self.user_id),
             permissions=list(self.permissions),
         )
-        if config.jwt_token_issuer:
-            claims["iss"] = config.jwt_token_issuer
-        if config.jwt_token_audience:
-            claims["aud"] = config.jwt_token_audience
+        claims["iss"] = config.get_jwt_token_issuer()
+        claims["aud"] = config.get_jwt_token_audience()
 
         if expires:
             claims["exp"] = expires
