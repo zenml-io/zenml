@@ -33,13 +33,13 @@ def authorized_device() -> None:
     """Interact with authorized devices."""
 
 
-@authorized_device.command("get")
+@authorized_device.command("describe")
 @click.argument("id_or_prefix", type=str, required=True)
-def get_authorized_device(id_or_prefix: str) -> None:
+def describe_authorized_device(id_or_prefix: str) -> None:
     """Fetch an authorized device.
 
     Args:
-        id_or_prefix: The ID of the authorized device to lock.
+        id_or_prefix: The ID of the authorized device to fetch.
     """
     try:
         device = Client().get_authorized_device(
@@ -47,11 +47,10 @@ def get_authorized_device(id_or_prefix: str) -> None:
         )
     except KeyError as e:
         cli_utils.error(str(e))
-    else:
-        cli_utils.declare(f"Locked authorized device `{id}`.")
-    cli_utils.print_pydantic_models(
-        [device],
-        exclude_columns=["user"],
+
+    cli_utils.print_pydantic_model(
+        title=f"Authorized device `{device.id}`",
+        model=device,
     )
 
 

@@ -52,6 +52,9 @@ class OAuthDeviceSchema(BaseSchema, table=True):
     hostname: Optional[str] = None
     python_version: Optional[str] = None
     zenml_version: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -124,6 +127,9 @@ class OAuthDeviceSchema(BaseSchema, table=True):
                 hostname=request.hostname,
                 python_version=request.python_version,
                 zenml_version=request.zenml_version,
+                city=request.city,
+                region=request.region,
+                country=request.country,
                 created=now,
                 updated=now,
             ),
@@ -211,6 +217,9 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             ip_address=self.ip_address,
             python_version=self.python_version,
             zenml_version=self.zenml_version,
+            city=self.city,
+            region=self.region,
+            country=self.country,
             created=self.created,
             updated=self.updated,
         )
@@ -221,22 +230,9 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         Returns:
             The converted internal device response model.
         """
+        device_model = self.to_model()
         return OAuthDeviceInternalResponseModel(
-            id=self.id,
-            user=self.user.to_model(True) if self.user else None,
-            client_id=self.client_id,
-            expires=self.expires,
-            status=self.status,
             user_code=self.user_code,
             device_code=self.device_code,
-            last_login=self.last_login,
-            trusted_device=self.trusted_device,
-            failed_auth_attempts=self.failed_auth_attempts,
-            created=self.created,
-            updated=self.updated,
-            hostname=self.hostname,
-            os=self.os,
-            ip_address=self.ip_address,
-            python_version=self.python_version,
-            zenml_version=self.zenml_version,
+            **device_model.dict(),
         )

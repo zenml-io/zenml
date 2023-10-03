@@ -1,8 +1,8 @@
-"""add oauth devices [845e4d55a660].
+"""add oauth devices [f3b3964e3a0f].
 
-Revision ID: 845e4d55a660
+Revision ID: f3b3964e3a0f
 Revises: 0.44.3
-Create Date: 2023-09-29 16:21:53.387330
+Create Date: 2023-10-03 22:06:04.452359
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "845e4d55a660"
+revision = "f3b3964e3a0f"
 down_revision = "0.44.3"
 branch_labels = None
 depends_on = None
@@ -51,6 +51,11 @@ def upgrade() -> None:
         ),
         sa.Column(
             "zenml_version", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+        ),
+        sa.Column("city", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("region", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column(
+            "country", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
         sa.ForeignKeyConstraint(
             ["user_id"],

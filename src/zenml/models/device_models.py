@@ -69,6 +69,18 @@ class OAuthDeviceBaseModel(BaseModel):
         default=None,
         description="The ZenML version of the device used for authentication.",
     )
+    city: Optional[str] = Field(
+        default=None,
+        description="The city where the device is located.",
+    )
+    region: Optional[str] = Field(
+        default=None,
+        description="The region where the device is located.",
+    )
+    country: Optional[str] = Field(
+        default=None,
+        description="The country where the device is located.",
+    )
 
 
 # -------- #
@@ -209,6 +221,18 @@ class OAuthDeviceInternalRequestModel(BaseModel):
         default=None,
         description="The ZenML version of the device used for authentication.",
     )
+    city: Optional[str] = Field(
+        default=None,
+        description="The city where the device is located.",
+    )
+    region: Optional[str] = Field(
+        default=None,
+        description="The region where the device is located.",
+    )
+    country: Optional[str] = Field(
+        default=None,
+        description="The country where the device is located.",
+    )
 
 
 class OAuthDeviceUpdateModel(BaseModel):
@@ -271,4 +295,16 @@ class OAuthDeviceInternalUpdateModel(OAuthDeviceUpdateModel):
     zenml_version: Optional[str] = Field(
         default=None,
         description="The ZenML version of the device used for authentication.",
+    )
+    city: Optional[str] = Field(
+        default=None,
+        description="The city where the device is located.",
+    )
+    region: Optional[str] = Field(
+        default=None,
+        description="The region where the device is located.",
+    )
+    country: Optional[str] = Field(
+        default=None,
+        description="The country where the device is located.",
     )
