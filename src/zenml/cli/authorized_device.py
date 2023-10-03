@@ -51,6 +51,7 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     cli_utils.print_pydantic_model(
         title=f"Authorized device `{device.id}`",
         model=device,
+        exclude_columns={"user"},
     )
 
 

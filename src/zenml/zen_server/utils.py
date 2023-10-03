@@ -19,6 +19,7 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
+import ipinfo
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
@@ -259,3 +260,25 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
 
     return init_cls_and_handle_errors
+
+
+def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
+    """Get the location of the given IP address.
+
+    Args:
+        ip_address: The IP address to get the location for.
+
+    Returns:
+        A tuple of city, region, country.
+    """
+    try:
+        handler = ipinfo.getHandler()
+        details = handler.getDetails(ip_address)
+        return (
+            details.city,
+            details.region,
+            details.country_name,
+        )
+    except Exception:
+        logger.exception(f"Could not get IP location for {ip_address}.")
+        return "", "", ""

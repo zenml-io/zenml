@@ -49,7 +49,12 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
-from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
+from zenml.zen_server.utils import (
+    get_ip_location,
+    handle_exceptions,
+    server_config,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
@@ -381,8 +386,10 @@ def device_authorization(
 
     # Fetch the IP address of the client
     ip_address: str = ""
+    city, region, country = "", "", ""
     if request.client and request.client.host:
         ip_address = request.client.host
+        city, region, country = get_ip_location(ip_address)
 
     # Check if a device is already registered for the same client ID.
     try:
@@ -395,6 +402,9 @@ def device_authorization(
                 client_id=client_id,
                 expires_in=config.device_auth_timeout,
                 ip_address=ip_address,
+                city=city,
+                region=region,
+                country=country,
                 **device_details.dict(exclude_none=True),
             )
         )
@@ -411,6 +421,9 @@ def device_authorization(
                 failed_auth_attempts=0,
                 generate_new_codes=True,
                 ip_address=ip_address,
+                city=city,
+                region=region,
+                country=country,
                 **device_details.dict(exclude_none=True),
             ),
         )

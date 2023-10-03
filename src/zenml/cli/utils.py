@@ -21,6 +21,7 @@ import subprocess
 import sys
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     Callable,
     Dict,
@@ -364,12 +365,16 @@ def print_pydantic_models(
 def print_pydantic_model(
     title: str,
     model: BaseModel,
+    exclude_columns: Optional[AbstractSet[str]] = None,
+    columns: Optional[AbstractSet[str]] = None,
 ) -> None:
     """Prints a single Pydantic model in a table.
 
     Args:
         title: Title of the table.
         model: Pydantic model that will be represented as a row in the table.
+        exclude_columns: Optionally specify columns to exclude.
+        columns: Optionally specify subset and order of columns to display.
     """
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
@@ -379,7 +384,8 @@ def print_pydantic_model(
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
 
-    for item in model.dict().items():
+    model_info = model.dict(include=columns, exclude=exclude_columns)
+    for item in model_info.items():
         rich_table.add_row(*[str(elem) for elem in item])
 
     # capitalize entries in first column

@@ -71,6 +71,7 @@ pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 fastapi-utils = { version = "~0.2.1", optional = true}
 orjson = { version = "~3.8.3", optional = true}
 Jinja2 = { version = "*", optional = true}
+ipinfo = { version = ">4.4.3", optional = true}
 
 # optional dependencies for stack recipes
 
@@ -171,7 +172,8 @@ server = [
     "pyjwt",
     "fastapi-utils",
     "orjson",
-    "Jinja2"
+    "Jinja2",
+    "ipinfo"
 ]
 templates = ["copier", "jinja2-time", "black", "ruff"]
 secrets-aws = ["boto3"]
