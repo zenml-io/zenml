@@ -736,7 +736,7 @@ def connect(
 
     if not username:
         if store_type == StoreType.REST:
-            store_dict["api_token"] = web_login(url=url)
+            store_dict["api_token"] = web_login(url=url, verify_ssl=verify_ssl)
         else:
             username = click.prompt("Username", type=str)
 

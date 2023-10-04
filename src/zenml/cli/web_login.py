@@ -15,7 +15,7 @@
 import platform
 import time
 import webbrowser
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 
@@ -34,7 +34,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def web_login(url: str) -> str:
+def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
     """Implements the OAuth2 Device Authorization Grant flow.
 
     This function implements the client side of the OAuth2 Device Authorization
@@ -48,6 +48,9 @@ def web_login(url: str) -> str:
 
     Args:
         url: The URL of the OAuth2 server.
+        verify_ssl: Whether to verify the SSL certificate of the OAuth2 server.
+            If a string is passed, it is interpreted as the path to a CA bundle
+            file.
 
     Returns:
         The access token returned by the OAuth2 server.
@@ -94,6 +97,7 @@ def web_login(url: str) -> str:
                 "User-Agent": user_agent_header.encode(),
             },
             data=auth_request.dict(),
+            verify=verify_ssl,
             timeout=DEFAULT_HTTP_TIMEOUT,
         )
         if response.status_code == 200:
@@ -144,6 +148,7 @@ def web_login(url: str) -> str:
             login_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data=token_request.dict(),
+            verify=verify_ssl,
             timeout=DEFAULT_HTTP_TIMEOUT,
         )
         if response.status_code == 200:

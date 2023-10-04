@@ -1167,7 +1167,7 @@ To connect to a ZenML server, you can either pass the configuration as command
 line arguments or as a YAML file:
 
 ```bash
-zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
 ```
 
 or
