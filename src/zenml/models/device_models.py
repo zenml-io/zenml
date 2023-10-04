@@ -124,7 +124,7 @@ class OAuthDeviceInternalResponseModel(OAuthDeviceResponseModel):
             True if the code is valid, False otherwise.
         """
         context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        result = context.verify(code, code_hash)  # type: ignore[arg-type]
+        result = context.verify(code, code_hash)
 
         return result
 

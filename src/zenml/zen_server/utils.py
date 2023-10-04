@@ -19,7 +19,7 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
-import ipinfo
+import ipinfo  # type: ignore[import]
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
