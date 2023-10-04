@@ -778,6 +778,8 @@ deployment_crud_test_config = CrudTestConfig(
         stack=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
     ),
     filter_model=PipelineDeploymentFilterModel,
     entity_name="deployment",
