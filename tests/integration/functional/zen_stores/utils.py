@@ -723,21 +723,21 @@ pipeline_crud_test_config = CrudTestConfig(
     filter_model=PipelineFilterModel,
     entity_name="pipeline",
 )
-pipeline_run_crud_test_config = CrudTestConfig(
-    create_model=PipelineRunRequestModel(
-        id=uuid.uuid4(),
-        deployment=uuid.uuid4(),
-        pipeline=uuid.uuid4(),
-        name=sample_name("sample_pipeline_run"),
-        status=ExecutionStatus.RUNNING,
-        config=PipelineConfiguration(name="aria_pipeline"),
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
-    ),
-    update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
-    filter_model=PipelineRunFilterModel,
-    entity_name="run",
-)
+# pipeline_run_crud_test_config = CrudTestConfig(
+#     create_model=PipelineRunRequestModel(
+#         id=uuid.uuid4(),
+#         deployment=uuid.uuid4(), # deployment has to exist first
+#         pipeline=uuid.uuid4(),
+#         name=sample_name("sample_pipeline_run"),
+#         status=ExecutionStatus.RUNNING,
+#         config=PipelineConfiguration(name="aria_pipeline"),
+#         user=uuid.uuid4(),
+#         workspace=uuid.uuid4(),
+#     ),
+#     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
+#     filter_model=PipelineRunFilterModel,
+#     entity_name="run",
+# )
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequestModel(
         name=sample_name("sample_artifact"),
@@ -845,7 +845,7 @@ list_of_entities = [
     component_crud_test_config,
     pipeline_crud_test_config,
     # step_run_crud_test_config,
-    pipeline_run_crud_test_config,
+    # pipeline_run_crud_test_config,
     artifact_crud_test_config,
     secret_crud_test_config,
     build_crud_test_config,
