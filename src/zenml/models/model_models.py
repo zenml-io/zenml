@@ -561,7 +561,7 @@ class ModelResponseModel(
             Client()
             .list_model_versions(
                 ModelVersionFilterModel(
-                    model_id=self.id, workspace_id=self.workspace
+                    model_id=self.id, workspace_id=self.workspace.id
                 )
             )
             .items

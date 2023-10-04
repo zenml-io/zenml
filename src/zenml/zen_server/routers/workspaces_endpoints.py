@@ -1441,7 +1441,8 @@ def create_model_version_pipeline_run_link(
         auth_context: Authentication context.
 
     Returns:
-        The created model version to pipeline run link.
+        - If Model Version to Pipeline Run Link already exists - returns the existing link.
+        - Otherwise, returns the newly created model version to pipeline run link.
 
     Raises:
         IllegalOperationError: If the workspace or user specified in the

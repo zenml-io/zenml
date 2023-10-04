@@ -594,6 +594,9 @@ class Pipeline:
             stack = Client().active_stack
 
             new_version_requests = self.get_new_version_requests(deployment)
+            deployment = self.update_new_versions_requests(
+                deployment, new_version_requests
+            )
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -825,6 +828,46 @@ class Pipeline:
                 )
 
         return new_versions_requested
+
+    def update_new_versions_requests(
+        self,
+        deployment: "PipelineDeploymentBaseModel",
+        new_version_requests: Dict[str, Dict[str, Any]],
+    ) -> "PipelineDeploymentBaseModel":
+        """Update model configurations that are used in the pipeline run.
+
+        This method is updating create_new_model_version for all model configurations in the pipeline,
+        who deal with model name with existing request to create a new mode version.
+
+
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            new_version_requests: Dict of models requesting new versions and their definition points.
+
+        Returns:
+            Updated pipeline deployment configuration.
+        """
+        for step_name in deployment.step_configurations:
+            step_model_config = deployment.step_configurations[
+                step_name
+            ].config.model_config_model
+            if (
+                step_model_config is not None
+                and step_model_config.name in new_version_requests
+            ):
+                step_model_config.version = None
+                step_model_config.create_new_model_version = True
+        pipeline_model_config = (
+            deployment.pipeline_configuration.model_config_model
+        )
+        if (
+            pipeline_model_config is not None
+            and pipeline_model_config.name in new_version_requests
+        ):
+            pipeline_model_config.version = None
+            pipeline_model_config.create_new_model_version = True
+        return deployment
 
     def register_running_versions(
         self, new_version_requests: Dict[str, Dict[str, Any]]

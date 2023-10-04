@@ -75,10 +75,6 @@ class ExternalArtifactConfiguration(BaseModel):
                 "Please check your inputs and try again."
             )
 
-        # clean-up state after id found
-        self.pipeline_name = None
-        self.artifact_name = None
-
         return response
 
     def _get_artifact_from_model(
@@ -97,10 +93,7 @@ class ExternalArtifactConfiguration(BaseModel):
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
                 model configuration is missing in @step and @pipeline.
         """
-        from zenml.client import Client
         from zenml.model.model_config import ModelConfig
-
-        client = Client()
 
         if self.model_name is None:
             if model_config is None:
@@ -115,8 +108,7 @@ class ExternalArtifactConfiguration(BaseModel):
         _model_config = ModelConfig(
             name=self.model_name, version=self.model_version
         )
-        model = client.zen_store.get_model(model_name_or_id=self.model_name)
-        model_version = _model_config._get_model_version(model)
+        model_version = _model_config._get_model_version()
 
         for artifact_getter in [
             model_version.get_artifact_object,
@@ -138,11 +130,6 @@ class ExternalArtifactConfiguration(BaseModel):
                 f"in model `{self.model_name}` version `{self.model_version}`. "
                 "Please check your inputs and try again."
             )
-
-        # clean-up state after id found
-        self.model_name = None
-        self.model_version = None
-        self.model_artifact_name = None
 
         return response
 

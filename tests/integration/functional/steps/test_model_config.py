@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 from tests.integration.functional.utils import model_killer
@@ -21,7 +23,9 @@ from typing_extensions import Annotated
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ArtifactConfig, ModelConfig
+from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
+from zenml.models import ModelRequestModel, ModelVersionRequestModel
+from zenml.steps.external_artifact import ExternalArtifact
 
 
 @step
@@ -388,3 +392,418 @@ def test_multiple_definitions_create_new_version_warns(
                 assert expected_warning in logger.call_args[0][0]
             else:
                 logger.assert_not_called()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_pipeline_context_single_step():
+    _this_step_produces_output()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_pipeline_context_multiple_steps():
+    _this_step_produces_output()
+    _this_step_produces_output()
+
+
+@pytest.mark.parametrize(
+    "pipeline",
+    (
+        _pipeline_run_link_attached_from_pipeline_context_single_step,
+        _pipeline_run_link_attached_from_pipeline_context_multiple_steps,
+    ),
+    ids=["Single step pipeline", "Multiple steps pipeline"],
+)
+def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
+    """Tests that current pipeline run information is attached to model version by pipeline context."""
+    with model_killer():
+        client = Client()
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+            model_config=ModelConfig(
+                name="foo",
+                create_new_model_version=True,
+                delete_new_version_on_failure=True,
+            ),
+        )()
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+            model_config=ModelConfig(
+                name="foo",
+            ),
+        )()
+
+        model = client.get_model("foo")
+        mv = client.get_model_version(
+            model_name_or_id=model.id,
+        )
+
+        assert len(mv.pipeline_run_ids) == 2
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            run_name_1,
+            run_name_2,
+        }
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_step_context_single_step(mc: ModelConfig):
+    _this_step_produces_output.with_options(model_config=mc)()
+
+
+@pipeline(name="bar", enable_cache=False)
+def _pipeline_run_link_attached_from_step_context_multiple_step(
+    mc: ModelConfig,
+):
+    _this_step_produces_output.with_options(model_config=mc)()
+    _this_step_produces_output.with_options(model_config=mc)()
+
+
+@pytest.mark.parametrize(
+    "pipeline",
+    (
+        _pipeline_run_link_attached_from_step_context_single_step,
+        _pipeline_run_link_attached_from_step_context_multiple_step,
+    ),
+    ids=["Single step pipeline", "Multiple steps pipeline"],
+)
+def test_pipeline_run_link_attached_from_step_context(pipeline):
+    """Tests that current pipeline run information is attached to model version by step context."""
+    with model_killer():
+        client = Client()
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+        )(
+            ModelConfig(
+                name="foo",
+                create_new_model_version=True,
+                delete_new_version_on_failure=True,
+            )
+        )
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+        )(
+            ModelConfig(
+                name="foo",
+            )
+        )
+
+        model = client.get_model("foo")
+        mv = client.get_model_version(
+            model_name_or_id=model.id,
+        )
+
+        assert len(mv.pipeline_run_ids) == 2
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            run_name_1,
+            run_name_2,
+        }
+
+
+@step
+def _this_step_has_model_config_on_artifact_level() -> (
+    Tuple[
+        Annotated[
+            int, "declarative_link", ArtifactConfig(model_name="declarative")
+        ],
+        Annotated[int, "functional_link"],
+    ]
+):
+    link_output_to_model(
+        ArtifactConfig(model_name="functional"), output_name="functional_link"
+    )
+    return 1, 2
+
+
+@pipeline(enable_cache=False)
+def _pipeline_run_link_attached_from_artifact_context_single_step():
+    _this_step_has_model_config_on_artifact_level()
+
+
+@pipeline(enable_cache=False)
+def _pipeline_run_link_attached_from_artifact_context_multiple_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_config_on_artifact_level()
+
+
+@pipeline(enable_cache=False, model_config=ModelConfig(name="pipeline"))
+def _pipeline_run_link_attached_from_mixed_context_single_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+
+
+@pipeline(enable_cache=False, model_config=ModelConfig(name="pipeline"))
+def _pipeline_run_link_attached_from_mixed_context_multiple_step():
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+    _this_step_has_model_config_on_artifact_level()
+    _this_step_produces_output()
+    _this_step_produces_output.with_options(
+        model_config=ModelConfig(name="step"),
+    )()
+
+
+@pytest.mark.parametrize(
+    "pipeline,model_names",
+    (
+        (
+            _pipeline_run_link_attached_from_artifact_context_single_step,
+            ["declarative", "functional"],
+        ),
+        (
+            _pipeline_run_link_attached_from_artifact_context_multiple_step,
+            ["declarative", "functional"],
+        ),
+        (
+            _pipeline_run_link_attached_from_mixed_context_single_step,
+            ["declarative", "functional", "step", "pipeline"],
+        ),
+        (
+            _pipeline_run_link_attached_from_mixed_context_multiple_step,
+            ["declarative", "functional", "step", "pipeline"],
+        ),
+    ),
+    ids=[
+        "Single step pipeline (declarative+functional)",
+        "Multiple steps pipeline (declarative+functional)",
+        "Single step pipeline (declarative+functional+step+pipeline)",
+        "Multiple steps pipeline (declarative+functional+step+pipeline)",
+    ],
+)
+def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
+    """Tests that current pipeline run information is attached to model version by artifact context.
+
+    Here we use 2 models and Artifacts has different configs to link there.
+    """
+    with model_killer():
+        client = Client()
+
+        models = []
+        for model_name in model_names:
+            models.append(
+                client.create_model(
+                    ModelRequestModel(
+                        name=model_name,
+                        user=Client().active_user.id,
+                        workspace=Client().active_workspace.id,
+                    )
+                )
+            )
+            client.create_model_version(
+                ModelVersionRequestModel(
+                    model=models[-1].id,
+                    version="good_one",
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                )
+            )
+
+        run_name_1 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_1,
+        )()
+        run_name_2 = f"bar_run_{uuid4()}"
+        pipeline.with_options(
+            run_name=run_name_2,
+        )()
+
+        for model in models:
+            mv = client.get_model_version(
+                model_name_or_id=model.id,
+            )
+            assert len(mv.pipeline_run_ids) == 2
+            assert {run_name for run_name in mv.pipeline_run_ids} == {
+                run_name_1,
+                run_name_2,
+            }
+
+
+@step
+def _consumer_step(a: int, b: int):
+    assert a == b
+
+
+@step(model_config=ModelConfig(name="step", create_new_model_version=True))
+def _producer_step() -> Tuple[int, int, int]:
+    return 1, 2, 3
+
+
+@pipeline
+def _consumer_pipeline_with_step_context():
+    _consumer_step.with_options(model_config=ModelConfig(name="step"))(
+        ExternalArtifact(model_artifact_name="output_0"), 1
+    )
+
+
+@pipeline
+def _consumer_pipeline_with_artifact_context():
+    _consumer_step(
+        ExternalArtifact(model_artifact_name="output_1", model_name="step"), 2
+    )
+
+
+@pipeline(model_config=ModelConfig(name="step"))
+def _consumer_pipeline_with_pipeline_context():
+    _consumer_step(
+        ExternalArtifact(model_artifact_name="output_2", model_name="step"), 3
+    )
+
+
+@pipeline
+def _producer_pipeline():
+    _producer_step()
+
+
+def test_that_consumption_also_registers_run_in_model_version():
+    """Test that consumption scenario also registers run in model version."""
+    with model_killer():
+        producer_run = f"producer_run_{uuid4()}"
+        consumer_run_1 = f"consumer_run_1_{uuid4()}"
+        consumer_run_2 = f"consumer_run_2_{uuid4()}"
+        consumer_run_3 = f"consumer_run_3_{uuid4()}"
+        _producer_pipeline.with_options(
+            run_name=producer_run, enable_cache=False
+        )()
+        _consumer_pipeline_with_step_context.with_options(
+            run_name=consumer_run_1
+        )()
+        _consumer_pipeline_with_artifact_context.with_options(
+            run_name=consumer_run_2
+        )()
+        _consumer_pipeline_with_pipeline_context.with_options(
+            run_name=consumer_run_3
+        )()
+
+        client = Client()
+        model = client.get_model(model_name_or_id="step")
+        mv = client.get_model_version(
+            model_name_or_id=model.id,
+        )
+        assert len(mv.pipeline_run_ids) == 4
+        assert {run_name for run_name in mv.pipeline_run_ids} == {
+            producer_run,
+            consumer_run_1,
+            consumer_run_2,
+            consumer_run_3,
+        }
+
+
+def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_created():
+    """Test that if one of the steps requests a new version but was cached a new version is still created for other steps."""
+    with model_killer():
+
+        @pipeline(model_config=ModelConfig(name="step"))
+        def _inner_pipeline():
+            # this step requests a new version, but can be cached
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+            # this is an always run step
+            _this_step_produces_output.with_options(enable_cache=False)()
+
+        # this will run all steps, including one requesting new version
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+        # here the step requesting new version is cached
+        run_2 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_2)()
+
+        client = Client()
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 2
+        assert {
+            run_name
+            for mv in model.versions
+            for run_name in mv.pipeline_run_ids
+        } == {run_1, run_2}
+
+
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
+    """Test that if pipeline run gets deleted - it is removed from model version."""
+    with model_killer():
+
+        @pipeline(model_config=ModelConfig(name="step"), enable_cache=False)
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        client.delete_pipeline_run(run_1)
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].pipeline_run_ids) == 0
+
+
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
+    """Test that if pipeline gets deleted - runs are removed from model version."""
+    with model_killer():
+
+        @pipeline(
+            model_config=ModelConfig(name="step"),
+            enable_cache=False,
+            name="test_that_pipeline_run_is_removed_on_deletion_of_pipeline",
+        )
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        client.delete_pipeline(
+            "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
+        )
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].pipeline_run_ids) == 0
+
+
+def test_that_artifact_is_removed_on_deletion():
+    """Test that if artifact gets deleted - it is removed from model version."""
+    with model_killer():
+
+        @pipeline(
+            model_config=ModelConfig(name="step"),
+            enable_cache=False,
+        )
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        run = client.get_pipeline_run(run_1)
+        client.delete_pipeline(run.pipeline.id)
+        client.delete_artifact(
+            run.steps["_this_step_produces_output"].outputs["data"].id
+        )
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].artifact_object_ids) == 0

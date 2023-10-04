@@ -5973,10 +5973,8 @@ class SqlZenStore(BaseZenStore):
             model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
 
         Returns:
-            The newly created model version to pipeline run link.
-
-        Raises:
-            EntityExistsError: If a link with the given ID already exists.
+            - If Model Version to Pipeline Run Link already exists - returns the existing link.
+            - Otherwise, returns the newly created model version to pipeline run link.
         """
         with Session(self.engine) as session:
             existing_model_version_pipeline_run_link = session.exec(
@@ -5995,9 +5993,8 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
             if existing_model_version_pipeline_run_link is not None:
-                raise EntityExistsError(
-                    f"Unable to create model version link {existing_model_version_pipeline_run_link.name}: "
-                    f"A model version link with this name already exists in {existing_model_version_pipeline_run_link.model_version} model version."
+                return ModelVersionPipelineRunSchema.to_model(
+                    existing_model_version_pipeline_run_link
                 )
 
             if model_version_pipeline_run_link.name is None:

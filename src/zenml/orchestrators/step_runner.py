@@ -23,9 +23,11 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
 )
+from uuid import UUID
 
 from pydantic.typing import get_origin, is_union
 
@@ -57,8 +59,9 @@ from zenml.steps.utils import (
 from zenml.utils import artifact_utils, materializer_utils, source_utils
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -249,6 +252,13 @@ class StepRunner:
                         )
                         self._link_artifacts_to_model(
                             artifact_ids=output_artifact_ids
+                        )
+                        self._link_pipeline_run_to_model(
+                            pipeline_run=pipeline_run,
+                            artifact_names=list(output_artifact_ids.keys()),
+                            external_artifacts=list(
+                                step_run.config.external_input_artifacts.values()
+                            ),
                         )
                     StepContext._clear()  # Remove the step context singleton
 
@@ -524,7 +534,7 @@ class StepRunner:
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
-    ) -> Dict[str, "UUID"]:
+    ) -> Dict[str, UUID]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -546,7 +556,7 @@ class StepRunner:
         )
         assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
-        output_artifacts: Dict[str, "UUID"] = {}
+        output_artifacts: Dict[str, UUID] = {}
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -605,7 +615,7 @@ class StepRunner:
 
     def _link_artifacts_to_model(
         self,
-        artifact_ids: Dict[str, "UUID"],
+        artifact_ids: Dict[str, UUID],
     ) -> None:
         """Links the output artifacts of the step to the model.
 
@@ -646,6 +656,116 @@ class StepRunner:
                 )
                 artifact_config._step_name = get_step_context().step_run.name
                 artifact_config.link_to_model(artifact_uuid=artifact_uuid)
+
+    def _get_model_versions_from_artifacts(
+        self,
+        artifact_names: List[str],
+    ) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the artifacts.
+
+        Args:
+            artifact_names: The names of the published output artifacts.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        models = set()
+        for artifact_name in artifact_names:
+            artifact_config = (
+                get_step_context()._get_output(artifact_name).artifact_config
+            )
+            if artifact_config is not None:
+                try:
+                    model_version = (
+                        artifact_config._model_config._get_model_version()
+                    )
+                    models.add((model_version.model.id, model_version.id))
+                except RuntimeError:
+                    break
+        return models
+
+    def _get_model_versions_from_external_artifacts(
+        self, external_artifacts: List["ExternalArtifactConfiguration"]
+    ) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the external artifacts.
+
+        Args:
+            external_artifacts: The external artifacts of the step.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        client = Client()
+        models = set()
+        for external_artifact in external_artifacts:
+            if (
+                external_artifact.model_artifact_name is not None
+                and external_artifact.model_name is not None
+            ):
+                if external_artifact.model_version is not None:
+                    model_version = client.get_model_version(
+                        model_name_or_id=external_artifact.model_name,
+                        model_version_name_or_id=external_artifact.model_version,
+                    )
+                else:
+                    model_version = client.get_model_version(
+                        model_name_or_id=external_artifact.model_name
+                    )
+                models.add((model_version.model.id, model_version.id))
+        return models
+
+    def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the step model config.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        try:
+            mc = get_step_context().model_config
+            model_version = mc._get_model_version()
+            return {(model_version.model.id, model_version.id)}
+        except StepContextError:
+            return set()
+
+    def _link_pipeline_run_to_model(
+        self,
+        pipeline_run: "PipelineRunResponseModel",
+        artifact_names: List[str],
+        external_artifacts: List["ExternalArtifactConfiguration"],
+    ) -> None:
+        """Links the pipeline run to the model version.
+
+        Args:
+            pipeline_run: The response model of current pipeline run.
+            artifact_names: The name of the published output artifacts.
+            external_artifacts: The external artifacts of the step.
+        """
+        from zenml.models.model_models import (
+            ModelVersionPipelineRunRequestModel,
+        )
+
+        models = self._get_model_versions_from_artifacts(artifact_names)
+
+        models = models.union(
+            self._get_model_versions_from_external_artifacts(
+                external_artifacts
+            )
+        )
+
+        models = models.union(self._get_model_versions_from_config())
+
+        client = Client()
+        for model in models:
+            client.zen_store.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    name=pipeline_run.name,
+                    pipeline_run=pipeline_run.id,
+                    model=model[0],
+                    model_version=model[1],
+                )
+            )
 
     def load_and_run_hook(
         self,

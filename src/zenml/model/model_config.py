@@ -166,28 +166,31 @@ class ModelConfig(ModelConfigModel):
 
         return self._model_version
 
-    def _get_model_version(
-        self, model: "ModelResponseModel"
-    ) -> "ModelVersionResponseModel":
+    def _get_model_version(self) -> "ModelVersionResponseModel":
         """This method gets a model version from Model WatchTower.
-
-        Args:
-            model: The model containing the model version.
 
         Returns:
             The model version based on configuration.
         """
+        if self._model_version is not None:
+            return self._model_version
+
         from zenml.client import Client
 
         zenml_client = Client()
         if self.version is None:
             # raise if not found
-            return zenml_client.get_model_version(model_name_or_id=self.name)
-        # by version name or stage
-        # raise if not found
-        return zenml_client.get_model_version(
-            model_name_or_id=self.name, model_version_name_or_id=self.version
-        )
+            self._model_version = zenml_client.get_model_version(
+                model_name_or_id=self.name
+            )
+        else:
+            # by version name or stage
+            # raise if not found
+            self._model_version = zenml_client.get_model_version(
+                model_name_or_id=self.name,
+                model_version_name_or_id=self.version,
+            )
+        return self._model_version
 
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model WatchTower.
@@ -212,5 +215,5 @@ class ModelConfig(ModelConfigModel):
         if self.create_new_model_version:
             mv = self._create_model_version(model)
         else:
-            mv = self._get_model_version(model)
+            mv = self._get_model_version()
         return mv
