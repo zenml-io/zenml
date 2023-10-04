@@ -30,8 +30,8 @@ briefly discuss the three core abstractions related to stack components: the
 ### Base Abstraction 1: `StackComponent`
 
 The `StackComponent` is the abstraction that defines the core functionality. 
-As an example, checkout the `BaseArtifactStore` definition below: The 
-`BaseArtifactStore` inhertis from `StackComponent` and establishes the public 
+As an example, check out the `BaseArtifactStore` definition below: The 
+`BaseArtifactStore` inherits from `StackComponent` and establishes the public 
 interface of all artifact stores. Any artifact store flavor needs to follow the 
 standards set by this base class.
 
@@ -276,7 +276,7 @@ class MyS3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
 For flavors that require additional dependencies, you should make sure to 
 define your implementation, config, and flavor classes in separate Python files 
 and to only import the implementation class inside the `implementation_class` 
-property of the flavor class. Otherwise ZenML will not be able to load and 
+property of the flavor class. Otherwise, ZenML will not be able to load and 
 validate your flavor configuration without the dependencies installed.
 {% endhint %}
 
@@ -354,7 +354,7 @@ for others to use and contribute to your flavor.
 help ensure your flavor is efficient, reliable, and easy to maintain.
 
 * We recommend you develop new flavors by using existing flavors as a reference.
-A good starting point are the flavors defined in the
+A good starting point is the flavors defined in the
 [official ZenML integrations](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations).
 
 

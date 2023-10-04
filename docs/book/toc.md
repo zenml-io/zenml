@@ -143,7 +143,6 @@
   * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
 
-/gpt give me 5 icons that represent "custom"
 
 * [🛠️ Custom solutions](stacks-and-components/custom-solutions/custom-stack-solutions.md)
   * [Implement a custom stack component](stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)
