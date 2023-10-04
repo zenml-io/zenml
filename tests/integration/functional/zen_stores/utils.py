@@ -20,12 +20,10 @@ from pydantic import BaseModel, Field, SecretStr
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
-    ExecutionStatus,
     SecretScope,
     StackComponentType,
 )
@@ -49,8 +47,6 @@ from zenml.models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunUpdateModel,
     PipelineUpdateModel,
     ResourceTypeModel,
     RoleFilterModel,
@@ -144,14 +140,14 @@ class PipelineRunContext:
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        for artifact in self.artifacts:
-            try:
-                self.store.delete_artifact(artifact.id)
-            except KeyError:
-                pass
         for run in self.runs:
             try:
-                self.store.delete_run(run.id)
+                self.client.delete_pipeline_run(run.id)
+            except KeyError:
+                pass
+        for artifact in self.artifacts:
+            try:
+                self.client.delete_artifact(artifact.id)
             except KeyError:
                 pass
 
