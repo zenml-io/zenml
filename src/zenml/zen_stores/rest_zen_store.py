@@ -2494,6 +2494,10 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The parsed response.
+
+        Raises:
+            AuthorizationException: if the request fails due to an expired
+                authentication token.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
 

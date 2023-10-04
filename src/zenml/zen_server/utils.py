@@ -66,6 +66,10 @@ def initialize_zen_store() -> None:
         ValueError: If the ZenML Store is using a REST back-end.
     """
     logger.debug("Initializing ZenML Store for FastAPI...")
+
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
+
     zen_store_ = GlobalConfiguration().zen_store
 
     if not isinstance(zen_store_, SqlZenStore):
@@ -74,9 +78,6 @@ def initialize_zen_store() -> None:
             "configure ZenML to use a non-networked store backend "
             "when trying to start the ZenML Server."
         )
-
-    # Use an environment variable to flag the instance as a server
-    os.environ[ENV_ZENML_SERVER] = "true"
 
     global _zen_store
     _zen_store = zen_store_

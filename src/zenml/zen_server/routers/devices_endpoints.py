@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -20,7 +21,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
-    DEVICE_VERIFICATION,
+    DEVICE_VERIFY,
     DEVICES,
     VERSION_1,
 )
@@ -85,6 +86,7 @@ def list_authorized_devices(
 @handle_exceptions
 def get_authorization_device(
     device_id: UUID,
+    user_code: Optional[str] = None,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -93,22 +95,35 @@ def get_authorization_device(
 
     Args:
         device_id: The ID of the OAuth2 authorized device to get.
+        user_code: The user code of the OAuth2 authorized device to get. Needs
+            to be specified with devices that have not been verified yet.
         auth_context: The current auth context.
 
     Returns:
         A specific OAuth2 authorized device object.
 
     Raises:
-        KeyError: If the device with the given ID does not exist or does not
-            belong to the current user.
+        KeyError: If the device with the given ID does not exist, does not
+            belong to the current user or could not be verified using the
+            given user code.
     """
     device = zen_store().get_authorized_device(device_id=device_id)
-    if not device.user or device.user.id != auth_context.user.id:
-        raise KeyError(
-            f"Unable to get device with ID {device_id}: No device with "
-            "this ID found."
-        )
-    return device
+    if not device.user:
+        # A device that hasn't been verified and associated with a user yet
+        # can only be retrieved if the user code is specified and valid.
+        if user_code:
+            internal_device = zen_store().get_internal_authorized_device(
+                device_id=device_id
+            )
+            if internal_device.verify_user_code(user_code=user_code):
+                return device
+    elif device.user.id == auth_context.user.id:
+        return device
+
+    raise KeyError(
+        f"Unable to get device with ID {device_id}: No device with "
+        "this ID found."
+    )
 
 
 @router.put(
@@ -151,7 +166,7 @@ def update_authorized_device(
 
 
 @router.put(
-    "/{device_id}" + DEVICE_VERIFICATION,
+    "/{device_id}" + DEVICE_VERIFY,
     response_model=OAuthDeviceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )

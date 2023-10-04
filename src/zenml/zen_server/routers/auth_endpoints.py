@@ -25,7 +25,8 @@ from starlette.requests import Request
 from zenml.constants import (
     API,
     DEVICE_AUTHORIZATION,
-    DEVICE_VERIFICATION,
+    DEVICE_VERIFY,
+    DEVICES,
     LOGIN,
     LOGOUT,
     VERSION_1,
@@ -430,10 +431,10 @@ def device_authorization(
 
     if config.dashboard_url:
         verification_uri = (
-            config.dashboard_url.lstrip("/") + DEVICE_VERIFICATION
+            config.dashboard_url.lstrip("/") + DEVICES + DEVICE_VERIFY
         )
     else:
-        verification_uri = DEVICE_VERIFICATION
+        verification_uri = DEVICES + DEVICE_VERIFY
 
     verification_uri_complete = (
         verification_uri

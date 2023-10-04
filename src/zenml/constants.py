@@ -235,7 +235,7 @@ SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
-DEVICE_VERIFICATION = "/device_verification"
+DEVICE_VERIFY = "/verify"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
