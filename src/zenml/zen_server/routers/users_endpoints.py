@@ -18,6 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 
+from zenml.analytics.utils import email_opt_int
 from zenml.constants import (
     ACTIVATE,
     API,
@@ -322,6 +323,13 @@ def email_opt_in_response(
             email=user_response.email,
             email_opted_in=user_response.email_opted_in,
         )
+
+        if user_response.email_opted_in is not None:
+            email_opt_int(
+                opted_in=user_response.email_opted_in,
+                email=user_response.email,
+                source="zenml server",
+            )
 
         return zen_store().update_user(
             user_id=user.id, user_update=user_update

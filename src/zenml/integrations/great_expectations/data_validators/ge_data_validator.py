@@ -36,9 +36,9 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
     UserConfigurableProfiler,
 )
 
+from zenml import get_step_context
 from zenml.client import Client
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
-from zenml.environment import Environment
 from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
     GreatExpectationsDataValidatorConfig,
     GreatExpectationsDataValidatorFlavor,
@@ -49,7 +49,6 @@ from zenml.integrations.great_expectations.ge_store_backend import (
 from zenml.integrations.great_expectations.utils import create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
 
@@ -375,14 +374,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         if not expectation_suite_name:
             try:
-                # get pipeline name and step name
-                step_env = cast(
-                    StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
-                )
-                pipeline_name = step_env.pipeline_name
-                step_name = step_env.step_name
+                step_context = get_step_context()
+                pipeline_name = step_context.pipeline.name
+                step_name = step_context.step_run.name
                 expectation_suite_name = f"{pipeline_name}_{step_name}"
-            except KeyError:
+            except RuntimeError:
                 raise ValueError(
                     "A expectation suite name is required when not running in "
                     "the context of a pipeline step."
@@ -482,13 +478,10 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             )
 
         try:
-            # get pipeline name, step name and run id
-            step_env = cast(
-                StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
-            )
-            run_name = step_env.run_name
-            step_name = step_env.step_name
-        except KeyError:
+            step_context = get_step_context()
+            run_name = step_context.pipeline_run.name
+            step_name = step_context.step_run.name
+        except RuntimeError:
             # if not running inside a pipeline step, use random values
             run_name = f"pipeline_{random_str(5)}"
             step_name = f"step_{random_str(5)}"

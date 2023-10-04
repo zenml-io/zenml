@@ -16,7 +16,6 @@ import os
 import re
 from pathlib import Path, PurePath
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -162,7 +161,6 @@ from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
@@ -173,9 +171,6 @@ from zenml.zen_stores.secrets_stores.rest_secrets_store import (
 )
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -446,7 +441,6 @@ class RestZenStore(BaseZenStore):
     # Stacks
     # ------
 
-    @track(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
@@ -495,7 +489,6 @@ class RestZenStore(BaseZenStore):
             filter_model=stack_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
@@ -515,7 +508,6 @@ class RestZenStore(BaseZenStore):
             response_model=StackResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_STACK)
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
@@ -531,7 +523,6 @@ class RestZenStore(BaseZenStore):
     # Stack components
     # ----------------
 
-    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
         component: ComponentRequestModel,
@@ -585,7 +576,6 @@ class RestZenStore(BaseZenStore):
             filter_model=component_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
         self,
         component_id: UUID,
@@ -607,7 +597,6 @@ class RestZenStore(BaseZenStore):
             response_model=ComponentResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_STACK_COMPONENT)
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
@@ -623,7 +612,6 @@ class RestZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -691,7 +679,6 @@ class RestZenStore(BaseZenStore):
             filter_model=flavor_filter_model,
         )
 
-    @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a stack component flavor.
 
@@ -707,7 +694,6 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
@@ -752,24 +738,6 @@ class RestZenStore(BaseZenStore):
             body = self.get(CURRENT_USER)
             return UserResponseModel.parse_obj(body)
 
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> "UserAuthModel":
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Raises:
-            NotImplementedError: This method is only available for the
-                SQLZenStore.
-        """
-        raise NotImplementedError(
-            "This method is only designed for use"
-            " by the server endpoints. It is not designed"
-            " to be called from the client side."
-        )
-
     def list_users(
         self, user_filter_model: UserFilterModel
     ) -> Page[UserResponseModel]:
@@ -788,7 +756,6 @@ class RestZenStore(BaseZenStore):
             filter_model=user_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
         self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
@@ -808,7 +775,6 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_USER)
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -824,7 +790,6 @@ class RestZenStore(BaseZenStore):
     # Teams
     # -----
 
-    @track(AnalyticsEvent.CREATED_TEAM)
     def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
@@ -873,7 +838,6 @@ class RestZenStore(BaseZenStore):
             filter_model=team_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
         self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
@@ -893,7 +857,6 @@ class RestZenStore(BaseZenStore):
             response_model=TeamResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_TEAM)
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
@@ -909,7 +872,6 @@ class RestZenStore(BaseZenStore):
     # Roles
     # -----
 
-    @track(AnalyticsEvent.CREATED_ROLE)
     def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
@@ -958,7 +920,6 @@ class RestZenStore(BaseZenStore):
             filter_model=role_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
         self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
@@ -978,7 +939,6 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_ROLE)
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
 
@@ -1132,7 +1092,6 @@ class RestZenStore(BaseZenStore):
     # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_WORKSPACE)
     def create_workspace(
         self, workspace: WorkspaceRequestModel
     ) -> WorkspaceResponseModel:
@@ -1185,7 +1144,6 @@ class RestZenStore(BaseZenStore):
             filter_model=workspace_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_WORKSPACE)
     def update_workspace(
         self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
     ) -> WorkspaceResponseModel:
@@ -1205,7 +1163,6 @@ class RestZenStore(BaseZenStore):
             response_model=WorkspaceResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_WORKSPACE)
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
         """Deletes a workspace.
 
@@ -1221,7 +1178,6 @@ class RestZenStore(BaseZenStore):
     # Pipelines
     # ---------
 
-    @track(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self, pipeline: PipelineRequestModel
     ) -> PipelineResponseModel:
@@ -1272,7 +1228,6 @@ class RestZenStore(BaseZenStore):
             filter_model=pipeline_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self, pipeline_id: UUID, pipeline_update: PipelineUpdateModel
     ) -> PipelineResponseModel:
@@ -1292,7 +1247,6 @@ class RestZenStore(BaseZenStore):
             response_model=PipelineResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETE_PIPELINE)
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 

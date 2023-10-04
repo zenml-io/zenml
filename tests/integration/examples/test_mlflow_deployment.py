@@ -17,7 +17,6 @@ import pytest
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -25,10 +24,11 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
     with run_example(
         request=request,
-        name="mlflow_deployment",
+        name="mlflow",
+        example_args=["--type", "deployment"],
         pipelines={
-            "continuous_deployment_pipeline": (1, 6),
-            "inference_pipeline": (1, 4),
+            "mlflow_train_deploy_pipeline": (1, 5),
+            "mlflow_deployment_inference_pipeline": (1, 4),
         },
     ):
         import mlflow
@@ -39,9 +39,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
         )
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        deployment_run = get_pipeline("continuous_deployment_pipeline").runs[
-            -1
-        ]
+        deployment_run = (
+            Client().get_pipeline("mlflow_train_deploy_pipeline").last_run
+        )
         assert deployment_run.status == ExecutionStatus.COMPLETED
 
         experiment_tracker = Client().active_stack.experiment_tracker
@@ -50,17 +50,10 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
         # fetch the MLflow experiment created for the deployment run
         mlflow_experiment = mlflow.get_experiment_by_name(
-            "continuous_deployment_pipeline"
+            "mlflow_train_deploy_pipeline"
         )
 
         assert mlflow_experiment is not None
-
-        # fetch all MLflow runs created for the pipeline
-        mlflow_runs = mlflow.search_runs(
-            experiment_ids=[mlflow_experiment.experiment_id],
-            output_format="list",
-        )
-        assert len(mlflow_runs) == 1
 
         # fetch the MLflow run created for the deployment run
         mlflow_runs = mlflow.search_runs(
@@ -76,10 +69,10 @@ def test_example(request: pytest.FixtureRequest) -> None:
         artifacts = client.list_artifacts(mlflow_run.info.run_id)
         assert len(artifacts) == 3
 
-        service = deployment_run.get_step(
+        service = deployment_run.steps[
             "mlflow_model_deployer_step"
-        ).output.read()
+        ].output.load()
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
-            service.stop(timeout=60)
+            service.stop(timeout=180)

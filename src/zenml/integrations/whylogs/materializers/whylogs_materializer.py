@@ -20,6 +20,7 @@ from typing import Any, ClassVar, Dict, Tuple, Type, cast
 from whylogs.core import DatasetProfileView  # type: ignore
 from whylogs.viz import NotebookProfileVisualizer  # type: ignore
 
+from zenml import get_step_context
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -120,14 +121,12 @@ class WhylogsMaterializer(BaseMaterializer):
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        from zenml.environment import Environment
         from zenml.integrations.whylogs.data_validators import (
             WhylogsDataValidator,
         )
         from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
             WhylogsDataValidatorSettings,
         )
-        from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
         try:
             data_validator = WhylogsDataValidator.get_active_data_validator()
@@ -140,14 +139,12 @@ class WhylogsMaterializer(BaseMaterializer):
             return
 
         try:
-            step_env = cast(
-                StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
-            )
-        except KeyError:
-            # we are not in a step environment
+            step_context = get_step_context()
+        except RuntimeError:
+            # we are not running as part of a pipeline
             return
 
-        run_info = step_env.step_run_info
+        run_info = step_context.step_run_info
         settings = cast(
             WhylogsDataValidatorSettings, data_validator.get_settings(run_info)
         )

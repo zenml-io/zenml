@@ -33,7 +33,6 @@ from zenml.cli.utils import (
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -58,7 +57,7 @@ def list_integrations() -> None:
     warning(
         "\n" + "To install the dependencies of a specific integration, type: "
     )
-    warning("zenml integration install EXAMPLE_NAME")
+    warning("zenml integration install INTEGRATION_NAME")
 
 
 @integration.command(
@@ -90,7 +89,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
                 "\n" + "To install the dependencies of a "
                 "specific integration, type: "
             )
-            warning("zenml integration install EXAMPLE_NAME")
+            warning("zenml integration install INTEGRATION_NAME")
 
 
 @integration.command(
@@ -112,10 +111,20 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     help="File to which to export the integration requirements. If not "
     "provided, the requirements will be printed to stdout instead.",
 )
+@click.option(
+    "--installed-only",
+    "installed_only",
+    is_flag=True,
+    default=False,
+    help="Only export requirements for integrations installed in your current "
+    "environment. This can not be specified when also providing explicit "
+    "integrations.",
+)
 def export_requirements(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     output_file: Optional[str] = None,
+    installed_only: bool = False,
 ) -> None:
     """Exports integration requirements so they can be installed using pip.
 
@@ -124,23 +133,42 @@ def export_requirements(
             for.
         ignore_integration: List of integrations to ignore explicitly.
         output_file: Optional path to the requirements output file.
+        installed_only: Only export requirements for integrations installed in
+            your current environment. This can not be specified when also
+            providing explicit integrations.
     """
     from zenml.integrations.registry import integration_registry
 
-    if not integrations:
-        # no integrations specified, use all registered integrations
-        integrations = set(integration_registry.integrations.keys())
-        for i in ignore_integration:
-            try:
-                integrations.remove(i)
-            except KeyError:
+    if installed_only and integrations:
+        error(
+            "You can either provide specific integrations or export only "
+            "requirements for integrations installed in your local "
+            "environment, not both."
+        )
+
+    all_integrations = set(integration_registry.integrations.keys())
+
+    if integrations:
+        integrations_to_export = set(integrations)
+    elif installed_only:
+        integrations_to_export = set(
+            integration_registry.get_installed_integrations()
+        )
+    else:
+        integrations_to_export = all_integrations
+
+    for i in ignore_integration:
+        try:
+            integrations_to_export.remove(i)
+        except KeyError:
+            if i not in all_integrations:
                 error(
                     f"Integration {i} does not exist. Available integrations: "
-                    f"{list(integration_registry.integrations.keys())}"
+                    f"{all_integrations}"
                 )
 
     requirements = []
-    for integration_name in integrations:
+    for integration_name in integrations_to_export:
         try:
             requirements += (
                 integration_registry.select_integration_requirements(
@@ -236,17 +264,6 @@ def install(
     ):
         with console.status("Installing integrations..."):
             install_packages(requirements)
-            if "label_studio" in integrations:
-                warning(
-                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
-                )
-
-        for integration_name in integrations_to_install:
-            track_event(
-                event=AnalyticsEvent.INSTALL_INTEGRATION,
-                metadata={"integration_name": integration_name},
-                v2=True,
-            )
 
 
 @integration.command(
@@ -371,13 +388,3 @@ def upgrade(
     ):
         with console.status("Upgrading integrations..."):
             install_packages(requirements, upgrade=True)
-            if "label_studio" in integrations:
-                warning(
-                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
-                )
-
-        for integration_name in integrations_to_install:
-            track_event(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
-            )

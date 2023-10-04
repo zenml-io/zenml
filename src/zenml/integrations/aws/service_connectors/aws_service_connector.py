@@ -31,6 +31,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
+from aws_profile_manager import Common  # type: ignore[import]
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
@@ -41,11 +42,6 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -821,6 +817,8 @@ class AWSServiceConnector(ServiceConnector):
         """
         cfg = self.config
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             assert isinstance(cfg, AWSImplicitConfig)
             # Create a boto3 session and use the default credentials provider
             session = boto3.Session(
@@ -1319,6 +1317,7 @@ class AWSServiceConnector(ServiceConnector):
 
     def _configure_local_client(
         self,
+        profile_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
@@ -1327,6 +1326,11 @@ class AWSServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
+            profile_name: The name of the AWS profile to use. If not specified,
+                a profile name is generated based on the first 8 digits of the
+                connector's UUID in the form 'zenml-<uuid[:8]>'. If a profile
+                with the given or generated name already exists, the profile is
+                overwritten.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -1338,10 +1342,41 @@ class AWSServiceConnector(ServiceConnector):
         resource_type = self.resource_type
 
         if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
-            raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+            session, _ = self.get_boto3_session(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=self.resource_id,
             )
+
+            # Configure a new AWS SDK profile with the credentials
+            # from the session using the aws-profile-manager package
+
+            # Generate a profile name based on the first 8 digits from the
+            # connector UUID, if one is not supplied
+            aws_profile_name = profile_name or f"zenml-{str(self.id)[:8]}"
+            common = Common()
+            users_home = common.get_users_home()
+            all_profiles = common.get_all_profiles(users_home)
+
+            credentials = session.get_credentials()
+            all_profiles[aws_profile_name] = {
+                "region": self.config.region,
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
+            }
+
+            if credentials.token:
+                all_profiles[aws_profile_name][
+                    "aws_session_token"
+                ] = credentials.token
+
+            common.rewrite_credentials_file(all_profiles, users_home)
+
+            logger.info(
+                f"Configured local AWS SDK profile '{aws_profile_name}'."
+            )
+
+            return
 
         raise NotImplementedError(
             f"Configuring the local client for {resource_type} resources is "
@@ -1401,6 +1436,8 @@ class AWSServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             if region_name is None:
                 raise ValueError(
                     "The AWS region name must be specified when using the "
@@ -1772,6 +1809,8 @@ class AWSServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1960,6 +1999,18 @@ class AWSServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # temporary Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
+                )
             return KubernetesServiceConnector(
                 id=self.id,
                 name=connector_name,

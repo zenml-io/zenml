@@ -43,20 +43,16 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp==1.8.16",
+        "kfp==1.8.22",  # Only 1.x version that supports pyyaml 6
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-storage>=2.9.0",
-        "google-cloud-aiplatform>=1.11.0",
+        "google-cloud-aiplatform>=1.21.0",  # includes shapely pin fix
         "google-cloud-scheduler>=2.7.3",
         "google-cloud-functions>=1.8.3",
         "google-cloud-build>=3.11.0",
         "kubernetes",
-        # google-cloud-bigquery 2.34.4 is not compatible with shapely 2.0.0
-        # which was released on 2021-12-21. This is a temporary fix until
-        # google-cloud-bigquery is updated.
-        "shapely<2.0",
     ]
 
     @staticmethod

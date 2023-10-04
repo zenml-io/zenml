@@ -14,22 +14,17 @@
 """Contains objects that create a Neptune run and store its state throughout the pipeline."""
 
 from hashlib import md5
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-try:
-    # neptune-client>=1.0.0 package structure
-    import neptune
-    from neptune import Run
-except ImportError:
-    # neptune-client=0.9.0+ package structure
-    import neptune.new as neptune  # type: ignore
-    from neptune.new.metadata_containers import Run  # type: ignore
-
+import neptune  # type: ignore[import]
 
 import zenml
 from zenml.client import Client
 from zenml.integrations.constants import NEPTUNE
 from zenml.utils.singleton import SingletonMetaClass
+
+if TYPE_CHECKING:
+    from neptune import Run
 
 _INTEGRATION_VERSION_KEY = "source_code/integrations/zenml"
 
@@ -122,7 +117,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         self._tags = tags
 
     @property
-    def active_run(self) -> Run:
+    def active_run(self) -> "Run":
         """Initializes a new neptune run every time it is called.
 
         The run is closed and the active run state is set to stopped
@@ -135,7 +130,7 @@ class RunProvider(metaclass=SingletonMetaClass):
             run = neptune.init_run(
                 project=self.project,
                 api_token=self.token,
-                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore
+                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore  # nosec
                 tags=self.tags,
             )
             run[_INTEGRATION_VERSION_KEY] = zenml.__version__
@@ -147,7 +142,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         self._active_run = None
 
 
-def get_neptune_run() -> Run:
+def get_neptune_run() -> "Run":
     """Helper function to fetch an existing Neptune run or create a new one.
 
     Returns:

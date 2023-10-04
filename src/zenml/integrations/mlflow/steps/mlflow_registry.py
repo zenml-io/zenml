@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-from typing import Optional, cast
+from typing import Optional
 
 from mlflow.tracking import artifact_utils
 
-from zenml import __version__, step
+from zenml import __version__, get_step_context, step
 from zenml.client import Client
-from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -30,10 +29,6 @@ from zenml.logger import get_logger
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
-)
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
 )
 
 logger = get_logger(__name__)
@@ -57,16 +52,17 @@ def mlflow_register_model_step(
     Args:
         model: Model to be registered, This is not used in the step, but is
             required to trigger the step when the model is trained.
-        name: Name of the registered model.
-        version: Version of the registered model.
-        trained_model_name: Name of the model to be deployed.
+        name: The name of the model.
+        version: The version of the model.
+        trained_model_name: Name of the model artifact in MLflow.
+        model_source_uri: The path to the model. If not provided, the model will
+            be fetched from the MLflow tracking server via the
+            `trained_model_name`.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
-        model_source_uri: URI of the model source. If not provided, the model
-            will be fetched from the MLflow tracking server.
-        description: Description of the model.
-        metadata: Metadata of the model version to be added to the model registry.
+        description: A description of the model version.
+        metadata: A list of metadata to associate with the model version
 
     Raises:
         ValueError: If the model registry is not an MLflow model registry.
@@ -92,17 +88,17 @@ def mlflow_register_model_step(
         )
 
     # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
-    pipeline_run_uuid = str(step_env.step_run_info.run_id)
+    step_context = get_step_context()
+    pipeline_name = step_context.pipeline.name
+    current_run_name = step_context.pipeline_run.name
+    pipeline_run_uuid = str(step_context.pipeline_run.id)
     zenml_workspace = str(model_registry.workspace)
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
     mlflow_run_id = run_id or experiment_tracker.get_run_id(
         experiment_name=experiment_name or pipeline_name,
-        run_name=run_name or run_name,
+        run_name=run_name or current_run_name,
     )
     # If no value was set at all, raise an error
     if not mlflow_run_id:

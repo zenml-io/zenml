@@ -14,6 +14,7 @@
 """Azure Service Connector."""
 import datetime
 import re
+import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -37,11 +38,6 @@ from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     AZURE_CONNECTOR_TYPE,
     AZURE_RESOURCE_TYPE,
     BLOB_RESOURCE_TYPE,
-)
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -349,7 +345,7 @@ the connector.
 - allow listing the containers in a storage account (e.g. the `Reader and Data
 Access` role)
 
-If set, the resource name must identify an S3 bucket using one of the following
+If set, the resource name must identify an Azure blob container using one of the following
 formats:
 
 - Azure blob container URI (canonical resource name): `{az|abfs}://{container-name}`
@@ -374,7 +370,7 @@ resources is the service principal authentication method.
             emoji=":package:",
         ),
         ResourceTypeModel(
-            name="Azure AKS Kubernetes cluster",
+            name="AKS Kubernetes cluster",
             resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access an AKS cluster as a standard Kubernetes
@@ -383,7 +379,7 @@ pre-authenticated python-kubernetes client instance.
 
 The configured credentials must have at least the following
 Azure IAM permissions associated with the AKS clusters
-that the connector that the connector will be allowed to access:
+that the connector will be allowed to access:
 
 - allow listing the AKS clusters and fetching their credentials (e.g. the
 `Azure Kubernetes Service Cluster Admin Role` role)
@@ -413,7 +409,7 @@ resource group will be accessible.
             emoji=":cyclone:",
         ),
         ResourceTypeModel(
-            name="Azure ACR container registry",
+            name="ACR container registry",
             resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access one or more ACR registries as a standard
@@ -641,6 +637,8 @@ class AzureServiceConnector(ServiceConnector):
         cfg = self.config
         credential: TokenCredential
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             try:
                 credential = DefaultAzureCredential()
             except AzureError as e:
@@ -983,13 +981,52 @@ class AzureServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the connector instance does not support
+                local configuration for the configured authentication method.
         """
         resource_type = self.resource_type
 
         if resource_type in [AZURE_RESOURCE_TYPE, BLOB_RESOURCE_TYPE]:
+            if (
+                self.auth_method
+                == AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            ):
+                # Use the service principal credentials to configure the local
+                # Azure CLI
+                assert isinstance(self.config, AzureServicePrincipalConfig)
+
+                command = [
+                    "az",
+                    "login",
+                    "--service-principal",
+                    "-u",
+                    str(self.config.client_id),
+                    "-p",
+                    self.config.client_secret.get_secret_value(),
+                    "--tenant",
+                    str(self.config.tenant_id),
+                ]
+
+                try:
+                    subprocess.run(command, check=True)
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to update the local Azure CLI with the "
+                        f"connector service principal credentials: {e}"
+                    ) from e
+
+                logger.info(
+                    "Updated the local Azure CLI configuration with the "
+                    "connector's service principal credentials."
+                )
+
+                return
+
             raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+                f"Local Azure client configuration for resource type "
+                f"{resource_type} is only supported if the "
+                f"'{AzureAuthenticationMethods.SERVICE_PRINCIPAL}' "
+                f"authentication method is used."
             )
 
         raise NotImplementedError(
@@ -1049,6 +1086,8 @@ class AzureServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = AzureBaseConfig(
                 resource_group=resource_group,
                 storage_account=storage_account,
@@ -1628,6 +1667,8 @@ class AzureServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1769,6 +1810,18 @@ class AzureServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
+                )
             cluster_name = kubeconfig["clusters"][0]["name"]
             cluster = kubeconfig["clusters"][0]["cluster"]
             user = kubeconfig["users"][0]["user"]

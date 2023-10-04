@@ -27,11 +27,15 @@ from typing import (
 
 from pydantic import BaseConfig, ValidationError, create_model
 
+from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
-from zenml.steps.utils import parse_return_type_annotations
+from zenml.steps.utils import (
+    parse_return_type_annotations,
+    resolve_type_annotation,
+)
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -44,23 +48,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def get_step_entrypoint_signature(
-    step: "BaseStep",
-    include_step_context: bool = False,
-    include_legacy_parameters: bool = False,
-) -> inspect.Signature:
+def get_step_entrypoint_signature(step: "BaseStep") -> inspect.Signature:
     """Get the entrypoint signature of a step.
 
     Args:
         step: The step for which to get the entrypoint signature.
-        include_step_context: Whether to include the `StepContext` as a
-            parameter of the returned signature. If `False`, a potential
-            signature parameter of type `StepContext` will be removed before
-            returning the signature.
-        include_legacy_parameters: Whether to include the `BaseParameters`
-            subclass as a parameter of the returned signature. If `False`, a
-            potential signature parameter of type `BaseParameters` will be
-            removed before returning the signature.
 
     Returns:
         The entrypoint function signature.
@@ -70,23 +62,18 @@ def get_step_entrypoint_signature(
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
 
     def _is_param_of_class(annotation: Any, class_: Type[Any]) -> bool:
+        annotation = resolve_type_annotation(annotation)
         return inspect.isclass(annotation) and issubclass(annotation, class_)
 
     parameters = list(signature.parameters.values())
 
-    if not include_step_context:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=StepContext)
-        ]
-
-    if not include_legacy_parameters:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=BaseParameters)
-        ]
+    # Filter out deprecated args: step context and legacy parameters
+    parameters = [
+        param
+        for param in parameters
+        if not _is_param_of_class(param.annotation, class_=BaseParameters)
+        and not _is_param_of_class(param.annotation, class_=StepContext)
+    ]
 
     signature = signature.replace(parameters=parameters)
     return signature
@@ -161,6 +148,8 @@ class EntrypointFunctionDefinition(NamedTuple):
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
                 annotated as an `UnmaterializedArtifact`.
+            RuntimeError: If the input value is not valid for the type
+                annotation provided for the function parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
@@ -186,14 +175,23 @@ class EntrypointFunctionDefinition(NamedTuple):
                 "is not allowed."
             )
 
-        self._validate_input_value(parameter=parameter, value=value)
-
         if not yaml_utils.is_json_serializable(value):
             raise StepInterfaceError(
                 f"Argument type (`{type(value)}`) for argument "
-                f"'{key}' is not JSON "
-                "serializable."
+                f"'{key}' is not JSON serializable and can not be passed as "
+                "a parameter. This input can either be provided by the "
+                "output of another step or as an external artifact: "
+                "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#pass-any-kind-of-data-to-your-steps"
             )
+
+        try:
+            self._validate_input_value(parameter=parameter, value=value)
+        except ValidationError as e:
+            raise RuntimeError(
+                f"Input validation failed for input '{parameter.name}': "
+                f"Expected type `{parameter.annotation}` but received type "
+                f"`{type(value)}`."
+            ) from e
 
     def _validate_input_value(
         self, parameter: inspect.Parameter, value: Any
@@ -203,10 +201,6 @@ class EntrypointFunctionDefinition(NamedTuple):
         Args:
             parameter: The function parameter for which the value was provided.
             value: The input value.
-
-        Raises:
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
         """
 
         class ModelConfig(BaseConfig):
@@ -220,11 +214,7 @@ class EntrypointFunctionDefinition(NamedTuple):
             __config__=ModelConfig,
             value=(parameter.annotation, ...),
         )
-
-        try:
-            validation_model_class(value=value)
-        except ValidationError as e:
-            raise RuntimeError("Input validation failed.") from e
+        validation_model_class(value=value)
 
 
 def validate_entrypoint_function(
@@ -243,7 +233,8 @@ def validate_entrypoint_function(
             `BaseParameter` arguments.
         StepInterfaceError: If the entrypoint function has multiple
             `StepContext` arguments.
-        StepInterfaceError: If the entrypoint function has no return annotation.
+        RuntimeError: If type annotations should be enforced and a type
+            annotation is missing.
 
     Returns:
         A validated definition of the entrypoint function.
@@ -277,9 +268,16 @@ def validate_entrypoint_function(
 
         annotation = parameter.annotation
         if annotation is parameter.empty:
+            if ENFORCE_TYPE_ANNOTATIONS:
+                raise RuntimeError(
+                    f"Missing type annotation for input '{key}' of step "
+                    f"function '{func.__name__}'."
+                )
+
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
+        annotation = resolve_type_annotation(annotation)
         if inspect.isclass(annotation) and issubclass(
             annotation, BaseParameters
         ):
@@ -304,13 +302,8 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    if signature.return_annotation is signature.empty:
-        raise StepInterfaceError(
-            f"Missing return type annotation for function {func.__name__}."
-        )
-
     outputs = parse_return_type_annotations(
-        return_annotation=signature.return_annotation
+        func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
     )
 
     return EntrypointFunctionDefinition(

@@ -1,9 +1,7 @@
 [tool.poetry]
 name = "zenml"
-version = "0.40.2"
-packages = [
-    { include = "zenml", from = "src" },
-]
+version = "0.44.3"
+packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -11,9 +9,7 @@ homepage = "https://zenml.io"
 documentation = "https://docs.zenml.io"
 repository = "https://github.com/zenml-io/zenml"
 license = "Apache-2.0"
-keywords = [
-    "machine learning", "production", "pipeline", "mlops", "devops"
-]
+keywords = ["machine learning", "production", "pipeline", "mlops", "devops"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -21,9 +17,10 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -36,22 +33,16 @@ exclude = [
     "tests",
     "legacy",
     "*.tests.*",
-    "examples"
+    "examples",
 ]
-include = [
-    "src/zenml",
-    "*.txt",
-     "*.sh",
-    "*.md"
-]
+include = ["src/zenml", "*.txt", "*.sh", "*.md"]
 
 [tool.poetry.scripts]
 zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
-alembic = { version = "~1.8.1"}
-analytics-python = "^1.4.0"
-click = "^8.0.1"
+alembic = { version = "~1.8.1" }
+click = "^8.0.1,<8.1.4"
 click-params = "^0.3.0"
 cloudpickle = ">=2.0.0,<3"
 distro = "^1.6.0"
@@ -59,81 +50,88 @@ docker = "~6.1.0"
 httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
 pandas = ">=1.1.5"
-passlib = { extras = ["bcrypt"], version = "~1.7.4"}
+passlib = { extras = ["bcrypt"], version = "~1.7.4" }
+psutil = ">=5.0.0"
 pydantic = "<1.11, >=1.9.0"
-pymysql = { version = "~1.0.2"}
+pymysql = { version = "~1.0.2" }
 pyparsing = "<3,>=2.4.0"
-python = ">=3.7.1,<3.11"
+python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
 python-terraform = { version = "^0.10.1" }
-pyyaml = "^5.4.1"
-rich = {extras = ["jupyter"], version = "^12.0.0"}
+pyyaml = ">=6.0.1"
+rich = {extras = ["jupyter"], version = ">=12.0.0"}
 sqlalchemy_utils = "0.38.3"
 sqlmodel = "~0.0.8"
 
 # Optional dependencies for the ZenServer
-fastapi = { version = "~0.75.0", optional = true }
-uvicorn = { extras = ["standard"], version = "~0.17.5",  optional = true}
+fastapi = { version = ">=0.75,<0.100", optional = true }
+uvicorn = { extras = ["standard"], version = ">=0.17.5",  optional = true}
 python-multipart = { version = "~0.0.5", optional = true}
 python-jose = { extras = ["cryptography"], version = "~3.3.0", optional = true}
 fastapi-utils = { version = "~0.2.1", optional = true}
 orjson = { version = "~3.8.3", optional = true}
+Jinja2 = { version = "*", optional = true}
 
 # optional dependencies for stack recipes
 
 # Optional dependencies for project templates
-copier = { version = ">=7.0.0", optional = true }
+copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^23.3.0", optional = true }
-ruff = { version = "^0.0.270", optional = true }
+ruff = { version = "^0.0.285", optional = true }
 
 # Optional dependencies for the AWS secrets store
-boto3 = { version=">=1.16.0,<=1.24.59", optional = true }
+boto3 = { version = ">=1.16.0,<=1.24.59", optional = true }
 
 # Optional dependencies for the GCP secrets store
-google-cloud-secret-manager = { version=">=2.12.5", optional = true }
+google-cloud-secret-manager = { version = ">=2.12.5", optional = true }
 
 # Optional dependencies for the Azure Key Vault secrets store
-azure-identity = { version=">=1.4.0", optional = true }
-azure-keyvault-secrets = { version=">=4.0.0", optional = true }
+azure-identity = { version = ">=1.4.0", optional = true }
+azure-keyvault-secrets = { version = ">=4.0.0", optional = true }
 
 # Optional dependencies for the HashiCorp Vault secrets store
-hvac = { version=">=0.11.2", optional = true }
+hvac = { version = ">=0.11.2", optional = true }
+
+# Optional dependencies for the AWS connector
+aws-profile-manager = { version = ">=0.5.0", optional = true }
 
 # Optional dependencies for the Kubernetes connector
-kubernetes = { version=">=18.20.0", optional = true }
+kubernetes = { version = ">=18.20.0", optional = true }
 
 # Optional dependencies for the GCP connector
-google-cloud-container = { version=">=2.21.0", optional = true }
-google-cloud-storage = { version=">=2.9.0", optional = true }
+google-cloud-container = { version = ">=2.21.0", optional = true }
+google-cloud-storage = { version = ">=2.9.0", optional = true }
 
 # Optional dependencies for the Azure connector
-azure-mgmt-containerservice = { version=">=20.0.0", optional = true }
-azure-mgmt-containerregistry = { version=">=10.0.0", optional = true }
-azure-mgmt-storage = { version=">=20.0.0", optional = true }
-azure-storage-blob = { version=">=12.0.0", optional = true }
-azure-mgmt-resource = { version=">=21.0.0", optional = true }
+azure-mgmt-containerservice = { version = ">=20.0.0", optional = true }
+azure-mgmt-containerregistry = { version = ">=10.0.0", optional = true }
+azure-mgmt-storage = { version = ">=20.0.0", optional = true }
+azure-storage-blob = { version = ">=12.0.0", optional = true }
+azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 
 # Optional dependencies for the S3 artifact store
-s3fs = {version = "2022.11.0", optional = true}
+s3fs = { version = "2022.11.0", optional = true }
 
 # Optional dependencies for the GCS artifact store
-gcsfs = {version = "2022.11.0", optional = true}
+gcsfs = { version = "2022.11.0", optional = true }
 
 # Optional dependencies for the Azure artifact store
-adlfs = {version = ">=2021.10.0", optional = true}
+adlfs = { version = ">=2021.10.0", optional = true }
 
 # Optional development dependencies
+bandit = { version = "^1.7.5", optional = true }
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
-mypy = { version = "1.3.0", optional = true }
+mypy = { version = "1.5.1", optional = true }
 pre-commit = { version = "^2.14.0", optional = true }
 pyment = { version = "^0.3.3", optional = true }
 tox = { version = "^3.24.3", optional = true }
 hypothesis = { version = "^6.43.1", optional = true }
 typing-extensions = { version = ">=3.7.4", optional = true }
 darglint = { version = "^1.8.1", optional = true }
+
 # pytest
-pytest = { version = "^6.2.4", optional = true }
+pytest = { version = "^7.4.0", optional = true }
 pytest-randomly = { version = "^3.10.1", optional = true }
 pytest-mock = { version = "^3.6.1", optional = true }
 pytest-clarity = { version = "^1.0.1", optional = true }
@@ -160,11 +158,20 @@ types-setuptools = { version = "^57.4.2", optional = true }
 types-six = { version = "^1.16.2", optional = true }
 types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
-# test framework dependencies
-docker-compose = { version = "^1.28", optional = true }
+
+# mlstacks dependencies
+mlstacks = { version = "0.7.3", optional = true }
 
 [tool.poetry.extras]
-server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils", "orjson"]
+server = [
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+    "python-jose",
+    "fastapi-utils",
+    "orjson",
+    "Jinja2"
+]
 templates = ["copier", "jinja2-time", "black", "ruff"]
 secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
@@ -174,10 +181,59 @@ s3fs = ["s3fs"]
 gcsfs = ["gcsfs"]
 adlfs = ["adlfs"]
 connectors-kubernetes = ["kubernetes"]
-connectors-aws = ["boto3", "kubernetes"]
-connectors-gcp = ["google-cloud-container", "google-cloud-storage", "kubernetes"]
-connectors-azure = ["azure-identity", "azure-mgmt-containerservice", "azure-mgmt-containerregistry", "azure-mgmt-storage", "azure-storage-blob", "kubernetes"]
-dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
+connectors-aws = ["boto3", "kubernetes", "aws-profile-manager"]
+connectors-gcp = [
+    "google-cloud-container",
+    "google-cloud-storage",
+    "kubernetes",
+]
+connectors-azure = [
+    "azure-identity",
+    "azure-mgmt-containerservice",
+    "azure-mgmt-containerregistry",
+    "azure-mgmt-storage",
+    "azure-storage-blob",
+    "kubernetes",
+]
+dev = [
+    "bandit",
+    "black",
+    "ruff",
+    "coverage",
+    "pytest",
+    "mypy",
+    "pre-commit",
+    "pyment",
+    "tox",
+    "hypothesis",
+    "typing-extensions",
+    "darglint",
+    "pytest-randomly",
+    "pytest-mock",
+    "pytest-clarity",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-awesome-pages-plugin",
+    "mkdocstrings",
+    "mike",
+    "types-certifi",
+    "types-croniter",
+    "types-futures",
+    "types-Markdown",
+    "types-Pillow",
+    "types-protobuf",
+    "types-PyMySQL",
+    "types-python-dateutil",
+    "types-python-slugify",
+    "types-PyYAML",
+    "types-redis",
+    "types-requests",
+    "types-setuptools",
+    "types-six",
+    "types-termcolor",
+    "types-psutil",
+]
+mlstacks = ["mlstacks"]
 
 [build-system]
 requires = ["poetry-core"]
@@ -187,19 +243,18 @@ build-backend = "poetry.core.masonry.api"
 source = "init"
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
+filterwarnings = ["ignore::DeprecationWarning"]
 log_cli = true
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true
+norecursedirs = [
+    "tests/integration/examples/*", # ignore example folders
+]
 
 [tool.coverage.run]
 parallel = true
-source = [
-    "src/zenml"
-]
+source = ["src/zenml"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -236,10 +291,25 @@ exclude = [
 ]
 per-file-ignores = {}
 select = ["D", "E", "F", "I", "I001", "Q"]
-ignore = ["E501", "F401", "F403", "D301", "D401", "D403", "D407", "D213", "D203", "S101", "S104", "S105", "S106", "S107"]
+ignore = [
+    "E501",
+    "F401",
+    "F403",
+    "D301",
+    "D401",
+    "D403",
+    "D407",
+    "D213",
+    "D203",
+    "S101",
+    "S104",
+    "S105",
+    "S106",
+    "S107",
+]
 src = ["src", "test"]
-# use Python 3.7 as the minimum version for autofixing
-target-version = "py37"
+# use Python 3.8 as the minimum version for autofixing
+target-version = "py38"
 ignore-init-module-imports = true
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
@@ -260,9 +330,7 @@ convention = "google"
 
 [tool.mypy]
 
-plugins = [
-  "pydantic.mypy"
-]
+plugins = ["pydantic.mypy"]
 
 strict = true
 namespace_packages = true
@@ -273,9 +341,7 @@ show_error_codes = true
 exclude = "airflow/"
 
 [[tool.mypy.overrides]]
-module = [
-    "airflow.*",
-    ]
+module = ["airflow.*"]
 follow_imports = "skip"
 
 # end of fix
@@ -283,9 +349,10 @@ follow_imports = "skip"
 # import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
 module = [
-    "google.*" ,
-    "transformers.*",  # https://github.com/huggingface/transformers/issues/13390
-    "datasets.*"
+    "google.*",
+    "transformers.*", # https://github.com/huggingface/transformers/issues/13390
+    "datasets.*",
+    "IPython.core.*",
 ]
 follow_imports = "skip"
 
@@ -333,6 +400,8 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
+    "azure-mgmt-resource.*",
+    "azure.mgmt.resource.*",
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
@@ -342,10 +411,13 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
+    "sky.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",
     "cloudpickle.*",
+    "mlstacks.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 

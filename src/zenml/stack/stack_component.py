@@ -91,7 +91,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store"
+                        "https://docs.zenml.io/user-guide/advanced-guide/secret-management"
                     )
                 continue
 
@@ -140,6 +140,18 @@ class StackComponentConfig(BaseModel, ABC):
             True if this config is for a remote component, False otherwise.
         """
         return False
+
+    @property
+    def is_valid(self) -> bool:
+        """Checks if the stack component configurations are valid.
+
+        Concrete stack component configuration classes should override this
+        method to return False if the stack component configurations are invalid.
+
+        Returns:
+            True if the stack component config is valid, False otherwise.
+        """
+        return True
 
     @property
     def is_local(self) -> bool:

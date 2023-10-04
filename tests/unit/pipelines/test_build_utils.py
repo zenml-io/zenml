@@ -21,6 +21,7 @@ from uuid import UUID, uuid4
 import pytest
 
 import zenml
+from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.code_repositories import BaseCodeRepository, LocalRepositoryContext
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -143,7 +144,9 @@ def test_stack_with_container_registry_creates_non_local_build(
     assert build.is_local is False
 
 
-def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
+def test_build_uses_correct_settings(
+    clean_client, mocker, empty_pipeline  # noqa: F811
+):
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
@@ -167,7 +170,7 @@ def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
         step_configurations={},
     )
 
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     pipeline_id = pipeline_instance.register().id
     build = build_utils.create_pipeline_build(
         deployment=deployment, pipeline_id=pipeline_id

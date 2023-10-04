@@ -29,9 +29,7 @@ class NeptuneIntegration(Integration):
     """Definition of the neptune.ai integration with ZenML."""
 
     NAME = NEPTUNE
-    REQUIREMENTS = [
-        "neptune-client>=0.16.10",
-    ]
+    REQUIREMENTS = ["neptune"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

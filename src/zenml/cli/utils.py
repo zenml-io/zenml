@@ -46,10 +46,15 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
-from zenml.config.global_config import GlobalConfiguration
+from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
-from zenml.enums import GenericFilterOps, StackComponentType, StoreType
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
+    TERRAFORM_NOT_INSTALLED_MESSAGE,
+)
+from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     ModelVersion,
@@ -78,7 +83,6 @@ if TYPE_CHECKING:
 
     from rich.text import Text
 
-    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -172,6 +176,27 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
+def print_markdown(text: str) -> None:
+    """Prints a string as markdown.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    console.print(markdown_text)
+
+
+def print_markdown_with_pager(text: str) -> None:
+    """Prints a string as markdown with a pager.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    with console.pager():
+        console.print(markdown_text)
+
+
 def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
@@ -226,7 +251,8 @@ def print_pydantic_models(
     models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[T], bool]] = None,
+    active_models: Optional[List[T]] = None,
+    show_active: bool = False,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -236,11 +262,15 @@ def print_pydantic_models(
         columns: Optionally specify subset and order of columns to display.
         exclude_columns: Optionally specify columns to exclude. (Note: `columns`
             takes precedence over `exclude_columns`.)
-        is_active: Optional function that marks as row as active.
-
+        active_models: Optional list of active models of the given type T.
+        show_active: Flag to decide whether to append the active model on the
+            top of the list.
     """
     if exclude_columns is None:
         exclude_columns = list()
+
+    if active_models is None:
+        active_models = list()
 
     def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
@@ -254,7 +284,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+                k for k in model.dict().keys() if k not in exclude_columns
             ]
         else:
             include_columns = columns
@@ -291,16 +321,44 @@ def print_pydantic_models(
         if marker in items:
             marker = "current"
         return (
-            {marker: ":point_right:" if is_active(model) else "", **items}
-            if is_active is not None
+            {
+                marker: ":point_right:"
+                if any(model.id == a.id for a in active_models)
+                else "",
+                **items,
+            }
+            if active_models is not None
             else items
         )
 
+    active_ids = [a.id for a in active_models]
     if isinstance(models, Page):
-        print_table([__dictify(model) for model in models.items])
+        table_items = list(models.items)
+
+        if show_active:
+            for active_model in active_models:
+                if active_model.id not in [i.id for i in table_items]:
+                    table_items.append(active_model)
+
+            table_items = [i for i in table_items if i.id in active_ids] + [
+                i for i in table_items if i.id not in active_ids
+            ]
+
+        print_table([__dictify(model) for model in table_items])
         print_page_info(models)
     else:
-        print_table([__dictify(model) for model in models])
+        table_items = list(models)
+
+        if show_active:
+            for active_model in active_models:
+                if active_model.id not in [i.id for i in table_items]:
+                    table_items.append(active_model)
+
+            table_items = [i for i in table_items if i.id in active_ids] + [
+                i for i in table_items if i.id not in active_ids
+            ]
+
+        print_table([__dictify(model) for model in table_items])
 
 
 def format_integration_list(
@@ -331,6 +389,43 @@ def format_integration_list(
             }
         )
     return list_of_dicts
+
+
+def print_stack_outputs(stack: "StackResponseModel") -> None:
+    """Prints outputs for stacks deployed with mlstacks.
+
+    Args:
+        stack: Instance of a stack model.
+    """
+    verify_mlstacks_prerequisites_installation()
+
+    if not stack.stack_spec_path:
+        declare("No stack spec path is set for this stack.")
+        return
+    stack_caption = f"'{stack.name}' stack"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="MLStacks Outputs",
+        caption=stack_caption,
+        show_lines=True,
+    )
+    rich_table.add_column("OUTPUT_KEY", overflow="fold")
+    rich_table.add_column("OUTPUT_VALUE", overflow="fold")
+
+    from mlstacks.utils.terraform_utils import get_stack_outputs
+
+    stack_spec_file = stack.stack_spec_path
+    stack_outputs = get_stack_outputs(stack_path=stack_spec_file)
+
+    for output_key, output_value in stack_outputs.items():
+        rich_table.add_row(output_key, output_value)
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_stack_configuration(
@@ -367,6 +462,9 @@ def print_stack_configuration(
         f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
+
+    if stack.stack_spec_path:
+        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
@@ -488,49 +586,10 @@ def print_stack_component_configuration(
 
         console.print(rich_table)
 
-
-def print_active_config() -> None:
-    """Print the active configuration."""
-    from zenml.client import Client
-
-    gc = GlobalConfiguration()
-    client = Client()
-
-    # We use gc.store here instead of client.zen_store for two reasons:
-    # 1. to avoid initializing ZenML with the default store just because we want
-    # to print the active config
-    # 2. to avoid connecting to the active store and keep this call lightweight
-    if not gc.store:
-        return
-
-    if gc.uses_default_store():
-        declare("Using the default local database.")
-    elif gc.store.type == StoreType.SQL:
-        declare(f"Using the SQL database: '{gc.store.url}'.")
-    elif gc.store.type == StoreType.REST:
-        declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if client.uses_local_configuration:
+    if component.component_spec_path:
         declare(
-            f"Running with active workspace: '{client.active_workspace.name}' "
-            "(repository)"
+            f"Component spec path for `mlstacks`: {component.component_spec_path}"
         )
-    else:
-        declare(
-            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
-            "(global)"
-        )
-
-
-def print_active_stack() -> None:
-    """Print active stack."""
-    from zenml.client import Client
-
-    client = Client()
-    scope = "repository" if client.uses_local_configuration else "global"
-    declare(
-        f"Running with active stack: '{client.active_stack_model.name}' "
-        f"({scope})"
-    )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -838,6 +897,13 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
     """
+    if "neptune" in packages:
+        declare(
+            "Uninstalling legacy `neptune-client` package to avoid version "
+            "conflicts with new `neptune` package..."
+        )
+        uninstall_package("neptune-client")
+
     if upgrade:
         command = [
             sys.executable,
@@ -856,6 +922,16 @@ def install_packages(
         ]
 
     subprocess.check_call(command)
+
+    if "label-studio" in packages:
+        warning(
+            "There is a known issue with Label Studio installations "
+            "via zenml. You might find that the Label Studio "
+            "installation breaks the ZenML CLI. In this case, please "
+            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
+            "issue or message us on Slack if you need help with this. "
+            "We are working on a more definitive fix."
+        )
 
 
 def uninstall_package(package: str) -> None:
@@ -1252,15 +1328,30 @@ def replace_emojis(text: str) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: Sequence["StackResponseModel"]
+    client: "Client",
+    stacks: Sequence["StackResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:
         client: Repository instance
         stacks: List of stacks
+        show_active: Flag to decide whether to append the active stack on the
+            top of the list.
     """
     stack_dicts = []
+
+    stacks = list(stacks)
+    active_stack = client.active_stack_model
+    if show_active:
+        if active_stack.id not in [s.id for s in stacks]:
+            stacks.append(active_stack)
+
+        stacks = [s for s in stacks if s.id == active_stack.id] + [
+            s for s in stacks if s.id != active_stack.id
+        ]
+
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
@@ -1290,6 +1381,7 @@ def print_components_table(
     client: "Client",
     component_type: StackComponentType,
     components: Sequence["ComponentResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -1300,22 +1392,37 @@ def print_components_table(
         client: Instance of the Repository singleton
         component_type: Type of stack component
         components: List of stack components to print.
+        show_active: Flag to decide whether to append the active stack component
+            on the top of the list.
     """
     display_name = _component_display_name(component_type, plural=True)
+
     if len(components) == 0:
         warning(f"No {display_name} registered.")
         return
+
     active_stack = client.active_stack_model
-    active_component_id = None
+    active_component = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
-        active_component_id = (
-            active_components[0].id if active_components else None
-        )
+        active_component = active_components[0] if active_components else None
+
+    components = list(components)
+    if show_active and active_component is not None:
+        if active_component.id not in [c.id for c in components]:
+            components.append(active_component)
+
+        components = [c for c in components if c.id == active_component.id] + [
+            c for c in components if c.id != active_component.id
+        ]
 
     configurations = []
     for component in components:
-        is_active = component.id == active_component_id
+        is_active = False
+
+        if active_component is not None:
+            is_active = component.id == active_component.id
+
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
@@ -1329,7 +1436,7 @@ def print_components_table(
 
 
 def seconds_to_human_readable(time_seconds: int) -> str:
-    """Converts seconds to human readable format.
+    """Converts seconds to human-readable format.
 
     Args:
         time_seconds: Seconds to convert.
@@ -1355,7 +1462,7 @@ def seconds_to_human_readable(time_seconds: int) -> str:
 
 
 def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
-    """Returns a human readable string of the time until the token expires.
+    """Returns a human-readable string of the time until the token expires.
 
     Args:
         expires_at: Datetime object of the token expiration.
@@ -1374,30 +1481,50 @@ def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
 def print_service_connectors_table(
     client: "Client",
     connectors: Sequence["ServiceConnectorResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connectors.
 
     Args:
         client: Instance of the Repository singleton
         connectors: List of service connectors to print.
+        show_active: lag to decide whether to append the active connectors
+            on the top of the list.
     """
     if len(connectors) == 0:
         return
 
-    active_stack = client.active_stack_model
-    active_connector_ids: List["UUID"] = []
-    for components in active_stack.components.values():
-        active_connector_ids.extend(
-            [
-                component.connector.id
-                for component in components
-                if component.connector
+    active_connectors: List["ServiceConnectorResponseModel"] = []
+    for components in client.active_stack_model.components.values():
+        for component in components:
+            if component.connector:
+                connector = component.connector
+                if connector.id not in [c.id for c in active_connectors]:
+                    if isinstance(connector.connector_type, str):
+                        # The connector embedded within the stack component
+                        # does not include a hydrated connector type. We need
+                        # that to print its emojis.
+                        connector.connector_type = (
+                            client.get_service_connector_type(
+                                connector.connector_type
+                            )
+                        )
+                    active_connectors.append(connector)
+
+    connectors = list(connectors)
+    if show_active:
+        active_ids = [c.id for c in connectors]
+        for active_connector in active_connectors:
+            if active_connector.id not in active_ids:
+                connectors.append(active_connector)
+
+            connectors = [c for c in connectors if c.id in active_ids] + [
+                c for c in connectors if c.id not in active_ids
             ]
-        )
 
     configurations = []
     for connector in connectors:
-        is_active = connector.id in active_connector_ids
+        is_active = connector.id in [c.id for c in active_connectors]
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
@@ -2304,7 +2431,7 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information."
     )
 
@@ -2318,7 +2445,7 @@ def fail_secrets_manager_creation() -> None:
         "existing secrets to the centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command."
         " See the `zenml secret` CLI command or the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information. "
     )
 
@@ -2331,7 +2458,7 @@ def fail_secret_creation_on_secrets_manager() -> None:
         "Existing secrets managers will be removed in an "
         "upcoming release in favor of the centralized secrets management. "
         "Learn more about this in our documentation:"
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "Please also consider migrating all your existing secrets to the "
         "centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command. "
@@ -2371,3 +2498,67 @@ def get_parsed_labels(
         metadata_dict[key] = value
 
     return metadata_dict
+
+
+def is_sorted_or_filtered(ctx: click.Context) -> bool:
+    """Decides whether any filtering/sorting happens during a 'list' CLI call.
+
+    Args:
+        ctx: the Click context of the CLI call.
+
+    Returns:
+        a boolean indicating whether any sorting or filtering parameters were
+        used during the list CLI call.
+    """
+    try:
+        for _, source in ctx._parameter_source.items():
+            if source != click.core.ParameterSource.DEFAULT:
+                return True
+        return False
+
+    except Exception as e:
+        logger.debug(
+            f"There was a problem accessing the parameter source for "
+            f'the "sort_by" option: {e}'
+        )
+        return False
+
+
+def print_model_url(url: Optional[str]) -> None:
+    """Pretty prints a given URL on the CLI.
+
+    Args:
+        url: optional str, the URL to display.
+    """
+    if url:
+        declare(f"Dashboard URL: {url}")
+    else:
+        warning(
+            "You can display various ZenML entities including pipelines, "
+            "runs, stacks and much more on the ZenML Dashboard. "
+            "You can try it locally, by running `zenml up`, or remotely, "
+            "by deploying ZenML on the infrastructure of your choice."
+        )
+
+
+def warn_deprecated_example_subcommand() -> None:
+    """Warning for deprecating example subcommand."""
+    warning(
+        "The `example` CLI subcommand has been deprecated and will be removed "
+        "in a future release."
+    )
+
+
+def verify_mlstacks_prerequisites_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+        import python_terraform  # noqa: F401
+
+        subprocess.check_output(
+            ["terraform", "--version"], universal_newlines=True
+        )
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)
+    except subprocess.CalledProcessError:
+        error(TERRAFORM_NOT_INSTALLED_MESSAGE)

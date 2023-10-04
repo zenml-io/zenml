@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.analytics import group
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -35,18 +36,10 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource, StoreType
+from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    AnalyticsGroup,
-    event_handler,
-    identify_group,
-    identify_user,
-    track_event,
-)
 
 if TYPE_CHECKING:
     from zenml.models import StackResponseModel, WorkspaceResponseModel
@@ -307,7 +300,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/user-guide/advanced-guide/global-settings-of-zenml#version-mismatch-downgrading`",
+                    "`https://docs.zenml.io/user-guide/advanced-guide/environment-management/global-settings-of-zenml#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -404,17 +397,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         if not skip_default_registrations:
             store._initialize_database()
-
-        # We want to check if the active user has opted in or out for using
-        # an email address for marketing purposes and if so, record it in
-        # the analytics.
-        active_user = store.get_user(include_private=True)
-        if active_user.email_opted_in is not None:
-            self.record_email_opt_in_out(
-                opted_in=active_user.email_opted_in,
-                email=active_user.email,
-                source=AnalyticsEventSource.ZENML_SERVER,
-            )
 
         # Sanitize the global configuration to reflect the new store
         self._sanitize_config()
@@ -611,15 +593,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        with event_handler(
-            AnalyticsEvent.INITIALIZED_STORE
-        ) as analytics_handler:
-            default_store_cfg = self.get_default_store()
-            self._configure_store(default_store_cfg)
-            logger.debug("Using the default store for the global config.")
-            analytics_handler.metadata = {
-                "store_type": default_store_cfg.type.value
-            }
+        default_store_cfg = self.get_default_store()
+        self._configure_store(default_store_cfg)
+        logger.debug("Using the default store for the global config.")
 
     def uses_default_store(self) -> bool:
         """Check if the global configuration uses the default store.
@@ -649,37 +625,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             **kwargs: Additional keyword arguments to pass to the store
                 constructor.
         """
-        with event_handler(
-            event=AnalyticsEvent.INITIALIZED_STORE,
-            metadata={"store_type": config.type.value},
-        ):
-            self._configure_store(config, skip_default_registrations, **kwargs)
-            logger.info("Updated the global store configuration.")
+        self._configure_store(config, skip_default_registrations, **kwargs)
+        logger.info("Updated the global store configuration.")
 
-            if self.zen_store.type == StoreType.REST:
-                # Every time a client connects to a ZenML server, we want to
-                # group the client ID and the server ID together. This records
-                # only that a particular client has successfully connected to a
-                # particular server at least once, but no information about the
-                # user account is recorded here.
+        if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
+            server_info = self.zen_store.get_store_info()
 
-                with event_handler(
-                    event=AnalyticsEvent.ZENML_SERVER_CONNECTED
-                ):
-                    server_info = self.zen_store.get_store_info()
-
-                    identify_group(
-                        AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=server_info.id,
-                        group_metadata={
-                            "version": server_info.version,
-                            "deployment_type": str(
-                                server_info.deployment_type
-                            ),
-                            "database_type": str(server_info.database_type),
-                        },
-                        v2=True,
-                    )
+            group(
+                group_id=server_info.id,
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -768,46 +732,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             assert self.active_stack_id is not None
 
         return self.active_stack_id
-
-    def record_email_opt_in_out(
-        self,
-        opted_in: bool,
-        email: Optional[str],
-        source: AnalyticsEventSource,
-    ) -> None:
-        """Set the email address associated with this client.
-
-        Args:
-            opted_in: Whether the user has opted in to email communication.
-            email: The email address to use for this client, if given.
-            source: The analytics event source.
-        """
-        # Whenever a new email address is associated with the client, we want
-        # to identify the client by that email address. If the email address has
-        # been changed, we also want to update the information.
-        if opted_in and email and self.user_email != email:
-            identify_user(
-                user_metadata={"email": email, "source": source},
-                v2=True,
-            )
-            self.user_email = email
-
-        if (
-            self.user_email_opt_in is None
-            or opted_in
-            and not self.user_email_opt_in
-        ):
-            # When the user opts out giving the email for the first time, or
-            # when the user opts in after opting out (e.g. when connecting to
-            # a new server where the account has opt-in enabled), we want to
-            # record the information as an analytics event.
-            track_event(
-                AnalyticsEvent.OPT_IN_OUT_EMAIL,
-                {"opted_in": opted_in, "source": source},
-                v2=True,
-            )
-
-            self.user_email_opt_in = opted_in
 
     class Config:
         """Pydantic configuration class."""

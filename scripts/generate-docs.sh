@@ -68,7 +68,7 @@ zenml integration install -y kserve
 zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
 pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
 pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
-
+pip install typing-extensions --upgrade
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
 
@@ -78,14 +78,6 @@ zenml status # to initialize the db
 rm -rf src/zenml/zen_stores/migrations/env.py
 rm -rf src/zenml/zen_stores/migrations/versions
 rm -rf src/zenml/zen_stores/migrations/script.py.mako
-
-########################## Temporary workaround that removes a line of code that typically fails #######################
-file_name="${SRC}new/pipelines/pipeline.py"
-
-# currently `get_runs = GetRunsDescriptor()` fails the building of the API docs
-# Find the offending line of code, if it exists delete the line of code and overwrite the file.
-awk '!/^\s*get_runs\s*=\s*GetRunsDescriptor\(\s*\)$/' "$file_name" > "${file_name}.tmp" && mv "${file_name}.tmp" "$file_name"
-echo "Processed file, continuing."
 
 
 ########################################## Generate Structure of API docs ##############################################

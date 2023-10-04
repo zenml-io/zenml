@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -53,7 +53,7 @@ class PipelineBaseModel(BaseModel):
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    spec: PipelineSpec
+    spec: PipelineSpec = Field(title="The spec of the pipeline.")
 
 
 # -------- #
@@ -64,12 +64,81 @@ class PipelineBaseModel(BaseModel):
 class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
     """Pipeline response model user, workspace, runs, and status hydrated."""
 
-    runs: Optional[List["PipelineRunResponseModel"]] = Field(
-        default=None, title="A list of the last x Pipeline Runs."
-    )
     status: Optional[List[ExecutionStatus]] = Field(
-        default=None, title="The status of the last x Pipeline Runs."
+        default=None, title="The status of the last 3 Pipeline Runs."
     )
+
+    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponseModel"]:
+        """Get runs of this pipeline.
+
+        Can be used to fetch runs other than `self.runs` and supports
+        fine-grained filtering and pagination.
+
+        Args:
+            **kwargs: Further arguments for filtering or pagination that are
+                passed to `client.list_pipeline_runs()`.
+
+        Returns:
+            List of runs of this pipeline.
+        """
+        from zenml.client import Client
+
+        return Client().list_pipeline_runs(pipeline_id=self.id, **kwargs).items
+
+    @property
+    def runs(self) -> List["PipelineRunResponseModel"]:
+        """Returns the 20 most recent runs of this pipeline in descending order.
+
+        Returns:
+            The 20 most recent runs of this pipeline in descending order.
+        """
+        return self.get_runs()
+
+    @property
+    def num_runs(self) -> int:
+        """Returns the number of runs of this pipeline.
+
+        Returns:
+            The number of runs of this pipeline.
+        """
+        from zenml.client import Client
+
+        return Client().list_pipeline_runs(pipeline_id=self.id, size=1).total
+
+    @property
+    def last_run(self) -> "PipelineRunResponseModel":
+        """Returns the last run of this pipeline.
+
+        Returns:
+            The last run of this pipeline.
+
+        Raises:
+            RuntimeError: If no runs were found for this pipeline.
+        """
+        runs = self.get_runs(size=1)
+        if not runs:
+            raise RuntimeError(
+                f"No runs found for pipeline '{self.name}' with id {self.id}."
+            )
+        return runs[0]
+
+    @property
+    def last_successful_run(self) -> "PipelineRunResponseModel":
+        """Returns the last successful run of this pipeline.
+
+        Returns:
+            The last successful run of this pipeline.
+
+        Raises:
+            RuntimeError: If no successful runs were found for this pipeline.
+        """
+        runs = self.get_runs(status=ExecutionStatus.COMPLETED, size=1)
+        if not runs:
+            raise RuntimeError(
+                f"No successful runs found for pipeline '{self.name}' with id "
+                f"{self.id}."
+            )
+        return runs[0]
 
 
 # ------ #

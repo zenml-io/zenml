@@ -26,14 +26,14 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
-from zenml.enums import ServerProviderType, StoreType
+from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
@@ -41,10 +41,10 @@ logger = get_logger(__name__)
 ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
-_zen_store: Optional[BaseZenStore] = None
+_zen_store: Optional["SqlZenStore"] = None
 
 
-def zen_store() -> BaseZenStore:
+def zen_store() -> "SqlZenStore":
     """Initialize the ZenML Store.
 
     Returns:
@@ -65,24 +65,21 @@ def initialize_zen_store() -> None:
     Raises:
         ValueError: If the ZenML Store is using a REST back-end.
     """
-    global _zen_store
-
     logger.debug("Initializing ZenML Store for FastAPI...")
-    _zen_store = GlobalConfiguration().zen_store
+    zen_store_ = GlobalConfiguration().zen_store
 
-    # We override track_analytics=False because we do not
-    # want to track anything server side.
-    _zen_store.track_analytics = False
-
-    # Use an environment variable to flag the instance as a server
-    os.environ[ENV_ZENML_SERVER] = "true"
-
-    if _zen_store.type == StoreType.REST:
+    if not isinstance(zen_store_, SqlZenStore):
         raise ValueError(
             "Server cannot be started with a REST store type. Make sure you "
             "configure ZenML to use a non-networked store backend "
             "when trying to start the ZenML Server."
         )
+
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
+
+    global _zen_store
+    _zen_store = zen_store_
 
 
 def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:

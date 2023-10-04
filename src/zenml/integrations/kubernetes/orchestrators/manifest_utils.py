@@ -210,7 +210,7 @@ def build_cron_job_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
-) -> k8s_client.V1beta1CronJob:
+) -> k8s_client.V1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
     Args:
@@ -245,23 +245,23 @@ def build_cron_job_manifest(
         mount_local_stores=mount_local_stores,
     )
 
-    job_spec = k8s_client.V1beta1CronJobSpec(
+    job_spec = k8s_client.V1CronJobSpec(
         schedule=cron_expression,
-        job_template=k8s_client.V1beta1JobTemplateSpec(
-            metadata=pod_manifest["metadata"],
+        job_template=k8s_client.V1JobTemplateSpec(
+            metadata=pod_manifest.metadata,
             spec=k8s_client.V1JobSpec(
                 template=k8s_client.V1PodTemplateSpec(
-                    metadata=pod_manifest["metadata"],
-                    spec=pod_manifest["spec"],
+                    metadata=pod_manifest.metadata,
+                    spec=pod_manifest.spec,
                 ),
             ),
         ),
     )
 
-    job_manifest = k8s_client.V1beta1CronJob(
+    job_manifest = k8s_client.V1CronJob(
         kind="CronJob",
-        api_version="batch/v1beta1",
-        metadata=pod_manifest["metadata"],
+        api_version="batch/v1",
+        metadata=pod_manifest.metadata,
         spec=job_spec,
     )
 

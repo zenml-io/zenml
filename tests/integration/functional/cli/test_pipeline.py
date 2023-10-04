@@ -346,7 +346,7 @@ def test_pipeline_run_with_config_file(clean_workspace, tmp_path):
     )
     assert result.exit_code == 0
 
-    runs = Client().list_runs(pipeline_id=pipeline_id)
+    runs = Client().list_pipeline_runs(pipeline_id=pipeline_id)
     assert len(runs) == 1
     assert runs[0].name == "custom_run_name"
 
@@ -369,7 +369,7 @@ def test_pipeline_run_with_different_stack(clean_workspace):
     )
     assert result.exit_code == 0
 
-    runs = Client().list_runs(pipeline_id=pipeline_id)
+    runs = Client().list_pipeline_runs(pipeline_id=pipeline_id)
     assert len(runs) == 1
     assert runs[0].stack.id == new_stack.id
 
@@ -414,7 +414,7 @@ def test_pipeline_run_with_custom_build_id(clean_workspace):
     )
     assert result.exit_code == 0
 
-    runs = Client().list_runs(pipeline_id=pipeline_id)
+    runs = Client().list_pipeline_runs(pipeline_id=pipeline_id)
     assert len(runs) == 1
     assert runs[0].build.id == build.id
 
@@ -439,7 +439,7 @@ def test_pipeline_run_with_custom_build_file(clean_workspace, tmp_path):
     )
     assert result.exit_code == 0
 
-    runs = Client().list_runs(pipeline_id=pipeline_id)
+    runs = Client().list_pipeline_runs(pipeline_id=pipeline_id)
     assert len(runs) == 1
     assert runs[0].build.images == build.images
     assert runs[0].build.is_local == build.is_local

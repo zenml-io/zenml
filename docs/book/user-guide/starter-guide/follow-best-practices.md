@@ -34,6 +34,8 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
+Check out how to initialize your project from a template following best practices in the [Project templates](./using-project-templates.md#generating-project-from-a-project-template) section.
+
 #### Steps
 
 Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
@@ -44,14 +46,16 @@ Keep your steps in separate Python files. This allows you to optionally keep the
 ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
 
 ```python
-# Use root handler
-import logging
+# Use ZenML handler
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 ...
 
 @step
 def training_data_loader():
     # This will show up in the dashboard
-    logging.info("My logs")
+    logger.info("My logs")
 ```
 
 #### Pipelines
@@ -74,7 +78,7 @@ Containerized orchestrators and step operators load your complete project files 
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn more [here](../advanced-guide/containerize-your-pipeline.md).
+By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn more [here](../advanced-guide/environment-management/containerize-your-pipeline.md).
 
 #### Notebooks
 

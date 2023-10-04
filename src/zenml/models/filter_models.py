@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base filter model definitions."""
-from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -256,7 +255,7 @@ class BaseFilterModel(BaseModel):
         count_steps="gte:5"
         sort_by="created",
         page=2,
-        size=50
+        size=20
     )
     ```
     """

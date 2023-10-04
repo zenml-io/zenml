@@ -213,7 +213,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 and kubernetes_context != active_context
             ):
                 logger.warning(
-                    f"{msg}the Kubernetes context '{kubernetes_context}' "
+                    f"{msg}the Kubernetes context '{kubernetes_context}' "  # nosec
                     f"configured for the Kubeflow orchestrator is not the "
                     f"same as the active context in the local Kubernetes "
                     f"configuration. If this is not deliberate, you should "
@@ -926,7 +926,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         settings_key = settings_utils.get_stack_component_setting_key(self)
         run_settings = self.settings_class.parse_obj(
-            run.pipeline_configuration.dict().get(settings_key, self.config)
+            run.config.dict().get(settings_key, self.config)
         )
         user_namespace = run_settings.user_namespace
 

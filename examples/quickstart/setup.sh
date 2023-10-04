@@ -10,26 +10,24 @@ setup_stack () {
     msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
   zenml model-registry register mlflow_registry --flavor=mlflow || \
     msg "${WARNING}Reusing preexisting model registry ${NOFORMAT}mlflow_registry"
-  zenml data-validator register evidently_validator --flavor=evidently || \
-    msg "${WARNING}Reusing preexisting data validator ${NOFORMAT}evidently_validator"
+
   zenml stack register quickstart_stack \
       -a default \
       -o default \
-      -dv evidently_validator \
       -d mlflow_deployer \
       -r mlflow_registry \
       -e mlflow_tracker || \
-    msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart_stack"
+    msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart"
 
   zenml stack set quickstart_stack
 }
 
 pre_run () {
-  zenml integration install sklearn mlflow evidently
+  zenml integration install sklearn mlflow
 }
 
 pre_run_forced () {
-  zenml integration install sklearn mlflow evidently -y
+  zenml integration install sklearn mlflow -y
 }
 
 post_run () {

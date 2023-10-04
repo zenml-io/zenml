@@ -66,6 +66,8 @@ class ExternalArtifact:
         self,
         value: Any = None,
         id: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        artifact_name: Optional[str] = None,
         materializer: Optional["MaterializerClassOrSource"] = None,
         store_artifact_metadata: bool = True,
         store_artifact_visualizations: bool = True,
@@ -82,33 +84,72 @@ class ExternalArtifact:
                 provided.
             id: The ID of an artifact that should be referenced by this external
                 artifact. Either this or an artifact value must be provided.
+            pipeline_name: Name of a pipeline to search for artifact in latest run.
+            artifact_name: Name of an artifact to be searched in latest pipeline run.
             materializer: The materializer to use for saving the artifact value
                 to the artifact store. Only used when `value` is provided.
             store_artifact_metadata: Whether metadata for the artifact should
                 be stored. Only used when `value` is provided.
             store_artifact_visualizations: Whether visualizations for the
                 artifact should be stored. Only used when `value` is provided.
-
-        Raises:
-            ValueError: If no/multiple values are provided for the `value` and
-                `id` arguments.
         """
-        if value is not None and id is not None:
-            raise ValueError(
-                "Only a value or an ID can be provided when creating an "
-                "external artifact."
-            )
-        if value is None and id is None:
-            raise ValueError(
-                "Either a value or an ID must be provided when creating an "
-                "external artifact."
-            )
+        self._validate_init_params(
+            value=value,
+            id=id,
+            pipeline_name=pipeline_name,
+            artifact_name=artifact_name,
+        )
 
         self._value = value
         self._id = id
+        self._pipeline_name = pipeline_name
+        self._artifact_name = artifact_name
         self._materializer = materializer
         self._store_artifact_metadata = store_artifact_metadata
         self._store_artifact_visualizations = store_artifact_visualizations
+
+    def _validate_init_params(
+        self,
+        value: Any = None,
+        id: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        artifact_name: Optional[str] = None,
+    ) -> None:
+        """Validate input parameters and raise on bad input.
+
+        Args:
+            value: The artifact value. Either this or an artifact ID must be
+                provided.
+            id: The ID of an artifact that should be referenced by this external
+                artifact. Either this or an artifact value must be provided.
+            pipeline_name: Name of a pipeline to search for artifact in latest run.
+            artifact_name: Name of an artifact to be searched in latest pipeline run.
+
+        Raises:
+            ValueError: If all inputs are `None`.
+            ValueError: If more than one of `[value,id,(pipeline_name,artifact_name)]`
+                is not `None`.
+            ValueError: If `pipeline_name` and `artifact_name` are used separately.
+        """
+        if (value is not None) + (id is not None) + (
+            pipeline_name is not None and artifact_name is not None
+        ) > 1:
+            raise ValueError(
+                "Only a value, an ID or pipeline/artifact name pair can be "
+                "provided when creating an external artifact."
+            )
+        elif all(
+            v is None for v in [value, id, pipeline_name or artifact_name]
+        ):
+            raise ValueError(
+                "Either a value, an ID or pipeline/artifact name pair can be "
+                "provided when creating an external artifact."
+            )
+        elif (pipeline_name is None) != (artifact_name is None):
+            raise ValueError(
+                "`pipeline_name` and `artifact_name` can be only provided "
+                "together when creating an external artifact."
+            )
 
     def upload_if_necessary(self) -> UUID:
         """Uploads the artifact if necessary.
@@ -128,19 +169,7 @@ class ExternalArtifact:
         """
         artifact_store_id = Client().active_stack.artifact_store.id
 
-        if self._id:
-            response = Client().get_artifact(artifact_id=self._id)
-            if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError(
-                    f"The artifact {response.name} (ID: {response.id}) "
-                    "referenced by an external artifact is not stored in the "
-                    "artifact store of the active stack. This will lead to "
-                    "issues loading the artifact. Please make sure to only "
-                    "reference artifacts stored in your active artifact store."
-                )
-        else:
-            assert self._value is not None
-
+        if self._value:
             logger.info("Uploading external artifact...")
             artifact_name = f"external_{uuid4()}"
             materializer_class = self._get_materializer_class(
@@ -173,6 +202,32 @@ class ExternalArtifact:
             logger.info(
                 "Finished uploading external artifact %s.", artifact_id
             )
+        else:
+            response = None
+            if self._id:
+                response = Client().get_artifact(artifact_id=self._id)
+            elif self._pipeline_name and self._artifact_name:
+                pipeline = Client().get_pipeline(self._pipeline_name)
+                for artifact in pipeline.last_successful_run.artifacts:
+                    if artifact.name == self._artifact_name:
+                        response = artifact
+                        break
+
+            if response is None:
+                raise RuntimeError(
+                    f"Artifact with name `{self._artifact_name}` was not found "
+                    f"in last successful run of pipeline `{self._pipeline_name}`. "
+                    "Please check your inputs and try again."
+                )
+            elif response.artifact_store_id != artifact_store_id:
+                raise RuntimeError(
+                    f"The artifact {response.name} (ID: {response.id}) "
+                    "referenced by an external artifact is not stored in the "
+                    "artifact store of the active stack. This will lead to "
+                    "issues loading the artifact. Please make sure to only "
+                    "reference artifacts stored in your active artifact store."
+                )
+            self._id = response.id
 
         return self._id
 

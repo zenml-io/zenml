@@ -37,7 +37,7 @@ class KServeIntegration(Integration):
 
     @classmethod
     def activate(cls) -> None:
-        """Activate the Seldon Core integration."""
+        """Activate the KServe integration."""
         from zenml.integrations.kserve import model_deployers  # noqa
         from zenml.integrations.kserve import secret_schemas  # noqa
         from zenml.integrations.kserve import services  # noqa

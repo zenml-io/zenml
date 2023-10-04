@@ -1,6 +1,6 @@
 name: Integration Tests
 
-on: 
+on:
   workflow_call:
     inputs:
       os:
@@ -41,10 +41,10 @@ on:
         description: 'Python version'
         type: choice
         options:
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
         required: false
         default: '3.8'
       test_environment:
@@ -107,9 +107,11 @@ on:
 
 jobs:
 
-  integration-tests:
-    name: integration-tests
+  integration-and-template-tests:
+    name: integration-and-template-tests
     runs-on: ${{ inputs.os }}
+    strategy:
+      fail-fast: false
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -127,6 +129,7 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
     defaults:
       run:
@@ -177,6 +180,10 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
 
+      - name: Install docker-compose for non-default environments
+        if: inputs.test_environment != 'default'
+        run: pip install docker-compose
+
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
         run: sudo apt install graphviz
@@ -192,13 +199,16 @@ jobs:
       - name: Install Docker and Colima on MacOS
         if: runner.os=='macOS'
         run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
           brew install docker colima
+          brew reinstall --force qemu
 
           # We need to mount the /private/tmp/zenml-test/ folder because
           # this folder is also mounted in the Docker containers that are
           # started by local ZenML orchestrators.
           colima start --mount /private/tmp/zenml-test/:w
-          
+
           # This is required for the Docker Python SDK to work
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 

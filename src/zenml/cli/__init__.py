@@ -80,12 +80,20 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guide/starter-guide/using-project-templates#list-of-zenml-project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
 ```bash
-zenml init --template
+zenml init --template <name_of_template>
+```
+
+Running the above command will result in input prompts being shown to you. If 
+you would like to rely on default values for the ZenML project template - 
+you can add ``--template-with-defaults`` to the same command, like this:
+
+```bash
+zenml init --template <name_of_template> --template-with-defaults
 ```
 
 If you wish to delete all data relating to your workspace from the
@@ -93,70 +101,6 @@ directory, use the ``zenml clean`` command. This will:
 
 -  delete all pipelines, pipeline runs and associated metadata
 -  delete all artifacts
-
-Loading and using pre-built examples
-------------------------------------
-
-If you don't have a project of your own that you're currently working
-on, or if you just want to play around a bit and see some functional
-code, we've got your back! You can use the ZenML CLI tool to download
-some pre-built examples.
-
-We know that working examples are a great way to get to know a tool, so
-we've made some examples for you to use to get started. (This is
-something that will grow as we add more).
-
-To list all the examples available to you, type:
-
-```bash
-zenml example list
-```
-If you want more detailed information about a specific example, use the
-``info`` subcommand in combination with the name of the example, like
-this:
-
-```bash
-zenml example info quickstart
-```
-If you want to pull all the examples into your current working directory
-(wherever you are executing the ``zenml`` command from in your
-terminal), the CLI will create a ``zenml_examples`` folder for you if it
-doesn't already exist whenever you use the ``pull`` subcommand. The
-default is to copy all the examples, like this:
-
-```bash
-zenml example pull
-```
-
-If you'd only like to pull a single example, add the name of that
-example (for example, ``quickstart``) as an argument to the same
-command, as follows:
-
-```bash
-zenml example pull quickstart
-```
-
-If you would like to force-redownload the examples, use the ``--yes``
-or ``-y`` flag as in this example:
-
-```bash
-zenml example pull --yes
-```
-This will redownload all the examples afresh, using the same version of
-ZenML as you currently have installed. If for some reason you want to
-download examples corresponding to a previous release of ZenML, use the
-``--version`` or ``-v`` flag to specify, as in the following example:
-
-```bash
-zenml example pull --yes --version 0.3.8
-```
-
-If you wish to run the example, allowing the ZenML CLI to do the work of setting
-up whatever dependencies are required, use the ``run`` subcommand:
-
-```bash
-zenml example run quickstart
-```
 
 Using integrations
 ------------------
@@ -472,15 +416,15 @@ Deploying Stack Components
 --------------------------
 
 Stack components can be deployed directly via the CLI. You can use the `deploy`
-subcommand for this. For example, you could deploy an S3 artifact store using
+subcommand for this. For example, you could deploy a GCP artifact store using
 the following command:
 
 ```shell
-zenml artifact-store deploy s3_artifact_store --flavor=s3
+zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml-core basic_gcp_artifact_store
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
+documentation on stack component deploy](https://docs.zenml.io/stacks-and-components/stack-deployment/deploy-a-stack-component).
 
 Secrets Management
 ------------------
@@ -1453,7 +1397,7 @@ Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just
 a few commands. Each recipe uses Terraform modules under the hood and once
 executed can set up a ZenML stack, ready to run your pipelines!
 
-A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
+A number of stack recipes are already available at [the `mlstacks` repository](https://github.com/zenml-io/mlstacks/). List them
 using the following command:
 
 ```bash
@@ -1596,7 +1540,6 @@ from zenml.cli.artifact import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
-from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa

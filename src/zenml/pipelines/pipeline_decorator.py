@@ -95,14 +95,11 @@ def pipeline(
         enable_step_logs: Whether to enable step logs.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be
-            a function with three possible parameters,
-            `StepContext`, `BaseParameters`, and `BaseException`,
-            or a source path to a function of the same specifications
-            (e.g. `module.my_function`).
-        on_success: Callback function in event of failure of the step. Can be
-            a function with two possible parameters, `StepContext` and
-            `BaseParameters, or a source path to a function of the same specifications
+        on_failure: Callback function in event of failure of the step. Can be a
+            function with a single argument of type `BaseException`, or a source
+            path to such a function (e.g. `module.my_function`).
+        on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
 
     Returns:
@@ -114,9 +111,10 @@ def pipeline(
         pipeline_name = name or func.__name__
         logger.warning(
             "The `@pipeline` decorator that you used to define your "
-            f"{pipeline_name} pipeline is deprecated. Check out our docs "
-            "https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps "
-            "for information on how to migrate your pipelines to the new syntax."
+            f"{pipeline_name} pipeline is deprecated. Check out the 0.40.0 "
+            "migration guide for more information on how to migrate your "
+            "pipelines to the new syntax: "
+            "https://docs.zenml.io/reference/migration-guide/migration-zero-forty.html"
         )
 
         return type(
@@ -140,7 +138,4 @@ def pipeline(
             },
         )
 
-    if _func is None:
-        return inner_decorator
-    else:
-        return inner_decorator(_func)
+    return inner_decorator if _func is None else inner_decorator(_func)

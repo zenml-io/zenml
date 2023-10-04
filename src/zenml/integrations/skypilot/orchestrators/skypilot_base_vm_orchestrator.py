@@ -1,0 +1,268 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the a Skypilot base VM orchestrator."""
+
+import os
+import time
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from uuid import uuid4
+
+import sky
+
+from zenml.client import Client
+from zenml.entrypoints import PipelineEntrypointConfiguration
+from zenml.enums import StackComponentType
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
+    SkypilotBaseOrchestratorSettings,
+)
+from zenml.logger import get_logger
+from zenml.orchestrators import (
+    ContainerizedOrchestrator,
+)
+from zenml.orchestrators import utils as orchestrator_utils
+from zenml.stack import StackValidator
+from zenml.utils import string_utils
+
+if TYPE_CHECKING:
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
+    from zenml.stack import Stack
+
+
+logger = get_logger(__name__)
+
+ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID = "ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID"
+
+
+class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
+    """Base class for Orchestrator responsible for running pipelines remotely in a VM.
+
+    This orchestrator does not support running on a schedule.
+    """
+
+    # The default instance type to use if none is specified in settings
+    DEFAULT_INSTANCE_TYPE: Optional[str] = None
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
+
+        In the remote case, checks that the stack contains a container registry,
+        image builder and only remote components.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+
+        def _validate_remote_components(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            for component in stack.components.values():
+                if not component.config.is_local:
+                    continue
+
+                return False, (
+                    f"The Skypilot orchestrator runs pipelines remotely, "
+                    f"but the '{component.name}' {component.type.value} is "
+                    "a local stack component and will not be available in "
+                    "the Skypilot step.\nPlease ensure that you always "
+                    "use non-local stack components with the Skypilot "
+                    "orchestrator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
+            custom_validation_function=_validate_remote_components,
+        )
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        try:
+            return os.environ[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID}."
+            )
+
+    @property
+    @abstractmethod
+    def cloud(self) -> sky.clouds.Cloud:
+        """The type of sky cloud to use.
+
+        Returns:
+            A `sky.clouds.Cloud` instance.
+        """
+
+    def setup_credentials(self) -> None:
+        """Set up credentials for the orchestrator."""
+        connector = self.get_connector()
+        assert connector is not None
+        connector.configure_local_client()
+
+    def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
+        """Run to set up the sky job.
+
+        Args:
+            stack: The stack to use.
+
+        Returns:
+            A `setup` string.
+        """
+        return None
+
+    @abstractmethod
+    def prepare_environment_variable(self, set: bool = True) -> None:
+        """Set up Environment variables that are required for the orchestrator.
+
+        Args:
+            set: Whether to set the environment variables or not.
+        """
+
+    def prepare_or_run_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+        environment: Dict[str, str],
+    ) -> Any:
+        """Runs all pipeline steps in Skypilot containers.
+
+        Args:
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
+        Raises:
+            Exception: If the pipeline run fails.
+        """
+        if deployment.schedule:
+            logger.warning(
+                "Skypilot Orchestrator currently does not support the"
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run immediately."
+            )
+
+        # Set up some variables for configuration
+        orchestrator_run_id = str(uuid4())
+        environment[
+            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
+        ] = orchestrator_run_id
+
+        settings = cast(
+            SkypilotBaseOrchestratorSettings,
+            self.get_settings(deployment),
+        )
+
+        entrypoint = PipelineEntrypointConfiguration.get_entrypoint_command()
+        entrypoint_str = " ".join(entrypoint)
+        arguments = PipelineEntrypointConfiguration.get_entrypoint_arguments(
+            deployment_id=deployment.id
+        )
+        arguments_str = " ".join(arguments)
+
+        # Set up docker run command
+        image = self.get_image(deployment=deployment)
+        docker_environment_str = " ".join(
+            f"-e {k}={v}" for k, v in environment.items()
+        )
+
+        start_time = time.time()
+
+        instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
+
+        # Set up credentials
+        self.setup_credentials()
+
+        # Run the entire pipeline
+
+        try:
+            task = sky.Task(
+                run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+                setup=self.get_setup(stack),
+            )
+            task = task.set_resources(
+                sky.Resources(
+                    cloud=self.cloud,
+                    instance_type=instance_type,
+                    cpus=settings.cpus,
+                    memory=settings.memory,
+                    accelerators=settings.accelerators,
+                    accelerator_args=settings.accelerator_args,
+                    use_spot=settings.use_spot,
+                    spot_recovery=settings.spot_recovery,
+                    region=settings.region,
+                    zone=settings.zone,
+                    image_id=settings.image_id,
+                    disk_size=settings.disk_size,
+                    disk_tier=settings.disk_tier,
+                )
+            )
+
+            cluster_name = settings.cluster_name
+            if cluster_name is None:
+                # Find existing cluster
+                for i in sky.status(refresh=True):
+                    if isinstance(
+                        i["handle"].launched_resources.cloud, type(self.cloud)
+                    ):
+                        cluster_name = i["handle"].cluster_name
+                        logger.info(
+                            f"Found existing cluster {cluster_name}. Reusing..."
+                        )
+
+            # Set the service connector AWS profile ENV variable
+            self.prepare_environment_variable(set=True)
+            # Launch the cluster
+            sky.launch(
+                task,
+                cluster_name,
+                retry_until_up=settings.retry_until_up,
+                idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
+                down=settings.down,
+                stream_logs=settings.stream_logs,
+            )
+
+        except Exception as e:
+            raise e
+
+        finally:
+            # Unset the service connector AWS profile ENV variable
+            self.prepare_environment_variable(set=False)
+
+        run_duration = time.time() - start_time
+        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
+            orchestrator=self, orchestrator_run_id=orchestrator_run_id
+        )
+        run_model = Client().zen_store.get_run(run_id)
+        logger.info(
+            "Pipeline run `%s` has finished in `%s`.\n",
+            run_model.name,
+            string_utils.get_human_readable_time(run_duration),
+        )

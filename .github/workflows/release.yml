@@ -9,15 +9,36 @@ on:
 
 jobs:
 
-  lint-unit-test:
-    uses: ./.github/workflows/lint-unit-test.yml
+  setup-and-test:
+    uses: ./.github/workflows/setup-python-environment.yml
     with:
       os: "ubuntu-latest"
       python-version: "3.8"
     secrets: inherit
 
+  mlstacks-compatibility-check:
+    needs: setup-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install current package as editable
+        run: pip install -e .
+
+      - name: Install mlstacks package
+        run: pip install mlstacks
+
+      - name: Check for broken dependencies
+        run: pip check
+
   publish-python-package:
-    needs: lint-unit-test
+    needs: [setup-and-test, mlstacks-compatibility-check]
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
@@ -32,4 +53,9 @@ jobs:
   publish-docker-image:
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
+    secrets: inherit
+
+  publish-helm-chart:
+    needs: publish-docker-image
+    uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit

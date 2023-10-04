@@ -46,7 +46,7 @@ tests:
       - capabilities:
           server: true
 
-  - module: tests.integration.examples.test_deepchecks_data_validation
+  - module: tests.integration.examples.test_deepchecks
     requirements:
       - integrations:
           - sklearn
@@ -56,7 +56,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_evidently_data_validation
+  - module: tests.integration.examples.test_evidently
     requirements:
       - integrations:
           - sklearn
@@ -68,7 +68,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_great_expectations_data_validation
+  - module: tests.integration.examples.test_great_expectations
     requirements:
       - integrations:
           - sklearn
@@ -78,7 +78,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_kubeflow_pipelines_orchestration
+  - module: tests.integration.examples.test_tensorflow
     requirements:
       - integrations:
           - tensorflow
@@ -86,7 +86,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_kubernetes_orchestration
+  - module: tests.integration.examples.test_sklearn
     requirements:
       - integrations:
           - sklearn
@@ -133,13 +133,16 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_whylogs_data_profiling
+  - module: tests.integration.examples.test_whylogs
     requirements:
       - integrations:
           - sklearn
         stacks:
           - type: data_validator
             flavor: whylogs
+        system_os:
+           - linux
+           - macos
       - capabilities:
           synchronized: true
 
@@ -147,24 +150,6 @@ tests:
     requirements:
       - integrations:
           - xgboost
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_airflow_orchestration
-    requirements:
-      - integrations:
-          - pytorch
-        packages:
-          - torchvision
-
-  - module: tests.integration.examples.test_step_operator_remote_training
-    requirements:
-      - integrations:
-          - sklearn
-        packages:
-          - torchvision
-        stacks:
-          - type: step_operator
       - capabilities:
           synchronized: true
 
@@ -180,22 +165,6 @@ tests:
           - type: model_deployer
             flavor: mlflow
           - type: model_registry
-            flavor: mlflow
-          - type: data_validator
-            flavor: evidently
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_quickstart_py37
-    requirements:
-      - integrations:
-          - sklearn
-          - mlflow
-          - evidently
-        stacks:
-          - type: experiment_tracker
-            flavor: mlflow
-          - type: model_deployer
             flavor: mlflow
           - type: data_validator
             flavor: evidently
@@ -224,7 +193,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_facets_visualize_statistics
+  - module: tests.integration.examples.test_facets
     requirements:
       - integrations:
           - facets
@@ -245,7 +214,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_slack_alert
+  - module: tests.integration.examples.test_slack
     requirements:
       - integrations:
           - sklearn
@@ -261,29 +230,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_wandb_tracking
-    requirements:
-      - integrations:
-          - tensorflow
-          - wandb
-        stacks:
-          - type: experiment_tracker
-            flavor: wandb
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_neptune_tracking
-    requirements:
-      - integrations:
-          - tensorflow
-          - neptune
-        stacks:
-          - type: experiment_tracker
-            flavor: neptune
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_seldon_deployment
+  - module: tests.integration.examples.test_seldon
     requirements:
       - integrations:
           - sklearn
