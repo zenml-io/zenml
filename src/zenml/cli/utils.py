@@ -391,6 +391,43 @@ def format_integration_list(
     return list_of_dicts
 
 
+def print_stack_outputs(stack: "StackResponseModel") -> None:
+    """Prints outputs for stacks deployed with mlstacks.
+
+    Args:
+        stack: Instance of a stack model.
+    """
+    verify_mlstacks_prerequisites_installation()
+
+    if not stack.stack_spec_path:
+        declare("No stack spec path is set for this stack.")
+        return
+    stack_caption = f"'{stack.name}' stack"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="MLStacks Outputs",
+        caption=stack_caption,
+        show_lines=True,
+    )
+    rich_table.add_column("OUTPUT_KEY", overflow="fold")
+    rich_table.add_column("OUTPUT_VALUE", overflow="fold")
+
+    from mlstacks.utils.terraform_utils import get_stack_outputs
+
+    stack_spec_file = stack.stack_spec_path
+    stack_outputs = get_stack_outputs(stack_path=stack_spec_file)
+
+    for output_key, output_value in stack_outputs.items():
+        rich_table.add_row(output_key, output_value)
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
+
+
 def print_stack_configuration(
     stack: "StackResponseModel", active: bool
 ) -> None:
@@ -860,6 +897,13 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
     """
+    if "neptune" in packages:
+        declare(
+            "Uninstalling legacy `neptune-client` package to avoid version "
+            "conflicts with new `neptune` package..."
+        )
+        uninstall_package("neptune-client")
+
     if upgrade:
         command = [
             sys.executable,
@@ -878,6 +922,16 @@ def install_packages(
         ]
 
     subprocess.check_call(command)
+
+    if "label-studio" in packages:
+        warning(
+            "There is a known issue with Label Studio installations "
+            "via zenml. You might find that the Label Studio "
+            "installation breaks the ZenML CLI. In this case, please "
+            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
+            "issue or message us on Slack if you need help with this. "
+            "We are working on a more definitive fix."
+        )
 
 
 def uninstall_package(package: str) -> None:

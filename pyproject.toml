@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.44.2"
+version = "0.44.3"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -93,6 +93,9 @@ azure-keyvault-secrets = { version = ">=4.0.0", optional = true }
 # Optional dependencies for the HashiCorp Vault secrets store
 hvac = { version = ">=0.11.2", optional = true }
 
+# Optional dependencies for the AWS connector
+aws-profile-manager = { version = ">=0.5.0", optional = true }
+
 # Optional dependencies for the Kubernetes connector
 kubernetes = { version = ">=18.20.0", optional = true }
 
@@ -178,7 +181,7 @@ s3fs = ["s3fs"]
 gcsfs = ["gcsfs"]
 adlfs = ["adlfs"]
 connectors-kubernetes = ["kubernetes"]
-connectors-aws = ["boto3", "kubernetes"]
+connectors-aws = ["boto3", "kubernetes", "aws-profile-manager"]
 connectors-gcp = [
     "google-cloud-container",
     "google-cloud-storage",
@@ -397,6 +400,8 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
+    "azure-mgmt-resource.*",
+    "azure.mgmt.resource.*",
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
@@ -406,6 +411,7 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
+    "sky.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",

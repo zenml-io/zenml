@@ -70,7 +70,7 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet "${{ github.event.pull_request.head.ref }}" "origin/${{ github.event.pull_request.head.ref }}"; then
+          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
@@ -100,4 +100,18 @@ jobs:
               body: 'E2E template updates in `examples/e2e` have been pushed.'
             })
 
+      - name: Run template tests for zenml-io/template-e2e-batch
+        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
+        with:
+          python-version: ${{ inputs.python-version }}
+          stack-name: local
+          ref-zenml: ${{ github.ref }}
+          ref-template: '2023.09.28' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
 
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=zenml-io/template-e2e-batch project template testing failed with new version of ZenML core!::\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
+            please make the code in zenml-io/template-e2e-batch compatible with new version of\
+            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
