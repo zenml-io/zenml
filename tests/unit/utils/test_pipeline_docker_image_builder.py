@@ -42,6 +42,7 @@ def test_check_user_is_set():
             download_files=False,
         )
     )
+    assert "USER root" in generated_dockerfile
     assert "USER test_user" in generated_dockerfile
 
 
