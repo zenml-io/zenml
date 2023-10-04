@@ -638,8 +638,12 @@ class PipelineDockerImageBuilder:
         lines.append("RUN chmod -R a+rw .")
 
         if docker_settings.user:
-            lines.append(f"USER {docker_settings.user}")
+            # Switch to root user to change file ownership
+            lines.append("USER root")
+            # Change file ownership to specified user
             lines.append(f"RUN chown -R {docker_settings.user} .")
+            # Switch back to specified user for subsequent instructions
+            lines.append(f"USER {docker_settings.user}")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")
