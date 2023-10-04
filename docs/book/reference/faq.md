@@ -22,7 +22,7 @@ Most importantly, ZenML is extensible, and we encourage you to use it with whate
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
-This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md)!
+This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)!
 
 #### How can I contribute?
 
