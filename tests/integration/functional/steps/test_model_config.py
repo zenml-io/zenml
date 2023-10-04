@@ -728,3 +728,82 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
             for mv in model.versions
             for run_name in mv.pipeline_run_ids
         } == {run_1, run_2}
+
+
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
+    """Test that if pipeline run gets deleted - it is removed from model version."""
+    with model_killer():
+
+        @pipeline(model_config=ModelConfig(name="step"), enable_cache=False)
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        client.delete_pipeline_run(run_1)
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].pipeline_run_ids) == 0
+
+
+def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
+    """Test that if pipeline gets deleted - runs are removed from model version."""
+    with model_killer():
+
+        @pipeline(
+            model_config=ModelConfig(name="step"),
+            enable_cache=False,
+            name="test_that_pipeline_run_is_removed_on_deletion_of_pipeline",
+        )
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        client.delete_pipeline(
+            "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
+        )
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].pipeline_run_ids) == 0
+
+
+def test_that_artifact_is_removed_on_deletion():
+    """Test that if artifact gets deleted - it is removed from model version."""
+    with model_killer():
+
+        @pipeline(
+            model_config=ModelConfig(name="step"),
+            enable_cache=False,
+        )
+        def _inner_pipeline():
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+
+        client = Client()
+        run = client.get_pipeline_run(run_1)
+        client.delete_pipeline(run.pipeline.id)
+        client.delete_artifact(
+            run.steps["_this_step_produces_output"].outputs["data"].id
+        )
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 1
+        assert len(model.versions[0].artifact_object_ids) == 0
