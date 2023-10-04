@@ -296,6 +296,9 @@ class PipelineRunRequestModel(
     deployment: UUID = Field(
         title="The deployment associated with the pipeline run."
     )
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline associated with the pipeline run."
+    )
 
 
 # ------ #

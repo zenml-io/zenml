@@ -126,6 +126,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status,
+            pipeline_id=request.pipeline,
             deployment_id=request.deployment,
         )
 

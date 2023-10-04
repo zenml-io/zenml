@@ -727,6 +727,7 @@ pipeline_run_crud_test_config = CrudTestConfig(
     create_model=PipelineRunRequestModel(
         id=uuid.uuid4(),
         deployment=uuid.uuid4(),
+        pipeline=uuid.uuid4(),
         name=sample_name("sample_pipeline_run"),
         status=ExecutionStatus.RUNNING,
         config=PipelineConfiguration(name="aria_pipeline"),

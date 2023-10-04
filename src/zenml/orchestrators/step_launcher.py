@@ -305,6 +305,9 @@ class StepLauncher:
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             deployment=self._deployment.id,
+            pipeline=self._deployment.pipeline.id
+            if self._deployment.pipeline
+            else None,
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=datetime.utcnow(),

@@ -502,6 +502,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
         user=uuid4(),
         workspace=uuid4(),
         deployment=uuid4(),
+        pipeline=uuid4(),
     )
 
 
