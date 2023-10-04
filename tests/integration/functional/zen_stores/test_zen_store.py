@@ -2765,7 +2765,7 @@ class TestModelVersion:
                 == "staging"
             )
 
-            mv1._assign_version_to_running()
+            mv1._persist_model_version_with_next_version_number()
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,

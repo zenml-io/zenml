@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
-from pydantic import PrivateAttr, validator
+from pydantic import PrivateAttr
 
-from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.model_base_model import ModelConfigModel
@@ -35,6 +34,7 @@ class ModelConfig(ModelConfigModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
     version: points model context to a specific version or stage.
+    version_description: The description of the model version.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
@@ -45,42 +45,6 @@ class ModelConfig(ModelConfigModel):
     _model_version: Optional["ModelVersionResponseModel"] = PrivateAttr(
         default=None
     )
-
-    @validator("create_new_model_version")
-    def _validate_create_new_model_version(
-        cls, create_new_model_version: bool, values: Dict[str, Any]
-    ) -> bool:
-        from zenml.constants import RUNNING_MODEL_VERSION
-
-        if create_new_model_version:
-            version = values.get("version", RUNNING_MODEL_VERSION)
-            if version != RUNNING_MODEL_VERSION and version is not None:
-                raise ValueError(
-                    "`version` cannot be used with `create_new_model_version`."
-                )
-            values["version"] = RUNNING_MODEL_VERSION
-        return create_new_model_version
-
-    @validator("delete_new_version_on_failure")
-    def _validate_recovery(
-        cls, delete_new_version_on_failure: bool, values: Dict[str, Any]
-    ) -> bool:
-        if not delete_new_version_on_failure:
-            if not values.get("create_new_model_version", False):
-                logger.warning(
-                    "Using `delete_new_version_on_failure=False` without `create_new_model_version=True` has no effect."
-                )
-        return delete_new_version_on_failure
-
-    @validator("version")
-    def _validate_version(
-        cls, version: Union[str, ModelStages]
-    ) -> Union[str, ModelStages]:
-        if version in [stage.value for stage in ModelStages]:
-            logger.info(
-                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
-            )
-        return version
 
     def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model WatchTower.
@@ -140,15 +104,14 @@ class ModelConfig(ModelConfigModel):
             return self._model_version
 
         from zenml.client import Client
-        from zenml.constants import RUNNING_MODEL_VERSION
         from zenml.models.model_models import ModelVersionRequestModel
 
         zenml_client = Client()
-        self.version = RUNNING_MODEL_VERSION
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
             version=self.version,
+            description=self.version_description,
             model=model.id,
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
@@ -217,3 +180,18 @@ class ModelConfig(ModelConfigModel):
         else:
             mv = self._get_model_version()
         return mv
+
+    def _merge_with_config(self, model_config: ModelConfigModel) -> None:
+        self.license = self.license or model_config.license
+        self.description = self.description or model_config.description
+        self.audience = self.audience or model_config.audience
+        self.use_cases = self.use_cases or model_config.use_cases
+        self.limitations = self.limitations or model_config.limitations
+        self.trade_offs = self.trade_offs or model_config.trade_offs
+        self.ethic = self.ethic or model_config.ethic
+        if model_config.tags is not None:
+            self.tags = (self.tags or []) + model_config.tags
+
+        self.delete_new_version_on_failure &= (
+            model_config.delete_new_version_on_failure
+        )

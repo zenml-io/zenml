@@ -48,6 +48,7 @@ from zenml.constants import (
     FLAVORS,
     GET_OR_CREATE,
     INFO,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
     LOGIN,
     MODEL_VERSIONS,
     MODELS,
@@ -2418,7 +2419,9 @@ class RestZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
+        model_version_name_or_id: Union[
+            str, UUID, ModelStages
+        ] = LATEST_MODEL_VERSION_PLACEHOLDER,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 

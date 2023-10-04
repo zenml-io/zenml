@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     ARTIFACTS,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
     MODEL_VERSIONS,
     MODELS,
     RUNS,
@@ -189,7 +190,9 @@ def list_model_versions(
 @handle_exceptions
 def get_model_version(
     model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
+    model_version_name_or_id: Union[
+        str, UUID, ModelStages
+    ] = LATEST_MODEL_VERSION_PLACEHOLDER,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ModelVersionResponseModel:
     """Get a model version by name or ID.

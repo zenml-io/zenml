@@ -313,24 +313,16 @@ class ModelVersionResponseModel(
             ),
         )
 
-    def _assign_version_to_running(self) -> "ModelVersionResponseModel":
+    def _persist_model_version_with_next_version_number(self) -> None:
         """Sets a version to this running Model Version.
 
         Running version is an intermediate version create if ModelContext of
         pipeline or a step requested to do so. Running version after pipeline
         finished can resolve into a new stable version on success or get deleted
         on failure or kept as is on failure with recovery option.
-
-        Returns:
-            Model Version as a response model.
-
-        Raises:
-            RuntimeError: if this is not a running Model Version.
         """
         if self.version != RUNNING_MODEL_VERSION:
-            raise RuntimeError(
-                f"This is not a `{RUNNING_MODEL_VERSION}` Model Version."
-            )
+            return
 
         from zenml.client import Client
 
@@ -352,7 +344,7 @@ class ModelVersionResponseModel(
                     total_pages = 0
                     break
 
-        return Client().update_model_version(
+        Client().update_model_version(
             model_version_id=self.id,
             model_version_update_model=ModelVersionUpdateModel(
                 model=self.model.id, version=to_set_version

@@ -192,6 +192,10 @@ class StepRunner:
                     input_artifacts=input_artifacts,
                 )
 
+                self._link_pipeline_run_to_model_from_context(
+                    pipeline_run=pipeline_run
+                )
+
                 step_failed = False
                 try:
                     return_values = step_instance.call_entrypoint(
@@ -253,7 +257,7 @@ class StepRunner:
                         self._link_artifacts_to_model(
                             artifact_ids=output_artifact_ids
                         )
-                        self._link_pipeline_run_to_model(
+                        self._link_pipeline_run_to_model_from_artifacts(
                             pipeline_run=pipeline_run,
                             artifact_names=list(output_artifact_ids.keys()),
                             external_artifacts=list(
@@ -727,13 +731,41 @@ class StepRunner:
         except StepContextError:
             return set()
 
-    def _link_pipeline_run_to_model(
+    def _link_pipeline_run_to_model_from_context(
+        self,
+        pipeline_run: "PipelineRunResponseModel",
+    ) -> None:
+        """Links the pipeline run to the model version using artifacts data.
+
+        Args:
+            pipeline_run: The response model of current pipeline run.
+        """
+        from zenml.models.model_models import (
+            ModelVersionPipelineRunRequestModel,
+        )
+
+        models = self._get_model_versions_from_config()
+
+        client = Client()
+        for model in models:
+            client.zen_store.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    name=pipeline_run.name,
+                    pipeline_run=pipeline_run.id,
+                    model=model[0],
+                    model_version=model[1],
+                )
+            )
+
+    def _link_pipeline_run_to_model_from_artifacts(
         self,
         pipeline_run: "PipelineRunResponseModel",
         artifact_names: List[str],
         external_artifacts: List["ExternalArtifactConfiguration"],
     ) -> None:
-        """Links the pipeline run to the model version.
+        """Links the pipeline run to the model version using artifacts data.
 
         Args:
             pipeline_run: The response model of current pipeline run.
@@ -751,8 +783,6 @@ class StepRunner:
                 external_artifacts
             )
         )
-
-        models = models.union(self._get_model_versions_from_config())
 
         client = Client()
         for model in models:

@@ -44,6 +44,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
     PAGE_SIZE_DEFAULT,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
@@ -5079,7 +5080,9 @@ class Client(metaclass=ClientMetaClass):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
+        model_version_name_or_id: Union[
+            str, UUID, ModelStages
+        ] = LATEST_MODEL_VERSION_PLACEHOLDER,
     ) -> ModelVersionResponseModel:
         """Get an existing model version from Model WatchTower.
 
