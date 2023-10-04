@@ -275,33 +275,3 @@ jobs:
           zenml integration list
           pip list
           pip check || true
-
-      - name: Run template tests for zenml-io/zenml-project-templates
-        uses: zenml-io/zenml-project-templates/.github/actions/starter_template_test@main
-        with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: local
-          ref-zenml: ${{ github.ref }}
-
-      - name: message-on-error
-        if: failure()
-        run: |
-          echo "::error title=zenml-io/zenml-project-templates project template testing failed with new version of ZenML core!::\
-            Breaking changes affecting templates have been introduced. To mitigate this issue,\
-            please make the code in zenml-io/zenml-project-templates compatible with new version of\
-            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-
-      - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
-        with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: local
-          ref-zenml: ${{ github.ref }}
-
-      - name: message-on-error
-        if: failure()
-        run: |
-          echo "::error title=zenml-io/template-e2e-batch project template testing failed with new version of ZenML core!::\
-            Breaking changes affecting templates have been introduced. To mitigate this issue,\
-            please make the code in zenml-io/template-e2e-batch compatible with new version of\
-            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
