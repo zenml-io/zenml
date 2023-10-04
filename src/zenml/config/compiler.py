@@ -52,10 +52,10 @@ logger = get_logger(__file__)
 
 
 def get_zenml_versions() -> Tuple[str, str]:
-    """Returns the version of the ZenML on the client- and server side.
+    """Returns the version of ZenML on the client and server side.
 
     Returns:
-        the ZenML versions on the client- and server side respectively.
+        the ZenML versions on the client and server side respectively.
     """
     from zenml.client import Client
 
