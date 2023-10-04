@@ -419,6 +419,7 @@ module = [
     "cloudpickle.*",
     "mlstacks.*",
     "matplotlib.*",
+    "IPython.*",
 ]
 ignore_missing_imports = true
 
