@@ -682,7 +682,9 @@ def connect(
         )
 
     store_dict: Dict[str, Any] = {}
-    verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+    verify_ssl: Union[str, bool] = (
+        ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+    )
 
     if config:
         if os.path.isfile(config):
