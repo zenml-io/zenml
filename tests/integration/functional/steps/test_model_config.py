@@ -671,7 +671,9 @@ def test_that_consumption_also_registers_run_in_model_version():
         consumer_run_1 = f"consumer_run_1_{uuid4()}"
         consumer_run_2 = f"consumer_run_2_{uuid4()}"
         consumer_run_3 = f"consumer_run_3_{uuid4()}"
-        _producer_pipeline.with_options(run_name=producer_run)()
+        _producer_pipeline.with_options(
+            run_name=producer_run, enable_cache=False
+        )()
         _consumer_pipeline_with_step_context.with_options(
             run_name=consumer_run_1
         )()
@@ -694,3 +696,35 @@ def test_that_consumption_also_registers_run_in_model_version():
             consumer_run_2,
             consumer_run_3,
         }
+
+
+def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_created():
+    """Test that if one of the steps requests a new version but was cached a new version is still created for other steps."""
+    with model_killer():
+
+        @pipeline(model_config=ModelConfig(name="step"))
+        def _inner_pipeline():
+            # this step requests a new version, but can be cached
+            _this_step_produces_output.with_options(
+                model_config=ModelConfig(
+                    name="step", create_new_model_version=True
+                )
+            )()
+            # this is an always run step
+            _this_step_produces_output.with_options(enable_cache=False)()
+
+        # this will run all steps, including one requesting new version
+        run_1 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_1)()
+        # here the step requesting new version is cached
+        run_2 = f"run_{uuid4()}"
+        _inner_pipeline.with_options(run_name=run_2)()
+
+        client = Client()
+        model = client.get_model(model_name_or_id="step")
+        assert len(model.versions) == 2
+        assert {
+            run_name
+            for mv in model.versions
+            for run_name in mv.pipeline_run_ids
+        } == {run_1, run_2}
