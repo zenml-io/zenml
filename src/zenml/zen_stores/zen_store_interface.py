@@ -1775,6 +1775,7 @@ class ZenStoreInterface(ABC):
             The newly created model version.
 
         Raises:
+            ValueError: If `number` is not None during model version creation.
             EntityExistsError: If a model version with the given name already exists.
         """
 

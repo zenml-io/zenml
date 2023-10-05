@@ -5561,8 +5561,13 @@ class SqlZenStore(BaseZenStore):
             The newly created model version.
 
         Raises:
+            ValueError: If `number` is not None during model version creation.
             EntityExistsError: If a workspace with the given name already exists.
         """
+        if model_version.number is not None:
+            raise ValueError(
+                "`number` field  must be None during model version creation."
+            )
         with Session(self.engine) as session:
             model = self.get_model(model_version.model)
             existing_model_version = session.exec(
