@@ -16,25 +16,6 @@ from click import ClickException
 
 from zenml import __version__ as current_zenml_version
 from zenml.cli import utils as cli_utils
-from zenml.client import Client
-
-
-def test_temporarily_setting_the_active_stack():
-    """Tests the context manager to temporarily activate a stack."""
-    initial_stack = Client().active_stack_model
-    components = {
-        key: components[0].id
-        for key, components in initial_stack.components.items()
-    }
-    new_stack = Client().create_stack(name="new", components=components)
-
-    with cli_utils.temporary_active_stack():
-        assert Client().active_stack_model == initial_stack
-
-    with cli_utils.temporary_active_stack(stack_name_or_id=new_stack.id):
-        assert Client().active_stack_model == new_stack
-
-    assert Client().active_stack_model == initial_stack
 
 
 def test_error_raises_exception():

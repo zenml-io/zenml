@@ -106,6 +106,8 @@ def test_build_is_skipped_when_not_required(mocker):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     assert build_utils.create_pipeline_build(deployment=deployment) is None
@@ -138,6 +140,8 @@ def test_stack_with_container_registry_creates_non_local_build(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)
@@ -168,6 +172,8 @@ def test_build_uses_correct_settings(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     pipeline_instance = empty_pipeline
@@ -217,6 +223,8 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)
@@ -251,6 +259,8 @@ def test_building_with_identical_keys_and_different_settings(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     with pytest.raises(RuntimeError):
@@ -280,6 +290,8 @@ def test_building_with_different_keys_and_identical_settings(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)
