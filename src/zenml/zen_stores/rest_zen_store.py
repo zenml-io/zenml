@@ -2377,7 +2377,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: if the server response is not valid.
         """
-        params = {}
+        params: Dict[str, Any] = {}
         if pipeline_id:
             params["pipeline_id"] = pipeline_id
         if schedule_id:
