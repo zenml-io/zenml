@@ -39,6 +39,8 @@ class JWTToken(BaseModel):
     Attributes:
         user_id: The id of the authenticated User.
         device_id: The id of the authenticated device.
+        pipeline_id: The id of the pipeline for which the token was issued.
+        schedule_id: The id of the schedule for which the token was issued.
         permissions: The permissions scope of the authenticated user.
         claims: The original token claims.
     """
@@ -46,6 +48,8 @@ class JWTToken(BaseModel):
     user_id: UUID
     permissions: List[str]
     device_id: Optional[UUID] = None
+    pipeline_id: Optional[UUID] = None
+    schedule_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -112,11 +116,33 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
+        pipeline_id: Optional[UUID] = None
+        if "pipeline_id" in claims:
+            try:
+                pipeline_id = UUID(claims["pipeline_id"])
+            except ValueError:
+                raise AuthorizationException(
+                    "Invalid JWT token: the pipeline_id claim is not a valid "
+                    "UUID"
+                )
+
+        schedule_id: Optional[UUID] = None
+        if "schedule_id" in claims:
+            try:
+                schedule_id = UUID(claims["schedule_id"])
+            except ValueError:
+                raise AuthorizationException(
+                    "Invalid JWT token: the schedule_id claim is not a valid "
+                    "UUID"
+                )
+
         permissions: List[str] = claims.get("permissions", [])
 
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
+            pipeline_id=pipeline_id,
+            schedule_id=schedule_id,
             permissions=list(set(permissions)),
             claims=claims,
         )
@@ -146,6 +172,10 @@ class JWTToken(BaseModel):
             claims["exp"] = expires
         if self.device_id:
             claims["device_id"] = str(self.device_id)
+        if self.pipeline_id:
+            claims["pipeline_id"] = str(self.pipeline_id)
+        if self.schedule_id:
+            claims["schedule_id"] = str(self.schedule_id)
 
         # Apply custom claims
         claims.update(self.claims)

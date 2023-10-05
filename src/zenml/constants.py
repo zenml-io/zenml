@@ -236,6 +236,7 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
+API_TOKEN = "/api_token"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
@@ -246,6 +247,7 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
+PIPELINE_API_TOKEN_EXPIRES_MINUTES = 60 * 24  # 24 hours
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"

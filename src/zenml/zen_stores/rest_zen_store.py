@@ -40,6 +40,7 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
+    API_TOKEN,
     ARTIFACTS,
     CODE_REPOSITORIES,
     CURRENT_USER,
@@ -2351,6 +2352,45 @@ class RestZenStore(BaseZenStore):
             device_id: The ID of the device to delete.
         """
         self._delete_resource(resource_id=device_id, route=DEVICES)
+
+    # -------------------
+    # Pipeline API Tokens
+    # -------------------
+
+    def get_api_token(
+        self,
+        pipeline_id: Optional[UUID] = None,
+        schedule_id: Optional[UUID] = None,
+        expires_minutes: Optional[int] = None,
+    ) -> str:
+        """Get an API token for a workload.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get a token for.
+            schedule_id: The ID of the schedule to get a token for.
+            expires_minutes: The number of minutes for which the token should
+                be valid. If not provided, the token will be valid indefinitely.
+
+        Returns:
+            The API token.
+
+        Raises:
+            ValueError: if the server response is not valid.
+        """
+        params = {}
+        if pipeline_id:
+            params["pipeline_id"] = pipeline_id
+        if schedule_id:
+            params["schedule_id"] = schedule_id
+        if expires_minutes:
+            params["expires_minutes"] = expires_minutes
+        response_body = self.get(API_TOKEN, params=params)
+        if not isinstance(response_body, str):
+            raise ValueError(
+                f"Bad API Response. Expected API token, got "
+                f"{type(response_body)}"
+            )
+        return response_body
 
     # =======================
     # Internal helper methods

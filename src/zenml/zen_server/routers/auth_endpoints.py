@@ -18,12 +18,20 @@ from typing import Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Response,
+    Security,
+    status,
+)
 from fastapi.param_functions import Form
 from starlette.requests import Request
 
 from zenml.constants import (
     API,
+    API_TOKEN,
     DEVICE_AUTHORIZATION,
     DEVICE_VERIFY,
     DEVICES,
@@ -31,7 +39,12 @@ from zenml.constants import (
     LOGOUT,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, OAuthDeviceStatus, OAuthGrantTypes
+from zenml.enums import (
+    AuthScheme,
+    OAuthDeviceStatus,
+    OAuthGrantTypes,
+    PermissionType,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     OAuthDeviceAuthorizationResponse,
@@ -44,9 +57,11 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
 )
 from zenml.zen_server.auth import (
+    AuthContext,
     authenticate_credentials,
     authenticate_device,
     authenticate_external_user,
+    authorize,
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
@@ -454,3 +469,55 @@ def device_authorization(
         verification_uri=verification_uri,
         verification_uri_complete=verification_uri_complete,
     )
+
+
+@router.get(
+    API_TOKEN,
+    response_model=str,
+)
+@handle_exceptions
+def api_token(
+    pipeline_id: Optional[UUID] = None,
+    schedule_id: Optional[UUID] = None,
+    expires_minutes: Optional[int] = None,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> str:
+    """Get a workload API token for the current user.
+
+    Args:
+        pipeline_id: The ID of the pipeline to get the API token for.
+        schedule_id: The ID of the schedule to get the API token for.
+        expires_minutes: The number of minutes for which the API token should
+            be valid. If not provided, the API token will be valid indefinitely.
+        auth_context: The authentication context.
+
+    Returns:
+        The API token.
+    """
+    token = auth_context.access_token
+    if not token or not auth_context.encoded_access_token:
+        # Should not happen
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated.",
+        )
+
+    if not token.device_id:
+        # If not authenticated with a device, the current API token is returned
+        # as is, without any modifications. Issuing workload tokens is only
+        # supported for device authenticated users, because device tokens can
+        # be revoked at any time.
+        return auth_context.encoded_access_token
+
+    # If authenticated with a device, a new API token is generated for the
+    # pipeline and/or schedule.
+    if pipeline_id:
+        token.pipeline_id = pipeline_id
+    if schedule_id:
+        token.schedule_id = schedule_id
+    expires: Optional[datetime] = None
+    if expires_minutes:
+        expires = datetime.utcnow() + timedelta(minutes=expires_minutes)
+    return token.encode(expires=expires)

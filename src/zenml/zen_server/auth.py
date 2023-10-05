@@ -95,6 +95,7 @@ class AuthContext(BaseModel):
 
     user: UserResponseModel
     access_token: Optional[JWTToken] = None
+    encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponseModel] = None
 
     @property
@@ -255,7 +256,10 @@ def authenticate_credentials(
             )
 
         auth_context = AuthContext(
-            user=user_model, access_token=decoded_token, device=device_model
+            user=user_model,
+            access_token=decoded_token,
+            encoded_access_token=access_token,
+            device=device_model,
         )
     elif activation_token is not None:
         if not UserAuthModel.verify_activation_token(activation_token, user):

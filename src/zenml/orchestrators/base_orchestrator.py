@@ -161,7 +161,8 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self._prepare_run(deployment=deployment)
 
-        environment = get_config_environment_vars()
+        environment = get_config_environment_vars(deployment=deployment)
+
         try:
             result = self.prepare_or_run_pipeline(
                 deployment=deployment, stack=stack, environment=environment
