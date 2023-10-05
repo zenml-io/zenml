@@ -495,6 +495,9 @@ def api_token(
 
     Returns:
         The API token.
+
+    Raises:
+        HTTPException: If the user is not authenticated.
     """
     token = auth_context.access_token
     if not token or not auth_context.encoded_access_token:
