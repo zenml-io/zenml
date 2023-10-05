@@ -37,6 +37,7 @@ from zenml.models import (
     ArtifactResponseModel,
     CodeRepositoryResponseModel,
     PipelineBuildResponseModel,
+    PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
@@ -444,6 +445,7 @@ def sample_step_request_model() -> StepRunRequestModel:
         config=config,
         workspace=uuid4(),
         user=uuid4(),
+        deployment=uuid4(),
     )
 
 
@@ -473,6 +475,22 @@ def sample_pipeline_run(
 
 
 @pytest.fixture
+def sample_pipeline_deployment_request_model() -> (
+    PipelineDeploymentRequestModel
+):
+    """Return sample pipeline deployment request for testing purposes."""
+    return PipelineDeploymentRequestModel(
+        user=uuid4(),
+        workspace=uuid4(),
+        run_name_template="aria-blupus",
+        pipeline_configuration=PipelineConfiguration(name="axls-pipeline"),
+        client_version="0.12.3",
+        server_version="0.12.3",
+        stack=uuid4(),
+    )
+
+
+@pytest.fixture
 def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequestModel(
@@ -483,6 +501,8 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         workspace=uuid4(),
+        deployment=uuid4(),
+        pipeline=uuid4(),
     )
 
 
@@ -553,6 +573,7 @@ def create_step_run(
             id=uuid4(),
             name=step_run_name,
             pipeline_run_id=uuid4(),
+            deployment_id=uuid4(),
             spec=spec,
             config=config,
             status=ExecutionStatus.COMPLETED,
@@ -608,6 +629,8 @@ def sample_deployment_response_model(
         workspace=sample_workspace_model,
         run_name_template="",
         pipeline_configuration={"name": ""},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
 

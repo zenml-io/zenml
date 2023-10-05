@@ -173,19 +173,19 @@ def cleanup_secrets(
             pass
 
 
-def test_temporarily_setting_the_active_stack():
+def test_temporarily_setting_the_active_stack(clean_workspace):
     """Tests the context manager to temporarily activate a stack."""
-    initial_stack = Client().active_stack_model
+    initial_stack = clean_workspace.active_stack_model
     components = {
         key: components[0].id
         for key, components in initial_stack.components.items()
     }
-    new_stack = Client().create_stack(name="new", components=components)
+    new_stack = clean_workspace.create_stack(name="new", components=components)
 
     with temporary_active_stack():
-        assert Client().active_stack_model == initial_stack
+        assert clean_workspace.active_stack_model == initial_stack
 
     with temporary_active_stack(stack_name_or_id=new_stack.id):
-        assert Client().active_stack_model == new_stack
+        assert clean_workspace.active_stack_model == new_stack
 
-    assert Client().active_stack_model == initial_stack
+    assert clean_workspace.active_stack_model == initial_stack
