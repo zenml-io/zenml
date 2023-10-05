@@ -70,7 +70,8 @@ class ModelBaseModel(BaseModel):
 class ModelConfigModel(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
-    version: points model context to a specific version or stage.
+    version_name: points model context to a specific version or stage.
+    version_number: points model context to a specific version number.
     version_description: The description of the model version.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
