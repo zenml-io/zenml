@@ -19,6 +19,12 @@ guide](https://docs.zenml.io/stacks-and-components/component-guide) in our
 documentation which has been updated with all the latest information.
 {% endhint %}
 
+Note that our full use cases are all implemented as templates so you can start
+with our code and then adapt the specifics to your individual needs. To learn
+more about how to do this, please [visit our dedicated documentation
+page](https://docs.zenml.io/user-guide/starter-guide/using-project-templates) on
+this.
+
 | Name | Description | Integrations | Core Project |
 | ---- | ----------- | ------------ | ------------ |
 | e2e | Trains one or more scikit-learn classification models to make predictions on tabular classification datasets | scikit-learn | ✅ |
