@@ -144,6 +144,7 @@ class CliCategories(StrEnum):
     HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
+    MODEL_WATCHTOWER = "Model Watch Tower"
     IDENTITY_AND_SECURITY = "Identity and Security"
     OTHER_COMMANDS = "Other Commands"
 

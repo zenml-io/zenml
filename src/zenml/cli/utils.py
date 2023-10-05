@@ -253,6 +253,7 @@ def print_pydantic_models(
     exclude_columns: Optional[List[str]] = None,
     active_models: Optional[List[T]] = None,
     show_active: bool = False,
+    suppress_active_column: bool = False,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -265,6 +266,7 @@ def print_pydantic_models(
         active_models: Optional list of active models of the given type T.
         show_active: Flag to decide whether to append the active model on the
             top of the list.
+        suppress_active_column: Flag to decide whether to suppress the active column.
     """
     if exclude_columns is None:
         exclude_columns = list()
@@ -317,6 +319,9 @@ def print_pydantic_models(
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
+        if suppress_active_column:
+            return items
+
         marker = "active"
         if marker in items:
             marker = "current"

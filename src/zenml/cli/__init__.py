@@ -1545,7 +1545,7 @@ from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.service_connectors import *  # noqa
-from zenml.cli.model import *  # noqa
+from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.workspace import *  # noqa
 from zenml.cli.role import *  # noqa
@@ -1557,3 +1557,4 @@ from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa
 from zenml.cli.downgrade import *  # noqa
+from zenml.cli.model import *  # noqa
