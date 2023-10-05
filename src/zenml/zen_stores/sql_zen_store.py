@@ -5766,7 +5766,7 @@ class SqlZenStore(BaseZenStore):
                         )
                     else:
                         existing_model_version_in_target_stage.update(
-                            ModelStages.ARCHIVED.value
+                            target_stage=ModelStages.ARCHIVED.value
                         )
                         session.add(existing_model_version_in_target_stage)
 
@@ -5775,7 +5775,8 @@ class SqlZenStore(BaseZenStore):
                         )
 
             existing_model_version.update(
-                stage, model_version_update_model.name
+                target_stage=stage,
+                target_name=model_version_update_model.name,
             )
             session.add(existing_model_version)
             session.commit()
