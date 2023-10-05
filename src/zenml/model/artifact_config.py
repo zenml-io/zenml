@@ -80,7 +80,7 @@ class ArtifactConfig(BaseModel):
 
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
-                version=self.model_version_name,
+                version_name=self.model_version_name,
                 create_new_model_version=False,
             )
             return on_the_fly_config

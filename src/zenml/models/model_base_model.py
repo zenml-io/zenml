@@ -18,7 +18,6 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import (
-    LATEST_MODEL_VERSION_PLACEHOLDER,
     RUNNING_MODEL_VERSION,
 )
 from zenml.enums import ModelStages
@@ -79,10 +78,15 @@ class ModelConfigModel(ModelBaseModel):
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
     """
 
-    version: Union[ModelStages, str] = Field(
-        default=LATEST_MODEL_VERSION_PLACEHOLDER,
+    version_name: Optional[Union[ModelStages, str]] = Field(
+        default=None,
         description="Model version or stage is optional and points model context to a specific version/stage, "
         "if skipped and `create_new_model_version` is False - latest model version will be used.",
+    )
+    version_number: Optional[int] = Field(
+        default=None,
+        description="Model version number is optional and points model context to a specific version number, "
+        "this works only for reading from model version and not suitable with `create_new_model_version`.",
     )
     version_description: Optional[str]
     create_new_model_version: bool = False
@@ -120,21 +124,36 @@ class ModelConfigModel(ModelBaseModel):
             )
             values["delete_new_version_on_failure"] = True
 
-        version = values.get("version", LATEST_MODEL_VERSION_PLACEHOLDER)
+        version_number = values.get("version_number", None)
+        version_name = values.get("version_name", None)
+
+        if version_number and create_new_model_version:
+            raise ValueError(
+                "`version_number` cannot be used with `create_new_model_version`."
+            )
+
+        if version_number is not None and version_name is not None:
+            logger.warning(
+                "`version_number` has higher priority then `version_name`."
+                "Setting `version_name` to `None`."
+            )
+            version_name = None
+            values["version_name"] = None
+
         if create_new_model_version:
-            if isinstance(version, ModelStages):
+            if isinstance(version_name, ModelStages):
                 raise ValueError(
-                    "`version` set to `ModelStages` instance cannot be used with `create_new_model_version`."
+                    "`version_name` set to `ModelStages` instance cannot be used with `create_new_model_version`."
                     "You can leave it default or set to a string name of a model version."
                 )
-            if version == LATEST_MODEL_VERSION_PLACEHOLDER:
+            if version_name is None:
                 logger.info(
                     "Creation of new model version was requested, but no version name was explicitly provided."
-                    f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
+                    f"Setting `version_name` to `{RUNNING_MODEL_VERSION}`."
                 )
-                values["version"] = RUNNING_MODEL_VERSION
-        if version in [stage.value for stage in ModelStages]:
+                values["version_name"] = RUNNING_MODEL_VERSION
+        if version_name in [stage.value for stage in ModelStages]:
             logger.info(
-                f"`version` `{version}` matches one of the possible `ModelStages`, model will be fetched using stage."
+                f"`version_name` `{version_name}` matches one of the possible `ModelStages`, model will be fetched using stage."
             )
         return values

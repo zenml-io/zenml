@@ -844,14 +844,14 @@ class Pipeline:
                     if run.status == ExecutionStatus.RUNNING:
                         raise RuntimeError(
                             f"New model version was requested, but pipeline run `{run_name}` "
-                            f"is still running with version `{model_version.version}`."
+                            f"is still running with version `{model_version.name}`."
                         )
                 if (
-                    data.model_config.version
+                    data.model_config.version_name
                     and data.model_config.delete_new_version_on_failure
                 ):
                     raise RuntimeError(
-                        f"Cannot create version `{data.model_config.version}` "
+                        f"Cannot create version `{data.model_config.version_name}` "
                         f"for model `{data.model_config.name}` since it already exists"
                     )
             except KeyError:
@@ -882,9 +882,9 @@ class Pipeline:
                 step_model_config is not None
                 and step_model_config.name in new_version_requests
             ):
-                step_model_config.version = new_version_requests[
+                step_model_config.version_name = new_version_requests[
                     step_model_config.name
-                ].model_config.version
+                ].model_config.version_name
                 step_model_config.create_new_model_version = True
         pipeline_model_config = (
             deployment.pipeline_configuration.model_config_model
@@ -893,9 +893,9 @@ class Pipeline:
             pipeline_model_config is not None
             and pipeline_model_config.name in new_version_requests
         ):
-            pipeline_model_config.version = new_version_requests[
+            pipeline_model_config.version_name = new_version_requests[
                 pipeline_model_config.name
-            ].model_config.version
+            ].model_config.version_name
             pipeline_model_config.create_new_model_version = True
         return deployment
 
@@ -911,9 +911,9 @@ class Pipeline:
             if new_version_request.model_config.delete_new_version_on_failure:
                 mv = Client().get_model_version(
                     model_name_or_id=model_name,
-                    model_version_name_or_id=new_version_request.model_config.version,
+                    model_version_name_or_number_or_id=new_version_request.model_config.version_name,
                 )
-                mv._persist_model_version_with_next_version_number()
+                mv._update_default_running_version_name()
 
     def delete_running_versions_without_recovery(
         self, new_version_requests: Dict[str, NewModelVersionRequest]
@@ -924,10 +924,13 @@ class Pipeline:
             new_version_requests: Dict of models requesting new versions and their definition points.
         """
         for model_name, new_version_request in new_version_requests.items():
-            if new_version_request.model_config.delete_new_version_on_failure:
+            if (
+                new_version_request.model_config.delete_new_version_on_failure
+                and new_version_request.model_config.version_name is not None
+            ):
                 Client().delete_model_version(
                     model_name_or_id=model_name,
-                    model_version_name_or_id=new_version_request.model_config.version,
+                    model_version_name_or_id=new_version_request.model_config.version_name,
                 )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:

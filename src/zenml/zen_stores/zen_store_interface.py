@@ -16,7 +16,6 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.constants import LATEST_MODEL_VERSION_PLACEHOLDER
 from zenml.enums import ModelStages
 from zenml.models import (
     ArtifactFilterModel,
@@ -1799,15 +1798,15 @@ class ZenStoreInterface(ABC):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[
-            str, UUID, ModelStages
-        ] = LATEST_MODEL_VERSION_PLACEHOLDER,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
 
         Returns:

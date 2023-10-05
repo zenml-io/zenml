@@ -83,7 +83,7 @@ def test_link_minimalistic():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -144,7 +144,7 @@ def test_link_multiple_named_outputs():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         al = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -190,7 +190,7 @@ def test_link_multiple_named_outputs_without_links():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         artifact_links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -252,7 +252,7 @@ def test_link_multiple_named_outputs_with_self_context():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="bar",
+                name="bar",
                 model=m1.id,
             )
         )
@@ -260,7 +260,7 @@ def test_link_multiple_named_outputs_with_self_context():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="foo",
+                name="foo",
                 model=m2.id,
             )
         )
@@ -293,7 +293,7 @@ def test_link_multiple_named_outputs_with_self_context():
         assert al2[0].name == "3"
 
 
-@step(model_config=ModelConfig(name="step", version="step"))
+@step(model_config=ModelConfig(name="step", version_name="step"))
 def multi_named_output_step_mixed_linkage() -> (
     Tuple[
         Annotated[
@@ -331,7 +331,7 @@ def some_plain_outputs():
     return "bar", 42.0
 
 
-@step(model_config=ModelConfig(name="step", version="step"))
+@step(model_config=ModelConfig(name="step", version_name="step"))
 def and_some_typed_outputs() -> int:
     """This artifact can be implicitly tracked with step config."""
     return 1
@@ -339,7 +339,7 @@ def and_some_typed_outputs() -> int:
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(name="pipe", version="pipe"),
+    model_config=ModelConfig(name="pipe", version_name="pipe"),
 )
 def multi_named_pipeline_mixed_linkage():
     """Mixed linking cases, see steps description."""
@@ -370,7 +370,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                     ModelVersionRequestModel(
                         user=user,
                         workspace=ws,
-                        version=n,
+                        name=n,
                         model=models[-1].id,
                     )
                 )
@@ -413,7 +413,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         }, "some artifacts tracked as higher versions, while all should be version 1"
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, version="good_one"))
+@step(model_config=ModelConfig(name=MODEL_NAME, version_name="good_one"))
 def single_output_step_no_versioning() -> (
     Annotated[int, ArtifactConfig(overwrite=True)]
 ):
@@ -442,7 +442,7 @@ def test_link_no_versioning():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -513,7 +513,7 @@ def test_link_with_versioning():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -626,7 +626,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -634,7 +634,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="bar",
+                name="bar",
                 model=model2.id,
             )
         )
@@ -704,7 +704,7 @@ def test_link_with_manual_linkage_fail_on_override():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -761,7 +761,7 @@ def test_link_with_manual_linkage_flexible_config(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )

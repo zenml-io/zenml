@@ -550,7 +550,7 @@ class ModelVersionContext:
                         user=user.id,
                         workspace=ws.id,
                         model=model.id,
-                        version=self.model_version,
+                        name=self.model_version,
                     )
                 )
 

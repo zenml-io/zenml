@@ -644,11 +644,11 @@ class StepRunner:
             if artifact_config is None and mc is not None:
                 artifact_config = ArtifactConfig(
                     model_name=mc.name,
-                    model_version_name=mc.version,
+                    model_version_name=mc.version_name,
                     artifact_name=artifact_name,
                 )
                 logger.info(
-                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
+                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version_name}` implicitly."
                 )
 
             if artifact_config is not None:
@@ -706,15 +706,11 @@ class StepRunner:
                 external_artifact.model_artifact_name is not None
                 and external_artifact.model_name is not None
             ):
-                if external_artifact.model_version is not None:
-                    model_version = client.get_model_version(
-                        model_name_or_id=external_artifact.model_name,
-                        model_version_name_or_id=external_artifact.model_version,
-                    )
-                else:
-                    model_version = client.get_model_version(
-                        model_name_or_id=external_artifact.model_name
-                    )
+                model_version = client.get_model_version(
+                    model_name_or_id=external_artifact.model_name,
+                    model_version_name_or_number_or_id=external_artifact.model_version_number
+                    or external_artifact.model_version_name,
+                )
                 models.add((model_version.model.id, model_version.id))
         return models
 

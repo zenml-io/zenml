@@ -110,7 +110,7 @@ class ModelConfig(ModelConfigModel):
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
-            version=self.version,
+            name=self.version_name,
             description=self.version_description,
             model=model.id,
         )
@@ -118,7 +118,7 @@ class ModelConfig(ModelConfigModel):
         try:
             mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=self.version,
+                model_version_name_or_number_or_id=self.version_name,
             )
             self._model_version = mv
         except KeyError:
@@ -141,7 +141,7 @@ class ModelConfig(ModelConfigModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        if self.version is None:
+        if self.version_name is None and self.version_number is None:
             # raise if not found
             self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name
@@ -151,7 +151,8 @@ class ModelConfig(ModelConfigModel):
             # raise if not found
             self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=self.version,
+                model_version_name_or_number_or_id=self.version_number
+                or self.version_name,
             )
         return self._model_version
 

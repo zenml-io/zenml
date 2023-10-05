@@ -99,7 +99,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         pipeline_name = values.get("pipeline_name", None)
         artifact_name = values.get("artifact_name", None)
         model_name = values.get("model_name", None)
-        model_version = values.get("model_version", None)
+        model_version_name = values.get("model_version_name", None)
+        model_version_number = values.get("model_version_number", None)
         model_artifact_name = values.get("model_artifact_name", None)
 
         if (value is not None) + (id is not None) + (
@@ -116,7 +117,10 @@ class ExternalArtifact(ExternalArtifactConfiguration):
                 value,
                 id,
                 pipeline_name or artifact_name,
-                model_name or model_version or model_artifact_name,
+                model_name
+                or model_version_name
+                or model_artifact_name
+                or model_version_number,
             ]
         ):
             raise ValueError(
@@ -192,7 +196,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             pipeline_name=self.pipeline_name,
             artifact_name=self.artifact_name,
             model_name=self.model_name,
-            model_version=self.model_version,
+            model_version_name=self.model_version_name,
+            model_version_number=self.model_version_number,
             model_artifact_name=self.model_artifact_name,
             model_artifact_version=self.model_artifact_version,
             model_artifact_pipeline_name=self.model_artifact_pipeline_name,

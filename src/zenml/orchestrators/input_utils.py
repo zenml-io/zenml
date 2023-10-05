@@ -76,7 +76,9 @@ def resolve_step_inputs(
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
-        artifact_id = external_artifact.get_artifact(model_config=model_config)
+        artifact_id = external_artifact.get_artifact_id(
+            model_config=model_config
+        )
         input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
 
     parent_step_ids = [

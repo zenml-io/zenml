@@ -216,7 +216,10 @@ class BaseStep(metaclass=BaseStepMeta):
             logger.debug(
                 "Step '%s': Is in Model context %s.",
                 name,
-                {"model": model_config.name, "version": model_config.version},
+                {
+                    "model": model_config.name,
+                    "version": model_config.version_name,
+                },
             )
 
         self._configuration = PartialStepConfiguration(

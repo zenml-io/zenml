@@ -34,7 +34,7 @@ from zenml.models import (
     ModelVersionResponseModel,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
-from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -157,7 +157,7 @@ class ModelSchema(NamedSchema, table=True):
         return self
 
 
-class ModelVersionSchema(BaseSchema, table=True):
+class ModelVersionSchema(NamedSchema, table=True):
     """SQL Model for model version."""
 
     __tablename__ = "model_version"
@@ -204,7 +204,7 @@ class ModelVersionSchema(BaseSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
-    version: str = Field(sa_column=Column(TEXT, nullable=False))
+    number: int = Field(sa_column=Column(INTEGER, nullable=False))
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -224,7 +224,8 @@ class ModelVersionSchema(BaseSchema, table=True):
             workspace_id=model_version_request.workspace,
             user_id=model_version_request.user,
             model_id=model_version_request.model,
-            version=model_version_request.version,
+            name=model_version_request.name,
+            number=model_version_request.number,
             description=model_version_request.description,
             stage=model_version_request.stage,
         )
@@ -242,7 +243,8 @@ class ModelVersionSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             model=self.model.to_model(),
-            version=self.version,
+            name=self.name,
+            number=self.number,
             description=self.description,
             stage=self.stage,
             model_object_ids={
@@ -303,7 +305,7 @@ class ModelVersionSchema(BaseSchema, table=True):
         if target_stage is not None:
             self.stage = target_stage
         if version is not None:
-            self.version = version
+            self.name = version
         self.updated = datetime.utcnow()
         return self
 

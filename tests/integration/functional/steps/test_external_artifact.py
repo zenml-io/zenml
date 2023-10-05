@@ -19,6 +19,7 @@ from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.client import Client
 from zenml.model import ArtifactConfig, ModelConfig
 
 
@@ -126,3 +127,49 @@ def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
             model_artifact_pipeline_name="bar",
             model_artifact_step_name="producer",
         )
+
+
+def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number():
+    """Test that ExternalArtifact helps to exchange data from Model between pipelines using model version number."""
+    with model_killer():
+        producer_pipeline.with_options(
+            model_config=ModelConfig(name="foo", create_new_model_version=True)
+        )(1)
+        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
+            2
+        )  # add to latest version
+        consumer_pipeline.with_options(
+            model_config=ModelConfig(name="foo", version_number=1)
+        )(1)
+        consumer_pipeline.with_options(
+            model_config=ModelConfig(name="foo", version_number=1)
+        )(2)
+
+
+@pytest.mark.parametrize(
+    "model_version_name,model_version_number,expected",
+    [[None, 1, 42], ["1", None, 42], ["1", 2, 23]],
+    ids=[
+        "By model version number",
+        "By model version name",
+        "Model version number dominates name",
+    ],
+)
+def test_direct_consumption(
+    model_version_name, model_version_number, expected
+):
+    """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
+    with model_killer():
+        producer_pipeline.with_options(
+            model_config=ModelConfig(name="foo", create_new_model_version=True)
+        )(42)
+        producer_pipeline.with_options(
+            model_config=ModelConfig(name="foo", create_new_model_version=True)
+        )(23)
+        artifact_id = ExternalArtifact(
+            model_name="foo",
+            model_version_name=model_version_name,
+            model_version_number=model_version_number,
+            model_artifact_name="predictions",
+        ).get_artifact_id()
+        assert Client().get_artifact(artifact_id).load() == expected

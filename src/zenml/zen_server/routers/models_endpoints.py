@@ -183,15 +183,17 @@ def list_model_versions(
 
 
 @router.get(
-    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
+    "/{model_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_number_or_id}",
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_model_version(
     model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[
-        str, UUID, ModelStages
+    model_version_name_or_number_or_id: Union[
+        str, int, UUID, ModelStages
     ] = LATEST_MODEL_VERSION_PLACEHOLDER,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ModelVersionResponseModel:
@@ -199,14 +201,14 @@ def get_model_version(
 
     Args:
         model_name_or_id: The name or ID of the model containing version.
-        model_version_name_or_id: name, id or stage of the model version to be retrieved.
+        model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
 
     Returns:
         The model version with the given name or ID.
     """
     return zen_store().get_model_version(
-        model_name_or_id, model_version_name_or_id
+        model_name_or_id, model_version_name_or_number_or_id
     )
 
 

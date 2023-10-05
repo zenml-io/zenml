@@ -34,7 +34,7 @@ from zenml.steps.external_artifact import ExternalArtifact
 def _assert_that_model_config_set(name="foo", version=RUNNING_MODEL_VERSION):
     """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_config.name == name
-    assert get_step_context().model_config.version == version
+    assert get_step_context().model_config.version_name == version
 
 
 def test_model_config_passed_to_step_context_via_step():
@@ -147,21 +147,21 @@ def test_create_new_versions_both_pipeline_and_step():
         foo = client.get_model("foo")
         assert foo.name == "foo"
         foo_version = client.get_model_version("foo")
-        assert foo_version.version == "1"
+        assert foo_version.name == "1"
 
         bar = client.get_model("bar")
         assert bar.name == "bar"
         bar_version = client.get_model_version("bar")
-        assert bar_version.version == "1"
+        assert bar_version.name == "1"
         assert bar_version.description == desc
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("foo")
-        assert foo_version.version == "2"
+        assert foo_version.name == "2"
 
         bar_version = client.get_model_version("bar")
-        assert bar_version.version == "2"
+        assert bar_version.name == "2"
         assert bar_version.description == desc
 
 
@@ -181,12 +181,12 @@ def test_create_new_version_only_in_step():
         bar = client.get_model("foo")
         assert bar.name == "foo"
         bar_version = client.get_model_version("foo")
-        assert bar_version.version == "1"
+        assert bar_version.name == "1"
 
         _this_pipeline_does_not_create_a_version()
 
         bar_version = client.get_model_version("foo")
-        assert bar_version.version == "2"
+        assert bar_version.name == "2"
 
 
 def test_create_new_version_only_in_pipeline():
@@ -208,12 +208,12 @@ def test_create_new_version_only_in_pipeline():
         foo = client.get_model("bar")
         assert foo.name == "bar"
         foo_version = client.get_model_version("bar")
-        assert foo_version.version == "1"
+        assert foo_version.name == "1"
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("bar")
-        assert foo_version.version == "2"
+        assert foo_version.name == "2"
 
 
 @step
@@ -244,7 +244,7 @@ def _this_step_tries_to_recover(run_number: int):
         ),
         ModelConfig(
             name="foo",
-            version="test running version",
+            version_name="test running version",
             create_new_model_version=True,
             delete_new_version_on_failure=False,
         ),
@@ -278,10 +278,10 @@ def test_recovery_of_steps(model_config: ModelConfig):
         model = client.get_model("foo")
         mv = client.get_model_version(
             model_name_or_id=model.id,
-            model_version_name_or_id=model_config.version
+            model_version_name_or_number_or_id=model_config.version_name
             or RUNNING_MODEL_VERSION,
         )
-        assert mv.version == model_config.version or RUNNING_MODEL_VERSION
+        assert mv.name == model_config.version_name or RUNNING_MODEL_VERSION
         assert len(mv.artifact_object_ids) == 1
         assert (
             len(
@@ -301,7 +301,7 @@ def test_recovery_of_steps(model_config: ModelConfig):
         ),
         ModelConfig(
             name="foo",
-            version="test running version",
+            version_name="test running version",
             create_new_model_version=True,
             delete_new_version_on_failure=True,
         ),
@@ -334,7 +334,7 @@ def test_clean_up_after_failure(model_config: ModelConfig):
         with pytest.raises(KeyError):
             client.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_id=model_config.version
+                model_version_name_or_number_or_id=model_config.version_name
                 or RUNNING_MODEL_VERSION,
             )
 
@@ -635,7 +635,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
             client.create_model_version(
                 ModelVersionRequestModel(
                     model=models[-1].id,
-                    version="good_one",
+                    name="good_one",
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
                 )
@@ -852,7 +852,7 @@ def _multiprocessor(version, run_name, run_time, should_fail):
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version=version,
+            version_name=version,
             create_new_model_version=True,
         ),
         enable_cache=False,
@@ -911,7 +911,7 @@ def test_that_two_pipelines_cannot_create_same_specified_version():
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version="test running version",
+            version_name="test running version",
             create_new_model_version=True,
         ),
         enable_cache=False,
@@ -931,7 +931,7 @@ def test_that_two_decorators_cannot_request_different_specific_new_version():
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version="test running version",
+            version_name="test running version",
             create_new_model_version=True,
         ),
         enable_cache=False,
@@ -941,7 +941,7 @@ def test_that_two_decorators_cannot_request_different_specific_new_version():
         _this_step_produces_output.with_options(
             model_config=ModelConfig(
                 name="step",
-                version="test running version 2",
+                version_name="test running version 2",
                 create_new_model_version=True,
             ),
         )()

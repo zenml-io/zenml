@@ -2419,22 +2419,23 @@ class RestZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[
-            str, UUID, ModelStages
-        ] = LATEST_MODEL_VERSION_PLACEHOLDER,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
         """
         return self._get_resource(
-            resource_id=model_version_name_or_id,
+            resource_id=model_version_name_or_number_or_id
+            or LATEST_MODEL_VERSION_PLACEHOLDER,
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
         )
@@ -2982,7 +2983,7 @@ class RestZenStore(BaseZenStore):
 
     def _get_resource(
         self,
-        resource_id: Union[str, UUID],
+        resource_id: Union[str, int, UUID],
         route: str,
         response_model: Type[AnyResponseModel],
         params: Optional[Dict[str, Any]] = None,
