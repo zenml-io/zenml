@@ -22,21 +22,21 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, VisualizationType
+from zenml.enums import ArtifactType, ExecutionStatus, VisualizationType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.models.visualization_models import VisualizationModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.step_run_schemas import (
+    StepRunInputArtifactSchema,
+    StepRunOutputArtifactSchema,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-    from zenml.zen_stores.schemas.step_run_schemas import (
-        StepRunInputArtifactSchema,
-        StepRunOutputArtifactSchema,
-    )
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -44,6 +44,13 @@ class ArtifactSchema(NamedSchema, table=True):
 
     __tablename__ = "artifact"
 
+    # Fields
+    type: ArtifactType
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    materializer: str = Field(sa_column=Column(TEXT, nullable=False))
+    data_type: str = Field(sa_column=Column(TEXT, nullable=False))
+
+    # Foreign keys
     artifact_store_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -52,7 +59,6 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -61,8 +67,6 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
-
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
@@ -71,22 +75,19 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+
+    # Relationships
+    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
     workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
-
-    type: ArtifactType
-    uri: str = Field(sa_column=Column(TEXT, nullable=False))
-    materializer: str = Field(sa_column=Column(TEXT, nullable=False))
-    data_type: str = Field(sa_column=Column(TEXT, nullable=False))
-
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+    input_of_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -118,14 +119,8 @@ class ArtifactSchema(NamedSchema, table=True):
             data_type=artifact_request.data_type.json(),
         )
 
-    def to_model(
-        self, producer_step_run_id: Optional[UUID]
-    ) -> ArtifactResponseModel:
+    def to_model(self) -> ArtifactResponseModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
-
-        Args:
-            producer_step_run_id: The ID of the step run that produced this
-                artifact.
 
         Returns:
             The created `ArtifactModel`.
@@ -147,11 +142,22 @@ class ArtifactSchema(NamedSchema, table=True):
             # This is an old source which was simply an importable source path
             data_type = Source.from_import_path(self.data_type)
 
+        producer_step_run_id = None
+
+        if self.output_of_step_runs:
+            step_run = self.output_of_step_runs[0].step_run
+            if step_run.status == ExecutionStatus.COMPLETED:
+                producer_step_run_id = step_run.id
+            else:
+                producer_step_run_id = step_run.original_step_run_id
+
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
-            user=self.user.to_model() if self.user else None,
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
+            else None,
             workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
@@ -170,9 +176,11 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
 
     __tablename__ = "artifact_visualization"
 
+    # Fields
     type: VisualizationType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
 
+    # Foreign Keys
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ArtifactSchema.__tablename__,
@@ -181,6 +189,8 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+
+    # Relationships
     artifact: ArtifactSchema = Relationship(back_populates="visualizations")
 
     @classmethod

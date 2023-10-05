@@ -116,12 +116,7 @@ class StepRunner:
             step_logging_enabled = False
         else:
             enabled_on_step = step_run.config.enable_step_logs
-
-            enabled_on_pipeline = None
-            if pipeline_run.deployment:
-                enabled_on_pipeline = (
-                    pipeline_run.deployment.pipeline_configuration.enable_step_logs
-                )
+            enabled_on_pipeline = pipeline_run.config.enable_step_logs
 
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=enabled_on_step,
