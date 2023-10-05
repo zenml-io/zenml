@@ -47,9 +47,9 @@ class PipelineSchema(NamedSchema, table=True):
 
     __tablename__ = "pipeline"
 
+    # Fields
     version: str
     version_hash: str
-
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     spec: str = Field(
         sa_column=Column(
@@ -60,6 +60,7 @@ class PipelineSchema(NamedSchema, table=True):
         )
     )
 
+    # Foreign keys
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
@@ -68,8 +69,6 @@ class PipelineSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="pipelines")
-
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -79,19 +78,20 @@ class PipelineSchema(NamedSchema, table=True):
         nullable=True,
     )
 
+    # Relationships
     user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="pipelines")
 
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
-    )
+    runs: List["PipelineRunSchema"] = Relationship()
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
-        back_populates="pipeline"
+        back_populates="pipeline",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod

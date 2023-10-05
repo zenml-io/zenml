@@ -14,14 +14,9 @@
 """Base classes for SQLModel schemas."""
 
 from datetime import datetime
-from typing import TypeVar
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
-
-from zenml.models.base_models import BaseResponseModel
-
-B = TypeVar("B", bound=BaseResponseModel)
 
 
 class BaseSchema(SQLModel):

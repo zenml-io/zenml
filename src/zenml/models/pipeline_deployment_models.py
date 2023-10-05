@@ -57,6 +57,12 @@ class PipelineDeploymentBaseModel(BaseModel):
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
     )
+    client_version: str = Field(
+        title="The version of the ZenML installation on the client side."
+    )
+    server_version: str = Field(
+        title="The version of the ZenML installation on the server side."
+    )
 
     @property
     def requires_included_files(self) -> bool:
