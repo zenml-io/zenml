@@ -23,11 +23,11 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
-from zenml.steps.external_artifact import ExternalArtifact
 
 
 @step
@@ -854,6 +854,7 @@ def _multiprocessor(version, run_name, run_time, should_fail):
             name="step",
             version_name=version,
             create_new_model_version=True,
+            delete_new_version_on_failure=False,
         ),
         enable_cache=False,
     )
@@ -875,21 +876,33 @@ def _multiprocessor(version, run_name, run_time, should_fail):
     ("test running version", None),
     ids=["custom_running_name", "default_running_name"],
 )
-def test_that_two_pipelines_cannot_run_ath_the_same_time_requesting_new_version(
+def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_and_with_recovery(
     version,
 ):
     """Test that if second pipeline for same new version is started in parallel - it will fail."""
     with model_killer():
+        long_runtime = 120
+        long_run_name = f"long_{uuid4()}"
         # start a long running pipeline with a request for a new version
         p1 = Process(
             target=_multiprocessor,
-            args=(version, f"long_{uuid4()}", 120, False),
+            args=(version, long_run_name, long_runtime, False),
         )
 
         p1.start()
 
         # start concurrent run with same version and request for a new version creation
-        time.sleep(5)
+        # first wait till first run is actually started
+        client = Client()
+        for _ in range(long_runtime // 5):
+            try:
+                client.get_pipeline_run(long_run_name)
+            except KeyError:
+                break
+            finally:
+                print("sleep")
+                time.sleep(5)
+
         p2 = Process(
             target=_multiprocessor,
             args=(version, f"concurrent_{uuid4()}", 0, True),

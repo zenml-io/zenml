@@ -72,7 +72,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     Example:
     ```
-    from zenml import step, pipeline, ExternalArtifact
+    from zenml import step, pipeline
+    from zenml.artifacts.external_artifact import ExternalArtifact
     import numpy as np
 
     @step
