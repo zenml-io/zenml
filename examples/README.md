@@ -1,11 +1,11 @@
 # ZenML Use Cases
 
 This folder contains examples of ZenML pipelines. These are more involved use
-cases with real datasets and production-ready pipelines, with the exception of
+cases with production-ready pipelines, with the exception of
 some that will be indicated in the table below.
 
 These core demonstrations of ZenML showcase the power of the framework in real
-scenarios with real data and use cloud infrastructure or other cloud components.
+scenarios that use cloud infrastructure or other cloud components.
 Explanations for how to use and run the use cases can be found in the README
 associated with each sub-folder.
 
