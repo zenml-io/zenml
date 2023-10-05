@@ -209,17 +209,17 @@ def multi_named_output_step_from_self() -> (
         Annotated[
             int,
             "1",
-            ArtifactConfig(model_name=MODEL_NAME, model_version_name="bar"),
+            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "2",
-            ArtifactConfig(model_name=MODEL_NAME, model_version_name="bar"),
+            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "3",
-            ArtifactConfig(model_name="bar", model_version_name="foo"),
+            ArtifactConfig(model_name="bar", model_version="foo"),
         ],
     ]
 ):
@@ -304,9 +304,7 @@ def multi_named_output_step_mixed_linkage() -> (
         Annotated[
             int,
             "3",
-            ArtifactConfig(
-                model_name="artifact", model_version_name="artifact"
-            ),
+            ArtifactConfig(model_name="artifact", model_version="artifact"),
         ],
     ]
 ):
@@ -558,7 +556,7 @@ def step_with_manual_linkage() -> (
     """Multi output linking by function."""
     link_output_to_model(ArtifactConfig(), "1")
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+        ArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -578,7 +576,7 @@ def step_with_manual_and_implicit_linkage() -> (
 ):
     """Multi output: 2 is linked by function, 1 is linked implicitly."""
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+        ArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -732,13 +730,14 @@ def simple_pipeline_with_manual_linkage_flexible_config(
 @pytest.mark.parametrize(
     "artifact_config",
     (
-        ArtifactConfig(model_name=MODEL_NAME, model_version_name="good_one"),
+        ArtifactConfig(model_name=MODEL_NAME, model_version="good_one"),
         ArtifactConfig(
-            model_name=MODEL_NAME, model_version_name=ModelStages.PRODUCTION
+            model_name=MODEL_NAME, model_version=ModelStages.PRODUCTION
         ),
         ArtifactConfig(model_name=MODEL_NAME),
+        ArtifactConfig(model_name=MODEL_NAME, model_version=1),
     ),
-    ids=("exact_version", "exact_stage", "latest_version"),
+    ids=("exact_version", "exact_stage", "latest_version", "exact_number"),
 )
 def test_link_with_manual_linkage_flexible_config(
     artifact_config: ArtifactConfig,

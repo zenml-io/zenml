@@ -644,7 +644,7 @@ class StepRunner:
             if artifact_config is None and mc is not None:
                 artifact_config = ArtifactConfig(
                     model_name=mc.name,
-                    model_version_name=mc.version_name,
+                    model_version=mc.version_number or mc.version_name,
                     artifact_name=artifact_name,
                 )
                 logger.info(
