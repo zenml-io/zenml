@@ -23,6 +23,7 @@ from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer
     DeepchecksDatasetMaterializer,
 )
 
+
 @pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_deepchecks_dataset_materializer(clean_client):
     """Test the Deepchecks dataset materializer."""
