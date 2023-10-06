@@ -2,8 +2,8 @@
 
 ## How alembic works
 
-The alembic.ini file int the repository root is used for the configuration of
-alembic in general. The env.py file is the entrypoint for alembic where we tie
+The alembic.ini file in the repository root is used for the configuration of
+alembic in general. The `env.py` file is the entrypoint for alembic where we tie
 alembic into the SQL zen store database that ZenML is using.
 
 If you make changes to the SQLModel schemas as a part of your development,

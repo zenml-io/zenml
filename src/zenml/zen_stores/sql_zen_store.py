@@ -60,7 +60,6 @@ from zenml.constants import (
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import (
-    ExecutionStatus,
     LoggingLevels,
     ModelStages,
     SecretScope,
@@ -1268,8 +1267,8 @@ class SqlZenStore(BaseZenStore):
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
-                f"name in the active workspace, '{workspace.name}', owned by the "
-                f"same user, '{user.name}'."
+                f"name in the active workspace, '{workspace.name}', "
+                f"owned by the same user, '{user.name}'."
             )
         return None
 
@@ -1317,6 +1316,7 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Stack components
     # ----------------
+
     @track_decorator(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
@@ -2620,9 +2620,9 @@ class SqlZenStore(BaseZenStore):
                 filter_model=team_role_assignment_filter_model,
             )
 
-    # --------
+    # ----------
     # Workspaces
-    # --------
+    # ----------
 
     @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
     def create_workspace(
@@ -2932,9 +2932,9 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
-    # ---------
+    # ------
     # Builds
-    # ---------
+    # ------
 
     def create_build(
         self,
@@ -3030,9 +3030,9 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    # ----------------------
+    # --------------------
     # Pipeline Deployments
-    # ----------------------
+    # --------------------
 
     def create_deployment(
         self,
@@ -3306,58 +3306,12 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline_run.id}' already exists."
                 )
 
-            # Query stack to ensure it exists in the DB
-            stack_id = None
-            if pipeline_run.stack is not None:
-                stack_id = session.exec(
-                    select(StackSchema.id).where(
-                        StackSchema.id == pipeline_run.stack
-                    )
-                ).first()
-                if stack_id is None:
-                    logger.warning(
-                        f"No stack found for this run. "
-                        f"Creating pipeline run '{pipeline_run.name}' without "
-                        "linked stack."
-                    )
-
-            # Query pipeline to ensure it exists in the DB
-            pipeline_id = None
-            if pipeline_run.pipeline is not None:
-                pipeline_id = session.exec(
-                    select(PipelineSchema.id).where(
-                        PipelineSchema.id == pipeline_run.pipeline
-                    )
-                ).first()
-                if pipeline_id is None:
-                    logger.warning(
-                        f"No pipeline found. Creating pipeline run "
-                        f"'{pipeline_run.name}' as unlisted run."
-                    )
-
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)
             session.commit()
 
-            return self._run_schema_to_model(new_run)
-
-    def _run_schema_to_model(
-        self, run: PipelineRunSchema
-    ) -> PipelineRunResponseModel:
-        """Converts a pipeline run schema to a pipeline run model incl. steps.
-
-        Args:
-            run: The pipeline run schema to convert.
-
-        Returns:
-            The converted pipeline run model with steps hydrated into it.
-        """
-        steps = {
-            step.name: self._run_step_schema_to_model(step)
-            for step in run.step_runs
-        }
-        return run.to_model(steps=steps)
+            return new_run.to_model()
 
     def get_run(
         self, run_name_or_id: Union[str, UUID]
@@ -3371,8 +3325,9 @@ class SqlZenStore(BaseZenStore):
             The pipeline run.
         """
         with Session(self.engine) as session:
-            run = self._get_run_schema(run_name_or_id, session=session)
-            return self._run_schema_to_model(run)
+            return self._get_run_schema(
+                run_name_or_id, session=session
+            ).to_model()
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
@@ -3421,7 +3376,6 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
-                custom_schema_to_model_conversion=self._run_schema_to_model,
             )
 
     def count_runs(self, workspace_id: Optional[UUID]) -> int:
@@ -3469,7 +3423,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return self._run_schema_to_model(existing_run)
+            return existing_run.to_model()
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -3537,8 +3491,8 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_step_run is not None:
                 raise EntityExistsError(
-                    f"Unable to create step '{step_run.name}': A step with this "
-                    f"name already exists in the pipeline run with ID "
+                    f"Unable to create step '{step_run.name}': A step with "
+                    f"this name already exists in the pipeline run with ID "
                     f"'{step_run.pipeline_run_id}'."
                 )
 
@@ -3583,7 +3537,7 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            return self._run_step_schema_to_model(step_schema)
+            return step_schema.to_model()
 
     def _set_run_step_parent_step(
         self, child_id: UUID, parent_id: UUID, session: Session
@@ -3760,67 +3714,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step run with ID {step_run_id}: No step "
                     "run with this ID found."
                 )
-            return self._run_step_schema_to_model(step_run)
-
-    def _run_step_schema_to_model(
-        self, step_run: StepRunSchema
-    ) -> StepRunResponseModel:
-        """Converts a run step schema to a step model.
-
-        Args:
-            step_run: The run step schema to convert.
-
-        Returns:
-            The run step model.
-        """
-        with Session(self.engine) as session:
-            # Get parent steps.
-            parent_steps = session.exec(
-                select(StepRunSchema)
-                .where(StepRunParentsSchema.child_id == step_run.id)
-                .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
-            ).all()
-            parent_step_ids = [parent_step.id for parent_step in parent_steps]
-
-            # Get input artifacts.
-            input_artifact_list = session.exec(
-                select(
-                    ArtifactSchema,
-                    StepRunInputArtifactSchema.name,
-                )
-                .where(
-                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
-                )
-                .where(StepRunInputArtifactSchema.step_id == step_run.id)
-            ).all()
-            input_artifacts = {
-                input_name: self._artifact_schema_to_model(artifact)
-                for (artifact, input_name) in input_artifact_list
-            }
-
-            # Get output artifacts.
-            output_artifact_list = session.exec(
-                select(
-                    ArtifactSchema,
-                    StepRunOutputArtifactSchema.name,
-                )
-                .where(
-                    ArtifactSchema.id
-                    == StepRunOutputArtifactSchema.artifact_id
-                )
-                .where(StepRunOutputArtifactSchema.step_id == step_run.id)
-            ).all()
-            output_artifacts = {
-                output_name: self._artifact_schema_to_model(artifact)
-                for (artifact, output_name) in output_artifact_list
-            }
-
-            # Convert to model.
-            return step_run.to_model(
-                parent_step_ids=parent_step_ids,
-                input_artifacts=input_artifacts,
-                output_artifacts=output_artifacts,
-            )
+            return step_run.to_model()
 
     def list_run_steps(
         self, step_run_filter_model: StepRunFilterModel
@@ -3841,7 +3735,6 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=StepRunSchema,
                 filter_model=step_run_filter_model,
-                custom_schema_to_model_conversion=self._run_step_schema_to_model,
             )
 
     def update_run_step(
@@ -3891,7 +3784,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return self._run_step_schema_to_model(existing_step_run)
+            return existing_step_run.to_model()
 
     # ---------
     # Artifacts
@@ -3922,35 +3815,7 @@ class SqlZenStore(BaseZenStore):
                     session.add(vis_schema)
 
             session.commit()
-            return self._artifact_schema_to_model(artifact_schema)
-
-    def _artifact_schema_to_model(
-        self, artifact_schema: ArtifactSchema
-    ) -> ArtifactResponseModel:
-        """Converts an artifact schema to a model.
-
-        Args:
-            artifact_schema: The artifact schema to convert.
-
-        Returns:
-            The converted artifact model.
-        """
-        # Find the producer step run ID.
-        with Session(self.engine) as session:
-            producer_step_run_id = session.exec(
-                select(StepRunOutputArtifactSchema.step_id)
-                .where(
-                    StepRunOutputArtifactSchema.artifact_id
-                    == artifact_schema.id
-                )
-                .where(StepRunOutputArtifactSchema.step_id == StepRunSchema.id)
-                .where(StepRunSchema.status != ExecutionStatus.CACHED)
-            ).first()
-
-            # Convert the artifact schema to a model.
-            return artifact_schema.to_model(
-                producer_step_run_id=producer_step_run_id
-            )
+            return artifact_schema.to_model()
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
         """Gets an artifact.
@@ -3973,7 +3838,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get artifact with ID {artifact_id}: "
                     f"No artifact with this ID found."
                 )
-            return self._artifact_schema_to_model(artifact)
+            return artifact.to_model()
 
     def list_artifacts(
         self, artifact_filter_model: ArtifactFilterModel
@@ -4005,7 +3870,6 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ArtifactSchema,
                 filter_model=artifact_filter_model,
-                custom_schema_to_model_conversion=self._artifact_schema_to_model,
             )
 
     def delete_artifact(self, artifact_id: UUID) -> None:
@@ -5370,8 +5234,8 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
+    @staticmethod
     def _create_or_reuse_code_reference(
-        self,
         session: Session,
         workspace_id: UUID,
         code_reference: Optional["CodeReferenceRequestModel"],

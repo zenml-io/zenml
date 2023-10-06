@@ -230,7 +230,7 @@ PipelineDeploymentResponseModel.update_forward_refs(
 )
 
 PipelineDeploymentRequestModel.update_forward_refs(
-    CodeReferenceRequestModel=CodeReferenceRequestModel
+    CodeReferenceRequestModel=CodeReferenceRequestModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -240,8 +240,9 @@ PipelineRunResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
-    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
     StepRunResponseModel=StepRunResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
+    CodeReferenceResponseModel=CodeReferenceResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(

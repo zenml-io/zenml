@@ -76,4 +76,4 @@ def test_scheduled_pipeline_run_has_schedule_id(
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    assert pipeline_run.schedule_id is not None
+    assert pipeline_run.schedule is not None

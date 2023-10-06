@@ -107,7 +107,7 @@ class StepInvocation:
     def finalize(self, parameters_to_ignore: Set[str]) -> "StepConfiguration":
         """Finalizes a step invocation.
 
-        The will validate the upstream steps and run final configurations on the
+        It will validate the upstream steps and run final configurations on the
         step that is represented by the invocation.
 
         Args:
