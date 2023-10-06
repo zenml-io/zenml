@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality for model-deployer CLI subcommands."""
+"""Functionality for model deployer CLI subcommands."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, cast
@@ -213,7 +213,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "-t",
         type=(str, str),
         default=None,
-        help="Metadata or Tags to add to the model. Ran be used like: -m key1 value1 -m key2 value",
+        help="Metadata or Tags to add to the model. Can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.pass_obj
@@ -411,7 +411,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "--remove_metadata",
         "-rm",
         default=None,
-        help="Metadata or Tags to remove from the model. can be used like: -rm key1 -rm key2",
+        help="Metadata or Tags to remove from the model. Can be used like: -rm key1 -rm key2",
         multiple=True,
     )
     @click.pass_obj
@@ -478,7 +478,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "-m",
         type=(str, str),
         default=None,
-        help="Metadata or Tags to filter the model versions by. can be used like: -m key1 value1 -m key2 value",
+        help="Metadata or Tags to filter the model versions by. Can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.option(
@@ -564,7 +564,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "-m",
         type=(str, str),
         default=None,
-        help="Metadata or Tags to add to the model version. can be used like: -m key1 value1 -m key2 value",
+        help="Metadata or Tags to add to the model version. Can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.option(

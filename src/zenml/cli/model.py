@@ -75,7 +75,7 @@ def list_models(**kwargs: Any) -> None:
 @click.option(
     "--license",
     "-l",
-    help="The license model created under.",
+    help="The license under which the model is created.",
     type=str,
     required=False,
 )
@@ -89,7 +89,7 @@ def list_models(**kwargs: Any) -> None:
 @click.option(
     "--audience",
     "-a",
-    help="The target audience of the model.",
+    help="The target audience for the model.",
     type=str,
     required=False,
 )
@@ -101,8 +101,8 @@ def list_models(**kwargs: Any) -> None:
     required=False,
 )
 @click.option(
-    "--trade-offs",
-    help="The trade offs of the model.",
+    "--tradeoffs",
+    help="The tradeoffs of the model.",
     type=str,
     required=False,
 )
@@ -115,7 +115,7 @@ def list_models(**kwargs: Any) -> None:
 )
 @click.option(
     "--limitations",
-    help="The know limitations of the model.",
+    help="The known limitations of the model.",
     type=str,
     required=False,
 )
@@ -133,7 +133,7 @@ def create_model(
     description: Optional[str],
     audience: Optional[str],
     use_cases: Optional[str],
-    trade_offs: Optional[str],
+    tradeoffs: Optional[str],
     ethical: Optional[str],
     limitations: Optional[str],
     tag: Optional[List[str]],
@@ -146,7 +146,7 @@ def create_model(
         description: The description of the model.
         audience: The target audience of the model.
         use_cases: The use cases of the model.
-        trade_offs: The trade offs of the model.
+        tradeoffs: The tradeoffs of the model.
         ethical: The ethical implications of the model.
         limitations: The know limitations of the model.
         tag: Tags associated with the model.
@@ -158,7 +158,7 @@ def create_model(
             description=description,
             audience=audience,
             use_cases=use_cases,
-            trade_offs=trade_offs,
+            tradeoffs=tradeoffs,
             ethic=ethical,
             limitations=limitations,
             tags=tag,
@@ -214,7 +214,7 @@ def delete_model(
 
 @model.group
 def version() -> None:
-    """List or view model versions in the Model WatchTower."""
+    """List or view model versions in the Model Watchtower."""
 
 
 @cli_utils.list_options(ModelVersionFilterModel)
@@ -349,18 +349,21 @@ def artifact() -> None:
     "--only-artifacts",
     "-a",
     is_flag=True,
+    default=False,
     help="Show only artifact objects.",
 )
 @click.option(
     "--only-model-objects",
     "-m",
     is_flag=True,
+    default=False,
     help="Show only model objects.",
 )
 @click.option(
     "--only-deployments",
     "-d",
     is_flag=True,
+    default=False,
     help="Show only deployments.",
 )
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
@@ -467,7 +470,7 @@ def list_model_version_artifacts(
 
 @version.group
 def run() -> None:
-    """List pipeline runs related to model versions in the Model WatchTower."""
+    """List pipeline runs related to model versions in the Model Watchtower."""
 
 
 @run.command("list", help="List all pipeline runs of a model version.")

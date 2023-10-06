@@ -31,7 +31,7 @@ def test_model_list(clean_workspace_with_models):
 
 
 def test_model_create_short_names(clean_workspace_with_models):
-    """Test that zenml model create does not fail."""
+    """Test that zenml model create does not fail with short names."""
     runner = CliRunner()
     create_command = cli.commands["model"].commands["register"]
     result = runner.invoke(
@@ -65,7 +65,7 @@ def test_model_create_short_names(clean_workspace_with_models):
 
 
 def test_model_create_full_names(clean_workspace_with_models):
-    """Test that zenml model create does not fail."""
+    """Test that zenml model create does not fail with full names."""
     runner = CliRunner()
     create_command = cli.commands["model"].commands["register"]
     result = runner.invoke(
