@@ -76,6 +76,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Reinstall packages needed for unit tests
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
+
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
