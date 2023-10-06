@@ -95,7 +95,7 @@ jobs:
 
       - name: Reinstall packages needed for unit tests
         if: ${{ inputs.os == 'ubuntu-latest' }}
-        run: apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+        run: sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
 
       - name: Setup environment
         uses: ./.github/actions/setup_environment
