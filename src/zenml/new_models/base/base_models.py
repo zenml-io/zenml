@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from abc import abstractmethod
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
-from zenml.new_models.base.utils import generate_property
+from zenml.exceptions import HydrationError
+from zenml.new_models.base.utils import hydrated_property
 
 # TODO: We can now remove the additional analytics model from the module
 # -------------------- Base Model --------------------
@@ -107,26 +109,17 @@ class BaseResponseModel(BaseZenModel):
         title="The metadata related to this resource."
     )
 
-    def get_metadata(self) -> "BaseResponseModelMetadata":
-        """Abstract method that needs to be implemented to hydrate the instance.
+    @hydrated_property
+    def created(self):
+        """The created property"""
+        return self.metadata.created
 
-        Each response model has a metadata field. The purpose of this
-        is to populate this field by making an additional call to the API.
-        """
-        return BaseResponseModelMetadata()
+    @hydrated_property
+    def updated(self):
+        """The updated property."""
+        return self.metadata.updated
 
-    def __new__(cls, *args, **kwargs) -> "BaseResponseModel":
-        """A modified version of the __new__ function.
-
-        It automatically looks at the given metadata model and generates
-        properties for the class.
-        """
-        metadata_model = cls.__fields__["metadata"].type_
-
-        for name in metadata_model.__fields__:
-            setattr(cls, name, generate_property(name))
-
-        return super().__new__(cls)
+    # Helper functions
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -149,6 +142,52 @@ class BaseResponseModel(BaseZenModel):
             return self.id == other.id
         else:
             return False
+
+    @abstractmethod
+    def get_hydrated_version(self) -> "BaseResponseModel":
+        """Abstract method to fetch the hydrated version of the model."""
+
+    def _validate_hydrated_version(
+        self, hydrated_model: "BaseResponseModel"
+    ) -> None:
+        """Helper method to validate the values within the hydrated version.
+
+        Args:
+            hydrated_model: the hydrated version of the model.
+
+        Raises:
+            HydrationError: if the hydrated version has different values set
+                for the main fields.
+        """
+        # Check the values of each field except the metadata field
+        fields = set(self.__fields__.keys())
+        fields.remove("metadata")
+
+        for field in fields:
+            original_value = getattr(self, field)
+            hydrated_value = getattr(hydrated_model, field)
+            if original_value != hydrated_value:
+                raise HydrationError(
+                    f"The field {field} in the hydrated version of the "
+                    f"response model has a different value '{hydrated_value}'"
+                    f"than the original value '{original_value}'"
+                )
+
+        # Assert that metadata exists in the hydrated version
+        if hydrated_model.metadata is None:
+            raise HydrationError(
+                "The hydrated model does not have a metadata field."
+            )
+
+    def hydrate(self) -> None:
+        """Generalized method to hydrate a non-hydrated instance of a model.
+
+        Gets only executed if the model has not been hydrated before.
+        """
+        if self.metadata is None:
+            hydrated_version = self.get_hydrated_version()
+            self._validate_hydrated_version(hydrated_version)
+            self.metadata = hydrated_version.metadata
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for base response models.

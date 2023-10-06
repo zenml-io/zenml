@@ -27,4 +27,4 @@ from zenml.new_models.base.scoped_models import (
     ShareableResponseModel,
     WorkspaceScopedResponseMetadataModel,
 )
-from zenml.new_models.base.utils import update_model
+from zenml.new_models.base.utils import update_model, hydrated_property

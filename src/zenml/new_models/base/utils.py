@@ -38,30 +38,29 @@ def update_model(_cls: Type[T]) -> Type[T]:
     return _cls
 
 
-def generate_property(name):
-    """Generates a property specifically for response model metadata.
+def hydrated_property(class_method) -> property:
+    """Turns a class method into a property which always hydrates the instance.
 
     Args:
-        name: the name of the property
+        class_method: the class method to convert.
 
     Returns:
-        the property that returns the corresponding field in the metadata.
+        the corresponding property object.
     """
 
     def wrapper(instance: "BaseResponseModel"):
-        """The wrapper function to base the property on.
+        """The wrapper function which acts as the property.
 
-        It makes sure that the metadata fields of the response model is
-        populated and returns the corresponding field.
+        It makes sure that every time the property get accessed the main
+        instance is hydrated with the corresponding metadata class.
 
         Args:
             instance: the instance of the response model.
 
         Returns:
-            the corresponding fields in the metadata of the instance.
+            the class method's output
         """
-        if instance.metadata is None:
-            instance.metadata = instance.get_metadata()
-        return getattr(instance.metadata, name)
+        instance.hydrate()
+        return class_method(instance)
 
     return property(wrapper)

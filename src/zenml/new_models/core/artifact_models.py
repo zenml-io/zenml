@@ -12,23 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pydantic import Field
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
-from typing import Optional, List, Dict, TYPE_CHECKING
-from zenml.enums import ArtifactType
+
+from pydantic import Field
+
+from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import ArtifactType
 from zenml.new_models.base import (
     WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
     WorkspaceScopedResponseMetadataModel,
+    WorkspaceScopedResponseModel,
+    hydrated_property,
 )
-from zenml.config.source import Source, convert_source_validator
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.visualization_models import \
-        VisualizationResponseModel
-    from zenml.new_models.core.run_metadata_models import \
-        RunMetadataResponseModel
+    from zenml.new_models.core.run_metadata_models import (
+        RunMetadataResponseModel,
+    )
+    from zenml.new_models.core.visualization_models import (
+        VisualizationResponseModel,
+    )
 
 
 # ------------------ Request Model ------------------
@@ -68,8 +73,10 @@ class ArtifactRequestModel(WorkspaceScopedRequestModel):
 
 # ------------------ Response Model ------------------
 
+
 class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     """Response metadata model for artifacts."""
+
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
@@ -97,10 +104,7 @@ class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
 class ArtifactResponseModel(WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
-    # Metadata Association
-    metadata: Optional[ArtifactResponseMetadataModel]
-
-    # Fields
+    # Entity fields
     name: str = Field(
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -110,17 +114,41 @@ class ArtifactResponseModel(WorkspaceScopedResponseModel):
     )
     type: ArtifactType = Field(title="Type of the artifact.")
 
-    @property
-    def artifact_store_id(self):
-        return self.metadata.artifact_store_id
+    # Metadata related field, method and properties
+    metadata: Optional[ArtifactResponseMetadataModel]
 
-    def get_metadata(self) -> "WorkspaceScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "ArtifactResponseModel":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
-        artifact = Client().get_artifact(self.id)
-        return ArtifactResponseMetadataModel(
-            artifact_store_id=artifact.artifact_store_id,
-            producer_step_run_id=artifact.producer_step_run_id,
 
-        )
+        return Client().get_artifact(self.id, hydrate=True)
 
+    @hydrated_property
+    def artifact_store_id(self):
+        """The artifact_store_id property."""
+        return self.metadata.artifact_store_id
+
+    @hydrated_property
+    def producer_step_run_id(self):
+        """The producer_step_run_id property."""
+        return self.metadata.producer_step_run_id
+
+    @hydrated_property
+    def visualizations(self):
+        """The visualizations property."""
+        return self.metadata.visualizations
+
+    @hydrated_property
+    def metadata(self):
+        """The metadata property."""
+        return self.metadata.metadata
+
+    @hydrated_property
+    def materializer(self):
+        """The materializer property."""
+        return self.metadata.materializer
+
+    @hydrated_property
+    def data_type(self):
+        """The data_type property."""
+        return self.metadata.data_type

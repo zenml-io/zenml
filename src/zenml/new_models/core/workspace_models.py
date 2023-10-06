@@ -22,6 +22,7 @@ from zenml.new_models.base import (
     BaseRequestModel,
     BaseResponseModel,
     BaseResponseModelMetadata,
+    hydrated_property,
     update_model,
 )
 
@@ -66,20 +67,22 @@ class WorkspaceResponseMetadataModel(BaseResponseModelMetadata):
 class WorkspaceResponseModel(BaseResponseModel):
     """Response model for workspaces."""
 
-    # Metadata association
-    metadata: Optional[WorkspaceResponseMetadataModel]
-
-    # Fields
+    # Entity fields
     name: str = Field(
         title="The unique name of the workspace.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    def get_metadata(self) -> "WorkspaceResponseMetadataModel":
+    # Metadata related field, method and properties
+    metadata: Optional[WorkspaceResponseMetadataModel]
+
+    def get_hydrated_version(self) -> "WorkspaceResponseModel":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
-        workspace = Client().get_workspace(self.id)
-        return WorkspaceResponseMetadataModel(
-            description=workspace.description
-        )
+        return Client().get_workspace(self.id, hydrate=True)
+
+    @hydrated_property
+    def description(self):
+        """The description property."""
+        return self.metadata.description

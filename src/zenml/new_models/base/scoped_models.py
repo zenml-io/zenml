@@ -23,6 +23,7 @@ from zenml.new_models.base.base_models import (
     BaseResponseModel,
     BaseResponseModelMetadata,
 )
+from zenml.new_models.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.new_models.core.user_models import UserResponseModel
@@ -112,22 +113,25 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
+    # Entity fields
     user: Optional["UserResponseModel"] = Field(
         title="The user who created this resource."
     )
 
+    # Metadata related field, method and properties
     metadata: Optional["UserScopedResponseMetadataModel"] = Field(
         title="The metadata related to this resource."
     )
 
     @abstractmethod
-    def get_metadata(self) -> "UserScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "UserScopedResponseMetadataModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
 
+    # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
 
@@ -155,13 +159,21 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     Used as a base class for all domain models that are workspace-scoped.
     """
 
+    # Metadata related field, method and properties
+    metadata: Optional[WorkspaceScopedResponseMetadataModel]
+
     @abstractmethod
-    def get_metadata(self) -> "WorkspaceScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "WorkspaceScopedResponseMetadataModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
+
+    @hydrated_property
+    def workspace(self):
+        """The workspace property."""
+        return self.metadata.workspace
 
 
 # Shareable models
@@ -176,21 +188,25 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
     shareable.
     """
 
+    # Entity properties
     is_shared: bool = Field(
         title=(
             "Flag describing if this resource is shared with other users in "
             "the same workspace."
         ),
     )
+    # Metadata related field, method and properties
+    metadata: Optional[SharableScopedResponseMetadataModel]
 
     @abstractmethod
-    def get_metadata(self) -> "SharableScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "SharableScopedResponseMetadataModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
 
+    # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for workspace scoped models.
 
