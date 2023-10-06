@@ -27,6 +27,7 @@ from zenml.logger import get_logger
 from zenml.models.model_models import (
     ModelFilterModel,
     ModelRequestModel,
+    ModelUpdateModel,
     ModelVersionArtifactFilterModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
@@ -126,7 +127,7 @@ def list_models(**kwargs: Any) -> None:
     required=False,
     multiple=True,
 )
-def register_model(
+def update_model(
     name: str,
     license: Optional[str],
     description: Optional[str],
@@ -157,13 +158,119 @@ def register_model(
             description=description,
             audience=audience,
             use_cases=use_cases,
-            tradeoffs=tradeoffs,
+            trade_offs=tradeoffs,
             ethic=ethical,
             limitations=limitations,
             tags=tag,
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )
+    )
+
+    cli_utils.print_pydantic_models(
+        [
+            model,
+        ],
+        exclude_columns=["user", "workspace"],
+    )
+
+
+@model.command("update", help="Update an existing model.")
+@click.argument("model_name_or_id")
+@click.option(
+    "--license",
+    "-l",
+    help="The license under which the model is created.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--description",
+    "-d",
+    help="The description of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--audience",
+    "-a",
+    help="The target audience for the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--use-cases",
+    "-u",
+    help="The use cases of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tradeoffs",
+    help="The tradeoffs of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--ethical",
+    "-e",
+    help="The ethical implications of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--limitations",
+    help="The known limitations of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tag",
+    "-t",
+    help="Tags associated with the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+def update_model(
+    model_name_or_id: str,
+    license: Optional[str],
+    description: Optional[str],
+    audience: Optional[str],
+    use_cases: Optional[str],
+    tradeoffs: Optional[str],
+    ethical: Optional[str],
+    limitations: Optional[str],
+    tag: Optional[List[str]],
+) -> None:
+    """Register a new model in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The name of the model.
+        license: The license model created under.
+        description: The description of the model.
+        audience: The target audience of the model.
+        use_cases: The use cases of the model.
+        tradeoffs: The tradeoffs of the model.
+        ethical: The ethical implications of the model.
+        limitations: The know limitations of the model.
+        tag: Tags associated with the model.
+    """
+    model_id = Client().get_model(model_name_or_id=model_name_or_id).id
+    model = Client().update_model(
+        model_id=model_id,
+        model_update=ModelUpdateModel(
+            license=license,
+            description=description,
+            audience=audience,
+            use_cases=use_cases,
+            trade_offs=tradeoffs,
+            ethic=ethical,
+            limitations=limitations,
+            tags=tag,
+            user=Client().active_user.id,
+            workspace=Client().active_workspace.id,
+        ),
     )
 
     cli_utils.print_pydantic_models(

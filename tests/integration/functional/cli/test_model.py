@@ -110,6 +110,17 @@ def test_model_create_only_required(clean_workspace_with_models):
     assert result.exit_code == 0
 
 
+def test_model_update(clean_workspace_with_models):
+    """Test that zenml model update does not fail."""
+    runner = CliRunner()
+    update_command = cli.commands["model"].commands["update"]
+    result = runner.invoke(
+        update_command,
+        args=[NAME, "--tradeoffs", "foo"],
+    )
+    assert result.exit_code == 0
+
+
 def test_model_create_without_required_fails(clean_workspace_with_models):
     """Test that zenml model create fails."""
     runner = CliRunner()
