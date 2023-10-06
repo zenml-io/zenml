@@ -1,4 +1,4 @@
-"""add model watchtower entities [3b68abe58f44].
+"""add Model Control Plane entities [3b68abe58f44].
 
 Revision ID: 3b68abe58f44
 Revises: 0.44.2

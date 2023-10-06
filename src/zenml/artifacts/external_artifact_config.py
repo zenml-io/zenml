@@ -101,7 +101,7 @@ class ExternalArtifactConfiguration(BaseModel):
     def _get_artifact_from_model(
         self, model_config: Optional["ModelConfig"] = None
     ) -> "ArtifactResponseModel":
-        """Get artifact from Model WatchTower.
+        """Get artifact from Model Control Plane.
 
         Args:
             model_config: The model containing the model version.

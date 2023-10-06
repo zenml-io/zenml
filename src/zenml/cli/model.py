@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI functionality to interact with Model WatchTower."""
+"""CLI functionality to interact with Model Control Plane."""
 # from functools import partial
 from typing import Any, List, Optional
 
@@ -38,15 +38,15 @@ from zenml.models.model_models import (
 logger = get_logger(__name__)
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.MODEL_WATCHTOWER)
+@cli.group(cls=TagGroup, tag=CliCategories.MODEL_CONTROL_PLANE)
 def model() -> None:
-    """Interact with models and model versions in the Model WatchTower."""
+    """Interact with models and model versions in the Model Control Plane."""
 
 
 @cli_utils.list_options(ModelFilterModel)
 @model.command("list", help="List models with filter.")
 def list_models(**kwargs: Any) -> None:
-    """List models with filter in the Model WatchTower.
+    """List models with filter in the Model Control Plane.
 
     Args:
         **kwargs: Keyword arguments to filter models.
@@ -138,7 +138,7 @@ def register_model(
     limitations: Optional[str],
     tag: Optional[List[str]],
 ) -> None:
-    """Register a new model in the Model WatchTower.
+    """Register a new model in the Model Control Plane.
 
     Args:
         name: The name of the model.
@@ -188,7 +188,7 @@ def delete_model(
     model_name_or_id: str,
     yes: bool = False,
 ) -> None:
-    """Delete an existing model from the Model WatchTower.
+    """Delete an existing model from the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model to delete.
@@ -214,14 +214,14 @@ def delete_model(
 
 @model.group
 def version() -> None:
-    """Interact with model versions in the Model WatchTower."""
+    """Interact with model versions in the Model Control Plane."""
 
 
 @cli_utils.list_options(ModelVersionFilterModel)
 @click.argument("model_name_or_id")
 @version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
-    """List model versions with filter in the Model WatchTower.
+    """List model versions with filter in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -275,7 +275,7 @@ def update_model_version(
     stage: str,
     force: bool = False,
 ) -> None:
-    """Update an existing model version stage in the Model WatchTower.
+    """Update an existing model version stage in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -412,7 +412,7 @@ def list_model_version_artifacts(
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List artifacts linked to a model version in the Model WatchTower.
+    """List artifacts linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -439,7 +439,7 @@ def list_model_version_model_objects(
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List model objects linked to a model version in the Model WatchTower.
+    """List model objects linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -466,7 +466,7 @@ def list_model_version_deployments(
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List deployments linked to a model version in the Model WatchTower.
+    """List deployments linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -483,7 +483,7 @@ def list_model_version_deployments(
 
 @version.command(
     "runs",
-    help="List pipeline runs of a model version in the Model WatchTower.",
+    help="List pipeline runs of a model version in the Model Control Plane.",
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
@@ -493,7 +493,7 @@ def list_model_version_pipeline_runs(
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List pipeline runs of a model version in the Model WatchTower.
+    """List pipeline runs of a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.

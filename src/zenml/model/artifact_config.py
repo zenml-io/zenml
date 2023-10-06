@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Artifact Config classes to support Model WatchTower feature."""
+"""Artifact Config classes to support Model Control Plane feature."""
 from typing import TYPE_CHECKING, ClassVar, Optional, Union
 from uuid import UUID
 
