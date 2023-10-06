@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import subprocess
 import time
-from multiprocessing import Process
 from typing import Tuple
 from unittest import mock
 from uuid import uuid4
@@ -842,38 +842,9 @@ def test_that_artifact_is_removed_on_deletion():
         assert len(model.versions[0].artifact_object_ids) == 0
 
 
-@step
-def _long_runner(run_time: int):
-    time.sleep(run_time)
-    return 1
-
-
-def _multiprocessor(version, run_name, run_time, should_fail):
-    @pipeline(
-        model_config=ModelConfig(
-            name="step",
-            version_name=version,
-            create_new_model_version=True,
-            delete_new_version_on_failure=False,
-        ),
-        enable_cache=False,
-    )
-    def _inner_pipeline(run_time):
-        _long_runner(run_time)
-
-    if should_fail:
-        with pytest.raises(
-            RuntimeError,
-            match="New model version was requested, but pipeline run",
-        ):
-            _inner_pipeline.with_options(run_name=run_name)(run_time)
-    else:
-        _inner_pipeline.with_options(run_name=run_name)(run_time)
-
-
 @pytest.mark.parametrize(
     "version",
-    ("test running version", None),
+    ("test running version", ""),
     ids=["custom_running_name", "default_running_name"],
 )
 def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_and_with_recovery(
@@ -884,12 +855,15 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_a
         long_runtime = 120
         long_run_name = f"long_{uuid4()}"
         # start a long running pipeline with a request for a new version
-        p1 = Process(
-            target=_multiprocessor,
-            args=(version, long_run_name, long_runtime, False),
+        long_process = subprocess.Popen(
+            [
+                "python3",
+                "tests/integration/functional/steps/parallel_pipeline.py",
+                version,
+                long_run_name,
+                str(long_runtime),
+            ],
         )
-
-        p1.start()
 
         # start concurrent run with same version and request for a new version creation
         # first wait till first run is actually started
@@ -903,19 +877,23 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_a
                 print("sleep")
                 time.sleep(5)
 
-        p2 = Process(
-            target=_multiprocessor,
-            args=(version, f"concurrent_{uuid4()}", 0, True),
+        process = subprocess.run(
+            [
+                "python3",
+                "tests/integration/functional/steps/parallel_pipeline.py",
+                version,
+                f"concurrent_{uuid4()}",
+                "0",
+            ],
+            capture_output=True,
         )
-        p2.start()
-        p2.join()
 
-        # clean-up
-        p2_exitcode = p2.exitcode
-        p1.kill()
-        p2.kill()
-
-        assert p2_exitcode == 0, "Concurrent run didn't raise RuntimeError"
+        assert process.returncode != 0
+        assert (
+            "New model version was requested, but pipeline run"
+            in process.stderr.decode()
+        )
+        long_process.terminate()
 
 
 def test_that_two_pipelines_cannot_create_same_specified_version():
