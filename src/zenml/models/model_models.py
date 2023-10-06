@@ -157,42 +157,6 @@ class ModelVersionResponseModel(
             for name, pr in self.pipeline_run_ids.items()
         }
 
-    @property
-    def model_objects_count(self) -> int:
-        """Get the number of model objects linked to this model version.
-
-        Returns:
-            The number of model objects linked to this model version.
-        """
-        return len(self.model_object_ids)
-
-    @property
-    def artifact_objects_count(self) -> int:
-        """Get the number of artifact objects linked to this model version.
-
-        Returns:
-            The number of artifact objects linked to this model version.
-        """
-        return len(self.artifact_object_ids)
-
-    @property
-    def deployments_count(self) -> int:
-        """Get the number of deployments linked to this model version.
-
-        Returns:
-            The number of deployments linked to this model version.
-        """
-        return len(self.deployment_ids)
-
-    @property
-    def pipeline_runs_count(self) -> int:
-        """Get the number of pipeline runs linked to this model version.
-
-        Returns:
-            The number of pipeline runs linked to this model version.
-        """
-        return len(self.pipeline_run_ids)
-
     def _get_linked_object(
         self,
         collection: Dict[str, Dict[str, UUID]],

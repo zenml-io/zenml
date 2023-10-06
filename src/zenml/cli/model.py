@@ -234,6 +234,14 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
         cli_utils.declare("No model versions found.")
         return
 
+    for model_version in model_versions:
+        model_version.artifact_objects_count = len(
+            model_version.artifact_object_ids
+        )
+        model_version.model_objects_count = len(model_version.model_object_ids)
+        model_version.deployments_count = len(model_version.deployment_ids)
+        model_version.pipeline_runs_count = len(model_version.pipeline_run_ids)
+
     cli_utils.print_pydantic_models(
         model_versions,
         columns=[
