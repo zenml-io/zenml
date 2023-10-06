@@ -40,13 +40,13 @@ logger = get_logger(__name__)
 
 @cli.group(cls=TagGroup, tag=CliCategories.MODEL_WATCHTOWER)
 def model() -> None:
-    """List, create or delete models in the Model WatchTower."""
+    """Interact with models and model versions in the Model WatchTower."""
 
 
 @cli_utils.list_options(ModelFilterModel)
-@model.command("list", help="List all models.")
+@model.command("list", help="List models with filter.")
 def list_models(**kwargs: Any) -> None:
-    """List all models.
+    """List models with filter in the Model WatchTower.
 
     Args:
         **kwargs: Keyword arguments to filter models.
@@ -64,7 +64,7 @@ def list_models(**kwargs: Any) -> None:
     )
 
 
-@model.command("register", help="Create a model.")
+@model.command("register", help="Register a new model.")
 @click.option(
     "--name",
     "-n",
@@ -127,7 +127,7 @@ def list_models(**kwargs: Any) -> None:
     required=False,
     multiple=True,
 )
-def create_model(
+def register_model(
     name: str,
     license: Optional[str],
     description: Optional[str],
@@ -138,7 +138,7 @@ def create_model(
     limitations: Optional[str],
     tag: Optional[List[str]],
 ) -> None:
-    """Create a model.
+    """Register a new model in the Model WatchTower.
 
     Args:
         name: The name of the model.
@@ -176,7 +176,7 @@ def create_model(
     )
 
 
-@model.command("delete", help="Delete a model.")
+@model.command("delete", help="Delete an existing model.")
 @click.argument("model_name_or_id")
 @click.option(
     "--yes",
@@ -188,7 +188,7 @@ def delete_model(
     model_name_or_id: str,
     yes: bool = False,
 ) -> None:
-    """Delete a model.
+    """Delete an existing model from the Model WatchTower.
 
     Args:
         model_name_or_id: The ID or name of the model to delete.
@@ -214,14 +214,14 @@ def delete_model(
 
 @model.group
 def version() -> None:
-    """List or view model versions in the Model Watchtower."""
+    """Interact with model versions in the Model WatchTower."""
 
 
 @cli_utils.list_options(ModelVersionFilterModel)
 @click.argument("model_name_or_id")
-@version.command("list", help="List all model versions.")
+@version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
-    """List all model versions.
+    """List model versions with filter in the Model WatchTower.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -254,7 +254,7 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     )
 
 
-@version.command("update", help="Update model version stage.")
+@version.command("update", help="Update an existing model version stage.")
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
 @click.option(
@@ -275,7 +275,7 @@ def update_model_version(
     stage: str,
     force: bool = False,
 ) -> None:
-    """Update model version stage.
+    """Update an existing model version stage in the Model WatchTower.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -318,10 +318,10 @@ def update_model_version(
                 suppress_active_column=True,
             )
             confirmation = cli_utils.confirmation(
-                f"Are you sure you want to promote model version to '{stage}'? "
-                "This stage is already taken by another model version and if you "
-                "will proceed the current model version in this stage will be "
-                "archived."
+                "Are you sure you want to change the status of this model "
+                f"version to '{stage}'? This stage is already taken by "
+                "another model version and if you will proceed the current "
+                "model version in this stage will be archived."
             )
             if not confirmation:
                 cli_utils.declare("Model version stage update canceled.")
@@ -337,143 +337,154 @@ def update_model_version(
     )
 
 
-@version.group
-def artifact() -> None:
-    """List artifacts related to model versions in the Model WatchTower."""
-
-
-@artifact.command("list", help="List all artifacts of a model version.")
-@click.argument("model_name_or_id")
-@click.argument("model_version_name_or_number_or_id")
-@click.option(
-    "--only-artifacts",
-    "-a",
-    is_flag=True,
-    default=False,
-    help="Show only artifact objects.",
-)
-@click.option(
-    "--only-model-objects",
-    "-m",
-    is_flag=True,
-    default=False,
-    help="Show only model objects.",
-)
-@click.option(
-    "--only-deployments",
-    "-d",
-    is_flag=True,
-    default=False,
-    help="Show only deployments.",
-)
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
-def list_model_version_artifacts(
+def _print_artifacts_links_generic(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
-    only_artifacts: bool,
-    only_model_objects: bool,
-    only_deployments: bool,
+    only_artifacts: bool = False,
+    only_deployments: bool = False,
+    only_model_objects: bool = False,
     **kwargs: Any,
-) -> None:
-    """List all artifacts of a model version.
+):
+    """Generic method to print artifacts links.
 
     Args:
-        model_name_or_id: The ID or name of the model containing version.
-        model_version_name_or_number_or_id: The name, number or ID of the model version.
-        only_artifacts: Show only artifact objects.
-        only_model_objects: Show only model objects.
-        only_deployments: Show only deployments.
-        **kwargs: Keyword arguments to filter models.
+    model_name_or_id: The ID or name of the model containing version.
+    model_version_name_or_number_or_id: The name, number or ID of the model version.
+    only_artifacts: If set, only print artifacts.
+    only_deployments: If set, only print deployments.
+    only_model_objects: If set, only print model objects.
+    **kwargs: Keyword arguments to filter models.
     """
-    if sum([only_artifacts, only_model_objects, only_deployments]) > 1:
-        cli_utils.declare(
-            "Only one of --only-artifacts, --only-model-objects, or --only-deployments can be set."
-        )
-        return
-
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
     )
 
     if (
-        (
-            not model_version.artifact_object_ids
-            and not model_version.model_object_ids
-            and not model_version.deployment_ids
-        )
-        or (only_artifacts and not model_version.artifact_object_ids)
-        or (only_model_objects and not model_version.model_object_ids)
+        (only_artifacts and not model_version.artifact_object_ids)
         or (only_deployments and not model_version.deployment_ids)
+        or (only_model_objects and not model_version.model_object_ids)
     ):
-        cli_utils.declare("No artifacts attached to model version found.")
+        _type = (
+            "artifacts"
+            if only_artifacts
+            else "deployments"
+            if only_deployments
+            else "model objects"
+        )
+        cli_utils.declare(f"No {_type} linked to the model version found.")
         return
 
-    for (
-        title,
-        _only_artifacts,
-        _only_model_objects,
-        _only_deployments,
-        condition,
-    ) in [
-        [
-            "Artifacts",
-            True,
-            False,
-            False,
-            model_version.artifact_object_ids
-            and not (only_model_objects or only_deployments),
+    links = Client().list_model_version_artifact_links(
+        ModelVersionArtifactFilterModel(
+            model_id=model_version.model.id,
+            model_version_id=model_version.id,
+            only_artifacts=only_artifacts,
+            only_deployments=only_deployments,
+            only_model_objects=only_model_objects,
+            **kwargs,
+        )
+    )
+
+    cli_utils.print_pydantic_models(
+        links,
+        columns=[
+            "pipeline_name",
+            "step_name",
+            "name",
+            "link_version",
+            "artifact",
+            "created",
         ],
-        [
-            "Model objects",
-            False,
-            True,
-            False,
-            model_version.model_object_ids
-            and not (only_artifacts or only_deployments),
-        ],
-        [
-            "Deployments",
-            False,
-            False,
-            True,
-            model_version.deployment_ids
-            and not (only_artifacts or only_model_objects),
-        ],
-    ]:
-        if condition:
-            links = Client().list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                    only_artifacts=_only_artifacts,
-                    only_model_objects=_only_model_objects,
-                    only_deployments=_only_deployments,
-                    **kwargs,
-                )
-            )
-
-            cli_utils.title(title)
-            cli_utils.print_pydantic_models(
-                links,
-                columns=[
-                    "pipeline_name",
-                    "step_name",
-                    "name",
-                    "link_version",
-                    "artifact",
-                    "created",
-                ],
-                suppress_active_column=True,
-            )
+        suppress_active_column=True,
+    )
 
 
-@version.group
-def run() -> None:
-    """List pipeline runs related to model versions in the Model Watchtower."""
+@version.command(
+    "artifacts",
+    help="List artifacts linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_artifacts(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List artifacts linked to a model version in the Model WatchTower.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_artifacts=True,
+        **kwargs,
+    )
 
 
-@run.command("list", help="List all pipeline runs of a model version.")
+@version.command(
+    "model_objects",
+    help="List model objects linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_model_objects(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List model objects linked to a model version in the Model WatchTower.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_model_objects=True,
+        **kwargs,
+    )
+
+
+@version.command(
+    "deployments",
+    help="List deployments linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_deployments(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List deployments linked to a model version in the Model WatchTower.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_deployments=True,
+        **kwargs,
+    )
+
+
+@version.command(
+    "runs",
+    help="List pipeline runs of a model version in the Model WatchTower.",
+)
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
 @cli_utils.list_options(ModelVersionPipelineRunFilterModel)
@@ -482,7 +493,7 @@ def list_model_version_pipeline_runs(
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List all artifacts of a model version.
+    """List pipeline runs of a model version in the Model WatchTower.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.

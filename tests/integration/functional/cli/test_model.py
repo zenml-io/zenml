@@ -16,9 +16,10 @@
 
 from uuid import uuid4
 
+import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.model.conftest import NAME, PREFIX
+from tests.integration.functional.cli.conftest import NAME, PREFIX
 from zenml.cli.cli import cli
 
 
@@ -47,7 +48,7 @@ def test_model_create_short_names(clean_workspace_with_models):
             "c",
             "-u",
             "d",
-            "--trade-offs",
+            "--tradeoffs",
             "f",
             "-e",
             "g",
@@ -81,7 +82,7 @@ def test_model_create_full_names(clean_workspace_with_models):
             "c",
             "--use-cases",
             "d",
-            "--trade-offs",
+            "--tradeoffs",
             "f",
             "--ethical",
             "g",
@@ -170,15 +171,14 @@ def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
     assert result.exit_code != 0
 
 
-def test_model_version_artifacts_list(clean_workspace_with_models):
+@pytest.mark.parametrize(
+    "command",
+    ("artifacts", "deployments", "model_objects", "runs"),
+)
+def test_model_version_links_list(command: str, clean_workspace_with_models):
     """Test that zenml model version artifacts list fails."""
     runner = CliRunner()
-    list_command = (
-        cli.commands["model"]
-        .commands["version"]
-        .commands["artifact"]
-        .commands["list"]
-    )
+    list_command = cli.commands["model"].commands["version"].commands[command]
     result = runner.invoke(
         list_command,
         args=[NAME, "1"],
@@ -195,21 +195,5 @@ def test_model_version_update(clean_workspace_with_models):
     result = runner.invoke(
         update_command,
         args=[NAME, "1", "-s", "production"],
-    )
-    assert result.exit_code == 0
-
-
-def test_model_version_runs_list(clean_workspace_with_models):
-    """Test that zenml model version pipeline runs list fails."""
-    runner = CliRunner()
-    list_command = (
-        cli.commands["model"]
-        .commands["version"]
-        .commands["run"]
-        .commands["list"]
-    )
-    result = runner.invoke(
-        list_command,
-        args=[NAME, "1"],
     )
     assert result.exit_code == 0
