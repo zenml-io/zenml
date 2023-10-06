@@ -1703,6 +1703,55 @@ def generate_stack_component_connect_command(
     return connect_stack_component_command
 
 
+def generate_stack_component_disconnect_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `disconnect` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+    )
+    def disconnect_stack_component_command(name_id_or_prefix: str) -> None:
+        """Rename a stack component.
+
+        Args:
+            name_id_or_prefix: The name of the stack component to rename.
+        """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
+        client = Client()
+
+        with console.status(
+            f"Disconnecting service-connector from {display_name} '{name_id_or_prefix}'...\n"
+        ):
+            try:
+                updated_component = client.update_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    disconnect=True,
+                )
+            except (KeyError, IllegalOperationError) as err:
+                cli_utils.error(str(err))
+
+            cli_utils.declare(
+                f"Successfully disconnected the service-connector from {display_name} `{name_id_or_prefix}`."
+            )
+            print_model_url(get_component_url(updated_component))
+
+    return disconnect_stack_component_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1832,6 +1881,15 @@ def register_single_stack_component_cli_commands(
         "connect",
         help=f"Connect {singular_display_name} to a service connector.",
     )(connect_command)
+
+    # zenml stack-component connect
+    disconnect_command = generate_stack_component_disconnect_command(
+        component_type
+    )
+    command_group.command(
+        "disconnect",
+        help=f"Disconnect {singular_display_name} to a service connector.",
+    )(disconnect_command)
 
     # zenml stack-component explain
     explain_command = generate_stack_component_explain_command(component_type)
