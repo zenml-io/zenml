@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
 import subprocess
 import time
 from typing import Tuple
@@ -842,6 +843,10 @@ def test_that_artifact_is_removed_on_deletion():
         assert len(model.versions[0].artifact_object_ids) == 0
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Subprocesses on Windows are hardly manageable.",
+)
 @pytest.mark.parametrize(
     "version",
     ("test running version", ""),

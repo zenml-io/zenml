@@ -919,6 +919,8 @@ def test_listing_deployments(clean_client):
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
     response = clean_client.zen_store.create_deployment(request)
 
@@ -941,6 +943,8 @@ def test_getting_deployments(clean_client):
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
     response = clean_client.zen_store.create_deployment(request)
 
@@ -961,6 +965,8 @@ def test_deleting_deployments(clean_client):
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
     response = clean_client.zen_store.create_deployment(request)
 

@@ -128,7 +128,9 @@ class RunMetadataSchema(BaseSchema, table=True):
             value=json.loads(self.value),
             type=self.type,
             workspace=self.workspace.to_model(),
-            user=self.user.to_model() if self.user else None,
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
+            else None,
             created=self.created,
             updated=self.updated,
         )
