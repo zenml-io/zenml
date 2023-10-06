@@ -19,10 +19,13 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
-@pytest.mark.skipif(
-    sys.version_info > (3, 10),
-    reason="Kubeflow integration not installed in Python 3.11",
-)
+# @pytest.mark.skipif(
+#     sys.version_info > (3, 10),
+#     reason="Kubeflow integration not installed in Python 3.11",
+# )
+
+
+@pytest.mark.skip(reason="Tensorflow is too big to install on CI currently")
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the kubeflow_pipelines_orchestration example.
 

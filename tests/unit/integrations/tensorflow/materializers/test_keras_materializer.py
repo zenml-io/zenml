@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
 from tensorflow import keras
 
 from tests.unit.test_general import _test_materializer
@@ -20,6 +21,7 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
 )
 
 
+@pytest.mark.skip(reason="Tensorflow is too big to install on CI currently")
 def test_tensorflow_keras_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
     inputs = keras.Input(shape=(32,))

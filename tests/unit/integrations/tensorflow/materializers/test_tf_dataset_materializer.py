@@ -19,7 +19,10 @@ from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import 
     TensorflowDatasetMaterializer,
 )
 
+import pytest
 
+
+@pytest.mark.skip(reason="Tensorflow is too big to install on CI currently")
 def test_tensorflow_tf_dataset_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow TF Dataset materializer."""
     dataset = _test_materializer(
