@@ -12,12 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 
 import pytest
 
 from tests.integration.examples.utils import run_example
-
 
 # @pytest.mark.skipif(
 #     sys.version_info > (3, 10),

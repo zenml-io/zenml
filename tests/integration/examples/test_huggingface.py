@@ -29,6 +29,7 @@ from tests.integration.examples.utils import run_example
 #         pass
 
 
+@pytest.mark.skip(reason="Tensorflow is too big to install on CI currently")
 def test_sequence_classification(request: pytest.FixtureRequest) -> None:
     """Runs the huggingface sequence classification example."""
 
