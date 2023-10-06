@@ -17,7 +17,6 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
-@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_example(request: pytest.FixtureRequest) -> None:
     """Test the deepchecks example."""
     with run_example(

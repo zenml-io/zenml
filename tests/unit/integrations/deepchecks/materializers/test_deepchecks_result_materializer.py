@@ -39,7 +39,6 @@ class DatasetSizeComparison(TrainTestCheck):
         return CheckResult(return_value)
 
 
-@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 @pytest.fixture
 def check_result():
     """Fixture to get a check result."""
@@ -50,7 +49,6 @@ def check_result():
     return DatasetSizeComparison().run(train_dataset, test_dataset)
 
 
-@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_deepchecks_dataset_materializer_with_check_result(
     clean_client, check_result
 ):
@@ -63,7 +61,6 @@ def test_deepchecks_dataset_materializer_with_check_result(
         )
 
 
-@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_deepchecks_dataset_materializer_with_suite_result(
     clean_client, check_result
 ):

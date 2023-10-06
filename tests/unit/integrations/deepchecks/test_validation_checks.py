@@ -18,7 +18,6 @@ from zenml.integrations.deepchecks.validation_checks import (
 )
 
 
-@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_validation_check_fails_when_checking_name():
     """Ensures that the validation check fails when names not using our format."""
     deepchecks_validation_check = DeepchecksValidationCheck(
