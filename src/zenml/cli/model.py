@@ -486,7 +486,7 @@ def list_model_version_deployments(
 
 @version.command(
     "runs",
-    help="List pipeline runs of a model version in the Model Control Plane.",
+    help="List pipeline runs of a model version.",
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
