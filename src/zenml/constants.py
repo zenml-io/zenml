@@ -99,7 +99,6 @@ ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 
-
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
@@ -111,7 +110,6 @@ else:
     ZENML_LOGGING_VERBOSITY = os.getenv(
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
-
 
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
@@ -225,7 +223,6 @@ SERVICE_CONNECTOR_CLIENT = "/client"
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 
-
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
@@ -250,7 +247,6 @@ FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
-
 
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"
@@ -290,3 +286,9 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "mlops_platform",
     "step_operator",
 ]
+
+# Model parameters
+
+TEXT_FIELD_MAX_LENGTH = 65535
+STR_FIELD_MAX_LENGTH = 255
+MEDIUMTEXT_MAX_LENGTH = 2**24 - 1

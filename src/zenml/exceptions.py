@@ -241,6 +241,10 @@ class InputResolutionError(ZenMLBaseException):
     """Raised when step input resolving failed."""
 
 
+class HydrationError(ZenMLBaseException):
+    """Raised when the model hydration failed."""
+
+
 class ZenKeyError(KeyError):
     """Specialized key error which allows error messages with line breaks."""
 
