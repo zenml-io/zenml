@@ -127,7 +127,7 @@ def list_models(**kwargs: Any) -> None:
     required=False,
     multiple=True,
 )
-def update_model(
+def register_model(
     name: str,
     license: Optional[str],
     description: Optional[str],
@@ -318,13 +318,13 @@ def delete_model(
 
 
 @model.group
-def version() -> None:
+def model_version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
 @cli_utils.list_options(ModelVersionFilterModel)
 @click.argument("model_name_or_id")
-@version.command("list", help="List model versions with filter.")
+@model_version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
@@ -342,12 +342,12 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
         return
 
     for model_version in model_versions:
-        model_version.artifact_objects_count = len(
+        model_version.artifact_objects_count = len(  # type: ignore[attr-defined]
             model_version.artifact_object_ids
         )
-        model_version.model_objects_count = len(model_version.model_object_ids)
-        model_version.deployments_count = len(model_version.deployment_ids)
-        model_version.pipeline_runs_count = len(model_version.pipeline_run_ids)
+        model_version.model_objects_count = len(model_version.model_object_ids)  # type: ignore[attr-defined]
+        model_version.deployments_count = len(model_version.deployment_ids)  # type: ignore[attr-defined]
+        model_version.pipeline_runs_count = len(model_version.pipeline_run_ids)  # type: ignore[attr-defined]
 
     cli_utils.print_pydantic_models(
         model_versions,
@@ -366,13 +366,15 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     )
 
 
-@version.command("update", help="Update an existing model version stage.")
+@model_version.command(
+    "update", help="Update an existing model version stage."
+)
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
 @click.option(
     "--stage",
     "-s",
-    type=click.Choice(ModelStages),
+    type=click.Choice(choices=ModelStages.values()),
     help="The stage of the model version.",
 )
 @click.option(
@@ -455,16 +457,16 @@ def _print_artifacts_links_generic(
     only_deployments: bool = False,
     only_model_objects: bool = False,
     **kwargs: Any,
-):
+) -> None:
     """Generic method to print artifacts links.
 
     Args:
-    model_name_or_id: The ID or name of the model containing version.
-    model_version_name_or_number_or_id: The name, number or ID of the model version.
-    only_artifacts: If set, only print artifacts.
-    only_deployments: If set, only print deployments.
-    only_model_objects: If set, only print model objects.
-    **kwargs: Keyword arguments to filter models.
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        only_artifacts: If set, only print artifacts.
+        only_deployments: If set, only print deployments.
+        only_model_objects: If set, only print model objects.
+        **kwargs: Keyword arguments to filter models.
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
@@ -510,7 +512,7 @@ def _print_artifacts_links_generic(
     )
 
 
-@version.command(
+@model_version.command(
     "artifacts",
     help="List artifacts linked to a model version.",
 )
@@ -537,7 +539,7 @@ def list_model_version_artifacts(
     )
 
 
-@version.command(
+@model_version.command(
     "model_objects",
     help="List model objects linked to a model version.",
 )
@@ -564,7 +566,7 @@ def list_model_version_model_objects(
     )
 
 
-@version.command(
+@model_version.command(
     "deployments",
     help="List deployments linked to a model version.",
 )
@@ -591,7 +593,7 @@ def list_model_version_deployments(
     )
 
 
-@version.command(
+@model_version.command(
     "runs",
     help="List pipeline runs of a model version.",
 )
