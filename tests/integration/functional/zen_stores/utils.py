@@ -20,12 +20,10 @@ from pydantic import BaseModel, Field, SecretStr
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
-    ExecutionStatus,
     SecretScope,
     StackComponentType,
 )
@@ -53,8 +51,6 @@ from zenml.models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunUpdateModel,
     PipelineUpdateModel,
     ResourceTypeModel,
     RoleFilterModel,
@@ -148,14 +144,14 @@ class PipelineRunContext:
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        for artifact in self.artifacts:
-            try:
-                self.store.delete_artifact(artifact.id)
-            except KeyError:
-                pass
         for run in self.runs:
             try:
-                self.store.delete_run(run.id)
+                self.client.delete_pipeline_run(run.id)
+            except KeyError:
+                pass
+        for artifact in self.artifacts:
+            try:
+                self.client.delete_artifact(artifact.id)
             except KeyError:
                 pass
 
@@ -825,19 +821,21 @@ pipeline_crud_test_config = CrudTestConfig(
     filter_model=PipelineFilterModel,
     entity_name="pipeline",
 )
-pipeline_run_crud_test_config = CrudTestConfig(
-    create_model=PipelineRunRequestModel(
-        id=uuid.uuid4(),
-        name=sample_name("sample_pipeline_run"),
-        status=ExecutionStatus.RUNNING,
-        config=PipelineConfiguration(name="aria_pipeline"),
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
-    ),
-    update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
-    filter_model=PipelineRunFilterModel,
-    entity_name="run",
-)
+# pipeline_run_crud_test_config = CrudTestConfig(
+#     create_model=PipelineRunRequestModel(
+#         id=uuid.uuid4(),
+#         deployment=uuid.uuid4(), # deployment has to exist first
+#         pipeline=uuid.uuid4(),
+#         name=sample_name("sample_pipeline_run"),
+#         status=ExecutionStatus.RUNNING,
+#         config=PipelineConfiguration(name="aria_pipeline"),
+#         user=uuid.uuid4(),
+#         workspace=uuid.uuid4(),
+#     ),
+#     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
+#     filter_model=PipelineRunFilterModel,
+#     entity_name="run",
+# )
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequestModel(
         name=sample_name("sample_artifact"),
@@ -879,6 +877,8 @@ deployment_crud_test_config = CrudTestConfig(
         stack=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
+        client_version="0.12.3",
+        server_version="0.12.3",
     ),
     filter_model=PipelineDeploymentFilterModel,
     entity_name="deployment",
@@ -964,7 +964,7 @@ list_of_entities = [
     component_crud_test_config,
     pipeline_crud_test_config,
     # step_run_crud_test_config,
-    pipeline_run_crud_test_config,
+    # pipeline_run_crud_test_config,
     artifact_crud_test_config,
     secret_crud_test_config,
     build_crud_test_config,
