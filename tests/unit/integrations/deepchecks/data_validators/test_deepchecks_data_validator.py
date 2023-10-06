@@ -15,6 +15,8 @@
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
+
 from zenml.enums import StackComponentType
 from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.deepchecks.data_validators import (
@@ -22,6 +24,7 @@ from zenml.integrations.deepchecks.data_validators import (
 )
 
 
+@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_deepchecks_data_validator_attributes():
     """Tests that the basic attributes of the Deepchecks data validator are set correctly."""
     validator = DeepchecksDataValidator(

@@ -15,6 +15,7 @@
 from contextlib import ExitStack as does_not_raise
 
 import pandas as pd
+import pytest
 from deepchecks.tabular import Dataset
 
 from tests.unit.test_general import _test_materializer
@@ -22,7 +23,7 @@ from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer
     DeepchecksDatasetMaterializer,
 )
 
-
+@pytest.mark.skip(reason="Deepchecks is too big to install on CI currently")
 def test_deepchecks_dataset_materializer(clean_client):
     """Test the Deepchecks dataset materializer."""
     df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"])
