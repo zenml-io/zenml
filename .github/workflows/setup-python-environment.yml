@@ -94,6 +94,7 @@ jobs:
           swap-storage: true
 
       - name: Reinstall packages needed for unit tests
+        if: ${{ inputs.os == 'ubuntu-latest' }}
         run: apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
       - name: Setup environment
