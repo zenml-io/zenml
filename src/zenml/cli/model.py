@@ -60,7 +60,6 @@ def list_models(**kwargs: Any) -> None:
     cli_utils.print_pydantic_models(
         models,
         exclude_columns=["user", "workspace"],
-        suppress_active_column=True,
     )
 
 
@@ -172,7 +171,6 @@ def register_model(
             model,
         ],
         exclude_columns=["user", "workspace"],
-        suppress_active_column=True,
     )
 
 
@@ -250,7 +248,6 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
             "pipeline_runs_count",
             "updated",
         ],
-        suppress_active_column=True,
     )
 
 
@@ -315,7 +312,6 @@ def update_model_version(
                     "pipeline_runs_count",
                     "updated",
                 ],
-                suppress_active_column=True,
             )
             confirmation = cli_utils.confirmation(
                 "Are you sure you want to change the status of this model "
@@ -396,7 +392,6 @@ def _print_artifacts_links_generic(
             "artifact",
             "created",
         ],
-        suppress_active_column=True,
     )
 
 
@@ -524,5 +519,4 @@ def list_model_version_pipeline_runs(
             "pipeline_run",
             "created",
         ],
-        suppress_active_column=True,
     )
