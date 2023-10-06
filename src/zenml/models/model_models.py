@@ -159,37 +159,37 @@ class ModelVersionResponseModel(
 
     @property
     def model_objects_count(self) -> int:
-        """Get the amount of model objects linked to this model version.
+        """Get the number of model objects linked to this model version.
 
         Returns:
-            The amount of model objects linked to this model version.
+            The number of model objects linked to this model version.
         """
         return len(self.model_object_ids)
 
     @property
     def artifact_objects_count(self) -> int:
-        """Get the amount of artifact objects linked to this model version.
+        """Get the number of artifact objects linked to this model version.
 
         Returns:
-            The amount of artifact objects linked to this model version.
+            The number of artifact objects linked to this model version.
         """
         return len(self.artifact_object_ids)
 
     @property
     def deployments_count(self) -> int:
-        """Get the amount of deployments linked to this model version.
+        """Get the number of deployments linked to this model version.
 
         Returns:
-            The amount of deployments linked to this model version.
+            The number of deployments linked to this model version.
         """
         return len(self.deployment_ids)
 
     @property
     def pipeline_runs_count(self) -> int:
-        """Get the amount of pipeline runs linked to this model version.
+        """Get the number of pipeline runs linked to this model version.
 
         Returns:
-            The amount of pipeline runs linked to this model version.
+            The number of pipeline runs linked to this model version.
         """
         return len(self.pipeline_run_ids)
 
