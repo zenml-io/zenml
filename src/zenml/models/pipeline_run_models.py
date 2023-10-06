@@ -28,7 +28,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml import __version__ as current_zenml_version
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus, LogicalOperators
 from zenml.models.base_models import (
@@ -45,9 +44,9 @@ if TYPE_CHECKING:
     from zenml.models import (
         ArtifactResponseModel,
         PipelineBuildResponseModel,
-        PipelineDeploymentResponseModel,
         PipelineResponseModel,
         RunMetadataResponseModel,
+        ScheduleResponseModel,
         StackResponseModel,
         StepRunResponseModel,
     )
@@ -69,14 +68,6 @@ class PipelineRunBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    schedule_id: Optional[UUID] = Field(
-        title="The ID of the schedule that triggered this pipeline run.",
-        default=None,
-    )
-    enable_cache: Optional[bool] = Field(
-        title="Whether to enable caching for this pipeline run.",
-        default=None,
-    )
     start_time: Optional[datetime] = Field(
         title="The start time of the pipeline run.",
         default=None,
@@ -87,22 +78,6 @@ class PipelineRunBaseModel(BaseModel):
     )
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
-    )
-    config: PipelineConfiguration = Field(
-        title="The pipeline configuration used for this pipeline run.",
-    )
-    num_steps: Optional[int] = Field(
-        title="The number of steps in this pipeline run.",
-        default=None,
-    )
-    client_version: Optional[str] = Field(
-        title="Client version.",
-        default=current_zenml_version,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    server_version: Optional[str] = Field(
-        title="Server version.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     client_environment: Dict[str, str] = Field(
         default={},
@@ -130,24 +105,27 @@ class PipelineRunResponseModel(
 ):
     """Pipeline run model with user, workspace, pipeline, and stack hydrated."""
 
+    stack: Optional["StackResponseModel"] = Field(
+        default=None, title="The stack that was used for this run."
+    )
     pipeline: Optional["PipelineResponseModel"] = Field(
         default=None, title="The pipeline this run belongs to."
     )
-    stack: Optional["StackResponseModel"] = Field(
-        default=None, title="The stack that was used for this run."
+    build: Optional["PipelineBuildResponseModel"] = Field(
+        default=None, title="The pipeline build that was used for this run."
+    )
+    schedule: Optional["ScheduleResponseModel"] = Field(
+        default=None, title="The schedule that was used for this run."
     )
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
-    build: Optional["PipelineBuildResponseModel"] = Field(
-        default=None, title="The pipeline build that was used for this run."
-    )
-    deployment: Optional["PipelineDeploymentResponseModel"] = Field(
-        default=None, title="The deployment that was used for this run."
-    )
     steps: Dict[str, "StepRunResponseModel"] = Field(
         default={}, title="The steps of this run."
+    )
+    config: PipelineConfiguration = Field(
+        title="The pipeline configuration used for this pipeline run.",
     )
 
     @property
@@ -172,24 +150,6 @@ class PipelineRunResponseModel(
 
         return get_artifacts_of_pipeline_run(self, only_produced=True)
 
-    def get_step(self, step: str) -> "StepRunResponseModel":
-        """(Deprecated) Get a step by name.
-
-        Args:
-            step: Name of the step to get.
-
-        Returns:
-            The step with the given name.
-        """
-        from zenml.logger import get_logger
-
-        logger = get_logger(__name__)
-        logger.warning(
-            "`run.get_step(<step_name>)` is deprecated and will be removed in "
-            "a future release. Please use `run.steps[<step_name>]` instead."
-        )
-        return self.steps[step]
-
 
 # ------ #
 # FILTER #
@@ -204,7 +164,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
         "unlisted",
         "code_repository_id",
     ]
-
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
@@ -213,7 +172,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
         default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
-
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Pipeline associated with the Pipeline Run"
     )
@@ -223,7 +181,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User that created the Pipeline Run"
     )
-
     stack_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
@@ -239,7 +196,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     code_repository_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Code repository used for the Pipeline Run"
     )
-
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
@@ -250,12 +206,6 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     end_time: Optional[Union[datetime, str]] = Field(
         default=None, description="End time for this run"
     )
-
-    num_steps: Optional[int] = Field(
-        default=None,
-        description="Amount of steps in the Pipeline Run",
-    )
-
     unlisted: Optional[bool] = None
 
     def generate_filter(
@@ -286,13 +236,16 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
 
             base_filter = operator(base_filter, unlisted_filter)
 
-        if self.code_repository_id:
-            from zenml.zen_stores.schemas import (
-                CodeReferenceSchema,
-                PipelineDeploymentSchema,
-                PipelineRunSchema,
-            )
+        from zenml.zen_stores.schemas import (
+            CodeReferenceSchema,
+            PipelineBuildSchema,
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+            ScheduleSchema,
+            StackSchema,
+        )
 
+        if self.code_repository_id:
             code_repo_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
@@ -300,8 +253,31 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
             )
-
             base_filter = operator(base_filter, code_repo_filter)
+
+        if self.stack_id:
+            stack_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                StackSchema.id == self.stack_id,
+            )
+            base_filter = operator(base_filter, stack_filter)
+
+        if self.schedule_id:
+            schedule_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
+                ScheduleSchema.id == self.schedule_id,
+            )
+            base_filter = operator(base_filter, schedule_filter)
+
+        if self.build_id:
+            pipeline_build_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
+                PipelineBuildSchema.id == self.build_id,
+            )
+            base_filter = operator(base_filter, pipeline_build_filter)
 
         return base_filter
 
@@ -317,10 +293,12 @@ class PipelineRunRequestModel(
     """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
-    stack: Optional[UUID]  # Might become None if the stack is deleted.
-    pipeline: Optional[UUID]  # Unlisted runs have this as None.
-    build: Optional[UUID]
-    deployment: Optional[UUID]
+    deployment: UUID = Field(
+        title="The deployment associated with the pipeline run."
+    )
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline associated with the pipeline run."
+    )
 
 
 # ------ #
