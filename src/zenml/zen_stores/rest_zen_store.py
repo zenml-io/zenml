@@ -2438,6 +2438,11 @@ class RestZenStore(BaseZenStore):
             or LATEST_MODEL_VERSION_PLACEHOLDER,
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
+            params={
+                "is_number": isinstance(
+                    model_version_name_or_number_or_id, int
+                )
+            },
         )
 
     def list_model_versions(
