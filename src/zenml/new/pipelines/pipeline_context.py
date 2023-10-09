@@ -58,15 +58,18 @@ class PipelineContext:
 
     ...
 
-    @pipeline(extra={"complex_parameter": ("sklearn.tree","DecisionTreeClassifier")})
+    @pipeline(extra={
+        "complex_parameter": ("sklearn.tree","DecisionTreeClassifier")
+        }
+    )
     def my_pipeline():
         context = get_pipeline_context()
 
-        model = load_model_step(model_config=context.extra["complex_parameter"])
+        model = load_model_step(
+            model_config=context.extra["complex_parameter"]
+        )
 
         trained_model = train_model(model=model)
-
-        ...
     ```
     """
 
