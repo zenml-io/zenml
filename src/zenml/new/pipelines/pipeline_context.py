@@ -56,6 +56,8 @@ class PipelineContext:
     ```python
     from zenml import get_pipeline_context
 
+    ...
+
     @pipeline(extra={"complex_parameter": ("sklearn.tree","DecisionTreeClassifier")})
     def my_pipeline():
         context = get_pipeline_context()
