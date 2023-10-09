@@ -512,7 +512,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         user = store.update_user(
             user_id=user.id,
             user_update=UserUpdateModel(
-                name=external_user.name or external_user.email,
+                name=external_user.email,
                 full_name=external_user.name or "",
                 email_opted_in=True,
                 active=True,
@@ -526,7 +526,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         )
         user = store.create_user(
             UserRequestModel(
-                name=external_user.name or external_user.email,
+                name=external_user.email,
                 full_name=external_user.name or "",
                 external_user_id=external_user.id,
                 email_opted_in=True,
