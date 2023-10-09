@@ -36,7 +36,8 @@ from fastapi.security import (
 from pydantic import BaseModel
 from starlette.requests import Request
 
-from zenml.analytics import alias
+from zenml import analytics
+from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
@@ -534,7 +535,13 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 email=external_user.email,
             )
         )
-        alias(user_id=user.id, previous_id=external_user.id)
+
+        with AnalyticsContext() as context:
+            context.user_id = user.id
+            context.identify(
+                traits={"email": user.email, "source": "external_auth"}
+            )
+            context.alias(user_id=user.id, previous_id=external_user.id)
 
         # Create a new user role assignment for the new user
         store.create_user_role_assignment(
