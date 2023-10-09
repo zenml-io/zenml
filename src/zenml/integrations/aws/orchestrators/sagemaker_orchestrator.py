@@ -20,11 +20,11 @@ from uuid import UUID
 
 import boto3
 import sagemaker
+from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
-from sagemaker.network import NetworkConfig
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
