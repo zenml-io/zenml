@@ -356,8 +356,9 @@ def upload_artifact(
     data: Any,
     materializer: "BaseMaterializer",
     artifact_store_id: "UUID",
-    extract_metadata: bool,
-    include_visualizations: bool,
+    extract_metadata: bool = True,
+    include_visualizations: bool = True,
+    has_custom_name: bool = False,
 ) -> "UUID":
     """Upload and publish an artifact.
 
@@ -369,6 +370,8 @@ def upload_artifact(
             be stored.
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
+        has_custom_name: If the artifact name is custom and should be listed in
+            the dashboard "Artifacts" tab.
 
     Returns:
         The ID of the published artifact.
@@ -412,6 +415,7 @@ def upload_artifact(
         workspace=Client().active_workspace.id,
         artifact_store_id=artifact_store_id,
         visualizations=visualizations,
+        has_custom_name=has_custom_name,
     )
     response = Client().zen_store.create_artifact(artifact=artifact)
     if artifact_metadata:

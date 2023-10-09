@@ -80,16 +80,34 @@ def func_with_multiple_annotated_outputs() -> (
 @pytest.mark.parametrize(
     "func,expected_output",
     [
-        (func_with_no_output_annotation_and_no_return, {}),
-        (func_with_no_output_annotation_and_return, {"output": Any}),
-        (func_with_single_output, {"output": int}),
-        (func_with_single_annotated_output, {"custom_output": int}),
-        (func_with_tuple_output, {"output": tuple}),
-        (func_with_annotated_tuple_output, {"custom_output": tuple}),
-        (func_with_multiple_outputs, {"output_0": int, "output_1": int}),
+        (func_with_no_output_annotation_and_no_return, ({}, {})),
+        (
+            func_with_no_output_annotation_and_return,
+            ({"output": Any}, {"output": False}),
+        ),
+        (func_with_single_output, ({"output": int}, {"output": False})),
+        (
+            func_with_single_annotated_output,
+            ({"custom_output": int}, {"custom_output": True}),
+        ),
+        (func_with_tuple_output, ({"output": tuple}, {"output": False})),
+        (
+            func_with_annotated_tuple_output,
+            ({"custom_output": tuple}, {"custom_output": True}),
+        ),
+        (
+            func_with_multiple_outputs,
+            (
+                {"output_0": int, "output_1": int},
+                {"output_0": False, "output_1": False},
+            ),
+        ),
         (
             func_with_multiple_annotated_outputs,
-            {"custom_output": int, "output_1": int},
+            (
+                {"custom_output": int, "output_1": int},
+                {"custom_output": True, "output_1": False},
+            ),
         ),
     ],
 )

@@ -194,6 +194,7 @@ class ExternalArtifact:
                 artifact_store_id=artifact_store_id,
                 extract_metadata=self._store_artifact_metadata,
                 include_visualizations=self._store_artifact_visualizations,
+                has_custom_name=False,
             )
 
             # To avoid duplicate uploads, switch to referencing the uploaded

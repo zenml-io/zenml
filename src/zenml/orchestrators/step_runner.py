@@ -214,7 +214,10 @@ class StepRunner:
                             )
 
                         # Store and publish the output artifacts of the step function.
-                        output_annotations = parse_return_type_annotations(
+                        (
+                            output_annotations,
+                            is_custom_name_dict,
+                        ) = parse_return_type_annotations(
                             func=step_instance.entrypoint
                         )
                         output_data = self._validate_outputs(
@@ -232,6 +235,7 @@ class StepRunner:
                             output_data=output_data,
                             output_artifact_uris=output_artifact_uris,
                             output_materializers=output_materializers,
+                            output_has_custom_name=is_custom_name_dict,
                             artifact_metadata_enabled=artifact_metadata_enabled,
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
@@ -506,6 +510,7 @@ class StepRunner:
         output_data: Dict[str, Any],
         output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
         output_artifact_uris: Dict[str, str],
+        output_has_custom_name: Dict[str, bool],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
     ) -> Dict[str, "UUID"]:
@@ -516,6 +521,8 @@ class StepRunner:
                 names to return values.
             output_materializers: The output materializers of the step.
             output_artifact_uris: The output artifact URIs of the step.
+            output_has_custom_name: For each output, whether it has a custom
+                name.
             artifact_metadata_enabled: Whether artifact metadata collection is
                 enabled.
             artifact_visualization_enabled: Whether artifact visualization is
@@ -567,14 +574,25 @@ class StepRunner:
 
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            has_custom_name = output_has_custom_name[output_name]
+
+            # Override the artifact name if it is not a custom name.
+            if has_custom_name:
+                artifact_name = output_name
+            else:
+                step_context = get_step_context()
+                pipeline_name = step_context.pipeline.name
+                step_name = step_context.step_run.name
+                artifact_name = f"{pipeline_name}::{step_name}::{output_name}"
 
             artifact_id = artifact_utils.upload_artifact(
-                name=output_name,
+                name=artifact_name,
                 data=return_value,
                 materializer=materializer,
                 artifact_store_id=artifact_store_id,
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
+                has_custom_name=has_custom_name,
             )
             output_artifacts[output_name] = artifact_id
 

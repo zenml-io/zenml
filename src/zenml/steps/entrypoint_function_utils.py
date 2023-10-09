@@ -302,7 +302,7 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    outputs = parse_return_type_annotations(
+    outputs, _ = parse_return_type_annotations(
         func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
     )
 
