@@ -318,13 +318,13 @@ def delete_model(
 
 
 @model.group
-def model_version() -> None:
+def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
 @cli_utils.list_options(ModelVersionFilterModel)
 @click.argument("model_name_or_id")
-@model_version.command("list", help="List model versions with filter.")
+@version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
@@ -366,9 +366,7 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     )
 
 
-@model_version.command(
-    "update", help="Update an existing model version stage."
-)
+@version.command("update", help="Update an existing model version stage.")
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id")
 @click.option(
@@ -512,7 +510,7 @@ def _print_artifacts_links_generic(
     )
 
 
-@model_version.command(
+@version.command(
     "artifacts",
     help="List artifacts linked to a model version.",
 )
@@ -539,7 +537,7 @@ def list_model_version_artifacts(
     )
 
 
-@model_version.command(
+@version.command(
     "model_objects",
     help="List model objects linked to a model version.",
 )
@@ -566,7 +564,7 @@ def list_model_version_model_objects(
     )
 
 
-@model_version.command(
+@version.command(
     "deployments",
     help="List deployments linked to a model version.",
 )
@@ -593,7 +591,7 @@ def list_model_version_deployments(
     )
 
 
-@model_version.command(
+@version.command(
     "runs",
     help="List pipeline runs of a model version.",
 )
