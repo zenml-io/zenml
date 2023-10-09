@@ -93,10 +93,15 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Get Docker Image IDs
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        id: docker_image_ids
+        run: echo "::set-output name=ids::$(docker images -q)"
+
       - name: clean unnecessary files to save space
         if: ${{ inputs.os == 'ubuntu-latest' }}
         run: |
-            docker rmi $(docker images -q)
+            docker rmi ${{ steps.docker_image_ids.outputs.ids }}
             sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
             sudo apt -y autoremove --purge
             sudo apt -y autoclean
