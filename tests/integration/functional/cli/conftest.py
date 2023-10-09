@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Annotated, Tuple
+from typing import Tuple
 from uuid import uuid4
 
 import pytest
+from typing_extensions import Annotated
 
 from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
