@@ -66,14 +66,14 @@ def list_authorized_devices(**kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter authorized devices.
     """
     with console.status("Listing authorized devices...\n"):
-        repos = Client().list_authorized_devices(**kwargs)
+        devices = Client().list_authorized_devices(**kwargs)
 
-        if not repos.items:
+        if not devices.items:
             cli_utils.declare("No authorized devices found for this filter.")
             return
 
         cli_utils.print_pydantic_models(
-            repos,
+            devices,
             columns=["id", "status", "ip_address", "hostname", "os"],
         )
 
