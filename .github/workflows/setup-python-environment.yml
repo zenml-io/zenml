@@ -96,7 +96,7 @@ jobs:
       - name: clean unnecessary files to save space
         if: ${{ inputs.os == 'ubuntu-latest' }}
         run: |
-            docker rmi `docker images -q`
+            docker rmi $(docker images -q)
             sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
             sudo apt -y autoremove --purge
             sudo apt -y autoclean
