@@ -173,7 +173,7 @@ class PipelineRunResponseModel(WorkspaceScopedResponseModel):
     # Metadata related field, method and properties
     metadata: Optional["PipelineRunResponseModelMetadata"]
 
-    def get_hydrated_version(self) -> "PipelineRunResponseModelMetadata":
+    def get_hydrated_version(self) -> "PipelineRunResponseModel":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

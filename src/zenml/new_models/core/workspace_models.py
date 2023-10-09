@@ -74,7 +74,7 @@ class WorkspaceResponseModel(BaseResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional[WorkspaceResponseMetadataModel]
+    metadata: Optional["WorkspaceResponseMetadataModel"]
 
     def get_hydrated_version(self) -> "WorkspaceResponseModel":
         # TODO: Implement it with the parameterized calls
