@@ -29,7 +29,7 @@ def my_pipeline():
     after = []
     search_steps_prefix = "hp_tuning_search_"
     for i, model_search_configuration in enumerate(
-        len(context.extra["complex_parameter"])
+        context.extra["complex_parameter"]
     ):
         step_name = f"{search_steps_prefix}{i}"
         cross_validation(
