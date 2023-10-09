@@ -28,11 +28,12 @@ from zenml.new_models.base import (
 )
 
 if TYPE_CHECKING:
+    from zenml.new_models.core.artifact_visualization_models import (
+        ArtifactVisualizationRequestModel,
+        ArtifactVisualizationResponseModel,
+    )
     from zenml.new_models.core.run_metadata_models import (
         RunMetadataResponseModel,
-    )
-    from zenml.new_models.core.visualization_models import (
-        VisualizationResponseModel,
     )
 
 
@@ -60,9 +61,9 @@ class ArtifactRequestModel(WorkspaceScopedRequestModel):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
-    visualizations: Optional[List["VisualizationResponseModel"]] = Field(
-        default=None, title="Visualizations of the artifact."
-    )
+    visualizations: Optional[
+        List["ArtifactVisualizationRequestModel"]
+    ] = Field(default=None, title="Visualizations of the artifact.")
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -85,10 +86,10 @@ class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
         title="ID of the step run that produced this artifact.",
         default=None,
     )
-    visualizations: Optional[List["VisualizationResponseModel"]] = Field(
-        default=None, title="Visualizations of the artifact."
-    )
-    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+    visualizations: Optional[
+        List["ArtifactVisualizationResponseModel"]
+    ] = Field(default=None, title="Visualizations of the artifact.")
+    run_metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
     materializer: Source = Field(
@@ -139,9 +140,9 @@ class ArtifactResponseModel(WorkspaceScopedResponseModel):
         return self.metadata.visualizations
 
     @hydrated_property
-    def metadata(self):
+    def run_metadata(self):
         """The metadata property."""
-        return self.metadata.metadata
+        return self.metadata.run_metadata
 
     @hydrated_property
     def materializer(self):

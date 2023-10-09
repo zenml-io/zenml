@@ -85,10 +85,12 @@ class BaseResponseModelMetadata(BaseModel):
     """
 
     created: Optional[datetime] = Field(
-        title="The timestamp when this resource was created."
+        title="The timestamp when this resource was created.",
+        default=None,
     )
     updated: Optional[datetime] = Field(
-        title="The timestamp when this resource was last updated."
+        title="The timestamp when this resource was last updated.",
+        default=None,
     )
 
 
