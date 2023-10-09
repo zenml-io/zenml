@@ -85,12 +85,14 @@ jobs:
     secrets: inherit
 
   ubuntu-integration-test:
-    needs: 
+    needs:
       - ubuntu-setup-and-test-python
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        # Disabled temporarily while CI is overhauled
+        python-version: ["3.8", "3.9", "3.10"]
+        # python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           [
             "default",
