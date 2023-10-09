@@ -81,7 +81,10 @@ class PipelineContext:
                 id=step_name
             )
             after.append(step_name)
-        select_best_model(search_steps_prefix=search_steps_prefix, after=after)
+        select_best_model(
+            search_steps_prefix=search_steps_prefix,
+            after=after,
+        )
     ```
     """
 
