@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEVICE_VERIFY,
     DEVICES,
     VERSION_1,
@@ -199,7 +198,7 @@ def verify_authorized_device(
     Raises:
         ValueError: If the device verification request fails.
     """
-    server_config()
+    config = server_config()
     store = zen_store()
 
     # Check if a device is registered for the ID
@@ -235,19 +234,13 @@ def verify_authorized_device(
         update = OAuthDeviceInternalUpdateModel(
             failed_auth_attempts=failed_auth_attempts
         )
-        if (
-            failed_auth_attempts
-            >= DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
-        ):
+        if failed_auth_attempts >= config.max_failed_device_auth_attempts:
             update.locked = True
         store.update_internal_authorized_device(
             device_id=device_model.id,
             update=update,
         )
-        if (
-            failed_auth_attempts
-            >= DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
-        ):
+        if failed_auth_attempts >= config.max_failed_device_auth_attempts:
             raise ValueError(
                 "Invalid request: device locked due to too many failed "
                 "authentication attempts.",
