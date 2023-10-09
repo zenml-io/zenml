@@ -16,6 +16,7 @@
 import base64
 import os
 import tempfile
+from functools import partial
 from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 from uuid import UUID
 
@@ -32,6 +33,7 @@ from zenml.models.visualization_models import (
 )
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
+from zenml.utils.pagination_utils import depaginate
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -358,6 +360,7 @@ def upload_artifact(
     artifact_store_id: "UUID",
     extract_metadata: bool,
     include_visualizations: bool,
+    version: Optional[str] = None,
 ) -> "UUID":
     """Upload and publish an artifact.
 
@@ -369,6 +372,8 @@ def upload_artifact(
             be stored.
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
+        version: The version of the artifact. If not provided, a new
+            auto-increment version will be used.
 
     Returns:
         The ID of the published artifact.
@@ -404,6 +409,7 @@ def upload_artifact(
 
     artifact = ArtifactRequestModel(
         name=name,
+        version=version or _get_new_artifact_version(name),
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
@@ -420,6 +426,30 @@ def upload_artifact(
         )
 
     return response.id
+
+
+def _get_new_artifact_version(artifact_name: str) -> int:
+    """Get the next auto-increment version for an artifact name.
+
+    Args:
+        artifact_name: The name of the artifact.
+
+    Returns:
+        The next auto-increment version.
+    """
+    models = depaginate(
+        partial(
+            Client().list_artifacts,
+            name=artifact_name,
+            sort_by="desc:version",
+        )
+    )
+    for model in models:
+        try:
+            return int(model.version) + 1
+        except ValueError:
+            pass
+    return 1
 
 
 def get_producer_step_of_artifact(

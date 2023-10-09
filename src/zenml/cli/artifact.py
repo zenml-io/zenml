@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 from functools import partial
-from typing import Any
-from uuid import UUID
+from typing import Any, Optional
 
 import click
 
@@ -63,7 +62,13 @@ def list_artifacts(**kwargs: Any) -> None:
 
 
 @artifact.command("delete", help="Delete an artifact.")
-@click.argument("artifact_id")
+@click.argument("artifact_name_or_id")
+@click.option(
+    "--version",
+    "-v",
+    default=None,
+    help="Version of the artifact to delete.",
+)
 @click.option(
     "--only-artifact",
     "-a",
@@ -83,7 +88,8 @@ def list_artifacts(**kwargs: Any) -> None:
     help="Don't ask for confirmation.",
 )
 def delete_artifact(
-    artifact_id: str,
+    artifact_name_or_id: str,
+    version: Optional[str] = None,
     only_artifact: bool = False,
     only_metadata: bool = False,
     yes: bool = False,
@@ -91,14 +97,15 @@ def delete_artifact(
     """Delete an artifact.
 
     Args:
-        artifact_id: ID of the artifact to delete.
+        artifact_name_or_id: Name or ID of the artifact to delete.
+        version: Version of the artifact to delete.
         only_artifact: If set, only delete the artifact but not its metadata.
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
     if not yes:
         confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete artifact '{artifact_id}'?"
+            f"Are you sure you want to delete artifact '{artifact_name_or_id}'?"
         )
         if not confirmation:
             cli_utils.declare("Artifact deletion canceled.")
@@ -106,14 +113,15 @@ def delete_artifact(
 
     try:
         Client().delete_artifact(
-            artifact_id=UUID(artifact_id),
+            name_id_or_prefix=artifact_name_or_id,
+            version=version,
             delete_metadata=not only_artifact,
             delete_from_artifact_store=not only_metadata,
         )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
     else:
-        cli_utils.declare(f"Artifact '{artifact_id}' deleted.")
+        cli_utils.declare(f"Artifact '{artifact_name_or_id}' deleted.")
 
 
 @artifact.command("prune", help="Delete all unused artifacts.")
@@ -166,7 +174,7 @@ def prune_artifacts(
     for unused_artifact in unused_artifacts:
         try:
             Client().delete_artifact(
-                artifact_id=unused_artifact.id,
+                name_id_or_prefix=unused_artifact.id,
                 delete_metadata=not only_artifact,
                 delete_from_artifact_store=not only_metadata,
             )

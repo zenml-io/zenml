@@ -205,7 +205,7 @@ class ExternalArtifact:
         else:
             response = None
             if self._id:
-                response = Client().get_artifact(artifact_id=self._id)
+                response = Client().get_artifact(self._id)
             elif self._pipeline_name and self._artifact_name:
                 pipeline = Client().get_pipeline(self._pipeline_name)
                 for artifact in pipeline.last_successful_run.artifacts:

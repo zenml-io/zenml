@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact tables."""
 
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Union
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -45,6 +45,7 @@ class ArtifactSchema(NamedSchema, table=True):
     __tablename__ = "artifact"
 
     # Fields
+    version: str
     type: ArtifactType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -110,6 +111,7 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         return cls(
             name=artifact_request.name,
+            version=str(artifact_request.version),
             artifact_store_id=artifact_request.artifact_store_id,
             workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
@@ -151,9 +153,16 @@ class ArtifactSchema(NamedSchema, table=True):
             else:
                 producer_step_run_id = step_run.original_step_run_id
 
+        version: Union[str, int]
+        try:
+            version = int(self.version)
+        except ValueError:
+            version = self.version
+
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
+            version=version,
             artifact_store_id=self.artifact_store_id,
             user=self.user.to_model(_block_recursion=True)
             if self.user

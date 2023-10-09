@@ -49,6 +49,9 @@ class ArtifactBaseModel(BaseModel):
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    version: Union[str, int] = Field(
+        title="Version of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+    )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
@@ -158,6 +161,10 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
     name: Optional[str] = Field(
         default=None,
         description="Name of the artifact",
+    )
+    version: Optional[Union[str, int]] = Field(
+        default=None,
+        description="Version of the artifact",
     )
     uri: Optional[str] = Field(
         default=None,

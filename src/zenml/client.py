@@ -2604,58 +2604,12 @@ class Client(metaclass=ClientMetaClass):
                 version.
             ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
-
-        if is_valid_uuid(name_id_or_prefix):
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return self.zen_store.get_pipeline(name_id_or_prefix)
-
-        assert not isinstance(name_id_or_prefix, UUID)
-        exact_name_matches = self.list_pipelines(
-            size=1,
-            sort_by="desc:created",
-            name=f"equals:{name_id_or_prefix}",
+        return self._get_versioned_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_pipeline,
+            list_method=self.list_pipelines,
+            name_id_or_prefix=name_id_or_prefix,
             version=version,
         )
-
-        if len(exact_name_matches) == 1:
-            # If the name matches exactly, use the explicitly specified version
-            # or fallback to the latest if not given
-            return exact_name_matches.items[0]
-
-        partial_id_matches = self.list_pipelines(
-            id=f"startswith:{name_id_or_prefix}"
-        )
-        if partial_id_matches.total == 1:
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            return partial_id_matches[0]
-        elif partial_id_matches.total == 0:
-            raise KeyError(
-                f"No pipelines found for name, ID or prefix "
-                f"{name_id_or_prefix}."
-            )
-        else:
-            raise ZenKeyError(
-                f"{partial_id_matches.total} pipelines have been found that "
-                "have an id prefix that matches the provided string "
-                f"'{name_id_or_prefix}':\n"
-                f"{partial_id_matches.items}.\n"
-                f"Please provide more characters to uniquely identify "
-                f"only one of the pipelines."
-            )
 
     def delete_pipeline(
         self,
@@ -3259,6 +3213,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        version: Optional[Union[str, int]] = None,
         artifact_store_id: Optional[Union[str, UUID]] = None,
         type: Optional[ArtifactType] = None,
         data_type: Optional[str] = None,
@@ -3279,6 +3234,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the run to filter by.
+            version: The version of the artifact to filter by.
             artifact_store_id: The id of the artifact store to filter by.
             type: The type of the artifact to filter by.
             data_type: The data type of the artifact to filter by.
@@ -3300,6 +3256,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            version=version,
             artifact_store_id=artifact_store_id,
             type=type,
             data_type=data_type,
@@ -3312,20 +3269,31 @@ class Client(metaclass=ClientMetaClass):
         artifact_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_artifacts(artifact_filter_model)
 
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+    def get_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> ArtifactResponseModel:
         """Get an artifact by ID.
 
         Args:
-            artifact_id: The ID of the artifact to get.
+            name_id_or_prefix: The ID or name or prefix of the artifact to get.
+            version: The version of the artifact to get.
 
         Returns:
             The artifact.
         """
-        return self.zen_store.get_artifact(artifact_id)
+        return self._get_versioned_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_artifact,
+            list_method=self.list_artifacts,
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
 
     def delete_artifact(
         self,
-        artifact_id: UUID,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
     ) -> None:
@@ -3335,13 +3303,17 @@ class Client(metaclass=ClientMetaClass):
         database, not the artifact itself.
 
         Args:
-            artifact_id: The ID of the artifact to delete.
+            name_id_or_prefix: The ID or name or prefix of the artifact to
+                delete.
+            version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact from
                 the database.
             delete_from_artifact_store: If True, delete the artifact itself from
                 the artifact store.
         """
-        artifact = self.get_artifact(artifact_id=artifact_id)
+        artifact = self.get_artifact(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         if delete_from_artifact_store:
             self._delete_artifact_from_artifact_store(artifact=artifact)
         if delete_metadata:
@@ -4985,6 +4957,8 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
             return get_method(name_id_or_prefix)
@@ -5007,7 +4981,6 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # If more than one entity with the same name is found, raise an error.
-        entity_label = get_method.__name__.replace("get_", "") + "s"
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
             f"a name that matches the provided "
@@ -5016,6 +4989,66 @@ class Client(metaclass=ClientMetaClass):
             f"Please use the id to uniquely identify "
             f"only one of the {entity_label}s."
         )
+
+    @staticmethod
+    def _get_versioned_entity_by_id_or_name_or_prefix(
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., Page[AnyResponseModel]],
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str],
+    ) -> "AnyResponseModel":
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    f"{entity_label}. Ignoring the version and fetching the "
+                    f"{entity_label} by ID."
+                )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
+            return get_method(name_id_or_prefix)
+
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = list_method(
+            size=1,
+            sort_by="desc:created",
+            name=f"equals:{name_id_or_prefix}",
+            version=version,
+        )
+
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = list_method(id=f"startswith:{name_id_or_prefix}")
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both a partial ID as well as a version of "
+                    f"the {entity_label}. Ignoring the version and fetching "
+                    f"the {entity_label} by partial ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No {entity_label} found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} {entity_label} have been found "
+                "that have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the {entity_label}s."
+            )
 
     @staticmethod
     def _get_entity_by_prefix(
