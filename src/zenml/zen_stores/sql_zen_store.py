@@ -58,6 +58,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
 )
 from zenml.enums import (
     LoggingLevels,
@@ -5489,7 +5490,11 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            if model_version_name_or_number_or_id is None:
+            if (
+                model_version_name_or_number_or_id is None
+                or model_version_name_or_number_or_id
+                == LATEST_MODEL_VERSION_PLACEHOLDER
+            ):
                 query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
             elif model_version_name_or_number_or_id in [
                 stage.value for stage in ModelStages
