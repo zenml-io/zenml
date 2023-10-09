@@ -58,18 +58,30 @@ class PipelineContext:
 
     ...
 
-    @pipeline(extra={
-        "complex_parameter": ("sklearn.tree","DecisionTreeClassifier")
+    @pipeline(
+        extra={
+            "complex_parameter": [
+                ("sklearn.tree", "DecisionTreeClassifier"),
+                ("sklearn.ensemble", "RandomForestClassifier"),
+            ]
         }
     )
     def my_pipeline():
         context = get_pipeline_context()
 
-        model = load_model_step(
-            model_config=context.extra["complex_parameter"]
-        )
-
-        trained_model = train_model(model=model)
+        after = []
+        search_steps_prefix = "hp_tuning_search_"
+        for i, model_search_configuration in enumerate(
+            len(context.extra["complex_parameter"])
+        ):
+            step_name = f"{search_steps_prefix}{i}"
+            cross_validation(
+                model_package=model_search_configuration[0],
+                model_class=model_search_configuration[1],
+                id=step_name
+            )
+            after.append(step_name)
+        select_best_model(search_steps_prefix=search_steps_prefix, after=after)
     ```
     """
 
