@@ -57,7 +57,6 @@ pymysql = { version = "~1.0.2" }
 pyparsing = "<3,>=2.4.0"
 python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
-python-terraform = { version = "^0.10.1" }
 pyyaml = ">=6.0.1"
 rich = {extras = ["jupyter"], version = ">=12.0.0"}
 sqlalchemy_utils = "0.38.3"
@@ -72,13 +71,14 @@ fastapi-utils = { version = "~0.2.1", optional = true}
 orjson = { version = "~3.8.3", optional = true}
 Jinja2 = { version = "*", optional = true}
 
-# optional dependencies for stack recipes
-
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^23.3.0", optional = true }
 ruff = { version = "^0.0.285", optional = true }
+
+# Optional terraform dependency for stack recipes and ZenServer deployments
+python-terraform = { version = "^0.10.1", optional = true }
 
 # Optional dependencies for the AWS secrets store
 boto3 = { version = ">=1.16.0,<=1.24.59", optional = true }
@@ -173,6 +173,7 @@ server = [
     "Jinja2"
 ]
 templates = ["copier", "jinja2-time", "black", "ruff"]
+terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
@@ -418,6 +419,7 @@ module = [
     "cloudpickle.*",
     "mlstacks.*",
     "matplotlib.*",
+    "IPython.*",
 ]
 ignore_missing_imports = true
 
