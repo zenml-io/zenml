@@ -128,7 +128,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         # URL to it
         verification_uri = url + verification_uri
     webbrowser.open(verification_uri)
-    print(
+    logger.info(
         f"If your browser did not open automatically, please open the "
         f"following URL into your browser to proceed with the authentication:"
         f"\n\n{verification_uri}\n"
@@ -154,7 +154,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         if response.status_code == 200:
             # The user has authorized the device, so we can extract the access token
             token_response = OAuthTokenResponse(**response.json())
-            print("Successfully logged in.")
+            logger.info("Successfully logged in.")
             return token_response.access_token
         elif response.status_code == 400:
             try:
