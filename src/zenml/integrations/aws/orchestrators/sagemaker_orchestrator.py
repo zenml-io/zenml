@@ -266,10 +266,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     # If the network_config passed is not compatible with the NetworkConfig class,
                     # raise a more informative error.
                     raise TypeError(
-                        f"Expected a sagemaker.network.NetworkConfig compatible object for the network_config argument, "
-                        f"but the network_config processor argument is invalid."
-                        f"See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
-                        f"for more information about the NetworkConfig class."
+                        "Expected a sagemaker.network.NetworkConfig compatible object for the network_config argument, "
+                        "but the network_config processor argument is invalid."
+                        "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
+                        "for more information about the NetworkConfig class."
                     )
                 except Exception as e:
                     # Reraise any other error
