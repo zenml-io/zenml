@@ -93,6 +93,17 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: clean unnecessary files to save space
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: |
+            docker rmi `docker images -q`
+            sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
+            sudo apt -y autoremove --purge
+            sudo apt -y autoclean
+            sudo apt clean
+            rm --recursive --force "$AGENT_TOOLSDIRECTORY"
+            df -h
+
       - name: Reinstall packages needed for unit tests
         if: ${{ inputs.os == 'ubuntu-latest' }}
         run: sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
