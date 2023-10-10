@@ -180,13 +180,10 @@ zenml:
       # GCP Secrets Manager service that you want to use is located.
       project_id: my-gcp-project
 
-      # Path to the GCP credentials file to use to authenticate with the GCP Secrets
-      # Manager instance. You can omit this if you are running the ZenML server
-      # in a GCP GKE cluster that uses workload identity to authenticate with
-      # GCP services without the need for credentials.
-      # NOTE: the credentials file needs to be copied in the helm chart folder
-      # and the path configured here needs to be relative to the root of the
-      # helm chart.
+      # The JSON content of the GCP credentials file to use to authenticate with 
+      # the GCP Secrets Manager instance. You can omit this if you are running 
+      # the ZenML server in a GCP GKE cluster that uses workload identity to 
+      # authenticate with GCP services without the need for credentials.
       google_application_credentials:
 
     # AWS Key Vault secrets store configuration. Only relevant if the `azure`
