@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+import subprocess
+import time
 from typing import Tuple
 from unittest import mock
 from uuid import uuid4
@@ -21,11 +24,11 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
-from zenml.steps.external_artifact import ExternalArtifact
 
 
 @step
@@ -124,10 +127,13 @@ def _this_step_does_not_create_a_version():
 
 def test_create_new_versions_both_pipeline_and_step():
     """Test that model config on step and pipeline levels can create new model versions at the same time."""
+    desc = "Should be the best version ever!"
 
     @pipeline(
         name="bar",
-        model_config=ModelConfig(name="bar", create_new_model_version=True),
+        model_config=ModelConfig(
+            name="bar", create_new_model_version=True, version_description=desc
+        ),
         enable_cache=False,
     )
     def _this_pipeline_creates_a_version():
@@ -142,20 +148,22 @@ def test_create_new_versions_both_pipeline_and_step():
         foo = client.get_model("foo")
         assert foo.name == "foo"
         foo_version = client.get_model_version("foo")
-        assert foo_version.version == "1"
+        assert foo_version.name == "1"
 
         bar = client.get_model("bar")
         assert bar.name == "bar"
         bar_version = client.get_model_version("bar")
-        assert bar_version.version == "1"
+        assert bar_version.name == "1"
+        assert bar_version.description == desc
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("foo")
-        assert foo_version.version == "2"
+        assert foo_version.name == "2"
 
         bar_version = client.get_model_version("bar")
-        assert bar_version.version == "2"
+        assert bar_version.name == "2"
+        assert bar_version.description == desc
 
 
 def test_create_new_version_only_in_step():
@@ -174,12 +182,12 @@ def test_create_new_version_only_in_step():
         bar = client.get_model("foo")
         assert bar.name == "foo"
         bar_version = client.get_model_version("foo")
-        assert bar_version.version == "1"
+        assert bar_version.name == "1"
 
         _this_pipeline_does_not_create_a_version()
 
         bar_version = client.get_model_version("foo")
-        assert bar_version.version == "2"
+        assert bar_version.name == "2"
 
 
 def test_create_new_version_only_in_pipeline():
@@ -201,12 +209,12 @@ def test_create_new_version_only_in_pipeline():
         foo = client.get_model("bar")
         assert foo.name == "bar"
         foo_version = client.get_model_version("bar")
-        assert foo_version.version == "1"
+        assert foo_version.name == "1"
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("bar")
-        assert foo_version.version == "2"
+        assert foo_version.name == "2"
 
 
 @step
@@ -218,9 +226,7 @@ def _this_step_produces_output() -> (
 
 @step
 def _this_step_tries_to_recover(run_number: int):
-    mv = Client().get_model_version(
-        model_name_or_id="foo", model_version_name_or_id=RUNNING_MODEL_VERSION
-    )
+    mv = get_step_context().model_config._get_model_version()
     assert (
         len(mv.artifact_object_ids["bar::_this_step_produces_output::data"])
         == run_number
@@ -229,17 +235,30 @@ def _this_step_tries_to_recover(run_number: int):
     raise Exception("make pipeline fail")
 
 
-def test_recovery_of_steps():
+@pytest.mark.parametrize(
+    "model_config",
+    [
+        ModelConfig(
+            name="foo",
+            create_new_model_version=True,
+            delete_new_version_on_failure=False,
+        ),
+        ModelConfig(
+            name="foo",
+            version="test running version",
+            create_new_model_version=True,
+            delete_new_version_on_failure=False,
+        ),
+    ],
+    ids=["default_running_name", "custom_running_name"],
+)
+def test_recovery_of_steps(model_config: ModelConfig):
     """Test that model config can recover states after previous fails."""
 
     @pipeline(
         name="bar",
         enable_cache=False,
-        model_config=ModelConfig(
-            name="foo",
-            create_new_model_version=True,
-            delete_new_version_on_failure=False,
-        ),
+        model_config=model_config,
     )
     def _this_pipeline_will_recover(run_number: int):
         _this_step_produces_output()
@@ -260,9 +279,10 @@ def test_recovery_of_steps():
         model = client.get_model("foo")
         mv = client.get_model_version(
             model_name_or_id=model.id,
-            model_version_name_or_id=RUNNING_MODEL_VERSION,
+            model_version_name_or_number_or_id=model_config.version
+            or RUNNING_MODEL_VERSION,
         )
-        assert mv.version == RUNNING_MODEL_VERSION
+        assert mv.name == model_config.version or RUNNING_MODEL_VERSION
         assert len(mv.artifact_object_ids) == 1
         assert (
             len(
@@ -272,17 +292,30 @@ def test_recovery_of_steps():
         )
 
 
-def test_clean_up_after_failure():
+@pytest.mark.parametrize(
+    "model_config",
+    [
+        ModelConfig(
+            name="foo",
+            create_new_model_version=True,
+            delete_new_version_on_failure=True,
+        ),
+        ModelConfig(
+            name="foo",
+            version="test running version",
+            create_new_model_version=True,
+            delete_new_version_on_failure=True,
+        ),
+    ],
+    ids=["default_running_name", "custom_running_name"],
+)
+def test_clean_up_after_failure(model_config: ModelConfig):
     """Test that hanging `running` versions are cleaned-up after failure."""
 
     @pipeline(
         name="bar",
         enable_cache=False,
-        model_config=ModelConfig(
-            name="foo",
-            create_new_model_version=True,
-            delete_new_version_on_failure=True,
-        ),
+        model_config=model_config,
     )
     def _this_pipeline_will_not_recover(run_number: int):
         _this_step_produces_output()
@@ -302,7 +335,8 @@ def test_clean_up_after_failure():
         with pytest.raises(KeyError):
             client.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_id=RUNNING_MODEL_VERSION,
+                model_version_name_or_number_or_id=model_config.version
+                or RUNNING_MODEL_VERSION,
             )
 
 
@@ -602,7 +636,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
             client.create_model_version(
                 ModelVersionRequestModel(
                     model=models[-1].id,
-                    version="good_one",
+                    name="good_one",
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
                 )
@@ -807,3 +841,110 @@ def test_that_artifact_is_removed_on_deletion():
         model = client.get_model(model_name_or_id="step")
         assert len(model.versions) == 1
         assert len(model.versions[0].artifact_object_ids) == 0
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Subprocesses on Windows are hardly manageable.",
+)
+@pytest.mark.parametrize(
+    "version",
+    ("test running version", ""),
+    ids=["custom_running_name", "default_running_name"],
+)
+def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_and_with_recovery(
+    version,
+):
+    """Test that if second pipeline for same new version is started in parallel - it will fail."""
+    with model_killer():
+        long_runtime = 120
+        long_run_name = f"long_{uuid4()}"
+        # start a long running pipeline with a request for a new version
+        long_process = subprocess.Popen(
+            [
+                "python3",
+                "tests/integration/functional/steps/parallel_pipeline.py",
+                version,
+                long_run_name,
+                str(long_runtime),
+            ],
+        )
+
+        # start concurrent run with same version and request for a new version creation
+        # first wait till first run is actually started
+        client = Client()
+        for _ in range(long_runtime // 5):
+            try:
+                client.get_pipeline_run(long_run_name)
+            except KeyError:
+                break
+            finally:
+                print("sleep")
+                time.sleep(5)
+
+        process = subprocess.run(
+            [
+                "python3",
+                "tests/integration/functional/steps/parallel_pipeline.py",
+                version,
+                f"concurrent_{uuid4()}",
+                "0",
+            ],
+            capture_output=True,
+        )
+
+        assert process.returncode != 0
+        assert (
+            "New model version was requested, but pipeline run"
+            in process.stderr.decode()
+        )
+        long_process.terminate()
+
+
+def test_that_two_pipelines_cannot_create_same_specified_version():
+    """Test that if second pipeline for same new version is started after completion of first one - it will fail."""
+
+    @pipeline(
+        model_config=ModelConfig(
+            name="step",
+            version="test running version",
+            create_new_model_version=True,
+        ),
+        enable_cache=False,
+    )
+    def _inner_pipeline():
+        _this_step_produces_output()
+
+    with model_killer():
+        _inner_pipeline()
+        with pytest.raises(RuntimeError, match="Cannot create version"):
+            _inner_pipeline()
+
+
+def test_that_two_decorators_cannot_request_different_specific_new_version():
+    """Test that if multiple decorators request different new versions - it will fail."""
+
+    @pipeline(
+        model_config=ModelConfig(
+            name="step",
+            version="test running version",
+            create_new_model_version=True,
+        ),
+        enable_cache=False,
+    )
+    def _inner_pipeline():
+        _this_step_produces_output()
+        _this_step_produces_output.with_options(
+            model_config=ModelConfig(
+                name="step",
+                version="test running version 2",
+                create_new_model_version=True,
+            ),
+        )()
+
+    with model_killer():
+        with pytest.raises(
+            ValueError,
+            match="A mismatch of `version` name in model configurations provided",
+        ):
+            _inner_pipeline()

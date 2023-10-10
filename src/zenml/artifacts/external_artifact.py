@@ -72,7 +72,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     Example:
     ```
-    from zenml import step, pipeline, ExternalArtifact
+    from zenml import step, pipeline
+    from zenml.artifacts.external_artifact import ExternalArtifact
     import numpy as np
 
     @step
@@ -99,7 +100,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         pipeline_name = values.get("pipeline_name", None)
         artifact_name = values.get("artifact_name", None)
         model_name = values.get("model_name", None)
-        model_version = values.get("model_version", None)
+        model_version_name = values.get("model_version_name", None)
+        model_version_number = values.get("model_version_number", None)
         model_artifact_name = values.get("model_artifact_name", None)
 
         if (value is not None) + (id is not None) + (
@@ -116,7 +118,10 @@ class ExternalArtifact(ExternalArtifactConfiguration):
                 value,
                 id,
                 pipeline_name or artifact_name,
-                model_name or model_version or model_artifact_name,
+                model_name
+                or model_version_name
+                or model_artifact_name
+                or model_version_number,
             ]
         ):
             raise ValueError(

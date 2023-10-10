@@ -52,7 +52,7 @@ class ModelContext:
                 mv = client.create_model_version(
                     ModelVersionRequestModel(
                         model=model.id,
-                        version=self.model_version,
+                        name=self.model_version,
                         user=self.user,
                         workspace=self.workspace,
                     )
@@ -103,7 +103,7 @@ class TestModelConfig:
             with mock.patch("zenml.model.model_config.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
-            assert mv.version == RUNNING_MODEL_VERSION
+            assert mv.name == RUNNING_MODEL_VERSION
             assert mv.model.name == MODEL_NAME
 
     def test_model_fetch_model_and_version_by_number(self):
@@ -152,10 +152,10 @@ class TestModelConfig:
             mc = ModelConfig(name=MODEL_NAME)
             mv = mc.get_or_create_model_version()
 
-            assert mv.version == "1.0.0"
+            assert mv.name == "1.0.0"
 
     def test_init_create_new_version_with_version_fails(self):
-        """Test that it is not possible to use `version` and `create_new_model_version` together."""
+        """Test that it is not possible to use `version` as ModelStages and `create_new_model_version` together."""
         with pytest.raises(ValueError):
             ModelConfig(
                 name=MODEL_NAME,
@@ -173,10 +173,14 @@ class TestModelConfig:
 
     def test_init_recovery_without_create_new_version_warns(self):
         """Test that use of `recovery` warn on `create_new_model_version` set to False."""
-        with mock.patch("zenml.model.model_config.logger.warning") as logger:
+        with mock.patch(
+            "zenml.models.model_base_model.logger.warning"
+        ) as logger:
             ModelConfig(name=MODEL_NAME, delete_new_version_on_failure=False)
             logger.assert_called_once()
-        with mock.patch("zenml.model.model_config.logger.warning") as logger:
+        with mock.patch(
+            "zenml.models.model_base_model.logger.warning"
+        ) as logger:
             ModelConfig(
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
@@ -186,7 +190,7 @@ class TestModelConfig:
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
-        with mock.patch("zenml.model.model_config.logger.info") as logger:
+        with mock.patch("zenml.models.model_base_model.logger.info") as logger:
             mc = ModelConfig(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,

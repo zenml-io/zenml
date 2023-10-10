@@ -13,12 +13,18 @@
 #  permissions and limitations under the License.
 """Model base model to support Model WatchTower feature."""
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr, root_validator
 
+from zenml.constants import (
+    RUNNING_MODEL_VERSION,
+)
 from zenml.enums import ModelStages
+from zenml.logger import get_logger
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+
+logger = get_logger(__name__)
 
 
 class ModelBaseModel(BaseModel):
@@ -64,18 +70,87 @@ class ModelBaseModel(BaseModel):
 class ModelConfigModel(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
-    version: points model context to a specific version or stage.
+    name: The name of the model.
+    version: The model version name, number or stage is optional and points model context
+        to a specific version/stage, if skipped and `create_new_model_version` is False -
+        latest model version will be used.
+    version_description: The description of the model version.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
     """
 
-    version: Optional[Union[ModelStages, str]] = Field(
-        default=None,
-        description="Model version or stage is optional and points model context to a specific version/stage, "
-        "if skipped and `create_new_model_version` is False - latest model version will be used.",
-    )
+    version: Optional[Union[ModelStages, int, str]]
+    _version_number: Optional[int] = PrivateAttr(default=None)
+    version_description: Optional[str]
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
+
+    class Config:
+        """Config class."""
+
+        smart_union = True
+
+    @root_validator
+    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate all in one.
+
+        Args:
+            values: Dict of values.
+
+        Returns:
+            Dict of validated values.
+
+        Raises:
+            ValueError: If validation failed on one of the checks.
+        """
+        create_new_model_version = values.get(
+            "create_new_model_version", False
+        )
+        delete_new_version_on_failure = values.get(
+            "delete_new_version_on_failure", True
+        )
+        if not delete_new_version_on_failure and not create_new_model_version:
+            logger.warning(
+                "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
+                "Setting `delete_new_version_on_failure` to `True`."
+            )
+            values["delete_new_version_on_failure"] = True
+
+        version = values.get("version", None)
+
+        if create_new_model_version:
+            misuse_message = (
+                "`version` set to {set} cannot be used with `create_new_model_version`."
+                "You can leave it default or set to a non-stage and non-numeric string.\n"
+                "Examples:\n"
+                " - `version` set to 1 or '1' is interpreted as a version number\n"
+                " - `version` set to 'production' is interpreted as a stage\n"
+                " - `version` set to 'my_first_version_in_2023' is a valid version to be created\n"
+                " - `version` set to 'My Second Version!' is a valid version to be created\n"
+            )
+            if isinstance(version, ModelStages) or version in [
+                stage.value for stage in ModelStages
+            ]:
+                raise ValueError(
+                    misuse_message.format(set="a `ModelStages` instance")
+                )
+            if str(version).isnumeric():
+                raise ValueError(misuse_message.format(set="a numeric value"))
+            if version is None:
+                logger.info(
+                    "Creation of new model version was requested, but no version name was explicitly provided."
+                    f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
+                )
+                values["version"] = RUNNING_MODEL_VERSION
+        if version in [stage.value for stage in ModelStages]:
+            logger.info(
+                f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
+            )
+        if str(version).isnumeric():
+            logger.info(
+                f"`version` `{version}` is numeric and will be fetched using version number."
+            )
+        return values

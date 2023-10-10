@@ -2434,7 +2434,8 @@ def test_connector_validation():
 
 
 class TestModelVersion:
-    def test_model_version_create_pass(self):
+    def test_create_pass(self):
+        """Test that vanilla creation pass."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
@@ -2442,11 +2443,12 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
 
-    def test_model_version_create_duplicated(self):
+    def test_create_duplicated(self):
+        """Test that duplicated creation fails."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
@@ -2454,7 +2456,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             with pytest.raises(EntityExistsError):
@@ -2463,11 +2465,12 @@ class TestModelVersion:
                         user=model.user.id,
                         workspace=model.workspace.id,
                         model=model.id,
-                        version="great one",
+                        name="great one",
                     )
                 )
 
-    def test_model_version_create_no_model(self):
+    def test_create_no_model(self):
+        """Test that model relation in DB works."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
@@ -2476,19 +2479,22 @@ class TestModelVersion:
                         user=model.user.id,
                         workspace=model.workspace.id,
                         model=uuid4(),
-                        version="great one",
+                        name="great one",
                     )
                 )
 
-    def test_model_version_get_not_found(self):
+    def test_get_not_found(self):
+        """Test that get fails if not found."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model.id, model_version_name_or_id="1.0.0"
+                    model_name_or_id=model.id,
+                    model_version_name_or_number_or_id="1.0.0",
                 )
 
-    def test_model_version_get_found(self):
+    def test_get_found(self):
+        """Test that get works, if model version exists."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2496,16 +2502,17 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             mv2 = zs.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_id="great one",
+                model_version_name_or_number_or_id="great one",
             )
             assert mv1.id == mv2.id
 
-    def test_model_version_list_empty(self):
+    def test_list_empty(self):
+        """Test list without any versions."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mvs = zs.list_model_versions(
@@ -2513,7 +2520,8 @@ class TestModelVersion:
             )
             assert len(mvs) == 0
 
-    def test_model_version_list_not_empty(self):
+    def test_list_not_empty(self):
+        """Test list with some versions."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2521,7 +2529,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             mv2 = zs.create_model_version(
@@ -2529,7 +2537,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="and yet another one",
+                    name="and yet another one",
                 )
             )
             mvs = zs.list_model_versions(
@@ -2539,7 +2547,8 @@ class TestModelVersion:
             assert mv1 in mvs
             assert mv2 in mvs
 
-    def test_model_version_delete_not_found(self):
+    def test_delete_not_found(self):
+        """Test that delete fails if not found."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
@@ -2548,7 +2557,8 @@ class TestModelVersion:
                     model_version_name_or_id="1.0.0",
                 )
 
-    def test_model_version_delete_found(self):
+    def test_delete_found(self):
+        """Test that delete works, if model version exists."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
@@ -2556,7 +2566,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             zs.delete_model_version(
@@ -2566,10 +2576,11 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id="great one",
+                    model_version_name_or_number_or_id="great one",
                 )
 
-    def test_model_version_update_not_found(self):
+    def test_update_not_found(self):
+        """Test that update fails if not found."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
@@ -2582,7 +2593,8 @@ class TestModelVersion:
                     ),
                 )
 
-    def test_model_version_update_not_forced(self):
+    def test_update_not_forced(self):
+        """Test that update fails if not forced on existing stage version."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2590,7 +2602,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             mv2 = zs.create_model_version(
@@ -2598,7 +2610,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="yet another one",
+                    name="yet another one",
                 )
             )
             zs.update_model_version(
@@ -2611,16 +2623,17 @@ class TestModelVersion:
             )
             mv2 = zs.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_id="staging",
+                model_version_name_or_number_or_id="staging",
             )
             assert mv1.id == mv2.id
             mv3 = zs.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_id=ModelStages.STAGING,
+                model_version_name_or_number_or_id=ModelStages.STAGING,
             )
             assert mv1.id == mv3.id
 
-    def test_model_version_in_stage_not_found(self):
+    def test_in_stage_not_found(self):
+        """Test that get in stage fails if not found."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
@@ -2628,17 +2641,18 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
 
             with pytest.raises(KeyError):
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=ModelStages.STAGING,
+                    model_version_name_or_number_or_id=ModelStages.STAGING,
                 )
 
-    def test_model_version_latest_not_found(self):
+    def test_latest_not_found(self):
+        """Test that get latest fails if not found."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
@@ -2646,7 +2660,8 @@ class TestModelVersion:
                     model_name_or_id=model.id,
                 )
 
-    def test_model_version_latest_found(self):
+    def test_latest_found(self):
+        """Test that get latest works, if model version exists."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
@@ -2654,7 +2669,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             time.sleep(1)  # thanks to MySQL way of storing datetimes
@@ -2663,7 +2678,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="yet another one",
+                    name="yet another one",
                 )
             )
             found_latest = zs.get_model_version(
@@ -2671,7 +2686,8 @@ class TestModelVersion:
             )
             assert latest.id == found_latest.id
 
-    def test_model_version_update_forced(self):
+    def test_update_forced(self):
+        """Test that update works, if model version in stage exists and force=True."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2679,7 +2695,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
             mv2 = zs.create_model_version(
@@ -2687,7 +2703,7 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="yet another one",
+                    name="yet another one",
                 )
             )
             zs.update_model_version(
@@ -2701,7 +2717,7 @@ class TestModelVersion:
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv1.version,
+                    model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "staging"
             )
@@ -2711,33 +2727,34 @@ class TestModelVersion:
                     model=model.id,
                     stage="staging",
                     force=True,
-                    version="I changed that...",
+                    name="I changed that...",
                 ),
             )
 
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv1.version,
+                    model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "archived"
             )
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv2.id,
+                    model_version_name_or_number_or_id=mv2.id,
                 ).stage
                 == "staging"
             )
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv2.id,
-                ).version
+                    model_version_name_or_number_or_id=mv2.id,
+                ).name
                 == "I changed that..."
             )
 
-    def test_model_version_update_public_interface(self):
+    def test_update_public_interface(self):
+        """Test that update works via public interface."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2745,13 +2762,13 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version=RUNNING_MODEL_VERSION,
+                    name=RUNNING_MODEL_VERSION,
                 )
             )
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv1.version,
+                    model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 is None
             )
@@ -2759,21 +2776,22 @@ class TestModelVersion:
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv1.version,
+                    model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "staging"
             )
 
-            mv1._assign_version_to_running()
+            mv1._update_default_running_version_name()
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,
-                    model_version_name_or_id=mv1.id,
-                ).version
+                    model_version_name_or_number_or_id=mv1.id,
+                ).name
                 == "1"
             )
 
-    def test_model_version_update_public_interface_bad_stage(self):
+    def test_update_public_interface_bad_stage(self):
+        """Test that update fails via public interface on bad stage value."""
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
@@ -2781,20 +2799,82 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    version="great one",
+                    name="great one",
                 )
             )
 
             with pytest.raises(ValueError):
                 mv1.set_stage("my_super_stage")
 
-    def test_model_version_model_bad_stage(self):
+    def test_model_bad_stage(self):
+        """Test that update fails on bad stage value."""
         with pytest.raises(ValueError):
             ModelVersionUpdateModel(model=uuid4(), stage="my_super_stage")
 
-    def test_model_version_model_ok_stage(self):
+    def test_model_ok_stage(self):
+        """Test that update works on valid stage value."""
         mvum = ModelVersionUpdateModel(model=uuid4(), stage="staging")
         assert mvum.stage == "staging"
+
+    def test_increments_version_number(self):
+        """Test that increment version number works on sequential insertions."""
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                )
+            )
+            time.sleep(1)  # thanks MySQL again!
+            zs.create_model_version(
+                ModelVersionRequestModel(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great second",
+                )
+            )
+
+            model_versions = zs.list_model_versions(
+                ModelVersionFilterModel(model_id=model.id)
+            )
+            assert len(model_versions) == 2
+            assert model_versions[0].name == "great one"
+            assert model_versions[1].name == "great second"
+            assert model_versions[0].number == 1
+            assert model_versions[1].number == 2
+
+    def test_get_found_by_number(self):
+        """Test that get works by integer version number."""
+        with ModelVersionContext(create_version=True) as model_version:
+            zs = Client().zen_store
+            found = zs.get_model_version(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_number_or_id=1,
+            )
+            assert found.id == model_version.id
+            assert found.number == 1
+            assert found.name == model_version.name
+
+    def test_get_not_found_by_number(self):
+        """Test that get fails by integer version number, if not found and by string version number, cause treated as name."""
+        with ModelVersionContext(create_version=True) as model_version:
+            zs = Client().zen_store
+            # no version numbered as 2
+            with pytest.raises(KeyError):
+                zs.get_model_version(
+                    model_name_or_id=model_version.model.id,
+                    model_version_name_or_number_or_id=2,
+                )
+            # cannot fetch by string number - treated as name
+            with pytest.raises(KeyError):
+                zs.get_model_version(
+                    model_name_or_id=model_version.model.id,
+                    model_version_name_or_number_or_id="1",
+                )
 
 
 class TestModelVersionArtifactLinks:
@@ -3138,7 +3218,7 @@ class TestModelVersionArtifactLinks:
 
             mv = zs.get_model_version(
                 model_name_or_id=model_version.model.id,
-                model_version_name_or_id=model_version.id,
+                model_version_name_or_number_or_id=model_version.id,
             )
 
             assert len(mv.model_object_ids) == 1
@@ -3327,7 +3407,7 @@ class TestModelVersionPipelineRunLinks:
 
             mv = zs.get_model_version(
                 model_name_or_id=model_version.model.id,
-                model_version_name_or_id=model_version.id,
+                model_version_name_or_number_or_id=model_version.id,
             )
 
             assert len(mv.pipeline_run_ids) == 2

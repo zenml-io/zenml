@@ -58,6 +58,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
 )
 from zenml.enums import (
     LoggingLevels,
@@ -5425,20 +5426,35 @@ class SqlZenStore(BaseZenStore):
             The newly created model version.
 
         Raises:
+            ValueError: If `number` is not None during model version creation.
             EntityExistsError: If a workspace with the given name already exists.
         """
+        if model_version.number is not None:
+            raise ValueError(
+                "`number` field  must be None during model version creation."
+            )
         with Session(self.engine) as session:
             model = self.get_model(model_version.model)
             existing_model_version = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)
-                .where(ModelVersionSchema.version == model_version.version)
+                .where(ModelVersionSchema.name == model_version.name)
             ).first()
             if existing_model_version is not None:
                 raise EntityExistsError(
-                    f"Unable to create model version {model_version.version}: "
+                    f"Unable to create model version {model_version.name}: "
                     f"A model version with this name already exists in {model.name} model."
                 )
+
+            all_versions = session.exec(
+                select(ModelVersionSchema)
+                .where(ModelVersionSchema.model_id == model.id)
+                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+            ).first()
+
+            model_version.number = (
+                all_versions.number + 1 if all_versions else 1
+            )
 
             model_version_schema = ModelVersionSchema.from_request(
                 model_version
@@ -5452,13 +5468,15 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID, ModelStages] = "__latest__",
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name, id or stage of the model version to be retrieved.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
 
         Returns:
@@ -5472,29 +5490,42 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionSchema).where(
                 ModelVersionSchema.model_id == model.id
             )
-            if model_version_name_or_id == "__latest__":
+            if (
+                model_version_name_or_number_or_id is None
+                or model_version_name_or_number_or_id
+                == LATEST_MODEL_VERSION_PLACEHOLDER
+            ):
                 query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
-            elif model_version_name_or_id in [
+            elif model_version_name_or_number_or_id in [
                 stage.value for stage in ModelStages
             ]:
                 query = query.where(
-                    ModelVersionSchema.stage == model_version_name_or_id
+                    ModelVersionSchema.stage
+                    == model_version_name_or_number_or_id
                 )
+            elif isinstance(model_version_name_or_number_or_id, int):
+                query = query.where(
+                    ModelVersionSchema.number
+                    == model_version_name_or_number_or_id
+                )
+
             else:
                 try:
-                    UUID(str(model_version_name_or_id))
+                    UUID(str(model_version_name_or_number_or_id))
                     query = query.where(
-                        ModelVersionSchema.id == model_version_name_or_id
+                        ModelVersionSchema.id
+                        == model_version_name_or_number_or_id
                     )
                 except ValueError:
                     query = query.where(
-                        ModelVersionSchema.version == model_version_name_or_id
+                        ModelVersionSchema.name
+                        == model_version_name_or_number_or_id
                     )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to get model version with name `{model_version_name_or_id}`: "
-                    f"No model version with this name found."
+                    f"Unable to get model version with identifier `{model_version_name_or_number_or_id}`: "
+                    f"No model version with this identifier found."
                 )
             return ModelVersionSchema.to_model(model_version)
 
@@ -5546,7 +5577,7 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionSchema.version == model_version_name_or_id
+                    ModelVersionSchema.name == model_version_name_or_id
                 )
             model_version = session.exec(query).first()
             if model_version is None:
@@ -5604,21 +5635,22 @@ class SqlZenStore(BaseZenStore):
                 if existing_model_version_in_target_stage is not None:
                     if not model_version_update_model.force:
                         raise RuntimeError(
-                            f"Model version {existing_model_version_in_target_stage.version} is "
+                            f"Model version {existing_model_version_in_target_stage.name} is "
                             f"in {stage}, but `force` flag is False."
                         )
                     else:
                         existing_model_version_in_target_stage.update(
-                            ModelStages.ARCHIVED.value
+                            target_stage=ModelStages.ARCHIVED.value
                         )
                         session.add(existing_model_version_in_target_stage)
 
                         logger.info(
-                            f"Model version {existing_model_version_in_target_stage.version} has been set to {ModelStages.ARCHIVED.value}."
+                            f"Model version {existing_model_version_in_target_stage.name} has been set to {ModelStages.ARCHIVED.value}."
                         )
 
             existing_model_version.update(
-                stage, model_version_update_model.version
+                target_stage=stage,
+                target_name=model_version_update_model.name,
             )
             session.add(existing_model_version)
             session.commit()

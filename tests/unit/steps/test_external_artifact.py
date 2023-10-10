@@ -175,7 +175,7 @@ def test_get_artifact_by_value_before_upload_raises():
                 "zenml.client": MockZenmlClient,
             },
         ):
-            ea.get_artifact()
+            ea.get_artifact_id()
 
 
 def test_get_artifact_by_id():
@@ -192,7 +192,7 @@ def test_get_artifact_by_id():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.get_artifact() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
 
 
 def test_get_artifact_by_pipeline_and_artifact():
@@ -209,7 +209,7 @@ def test_get_artifact_by_pipeline_and_artifact():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.get_artifact() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
     assert ea.id == GLOBAL_ARTIFACT_ID
 
 
@@ -231,7 +231,7 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
             ):
                 ExternalArtifact(
                     pipeline_name="foo", artifact_name="bar"
-                ).get_artifact()
+                ).get_artifact_id()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
 
@@ -248,4 +248,4 @@ def test_get_artifact_by_pipeline_and_artifact_name_not_found():
         ):
             ExternalArtifact(
                 pipeline_name="foo", artifact_name="foobar"
-            ).get_artifact()
+            ).get_artifact_id()

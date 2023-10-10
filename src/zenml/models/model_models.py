@@ -14,13 +14,14 @@
 """Model implementation to support Model WatchTower feature."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
+from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -31,16 +32,18 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
-if TYPE_CHECKING:
-    pass
+logger = get_logger(__name__)
 
 
 class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
-    version: str = Field(
+    name: Optional[str] = Field(
         title="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    number: Optional[int] = Field(
+        title="The number of the model version",
     )
     description: Optional[str] = Field(
         title="The description of the model version",
@@ -313,50 +316,21 @@ class ModelVersionResponseModel(
             ),
         )
 
-    def _assign_version_to_running(self) -> "ModelVersionResponseModel":
-        """Sets a version to this running Model Version.
-
-        Running version is an intermediate version create if ModelContext of
-        pipeline or a step requested to do so. Running version after pipeline
-        finished can resolve into a new stable version on success or get deleted
-        on failure or kept as is on failure with recovery option.
-
-        Returns:
-            Model Version as a response model.
-
-        Raises:
-            RuntimeError: if this is not a running Model Version.
-        """
-        if self.version != RUNNING_MODEL_VERSION:
-            raise RuntimeError(
-                f"This is not a `{RUNNING_MODEL_VERSION}` Model Version."
-            )
+    def _update_default_running_version_name(self) -> None:
+        """Replace default running version name with a version number product."""
+        if self.name != RUNNING_MODEL_VERSION:
+            return
 
         from zenml.client import Client
 
-        page = 1
-        total_pages = float("inf")
-        while page < total_pages:
-            versions = Client().list_model_versions(
-                ModelVersionFilterModel(
-                    sort_by="desc:version", model_id=self.model.id, page=page
-                )
-            )
-            page += 1
-            total_pages = versions.total_pages
-
-            to_set_version = "1"
-            for version in versions:
-                if version.version.isnumeric():
-                    to_set_version = str(int(version.version) + 1)
-                    total_pages = 0
-                    break
-
-        return Client().update_model_version(
+        Client().update_model_version(
             model_version_id=self.id,
             model_version_update_model=ModelVersionUpdateModel(
-                model=self.model.id, version=to_set_version
+                model=self.model.id, name=str(self.number)
             ),
+        )
+        logger.info(
+            f"Updated model version name for `ID:{self.id}` to `{self.number}`"
         )
 
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
@@ -370,9 +344,13 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     model_id: Union[str, UUID] = Field(
         description="The ID of the Model",
     )
-    version: Optional[Union[str, UUID]] = Field(
+    name: Optional[Union[str, UUID]] = Field(
         default=None,
         description="The name of the Model Version",
+    )
+    number: Optional[int] = Field(
+        default=None,
+        description="The number of the Model Version",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -396,8 +374,8 @@ class ModelVersionUpdateModel(BaseModel):
         "or an error should be raised.",
         default=False,
     )
-    version: Optional[str] = Field(
-        title="Target model version to be set", default=None
+    name: Optional[str] = Field(
+        title="Target model version name to be set", default=None
     )
 
     @validator("stage")
@@ -568,12 +546,12 @@ class ModelResponseModel(
         )
 
     def get_version(
-        self, version: Optional[Union[str, ModelStages]] = None
+        self, version: Optional[Union[str, int, ModelStages]] = None
     ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
         Args:
-            version: version number, stage or None for latest version.
+            version: version name, number, stage or None for latest version.
 
         Returns:
             The requested model version.
@@ -585,7 +563,9 @@ class ModelResponseModel(
         else:
             return Client().get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_id=getattr(version, "value", version),
+                model_version_name_or_number_or_id=getattr(
+                    version, "value", version
+                ),
             )
 
 

@@ -83,7 +83,7 @@ def test_link_minimalistic():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -144,7 +144,7 @@ def test_link_multiple_named_outputs():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         al = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -190,7 +190,7 @@ def test_link_multiple_named_outputs_without_links():
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME)
-        assert mv.version == "1"
+        assert mv.name == "1"
         artifact_links = client.list_model_version_artifact_links(
             ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -209,17 +209,17 @@ def multi_named_output_step_from_self() -> (
         Annotated[
             int,
             "1",
-            ArtifactConfig(model_name=MODEL_NAME, model_version_name="bar"),
+            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "2",
-            ArtifactConfig(model_name=MODEL_NAME, model_version_name="bar"),
+            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "3",
-            ArtifactConfig(model_name="bar", model_version_name="foo"),
+            ArtifactConfig(model_name="bar", model_version="foo"),
         ],
     ]
 ):
@@ -252,7 +252,7 @@ def test_link_multiple_named_outputs_with_self_context():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="bar",
+                name="bar",
                 model=m1.id,
             )
         )
@@ -260,7 +260,7 @@ def test_link_multiple_named_outputs_with_self_context():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="foo",
+                name="foo",
                 model=m2.id,
             )
         )
@@ -304,9 +304,7 @@ def multi_named_output_step_mixed_linkage() -> (
         Annotated[
             int,
             "3",
-            ArtifactConfig(
-                model_name="artifact", model_version_name="artifact"
-            ),
+            ArtifactConfig(model_name="artifact", model_version="artifact"),
         ],
     ]
 ):
@@ -370,7 +368,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
                     ModelVersionRequestModel(
                         user=user,
                         workspace=ws,
-                        version=n,
+                        name=n,
                         model=models[-1].id,
                     )
                 )
@@ -442,7 +440,7 @@ def test_link_no_versioning():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -513,7 +511,7 @@ def test_link_with_versioning():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -558,7 +556,7 @@ def step_with_manual_linkage() -> (
     """Multi output linking by function."""
     link_output_to_model(ArtifactConfig(), "1")
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+        ArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -578,7 +576,7 @@ def step_with_manual_and_implicit_linkage() -> (
 ):
     """Multi output: 2 is linked by function, 1 is linked implicitly."""
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version_name="bar"), "2"
+        ArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -626,7 +624,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -634,7 +632,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="bar",
+                name="bar",
                 model=model2.id,
             )
         )
@@ -704,7 +702,7 @@ def test_link_with_manual_linkage_fail_on_override():
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )
@@ -732,13 +730,14 @@ def simple_pipeline_with_manual_linkage_flexible_config(
 @pytest.mark.parametrize(
     "artifact_config",
     (
-        ArtifactConfig(model_name=MODEL_NAME, model_version_name="good_one"),
+        ArtifactConfig(model_name=MODEL_NAME, model_version="good_one"),
         ArtifactConfig(
-            model_name=MODEL_NAME, model_version_name=ModelStages.PRODUCTION
+            model_name=MODEL_NAME, model_version=ModelStages.PRODUCTION
         ),
         ArtifactConfig(model_name=MODEL_NAME),
+        ArtifactConfig(model_name=MODEL_NAME, model_version=1),
     ),
-    ids=("exact_version", "exact_stage", "latest_version"),
+    ids=("exact_version", "exact_stage", "latest_version", "exact_number"),
 )
 def test_link_with_manual_linkage_flexible_config(
     artifact_config: ArtifactConfig,
@@ -761,7 +760,7 @@ def test_link_with_manual_linkage_flexible_config(
             ModelVersionRequestModel(
                 user=user,
                 workspace=ws,
-                version="good_one",
+                name="good_one",
                 model=model.id,
             )
         )

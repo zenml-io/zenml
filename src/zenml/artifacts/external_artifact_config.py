@@ -42,8 +42,8 @@ class ExternalArtifactConfiguration(BaseModel):
     pipeline_name: Optional[str] = None
     artifact_name: Optional[str] = None
     model_name: Optional[str] = None
-    model_version: Optional[str] = None
-    model_artifact_name: Optional[Union[str, ModelStages]] = None
+    model_version: Optional[Union[str, int, ModelStages]] = None
+    model_artifact_name: Optional[str] = None
     model_artifact_version: Optional[str] = None
     model_artifact_pipeline_name: Optional[str] = None
     model_artifact_step_name: Optional[str] = None
@@ -106,7 +106,8 @@ class ExternalArtifactConfiguration(BaseModel):
             self.model_version = model_config.version
 
         _model_config = ModelConfig(
-            name=self.model_name, version=self.model_version
+            name=self.model_name,
+            version=self.model_version,
         )
         model_version = _model_config._get_model_version()
 
@@ -133,7 +134,7 @@ class ExternalArtifactConfiguration(BaseModel):
 
         return response
 
-    def get_artifact(
+    def get_artifact_id(
         self, model_config: Optional["ModelConfig"] = None
     ) -> UUID:
         """Get the artifact.

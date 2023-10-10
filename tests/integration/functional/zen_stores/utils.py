@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field, SecretStr
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
@@ -51,6 +52,7 @@ from zenml.models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
+    PipelineRunRequestModel,
     PipelineUpdateModel,
     ResourceTypeModel,
     RoleFilterModel,
@@ -524,11 +526,13 @@ class ModelVersionContext:
         self.artifacts = []
         self.create_prs = create_prs
         self.prs = []
+        self.deployments = []
 
     def __enter__(self):
         client = Client()
         ws = client.get_workspace(self.workspace)
         user = client.get_user(self.user)
+        stack = client.active_stack
         try:
             model = client.get_model(self.model)
         except KeyError:
@@ -546,7 +550,7 @@ class ModelVersionContext:
                         user=user.id,
                         workspace=ws.id,
                         model=model.id,
-                        version=self.model_version,
+                        name=self.model_version,
                     )
                 )
 
@@ -565,6 +569,18 @@ class ModelVersionContext:
                 )
             )
         for _ in range(self.create_prs):
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequestModel(
+                    user=user.id,
+                    workspace=ws.id,
+                    stack=stack.id,
+                    run_name_template="",
+                    pipeline_configuration={"name": "pipeline_name"},
+                    client_version="0.12.3",
+                    server_version="0.12.3",
+                ),
+            )
+            self.deployments.append(deployment)
             self.prs.append(
                 client.zen_store.create_run(
                     PipelineRunRequestModel(
@@ -574,6 +590,7 @@ class ModelVersionContext:
                         config=PipelineConfiguration(name="aria_pipeline"),
                         user=user.id,
                         workspace=ws.id,
+                        deployment=deployment.id,
                     )
                 )
             )
@@ -602,6 +619,8 @@ class ModelVersionContext:
             client.delete_artifact(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)
+        for deployment in self.deployments:
+            client.delete_deployment(str(deployment.id))
 
 
 class CatClawMarks(AuthenticationConfig):
