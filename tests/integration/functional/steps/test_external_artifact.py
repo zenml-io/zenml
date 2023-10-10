@@ -147,7 +147,7 @@ def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number()
 
 
 @pytest.mark.parametrize(
-    "model_version_name,model_version_number,expected",
+    "model_version_name,expected",
     [[1, 42], ["1", 42], ["foo", 23]],
     ids=[
         "By model version number",
@@ -155,9 +155,7 @@ def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number()
         "By model version name",
     ],
 )
-def test_direct_consumption(
-    model_version_name, model_version_number, expected
-):
+def test_direct_consumption(model_version_name, expected):
     """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
     with model_killer():
         producer_pipeline.with_options(
