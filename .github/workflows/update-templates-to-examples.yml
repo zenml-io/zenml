@@ -1,4 +1,4 @@
-name: Auto-update E2E template
+name: Auto-update all templates
 
 on:
   workflow_call:
@@ -35,8 +35,8 @@ on:
         default: '3.8'
 
 jobs:
-  update-e2e-template:
-    name: update-e2e-template
+  update-templates-to-examples:
+    name: update-templates-to-examples
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
@@ -106,7 +106,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: '2023.09.28' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
+          ref-template: '2023.10.10' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
 
       - name: message-on-error
         if: failure()
