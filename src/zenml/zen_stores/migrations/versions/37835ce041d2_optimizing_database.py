@@ -9,6 +9,7 @@ import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy.dialects import mysql
+from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
 revision = "37835ce041d2"
@@ -25,14 +26,14 @@ def upgrade() -> None:
             sa.Column(
                 "client_version",
                 sqlmodel.sql.sqltypes.AutoString(),
-                nullable=False,
+                nullable=True,
             )
         )
         batch_op.add_column(
             sa.Column(
                 "server_version",
                 sqlmodel.sql.sqltypes.AutoString(),
-                nullable=False,
+                nullable=True,
             )
         )
         batch_op.alter_column(
@@ -43,6 +44,91 @@ def upgrade() -> None:
             ),
             existing_nullable=False,
         )
+
+    # Fill in the values and make fields nullable
+    connection = op.get_bind()
+
+    update_client_version_query = text(
+        """
+        UPDATE pipeline_deployment
+        SET client_version = (
+            SELECT pipeline_run.client_version
+            FROM pipeline_run
+            WHERE pipeline_run.deployment_id = pipeline_deployment.id
+        )
+        WHERE EXISTS (
+            SELECT 1
+            FROM pipeline_run
+            WHERE pipeline_run.deployment_id = pipeline_deployment.id
+        )
+        """
+    )
+    connection.execute(update_client_version_query)
+
+    update_server_version_query = text(
+        """
+        UPDATE pipeline_deployment
+        SET server_version = (
+            SELECT pipeline_run.server_version
+            FROM pipeline_run
+            WHERE pipeline_run.deployment_id = pipeline_deployment.id
+        )
+        WHERE EXISTS (
+            SELECT 1
+            FROM pipeline_run
+            WHERE pipeline_run.deployment_id = pipeline_deployment.id
+        )
+        """
+    )
+    connection.execute(update_server_version_query)
+
+    with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
+        batch_op.alter_column("client_version", nullable=False)
+        batch_op.alter_column("server_version", nullable=False)
+
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "deployment_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+
+        batch_op.create_foreign_key(
+            "fk_step_run_deployment_id_pipeline_deployment",
+            "pipeline_deployment",
+            ["deployment_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+        batch_op.drop_column("step_configuration")
+        batch_op.drop_column("parameters")
+        batch_op.drop_column("enable_artifact_metadata")
+        batch_op.drop_column("num_outputs")
+        batch_op.drop_column("enable_cache")
+        batch_op.drop_column("caching_parameters")
+        batch_op.drop_column("entrypoint_name")
+
+    connection = op.get_bind()
+
+    update_deployment_id = text(
+        """
+        UPDATE step_run
+        SET deployment_id = (
+            SELECT pipeline_run.deployment_id
+            FROM pipeline_run
+            WHERE pipeline_run.id = step_run.pipeline_run_id
+        )
+        WHERE EXISTS (
+            SELECT 1
+            FROM pipeline_run
+            WHERE pipeline_run.id = step_run.pipeline_run_id
+        )
+        """
+    )
+    connection.execute(update_deployment_id)
+
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.alter_column("deployment_id", nullable=False)
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
@@ -76,27 +162,6 @@ def upgrade() -> None:
         batch_op.drop_column("enable_artifact_metadata")
         batch_op.drop_column("enable_cache")
         batch_op.drop_column("build_id")
-
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "deployment_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-            )
-        )
-        batch_op.create_foreign_key(
-            "fk_step_run_deployment_id_pipeline_deployment",
-            "pipeline_deployment",
-            ["deployment_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.drop_column("step_configuration")
-        batch_op.drop_column("parameters")
-        batch_op.drop_column("enable_artifact_metadata")
-        batch_op.drop_column("num_outputs")
-        batch_op.drop_column("enable_cache")
-        batch_op.drop_column("caching_parameters")
-        batch_op.drop_column("entrypoint_name")
 
     # ### end Alembic commands ###
 
