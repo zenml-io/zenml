@@ -128,7 +128,7 @@ def test_external_artifact_init(
                 pipeline_name=pipeline_name,
                 artifact_name=artifact_name,
                 model_name=model_name,
-                model_version_name=model_version,
+                model_version=model_version,
                 model_artifact_name=model_artifact_name,
             )
     else:
@@ -138,7 +138,7 @@ def test_external_artifact_init(
             pipeline_name=pipeline_name,
             artifact_name=artifact_name,
             model_name=model_name,
-            model_version_name=model_version,
+            model_version=model_version,
             model_artifact_name=model_artifact_name,
         )
 

@@ -85,12 +85,7 @@ class ArtifactConfig(BaseModel):
 
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
-                version_name=self.model_version
-                if not isinstance(self.model_version, int)
-                else None,
-                version_number=self.model_version
-                if isinstance(self.model_version, int)
-                else None,
+                version=self.model_version,
                 create_new_model_version=False,
             )
             return on_the_fly_config

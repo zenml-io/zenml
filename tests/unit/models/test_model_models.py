@@ -184,23 +184,24 @@ def test_getters(
 
 
 @pytest.mark.parametrize(
-    "version_name,version_number,create_new_model_version,delete_new_version_on_failure,logger",
+    "version_name,create_new_model_version,delete_new_version_on_failure,logger",
     [
-        [None, None, False, False, "warning"],
-        ["bar", 1, False, True, "warning"],
-        [None, None, True, False, "info"],
-        ["staging", None, False, False, "info"],
+        [None, False, False, "warning"],
+        [None, True, False, "info"],
+        ["staging", False, False, "info"],
+        ["1", False, False, "info"],
+        [1, False, False, "info"],
     ],
     ids=[
         "No new version, but recovery",
-        "Version number over version name",
         "Default running version",
         "Pick model by text stage",
+        "Pick model by text version number",
+        "Pick model by integer version number",
     ],
 )
 def test_init_warns(
     version_name,
-    version_number,
     create_new_model_version,
     delete_new_version_on_failure,
     logger,
@@ -208,8 +209,7 @@ def test_init_warns(
     with patch(f"zenml.models.model_base_model.logger.{logger}") as logger:
         ModelConfigModel(
             name="foo",
-            version_name=version_name,
-            version_number=version_number,
+            version=version_name,
             create_new_model_version=create_new_model_version,
             delete_new_version_on_failure=delete_new_version_on_failure,
         )
@@ -217,25 +217,27 @@ def test_init_warns(
 
 
 @pytest.mark.parametrize(
-    "version_name,version_number,create_new_model_version",
+    "version_name,create_new_model_version",
     [
-        [None, 1, True],
-        [ModelStages.PRODUCTION, None, True],
+        [1, True],
+        ["1", True],
+        [ModelStages.PRODUCTION, True],
+        ["production", True],
     ],
     ids=[
-        "Version number and new version request",
-        "Version name as stage and new version request",
+        "Version number as integer and new version request",
+        "Version number as string and new version request",
+        "Version stage as instance and new version request",
+        "Version stage as string and new version request",
     ],
 )
 def test_init_raises(
     version_name,
-    version_number,
     create_new_model_version,
 ):
     with pytest.raises(ValueError):
         ModelConfigModel(
             name="foo",
-            version_name=version_name,
-            version_number=version_number,
+            version=version_name,
             create_new_model_version=create_new_model_version,
         )

@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel
 
 from zenml.config.source import Source
 from zenml.enums import ModelStages
@@ -42,32 +42,11 @@ class ExternalArtifactConfiguration(BaseModel):
     pipeline_name: Optional[str] = None
     artifact_name: Optional[str] = None
     model_name: Optional[str] = None
-    model_version_name: Optional[Union[str, ModelStages]] = None
-    model_version_number: Optional[int] = None
+    model_version: Optional[Union[str, int, ModelStages]] = None
     model_artifact_name: Optional[str] = None
     model_artifact_version: Optional[str] = None
     model_artifact_pipeline_name: Optional[str] = None
     model_artifact_step_name: Optional[str] = None
-
-    @root_validator
-    def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates all fields.
-
-        Args:
-            values: The values dict used to instantiate the model.
-
-        Returns:
-            The validated values dict.
-        """
-        if values.get("model_version_number", None) and values.get(
-            "model_version_name", None
-        ):
-            logger.warning(
-                "`model_version_number` has higher priority then `model_version_name`."
-                "Setting `model_version_name` to `None`."
-            )
-            values["model_version_name"] = None
-        return values
 
     def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
         """Get artifact from pipeline run.
@@ -124,13 +103,11 @@ class ExternalArtifactConfiguration(BaseModel):
                     "@pipeline definitions."
                 )
             self.model_name = model_config.name
-            self.model_version_name = model_config.version_name
-            self.model_version_number = model_config.version_number
+            self.model_version = model_config.version
 
         _model_config = ModelConfig(
             name=self.model_name,
-            version_name=self.model_version_name,
-            version_number=self.model_version_number,
+            version=self.model_version,
         )
         model_version = _model_config._get_model_version()
 
@@ -151,7 +128,7 @@ class ExternalArtifactConfiguration(BaseModel):
         if response is None:
             raise RuntimeError(
                 f"Artifact with name `{self.model_artifact_name}` was not found "
-                f"in model `{self.model_name}` version `{self.model_version_name}`. "
+                f"in model `{self.model_name}` version `{self.model_version}`. "
                 "Please check your inputs and try again."
             )
 
