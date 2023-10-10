@@ -14,7 +14,6 @@
 """ZenML constants."""
 
 import os
-from typing import Optional
 
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
@@ -54,15 +53,12 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
 
 # Global constants
 APP_NAME = "zenml"
-CONFIG_VERSION = "1"
-GIT_REPO_URL = "https://github.com/zenml-io/zenml.git"
 
 # Environment variables
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
-ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
 ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
@@ -70,9 +66,7 @@ ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_WORKSPACE_ID = "ZENML_ACTIVE_WORKSPACE_ID"
 ENV_ZENML_SUPPRESS_LOGS = "ZENML_SUPPRESS_LOGS"
 ENV_ZENML_ENABLE_REPO_INIT_WARNINGS = "ZENML_ENABLE_REPO_INIT_WARNINGS"
-ENV_ZENML_IGNORE_STORE_COUPLINGS = "ZENML_IGNORE_STORE_COUPLINGS"
 ENV_ZENML_SECRET_VALIDATION_LEVEL = "ZENML_SECRET_VALIDATION_LEVEL"
-ENV_ZENML_JWT_SECRET_KEY = "ZENML_JWT_SECRET_KEY"
 ENV_ZENML_AUTH_TYPE = "ZENML_AUTH_TYPE"
 ENV_ZENML_DEFAULT_USER_NAME = "ZENML_DEFAULT_USER_NAME"
 ENV_ZENML_DEFAULT_USER_PASSWORD = "ZENML_DEFAULT_USER_PASSWORD"
@@ -121,10 +115,6 @@ VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 # Path utilities constants
 REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 
-# Segment
-SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
-SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
-
 # ZenML Analytics Server - URL
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
@@ -136,8 +126,6 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
-
-USER_MAIN_MODULE: Optional[str] = None
 
 # Config file name
 CONFIG_FILE_NAME = "config.yaml"
@@ -172,8 +160,6 @@ STEP_SOURCE_PARAMETER_NAME = "step_source"
 # API Endpoint paths:
 API = "/api"
 HEALTH = "/health"
-VERSION = "/version"
-STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
@@ -181,22 +167,17 @@ USERS = "/users"
 CURRENT_USER = "/current-user"
 TEAMS = "/teams"
 WORKSPACES = "/workspaces"
-PERMISSIONS = "/permissions"
 ROLES = "/roles"
 FLAVORS = "/flavors"
 USER_ROLE_ASSIGNMENTS = "/role_assignments"
 TEAM_ROLE_ASSIGNMENTS = "/team_role_assignments"
-PIPELINE_RUNS = "/pipeline_runs"
 LOGIN = "/login"
-LOGOUT = "/logout"
 PIPELINES = "/pipelines"
 PIPELINE_BUILDS = "/pipeline_builds"
 PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
-TRIGGERS = "/triggers"
 RUNS = "/runs"
 RUN_METADATA = "/run-metadata"
 SCHEDULES = "/schedules"
-DEFAULT_STACK = "/default-stack"
 PIPELINE_SPEC = "/pipeline-spec"
 PIPELINE_CONFIGURATION = "/pipeline-configuration"
 STEP_CONFIGURATION = "/step-configuration"
@@ -205,7 +186,6 @@ STEPS = "/steps"
 LOGS = "/logs"
 ARTIFACTS = "/artifacts"
 COMPONENT_TYPES = "/component-types"
-REPOSITORIES = "/repositories"
 DEACTIVATE = "/deactivate"
 EMAIL_ANALYTICS = "/email-opt-in"
 ACTIVATE = "/activate"
@@ -223,10 +203,6 @@ SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
-
-# mandatory stack component attributes
-MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
-
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
@@ -262,10 +238,7 @@ DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
-STACK_RECIPE_PACKAGE_NAME = "mlstacks"
-STACK_RECIPE_TERRAFORM_FILES_PATH = "terraform"
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
-STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 ALPHA_MESSAGE = (
     "The mlstacks tool/package is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
