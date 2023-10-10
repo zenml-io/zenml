@@ -35,8 +35,8 @@ on:
         default: '3.8'
 
 jobs:
-  update-e2e-template:
-    name: update-e2e-template
+  update-templates-to-examples:
+    name: update-templates-to-examples
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
