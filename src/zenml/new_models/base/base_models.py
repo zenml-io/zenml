@@ -20,12 +20,13 @@ from pydantic import BaseModel, Field, SecretStr
 
 from zenml.exceptions import HydrationError
 from zenml.new_models.base.utils import hydrated_property
+from zenml.utils.pydantic_utils import YAMLSerializationMixin
 
 # TODO: We can now remove the additional analytics model from the module
 # -------------------- Base Model --------------------
 
 
-class BaseZenModel(BaseModel):
+class BaseZenModel(BaseModel, YAMLSerializationMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides
