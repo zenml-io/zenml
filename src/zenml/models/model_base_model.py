@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model base model to support Model WatchTower feature."""
+"""Model base model to support Model Control Plane feature."""
 
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, PrivateAttr, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import (
     RUNNING_MODEL_VERSION,
@@ -82,7 +82,6 @@ class ModelConfigModel(ModelBaseModel):
     """
 
     version: Optional[Union[ModelStages, int, str]]
-    _version_number: Optional[int] = PrivateAttr(default=None)
     version_description: Optional[str]
     create_new_model_version: bool = False
     save_models_to_registry: bool = True

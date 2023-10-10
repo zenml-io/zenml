@@ -30,7 +30,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
-from zenml.cli.model import register_model_registry_subcommands
+from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (

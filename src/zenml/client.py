@@ -4977,7 +4977,7 @@ class Client(metaclass=ClientMetaClass):
     #########
 
     def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
-        """Creates a new model in Model WatchTower.
+        """Creates a new model in Model Control Plane.
 
         Args:
             model: the Model to be created.
@@ -4988,7 +4988,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.create_model(model=model)
 
     def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a model from Model WatchTower.
+        """Deletes a model from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
@@ -5000,7 +5000,7 @@ class Client(metaclass=ClientMetaClass):
         model_id: UUID,
         model_update: ModelUpdateModel,
     ) -> ModelResponseModel:
-        """Updates an existing model in Model WatchTower.
+        """Updates an existing model in Model Control Plane.
 
         Args:
             model_id: UUID of the model to be updated.
@@ -5016,7 +5016,7 @@ class Client(metaclass=ClientMetaClass):
     def get_model(
         self, model_name_or_id: Union[str, UUID]
     ) -> ModelResponseModel:
-        """Get an existing model from Model WatchTower.
+        """Get an existing model from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
@@ -5030,7 +5030,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_filter_model: ModelFilterModel,
     ) -> Page[ModelResponseModel]:
-        """Get models by filter from Model WatchTower.
+        """Get models by filter from Model Control Plane.
 
         Args:
             model_filter_model: All filter parameters including pagination
@@ -5050,7 +5050,7 @@ class Client(metaclass=ClientMetaClass):
     def create_model_version(
         self, model_version: ModelVersionRequestModel
     ) -> ModelVersionResponseModel:
-        """Creates a new model version in Model WatchTower.
+        """Creates a new model version in Model Control Plane.
 
         Args:
             model_version: the Model Version to be created.
@@ -5065,7 +5065,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
     ) -> None:
-        """Deletes a model version from Model WatchTower.
+        """Deletes a model version from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
@@ -5083,7 +5083,7 @@ class Client(metaclass=ClientMetaClass):
             Union[str, int, UUID, ModelStages]
         ] = None,
     ) -> ModelVersionResponseModel:
-        """Get an existing model version from Model WatchTower.
+        """Get an existing model version from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
@@ -5102,7 +5102,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
-        """Get model versions by filter from Model WatchTower.
+        """Get model versions by filter from Model Control Plane.
 
         Args:
             model_version_filter_model: All filter parameters including pagination
@@ -5144,7 +5144,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
-        """Get model version to artifact links by filter in Model WatchTower.
+        """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
             model_version_artifact_link_filter_model: All filter parameters including pagination

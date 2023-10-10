@@ -317,6 +317,9 @@ def print_pydantic_models(
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
+        if not active_models and not show_active:
+            return items
+
         marker = "active"
         if marker in items:
             marker = "current"

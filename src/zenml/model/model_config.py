@@ -50,7 +50,7 @@ class ModelConfig(ModelConfigModel):
     )
 
     def get_or_create_model(self) -> "ModelResponseModel":
-        """This method should get or create a model from Model WatchTower.
+        """This method should get or create a model from Model Control Plane.
 
         New model is created implicitly, if missing, otherwise fetched.
 
@@ -95,7 +95,7 @@ class ModelConfig(ModelConfigModel):
     def _create_model_version(
         self, model: "ModelResponseModel"
     ) -> "ModelVersionResponseModel":
-        """This method creates a model version for Model WatchTower.
+        """This method creates a model version for Model Control Plane.
 
         Args:
             model: The model containing the model version.
@@ -133,7 +133,7 @@ class ModelConfig(ModelConfigModel):
         return self._model_version
 
     def _get_model_version(self) -> "ModelVersionResponseModel":
-        """This method gets a model version from Model WatchTower.
+        """This method gets a model version from Model Control Plane.
 
         Returns:
             The model version based on configuration.
@@ -159,7 +159,7 @@ class ModelConfig(ModelConfigModel):
         return self._model_version
 
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
-        """This method should get or create a model and a model version from Model WatchTower.
+        """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
         name is controlled by the `name` parameter.

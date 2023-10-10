@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 """Initialization of ZenML model.
-ZenML model support Model WatchTower feature.
+ZenML model support Model Control Plane feature.
 """
 
 from zenml.model.model_config import ModelConfig

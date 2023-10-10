@@ -5632,7 +5632,11 @@ class SqlZenStore(BaseZenStore):
                     .where(ModelVersionSchema.stage == stage)
                 ).first()
 
-                if existing_model_version_in_target_stage is not None:
+                if (
+                    existing_model_version_in_target_stage is not None
+                    and existing_model_version_in_target_stage.id
+                    != existing_model_version.id
+                ):
                     if not model_version_update_model.force:
                         raise RuntimeError(
                             f"Model version {existing_model_version_in_target_stage.name} is "

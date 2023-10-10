@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model implementation to support Model WatchTower feature."""
+"""Model implementation to support Model Control Plane feature."""
 
 import re
 from typing import Any, Dict, List, Optional, Union
@@ -39,18 +39,18 @@ class ModelVersionBaseModel(BaseModel):
     """Model Version base model."""
 
     name: Optional[str] = Field(
-        title="The name of the model version",
+        description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     number: Optional[int] = Field(
-        title="The number of the model version",
+        description="The number of the model version",
     )
     description: Optional[str] = Field(
-        title="The description of the model version",
+        description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     stage: Optional[str] = Field(
-        title="The stage of the model version",
+        description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
@@ -62,7 +62,7 @@ class ModelVersionRequestModel(
     """Model Version request model."""
 
     model: UUID = Field(
-        title="The ID of the model containing version",
+        description="The ID of the model containing version",
     )
 
 
@@ -73,22 +73,22 @@ class ModelVersionResponseModel(
     """Model Version response model."""
 
     model: "ModelResponseModel" = Field(
-        title="The model containing version",
+        description="The model containing version",
     )
     model_object_ids: Dict[str, Dict[str, UUID]] = Field(
-        title="Model Objects linked to the model version",
+        description="Model Objects linked to the model version",
         default={},
     )
     artifact_object_ids: Dict[str, Dict[str, UUID]] = Field(
-        title="Artifacts linked to the model version",
+        description="Artifacts linked to the model version",
         default={},
     )
     deployment_ids: Dict[str, Dict[str, UUID]] = Field(
-        title="Deployments linked to the model version",
+        description="Deployments linked to the model version",
         default={},
     )
     pipeline_run_ids: Dict[str, UUID] = Field(
-        title="Pipeline runs linked to the model version",
+        description="Pipeline runs linked to the model version",
         default={},
     )
 
@@ -358,24 +358,32 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+    stage: Optional[Union[str, ModelStages]] = Field(
+        description="The model version stage", default=None
+    )
+
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "model_id",
+    ]
 
 
 class ModelVersionUpdateModel(BaseModel):
     """Update Model for Model Version."""
 
     model: UUID = Field(
-        title="The ID of the model containing version",
+        description="The ID of the model containing version",
     )
     stage: Optional[Union[str, ModelStages]] = Field(
-        title="Target model version stage to be set", default=None
+        description="Target model version stage to be set", default=None
     )
     force: bool = Field(
-        title="Whether existing model version in target stage should be silently archived "
+        description="Whether existing model version in target stage should be silently archived "
         "or an error should be raised.",
         default=False,
     )
     name: Optional[str] = Field(
-        title="Target model version name to be set", default=None
+        description="Target model version name to be set", default=None
     )
 
     @validator("stage")
@@ -390,15 +398,15 @@ class ModelVersionArtifactBaseModel(BaseModel):
     """Model version links with artifact base model."""
 
     name: Optional[str] = Field(
-        title="The name of the artifact inside model version.",
+        description="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     pipeline_name: Optional[str] = Field(
-        title="The name of the pipeline creating this artifact.",
+        description="The name of the pipeline creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     step_name: Optional[str] = Field(
-        title="The name of the step creating this artifact.",
+        description="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     artifact: UUID
@@ -448,15 +456,15 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
         description="The name or ID of the Model Version",
     )
     name: Optional[str] = Field(
-        title="The name of the artifact inside model version.",
+        description="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     pipeline_name: Optional[str] = Field(
-        title="The name of the pipeline creating this artifact.",
+        description="The name of the pipeline creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     step_name: Optional[str] = Field(
-        title="The name of the step creating this artifact.",
+        description="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -469,12 +477,26 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     only_model_objects: Optional[bool] = False
     only_deployments: Optional[bool] = False
 
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "model_id",
+        "model_version_id",
+        "only_artifacts",
+        "only_model_objects",
+        "only_deployments",
+        "user_id",
+        "workspace_id",
+        "scope_workspace",
+        "updated",
+        "id",
+    ]
+
 
 class ModelVersionPipelineRunBaseModel(BaseModel):
     """Model version links with pipeline run base model."""
 
     name: Optional[str] = Field(
-        title="The name of the pipeline run inside model version.",
+        description="The name of the pipeline run inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     pipeline_run: UUID
@@ -509,6 +531,12 @@ class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "model_id",
+        "model_version_id",
+    ]
 
 
 class ModelRequestModel(
