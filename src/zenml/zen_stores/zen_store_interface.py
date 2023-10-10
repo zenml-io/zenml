@@ -47,6 +47,9 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
@@ -194,6 +197,14 @@ class ZenStoreInterface(ABC):
 
         Returns:
             Information about the store.
+        """
+
+    @abstractmethod
+    def get_deployment_id(self) -> UUID:
+        """Get the ID of the deployment.
+
+        Returns:
+            The ID of the deployment.
         """
 
     # ------
@@ -1955,4 +1966,66 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: specified ID not found.
+        """
+
+    # ------------------
+    # Authorized Devices
+    # ------------------
+
+    @abstractmethod
+    def get_authorized_device(
+        self, device_id: UUID
+    ) -> OAuthDeviceResponseModel:
+        """Gets a specific OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to get.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_authorized_devices(
+        self, filter_model: OAuthDeviceFilterModel
+    ) -> Page[OAuthDeviceResponseModel]:
+        """List all OAuth 2.0 authorized devices for a user.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all matching OAuth 2.0 authorized devices.
+        """
+
+    @abstractmethod
+    def update_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceUpdateModel
+    ) -> OAuthDeviceResponseModel:
+        """Updates an existing OAuth 2.0 authorized device for internal use.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_authorized_device(self, device_id: UUID) -> None:
+        """Deletes an OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to delete.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
         """

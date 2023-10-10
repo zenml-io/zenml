@@ -53,6 +53,7 @@ from zenml.enums import (
     ArtifactType,
     LogicalOperators,
     ModelStages,
+    OAuthDeviceStatus,
     PermissionType,
     SecretScope,
     StackComponentType,
@@ -81,6 +82,9 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildResponseModel,
     PipelineDeploymentFilterModel,
@@ -714,6 +718,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
+        external_user_id: Optional[str] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -730,6 +735,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
             id: Use the id of stacks to filter by.
+            external_user_id: Use the external user id for filtering.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the username for filtering
@@ -748,6 +754,7 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 id=id,
+                external_user_id=external_user_id,
                 created=created,
                 updated=updated,
                 name=name,
@@ -5179,6 +5186,140 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_model_version_pipeline_run_links(
             model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model
         )
+
+    # .--------------------.
+    # | AUTHORIZED_DEVICES |
+    # '--------------------'
+
+    def list_authorized_devices(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        expires: Optional[Union[datetime, str]] = None,
+        client_id: Union[UUID, str, None] = None,
+        status: Union[OAuthDeviceStatus, str, None] = None,
+        trusted_device: Union[bool, str, None] = None,
+        failed_auth_attempts: Union[int, str, None] = None,
+        last_login: Optional[Union[datetime, str, None]] = None,
+    ) -> Page[OAuthDeviceResponseModel]:
+        """List all authorized devices.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the code repository to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            expires: Use the expiration date for filtering.
+            client_id: Use the client id for filtering.
+            status: Use the status for filtering.
+            trusted_device: Use the trusted device flag for filtering.
+            failed_auth_attempts: Use the failed auth attempts for filtering.
+            last_login: Use the last login date for filtering.
+
+        Returns:
+            A page of authorized devices matching the filter.
+        """
+        filter_model = OAuthDeviceFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            expires=expires,
+            client_id=client_id,
+            status=status,
+            trusted_device=trusted_device,
+            failed_auth_attempts=failed_auth_attempts,
+            last_login=last_login,
+        )
+        return self.zen_store.list_authorized_devices(
+            filter_model=filter_model
+        )
+
+    def get_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        allow_id_prefix_match: bool = True,
+    ) -> OAuthDeviceResponseModel:
+        """Get an authorized device by id or prefix.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            allow_id_prefix_match: If True, allow matching by ID prefix.
+
+        Returns:
+            The requested authorized device.
+
+        Raises:
+            KeyError: If no authorized device is found with the given ID or
+                prefix.
+        """
+        if isinstance(id_or_prefix, str):
+            try:
+                id_or_prefix = UUID(id_or_prefix)
+            except ValueError:
+                if not allow_id_prefix_match:
+                    raise KeyError(
+                        f"No authorized device found with id or prefix "
+                        f"'{id_or_prefix}'."
+                    )
+        if isinstance(id_or_prefix, UUID):
+            return self.zen_store.get_authorized_device(id_or_prefix)
+        return self._get_entity_by_prefix(
+            get_method=self.zen_store.get_authorized_device,
+            list_method=self.list_authorized_devices,
+            partial_id_or_name=id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+    def update_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        locked: Optional[bool] = None,
+    ) -> OAuthDeviceResponseModel:
+        """Update an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            locked: Whether to lock or unlock the authorized device.
+
+        Returns:
+            The updated authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix, allow_id_prefix_match=False
+        )
+        return self.zen_store.update_authorized_device(
+            device_id=device.id,
+            update=OAuthDeviceUpdateModel(
+                locked=locked,
+            ),
+        )
+
+    def delete_authorized_device(
+        self,
+        id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix,
+            allow_id_prefix_match=False,
+        )
+        self.zen_store.delete_authorized_device(device.id)
 
     # ---- utility prefix matching get functions -----
 

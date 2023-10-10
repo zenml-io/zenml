@@ -194,6 +194,32 @@ class PermissionType(StrEnum):
     )
 
 
+class AuthScheme(StrEnum):
+    """The authentication scheme."""
+
+    NO_AUTH = "NO_AUTH"
+    HTTP_BASIC = "HTTP_BASIC"
+    OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
+    EXTERNAL = "EXTERNAL"
+
+
+class OAuthGrantTypes(StrEnum):
+    """The OAuth grant types."""
+
+    OAUTH_PASSWORD = "password"
+    OAUTH_DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"
+    ZENML_EXTERNAL = "zenml-external"
+
+
+class OAuthDeviceStatus(StrEnum):
+    """The OAuth device status."""
+
+    PENDING = "pending"
+    VERIFIED = "verified"
+    ACTIVE = "active"
+    LOCKED = "locked"
+
+
 class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
