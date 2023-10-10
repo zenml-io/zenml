@@ -19,14 +19,18 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
+import ipinfo  # type: ignore[import]
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     ENV_ZENML_SERVER,
-    ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
 from zenml.enums import ServerProviderType
+from zenml.exceptions import OAuthError
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
@@ -36,10 +40,6 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
-
-
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
-
 
 _zen_store: Optional["SqlZenStore"] = None
 
@@ -66,6 +66,10 @@ def initialize_zen_store() -> None:
         ValueError: If the ZenML Store is using a REST back-end.
     """
     logger.debug("Initializing ZenML Store for FastAPI...")
+
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
+
     zen_store_ = GlobalConfiguration().zen_store
 
     if not isinstance(zen_store_, SqlZenStore):
@@ -75,11 +79,23 @@ def initialize_zen_store() -> None:
             "when trying to start the ZenML Server."
         )
 
-    # Use an environment variable to flag the instance as a server
-    os.environ[ENV_ZENML_SERVER] = "true"
-
     global _zen_store
     _zen_store = zen_store_
+
+
+_server_config: Optional[ServerConfiguration] = None
+
+
+def server_config() -> ServerConfiguration:
+    """Returns the ZenML Server configuration.
+
+    Returns:
+        The ZenML Server configuration.
+    """
+    global _server_config
+    if _server_config is None:
+        _server_config = ServerConfiguration.get_server_config()
+    return _server_config
 
 
 def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
@@ -193,6 +209,14 @@ def handle_exceptions(func: F) -> F:
 
         try:
             return func(*args, **kwargs)
+        except OAuthError as error:
+            # The OAuthError is special because it needs to have a JSON response
+            return JSONResponse(
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
         except Exception as error:
             logger.exception("API error")
             http_exception = http_exception_from_error(error)
@@ -237,3 +261,25 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
 
     return init_cls_and_handle_errors
+
+
+def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
+    """Get the location of the given IP address.
+
+    Args:
+        ip_address: The IP address to get the location for.
+
+    Returns:
+        A tuple of city, region, country.
+    """
+    try:
+        handler = ipinfo.getHandler()
+        details = handler.getDetails(ip_address)
+        return (
+            details.city,
+            details.region,
+            details.country_name,
+        )
+    except Exception:
+        logger.exception(f"Could not get IP location for {ip_address}.")
+        return "", "", ""

@@ -132,7 +132,7 @@ If your custom secrets store implementation requires additional configuration op
 
 These configuration options are not required for most use cases, but can be useful in certain scenarios that require mirroring the same ZenML server configuration across multiple container instances (e.g. a Kubernetes deployment with multiple replicas):
 
-*   **ZENML\_JWT\_SECRET\_KEY**: This is a secret key used to sign JWT tokens used for authentication. If not explicitly set, a random key is generated automatically by the server on startup and stored in the server's global configuration. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
+*   **ZENML\_SERVER\_JWT\_SECRET\_KEY**: This is a secret key used to sign JWT tokens used for authentication. If not explicitly set, a random key is generated automatically by the server on startup and stored in the server's global configuration. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
 
     ```python
     from secrets import token_hex
@@ -157,13 +157,17 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You can visit the ZenML dashboard at `http://localhost:8080` or connect your client to the server with the `default` username and empty password:
+You can visit the ZenML dashboard at `http://localhost:8080` and login with the `default` username and empty password or connect your client to the server with the web login flow:
 
 ```shell
 $ zenml connect --url http://localhost:8080
 Connecting to: 'http://localhost:8080'...
-Username: default
-Password for user default (press ENTER for empty password) []: 
+If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:
+
+http://localhost:8080/devices/verify?device_id=f7a7333a-3ef0-4f39-85a9-f190279456d3&user_code=9375f5cdfdaf36772ce981fe3ee6172c
+
+Successfully logged in.
+Creating default stack for user 'default' in workspace default...
 Updated the global store configuration.
 ```
 
@@ -236,7 +240,7 @@ docker run -it -d -p 8080:8080 --name zenml \
 Connecting your client to the ZenML server is the same as before:
 
 ```shell
-zenml connect --url http://localhost:8080 --username default --password ''
+zenml connect --url http://localhost:8080
 ```
 
 ### Direct MySQL database connection

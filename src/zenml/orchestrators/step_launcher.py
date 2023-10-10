@@ -456,7 +456,9 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars()
+        environment = orchestrator_utils.get_config_environment_vars(
+            deployment=self._deployment
+        )
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

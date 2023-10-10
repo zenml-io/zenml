@@ -28,12 +28,13 @@ from starlette.responses import FileResponse
 import zenml
 from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
-from zenml.enums import SourceContextTypes
+from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
+    devices_endpoints,
     flavors_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
@@ -54,7 +55,7 @@ from zenml.zen_server.routers import (
     users_endpoints,
     workspaces_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
+from zenml.zen_server.utils import initialize_zen_store, server_config
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -74,7 +75,7 @@ def relative_path(rel: str) -> str:
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
-    root_path=ROOT_URL_PATH,
+    root_path=server_config().root_url_path,
     default_response_class=ORJSONResponse,
 )
 
@@ -99,7 +100,7 @@ def validation_exception_handler(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=server_config().cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -141,7 +142,7 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
-    # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
+    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
 
@@ -195,6 +196,7 @@ def dashboard(request: Request) -> Any:
 
 
 app.include_router(auth_endpoints.router)
+app.include_router(devices_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
@@ -216,7 +218,12 @@ app.include_router(artifacts_endpoints.router)
 app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(users_endpoints.activation_router)
+
+# When the auth scheme is set to EXTERNAL, users cannot be managed via the
+# API.
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
+    app.include_router(users_endpoints.activation_router)
+
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
