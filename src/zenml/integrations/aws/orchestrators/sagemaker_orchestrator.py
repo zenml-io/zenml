@@ -261,7 +261,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             network_config = processor_args_for_step.get("network_config")
             if network_config and isinstance(network_config, dict):
                 try:
-                    processor_args_for_step["network_config"] = NetworkConfig(**network_config)
+                    processor_args_for_step["network_config"] = NetworkConfig(
+                        **network_config
+                    )
                 except TypeError:
                     # If the network_config passed is not compatible with the NetworkConfig class,
                     # raise a more informative error.
