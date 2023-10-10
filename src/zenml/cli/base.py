@@ -197,10 +197,11 @@ def init(
                 vcs_ref = zenml_project_template.github_tag
             else:
                 declare(
-                    f"List of known templates is: {','.join(ZENML_PROJECT_TEMPLATES.keys())}"
+                    f"List of known templates is: {', '.join(ZENML_PROJECT_TEMPLATES.keys())}"
                 )
                 declare(
-                    f"No known templates specified. Using {template} as URL."
+                    f"No known templates specified. Using `{template}` as URL."
+                    "If this is not a valid copier template URL, this will fail."
                 )
 
                 src_path = template
