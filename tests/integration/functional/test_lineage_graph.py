@@ -20,6 +20,7 @@ from tests.integration.functional.zen_stores.utils import (
     int_plus_one_test_step,
 )
 from zenml import pipeline, step
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
     STEP_PREFIX,
@@ -27,7 +28,6 @@ from zenml.lineage_graph.lineage_graph import (
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
-from zenml.steps.external_artifact import ExternalArtifact
 
 
 def test_generate_run_nodes_and_edges(

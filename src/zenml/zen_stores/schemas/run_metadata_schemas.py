@@ -23,7 +23,6 @@ from sqlmodel import Field, Relationship
 
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models.run_metadata_models import (
-    RunMetadataRequestModel,
     RunMetadataResponseModel,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
@@ -134,28 +133,4 @@ class RunMetadataSchema(BaseSchema, table=True):
             else None,
             created=self.created,
             updated=self.updated,
-        )
-
-    @classmethod
-    def from_request(
-        cls, request: "RunMetadataRequestModel"
-    ) -> "RunMetadataSchema":
-        """Create a `RunMetadataSchema` from a `RunMetadataRequestModel`.
-
-        Args:
-            request: The request model to create the schema from.
-
-        Returns:
-            The created `RunMetadataSchema`.
-        """
-        return cls(
-            workspace_id=request.workspace,
-            user_id=request.user,
-            pipeline_run_id=request.pipeline_run_id,
-            step_run_id=request.step_run_id,
-            artifact_id=request.artifact_id,
-            stack_component_id=request.stack_component_id,
-            key=request.key,
-            value=json.dumps(request.value),
-            type=request.type,
         )

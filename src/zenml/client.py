@@ -52,6 +52,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    ModelStages,
     OAuthDeviceStatus,
     PermissionType,
     SecretScope,
@@ -139,6 +140,20 @@ from zenml.models.artifact_models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
+)
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
@@ -150,7 +165,7 @@ from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.metadata.metadata_types import MetadataType
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -3429,7 +3444,7 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> Dict[str, RunMetadataResponseModel]:
+    ) -> List[RunMetadataResponseModel]:
         """Create run metadata.
 
         Args:
@@ -3472,7 +3487,8 @@ class Client(metaclass=ClientMetaClass):
                 "`step_run_id` or only an `artifact_id`."
             )
 
-        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        values: Dict[str, "MetadataType"] = {}
+        types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -3481,7 +3497,6 @@ class Client(metaclass=ClientMetaClass):
                     "stored in the database. Skipping."
                 )
                 continue
-
             # Skip metadata that is not of a supported type.
             try:
                 metadata_type = get_metadata_type(value)
@@ -3491,21 +3506,20 @@ class Client(metaclass=ClientMetaClass):
                     f"type. Skipping. Full error: {e}"
                 )
                 continue
+            values[key] = value
+            types[key] = metadata_type
 
-            run_metadata = RunMetadataRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-                artifact_id=artifact_id,
-                stack_component_id=stack_component_id,
-                key=key,
-                value=value,
-                type=metadata_type,
-            )
-            metadata_model = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata[key] = metadata_model
-        return created_metadata
+        run_metadata = RunMetadataRequestModel(
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            values=values,
+            types=types,
+        )
+        return self.zen_store.create_run_metadata(run_metadata)
 
     def list_run_metadata(
         self,
@@ -4963,6 +4977,214 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.get_service_connector_type(
             connector_type=connector_type,
+        )
+
+    #########
+    # Model
+    #########
+
+    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+        """Creates a new model in Model Control Plane.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+        """
+        return self.zen_store.create_model(model=model)
+
+    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be deleted.
+        """
+        self.zen_store.delete_model(model_name_or_id=model_name_or_id)
+
+    def update_model(
+        self,
+        model_id: UUID,
+        model_update: ModelUpdateModel,
+    ) -> ModelResponseModel:
+        """Updates an existing model in Model Control Plane.
+
+        Args:
+            model_id: UUID of the model to be updated.
+            model_update: the Model to be updated.
+
+        Returns:
+            The updated model.
+        """
+        return self.zen_store.update_model(
+            model_id=model_id, model_update=model_update
+        )
+
+    def get_model(
+        self, model_name_or_id: Union[str, UUID]
+    ) -> ModelResponseModel:
+        """Get an existing model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The model of interest.
+        """
+        return self.zen_store.get_model(model_name_or_id=model_name_or_id)
+
+    def list_models(
+        self,
+        model_filter_model: ModelFilterModel,
+    ) -> Page[ModelResponseModel]:
+        """Get models by filter from Model Control Plane.
+
+        Args:
+            model_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all models.
+        """
+        return self.zen_store.list_models(
+            model_filter_model=model_filter_model
+        )
+
+    #################
+    # Model Versions
+    #################
+
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version in Model Control Plane.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+        """
+        return self.zen_store.create_model_version(model_version=model_version)
+
+    def delete_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be deleted.
+        """
+        self.zen_store.delete_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_id=model_version_name_or_id,
+        )
+
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
+
+        Returns:
+            The model version of interest.
+        """
+        return self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+
+    def list_model_versions(
+        self,
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get model versions by filter from Model Control Plane.
+
+        Args:
+            model_version_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model versions.
+        """
+        return self.zen_store.list_model_versions(
+            model_version_filter_model=model_version_filter_model
+        )
+
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+        """
+        return self.zen_store.update_model_version(
+            model_version_id=model_version_id,
+            model_version_update_model=model_version_update_model,
+        )
+
+    #################################################
+    # Model Versions Artifacts
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_artifact_links(
+        self,
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get model version to artifact links by filter in Model Control Plane.
+
+        Args:
+            model_version_artifact_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to artifact links.
+        """
+        return self.zen_store.list_model_version_artifact_links(
+            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model
+        )
+
+    #################################################
+    # Model Versions Pipeline Runs
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_pipeline_run_links(
+        self,
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        return self.zen_store.list_model_version_pipeline_run_links(
+            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model
         )
 
     # .--------------------.

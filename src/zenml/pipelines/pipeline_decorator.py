@@ -26,6 +26,7 @@ from typing import (
 )
 
 from zenml.logger import get_logger
+from zenml.model.model_config import ModelConfig
 from zenml.pipelines.base_pipeline import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
@@ -33,6 +34,7 @@ from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_CACHE,
     PARAM_ENABLE_STEP_LOGS,
     PARAM_EXTRA_OPTIONS,
+    PARAM_MODEL_CONFIG,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
     PARAM_PIPELINE_NAME,
@@ -66,6 +68,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -82,6 +85,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
@@ -101,6 +105,7 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
+        model_config: Model(Version) configuration for this step as `ModelConfig` instance.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -132,6 +137,7 @@ def pipeline(
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,
                     PARAM_ON_SUCCESS: on_success,
+                    PARAM_MODEL_CONFIG: model_config,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
