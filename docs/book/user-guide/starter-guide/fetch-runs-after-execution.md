@@ -96,7 +96,7 @@ pipelines = Client().list_pipelines()
 Alternatively, you can also list pipelines with the following CLI command:
 
 ```shell
-zenml pipelines list
+zenml pipeline list
 ```
 
 ## Runs
