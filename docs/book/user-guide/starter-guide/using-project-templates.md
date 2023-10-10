@@ -47,8 +47,7 @@ What would you need to get a quick understanding of the ZenML framework and star
                 <code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code> <code>gradio</code> <code>huggingface</code>
             </td>
             <td>
-                This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT based
-                model.
+                This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT or GPT-2 based model and testing locally it with gradio
             </td>
         </tr>
     </tbody>
