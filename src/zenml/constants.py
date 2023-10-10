@@ -290,6 +290,6 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "step_operator",
 ]
 
-# Model WatchTower constants
+# Model Control Plane constants
 RUNNING_MODEL_VERSION = "running"
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
