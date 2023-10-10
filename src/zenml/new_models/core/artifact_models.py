@@ -70,7 +70,7 @@ class ArtifactRequestModel(WorkspaceScopedRequestModel):
 
 # ------------------ Update Model ------------------
 
-# There is no update models for artifacts.
+# There is no update model for artifacts.
 
 # ------------------ Response Model ------------------
 

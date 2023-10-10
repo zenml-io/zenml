@@ -34,7 +34,7 @@ class ArtifactVisualizationRequestModel(BaseRequestModel):
 
 # ------------------ Update Model ------------------
 
-# There is no update models for artifact visualizations.
+# There is no update model for artifact visualizations.
 
 # ------------------ Response Model ------------------
 

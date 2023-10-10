@@ -160,7 +160,7 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     """
 
     # Metadata related field, method and properties
-    metadata: Optional[WorkspaceScopedResponseMetadataModel]
+    metadata: Optional["WorkspaceScopedResponseMetadataModel"]
 
     @abstractmethod
     def get_hydrated_version(self) -> "WorkspaceScopedResponseModel":
@@ -196,7 +196,7 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
         ),
     )
     # Metadata related field, method and properties
-    metadata: Optional[SharableScopedResponseMetadataModel]
+    metadata: Optional["SharableResponseMetadataModel"]
 
     @abstractmethod
     def get_hydrated_version(self) -> "ShareableResponseModel":

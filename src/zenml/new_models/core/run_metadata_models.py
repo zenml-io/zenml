@@ -60,7 +60,7 @@ class RunMetadataRequestModel(WorkspaceScopedRequestModel):
 
 # ------------------ Update Model ------------------
 
-# There is no update models for run metadata.
+# There is no update model for run metadata.
 
 # ------------------ Response Model ------------------
 

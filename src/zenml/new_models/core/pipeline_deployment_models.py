@@ -105,7 +105,7 @@ class PipelineDeploymentRequestModel(WorkspaceScopedRequestModel):
 
 # ------------------ Update Model ------------------
 
-# There is no update models for pipeline deployments.
+# There is no update model for pipeline deployments.
 
 # ------------------ Response Model ------------------
 

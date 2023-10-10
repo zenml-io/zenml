@@ -42,7 +42,7 @@ class LogsRequestModel(BaseRequestModel):
 
 # ------------------ Update Model ------------------
 
-# There is no update models for logs.
+# There is no update model for logs.
 
 # ------------------ Response Model ------------------
 
