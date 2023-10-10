@@ -97,7 +97,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     type=str,
     required=False,
     help="Name or URL of the ZenML project template to use to initialize the repository, "
-    "Can be a string like `e2e`, `nlp`, `starter` etc. or a copier URL like "
+    "Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a copier URL like "
     "gh:owner/repo_name. If not specified, no template is used.",
 )
 @click.option(
