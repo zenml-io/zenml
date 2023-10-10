@@ -109,7 +109,7 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
         with ModelContext(model_version="1.0.0") as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version_name="1.0.0")
+            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
@@ -121,7 +121,7 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_number_not_found(self):
         """Test model and model version retrieval fails by exact version number, if version missing."""
         with ModelContext():
-            mc = ModelConfig(name=MODEL_NAME, version_name="1.0.0")
+            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
             with pytest.raises(KeyError):
                 mc.get_or_create_model_version()
 

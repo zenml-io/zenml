@@ -94,7 +94,7 @@ class ArtifactConfig(BaseModel):
             raise RuntimeError(
                 "No model configuration found in @step or @pipeline. "
                 "You can configure ModelConfig inside ArtifactConfig as well, but "
-                "`model_name` and (`model_version_name` or `model_stage`) must be provided."
+                "`model_name` and `model_version` must be provided."
             )
         # Return the model from the context
         return model_config
