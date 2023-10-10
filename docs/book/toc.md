@@ -23,6 +23,7 @@
     * [Compose pipelines](user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
     * [Schedule pipeline runs](user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
     * [Fetch metadata within steps](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md)
+    * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Artifact management](user-guide/advanced-guide/artifact-management/artifact-management.md)

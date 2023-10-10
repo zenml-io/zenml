@@ -34,7 +34,7 @@ from zenml.console import console
 from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import terraform_utils, yaml_utils
 from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
@@ -337,6 +337,11 @@ def deploy(
     with track_handler(
         event=AnalyticsEvent.ZENML_SERVER_DEPLOYED
     ) as analytics_handler:
+        try:
+            terraform_utils.verify_terraform_installation()
+        except RuntimeError as e:
+            cli_utils.error(str(e))
+
         config_dict: Dict[str, Any] = {}
 
         if config:
