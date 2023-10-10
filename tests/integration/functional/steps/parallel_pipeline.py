@@ -29,7 +29,7 @@ def _multiprocessor(version, run_name, run_time):
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version_name=version,
+            version=version,
             create_new_model_version=True,
             delete_new_version_on_failure=False,
         ),

@@ -73,7 +73,7 @@ class NewModelVersionRequest(BaseModel):
         if self._model_config is None:
             self._model_config = ModelConfig.parse_obj(model_config)
 
-        if self._model_config.version_name != model_config.version_name:
+        if self._model_config.version != model_config.version:
             raise ValueError(
                 f"A mismatch of `version` name in model configurations provided for `{model_config.name} detected."
                 "Since a new model version is requested for this model, all `version` names must match or left default."

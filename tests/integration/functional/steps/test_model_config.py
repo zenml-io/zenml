@@ -35,7 +35,7 @@ from zenml.models import ModelRequestModel, ModelVersionRequestModel
 def _assert_that_model_config_set(name="foo", version=RUNNING_MODEL_VERSION):
     """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_config.name == name
-    assert get_step_context().model_config.version_name == version
+    assert get_step_context().model_config.version == version
 
 
 def test_model_config_passed_to_step_context_via_step():
@@ -245,7 +245,7 @@ def _this_step_tries_to_recover(run_number: int):
         ),
         ModelConfig(
             name="foo",
-            version_name="test running version",
+            version="test running version",
             create_new_model_version=True,
             delete_new_version_on_failure=False,
         ),
@@ -279,10 +279,10 @@ def test_recovery_of_steps(model_config: ModelConfig):
         model = client.get_model("foo")
         mv = client.get_model_version(
             model_name_or_id=model.id,
-            model_version_name_or_number_or_id=model_config.version_name
+            model_version_name_or_number_or_id=model_config.version
             or RUNNING_MODEL_VERSION,
         )
-        assert mv.name == model_config.version_name or RUNNING_MODEL_VERSION
+        assert mv.name == model_config.version or RUNNING_MODEL_VERSION
         assert len(mv.artifact_object_ids) == 1
         assert (
             len(
@@ -302,7 +302,7 @@ def test_recovery_of_steps(model_config: ModelConfig):
         ),
         ModelConfig(
             name="foo",
-            version_name="test running version",
+            version="test running version",
             create_new_model_version=True,
             delete_new_version_on_failure=True,
         ),
@@ -335,7 +335,7 @@ def test_clean_up_after_failure(model_config: ModelConfig):
         with pytest.raises(KeyError):
             client.get_model_version(
                 model_name_or_id=model.id,
-                model_version_name_or_number_or_id=model_config.version_name
+                model_version_name_or_number_or_id=model_config.version
                 or RUNNING_MODEL_VERSION,
             )
 
@@ -907,7 +907,7 @@ def test_that_two_pipelines_cannot_create_same_specified_version():
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version_name="test running version",
+            version="test running version",
             create_new_model_version=True,
         ),
         enable_cache=False,
@@ -927,7 +927,7 @@ def test_that_two_decorators_cannot_request_different_specific_new_version():
     @pipeline(
         model_config=ModelConfig(
             name="step",
-            version_name="test running version",
+            version="test running version",
             create_new_model_version=True,
         ),
         enable_cache=False,
@@ -937,7 +937,7 @@ def test_that_two_decorators_cannot_request_different_specific_new_version():
         _this_step_produces_output.with_options(
             model_config=ModelConfig(
                 name="step",
-                version_name="test running version 2",
+                version="test running version 2",
                 create_new_model_version=True,
             ),
         )()

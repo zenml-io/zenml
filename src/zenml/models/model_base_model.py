@@ -70,8 +70,10 @@ class ModelBaseModel(BaseModel):
 class ModelConfigModel(ModelBaseModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
-    version_name: points model context to a specific version or stage.
-    version_number: points model context to a specific version number.
+    name: The name of the model.
+    version: The model version name, number or stage is optional and points model context
+        to a specific version/stage, if skipped and `create_new_model_version` is False -
+        latest model version will be used.
     version_description: The description of the model version.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
@@ -79,16 +81,7 @@ class ModelConfigModel(ModelBaseModel):
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
     """
 
-    version_name: Optional[Union[ModelStages, str]] = Field(
-        default=None,
-        description="Model version or stage is optional and points model context to a specific version/stage, "
-        "if skipped and `create_new_model_version` is False - latest model version will be used.",
-    )
-    version_number: Optional[int] = Field(
-        default=None,
-        description="Model version number is optional and points model context to a specific version number, "
-        "this works only for reading from model version and not suitable with `create_new_model_version`.",
-    )
+    version: Optional[Union[ModelStages, int, str]]
     version_description: Optional[str]
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
@@ -125,36 +118,38 @@ class ModelConfigModel(ModelBaseModel):
             )
             values["delete_new_version_on_failure"] = True
 
-        version_number = values.get("version_number", None)
-        version_name = values.get("version_name", None)
-
-        if version_number and create_new_model_version:
-            raise ValueError(
-                "`version_number` cannot be used with `create_new_model_version`."
-            )
-
-        if version_number is not None and version_name is not None:
-            logger.warning(
-                "`version_number` has higher priority then `version_name`."
-                "Setting `version_name` to `None`."
-            )
-            version_name = None
-            values["version_name"] = None
+        version = values.get("version", None)
 
         if create_new_model_version:
-            if isinstance(version_name, ModelStages):
+            misuse_message = (
+                "`version` set to {set} cannot be used with `create_new_model_version`."
+                "You can leave it default or set to a non-stage and non-numeric string.\n"
+                "Examples:\n"
+                " - `version` set to 1 or '1' is interpreted as a version number\n"
+                " - `version` set to 'production' is interpreted as a stage\n"
+                " - `version` set to 'my_first_version_in_2023' is a valid version to be created\n"
+                " - `version` set to 'My Second Version!' is a valid version to be created\n"
+            )
+            if isinstance(version, ModelStages) or version in [
+                stage.value for stage in ModelStages
+            ]:
                 raise ValueError(
-                    "`version_name` set to `ModelStages` instance cannot be used with `create_new_model_version`."
-                    "You can leave it default or set to a string name of a model version."
+                    misuse_message.format(set="a `ModelStages` instance")
                 )
-            if version_name is None:
+            if str(version).isnumeric():
+                raise ValueError(misuse_message.format(set="a numeric value"))
+            if version is None:
                 logger.info(
                     "Creation of new model version was requested, but no version name was explicitly provided."
-                    f"Setting `version_name` to `{RUNNING_MODEL_VERSION}`."
+                    f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
                 )
-                values["version_name"] = RUNNING_MODEL_VERSION
-        if version_name in [stage.value for stage in ModelStages]:
+                values["version"] = RUNNING_MODEL_VERSION
+        if version in [stage.value for stage in ModelStages]:
             logger.info(
-                f"`version_name` `{version_name}` matches one of the possible `ModelStages`, model will be fetched using stage."
+                f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
+            )
+        if str(version).isnumeric():
+            logger.info(
+                f"`version` `{version}` is numeric and will be fetched using version number."
             )
         return values

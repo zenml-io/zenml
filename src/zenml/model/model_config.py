@@ -33,8 +33,10 @@ logger = get_logger(__name__)
 class ModelConfig(ModelConfigModel):
     """ModelConfig class to pass into pipeline or step to set it into a model context.
 
-    version_name: points model context to a specific version or stage.
-    version_number: points model context to a specific version number.
+    name: The name of the model.
+    version: The model version name, number or stage is optional and points model context
+        to a specific version/stage, if skipped and `create_new_model_version` is False -
+        latest model version will be used.
     version_description: The description of the model version.
     create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
@@ -111,7 +113,7 @@ class ModelConfig(ModelConfigModel):
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
-            name=self.version_name,
+            name=self.version,
             description=self.version_description,
             model=model.id,
         )
@@ -119,7 +121,7 @@ class ModelConfig(ModelConfigModel):
         try:
             mv = zenml_client.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_number_or_id=self.version_name,
+                model_version_name_or_number_or_id=self.version,
             )
             self._model_version = mv
         except KeyError:
@@ -142,18 +144,17 @@ class ModelConfig(ModelConfigModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        if self.version_name is None and self.version_number is None:
+        if self.version is None:
             # raise if not found
             self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name
             )
         else:
-            # by version name or stage
+            # by version name or stage or number
             # raise if not found
             self._model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name,
-                model_version_name_or_number_or_id=self.version_number
-                or self.version_name,
+                model_version_name_or_number_or_id=self.version,
             )
         return self._model_version
 

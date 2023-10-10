@@ -139,37 +139,36 @@ def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number()
             2
         )  # add to latest version
         consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version_number=1)
+            model_config=ModelConfig(name="foo", version=1)
         )(1)
         consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version_number=1)
+            model_config=ModelConfig(name="foo", version=1)
         )(2)
 
 
 @pytest.mark.parametrize(
-    "model_version_name,model_version_number,expected",
-    [[None, 1, 42], ["1", None, 42], ["1", 2, 23]],
+    "model_version_name,expected",
+    [[1, 42], ["1", 42], ["foo", 23]],
     ids=[
         "By model version number",
+        "By model version number as string",
         "By model version name",
-        "Model version number dominates name",
     ],
 )
-def test_direct_consumption(
-    model_version_name, model_version_number, expected
-):
+def test_direct_consumption(model_version_name, expected):
     """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
     with model_killer():
         producer_pipeline.with_options(
             model_config=ModelConfig(name="foo", create_new_model_version=True)
         )(42)
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", create_new_model_version=True)
+            model_config=ModelConfig(
+                name="foo", create_new_model_version=True, version="foo"
+            )
         )(23)
         artifact_id = ExternalArtifact(
             model_name="foo",
-            model_version_name=model_version_name,
-            model_version_number=model_version_number,
+            model_version=model_version_name,
             model_artifact_name="predictions",
         ).get_artifact_id()
         assert Client().get_artifact(artifact_id).load() == expected

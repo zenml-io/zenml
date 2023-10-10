@@ -218,7 +218,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 name,
                 {
                     "model": model_config.name,
-                    "version": model_config.version_name,
+                    "version": model_config.version,
                 },
             )
 
