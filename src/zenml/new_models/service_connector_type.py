@@ -37,8 +37,10 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.new_models.core.component_models import ComponentResponseModel
+    from zenml.new_models.core.service_connector_models import (
+        ServiceConnectorResponseModel,
+    )
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.new_models.core.service_connector_models import ServiceConnectorResponseModel
 logger = get_logger(__name__)
 
 
