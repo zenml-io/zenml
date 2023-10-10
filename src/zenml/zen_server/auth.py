@@ -36,7 +36,6 @@ from fastapi.security import (
 from pydantic import BaseModel
 from starlette.requests import Request
 
-from zenml import analytics
 from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
