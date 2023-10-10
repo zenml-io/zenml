@@ -24,7 +24,7 @@ from zenml.new_models.base import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.code_repository_models import (
+    from zenml.new_models.core.code_repository_models import (
         CodeRepositoryResponseModel,
     )
 
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 class CodeReferenceRequestModel(BaseRequestModel):
     """Request model for code references."""
+
     commit: str = Field(description="The commit of the code reference.")
     subdirectory: str = Field(
         description="The subdirectory of the code reference."
