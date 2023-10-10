@@ -150,7 +150,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a connector is used that does not return a
                 `boto3.Session` object.
-
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
         """
