@@ -271,9 +271,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
                         "for more information about the NetworkConfig class."
                     )
-                except Exception as e:
-                    # Reraise any other error
-                    raise e
 
             # Construct S3 inputs to container for step
             inputs = None
