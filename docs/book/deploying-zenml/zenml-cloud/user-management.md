@@ -71,7 +71,7 @@ To keep things simple, we can summarize the steps:
 3. Check permitted devices with `zenml devices list`.
 4. Invalidate a token with `zenml device lock ...`.
 
-#### Please remember:
+### Important notice
 
 Using the ZenML CLI is a secure and comfortable way to interact with your zenml
 tenants. It's important to always ensure that only trusted devices are used to
