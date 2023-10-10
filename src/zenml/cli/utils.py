@@ -21,6 +21,7 @@ import subprocess
 import sys
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     Callable,
     Dict,
@@ -38,7 +39,7 @@ from typing import (
 
 import click
 import yaml
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from rich import box, table
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -359,6 +360,40 @@ def print_pydantic_models(
             ]
 
         print_table([__dictify(model) for model in table_items])
+
+
+def print_pydantic_model(
+    title: str,
+    model: BaseModel,
+    exclude_columns: Optional[AbstractSet[str]] = None,
+    columns: Optional[AbstractSet[str]] = None,
+) -> None:
+    """Prints a single Pydantic model in a table.
+
+    Args:
+        title: Title of the table.
+        model: Pydantic model that will be represented as a row in the table.
+        exclude_columns: Optionally specify columns to exclude.
+        columns: Optionally specify subset and order of columns to display.
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    model_info = model.dict(include=columns, exclude=exclude_columns)
+    for item in model_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def format_integration_list(
