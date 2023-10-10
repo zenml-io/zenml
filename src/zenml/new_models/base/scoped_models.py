@@ -124,7 +124,7 @@ class UserScopedResponseModel(BaseResponseModel):
     )
 
     @abstractmethod
-    def get_hydrated_version(self) -> "UserScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "UserScopedResponseModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -163,7 +163,7 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     metadata: Optional[WorkspaceScopedResponseMetadataModel]
 
     @abstractmethod
-    def get_hydrated_version(self) -> "WorkspaceScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "WorkspaceScopedResponseModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -177,7 +177,7 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
 
 
 # Shareable models
-class SharableScopedResponseMetadataModel(UserScopedResponseMetadataModel):
+class SharableResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     """Base shareable workspace-scoped metadata model."""
 
 
@@ -199,7 +199,7 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
     metadata: Optional[SharableScopedResponseMetadataModel]
 
     @abstractmethod
-    def get_hydrated_version(self) -> "SharableScopedResponseMetadataModel":
+    def get_hydrated_version(self) -> "ShareableResponseModel":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
