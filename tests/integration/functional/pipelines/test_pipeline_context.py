@@ -1,4 +1,5 @@
 import pytest
+import yaml
 
 from zenml import get_pipeline_context, pipeline, step
 
@@ -30,3 +31,13 @@ def test_pipeline_context():
         get_pipeline_context()
 
     assert_pipeline_context_in_pipeline.with_options(extra={"foo": "bar"})()
+
+
+def test_pipeline_context_available_as_config_yaml(tmp_path):
+    """Tests that the pipeline context is available as a config yaml."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.dump({"extra": {"foo": "bar"}}))
+
+    assert_pipeline_context_in_pipeline.with_options(
+        config_path=str(config_path)
+    )

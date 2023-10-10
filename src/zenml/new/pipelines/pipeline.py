@@ -1168,8 +1168,17 @@ class Pipeline:
         Returns:
             The copied pipeline instance.
         """
+        if config_path:
+            with open(config_path, "r") as f:
+                from_config = yaml.load(f, Loader=yaml.SafeLoader)
+            if "steps" in from_config:
+                del from_config["steps"]
+        else:
+            from_config = {}
+        from_config.update(kwargs)
+
         pipeline_copy = self.copy()
-        pipeline_copy.configure(**kwargs)
+        pipeline_copy.configure(**from_config)
 
         run_args = dict_utils.remove_none_values(
             {
