@@ -21,9 +21,9 @@ from bentoml import bentos
 from bentoml._internal.bento import bento
 
 from zenml import get_step_context, step
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
-from zenml.materializers import UnmaterializedArtifact
 from zenml.utils import source_utils
 from zenml.utils.artifact_utils import load_artifact
 

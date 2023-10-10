@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -164,6 +164,26 @@ from zenml.models.workspace_models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelResponseModel,
+    ModelRequestModel,
+    ModelUpdateModel,
+    ModelVersionBaseModel,
+    ModelVersionResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionArtifactBaseModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionPipelineRunBaseModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionUpdateModel,
+)
+
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -274,6 +294,43 @@ ServiceConnectorResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+ModelRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionArtifactRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionArtifactResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
 OAuthDeviceResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
 )
@@ -308,6 +365,23 @@ __all__ = [
     "LogsBaseModel",
     "LogsRequestModel",
     "LogsResponseModel",
+    "ModelFilterModel",
+    "ModelRequestModel",
+    "ModelResponseModel",
+    "ModelUpdateModel",
+    "ModelVersionBaseModel",
+    "ModelVersionFilterModel",
+    "ModelVersionRequestModel",
+    "ModelVersionResponseModel",
+    "ModelVersionUpdateModel",
+    "ModelVersionArtifactBaseModel",
+    "ModelVersionArtifactFilterModel",
+    "ModelVersionArtifactRequestModel",
+    "ModelVersionArtifactResponseModel",
+    "ModelVersionPipelineRunBaseModel",
+    "ModelVersionPipelineRunFilterModel",
+    "ModelVersionPipelineRunRequestModel",
+    "ModelVersionPipelineRunResponseModel",
     "OAuthDeviceAuthorizationRequest",
     "OAuthDeviceAuthorizationResponse",
     "OAuthDeviceFilterModel",

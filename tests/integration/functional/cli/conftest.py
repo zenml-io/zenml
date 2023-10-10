@@ -12,13 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
+from uuid import uuid4
+
 import pytest
+from typing_extensions import Annotated
 
 from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml import pipeline, step
 from zenml.config.schedule import Schedule
+from zenml.model import (
+    ArtifactConfig,
+    DeploymentArtifactConfig,
+    ModelArtifactConfig,
+    ModelConfig,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -56,4 +67,39 @@ def clean_workspace_with_scheduled_run(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run(schedule=schedule)
+    return clean_workspace
+
+
+PREFIX = "tests_integration_functional_cli_model_"
+NAME = f"{PREFIX}{uuid4()}"
+
+
+@step
+def step_1() -> Annotated[int, NAME + "a", ArtifactConfig()]:
+    return 1
+
+
+@step
+def step_2() -> (
+    Tuple[
+        Annotated[int, NAME + "b", ModelArtifactConfig()],
+        Annotated[int, NAME + "c", DeploymentArtifactConfig()],
+    ]
+):
+    return 2, 3
+
+
+@pipeline(
+    model_config=ModelConfig(name=NAME, create_new_model_version=True),
+    name=NAME,
+)
+def pipeline():
+    step_1()
+    step_2()
+
+
+@pytest.fixture
+def clean_workspace_with_models(clean_workspace):
+    """Fixture to get a clean workspace with an existing pipeline run in it."""
+    pipeline.with_options(run_name=NAME)()
     return clean_workspace

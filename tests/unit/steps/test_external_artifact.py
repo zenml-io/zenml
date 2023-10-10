@@ -12,63 +12,99 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 
-from zenml.steps.external_artifact import ExternalArtifact
+from zenml.artifacts.external_artifact import ExternalArtifact
+
+GLOBAL_ARTIFACT_ID = uuid4()
 
 
-class MockClient:
-    class MockArtifactResponse:
-        def __init__(self, name):
-            self.artifact_store_id = 42
-            self.name = name
-            self.id = 123
+class MockZenmlClient:
+    class Client:
+        ARTIFACT_STORE_ID: ClassVar[int] = 42
 
-    class MockPipelineResponse:
+        class MockArtifactResponse:
+            def __init__(self, name, id=GLOBAL_ARTIFACT_ID):
+                self.artifact_store_id = 42
+                self.name = name
+                self.id = id
+
+        class MockPipelineResponse:
+            def __init__(self):
+                self.last_successful_run = MagicMock()
+                self.last_successful_run.artifacts = [
+                    MockZenmlClient.Client.MockArtifactResponse("foo"),
+                    MockZenmlClient.Client.MockArtifactResponse("bar"),
+                ]
+
         def __init__(self):
-            self.last_successful_run = MagicMock()
-            self.last_successful_run.artifacts = [
-                MockClient.MockArtifactResponse("foo"),
-                MockClient.MockArtifactResponse("bar"),
-            ]
+            self.active_stack = MagicMock()
+            self.active_stack.artifact_store.id = self.ARTIFACT_STORE_ID
+            self.active_stack.artifact_store.path = "foo"
 
-    def __init__(self, artifact_store_id=42):
-        self.active_stack = MagicMock()
-        self.active_stack.artifact_store.id = artifact_store_id
-        self.active_stack.artifact_store.path = "foo"
+        def get_artifact(self, *args, **kwargs):
+            if len(args):
+                return MockZenmlClient.Client.MockArtifactResponse(
+                    "foo", args[0]
+                )
+            else:
+                return MockZenmlClient.Client.MockArtifactResponse("foo")
 
-    def get_artifact(self, *args, **kwargs):
-        return MockClient.MockArtifactResponse("foo")
-
-    def get_pipeline(self, *args, **kwargs):
-        return MockClient.MockPipelineResponse()
+        def get_pipeline(self, *args, **kwargs):
+            return MockZenmlClient.Client.MockPipelineResponse()
 
 
 @pytest.mark.parametrize(
-    argnames="value,id,pipeline_name,artifact_name,exception_start",
+    argnames="value,id,pipeline_name,artifact_name,model_name,model_version,model_artifact_name,exception_start",
     argvalues=[
-        [1, None, None, None, ""],
-        [None, uuid4(), None, None, ""],
-        [None, None, "foo", "bar", ""],
-        [None, None, None, None, "Either a value,"],
-        [1, uuid4(), None, None, "Only a value,"],
-        [None, uuid4(), "foo", "bar", "Only a value,"],
-        [1, None, "foo", "bar", "Only a value,"],
-        [None, None, "foo", None, "`pipeline_name` and `artifact_name`"],
-        [None, None, None, "bar", "`pipeline_name` and `artifact_name`"],
+        [1, None, None, None, None, None, None, ""],
+        [None, uuid4(), None, None, None, None, None, ""],
+        [None, None, "foo", "bar", None, None, None, ""],
+        [None, None, None, None, "foo", "bar", "artifact", ""],
+        [None, None, None, None, None, None, None, "Either a value,"],
+        [1, uuid4(), None, None, None, None, None, "Only a value,"],
+        [None, uuid4(), "foo", "bar", None, None, None, "Only a value,"],
+        [1, None, "foo", "bar", None, None, None, "Only a value,"],
+        [1, None, None, None, "foo", "bar", "artifact", "Only a value,"],
+        [None, uuid4(), None, None, "foo", "bar", "artifact", "Only a value,"],
+        [None, None, "foo", "bar", "foo", "bar", "artifact", "Only a value,"],
+        [
+            None,
+            None,
+            "foo",
+            None,
+            None,
+            None,
+            None,
+            "`pipeline_name` and `artifact_name`",
+        ],
+        [
+            None,
+            None,
+            None,
+            "bar",
+            None,
+            None,
+            None,
+            "`pipeline_name` and `artifact_name`",
+        ],
     ],
     ids=[
         "good_by_value",
         "good_by_id",
         "good_by_pipeline_artifact",
+        "good_by_model",
         "bad_all_none",
         "bad_id_and_value",
         "bad_id_and_pipeline_artifact",
         "bad_value_and_pipeline_artifact",
+        "bad_value_and_model",
+        "bad_id_and_model",
+        "bad_pipeline_artifact_and_model",
         "bad_only_pipeline",
         "bad_only_artifact",
     ],
@@ -78,6 +114,9 @@ def test_external_artifact_init(
     id: Optional[UUID],
     pipeline_name: Optional[str],
     artifact_name: Optional[str],
+    model_name: Optional[str],
+    model_version: Optional[str],
+    model_artifact_name: Optional[str],
     exception_start: str,
 ):
     """Tests that initialization logic of `ExternalArtifact` works expectedly."""
@@ -88,6 +127,9 @@ def test_external_artifact_init(
                 id=id,
                 pipeline_name=pipeline_name,
                 artifact_name=artifact_name,
+                model_name=model_name,
+                model_version=model_version,
+                model_artifact_name=model_artifact_name,
             )
     else:
         ExternalArtifact(
@@ -95,70 +137,115 @@ def test_external_artifact_init(
             id=id,
             pipeline_name=pipeline_name,
             artifact_name=artifact_name,
+            model_name=model_name,
+            model_version=model_version,
+            model_artifact_name=model_artifact_name,
         )
 
 
-@patch("zenml.steps.external_artifact.Client")
-@patch("zenml.steps.external_artifact.fileio")
-@patch("zenml.steps.external_artifact.artifact_utils")
-def test_upload_if_necessary_by_value(
-    mocked_zenml_client,
-    mocked_fileio,
-    mocked_artifact_utils,
-):
+@patch("zenml.artifacts.external_artifact.fileio")
+def test_upload_by_value(mocked_fileio):
+    """Tests that `upload_by_value` works as expected for `value`."""
     mocked_fileio.exists.return_value = False
     ea = ExternalArtifact(value=1)
-    assert ea._id is None
-    ea.upload_if_necessary()
-    assert ea._id is not None
-    assert ea._value is not None
-    assert ea._pipeline_name is None
-    assert ea._artifact_name is None
+    assert ea.id is None
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        ea.upload_by_value()
+    assert ea.id is not None
+    assert ea.value is None
+    assert ea.pipeline_name is None
+    assert ea.artifact_name is None
 
 
-@pytest.mark.skip
-@patch("zenml.steps.external_artifact.Client")
-def test_upload_if_necessary_by_id(mocked_zenml_client):
-    mocked_zenml_client.return_value = MockClient()
-    ea = ExternalArtifact(id=123)
-    assert ea._value is None
-    assert ea._pipeline_name is None
-    assert ea._artifact_name is None
-    assert ea._id is not None
-    assert ea.upload_if_necessary() == 123
+def test_get_artifact_by_value_before_upload_raises():
+    """Tests that `get_artifact` raises if called without `upload_by_value` for `value`."""
+    ea = ExternalArtifact(value=1)
+    assert ea.id is None
+    with pytest.raises(RuntimeError):
+        with patch.dict(
+            "sys.modules",
+            {
+                "zenml.utils.artifact_utils": MagicMock(),
+                "zenml.client": MockZenmlClient,
+            },
+        ):
+            ea.get_artifact_id()
 
 
-@patch("zenml.steps.external_artifact.Client")
-def test_upload_if_necessary_by_pipeline_and_artifact(
-    mocked_zenml_client,
-):
-    mocked_zenml_client.return_value = MockClient()
+def test_get_artifact_by_id():
+    """Tests that `get_artifact` works as expected for `id`."""
+    ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
+    assert ea.value is None
+    assert ea.pipeline_name is None
+    assert ea.artifact_name is None
+    assert ea.id is not None
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
+
+
+def test_get_artifact_by_pipeline_and_artifact():
+    """Tests that `get_artifact` works as expected for pipeline lookup."""
     ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
-    assert ea._value is None
-    assert ea._pipeline_name is not None
-    assert ea._artifact_name is not None
-    assert ea._id is None
-    assert ea.upload_if_necessary() == 123
-    assert ea._id == 123
+    assert ea.value is None
+    assert ea.pipeline_name is not None
+    assert ea.artifact_name is not None
+    assert ea.id is None
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
+    assert ea.id == GLOBAL_ARTIFACT_ID
 
 
-@patch("zenml.steps.external_artifact.Client")
-def test_upload_if_necessary_by_pipeline_and_artifact_other_artifact_store(
-    mocked_zenml_client,
-):
-    mocked_zenml_client.return_value = MockClient(artifact_store_id=45)
-    with pytest.raises(RuntimeError, match=r"The artifact bar \(ID: 123\)"):
-        ExternalArtifact(
-            pipeline_name="foo", artifact_name="bar"
-        ).upload_if_necessary()
+def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
+    """Tests that `get_artifact` raises in case of mismatch between artifact stores (found vs active)."""
+    with pytest.raises(
+        RuntimeError,
+        match=r"The artifact bar \(ID: " + str(GLOBAL_ARTIFACT_ID) + r"\)",
+    ):
+        try:
+            old_id = MockZenmlClient.Client.ARTIFACT_STORE_ID
+            MockZenmlClient.Client.ARTIFACT_STORE_ID = 45
+            with patch.dict(
+                "sys.modules",
+                {
+                    "zenml.utils.artifact_utils": MagicMock(),
+                    "zenml.client": MockZenmlClient,
+                },
+            ):
+                ExternalArtifact(
+                    pipeline_name="foo", artifact_name="bar"
+                ).get_artifact_id()
+        finally:
+            MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
 
 
-@patch("zenml.steps.external_artifact.Client")
-def test_upload_if_necessary_by_pipeline_and_artifact_name_not_found(
-    mocked_zenml_client,
-):
-    mocked_zenml_client.return_value = MockClient()
+def test_get_artifact_by_pipeline_and_artifact_name_not_found():
+    """Tests that `get_artifact` raises in case artifact not found in pipeline."""
     with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
-        ExternalArtifact(
-            pipeline_name="foo", artifact_name="foobar"
-        ).upload_if_necessary()
+        with patch.dict(
+            "sys.modules",
+            {
+                "zenml.utils.artifact_utils": MagicMock(),
+                "zenml.client": MockZenmlClient,
+            },
+        ):
+            ExternalArtifact(
+                pipeline_name="foo", artifact_name="foobar"
+            ).get_artifact_id()

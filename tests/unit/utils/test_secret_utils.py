@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from zenml.utils import secret_utils
 
-strategy = from_regex(r"[^.\s]{1,100}", fullmatch=True)
+strategy = from_regex(r"[^.\s]{1,20}", fullmatch=True)
 
 
 @given(name=strategy, key=strategy)
