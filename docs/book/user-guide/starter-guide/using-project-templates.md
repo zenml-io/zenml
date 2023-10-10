@@ -44,7 +44,7 @@ What would you need to get a quick understanding of the ZenML framework and star
                 <a href="https://github.com/zenml-io/zenml-project-templates/tree/main/nlp">NLP Training Pipeline</a> [<code>nlp</code>]
             </td>
             <td>
-                <code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code>
+                <code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code> <code>gradio</code> <code>huggingface</code>
             </td>
             <td>
                 This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT based
