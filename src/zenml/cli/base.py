@@ -124,7 +124,7 @@ def init(
     Args:
         path: Path to the repository.
         template: Optional name or URL of the ZenML project template to use to initialize
-            the repository. Can be a string like `e2e`, `nlp`, `starter` etc. or a copier URL like
+            the repository. Can be a string like `e2e_batch`, `nlp`, `starter` or a copier URL like
             `gh:owner/repo_name`. If not specified, no template is used.
         template_tag: Optional tag of the ZenML project template to use to initialize the repository/
             If template is a pre-defined template, then this is ignored.
