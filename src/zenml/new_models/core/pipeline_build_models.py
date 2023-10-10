@@ -12,14 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
+
 from pydantic import Field
-from zenml.new_models.base import WorkspaceScopedResponseModel, WorkspaceScopedResponseMetadataModel, WorkspaceScopedRequestModel,hydrated_property
+
+from zenml.new_models.base import (
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseMetadataModel,
+    WorkspaceScopedResponseModel,
+    hydrated_property,
+)
+
 if TYPE_CHECKING:
     from zenml.new_models.build_item import BuildItem
-    from zenml.new_models.core.stack_models import StackResponseModel
     from zenml.new_models.core.pipeline_models import PipelineResponseModel
+    from zenml.new_models.core.stack_models import StackResponseModel
 
 # ------------------ Request Model ------------------
 
@@ -32,7 +40,7 @@ class PipelineBuildRequestModel(WorkspaceScopedRequestModel):
     )
     is_local: bool = Field(
         title="Whether the build images are stored in a container registry "
-              "or locally.",
+        "or locally.",
     )
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
@@ -68,6 +76,7 @@ class PipelineBuildRequestModel(WorkspaceScopedRequestModel):
         else:
             return component_key
 
+
 # ------------------ Update Model ------------------
 
 # There is no update model for pipeline build models.
@@ -77,6 +86,7 @@ class PipelineBuildRequestModel(WorkspaceScopedRequestModel):
 
 class PipelineBuildResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     """Response metadata model for pipeline builds."""
+
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline that was used for this build."
     )
@@ -95,7 +105,7 @@ class PipelineBuildResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     checksum: Optional[str] = Field(title="The build checksum.")
     is_local: bool = Field(
         title="Whether the build images are stored in a container "
-              "registry or locally.",
+        "registry or locally.",
     )
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
@@ -172,7 +182,7 @@ class PipelineBuildResponseModel(WorkspaceScopedResponseModel):
         Args:
             component_key: The key for which to get the image.
             step: The pipeline step for which to get the image. If no image
-                exists for this step, will fallback to the pipeline image for
+                exists for this step, will fall back to the pipeline image for
                 the same key.
 
         Returns:
@@ -188,7 +198,7 @@ class PipelineBuildResponseModel(WorkspaceScopedResponseModel):
         Args:
             component_key: The key for which to get the checksum.
             step: The pipeline step for which to get the checksum. If no
-                image exists for this step, will fallback to the pipeline image
+                image exists for this step, will fall back to the pipeline image
                 for the same key.
 
         Returns:
@@ -206,7 +216,7 @@ class PipelineBuildResponseModel(WorkspaceScopedResponseModel):
         Args:
             component_key: The key for which to get the item.
             step: The pipeline step for which to get the item. If no item
-                exists for this step, will fallback to the item for
+                exists for this step, will fall back to the item for
                 the same key.
 
         Raises:
