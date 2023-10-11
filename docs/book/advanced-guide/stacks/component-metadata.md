@@ -2,6 +2,11 @@
 description: How to track custom run metadata related to a stack component
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Certain stack components create dynamic, run-specific metadata that is
 displayed in the dashboard together with each run, usually either for
 convenience or reproducibility purposes. 

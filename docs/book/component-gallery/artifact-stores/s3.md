@@ -2,6 +2,11 @@
 description: How to store artifacts in an AWS S3 bucket
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The S3 Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
 the S3 ZenML integration that uses [the AWS S3 managed object storage service](https://aws.amazon.com/s3/)
 or one of the self-hosted S3 alternatives, such as [MinIO](https://min.io/) or
