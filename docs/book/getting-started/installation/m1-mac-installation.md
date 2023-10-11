@@ -2,6 +2,11 @@
 description: How to install ZenML on M1 Macs
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In order to run ZenML on Macs with M1 chips, you need to install Python under 
 Rosetta 2. 
 This issue arises because some of ZenML's dependencies aren’t fully compatible 

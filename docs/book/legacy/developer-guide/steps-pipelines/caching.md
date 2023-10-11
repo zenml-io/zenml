@@ -2,6 +2,11 @@
 description: How automated caching works in ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Machine learning pipelines are rerun many times over throughout their
 development lifecycle. Prototyping is often a fast and iterative process that
 benefits a lot from caching. This makes caching a very powerful tool.
