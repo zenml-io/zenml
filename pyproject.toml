@@ -66,10 +66,11 @@ sqlmodel = "~0.0.8"
 fastapi = { version = ">=0.75,<0.100", optional = true }
 uvicorn = { extras = ["standard"], version = ">=0.17.5",  optional = true}
 python-multipart = { version = "~0.0.5", optional = true}
-python-jose = { extras = ["cryptography"], version = "~3.3.0", optional = true}
+pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
 fastapi-utils = { version = "~0.2.1", optional = true}
 orjson = { version = "~3.8.3", optional = true}
 Jinja2 = { version = "*", optional = true}
+ipinfo = { version = ">=4.4.3", optional = true}
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -158,6 +159,7 @@ types-setuptools = { version = "^57.4.2", optional = true }
 types-six = { version = "^1.16.2", optional = true }
 types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
+types-passlib = { version = "^1.7.7", optional = true }
 
 # mlstacks dependencies
 mlstacks = { version = "0.7.3", optional = true }
@@ -167,10 +169,11 @@ server = [
     "fastapi",
     "uvicorn",
     "python-multipart",
-    "python-jose",
+    "pyjwt",
     "fastapi-utils",
     "orjson",
-    "Jinja2"
+    "Jinja2",
+    "ipinfo"
 ]
 templates = ["copier", "jinja2-time", "black", "ruff"]
 terraform = ["python-terraform"]
@@ -233,6 +236,7 @@ dev = [
     "types-six",
     "types-termcolor",
     "types-psutil",
+    "types-passlib",
 ]
 mlstacks = ["mlstacks"]
 

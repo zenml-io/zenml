@@ -147,7 +147,7 @@ When an artifact is used as a step function input, the step will only be cached 
 ```python
 import numpy as np
 from zenml import pipeline, step
-from zenml.steps.external_artifact import ExternalArtifact
+from zenml.artifacts.external_artifact import ExternalArtifact
 
 @step
 def trainer(data: np.ndarray) -> ...:
@@ -162,7 +162,7 @@ def my_pipeline():
     # trainer(data=np.array([1, 2, 3]))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.

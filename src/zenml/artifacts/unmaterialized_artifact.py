@@ -13,7 +13,12 @@
 #  permissions and limitations under the License.
 """Unmaterialized artifact class."""
 
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.models import (
+    ArtifactResponseModel,
+    RunMetadataResponseModel,
+    UserResponseModel,
+    WorkspaceResponseModel,
+)
 
 
 class UnmaterializedArtifact(ArtifactResponseModel):
@@ -27,10 +32,17 @@ class UnmaterializedArtifact(ArtifactResponseModel):
 
     ```python
     from zenml import step
-    from zenml.materializers import UnmaterializedArtifact
+    from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 
     @step
     def my_step(input_artifact: UnmaterializedArtifact):
         print(input_artifact.uri)
     ```
     """
+
+
+UnmaterializedArtifact.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
+)

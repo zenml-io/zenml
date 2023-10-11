@@ -235,7 +235,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 #### Additional Configuration
 
-For additional configuration of the Skypilot orchestrator, you can pass `SkypilotBaseOrchestratorSettings` which allows you to configure (among others) the following attributes:
+For additional configuration of the Skypilot orchestrator, you can pass `Settings` depending on which cloud you are using which allows you to configure (among others) the following attributes:
 
 * `instance_type`: The instance type to use.
 * `cpus`: The number of CPUs required for the task. If a string, must be a string of the form `'2'` or `'2+'`, where the `+` indicates that the task requires at least 2 CPUs.
@@ -255,12 +255,18 @@ For additional configuration of the Skypilot orchestrator, you can pass `Skypilo
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 
+The following code snippets show how to configure the orchestrator settings for each cloud provider:
+
+{% tabs %}
+{% tab title="AWS" %}
+
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotBaseOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
 
-skypilot_settings = SkypilotBaseOrchestratorSettings(
+
+skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
     memory="16",
     accelerators="V100:2",
@@ -282,10 +288,87 @@ skypilot_settings = SkypilotBaseOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.skypilot": skypilot_settings
+        "orchestrator.vm_aws": skypilot_settings
     }
 )
 ```
+
+{% endtab %}
+
+{% tab title="GCP" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+
+
+skypilot_settings = SkypilotGCPOrchestratorSettings(
+    cpus="2",
+    memory="16",
+    accelerators="V100:2",
+    accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
+    use_spot=True,
+    spot_recovery="recovery_strategy",
+    region="us-west1",
+    zone="us-west1-a",
+    image_id="ami-1234567890abcdef0",
+    disk_size=100,
+    disk_tier="high",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_gcp": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+
+{% tab title="Azure" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+
+
+skypilot_settings = SkypilotAzureOrchestratorSettings(
+    cpus="2",
+    memory="16",
+    accelerators="V100:2",
+    accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
+    use_spot=True,
+    spot_recovery="recovery_strategy",
+    region="us-west1",
+    zone="us-west1-a",
+    image_id="ami-1234567890abcdef0",
+    disk_size=100,
+    disk_tier="high",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_azure": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+{% endtabs %}
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)
