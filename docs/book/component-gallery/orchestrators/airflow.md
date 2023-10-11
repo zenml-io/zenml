@@ -2,6 +2,11 @@
 description: How to orchestrate pipelines with Airflow
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The Airflow orchestrator is an [orchestrator](./orchestrators.md) flavor 
 provided with the ZenML `airflow` integration that uses 
 [Airflow](https://airflow.apache.org/) to run your pipelines.
