@@ -22,8 +22,8 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 
@@ -61,9 +61,9 @@ class ArtifactRequest(WorkspaceScopedRequest):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
-    visualizations: Optional[
-        List["ArtifactVisualizationRequest"]
-    ] = Field(default=None, title="Visualizations of the artifact.")
+    visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
+        default=None, title="Visualizations of the artifact."
+    )
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -86,9 +86,9 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
         title="ID of the step run that produced this artifact.",
         default=None,
     )
-    visualizations: Optional[
-        List["ArtifactVisualizationResponse"]
-    ] = Field(default=None, title="Visualizations of the artifact.")
+    visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
+        default=None, title="Visualizations of the artifact."
+    )
     run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         default={}, title="Metadata of the artifact."
     )

@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.new_models.base.base import (
-    BaseResponseModel,
-    BaseResponseModelMetadata,
-    BaseRequestModel,
+    BaseResponse,
+    BaseResponseMetadata,
+    BaseRequest,
 )
 from zenml.new_models.base.scoped import (
     UserScopedRequest,

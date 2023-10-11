@@ -103,9 +103,7 @@ class StackResponse(ShareableResponse):
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
-    components: Dict[
-        StackComponentType, List["ComponentResponse"]
-    ] = Field(
+    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )

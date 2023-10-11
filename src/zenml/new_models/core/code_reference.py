@@ -18,9 +18,9 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
 )
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class CodeReferenceRequest(BaseRequestModel):
+class CodeReferenceRequest(BaseRequest):
     """Request model for code references."""
 
     commit: str = Field(description="The commit of the code reference.")
@@ -52,11 +52,11 @@ class CodeReferenceRequest(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class CodeReferenceResponseMetadata(BaseResponseModelMetadata):
+class CodeReferenceResponseMetadata(BaseResponseMetadata):
     """Response metadata model for code references."""
 
 
-class CodeReferenceResponse(BaseResponseModel):
+class CodeReferenceResponse(BaseResponse):
     """Response model for code references."""
 
     # Entity fields

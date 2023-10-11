@@ -67,7 +67,7 @@ class BaseZenModel(BaseModel, YAMLSerializationMixin):
 # -------------------- Request Model --------------------
 
 
-class BaseRequestModel(BaseZenModel):
+class BaseRequest(BaseZenModel):
     """Base request model.
 
     Used as a base class for all request models.
@@ -77,7 +77,7 @@ class BaseRequestModel(BaseZenModel):
 # -------------------- Response Model --------------------
 
 
-class BaseResponseModelMetadata(BaseModel):
+class BaseResponseMetadata(BaseModel):
     """Base metadata model.
 
     Used as a base class for all metadata models associated with domain models.
@@ -94,7 +94,7 @@ class BaseResponseModelMetadata(BaseModel):
     )
 
 
-class BaseResponseModel(BaseZenModel):
+class BaseResponse(BaseZenModel):
     """Base domain model.
 
     Used as a base class for all domain models that have the following common
@@ -109,12 +109,12 @@ class BaseResponseModel(BaseZenModel):
     id: UUID = Field(title="The unique resource id.")
 
     # Metadata related field, method and properties
-    metadata: Optional[BaseResponseModelMetadata] = Field(
+    metadata: Optional["BaseResponseMetadata"] = Field(
         title="The metadata related to this resource."
     )
 
     @abstractmethod
-    def get_hydrated_version(self) -> "BaseResponseModel":
+    def get_hydrated_version(self) -> "BaseResponse":
         """Abstract method to fetch the hydrated version of the model."""
 
     @hydrated_property
@@ -145,14 +145,13 @@ class BaseResponseModel(BaseZenModel):
         Returns:
             True if the other object is of the same type and has the same UUID.
         """
-        if isinstance(other, BaseResponseModel):
+        if isinstance(other, BaseResponse):
             return self.id == other.id
         else:
             return False
 
-
     def _validate_hydrated_version(
-        self, hydrated_model: "BaseResponseModel"
+        self, hydrated_model: "BaseResponse"
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 

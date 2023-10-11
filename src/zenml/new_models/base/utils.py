@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING, Type, TypeVar
 
 if TYPE_CHECKING:
-    from zenml.new_models.base.base import BaseResponseModel
+    from zenml.new_models.base.base import BaseResponse
 
 T = TypeVar("T", bound="BaseRequestModel")
 
@@ -48,7 +48,7 @@ def hydrated_property(class_method) -> property:
         the corresponding property object.
     """
 
-    def wrapper(instance: "BaseResponseModel"):
+    def wrapper(instance: "BaseResponse"):
         """The wrapper function which acts as the property.
 
         It makes sure that every time the property get accessed the main

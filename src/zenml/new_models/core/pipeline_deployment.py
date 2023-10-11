@@ -22,8 +22,8 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 
@@ -32,10 +32,10 @@ if TYPE_CHECKING:
         CodeReferenceRequest,
         CodeReferenceResponse,
     )
+    from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.pipeline_build import (
         PipelineBuildResponse,
     )
-    from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.schedule import ScheduleResponse
     from zenml.new_models.core.stack import StackResponse
 

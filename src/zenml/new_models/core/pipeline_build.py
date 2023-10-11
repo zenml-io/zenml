@@ -19,8 +19,8 @@ from pydantic import Field
 
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 

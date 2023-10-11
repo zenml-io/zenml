@@ -19,9 +19,9 @@ from pydantic import Field, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
     hydrated_property,
     update_model,
 )
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class UserRequest(BaseRequestModel):
+class UserRequest(BaseRequest):
     """Request model for users.
 
     This model is used to create a user. The email field is optional but is
@@ -190,7 +190,7 @@ class UserUpdate(UserRequest):
 # ------------------ Response Model ------------------
 
 
-class UserResponseMetadata(BaseResponseModelMetadata):
+class UserResponseMetadata(BaseResponseMetadata):
     """Response metadata model for users."""
 
     full_name: str = Field(
@@ -220,7 +220,7 @@ class UserResponseMetadata(BaseResponseModelMetadata):
     )
 
 
-class UserResponse(BaseResponseModel):
+class UserResponse(BaseResponse):
     """Response model for users.
 
     This returns the activation_token which is required for the

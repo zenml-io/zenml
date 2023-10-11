@@ -19,9 +19,9 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.new_models.base.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
 )
 from zenml.new_models.base.utils import hydrated_property
 
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 # ---------------------- Request Models ----------------------
 
 
-class UserScopedRequest(BaseRequestModel):
+class UserScopedRequest(BaseRequest):
     """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -103,11 +103,11 @@ class ShareableRequest(WorkspaceScopedRequest):
 
 
 # User-scoped models
-class UserScopedResponseMetadata(BaseResponseModelMetadata):
+class UserScopedResponseMetadata(BaseResponseMetadata):
     """Base user-owned metadata model."""
 
 
-class UserScopedResponse(BaseResponseModel):
+class UserScopedResponse(BaseResponse):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.

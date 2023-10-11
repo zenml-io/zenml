@@ -22,8 +22,8 @@ from zenml.config.schedule import Schedule
 from zenml.logger import get_logger
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
 )

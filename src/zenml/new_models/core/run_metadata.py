@@ -21,8 +21,8 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 

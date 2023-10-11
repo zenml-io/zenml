@@ -16,15 +16,15 @@ from uuid import UUID
 
 from zenml.enums import VisualizationType
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
 )
 
 # ------------------ Request Model ------------------
 
 
-class ArtifactVisualizationRequest(BaseRequestModel):
+class ArtifactVisualizationRequest(BaseRequest):
     """Request model for artifact visualization."""
 
     type: VisualizationType
@@ -39,11 +39,11 @@ class ArtifactVisualizationRequest(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactVisualizationResponseMetadata(BaseResponseModelMetadata):
+class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     pass
 
 
-class ArtifactVisualizationResponse(BaseResponseModel):
+class ArtifactVisualizationResponse(BaseResponse):
     pass
 
     type: VisualizationType
@@ -51,5 +51,5 @@ class ArtifactVisualizationResponse(BaseResponseModel):
     value: Union[str, bytes]
     artifact_id: UUID
 
-    def get_hydrated_version(self) -> "BaseResponseModel":
+    def get_hydrated_version(self) -> "BaseResponse":
         return self

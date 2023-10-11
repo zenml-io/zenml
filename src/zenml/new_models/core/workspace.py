@@ -19,9 +19,9 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
     hydrated_property,
     update_model,
 )
@@ -29,7 +29,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class WorkspaceRequest(BaseRequestModel):
+class WorkspaceRequest(BaseRequest):
     """Request model for workspaces."""
 
     name: str = Field(
@@ -54,7 +54,7 @@ class WorkspaceUpdate(WorkspaceRequest):
 # ------------------ Response Model ------------------
 
 
-class WorkspaceResponseMetadata(BaseResponseModelMetadata):
+class WorkspaceResponseMetadata(BaseResponseMetadata):
     """Response metadata model for workspaces."""
 
     description: str = Field(
@@ -64,7 +64,7 @@ class WorkspaceResponseMetadata(BaseResponseModelMetadata):
     )
 
 
-class WorkspaceResponse(BaseResponseModel):
+class WorkspaceResponse(BaseResponse):
     """Response model for workspaces."""
 
     # Entity fields

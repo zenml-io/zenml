@@ -24,8 +24,8 @@ from zenml.models.service_connector_models import (
 )
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
 )

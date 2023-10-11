@@ -23,9 +23,9 @@ from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
     hydrated_property,
 )
 
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class StepRunRequest(BaseRequestModel):
+class StepRunRequest(BaseRequest):
     """Request model for step runs."""
 
     name: str = Field(
@@ -133,7 +133,7 @@ class StepRunUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class StepRunResponseMetadata(BaseResponseModelMetadata):
+class StepRunResponseMetadata(BaseResponseMetadata):
     """Response metadata model for step runs/"""
 
     # Configuration
@@ -197,7 +197,7 @@ class StepRunResponseMetadata(BaseResponseModelMetadata):
     )
 
 
-class StepRunResponse(BaseResponseModel):
+class StepRunResponse(BaseResponse):
     """Response model for step runs."""
 
     # Entity fields

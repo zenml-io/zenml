@@ -18,16 +18,16 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
-    BaseRequestModel,
-    BaseResponseModel,
-    BaseResponseModelMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseMetadata,
     hydrated_property,
 )
 
 # ------------------ Request Model ------------------
 
 
-class LogsRequest(BaseRequestModel):
+class LogsRequest(BaseRequest):
     """Request model for logs."""
 
     uri: str = Field(
@@ -47,7 +47,7 @@ class LogsRequest(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class LogsResponseMetadata(BaseResponseModelMetadata):
+class LogsResponseMetadata(BaseResponseMetadata):
     """Response model for logs."""
 
     step_run_id: Optional[Union[str, UUID]] = Field(
@@ -66,7 +66,7 @@ class LogsResponseMetadata(BaseResponseModelMetadata):
     )
 
 
-class LogsResponse(BaseResponseModel):
+class LogsResponse(BaseResponse):
     """Response model for logs."""
 
     # Entity fields

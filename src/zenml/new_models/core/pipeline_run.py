@@ -24,17 +24,17 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
-    WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 
 if TYPE_CHECKING:
     from zenml.new_models.core.artifact import ArtifactResponse
+    from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.pipeline_build import (
         PipelineBuildResponse,
     )
-    from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.run_metadata import (
         RunMetadataResponse,
     )
