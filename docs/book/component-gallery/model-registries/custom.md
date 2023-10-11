@@ -3,6 +3,11 @@ description: How to develop a custom model registry
 ---
 
 {% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
+{% hint style="warning" %}
 **Base abstraction in progress!**
 
 The Model registry stack component is relatively new in ZenML. While it is fully
