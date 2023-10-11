@@ -2,6 +2,11 @@
 description: How to manage stacks in a centralized location with ZenStores
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Share Stacks and Profiles via ZenStores
 
 The ZenML **Store** (or **ZenStore**) is a low-level concept used to represent the

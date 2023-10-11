@@ -2,6 +2,11 @@
 description: How to inspect a finished pipeline run
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Inspecting Pipeline Runs
 
 Once a pipeline run has completed, we can access it using the

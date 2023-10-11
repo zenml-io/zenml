@@ -2,6 +2,11 @@
 description: How to set up a minimal stack on Google Cloud Platform (GCP)
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # GCP Setup Guide
 
 To get started using ZenML on the cloud, you need some basic infrastructure up 
