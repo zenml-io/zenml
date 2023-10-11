@@ -2,6 +2,11 @@
 description: Configuring pipelines, steps, and stack components in ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Define steps
 
 To define a step, all you need to do is decorate your Python functions with ZenML's
