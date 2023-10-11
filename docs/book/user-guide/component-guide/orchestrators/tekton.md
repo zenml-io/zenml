@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on Tekton.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Tekton Orchestrator
 
 The Tekton orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `tekton` integration that

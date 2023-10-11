@@ -2,6 +2,11 @@
 description: Running pipelines in the MLOps Platform Sandbox.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Use the Sandbox
 
 The [MLOps Platform Sandbox](https://sandbox.zenml.io) is a temporary MLOps platform that includes ZenML, [MLflow](https://mlflow.org), [Kubeflow](https://www.kubeflow.org/), and [Minio](https://min.io/). Its purpose is to showcase the simplicity of creating a production-ready machine-learning solution using popular open-source tools. The Sandbox is designed for learning and experimentation, not for commercial projects or large-scale production use. It offers users a controlled environment to explore MLOps tools and processes before building their custom MLOps stack based on their specific requirements.
