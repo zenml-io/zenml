@@ -2,6 +2,11 @@
 description: Welcome to ZenML!
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools?
 Do you struggle with versioning data, code, and models in your projects?
 Have you had trouble replicating production pipelines and monitoring models in production?

@@ -2,6 +2,11 @@
 description: How to orchestrate pipelines with Vertex AI
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The Vertex orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to run your pipelines.
