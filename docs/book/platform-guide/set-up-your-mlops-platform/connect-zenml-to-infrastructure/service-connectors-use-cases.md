@@ -2,6 +2,11 @@
 description: Features and use-cases unlocked with ZenML Service Connectors.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Service Connectors use cases
 
 Simply put, ZenML Service Connectors can be used to securely connect ZenML to external resources and services. All the complexity involved in validating, storing, and generating security-sensitive information as well as authenticating and authorizing access to external services is encapsulated in this simple yet powerful concept instead of being spread out across the wide range of Stack Components that you need to run pipelines.
