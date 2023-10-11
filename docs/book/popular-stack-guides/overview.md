@@ -2,6 +2,11 @@
 description: Learn about popular combinations of MLOps Stack Components.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Popular MLOps Stack Recipes
 
 There are many reasons why you might want to move your ML application setup to a cloud environment, from a need for specialized compute 💪 for training jobs to having requirements for a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
