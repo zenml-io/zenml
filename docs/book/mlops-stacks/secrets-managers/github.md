@@ -2,6 +2,11 @@
 description: How to store secrets in GitHub
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The GitHub secrets manager is a [secrets manager](./secrets-managers.md) flavor provided with
 the ZenML `github` integration that uses [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 to store secrets.

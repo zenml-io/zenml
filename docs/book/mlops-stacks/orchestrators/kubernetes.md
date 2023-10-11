@@ -2,6 +2,11 @@
 description: How to orchestrate pipelines with Kubernetes
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The Kubernetes orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `kubernetes` integration that runs your pipelines on a 
 [Kubernetes](https://kubernetes.io/) cluster.
