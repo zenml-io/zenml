@@ -2,6 +2,11 @@
 description: How to link stacks to code with repositories
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ZenML has two main locations where it stores information on the local machine.
 These are the [Global Configuration](../../resources/global-config.md) and the 
 _Repository_. The latter is also referred to as the _.zen folder_.
