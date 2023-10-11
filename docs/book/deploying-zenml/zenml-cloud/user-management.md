@@ -1,6 +1,6 @@
 # User Management
 
-In ZenML Cloud, there is a slightly different entity heirarchy as compared to the open-source ZenML
+In ZenML Cloud, there is a slightly different entity hierarchy as compared to the open-source ZenML
 framework. This document walks you through the key differences and new concepts that are cloud-only.
 ## Organizations, Tenants, and Roles
 
