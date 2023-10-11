@@ -71,9 +71,9 @@ jobs:
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
       - name: Re-install ZenML from local
-      shell: bash
-      run: |
-        pip install ".[dev, server, template]"
+        shell: bash
+        run: |
+          pip install ".[dev, server, template]"
 
       - name: Check-out fresh E2E template
         run: |
