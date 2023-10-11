@@ -92,7 +92,7 @@ To keep things simple, we can summarize the steps:
 
 ### Important notice
 
-Using the ZenML CLI is a secure and comfortable way to interact with your zenml
+Using the ZenML CLI is a secure and comfortable way to interact with your ZenML
 tenants. It's important to always ensure that only trusted devices are used to
 maintain security and privacy.
 
