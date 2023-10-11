@@ -1,7 +1,7 @@
 """add oauth devices [f3b3964e3a0f].
 
 Revision ID: f3b3964e3a0f
-Revises: 37835ce041d2
+Revises: 3b68abe58f44
 Create Date: 2023-10-03 22:06:04.452359
 
 """
