@@ -2,6 +2,11 @@
 description: Creating an external integration and contributing to ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ![ZenML integrates with a bunch of tools from the MLOps landscape](/docs/book/.gitbook/assets/sam-side-by-side-full-text.png)
 
 One of the main goals of ZenML is to find some semblance of order in the 
