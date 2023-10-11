@@ -235,7 +235,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 #### Additional Configuration
 
-For additional configuration of the Skypilot orchestrator, you can pass `Settings` depeneding of which cloud you are using which allow you to configure (among others) the following attributes:
+For additional configuration of the Skypilot orchestrator, you can pass `Settings` depending on which cloud you are using which allows you to configure (among others) the following attributes:
 
 * `instance_type`: The instance type to use.
 * `cpus`: The number of CPUs required for the task. If a string, must be a string of the form `'2'` or `'2+'`, where the `+` indicates that the task requires at least 2 CPUs.
