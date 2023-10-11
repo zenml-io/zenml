@@ -2,6 +2,11 @@
 description: Combine your efforts, expertise and resources.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Collaboration is a crucial aspect of any MLOps team as they often need to bring 
 together individuals with diverse skills and expertise to create a cohesive 
 and effective workflow for machine learning projects. A successful MLOps team 

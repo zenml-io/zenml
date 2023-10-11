@@ -2,6 +2,11 @@
 description: A collection of architecture diagrams that shows the interactions of different environments in mature productions settings.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In order to understand the interaction between ZenML clients, a ZenML Server and
 other environments, we have compiled a collection of diagrams that highlight 
 certain interactions.
