@@ -2,6 +2,11 @@
 description: Deploy pipelines to the public cloud.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Guide for cloud-specific deployments
 
 This guide will show how you can run your pipelines in Kubeflow Pipelines 

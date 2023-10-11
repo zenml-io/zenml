@@ -2,6 +2,11 @@
 description: How to track pipeline runs with metadata stores
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Keeping a historical record of your pipeline runs is a core MLOps practice.
 This makes it possible to trace back the lineage or provenance of the data that
 was used to train a model, for example, or to go back and compare the

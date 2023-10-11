@@ -2,6 +2,11 @@
 description: How to store ML metadata using the Kubeflow ML metadata service
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Kubeflow deployments include a [ML metadata service](https://www.kubeflow.org/docs/components/pipelines/concepts/metadata/)
 that is compatible with ZenML. The Kubeflow Metadata Store is a
 [Metadata Store](./metadata-stores.md) flavor provided with the Kubeflow ZenML

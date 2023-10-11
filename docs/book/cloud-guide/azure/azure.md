@@ -2,6 +2,11 @@
 description: How to set up stacks on Microsoft Azure
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Azure is one of the most popular cloud providers and offers a range of services that can be used while building your MLOps stacks. You can learn more about machine learning at Azure on their [website](https://azure.microsoft.com/en-in/services/machine-learning/).
 
 # Available Stack Components
