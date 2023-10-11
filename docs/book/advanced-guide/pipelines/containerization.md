@@ -2,6 +2,11 @@
 description: How ZenML uses Docker images to run your pipeline
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In the [Runtime Settings section](../../advanced-guide/pipelines/settings.md) of the docs, we saw how to
 use the `BaseSettings` concept to configure ZenML in various ways. In this guide, we will dive deeper into
 one particular sub-class of `BaseSettings` which is of particular important: `DockerSettings`. Here is why it is important.
