@@ -335,6 +335,8 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
+        if model_config:
+            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,

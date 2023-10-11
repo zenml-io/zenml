@@ -128,7 +128,7 @@ class ModelConfig(ModelConfigModel):
             self._model_version = zenml_client.create_model_version(
                 model_version=mv_request
             )
-            logger.info(f"New model version `{self.name}` was created.")
+            logger.info(f"New model version `{self.version}` was created.")
 
         return self._model_version
 

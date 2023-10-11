@@ -87,6 +87,7 @@ class ArtifactConfig(BaseModel):
                 name=self.model_name,
                 version=self.model_version,
                 create_new_model_version=False,
+                suppress_warnings=True,
             )
             return on_the_fly_config
 
