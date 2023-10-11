@@ -2,6 +2,11 @@
 description: How to store secrets in AWS
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The AWS secrets manager is a [secrets manager](./secrets-managers.md) flavor 
 provided with the ZenML `aws` integration that uses [AWS](https://aws.amazon.com/secrets-manager/)
 to store secrets.
