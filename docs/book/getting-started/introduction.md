@@ -2,6 +2,11 @@
 description: Welcome to ZenML!
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # ZenML: Open-source MLOps framework that integrates all your ML tools
 
 🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
