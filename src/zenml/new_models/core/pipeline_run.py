@@ -94,7 +94,7 @@ class PipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class PipelineRunUpdateModel(BaseModel):
+class PipelineRunUpdate(BaseModel):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None
