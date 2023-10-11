@@ -2,6 +2,11 @@
 description: Birds-eye view on the necessities of your MLOps platform.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🏗 Set up your MLOps platform
 
 In order to establish your own MLOps platform with ZenML, you need to deploy a few ingredients:

@@ -2,6 +2,11 @@
 description: Running a hyper-parameter tuning trial with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hyper-parameter tuning
 
 A basic iteration through a number of hyper-parameters can be achieved with ZenML by using a simple pipeline like this:
