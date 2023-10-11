@@ -41,10 +41,10 @@ def process_files(root_dir: str, version: str) -> None:
     warning_string = (
         '\n{% hint style="warning" %}\n'
         "This is an older version of the ZenML documentation. "
-        "To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).\n"
+        "To read and view the latest version please "
+        "[visit this up-to-date URL](https://docs.zenml.io).\n"
         "{% endhint %}\n\n"
     )
-    weird_files_path = "/Users/strickvl/Desktop/weird-files.txt"
 
     for root, _, files in os.walk(root_dir):
         # Skip the drafts folder
@@ -75,9 +75,10 @@ def process_files(root_dir: str, version: str) -> None:
                 elif file in ["glossary.md", "usage-analytics.md"]:
                     new_content = warning_string + content
                 else:
-                    with open(weird_files_path, "a", encoding="utf-8") as wf:
-                        wf.write(f"{version}: {file_path}\n")
-                        continue  # Skip the rest of this iteration
+                    print(
+                        f"Version {version}: Couldn't process file {file_path}"
+                    )
+                    continue  # Skip the rest of this iteration
 
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(new_content)
