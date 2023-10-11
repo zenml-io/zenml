@@ -1106,7 +1106,11 @@ class Pipeline:
         integration_registry.activate_integrations()
 
         if config_path:
-            run_config = PipelineRunConfiguration.from_yaml(config_path)
+            with open(config_path, "r") as f:
+                yaml.load(f, Loader=yaml.SafeLoader)
+            run_config = PipelineRunConfiguration(
+                steps=config_path.get("steps", {})
+            )
         else:
             run_config = PipelineRunConfiguration()
 
@@ -1380,7 +1384,7 @@ class Pipeline:
                 del from_config["steps"]
         else:
             from_config = {}
-        from_config.update(kwargs)
+        from_config = dict_utils.recursive_update(from_config, kwargs)
 
         pipeline_copy = self.copy()
         pipeline_copy.configure(**from_config)
