@@ -2,6 +2,11 @@
 description: How to collaboratively use ZenML in larger organizations with the ZenServer
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # The ZenML Server
 
 Sometimes, you may need to exchange or collaborate on Stack configurations with

@@ -2,6 +2,11 @@
 description: How to migrate legacy stacks from zenml<0.7
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Migrating Legacy Stacks to ZenML Profiles
 
 Traditionally, stack configurations were stored locally in the repository root

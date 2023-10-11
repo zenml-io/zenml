@@ -2,6 +2,11 @@
 description: How to execute individual steps on Spark
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The `spark` integration brings two different step operators:
 
 - **Step Operator**: The `SparkStepOperator` serves as the base class for all 
