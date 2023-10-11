@@ -330,7 +330,7 @@ class ModelVersionResponseModel(
             ),
         )
         logger.info(
-            f"Updated model version name for `ID:{self.id}` to `{self.number}`"
+            f"Updated model version name for `ID:{self.id}` to `{self.number}`."
         )
 
     # TODO in https://zenml.atlassian.net/browse/OSS-2433
