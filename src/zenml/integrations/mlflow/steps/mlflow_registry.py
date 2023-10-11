@@ -18,6 +18,7 @@ from typing import Optional
 from mlflow.tracking import artifact_utils
 
 from zenml import __version__, get_step_context, step
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
@@ -26,7 +27,6 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
 from zenml.logger import get_logger
-from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
 )

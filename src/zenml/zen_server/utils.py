@@ -19,9 +19,6 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
-import ipinfo  # type: ignore[import]
-from fastapi import HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -195,6 +192,11 @@ def handle_exceptions(func: F) -> F:
 
     @wraps(func)
     def decorated(*args: Any, **kwargs: Any) -> Any:
+        # These imports can't happen at module level as this module is also
+        # used by the CLI when installed without the `server` extra
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
         from zenml.zen_server.auth import AuthContext, set_auth_context
 
         for arg in args:
@@ -272,6 +274,8 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
     Returns:
         A tuple of city, region, country.
     """
+    import ipinfo  # type: ignore[import]
+
     try:
         handler = ipinfo.getHandler()
         details = handler.getDetails(ip_address)

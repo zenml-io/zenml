@@ -20,6 +20,7 @@ from uuid import UUID
 
 import boto3
 import sagemaker
+from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
@@ -149,6 +150,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a connector is used that does not return a
                 `boto3.Session` object.
+            TypeError: If the network_config passed is not compatible with the
+                AWS SageMaker NetworkConfig class.
         """
         if deployment.schedule:
             logger.warning(
@@ -255,6 +258,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             processor_args_for_step["entrypoint"] = entrypoint
             processor_args_for_step["base_job_name"] = orchestrator_run_name
             processor_args_for_step["env"] = environment
+
+            # Convert network_config to sagemaker.network.NetworkConfig if present
+            network_config = processor_args_for_step.get("network_config")
+            if network_config and isinstance(network_config, dict):
+                try:
+                    processor_args_for_step["network_config"] = NetworkConfig(
+                        **network_config
+                    )
+                except TypeError:
+                    # If the network_config passed is not compatible with the NetworkConfig class,
+                    # raise a more informative error.
+                    raise TypeError(
+                        "Expected a sagemaker.network.NetworkConfig compatible object for the network_config argument, "
+                        "but the network_config processor argument is invalid."
+                        "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
+                        "for more information about the NetworkConfig class."
+                    )
 
             # Construct S3 inputs to container for step
             inputs = None

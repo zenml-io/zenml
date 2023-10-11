@@ -217,8 +217,8 @@ SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
 SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
-
-# mandatory stack component attributes
+MODELS = "/models"
+MODEL_VERSIONS = "/model_versions"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
@@ -289,7 +289,10 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
 ]
 
 # Model parameters
-
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
+
+# Model Control Plane constants
+RUNNING_MODEL_VERSION = "running"
+LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"

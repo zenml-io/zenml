@@ -18,6 +18,7 @@ from typing import List, Optional, cast
 from pydantic import BaseModel, validator
 
 from zenml import get_step_context
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.exceptions import DoesNotExistException
@@ -35,7 +36,6 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     BaseParameters,
     StepContext,
