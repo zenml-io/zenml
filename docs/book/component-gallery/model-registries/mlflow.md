@@ -2,6 +2,11 @@
 description: How to manage MLFlow logged models and artifacts
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The MLflow Model Registry is a [model registry](./model-registries.md) flavor
 provided with the MLflow ZenML integration that uses
 [the MLflow model registry service](https://mlflow.org/docs/latest/model-registry.html)

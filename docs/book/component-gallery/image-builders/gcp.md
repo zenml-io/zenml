@@ -2,6 +2,11 @@
 description: How to build container images with Google Cloud Build
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The Google Cloud image builder is an [image builder](./image-builders.md) flavor provided
 with the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build)
 to build container images.
