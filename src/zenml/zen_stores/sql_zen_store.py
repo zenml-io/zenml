@@ -181,6 +181,7 @@ from zenml.models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -3878,6 +3879,33 @@ class SqlZenStore(BaseZenStore):
                 table=ArtifactSchema,
                 filter_model=artifact_filter_model,
             )
+
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdateModel
+    ) -> ArtifactResponseModel:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if not existing_artifact:
+                raise KeyError(f"Artifact with ID {artifact_id} not found.")
+            existing_artifact.update(artifact_update=artifact_update)
+            session.add(existing_artifact)
+            session.commit()
+            session.refresh(existing_artifact)
+            return existing_artifact.to_model()
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.

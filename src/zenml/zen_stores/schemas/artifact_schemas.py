@@ -14,6 +14,8 @@
 """SQLModel implementation of artifact tables."""
 
 
+import json
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -24,6 +26,7 @@ from sqlmodel import Field, Relationship
 from zenml.config.source import Source
 from zenml.enums import ArtifactType, ExecutionStatus, VisualizationType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.visualization_models import VisualizationModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -52,6 +55,7 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
+    tags: str = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     artifact_store_id: Optional[UUID] = build_foreign_key_field(
@@ -126,6 +130,7 @@ class ArtifactSchema(NamedSchema, table=True):
             uri=artifact_request.uri,
             materializer=artifact_request.materializer.json(),
             data_type=artifact_request.data_type.json(),
+            tags=json.dumps(artifact_request.tags),
         )
 
     def to_model(self) -> ArtifactResponseModel:
@@ -172,12 +177,32 @@ class ArtifactSchema(NamedSchema, table=True):
             uri=self.uri,
             materializer=materializer,
             data_type=data_type,
+            tags=json.loads(self.tags) if self.tags else None,
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
             metadata=metadata,
             visualizations=[vis.to_model() for vis in self.visualizations],
         )
+
+    def update(
+        self,
+        artifact_update: ArtifactUpdateModel,
+    ) -> "ArtifactSchema":
+        """Update an `ArtifactSchema` with an `ArtifactUpdateModel`.
+
+        Args:
+            artifact_update: The update model to apply.
+
+        Returns:
+            The updated `ArtifactSchema`.
+        """
+        if artifact_update.name:
+            self.name = artifact_update.name
+        if artifact_update.tags:
+            self.tags = json.dumps(artifact_update.tags)
+        self.updated = datetime.utcnow()
+        return self
 
 
 class ArtifactVisualizationSchema(BaseSchema, table=True):
