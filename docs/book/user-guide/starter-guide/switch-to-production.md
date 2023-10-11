@@ -49,7 +49,7 @@ Both options offer distinct advantages, allowing you to choose the deployment ap
 
 ## Using the ZenML CLI to connect to a deployed ZenML Server
 
-ZenML Cloud uses the Command Line Interface (CLI) to connect to a server. This
+[ZenML Cloud](https://cloud.zenml.io/) uses the Command Line Interface (CLI) to connect to a server. This
 can be executed with the command:
 
 ```bash
