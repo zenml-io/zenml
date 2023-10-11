@@ -1,6 +1,11 @@
 ---
 description: How roles and permissions work within ZenML
 ---
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
 {% hint style="warning" %}
 Permissions and roles are an alpha feature of ZenML and are in active 
 development.

@@ -2,6 +2,11 @@
 description: How to use step fixtures to access the active ZenML stack from within a step
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In general, when defining steps, you usually can only supply inputs that have
 been output by previous steps. However, there are two exceptions:
 

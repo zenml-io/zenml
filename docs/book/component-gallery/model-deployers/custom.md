@@ -2,6 +2,11 @@
 description: How to develop a custom model deployer
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 To deploy and manage your trained machine learning models, ZenML provides a
 stack component called `Model Deployer`. This component is responsible for
 interacting with the deployment tool, framework or platform.
