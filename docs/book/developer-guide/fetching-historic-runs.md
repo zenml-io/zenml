@@ -2,6 +2,11 @@
 description: Interact with Past Runs inside a Step
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Fetching historic runs
 
 ## The need to fetch historic runs

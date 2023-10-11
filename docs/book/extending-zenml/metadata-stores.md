@@ -2,6 +2,11 @@
 description: Tracking the execution of your pipelines/steps.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 The configuration of each pipeline, step and produced artifacts are all tracked
 within the metadata store. ZenML puts a lot of emphasis on guaranteed tracking 
 of inputs across pipeline steps. The strict, fully automated, and deeply 

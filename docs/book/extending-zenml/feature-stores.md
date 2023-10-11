@@ -2,6 +2,11 @@
 description: Managing of your data/features.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Feature stores allow data teams to serve data via an offline store, and an 
 online low-latency store where data is kept in sync between the two. It also 
 offers a centralized registry where features (and feature schemas) are stored 

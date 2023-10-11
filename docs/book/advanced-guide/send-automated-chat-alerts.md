@@ -2,6 +2,11 @@
 description: Send automated alerts to chat services.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # :speech_balloon: Send Automated Chat Alerts
 
 Many developer teams use real-time chat services like Slack for their

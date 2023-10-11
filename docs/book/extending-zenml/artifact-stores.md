@@ -2,6 +2,11 @@
 description: Setting up the storage for your artifacts
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 In ZenML, all the inputs and outputs which go through a step are treated as 
 artifacts and as its name suggests, an `ArtifactStore` is a place where these
 artifacts get stored.

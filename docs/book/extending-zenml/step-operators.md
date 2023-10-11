@@ -2,6 +2,11 @@
 description: Running individual steps in specialized environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Step operators allow you to run individual steps in a custom environment
 different from the default one used by your active orchestrator. One example
 use-case is to run a training step of your pipeline in an environment with GPUs

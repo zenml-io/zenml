@@ -2,6 +2,11 @@
 description: Guard against data drift with our Evidently integration.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Perform Drift Detection
 
 Data drift is something you often want to guard against in your pipelines.

@@ -2,6 +2,11 @@
 description: ZenML integrates with Feast so you can access your batch and online data via a Feature Store
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Feature Store
 
 Feature stores allow data teams to serve data via an offline store and an online
