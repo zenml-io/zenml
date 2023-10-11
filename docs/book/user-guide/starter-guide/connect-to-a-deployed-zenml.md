@@ -2,6 +2,11 @@
 description: Learning about the ZenML server.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Connect to a deployed ZenML
 
 Although the basic functionalities of ZenML work perfectly on your local machine, you need to connect to **a deployed ZenML server** to use remote services and infrastructure.

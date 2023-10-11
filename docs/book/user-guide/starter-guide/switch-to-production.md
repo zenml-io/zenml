@@ -2,6 +2,11 @@
 description: Bringing your pipelines into production using ZenML Sandbox
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Switch to production
 
 Transitioning your machine learning pipelines to production means deploying your models on real-world data to make

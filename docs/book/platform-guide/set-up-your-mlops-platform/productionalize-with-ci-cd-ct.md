@@ -2,6 +2,11 @@
 description: How to include ZenML in the CI/CD/CT workflows
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Productionalize with CI/CD/CT
 
 In many production settings, it is undesirable to have all developers accessing and running on the production environments. Therefore, it is best to "gate" certain pipelines running on production stacks. This can be achieved through the concept of Continuous Integration and Continuous Deployment (CI/CD).

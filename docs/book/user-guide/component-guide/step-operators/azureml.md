@@ -2,6 +2,11 @@
 description: Executing individual steps in AzureML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AzureML
 
 The AzureML step operator is a [step operator](step-operators.md) flavor provided by the ZenML `azure` integration that
