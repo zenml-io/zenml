@@ -2,6 +2,11 @@
 description: Sending alerts through specified channels.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Alerters allow you to send messages to chat services (like Slack, Discord, 
 Mattermost, etc.) from within your pipeline.
 This is useful for immediately getting notified when failures happen,

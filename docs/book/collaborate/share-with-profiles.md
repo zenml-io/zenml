@@ -2,6 +2,11 @@
 description: Centralized ZenML Stack Management with Profiles.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # ZenML Profiles
 
 ZenML implicitly stores all the information about the configured Stacks, Stack

@@ -2,6 +2,11 @@
 description: ZenML has learning paths for users from all backgrounds.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Navigate ZenML Resources
 
 The ZenML team and community have put together a list of learning resources that can be used to develop a 

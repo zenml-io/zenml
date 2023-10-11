@@ -2,6 +2,11 @@
 description: Collaboration with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # ZenML for Teams and Organizations
 
 Using ZenML to develop and execute pipelines from the comfortable confines of

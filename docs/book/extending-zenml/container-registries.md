@@ -2,6 +2,11 @@
 description: Setting up the storage for your containers.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 A container registry is a store for (Docker) containers. A ZenML workflow 
 involving a container registry would automatically containerize your code to 
 be transported across stacks running remotely. As part of the deployment to the

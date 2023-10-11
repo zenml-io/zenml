@@ -2,6 +2,11 @@
 description: Exporting and Importing Stacks.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Export and Import ZenML Stacks
 
 If you wish to transfer one of your stacks to another profile or even another

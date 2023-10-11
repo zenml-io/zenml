@@ -2,6 +2,11 @@
 description: Create Steps, Build a Pipeline and Run it.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Steps & Pipelines
 
 ## Step

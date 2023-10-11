@@ -2,6 +2,11 @@
 description: Use ZenML in a Collaborative Setting with the ZenServer.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # The ZenML Server
 
 Sometimes, you may need to exchange or collaborate on Stack configurations with

@@ -2,6 +2,11 @@
 description: Use Step Fixtures to Access the Stack from within a Step.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 
 # Step Fixtures
 

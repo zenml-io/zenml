@@ -2,6 +2,11 @@
 description: Deploy pipelines to production.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Run your Pipeline on Kubeflow
 
 [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting-started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.

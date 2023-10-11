@@ -2,6 +2,11 @@
 description: Managing the models deployed by your pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Model deployers are stack components responsible for online model serving.
 Online serving is the process of hosting and loading machine-learning models 
 as part of a managed web service and providing access to the models through 

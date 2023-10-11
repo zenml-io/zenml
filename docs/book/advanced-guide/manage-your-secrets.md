@@ -2,6 +2,11 @@
 description: ZenML provides functionality to store secrets locally and with AWS.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Managing Secrets
 
 Most projects involving either cloud infrastructure or of a certain complexity
