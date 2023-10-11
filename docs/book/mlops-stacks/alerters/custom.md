@@ -2,6 +2,11 @@
 description: How to develop a custom alerter
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Base Abstraction
 
 The base abstraction for alerters is very basic, as it only defines two
