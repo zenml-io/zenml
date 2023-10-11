@@ -2,6 +2,11 @@
 description: How to add users to your ZenML deployment
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Multi-player mode with ZenML
 
 After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](./zenml-deployment.md), you can go ahead and start adding your teammates as users.

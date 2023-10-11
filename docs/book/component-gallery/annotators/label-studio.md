@@ -2,6 +2,11 @@
 description: How to annotate data using Label Studio with ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Label Studio is one of the leading open-source annotation platforms available to
 data scientists and ML practitioners. It is used to create or edit datasets that
 you can then use as part of training or validation workflows. It supports a
