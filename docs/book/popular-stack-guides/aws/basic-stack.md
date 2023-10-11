@@ -2,6 +2,11 @@
 description: How to set up a minimal stack on Amazon Web Services (AWS)
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Getting started with AWS
 
 To get started using ZenML on the cloud, you need some basic infrastructure up 

@@ -2,6 +2,11 @@
 description: How to build container images locally
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The local image builder is an [image builder](./image-builders.md) flavor which 
 comes built-in with ZenML and uses the local Docker installation on your client
 machine to build container images.
