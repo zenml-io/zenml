@@ -2,6 +2,11 @@
 description: Collaborate with the ZenML community
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # What is the ZenML hub?
 
 The ZenML Hub is a central platform that enables our users to search, share
