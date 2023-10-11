@@ -57,7 +57,7 @@ zenml connect --url https://...
 ```
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to
-mark their respective device as trusted or not. If you choose not to
+mark your respective device as trusted or not. If you choose not to
 click `Trust this device`, a 24-hour token will be issued for authentication
 services. Choosing to trust the device will issue a 30-day token instead.
 
