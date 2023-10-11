@@ -238,17 +238,17 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 For additional configuration of the Skypilot orchestrator, you can pass `SkypilotBaseOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `instance_type`: The instance type to use.
-* `cpus`: The number of CPUs required for the task. If a string, must be a string of the form `'2'` or `'2+'`, where the `+` indicates that the task requires at least 2 CPUs.
-* `memory`: The amount of memory in GiB required. If a string, must be a string of the form `'16'` or `'16+'`, where the `+` indicates that the task requires at least 16 GB of memory.
-* `accelerators`: The accelerators required. If a string, must be a string of the form `'V100'` or `'V100:2'`, where the `:2` indicates that the task requires 2 V100 GPUs. If a dict, must be a dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
+* `cpus`: The number of CPUs required for the task. Must be a string of the form `'2'` or `'2+'`, where the `+` indicates that the task requires at least 2 CPUs.
+* `memory`: The amount of memory in GiB required. must be a string of the form `'16'` or `'16+'`, where the `+` indicates that the task requires at least 16 GB of memory.
+* `accelerators`: The accelerators required. Must be a dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
 * `accelerator_args`: Accelerator-specific arguments. For example, `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
 * `use_spot`: Whether to use spot instances. If None, defaults to False.
 * `spot_recovery`: The spot recovery strategy to use for the managed spot to recover the cluster from preemption. Read more about the available strategies [here](https://skypilot.readthedocs.io/en/latest/reference/api.html?highlight=instance_type#resources)
 * `region`: The cloud region to use.
 * `zone`: The cloud zone to use within the region.
-* `image_id`: The image ID to use. If a string, must be a string of the image id from the cloud, such as AWS: `'ami-1234567890abcdef0'`, GCP: `'projects/my-project-id/global/images/my-image-name'`; Or, a image tag provided by SkyPilot, such as AWS: `'skypilot:gpu-ubuntu-2004'`. If a dict, must be a dict mapping from region to image ID.
+* `image_id`: The image ID to use. Must be a dict mapping from region to image ID `{'us-west1': 'ami-1234567890abcdef0','us-east1': 'ami-1234567890abcdef0'}`.
 * `disk_size`: The size of the OS disk in GiB.
-* `disk_tier`: The disk performance tier to use. If None, defaults to `'medium'`.
+* `disk_tier`: The disk performance tier to use. If None, defaults to `'medium'` it must be one of `'high'`, `'medium'`, or `'low'`.
 * `cluster_name`: Name of the cluster to create/reuse. If None, auto-generate a name. SkyPilot uses term `cluster` to refer to a group or a single VM that are provisioned to execute the task. The cluster name is used to identify the cluster and to determine whether to reuse an existing cluster or create a new one.
 * `retry_until_up`: Whether to retry launching the cluster until it is up.
 * `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag is equivalent to running `sky.launch(..., detach_run=True, ...)` and then `sky.autostop(idle_minutes=<minutes>)`. If not set, the cluster will not be autostopped.

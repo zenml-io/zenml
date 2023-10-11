@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, Optional
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -28,14 +28,12 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     Attributes:
         instance_type: the instance type to use.
         cpus: the number of CPUs required for the task.
-            If a str, must be a string of the form `'2'` or `'2+'`, where
+           Must be a string of the form `'2'` or `'2+'`, where
             the `+` indicates that the task requires at least 2 CPUs.
         memory: the amount of memory in GiB required. If a
-            str, must be a string of the form `'16'` or `'16+'`, where
+            Must be a string of the form `'16'` or `'16+'`, where
             the `+` indicates that the task requires at least 16 GB of memory.
-        accelerators: the accelerators required. If a str, must be
-            a string of the form `'V100'` or `'V100:2'`, where the `:2`
-            indicates that the task requires 2 V100 GPUs. If a dict, must be a
+        accelerators: the accelerators required. Must be a
             dict of the form `{'V100': 2}` or `{'tpu-v2-8': 1}`.
         accelerator_args: accelerator-specific arguments. For example,
             `{'tpu_vm': True, 'runtime_version': 'tpu-vm-base'}` for TPUs.
@@ -47,12 +45,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             for more details.
         region: the region to use.
         zone: the zone to use.
-        image_id: the image ID to use. If a str, must be a string
-            of the image id from the cloud, such as AWS:
-            ``'ami-1234567890abcdef0'``, GCP:
-            ``'projects/my-project-id/global/images/my-image-name'``;
-            Or, a image tag provided by SkyPilot, such as AWS:
-            ``'skypilot:gpu-ubuntu-2004'``. If a dict, must be a dict mapping
+        image_id: the image ID to use. Must be a dict mapping
             from region to image ID, such as:
 
             .. code-block:: python
@@ -63,8 +56,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
                 }
 
         disk_size: the size of the OS disk in GiB.
-        disk_tier: the disk performance tier to use. If None, defaults to
-            ``'medium'``.
+        disk_tier: the disk performance tier to use. If None, defaults to `'medium'` it must be one of `'high'`, `'medium'`, or `'low'`.
 
         cluster_name: name of the cluster to create/reuse.  If None,
             auto-generate a name.
@@ -88,17 +80,17 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
 
     # Resources
     instance_type: Optional[str] = None
-    cpus: Union[None, int, float, str] = None
-    memory: Union[None, int, float, str] = None
-    accelerators: Union[None, str, Dict[str, int]] = None
+    cpus: Optional[str] = None
+    memory: Optional[str] = None
+    accelerators: Optional[Dict[str, int]] = None
     accelerator_args: Optional[Dict[str, str]] = None
     use_spot: Optional[bool] = None
     spot_recovery: Optional[str] = None
     region: Optional[str] = None
     zone: Optional[str] = None
-    image_id: Union[Dict[str, str], str, None] = None
+    image_id: Optional[Dict[str, str]] = None
     disk_size: Optional[int] = None
-    disk_tier: Optional[Literal["high", "medium", "low"]] = None
+    disk_tier: Optional[str] = None
 
     # Run settings
     cluster_name: Optional[str] = None
