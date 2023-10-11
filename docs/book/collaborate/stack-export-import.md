@@ -2,6 +2,11 @@
 description: How to export and import stacks to YAML files
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Export and Import ZenML Stacks
 
 If you wish to transfer one of your stacks to another profile or even another

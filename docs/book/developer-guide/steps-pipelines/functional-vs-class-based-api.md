@@ -2,6 +2,11 @@
 description: How to define pipelines and steps with functional and class-based APIs
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In ZenML there are two different ways how you can define pipelines or steps.
 What you have seen in the previous sections is the **Functional API**,
 where steps and pipelines are defined as Python functions with a
