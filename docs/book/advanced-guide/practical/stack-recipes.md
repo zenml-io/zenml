@@ -2,6 +2,11 @@
 description: Introduction to Stack recipes which help you deploy a full MLOps stack in minutes!
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 When we first created ZenML as an extensible MLOps framework for creating portable, production-ready MLOps pipelines, we saw many of our users having to deal with the pain of deploying infrastructure from scratch to run these pipelines.
 
 The expertise of setting up these often-complex stacks up shouldn't be a prerequisite to running your ML pipelines. We created stack recipes as a way to allow you to quickly get started with a full-fledged MLOps stack with the execution of just a couple of simple commands. Read on to learn what a recipe is, how you can deploy it and the steps needed to create your own!

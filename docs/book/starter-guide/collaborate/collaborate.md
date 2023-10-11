@@ -2,6 +2,11 @@
 description: How to collaborate with your team in ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # ZenML for Teams and Organizations
 
 Using ZenML to develop and execute pipelines from the comfortable confines of

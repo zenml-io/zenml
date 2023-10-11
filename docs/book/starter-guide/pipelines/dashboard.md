@@ -2,6 +2,11 @@
 description: How to use ZenML's native dashboard to monitor your pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Dashboard 101
 
 ZenML comes with a native dashboard that allows you to monitor your pipelines
