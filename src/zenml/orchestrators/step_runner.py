@@ -602,7 +602,10 @@ class StepRunner:
                 artifact_name = output_name
             else:
                 step_context = get_step_context()
-                pipeline_name = step_context.pipeline.name
+                if step_context.pipeline_run.pipeline:
+                    pipeline_name = step_context.pipeline_run.name
+                else:
+                    pipeline_name = "unlisted"
                 step_name = step_context.step_run.name
                 artifact_name = f"{pipeline_name}::{step_name}::{output_name}"
 
