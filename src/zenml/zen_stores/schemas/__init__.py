@@ -19,6 +19,7 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeRepositorySchema,
     CodeReferenceSchema,
 )
+from zenml.zen_stores.schemas.device_schemas import OAuthDeviceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
@@ -57,38 +58,49 @@ from zenml.zen_stores.schemas.team_schemas import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.schemas.model_schemas import (
+    ModelSchema,
+    ModelVersionSchema,
+    ModelVersionArtifactSchema,
+    ModelVersionPipelineRunSchema,
+)
 
 __all__ = [
     "ArtifactSchema",
     "BaseSchema",
-    "NamedSchema",
-    "CodeRepositorySchema",
     "CodeReferenceSchema",
+    "CodeRepositorySchema",
     "FlavorSchema",
     "IdentitySchema",
-    "ServiceConnectorLabelSchema",
+    "LogsSchema",
+    "NamedSchema",
+    "OAuthDeviceSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "WorkspaceSchema",
-    "RoleSchema",
     "RolePermissionSchema",
+    "RoleSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
     "ServiceConnectorSchema",
-    "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",
+    "StackSchema",
     "StepRunInputArtifactSchema",
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
+    "TeamAssignmentSchema",
     "TeamRoleAssignmentSchema",
     "TeamSchema",
-    "TeamAssignmentSchema",
     "UserRoleAssignmentSchema",
     "UserSchema",
     "LogsSchema",
+    "ModelSchema",
+    "ModelVersionSchema",
+    "ModelVersionArtifactSchema",
+    "ModelVersionPipelineRunSchema",
+    "WorkspaceSchema",
 ]

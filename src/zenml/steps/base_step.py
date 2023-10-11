@@ -32,17 +32,10 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.config.source import Source
-from zenml.config.step_configurations import (
-    PartialArtifactConfiguration,
-    PartialStepConfiguration,
-    StepConfiguration,
-    StepConfigurationUpdate,
-)
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
@@ -54,7 +47,6 @@ from zenml.steps.entrypoint_function_utils import (
     get_step_entrypoint_signature,
     validate_entrypoint_function,
 )
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
     resolve_type_annotation,
 )
@@ -67,7 +59,18 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.step_configurations import (
+        PartialArtifactConfiguration,
+        PartialStepConfiguration,
+        StepConfiguration,
+        StepConfigurationUpdate,
+    )
+    from zenml.model import ModelConfig
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -133,6 +136,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -161,8 +165,11 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             **kwargs: Keyword arguments passed to the step.
         """
+        from zenml.config.step_configurations import PartialStepConfiguration
+
         self._upstream_steps: Set["BaseStep"] = set()
         self.entrypoint_definition = validate_entrypoint_function(
             self.entrypoint, reserved_arguments=["after", "id"]
@@ -200,12 +207,20 @@ class BaseStep(metaclass=BaseStepMeta):
             if enable_artifact_visualization is not False
             else "disabled",
         )
-
         logger.debug(
             "Step '%s': logs %s.",
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
+        if model_config is not None:
+            logger.debug(
+                "Step '%s': Is in Model context %s.",
+                name,
+                {
+                    "model": model_config.name,
+                    "version": model_config.version,
+                },
+            )
 
         self._configuration = PartialStepConfiguration(
             name=name,
@@ -223,6 +238,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model_config=model_config,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -440,6 +456,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The artifacts, external artifacts and parameters for the step.
         """
+        from zenml.artifacts.external_artifact import ExternalArtifact
+
         signature = get_step_entrypoint_signature(step=self)
 
         try:
@@ -466,7 +484,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, ExternalArtifact):
                 external_artifacts[key] = value
-                if not value._id:
+                if not value.id:
                     # If the external artifact references a fixed artifact by
                     # ID, caching behaves as expected.
                     logger.warning(
@@ -606,7 +624,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.enable_cache
 
     @property
-    def configuration(self) -> PartialStepConfiguration:
+    def configuration(self) -> "PartialStepConfiguration":
         """The configuration of the step.
 
         Returns:
@@ -631,6 +649,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -668,6 +687,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -677,7 +697,9 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The step instance that this method was called on.
         """
+        from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
+        from zenml.models.model_base_model import ModelConfigModel
 
         if name:
             logger.warning("Configuring the name of a step is deprecated.")
@@ -740,6 +762,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "model_config_model": ModelConfigModel.parse_obj(
+                    model_config.dict()
+                )
+                if model_config is not None
+                else None,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -762,6 +789,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        model_config: Optional["ModelConfig"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -788,6 +816,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -811,6 +840,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model_config=model_config,
             merge=merge,
         )
         return step_copy
@@ -825,7 +855,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _apply_configuration(
         self,
-        config: StepConfigurationUpdate,
+        config: "StepConfigurationUpdate",
         merge: bool = True,
     ) -> None:
         """Applies an update to the step configuration.
@@ -845,7 +875,9 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.debug("Updated step configuration:")
         logger.debug(self._configuration)
 
-    def _validate_configuration(self, config: StepConfigurationUpdate) -> None:
+    def _validate_configuration(
+        self, config: "StepConfigurationUpdate"
+    ) -> None:
         """Validates a configuration update.
 
         Args:
@@ -881,7 +913,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
     def _validate_outputs(
-        self, outputs: Mapping[str, PartialArtifactConfiguration]
+        self, outputs: Mapping[str, "PartialArtifactConfiguration"]
     ) -> None:
         """Validates the step output configuration.
 
@@ -918,7 +950,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_inputs(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
     ) -> None:
         """Validates the step inputs.
 
@@ -944,8 +976,8 @@ class BaseStep(metaclass=BaseStepMeta):
     def _finalize_configuration(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, UUID],
-    ) -> StepConfiguration:
+        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
+    ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
         Once the step was called, we know the outputs of previous steps
@@ -960,6 +992,12 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The finalized step configuration.
         """
+        from zenml.config.step_configurations import (
+            PartialArtifactConfiguration,
+            StepConfiguration,
+            StepConfigurationUpdate,
+        )
+
         outputs: Dict[
             str, Dict[str, Union[Source, Tuple[Source, ...]]]
         ] = defaultdict(dict)
@@ -981,7 +1019,7 @@ class BaseStep(metaclass=BaseStepMeta):
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
-                if output_annotation is Any:
+                if output_annotation.resolved_annotation is Any:
                     outputs[output_name]["materializer_source"] = ()
                     outputs[output_name][
                         "default_materializer_source"
@@ -991,16 +1029,19 @@ class BaseStep(metaclass=BaseStepMeta):
                     continue
 
                 if is_union(
-                    get_origin(output_annotation) or output_annotation
+                    get_origin(output_annotation.resolved_annotation)
+                    or output_annotation.resolved_annotation
                 ):
                     output_types = tuple(
                         type(None)
                         if is_none_type(output_type)
                         else output_type
-                        for output_type in get_args(output_annotation)
+                        for output_type in get_args(
+                            output_annotation.resolved_annotation
+                        )
                     )
                 else:
-                    output_types = (output_annotation,)
+                    output_types = (output_annotation.resolved_annotation,)
 
                 materializer_sources = []
 

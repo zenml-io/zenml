@@ -1167,7 +1167,7 @@ To connect to a ZenML server, you can either pass the configuration as command
 line arguments or as a YAML file:
 
 ```bash
-zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
 ```
 
 or
@@ -1535,25 +1535,27 @@ zenml hub logs
 ```
 """
 
+from zenml.cli.version import *  # noqa
 from zenml.cli.annotator import *  # noqa
 from zenml.cli.artifact import *  # noqa
+from zenml.cli.authorized_device import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
+from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
-from zenml.cli.served_model import *  # noqa
-from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.model import *  # noqa
+from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.workspace import *  # noqa
 from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
+from zenml.cli.served_model import *  # noqa
 from zenml.cli.server import *  # noqa
+from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
-from zenml.cli.version import *  # noqa
-from zenml.cli.downgrade import *  # noqa
+from zenml.cli.workspace import *  # noqa

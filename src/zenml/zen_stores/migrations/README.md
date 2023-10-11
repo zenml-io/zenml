@@ -36,7 +36,7 @@ state of their database.
 2) You have updated a Schema at src/zenml/zen_stores/schemas
    (e.g. adding a new column to stacks called `stack_cats`)
 3) In the repository root run `alembic revision --autogenerate -m "<insert description>"`
-   (e.g. `alembic revision -m "add cat column to stack"`)
+   (e.g. `alembic revision --autogenerate -m "add cat column to stack"`)
    This will lead to an output like this one:
    ```shell
    Generating /home/apenner/PycharmProjects/zenml/src/zenml/alembic/versions/7b807019ae53_add_cat_column_to_stack.py ...  done

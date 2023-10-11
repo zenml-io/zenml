@@ -315,7 +315,8 @@ class StepLauncher:
         return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
-        self, step_run: StepRunRequestModel
+        self,
+        step_run: StepRunRequestModel,
     ) -> Tuple[bool, StepRunRequestModel]:
         """Prepares running the step.
 
@@ -326,8 +327,16 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
+        model_config = (
+            self._deployment.step_configurations[
+                step_run.name
+            ].config.model_config
+            or self._deployment.pipeline_configuration.model_config
+        )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
-            step=self._step, run_id=step_run.pipeline_run_id
+            step=self._step,
+            run_id=step_run.pipeline_run_id,
+            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -456,7 +465,9 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars()
+        environment = orchestrator_utils.get_config_environment_vars(
+            deployment=self._deployment
+        )
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
