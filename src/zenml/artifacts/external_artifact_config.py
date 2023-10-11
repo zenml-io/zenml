@@ -108,6 +108,7 @@ class ExternalArtifactConfiguration(BaseModel):
         _model_config = ModelConfig(
             name=self.model_name,
             version=self.model_version,
+            suppress_warnings=True,
         )
         model_version = _model_config._get_model_version()
 
