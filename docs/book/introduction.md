@@ -2,6 +2,11 @@
 description: Start here with the ZenML Docs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # ZenML
 
 **ZenML** is an extensible, open-source MLOps framework for creating 

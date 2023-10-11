@@ -2,6 +2,11 @@
 description: Use a simple CLI command to quickly run ZenML examples.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Run ZenML Examples Quickly
 
 One of the best ways to learn ZenML is [through examples](https://github.com/zenml-io/zenml/tree/main/examples). ZenML 
