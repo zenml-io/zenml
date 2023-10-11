@@ -2,6 +2,11 @@
 description: How to reference secrets when configuring stack components
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Some of the components in your stack require you to configure them with 
 sensitive information like passwords or tokens so they can connect to the 
 underlying infrastructure. Secret references allow you to configure these components in

@@ -2,6 +2,11 @@
 description: Validate data as it flows through your pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 In academia and research, the focus of ML is usually to build the best possible models for a given dataset. However, in practical applications, the overall performance of our application is often determined primarily by data quality, not by the model. That is why many ML practitioners advocate for **Data-Centric** ML approaches, where we focus on improving the data while keeping the ML model (mostly) fixed. See [this great article](https://neptune.ai/blog/data-centric-vs-model-centric-machine-learning) by neptune.ai for more details on model-centric vs. data-centric ML.
 
 One of the most critical parts of data-centric ML is to monitor data quality.
