@@ -2,6 +2,11 @@
 description: Setting up a storage for secrets.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Secrets Managers
 
 Secrets managers provide a secure way of storing confidential information that is needed to run your ML pipelines. Most

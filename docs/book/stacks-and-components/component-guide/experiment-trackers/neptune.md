@@ -2,6 +2,11 @@
 description: Logging and visualizing experiments with neptune.ai
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Neptune
 
 The Neptune Experiment Tracker is an [Experiment Tracker](experiment-trackers.md) flavor provided with the Neptune-ZenML

@@ -2,6 +2,11 @@
 description: Storing artifacts using Azure Blob Storage
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Azure Blob Storage
 
 The Azure Artifact Store is an [Artifact Store](artifact-stores.md) flavor provided with the Azure ZenML integration

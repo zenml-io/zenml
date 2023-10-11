@@ -2,6 +2,11 @@
 description: Storing container images in GCP.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Google Cloud Container Registry
 
 The GCP container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and

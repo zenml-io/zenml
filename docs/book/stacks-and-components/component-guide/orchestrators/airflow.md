@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on Airflow.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Airflow Orchestrator
 
 ZenML pipelines can be executed natively as [Airflow](https://airflow.apache.org/) 

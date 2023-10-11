@@ -2,6 +2,11 @@
 description: Troubleshooting tips for your ZenML deployment
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Troubleshoot the deployed server
 
 In this document, we will go over some common issues that you might face when deploying ZenML and how to solve them.

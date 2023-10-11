@@ -2,6 +2,11 @@
 description: Storing secrets in HashiCorp Vault.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # HashiCorp Vault Secrets Manager
 
 The HashiCorp Vault secrets manager is a [secrets manager](secrets-managers.md) flavor provided with the ZenML `vault`

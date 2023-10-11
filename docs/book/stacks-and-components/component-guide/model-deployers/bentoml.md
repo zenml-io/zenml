@@ -2,6 +2,11 @@
 description: Deploying your models locally with BentoML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # BentoML
 
 BentoML is an open-source framework for machine learning model serving. it can be used to deploy models locally, in a

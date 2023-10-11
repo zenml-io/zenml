@@ -2,6 +2,11 @@
 description: Executing individual steps in specialized environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Step Operators
 
 The step operator enables the execution of individual pipeline steps in specialized runtime environments that are

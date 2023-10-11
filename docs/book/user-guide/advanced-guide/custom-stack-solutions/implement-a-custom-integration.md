@@ -2,6 +2,11 @@
 description: Creating an external integration and contributing to ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Implement a custom integration
 
 ![ZenML integrates with a bunch of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)

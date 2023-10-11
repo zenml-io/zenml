@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on VMs using SkyPilot.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # SkyPilot VM Orchestrator
 
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to

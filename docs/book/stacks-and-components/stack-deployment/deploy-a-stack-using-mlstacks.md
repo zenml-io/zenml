@@ -2,6 +2,11 @@
 description: Deploying an entire stack with mlstacks.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Deploy a stack using mlstacks
 
 MLStacks is a Python package that allows you to quickly spin up MLOps

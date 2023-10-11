@@ -2,6 +2,11 @@
 description: Building container images with Kaniko.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Kaniko Image Builder
 
 The Kaniko image builder is an [image builder](image-builders.md) flavor provided by the ZenML `kaniko` integration that

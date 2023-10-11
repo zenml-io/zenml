@@ -2,6 +2,11 @@
 description: Setting up a persistent storage for your artifacts.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Artifact Stores
 
 The Artifact Store is a central component in any MLOps stack. As the name suggests, it acts as a data persistence layer

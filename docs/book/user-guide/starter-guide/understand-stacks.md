@@ -2,6 +2,11 @@
 description: Learning how to switch the infrastructure backend of your code.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Understand stacks
 
 In the previous section, you might have already noticed the term `stack` in the logs and on the dashboard.

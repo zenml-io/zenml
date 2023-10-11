@@ -2,6 +2,11 @@
 description: A guide to debug common issues and get help.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 If you stumbled upon this page, chances are you're facing issues with using 
 ZenML. This page documents suggestions and best practices to let you debug, 
 get help, and solve issues quickly.

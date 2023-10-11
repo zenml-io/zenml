@@ -2,6 +2,11 @@
 description: Storing artifacts on your local filesystem.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Local Artifact Store
 
 The local Artifact Store is a built-in ZenML [Artifact Store](artifact-stores.md) flavor that uses a folder on your

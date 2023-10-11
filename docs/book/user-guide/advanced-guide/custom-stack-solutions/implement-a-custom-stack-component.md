@@ -2,6 +2,11 @@
 description: How to write a custom stack component flavor
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Implement a custom stack component
 
 When building a sophisticated MLOps Platform, you will often need to come up with custom-tailored solutions. Sometimes, this might even require you to use custom components for your infrastructure or tooling.

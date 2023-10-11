@@ -2,6 +2,11 @@
 description: Accessing meta information in real-time within your pipeline.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Fetch metadata within steps
 
 ### Step & run information using the `StepContext`

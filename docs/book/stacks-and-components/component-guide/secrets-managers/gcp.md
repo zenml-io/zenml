@@ -2,6 +2,11 @@
 description: Storing secrets in GCP.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Google Cloud Secrets Manager
 
 The GCP secrets manager is a [secrets manager](secrets-managers.md) flavor provided with the ZenML `gcp` integration

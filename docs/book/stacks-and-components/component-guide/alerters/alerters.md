@@ -2,6 +2,11 @@
 description: Sending automated alerts to chat services.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Alerters
 
 **Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your

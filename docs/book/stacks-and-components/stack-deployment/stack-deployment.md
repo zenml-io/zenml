@@ -2,6 +2,11 @@
 description: Deploying your stack components directly from the ZenML CLI
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # ⚒ Stack deployment
 
 The first step in running your pipelines on remote infrastructure is to deploy all the components that you would need, like an MLflow tracking server, a Seldon Core model deployer, and more to your cloud.
