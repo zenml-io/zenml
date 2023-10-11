@@ -54,12 +54,21 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
+      - name: Run template tests for zenml-io/template-e2e-batch
+        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
-          os: ${{ inputs.os }}
+          stack-name: local
+          ref-zenml: ${{ github.ref }}
+          ref-template: '2023.10.10' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
+
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=zenml-io/template-e2e-batch project template testing failed with new version of ZenML core!::\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
+            please make the code in zenml-io/template-e2e-batch compatible with new version of\
+            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
       - name: Check-out fresh E2E template
         run: |
@@ -99,19 +108,3 @@ jobs:
               repo: context.repo.repo,
               body: 'E2E template updates in `examples/e2e` have been pushed.'
             })
-
-      - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
-        with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: local
-          ref-zenml: ${{ github.ref }}
-          ref-template: '2023.10.10' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
-
-      - name: message-on-error
-        if: failure()
-        run: |
-          echo "::error title=zenml-io/template-e2e-batch project template testing failed with new version of ZenML core!::\
-            Breaking changes affecting templates have been introduced. To mitigate this issue,\
-            please make the code in zenml-io/template-e2e-batch compatible with new version of\
-            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
