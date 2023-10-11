@@ -2,6 +2,11 @@
 description: Managing data in Feast feature stores.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Feast
 
 Feast (Feature Store) is an operational data system for managing and serving machine learning features to models in

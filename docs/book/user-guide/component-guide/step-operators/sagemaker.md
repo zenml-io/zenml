@@ -2,6 +2,11 @@
 description: Executing individual steps in SageMaker.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Amazon SageMaker
 
 The SageMaker step operator is a [step operator](step-operators.md) flavor provided with the ZenML `aws` integration

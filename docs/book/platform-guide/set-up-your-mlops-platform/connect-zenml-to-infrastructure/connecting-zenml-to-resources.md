@@ -2,6 +2,11 @@
 description: Understanding the workflow of using Service Connectors to access external resources with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Connecting ZenML to resources
 
 Everything around Service Connectors is expressed in terms of resources: a Kubernetes cluster is a resource, an S3 bucket is another resource. Different flavors of Stack Components need to use different resources to function: the Kubernetes and Tekton Orchestrators need access to a Kubernetes cluster, the S3 Artifact Store needs access to an S3 bucket. It is still possible to configure Stack Components like these to authenticate and connect directly to the target services that they need to interact with, but this is not simple to set up and it definitely isn't easily reproducible and maintainable.

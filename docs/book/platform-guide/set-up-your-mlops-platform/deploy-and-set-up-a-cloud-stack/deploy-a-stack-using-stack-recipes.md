@@ -2,6 +2,11 @@
 description: Deploying an entire stack with the ZenML Stack Recipes.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy a stack using Stack Recipes
 
 A Stack Recipe is a collection of carefully crafted Terraform modules and resources which, when executed, creates a range of stack components that can be used to run your pipelines. Each recipe is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.

@@ -2,6 +2,11 @@
 description: Migrating your pipelines and steps to the new syntax.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Migrate your old pipelines and steps
 
 ZenML version 0.40.0 introduced a new, more flexible syntax to define ZenML steps and pipelines. This page
