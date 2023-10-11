@@ -748,6 +748,8 @@ class BaseStep(metaclass=BaseStepMeta):
         if isinstance(parameters, BaseParameters):
             parameters = parameters.dict()
 
+        if model_config:
+            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
