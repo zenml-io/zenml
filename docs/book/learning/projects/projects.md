@@ -2,6 +2,11 @@
 description: Resources to learn how to use ZenML practically.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # 🧩 Projects
 
 ZenML Projects are small-scale production-grade ML use cases powered by ZenML. They are fully fleshed-out, end-to-end, projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.

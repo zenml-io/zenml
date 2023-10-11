@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on Tekton.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Tekton Orchestrator
 
 [Tekton](https://tekton.dev/) is a powerful and flexible open-source framework 

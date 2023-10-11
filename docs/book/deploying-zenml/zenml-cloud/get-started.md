@@ -2,6 +2,11 @@
 description: Your first steps to join ZenML Cloud and set up your first tenant.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Get started
 
 This page will walk you through the simple steps to sign up for the ZenML Cloud and gain access to a managed ZenML server instance, called a tenant, with exciting new features.

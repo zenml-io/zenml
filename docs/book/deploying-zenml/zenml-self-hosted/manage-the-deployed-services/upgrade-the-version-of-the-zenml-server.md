@@ -2,6 +2,11 @@
 description: Learn how to upgrade your server to a new version of ZenML for the different deployment options.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Upgrade the version of the ZenML server
 
 The way to upgrade your ZenML server depends a lot on how you deployed it.

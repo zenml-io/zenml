@@ -2,6 +2,11 @@
 description: Overview of third-party ZenML integrations.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Integration overview
 
 Categorizing the MLOps stack is a good way to write abstractions

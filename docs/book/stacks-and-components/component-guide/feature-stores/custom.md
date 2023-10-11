@@ -2,6 +2,11 @@
 description: Learning how to develop a custom feature store.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Develop a Custom Feature Store
 
 Feature stores allow data teams to serve data via an offline store, and an online low-latency store where data is kept

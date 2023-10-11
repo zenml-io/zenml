@@ -2,6 +2,11 @@
 description: Different variations of the ZenML Cloud architecture depending on your needs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Cloud Architecture
 
 {% hint style="info" %}

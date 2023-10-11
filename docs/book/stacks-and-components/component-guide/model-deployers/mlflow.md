@@ -2,6 +2,11 @@
 description: Deploying your models locally with MLflow.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # MLflow
 
 The MLflow Model Deployer is one of the available flavors of the [Model Deployer](model-deployers.md) stack component.

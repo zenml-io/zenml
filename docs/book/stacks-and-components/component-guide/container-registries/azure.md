@@ -2,6 +2,11 @@
 description: Storing container images in Azure.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Azure Container Registry
 
 The Azure container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML

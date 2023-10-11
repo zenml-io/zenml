@@ -2,6 +2,11 @@
 description: Once deployed, here's how to manage ZenML and its Stack Components
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Manage deployed services
 
 Maintaining and troubleshooting your ZenML deployment and the stack components deployed through ZenML is quite easy. Here are a few guides that will explain how:
