@@ -2,6 +2,11 @@
 description: How to deploy models to Kubernetes with KServe
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The KServe Model Deployer is one of the available flavors of the[Model Deployer](./model-deployers.md) 
 stack component. Provided with the MLflow and Seldon Core integration it can 
 be used to deploy and manage models on an inference server running on top of 

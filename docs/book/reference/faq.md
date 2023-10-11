@@ -2,6 +2,11 @@
 description: Find answers to the most frequently asked questions about ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # FAQ
 
 #### Is ZenML just another orchestrator like Airflow, Kubeflow, Flyte, etc?
