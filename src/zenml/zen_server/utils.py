@@ -19,7 +19,6 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
-import ipinfo  # type: ignore[import]
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
@@ -272,6 +271,8 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
     Returns:
         A tuple of city, region, country.
     """
+    import ipinfo  # type: ignore[import]
+
     try:
         handler = ipinfo.getHandler()
         details = handler.getDetails(ip_address)
