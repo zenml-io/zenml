@@ -23,6 +23,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -151,7 +152,6 @@ class StepLauncher:
         # Enable or disable step logs storage
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
-
         else:
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
@@ -194,11 +194,15 @@ class StepLauncher:
                     docstring,
                     source_code,
                 ) = self._get_step_docstring_and_source_code()
+
+                code_hash = self._deployment.step_configurations[
+                    self._step_name
+                ].config.caching_parameters.get(STEP_SOURCE_PARAMETER_NAME)
                 step_run = StepRunRequestModel(
                     name=self._step_name,
                     pipeline_run_id=pipeline_run.id,
-                    config=self._step.config,
-                    spec=self._step.spec,
+                    deployment=self._deployment.id,
+                    code_hash=code_hash,
                     status=ExecutionStatus.RUNNING,
                     docstring=docstring,
                     source_code=source_code,
@@ -241,7 +245,8 @@ class StepLauncher:
                         raise
 
                 publish_utils.update_pipeline_run_status(
-                    pipeline_run=pipeline_run
+                    pipeline_run=pipeline_run,
+                    num_steps=len(self._deployment.step_configurations),
                 )
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
@@ -299,31 +304,19 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            stack=self._deployment.stack.id
-            if self._deployment.stack
-            else None,
+            deployment=self._deployment.id,
             pipeline=self._deployment.pipeline.id
             if self._deployment.pipeline
             else None,
-            build=self._deployment.build.id
-            if self._deployment.build
-            else None,
-            deployment=self._deployment.id,
-            schedule_id=self._deployment.schedule.id
-            if self._deployment.schedule
-            else None,
             status=ExecutionStatus.RUNNING,
-            config=self._deployment.pipeline_configuration,
-            num_steps=len(self._deployment.step_configurations),
-            client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
-            server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
-        self, step_run: StepRunRequestModel
+        self,
+        step_run: StepRunRequestModel,
     ) -> Tuple[bool, StepRunRequestModel]:
         """Prepares running the step.
 
@@ -334,8 +327,16 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
+        model_config = (
+            self._deployment.step_configurations[
+                step_run.name
+            ].config.model_config
+            or self._deployment.pipeline_configuration.model_config
+        )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
-            step=self._step, run_id=step_run.pipeline_run_id
+            step=self._step,
+            run_id=step_run.pipeline_run_id,
+            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -464,7 +465,9 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars()
+        environment = orchestrator_utils.get_config_environment_vars(
+            deployment=self._deployment
+        )
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

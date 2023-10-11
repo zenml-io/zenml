@@ -17,7 +17,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import SecretsStoreType
+from zenml.enums import AuthScheme, SecretsStoreType
 from zenml.utils.enum_utils import StrEnum
 
 
@@ -72,6 +72,9 @@ class ServerModel(BaseModel):
     secrets_store_type: SecretsStoreType = Field(
         SecretsStoreType.NONE,
         title="The type of secrets store that the server is using.",
+    )
+    auth_scheme: AuthScheme = Field(
+        title="The authentication scheme that the server is using.",
     )
 
     def is_local(self) -> bool:

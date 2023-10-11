@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,10 +18,23 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
-from zenml.models.pipeline_build_models import (
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
+from zenml.models.auth_models import (
+    OAuthDeviceAuthorizationRequest,
+    OAuthDeviceAuthorizationResponse,
+    OAuthDeviceTokenRequest,
+    OAuthDeviceUserAgentHeader,
+    OAuthDeviceVerificationRequest,
+    OAuthRedirectResponse,
+    OAuthTokenResponse,
+)
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.code_repository_models import (
+    CodeReferenceRequestModel,
+    CodeReferenceResponseModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
 )
 from zenml.models.component_models import (
     ComponentFilterModel,
@@ -29,7 +42,14 @@ from zenml.models.component_models import (
     ComponentResponseModel,
     ComponentUpdateModel,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.device_models import (
+    OAuthDeviceFilterModel,
+    OAuthDeviceInternalRequestModel,
+    OAuthDeviceInternalResponseModel,
+    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
+)
 from zenml.models.filter_models import Filter, BaseFilterModel
 from zenml.models.flavor_models import (
     FlavorFilterModel,
@@ -37,17 +57,27 @@ from zenml.models.flavor_models import (
     FlavorResponseModel,
     FlavorUpdateModel,
 )
+from zenml.models.logs_models import (
+    LogsBaseModel,
+    LogsRequestModel,
+    LogsResponseModel,
+)
+from zenml.models.page_model import Page
+from zenml.models.pipeline_build_models import (
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+)
+from zenml.models.pipeline_deployment_models import (
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
+)
 from zenml.models.pipeline_models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
-)
-from zenml.models.page_model import Page
-from zenml.models.pipeline_deployment_models import (
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
 )
 from zenml.models.pipeline_run_models import (
     PipelineRunFilterModel,
@@ -55,36 +85,25 @@ from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
-from zenml.models.workspace_models import (
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
-)
 from zenml.models.run_metadata_models import (
     RunMetadataFilterModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
 )
 from zenml.models.schedule_model import (
+    ScheduleFilterModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
-    ScheduleFilterModel,
 )
 from zenml.models.secret_models import (
     SecretBaseModel,
-    SecretRequestModel,
     SecretFilterModel,
+    SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.stack_models import (
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-)
+from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.models.service_connector_models import (
     AuthenticationMethodModel,
     ResourceTypeModel,
@@ -97,6 +116,12 @@ from zenml.models.service_connector_models import (
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
 )
+from zenml.models.stack_models import (
+    StackFilterModel,
+    StackRequestModel,
+    StackResponseModel,
+    StackUpdateModel,
+)
 from zenml.models.step_run_models import (
     StepRunFilterModel,
     StepRunRequestModel,
@@ -104,25 +129,39 @@ from zenml.models.step_run_models import (
     StepRunUpdateModel,
 )
 from zenml.models.user_models import (
+    ExternalUserModel,
     UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.code_repository_models import (
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    CodeReferenceRequestModel,
-    CodeReferenceResponseModel,
+from zenml.models.workspace_models import (
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
-from zenml.models.logs_models import (
-    LogsBaseModel,
-    LogsRequestModel,
-    LogsResponseModel,
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelResponseModel,
+    ModelRequestModel,
+    ModelUpdateModel,
+    ModelVersionBaseModel,
+    ModelVersionResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionArtifactBaseModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionPipelineRunBaseModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionUpdateModel,
 )
+
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -171,7 +210,7 @@ PipelineDeploymentResponseModel.update_forward_refs(
 )
 
 PipelineDeploymentRequestModel.update_forward_refs(
-    CodeReferenceRequestModel=CodeReferenceRequestModel
+    CodeReferenceRequestModel=CodeReferenceRequestModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -181,8 +220,9 @@ PipelineRunResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
-    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
     StepRunResponseModel=StepRunResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
+    CodeReferenceResponseModel=CodeReferenceResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
@@ -215,82 +255,160 @@ ServiceConnectorResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+ModelRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+ModelVersionArtifactRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionArtifactResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunRequestModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ModelVersionPipelineRunResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
+OAuthDeviceResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+)
+OAuthDeviceInternalResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+)
+
 __all__ = [
+    "ArtifactFilterModel",
     "ArtifactRequestModel",
     "ArtifactResponseModel",
-    "ArtifactFilterModel",
+    "AuthenticationMethodModel",
+    "BaseFilterModel",
     "BaseRequestModel",
     "BaseResponseModel",
-    "PipelineBuildFilterModel",
-    "PipelineBuildRequestModel",
-    "PipelineBuildResponseModel",
+    "CodeReferenceRequestModel",
+    "CodeReferenceResponseModel",
     "CodeRepositoryFilterModel",
     "CodeRepositoryRequestModel",
     "CodeRepositoryResponseModel",
     "CodeRepositoryUpdateModel",
-    "CodeReferenceRequestModel",
-    "CodeReferenceResponseModel",
+    "ComponentFilterModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
-    "ComponentFilterModel",
+    "ExternalUserModel",
+    "Filter",
+    "FlavorFilterModel",
     "FlavorRequestModel",
     "FlavorResponseModel",
-    "FlavorFilterModel",
     "FlavorUpdateModel",
-    "BaseFilterModel",
-    "Page",
-    "PipelineRequestModel",
-    "PipelineResponseModel",
-    "PipelineUpdateModel",
-    "PipelineFilterModel",
-    "PipelineDeploymentRequestModel",
-    "PipelineDeploymentResponseModel",
-    "PipelineDeploymentFilterModel",
-    "PipelineRunRequestModel",
-    "PipelineRunResponseModel",
-    "PipelineRunUpdateModel",
-    "PipelineRunFilterModel",
-    "WorkspaceRequestModel",
-    "WorkspaceResponseModel",
-    "WorkspaceUpdateModel",
-    "WorkspaceFilterModel",
-    "RunMetadataFilterModel",
-    "RunMetadataRequestModel",
-    "RunMetadataResponseModel",
-    "ScheduleRequestModel",
-    "ScheduleResponseModel",
-    "ScheduleUpdateModel",
-    "ScheduleFilterModel",
-    "SecretBaseModel",
-    "SecretRequestModel",
-    "SecretFilterModel",
-    "SecretResponseModel",
-    "SecretUpdateModel",
-    "AuthenticationMethodModel",
-    "ResourceTypeModel",
-    "ServiceConnectorTypeModel",
-    "ServiceConnectorBaseModel",
-    "ServiceConnectorFilterModel",
-    "ServiceConnectorRequestModel",
-    "ServiceConnectorRequirements",
-    "ServiceConnectorResourcesModel",
-    "ServiceConnectorResponseModel",
-    "ServiceConnectorUpdateModel",
-    "StackRequestModel",
-    "StackResponseModel",
-    "StackUpdateModel",
-    "StackFilterModel",
-    "StepRunRequestModel",
-    "StepRunResponseModel",
-    "StepRunUpdateModel",
-    "StepRunFilterModel",
-    "UserRequestModel",
-    "UserResponseModel",
-    "UserUpdateModel",
-    "UserFilterModel",
-    "UserAuthModel",
     "LogsBaseModel",
     "LogsRequestModel",
     "LogsResponseModel",
+    "ModelFilterModel",
+    "ModelRequestModel",
+    "ModelResponseModel",
+    "ModelUpdateModel",
+    "ModelVersionBaseModel",
+    "ModelVersionFilterModel",
+    "ModelVersionRequestModel",
+    "ModelVersionResponseModel",
+    "ModelVersionUpdateModel",
+    "ModelVersionArtifactBaseModel",
+    "ModelVersionArtifactFilterModel",
+    "ModelVersionArtifactRequestModel",
+    "ModelVersionArtifactResponseModel",
+    "ModelVersionPipelineRunBaseModel",
+    "ModelVersionPipelineRunFilterModel",
+    "ModelVersionPipelineRunRequestModel",
+    "ModelVersionPipelineRunResponseModel",
+    "OAuthDeviceAuthorizationRequest",
+    "OAuthDeviceAuthorizationResponse",
+    "OAuthDeviceFilterModel",
+    "OAuthDeviceInternalRequestModel",
+    "OAuthDeviceInternalResponseModel",
+    "OAuthDeviceInternalUpdateModel",
+    "OAuthDeviceResponseModel",
+    "OAuthDeviceTokenRequest",
+    "OAuthDeviceUpdateModel",
+    "OAuthDeviceUserAgentHeader",
+    "OAuthDeviceVerificationRequest",
+    "OAuthRedirectResponse",
+    "OAuthTokenResponse",
+    "Page",
+    "PipelineBuildFilterModel",
+    "PipelineBuildRequestModel",
+    "PipelineBuildResponseModel",
+    "PipelineDeploymentFilterModel",
+    "PipelineDeploymentRequestModel",
+    "PipelineDeploymentResponseModel",
+    "PipelineFilterModel",
+    "PipelineRequestModel",
+    "PipelineResponseModel",
+    "PipelineRunFilterModel",
+    "PipelineRunRequestModel",
+    "PipelineRunResponseModel",
+    "PipelineRunUpdateModel",
+    "PipelineUpdateModel",
+    "ResourceTypeModel",
+    "RunMetadataFilterModel",
+    "RunMetadataRequestModel",
+    "RunMetadataResponseModel",
+    "ScheduleFilterModel",
+    "ScheduleRequestModel",
+    "ScheduleResponseModel",
+    "ScheduleUpdateModel",
+    "SecretBaseModel",
+    "SecretFilterModel",
+    "SecretRequestModel",
+    "SecretResponseModel",
+    "SecretUpdateModel",
+    "ServerDatabaseType",
+    "ServerModel",
+    "ServiceConnectorBaseModel",
+    "ServiceConnectorFilterModel",
+    "ServiceConnectorRequirements",
+    "ServiceConnectorRequestModel",
+    "ServiceConnectorResourcesModel",
+    "ServiceConnectorResponseModel",
+    "ServiceConnectorTypeModel",
+    "ServiceConnectorUpdateModel",
+    "StackFilterModel",
+    "StackRequestModel",
+    "StackResponseModel",
+    "StackUpdateModel",
+    "StepRunFilterModel",
+    "StepRunRequestModel",
+    "StepRunResponseModel",
+    "StepRunUpdateModel",
+    "UserAuthModel",
+    "UserFilterModel",
+    "UserRequestModel",
+    "UserResponseModel",
+    "UserUpdateModel",
+    "WorkspaceFilterModel",
+    "WorkspaceRequestModel",
+    "WorkspaceResponseModel",
+    "WorkspaceUpdateModel",
 ]

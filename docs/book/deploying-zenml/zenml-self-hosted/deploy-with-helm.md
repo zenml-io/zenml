@@ -115,7 +115,7 @@ The Helm chart should print out a message with the URL of the deployed ZenML ser
 To connect to a ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
 
 ```bash
-zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
 ```
 
 or
@@ -128,8 +128,6 @@ The YAML file should have the following structure when connecting to a ZenML ser
 
 ```yaml
 url: <The URL of the ZenML server>
-username: <The username to use for authentication>
-password: <The password to use for authentication>
 verify_ssl: |
   <Either a boolean, in which case it controls whether the
   server's TLS certificate is verified, or a string, in which case it
@@ -141,8 +139,6 @@ Example of a ZenML server YAML configuration file:
 
 ```yaml
 url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
-username: admin
-password: Pa$$word123
 verify_ssl: |
   -----BEGIN CERTIFICATE-----
   MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT

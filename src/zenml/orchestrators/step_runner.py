@@ -23,12 +23,15 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
 )
+from uuid import UUID
 
 from pydantic.typing import get_origin, is_union
 
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -37,11 +40,10 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import StackComponentType
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -50,14 +52,16 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
+    OutputSignature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
 from zenml.utils import artifact_utils, materializer_utils, source_utils
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
+    from zenml.artifacts.external_artifact_config import (
+        ExternalArtifactConfiguration,
+    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -116,12 +120,7 @@ class StepRunner:
             step_logging_enabled = False
         else:
             enabled_on_step = step_run.config.enable_step_logs
-
-            enabled_on_pipeline = None
-            if pipeline_run.deployment:
-                enabled_on_pipeline = (
-                    pipeline_run.deployment.pipeline_configuration.enable_step_logs
-                )
+            enabled_on_pipeline = pipeline_run.config.enable_step_logs
 
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=enabled_on_step,
@@ -155,6 +154,9 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_cache,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
             )
+            output_annotations = parse_return_type_annotations(
+                func=step_instance.entrypoint
+            )
             with StepEnvironment(
                 step_run_info=step_run_info,
                 cache_enabled=cache_enabled,
@@ -170,13 +172,23 @@ class StepRunner:
                     output_artifact_uris=output_artifact_uris,
                     step_run_info=step_run_info,
                     cache_enabled=cache_enabled,
+                    output_artifact_configs={
+                        k: v.artifact_config
+                        for k, v in output_annotations.items()
+                    },
                 )
+                # Prepare Model Context
+                self._prepare_model_context_for_step()
 
                 # Parse the inputs for the entrypoint function.
                 function_params = self._parse_inputs(
                     args=spec.args,
                     annotations=spec.annotations,
                     input_artifacts=input_artifacts,
+                )
+
+                self._link_pipeline_run_to_model_from_context(
+                    pipeline_run=pipeline_run
                 )
 
                 step_failed = False
@@ -219,9 +231,6 @@ class StepRunner:
                             )
 
                         # Store and publish the output artifacts of the step function.
-                        output_annotations = parse_return_type_annotations(
-                            func=step_instance.entrypoint
-                        )
                         output_data = self._validate_outputs(
                             return_values, output_annotations
                         )
@@ -239,6 +248,16 @@ class StepRunner:
                             output_materializers=output_materializers,
                             artifact_metadata_enabled=artifact_metadata_enabled,
                             artifact_visualization_enabled=artifact_visualization_enabled,
+                        )
+                        self._link_artifacts_to_model(
+                            artifact_ids=output_artifact_ids
+                        )
+                        self._link_pipeline_run_to_model_from_artifacts(
+                            pipeline_run=pipeline_run,
+                            artifact_names=list(output_artifact_ids.keys()),
+                            external_artifacts=list(
+                                step_run.config.external_input_artifacts.values()
+                            ),
                         )
                     StepContext._clear()  # Remove the step context singleton
 
@@ -430,7 +449,7 @@ class StepRunner:
     def _validate_outputs(
         self,
         return_values: Any,
-        output_annotations: Dict[str, Any],
+        output_annotations: Dict[str, OutputSignature],
     ) -> Dict[str, Any]:
         """Validates the step function outputs.
 
@@ -491,16 +510,17 @@ class StepRunner:
         for return_value, (output_name, output_annotation) in zip(
             return_values, output_annotations.items()
         ):
-            if output_annotation is Any:
+            output_type = output_annotation.resolved_annotation
+            if output_type is Any:
                 pass
             else:
-                if is_union(get_origin(output_annotation)):
-                    output_annotation = get_args(output_annotation)
+                if is_union(get_origin(output_type)):
+                    output_type = get_args(output_type)
 
-                if not isinstance(return_value, output_annotation):
+                if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{step_name}' (expected type: {output_annotation}, "
+                        f"'{step_name}' (expected type: {output_type}, "
                         f"actual type: {type(return_value)})."
                     )
             validated_outputs[output_name] = return_value
@@ -513,7 +533,7 @@ class StepRunner:
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
-    ) -> Dict[str, "UUID"]:
+    ) -> Dict[str, UUID]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -535,7 +555,7 @@ class StepRunner:
         )
         assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
-        output_artifacts: Dict[str, "UUID"] = {}
+        output_artifacts: Dict[str, UUID] = {}
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -584,6 +604,188 @@ class StepRunner:
             output_artifacts[output_name] = artifact_id
 
         return output_artifacts
+
+    def _prepare_model_context_for_step(self) -> None:
+        try:
+            model_config = get_step_context().model_config
+            model_config.get_or_create_model_version()
+        except StepContextError:
+            return
+
+    def _link_artifacts_to_model(
+        self,
+        artifact_ids: Dict[str, UUID],
+    ) -> None:
+        """Links the output artifacts of the step to the model.
+
+        Args:
+            artifact_ids: The IDs of the published output artifacts.
+        """
+        from zenml.model.artifact_config import ArtifactConfig
+
+        try:
+            mc = get_step_context().model_config
+        except StepContextError:
+            mc = None
+            logger.warning(
+                "No model context found, unable to auto-link artifacts."
+            )
+
+        for artifact_name in artifact_ids:
+            artifact_uuid = artifact_ids[artifact_name]
+            artifact_config = (
+                get_step_context()._get_output(artifact_name).artifact_config
+            )
+            if artifact_config is None and mc is not None:
+                artifact_config = ArtifactConfig(
+                    model_name=mc.name,
+                    model_version=mc.version,
+                    artifact_name=artifact_name,
+                )
+                logger.info(
+                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
+                )
+
+            if artifact_config is not None:
+                artifact_config.artifact_name = (
+                    artifact_config.artifact_name or artifact_name
+                )
+                artifact_config._pipeline_name = (
+                    get_step_context().pipeline.name
+                )
+                artifact_config._step_name = get_step_context().step_run.name
+                artifact_config.link_to_model(artifact_uuid=artifact_uuid)
+
+    def _get_model_versions_from_artifacts(
+        self,
+        artifact_names: List[str],
+    ) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the artifacts.
+
+        Args:
+            artifact_names: The names of the published output artifacts.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        models = set()
+        for artifact_name in artifact_names:
+            artifact_config = (
+                get_step_context()._get_output(artifact_name).artifact_config
+            )
+            if artifact_config is not None:
+                try:
+                    model_version = (
+                        artifact_config._model_config._get_model_version()
+                    )
+                    models.add((model_version.model.id, model_version.id))
+                except RuntimeError:
+                    break
+        return models
+
+    def _get_model_versions_from_external_artifacts(
+        self, external_artifacts: List["ExternalArtifactConfiguration"]
+    ) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the external artifacts.
+
+        Args:
+            external_artifacts: The external artifacts of the step.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        client = Client()
+        models = set()
+        for external_artifact in external_artifacts:
+            if (
+                external_artifact.model_artifact_name is not None
+                and external_artifact.model_name is not None
+            ):
+                model_version = client.get_model_version(
+                    model_name_or_id=external_artifact.model_name,
+                    model_version_name_or_number_or_id=external_artifact.model_version,
+                )
+                models.add((model_version.model.id, model_version.id))
+        return models
+
+    def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
+        """Gets the model versions from the step model config.
+
+        Returns:
+            Set of tuples of (model_id, model_version_id).
+        """
+        try:
+            mc = get_step_context().model_config
+            model_version = mc._get_model_version()
+            return {(model_version.model.id, model_version.id)}
+        except StepContextError:
+            return set()
+
+    def _link_pipeline_run_to_model_from_context(
+        self,
+        pipeline_run: "PipelineRunResponseModel",
+    ) -> None:
+        """Links the pipeline run to the model version using artifacts data.
+
+        Args:
+            pipeline_run: The response model of current pipeline run.
+        """
+        from zenml.models.model_models import (
+            ModelVersionPipelineRunRequestModel,
+        )
+
+        models = self._get_model_versions_from_config()
+
+        client = Client()
+        for model in models:
+            client.zen_store.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    name=pipeline_run.name,
+                    pipeline_run=pipeline_run.id,
+                    model=model[0],
+                    model_version=model[1],
+                )
+            )
+
+    def _link_pipeline_run_to_model_from_artifacts(
+        self,
+        pipeline_run: "PipelineRunResponseModel",
+        artifact_names: List[str],
+        external_artifacts: List["ExternalArtifactConfiguration"],
+    ) -> None:
+        """Links the pipeline run to the model version using artifacts data.
+
+        Args:
+            pipeline_run: The response model of current pipeline run.
+            artifact_names: The name of the published output artifacts.
+            external_artifacts: The external artifacts of the step.
+        """
+        from zenml.models.model_models import (
+            ModelVersionPipelineRunRequestModel,
+        )
+
+        models = self._get_model_versions_from_artifacts(artifact_names)
+
+        models = models.union(
+            self._get_model_versions_from_external_artifacts(
+                external_artifacts
+            )
+        )
+
+        client = Client()
+        for model in models:
+            client.zen_store.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    name=pipeline_run.name,
+                    pipeline_run=pipeline_run.id,
+                    model=model[0],
+                    model_version=model[1],
+                )
+            )
 
     def load_and_run_hook(
         self,

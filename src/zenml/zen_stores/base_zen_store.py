@@ -34,15 +34,16 @@ from requests import ConnectionError
 import zenml
 from zenml.analytics.utils import analytics_disabler
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
-    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
+    AuthScheme,
     SecretsStoreType,
     StackComponentType,
     StoreType,
@@ -60,9 +61,9 @@ from zenml.models import (
 )
 from zenml.models.server_models import (
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
 )
+from zenml.models.user_models import UserFilterModel
 from zenml.utils.proxy_utils import make_proxy_class
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
@@ -297,20 +298,25 @@ class BaseZenStore(
             default_workspace = self._default_workspace
         except KeyError:
             default_workspace = self._create_default_workspace()
-        try:
-            default_user = self._default_user
-        except KeyError:
-            default_user = self._create_default_user()
-        try:
-            self._get_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
-        except KeyError:
-            self._create_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
+
+        config = ServerConfiguration.get_server_config()
+        # If the auth scheme is external, don't create the default user and
+        # stack
+        if config.auth_scheme != AuthScheme.EXTERNAL:
+            try:
+                default_user = self._default_user
+            except KeyError:
+                default_user = self._create_default_user()
+            try:
+                self._get_default_stack(
+                    workspace_name_or_id=default_workspace.id,
+                    user_name_or_id=default_user.id,
+                )
+            except KeyError:
+                self._create_default_stack(
+                    workspace_name_or_id=default_workspace.id,
+                    user_name_or_id=default_user.id,
+                )
 
     @property
     def url(self) -> str:
@@ -441,18 +447,20 @@ class BaseZenStore(
         Returns:
             Information about the store.
         """
+        server_config = ServerConfiguration.get_server_config()
+        deployment_type = server_config.deployment_type
+        auth_scheme = server_config.auth_scheme
         return ServerModel(
             id=GlobalConfiguration().user_id,
             version=zenml.__version__,
-            deployment_type=os.environ.get(
-                ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
-            ),
+            deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
             zenml_cloud=False,
             secrets_store_type=self.secrets_store.type
             if self.secrets_store
             else SecretsStoreType.NONE,
+            auth_scheme=auth_scheme,
         )
 
     def is_local_store(self) -> bool:
@@ -669,6 +677,23 @@ class BaseZenStore(
             )
         )
         return new_user
+
+    def get_external_user(self, user_id: UUID) -> UserResponseModel:
+        """Get a user by external ID.
+
+        Args:
+            user_id: The external ID of the user.
+
+        Returns:
+            The user with the supplied external ID.
+
+        Raises:
+            KeyError: If the user doesn't exist.
+        """
+        users = self.list_users(UserFilterModel(external_user_id=user_id))
+        if users.total == 0:
+            raise KeyError(f"User with external ID '{user_id}' not found.")
+        return users.items[0]
 
     # --------
     # Workspaces

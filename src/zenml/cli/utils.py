@@ -21,6 +21,7 @@ import subprocess
 import sys
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     Callable,
     Dict,
@@ -38,7 +39,7 @@ from typing import (
 
 import click
 import yaml
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from rich import box, table
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -317,6 +318,9 @@ def print_pydantic_models(
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
+        if not active_models and not show_active:
+            return items
+
         marker = "active"
         if marker in items:
             marker = "current"
@@ -361,6 +365,40 @@ def print_pydantic_models(
         print_table([__dictify(model) for model in table_items])
 
 
+def print_pydantic_model(
+    title: str,
+    model: BaseModel,
+    exclude_columns: Optional[AbstractSet[str]] = None,
+    columns: Optional[AbstractSet[str]] = None,
+) -> None:
+    """Prints a single Pydantic model in a table.
+
+    Args:
+        title: Title of the table.
+        model: Pydantic model that will be represented as a row in the table.
+        exclude_columns: Optionally specify columns to exclude.
+        columns: Optionally specify subset and order of columns to display.
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    model_info = model.dict(include=columns, exclude=exclude_columns)
+    for item in model_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
+
+
 def format_integration_list(
     integrations: List[Tuple[str, Type["Integration"]]]
 ) -> List[Dict[str, str]]:
@@ -389,6 +427,43 @@ def format_integration_list(
             }
         )
     return list_of_dicts
+
+
+def print_stack_outputs(stack: "StackResponseModel") -> None:
+    """Prints outputs for stacks deployed with mlstacks.
+
+    Args:
+        stack: Instance of a stack model.
+    """
+    verify_mlstacks_prerequisites_installation()
+
+    if not stack.stack_spec_path:
+        declare("No stack spec path is set for this stack.")
+        return
+    stack_caption = f"'{stack.name}' stack"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="MLStacks Outputs",
+        caption=stack_caption,
+        show_lines=True,
+    )
+    rich_table.add_column("OUTPUT_KEY", overflow="fold")
+    rich_table.add_column("OUTPUT_VALUE", overflow="fold")
+
+    from mlstacks.utils.terraform_utils import get_stack_outputs
+
+    stack_spec_file = stack.stack_spec_path
+    stack_outputs = get_stack_outputs(stack_path=stack_spec_file)
+
+    for output_key, output_value in stack_outputs.items():
+        rich_table.add_row(output_key, output_value)
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_stack_configuration(
@@ -860,6 +935,13 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
     """
+    if "neptune" in packages:
+        declare(
+            "Uninstalling legacy `neptune-client` package to avoid version "
+            "conflicts with new `neptune` package..."
+        )
+        uninstall_package("neptune-client")
+
     if upgrade:
         command = [
             sys.executable,
@@ -878,6 +960,16 @@ def install_packages(
         ]
 
     subprocess.check_call(command)
+
+    if "label-studio" in packages:
+        warning(
+            "There is a known issue with Label Studio installations "
+            "via zenml. You might find that the Label Studio "
+            "installation breaks the ZenML CLI. In this case, please "
+            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
+            "issue or message us on Slack if you need help with this. "
+            "We are working on a more definitive fix."
+        )
 
 
 def uninstall_package(package: str) -> None:

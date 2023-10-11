@@ -90,6 +90,30 @@ component deployment documentation](deploy-a-stack-component.md)) can be passed
 in with the `-x` option. This option can be used multiple times to pass in
 multiple configurations.
 
+### Interactive stack deployment
+
+If you would like to be guided through the deployment process, you can use the
+`zenml stack deploy` command with the `--interactive` flag. You will still need
+to provide the `provider`, `name` and `region` options as described above but
+for the rest, you will get prompts in the CLI as to which components you would
+like to deploy. For example, using GCP as the provider you might type:
+
+```bash
+zenml stack deploy -p gcp -n my_new_stack -r us-east1 --interactive
+```
+
+## Displaying Terraform outputs for stacks deployed with mlstacks
+
+If you want to view any of the Terraform-generated outputs for a stack deployed
+with `mlstacks`, you can do so with the following command:
+
+```bash
+zenml stack describe -o <STACK_NAME>
+```
+
+This will print any available outputs to the console if you have deployed a
+stack with `mlstacks` via ZenML.
+
 ## Deleting / destroying resources
 
 🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud.

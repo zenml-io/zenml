@@ -20,8 +20,8 @@ from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.services import (
-    ServiceType,
+from zenml.services import ServiceType
+from zenml.services.terraform.terraform_service import (
     TerraformService,
     TerraformServiceConfig,
 )

@@ -1,5 +1,53 @@
 <!-- markdown-link-check-disable -->
 
+# 0.44.3
+
+## New Orchestrator: SkyPilot (#1765)
+
+This release introduces a new orchestrator called SkyPilot. SkyPilot is a VM orchestrator
+that can be used to run ZenML pipelines on a VM of choice in one of the three supported
+cloud providers. It is a great choice for users who want to run ZenML pipelines on a GPU
+instance, but don't want to use Kubernetes or serverless orchestrators like SageMaker.
+
+## Fixes and Improvements
+
+This release fixes several bugs and improves the user experience of the CLI and the
+documentation. The most notable changes are:
+* The new `connect` command that allows connecting all stack components within a stack to a
+service connector with a single command.
+* Adding an interactive flow to the `zenml stack deploy` command that allows users to
+configure their stack in a guided manner.
+* Add documentation on how to debug the SageMaker orchestrator, how to get started with
+a quick cloud stack on GCP, and documentation on the use of service connectors with
+enabled MFA.
+
+## What's Changed
+* Add support for empty API token in Kubernetes service connector. by @stefannica in https://github.com/zenml-io/zenml/pull/1808
+* Use the container registry credentials to build images with the local image builder by @stefannica in https://github.com/zenml-io/zenml/pull/1804
+* Fix CI by @fa9r in https://github.com/zenml-io/zenml/pull/1809
+* Add documentation on how to debug the SageMaker orchestrator by @fa9r in https://github.com/zenml-io/zenml/pull/1810
+* Bump `rich` and `uvicorn` by @jlopezpena in https://github.com/zenml-io/zenml/pull/1750
+* SageMaker: Enable configuring authentication credentials explicitly by @fa9r in https://github.com/zenml-io/zenml/pull/1805
+* Fix: ZenML DB migrations don't run if zenml is installed in path with spaces by @stefannica in https://github.com/zenml-io/zenml/pull/1815
+* Fix mlflow 'run_name' variable overwriting by @iraadit in https://github.com/zenml-io/zenml/pull/1821
+* Add `SECURITY.md` file for vulnerability disclosures. by @strickvl in https://github.com/zenml-io/zenml/pull/1824
+* Add MFA limitation to service-connectors docs by @safoinme in https://github.com/zenml-io/zenml/pull/1827
+* Improve `zenml stack describe` to show `mlstacks` outputs by @strickvl in https://github.com/zenml-io/zenml/pull/1826
+* Documentation to get started with a quick cloud stack on GCP by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1807
+* Fix missing text in git repo docs by @strickvl in https://github.com/zenml-io/zenml/pull/1831
+* Handle irregular plural of `code_repository` for error message by @strickvl in https://github.com/zenml-io/zenml/pull/1832
+* Connect stack to a service account by @safoinme in https://github.com/zenml-io/zenml/pull/1828
+* SkyPilot Integration with VM Orchestrators by @htahir1 in https://github.com/zenml-io/zenml/pull/1765
+* Add interactive CLI flow for `zenml stack deploy` by @strickvl in https://github.com/zenml-io/zenml/pull/1829
+* Add `README` file for helm chart by @strickvl in https://github.com/zenml-io/zenml/pull/1830
+* Fix slack environment variable in in `generative_chat` example README by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1836
+
+## New Contributors
+* @iraadit made their first contribution in https://github.com/zenml-io/zenml/pull/1821
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.2...tes
+
+
 # 0.44.2
 
 This release contains updates for some of the most popular integrations, as well as several bug fixes and documentation improvements. 

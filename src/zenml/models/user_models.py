@@ -14,7 +14,6 @@
 """Models representing users."""
 
 import re
-from datetime import datetime, timedelta
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
@@ -24,14 +23,11 @@ from typing import (
     List,
     Optional,
     Union,
-    cast,
 )
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import (
@@ -40,118 +36,12 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
-    from passlib.context import CryptContext  # type: ignore[import]
+    from passlib.context import CryptContext
+
 
 logger = get_logger(__name__)
-
-
-class JWTTokenType(StrEnum):
-    """The type of JWT token."""
-
-    ACCESS_TOKEN = "access_token"
-
-
-class JWTToken(BaseModel):
-    """Pydantic object representing a JWT token.
-
-    Attributes:
-        token_type: The type of token.
-        user_id: The id of the authenticated User
-        permissions: The permissions scope of the authenticated user
-    """
-
-    JWT_ALGORITHM: ClassVar[str] = "HS256"
-
-    token_type: JWTTokenType
-    user_id: UUID
-    permissions: List[str]
-
-    @classmethod
-    def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
-        """Decodes a JWT access token.
-
-        Decodes a JWT access token and returns a `JWTToken` object with the
-        information retrieved from its subject claim.
-
-        Args:
-            token_type: The type of token.
-            token: The encoded JWT token.
-
-        Returns:
-            The decoded JWT access token.
-
-        Raises:
-            AuthorizationException: If the token is invalid.
-        """
-        # import here to keep these dependencies out of the client
-        from jose import JWTError, jwt
-
-        try:
-            payload = jwt.decode(
-                token,
-                GlobalConfiguration().jwt_secret_key,
-                algorithms=[cls.JWT_ALGORITHM],
-            )
-        except JWTError as e:
-            raise AuthorizationException(f"Invalid JWT token: {e}") from e
-
-        subject: str = payload.get("sub")
-        if subject is None:
-            raise AuthorizationException(
-                "Invalid JWT token: the subject claim is missing"
-            )
-        permissions: List[str] = payload.get("permissions")
-        if permissions is None:
-            raise AuthorizationException(
-                "Invalid JWT token: the permissions scope is missing"
-            )
-
-        try:
-            return cls(
-                token_type=token_type,
-                user_id=UUID(subject),
-                permissions=set(permissions),
-            )
-        except ValueError as e:
-            raise AuthorizationException(
-                f"Invalid JWT token: could not decode subject claim: {e}"
-            ) from e
-
-    def encode(self, expire_minutes: Optional[int] = None) -> str:
-        """Creates a JWT access token.
-
-        Generates and returns a JWT access token with the subject claim set to
-        contain the information in this Pydantic object.
-
-        Args:
-            expire_minutes: Number of minutes the token should be valid. If not
-                provided, the token will not be set to expire.
-
-        Returns:
-            The generated access token.
-        """
-        # import here to keep these dependencies out of the client
-        from jose import jwt
-
-        claims: Dict[str, Any] = {
-            "sub": str(self.user_id),
-            "permissions": list(self.permissions),
-        }
-
-        if expire_minutes:
-            expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
-            claims["exp"] = expire
-
-        token: str = jwt.encode(
-            claims,
-            GlobalConfiguration().jwt_secret_key,
-            algorithm=self.JWT_ALGORITHM,
-        )
-        return token
-
 
 # ---- #
 # BASE #
@@ -203,13 +93,26 @@ class UserBaseModel(BaseModel):
 # -------- #
 
 
+class ExternalUserModel(BaseModel):
+    """External user model."""
+
+    id: UUID
+    email: str
+    name: Optional[str] = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        # ignore arbitrary fields
+        extra = "ignore"
+
+
 class UserResponseModel(UserBaseModel, BaseResponseModel):
     """Response model for users.
 
     This returns the activation_token (which is required for the
-    user-invitation-flow of the frontend. This also optionally includes the
-    team the user is a part of. The email is returned optionally as well
-    for use by the analytics on the client-side.
+    user-invitation-flow of the frontend. The email is returned optionally as
+    well for use by the analytics on the client-side.
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -227,23 +130,10 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         title="The email address associated with the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    def generate_access_token(self, permissions: List[str]) -> str:
-        """Generates an access token.
-
-        Generates an access token and returns it.
-
-        Args:
-            permissions: Permissions to add to the token
-
-        Returns:
-            The generated access token.
-        """
-        return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN,
-            user_id=self.id,
-            permissions=permissions,
-        ).encode()
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
 
 
 class UserAuthModel(UserBaseModel, BaseResponseModel):
@@ -257,23 +147,6 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
-
-    def generate_access_token(self, permissions: List[str]) -> str:
-        """Generates an access token.
-
-        Generates an access token and returns it.
-
-        Args:
-            permissions: Permissions to add to the token
-
-        Returns:
-            The generated access token.
-        """
-        return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN,
-            user_id=self.id,
-            permissions=permissions,
-        ).encode()
 
     @classmethod
     def _is_hashed_secret(cls, secret: SecretStr) -> bool:
@@ -307,7 +180,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         if cls._is_hashed_secret(secret):
             return secret.get_secret_value()
         pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret.get_secret_value()))
+        return pwd_context.hash(secret.get_secret_value())
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -355,44 +228,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         if user is not None and user.password is not None:  # and user.active:
             password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(plain_password, password_hash))
-
-    @classmethod
-    def verify_access_token(cls, token: str) -> Optional["UserAuthModel"]:
-        """Verifies an access token.
-
-        Verifies an access token and returns the user that was used to generate
-        it if the token is valid and None otherwise.
-
-        Args:
-            token: The access token to verify.
-
-        Returns:
-            The user that generated the token if valid, None otherwise.
-        """
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-        try:
-            access_token = JWTToken.decode(
-                token_type=JWTTokenType.ACCESS_TOKEN, token=token
-            )
-        except AuthorizationException:
-            return None
-
-        zen_store = GlobalConfiguration().zen_store
-        if not isinstance(zen_store, SqlZenStore):
-            return None
-        try:
-            user = zen_store.get_auth_user(
-                user_name_or_id=access_token.user_id
-            )
-        except KeyError:
-            return None
-        else:
-            if user.active:
-                return user
-
-        return None
+        return pwd_context.verify(plain_password, password_hash)
 
     @classmethod
     def verify_activation_token(
@@ -410,15 +246,15 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # even when the user or token is not set, we still want to execute the
         # token hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
+        token_hash: str = ""
         if (
             user is not None
             and user.activation_token is not None
             and not user.active
         ):
-            token_hash = user.get_hashed_activation_token()
+            token_hash = user.get_hashed_activation_token() or ""
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(activation_token, token_hash))
+        return pwd_context.verify(activation_token, token_hash)
 
 
 # ------ #
@@ -439,15 +275,19 @@ class UserFilterModel(BaseFilterModel):
     )
     email: Optional[str] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Email of the user",
     )
     active: Optional[Union[bool, str]] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Whether the user is active",
     )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
-        description="Full Name of the user",
+        description="Whether the user has opted in to emails",
+    )
+    external_user_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
 
@@ -485,6 +325,10 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
     activation_token: Optional[str] = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
 
     class Config:
         """Pydantic configuration class."""
@@ -510,7 +354,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         if secret is None:
             return None
         pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret))
+        return pwd_context.hash(secret)
 
     def create_hashed_password(self) -> Optional[str]:
         """Hashes the password.

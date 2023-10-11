@@ -51,6 +51,8 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    ModelStages,
+    OAuthDeviceStatus,
     SecretScope,
     StackComponentType,
     StoreType,
@@ -78,6 +80,9 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildResponseModel,
     PipelineDeploymentFilterModel,
@@ -119,6 +124,20 @@ from zenml.models.artifact_models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
+)
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
@@ -130,7 +149,7 @@ from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.metadata.metadata_types import MetadataType
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -674,6 +693,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
+        external_user_id: Optional[str] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -690,6 +710,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
             id: Use the id of stacks to filter by.
+            external_user_id: Use the external user id for filtering.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the username for filtering
@@ -708,6 +729,7 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 id=id,
+                external_user_id=external_user_id,
                 created=created,
                 updated=updated,
                 name=name,
@@ -2869,7 +2891,7 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> Dict[str, RunMetadataResponseModel]:
+    ) -> List[RunMetadataResponseModel]:
         """Create run metadata.
 
         Args:
@@ -2912,7 +2934,8 @@ class Client(metaclass=ClientMetaClass):
                 "`step_run_id` or only an `artifact_id`."
             )
 
-        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        values: Dict[str, "MetadataType"] = {}
+        types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -2921,7 +2944,6 @@ class Client(metaclass=ClientMetaClass):
                     "stored in the database. Skipping."
                 )
                 continue
-
             # Skip metadata that is not of a supported type.
             try:
                 metadata_type = get_metadata_type(value)
@@ -2931,21 +2953,20 @@ class Client(metaclass=ClientMetaClass):
                     f"type. Skipping. Full error: {e}"
                 )
                 continue
+            values[key] = value
+            types[key] = metadata_type
 
-            run_metadata = RunMetadataRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-                artifact_id=artifact_id,
-                stack_component_id=stack_component_id,
-                key=key,
-                value=value,
-                type=metadata_type,
-            )
-            metadata_model = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata[key] = metadata_model
-        return created_metadata
+        run_metadata = RunMetadataRequestModel(
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            values=values,
+            types=types,
+        )
+        return self.zen_store.create_run_metadata(run_metadata)
 
     def list_run_metadata(
         self,
@@ -4405,6 +4426,348 @@ class Client(metaclass=ClientMetaClass):
             connector_type=connector_type,
         )
 
+    #########
+    # Model
+    #########
+
+    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+        """Creates a new model in Model Control Plane.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+        """
+        return self.zen_store.create_model(model=model)
+
+    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be deleted.
+        """
+        self.zen_store.delete_model(model_name_or_id=model_name_or_id)
+
+    def update_model(
+        self,
+        model_id: UUID,
+        model_update: ModelUpdateModel,
+    ) -> ModelResponseModel:
+        """Updates an existing model in Model Control Plane.
+
+        Args:
+            model_id: UUID of the model to be updated.
+            model_update: the Model to be updated.
+
+        Returns:
+            The updated model.
+        """
+        return self.zen_store.update_model(
+            model_id=model_id, model_update=model_update
+        )
+
+    def get_model(
+        self, model_name_or_id: Union[str, UUID]
+    ) -> ModelResponseModel:
+        """Get an existing model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The model of interest.
+        """
+        return self.zen_store.get_model(model_name_or_id=model_name_or_id)
+
+    def list_models(
+        self,
+        model_filter_model: ModelFilterModel,
+    ) -> Page[ModelResponseModel]:
+        """Get models by filter from Model Control Plane.
+
+        Args:
+            model_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all models.
+        """
+        return self.zen_store.list_models(
+            model_filter_model=model_filter_model
+        )
+
+    #################
+    # Model Versions
+    #################
+
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version in Model Control Plane.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+        """
+        return self.zen_store.create_model_version(model_version=model_version)
+
+    def delete_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be deleted.
+        """
+        self.zen_store.delete_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_id=model_version_name_or_id,
+        )
+
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
+
+        Returns:
+            The model version of interest.
+        """
+        return self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+
+    def list_model_versions(
+        self,
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get model versions by filter from Model Control Plane.
+
+        Args:
+            model_version_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model versions.
+        """
+        return self.zen_store.list_model_versions(
+            model_version_filter_model=model_version_filter_model
+        )
+
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+        """
+        return self.zen_store.update_model_version(
+            model_version_id=model_version_id,
+            model_version_update_model=model_version_update_model,
+        )
+
+    #################################################
+    # Model Versions Artifacts
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_artifact_links(
+        self,
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get model version to artifact links by filter in Model Control Plane.
+
+        Args:
+            model_version_artifact_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to artifact links.
+        """
+        return self.zen_store.list_model_version_artifact_links(
+            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model
+        )
+
+    #################################################
+    # Model Versions Pipeline Runs
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_pipeline_run_links(
+        self,
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        return self.zen_store.list_model_version_pipeline_run_links(
+            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model
+        )
+
+    # .--------------------.
+    # | AUTHORIZED_DEVICES |
+    # '--------------------'
+
+    def list_authorized_devices(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        expires: Optional[Union[datetime, str]] = None,
+        client_id: Union[UUID, str, None] = None,
+        status: Union[OAuthDeviceStatus, str, None] = None,
+        trusted_device: Union[bool, str, None] = None,
+        failed_auth_attempts: Union[int, str, None] = None,
+        last_login: Optional[Union[datetime, str, None]] = None,
+    ) -> Page[OAuthDeviceResponseModel]:
+        """List all authorized devices.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the code repository to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            expires: Use the expiration date for filtering.
+            client_id: Use the client id for filtering.
+            status: Use the status for filtering.
+            trusted_device: Use the trusted device flag for filtering.
+            failed_auth_attempts: Use the failed auth attempts for filtering.
+            last_login: Use the last login date for filtering.
+
+        Returns:
+            A page of authorized devices matching the filter.
+        """
+        filter_model = OAuthDeviceFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            expires=expires,
+            client_id=client_id,
+            status=status,
+            trusted_device=trusted_device,
+            failed_auth_attempts=failed_auth_attempts,
+            last_login=last_login,
+        )
+        return self.zen_store.list_authorized_devices(
+            filter_model=filter_model
+        )
+
+    def get_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        allow_id_prefix_match: bool = True,
+    ) -> OAuthDeviceResponseModel:
+        """Get an authorized device by id or prefix.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            allow_id_prefix_match: If True, allow matching by ID prefix.
+
+        Returns:
+            The requested authorized device.
+
+        Raises:
+            KeyError: If no authorized device is found with the given ID or
+                prefix.
+        """
+        if isinstance(id_or_prefix, str):
+            try:
+                id_or_prefix = UUID(id_or_prefix)
+            except ValueError:
+                if not allow_id_prefix_match:
+                    raise KeyError(
+                        f"No authorized device found with id or prefix "
+                        f"'{id_or_prefix}'."
+                    )
+        if isinstance(id_or_prefix, UUID):
+            return self.zen_store.get_authorized_device(id_or_prefix)
+        return self._get_entity_by_prefix(
+            get_method=self.zen_store.get_authorized_device,
+            list_method=self.list_authorized_devices,
+            partial_id_or_name=id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+    def update_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        locked: Optional[bool] = None,
+    ) -> OAuthDeviceResponseModel:
+        """Update an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            locked: Whether to lock or unlock the authorized device.
+
+        Returns:
+            The updated authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix, allow_id_prefix_match=False
+        )
+        return self.zen_store.update_authorized_device(
+            device_id=device.id,
+            update=OAuthDeviceUpdateModel(
+                locked=locked,
+            ),
+        )
+
+    def delete_authorized_device(
+        self,
+        id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix,
+            allow_id_prefix_match=False,
+        )
+        self.zen_store.delete_authorized_device(device.id)
+
     # ---- utility prefix matching get functions -----
 
     @staticmethod
@@ -4500,7 +4863,11 @@ class Client(metaclass=ClientMetaClass):
         if entity.total == 1:
             return entity.items[0]
 
-        entity_label = get_method.__name__.replace("get_", "") + "s"
+        irregular_plurals = {"code_repository": "code_repositories"}
+        entity_label = irregular_plurals.get(
+            get_method.__name__.replace("get_", ""),
+            get_method.__name__.replace("get_", "") + "s",
+        )
 
         prefix_description = (
             "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"

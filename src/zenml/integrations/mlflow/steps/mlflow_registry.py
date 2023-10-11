@@ -18,6 +18,7 @@ from typing import Optional
 from mlflow.tracking import artifact_utils
 
 from zenml import __version__, get_step_context, step
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
@@ -26,7 +27,6 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
 from zenml.logger import get_logger
-from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
 )
@@ -90,7 +90,7 @@ def mlflow_register_model_step(
     # get pipeline name, step name and run id
     step_context = get_step_context()
     pipeline_name = step_context.pipeline.name
-    run_name = step_context.pipeline_run.name
+    current_run_name = step_context.pipeline_run.name
     pipeline_run_uuid = str(step_context.pipeline_run.id)
     zenml_workspace = str(model_registry.workspace)
 
@@ -98,7 +98,7 @@ def mlflow_register_model_step(
     # pipeline name and run name
     mlflow_run_id = run_id or experiment_tracker.get_run_id(
         experiment_name=experiment_name or pipeline_name,
-        run_name=run_name or run_name,
+        run_name=run_name or current_run_name,
     )
     # If no value was set at all, raise an error
     if not mlflow_run_id:

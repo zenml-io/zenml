@@ -17,7 +17,6 @@ import json
 import os
 import uuid
 from pathlib import Path, PurePath
-from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -33,6 +32,7 @@ from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SECRETS_STORE_PREFIX,
+    ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -48,17 +48,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
-
-
-def generate_jwt_secret_key() -> str:
-    """Generate a random JWT secret key.
-
-    This key is used to sign and verify generated JWT tokens.
-
-    Returns:
-        A random JWT secret key.
-    """
-    return token_hex(32)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -141,7 +130,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
-    jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
@@ -177,6 +165,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
         config_values.update(**kwargs)
+
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):
@@ -411,6 +400,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         This method is called to ensure that the active stack and workspace
         are set to their default values, if possible.
         """
+        # If running in a ZenML server environment, the active stack and
+        # workspace are not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return
         active_workspace, active_stack = self.zen_store.validate_active_config(
             self.active_workspace_name,
             self.active_stack_id,

@@ -28,13 +28,13 @@ from steps import (
 )
 
 from zenml import pipeline
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import evidently_report_step
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
 from zenml.logger import get_logger
-from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 

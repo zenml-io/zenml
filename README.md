@@ -91,7 +91,7 @@
     <br />
     <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
-    🎉 Version 0.44.2 is out. Check out the release notes
+    🎉 Version 0.44.3 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <a href="https://www.linkedin.com/company/zenml/">

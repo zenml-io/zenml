@@ -23,6 +23,7 @@
     * [Compose pipelines](user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
     * [Schedule pipeline runs](user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
     * [Fetch metadata within steps](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md)
+    * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Artifact management](user-guide/advanced-guide/artifact-management/artifact-management.md)
@@ -40,15 +41,12 @@
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
     * [Custom secret stores](user-guide/advanced-guide/secret-management/custom-secret-stores.md)
-  * [Custom stack solutions](user-guide/advanced-guide/custom-stack-solutions/custom-stack-solutions.md)
-    * [Implement a custom stack component](user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md)
-    * [Implement a custom integration](user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-integration.md)
 
 ## Deploying ZenML
 
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+  * [User Management](deploying-zenml/zenml-cloud/user-management.md)
   * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
-  * [Get started](deploying-zenml/zenml-cloud/get-started.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
   * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
   * [Deploy with Docker](deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
@@ -73,6 +71,7 @@
     * [AWS Sagemaker Orchestrator](stacks-and-components/component-guide/orchestrators/sagemaker.md)
     * [Tekton Orchestrator](stacks-and-components/component-guide/orchestrators/tekton.md)
     * [Airflow Orchestrator](stacks-and-components/component-guide/orchestrators/airflow.md)
+    * [Skypilot VM Orchestrator](stacks-and-components/component-guide/orchestrators/skypilot-vm.md)
     * [Develop a custom orchestrator](stacks-and-components/component-guide/orchestrators/custom.md)
   * [Artifact Stores](stacks-and-components/component-guide/artifact-stores/artifact-stores.md)
     * [Local Artifact Store](stacks-and-components/component-guide/artifact-stores/local.md)
@@ -141,10 +140,14 @@
   * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
   * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
-* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+* [🚀 Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+  * [Set up a minimal GCP stack](stacks-and-components/stack-deployment/cloud-stacks/minimal-gcp-stack.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
   * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)
   * [Contribute flavors or components](stacks-and-components/stack-deployment/contribute-flavors-or-components.md)
+* [🛠️ Custom solutions](stacks-and-components/custom-solutions/custom-stack-solutions.md)
+  * [Implement a custom stack component](stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)
+  * [Implement a custom integration](stacks-and-components/custom-solutions/implement-a-custom-integration.md)
 
 ## Learning
 

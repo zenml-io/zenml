@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,650 +11,627 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality for model-deployer CLI subcommands."""
-
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+"""CLI functionality to interact with Model Control Plane."""
+# from functools import partial
+from typing import Any, List, Optional
 
 import click
 
+# from uuid import UUID
+# import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.enums import StackComponentType
-from zenml.model_registries.base_model_registry import (
-    ModelRegistryModelMetadata,
-    ModelVersionStage,
+from zenml.client import Client
+from zenml.enums import CliCategories, ModelStages
+from zenml.logger import get_logger
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionUpdateModel,
 )
 
-if TYPE_CHECKING:
-    from zenml.model_registries import BaseModelRegistry
+# from zenml.utils.pagination_utils import depaginate
+
+logger = get_logger(__name__)
 
 
-def register_model_registry_subcommands() -> None:  # noqa: C901
-    """Registers CLI subcommands for the Model Registry."""
-    model_registry_group = cast(TagGroup, cli.commands.get("model-registry"))
-    if not model_registry_group:
+@cli.group(cls=TagGroup, tag=CliCategories.MODEL_CONTROL_PLANE)
+def model() -> None:
+    """Interact with models and model versions in the Model Control Plane."""
+
+
+@cli_utils.list_options(ModelFilterModel)
+@model.command("list", help="List models with filter.")
+def list_models(**kwargs: Any) -> None:
+    """List models with filter in the Model Control Plane.
+
+    Args:
+        **kwargs: Keyword arguments to filter models.
+    """
+    models = Client().list_models(ModelFilterModel(**kwargs))
+
+    if not models:
+        cli_utils.declare("No models found.")
         return
 
-    @model_registry_group.group(
-        cls=TagGroup,
-        help="Commands for interacting with registered models group of commands.",
+    cli_utils.print_pydantic_models(
+        models,
+        exclude_columns=["user", "workspace"],
     )
-    @click.pass_context
-    def models(ctx: click.Context) -> None:
-        """List and manage models with the active model registry.
 
-        Args:
-            ctx: The click context.
-        """
-        from zenml.client import Client
-        from zenml.stack.stack_component import StackComponent
 
-        client = Client()
-        model_registry_models = client.active_stack_model.components.get(
-            StackComponentType.MODEL_REGISTRY
-        )
-        if model_registry_models is None:
-            cli_utils.error(
-                "No active model registry found. Please add a model_registry "
-                "to your stack."
-            )
-            return
-        ctx.obj = StackComponent.from_model(model_registry_models[0])
+@model.command("register", help="Register a new model.")
+@click.option(
+    "--name",
+    "-n",
+    help="The name of the model.",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--license",
+    "-l",
+    help="The license under which the model is created.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--description",
+    "-d",
+    help="The description of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--audience",
+    "-a",
+    help="The target audience for the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--use-cases",
+    "-u",
+    help="The use cases of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tradeoffs",
+    help="The tradeoffs of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--ethical",
+    "-e",
+    help="The ethical implications of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--limitations",
+    help="The known limitations of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tag",
+    "-t",
+    help="Tags associated with the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+def register_model(
+    name: str,
+    license: Optional[str],
+    description: Optional[str],
+    audience: Optional[str],
+    use_cases: Optional[str],
+    tradeoffs: Optional[str],
+    ethical: Optional[str],
+    limitations: Optional[str],
+    tag: Optional[List[str]],
+) -> None:
+    """Register a new model in the Model Control Plane.
 
-    @models.command(
-        "list",
-        help="Get a list of all registered models within the model registry.",
-    )
-    @click.option(
-        "--metadata",
-        "-m",
-        type=(str, str),
-        default=None,
-        help="Filter models by metadata. can be used like: -m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.pass_obj
-    def list_registered_models(
-        model_registry: "BaseModelRegistry",
-        metadata: Optional[Dict[str, str]],
-    ) -> None:
-        """List of all registered models within the model registry.
-
-        The list can be filtered by metadata (tags) using the --metadata flag.
-        Example: zenml model-registry models list-versions -m key1 value1 -m key2 value2
-
-        Args:
-            model_registry: The model registry stack component.
-            metadata: Filter models by Metadata (Tags).
-        """
-        metadata = dict(metadata) if metadata else None
-        registered_models = model_registry.list_models(metadata=metadata)
-        # Print registered models if any
-        if registered_models:
-            cli_utils.pretty_print_registered_model_table(registered_models)
-        else:
-            cli_utils.declare("No models found.")
-
-    @models.command(
-        "register",
-        help="Register a model with the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--description",
-        "-d",
-        type=str,
-        default=None,
-        help="Description of the model to register.",
-    )
-    @click.option(
-        "--metadata",
-        "-t",
-        type=(str, str),
-        default=None,
-        help="Metadata or Tags to add to the model. can be used like: -m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.pass_obj
-    def register_model(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-    ) -> None:
-        """Register a model with the active model registry.
-
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to register.
-            description: Description of the model to register.
-            metadata: Metadata or Tags to add to the registered model.
-        """
-        try:
-            model_registry.get_model(name)
-            cli_utils.error(f"Model with name {name} already exists.")
-        except KeyError:
-            pass
-        metadata = dict(metadata) if metadata else None
-        model_registry.register_model(
+    Args:
+        name: The name of the model.
+        license: The license model created under.
+        description: The description of the model.
+        audience: The target audience of the model.
+        use_cases: The use cases of the model.
+        tradeoffs: The tradeoffs of the model.
+        ethical: The ethical implications of the model.
+        limitations: The know limitations of the model.
+        tag: Tags associated with the model.
+    """
+    model = Client().create_model(
+        ModelRequestModel(
             name=name,
+            license=license,
             description=description,
-            metadata=metadata,
+            audience=audience,
+            use_cases=use_cases,
+            trade_offs=tradeoffs,
+            ethic=ethical,
+            limitations=limitations,
+            tags=tag,
+            user=Client().active_user.id,
+            workspace=Client().active_workspace.id,
         )
-        cli_utils.declare(f"Model {name} registered successfully.")
+    )
 
-    @models.command(
-        "delete",
-        help="Delete a model from the active model registry.",
+    cli_utils.print_pydantic_models(
+        [
+            model,
+        ],
+        exclude_columns=["user", "workspace"],
     )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--yes",
-        "-y",
-        is_flag=True,
-        help="Don't ask for confirmation.",
-    )
-    @click.pass_obj
-    def delete_model(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        yes: bool = False,
-    ) -> None:
-        """Delete a model from the active model registry.
 
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to delete.
-            yes: If set, don't ask for confirmation.
-        """
-        try:
-            model_registry.get_model(name)
-        except KeyError:
-            cli_utils.error(f"Model with name {name} does not exist.")
+
+@model.command("update", help="Update an existing model.")
+@click.argument("model_name_or_id")
+@click.option(
+    "--license",
+    "-l",
+    help="The license under which the model is created.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--description",
+    "-d",
+    help="The description of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--audience",
+    "-a",
+    help="The target audience for the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--use-cases",
+    "-u",
+    help="The use cases of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tradeoffs",
+    help="The tradeoffs of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--ethical",
+    "-e",
+    help="The ethical implications of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--limitations",
+    help="The known limitations of the model.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--tag",
+    "-t",
+    help="Tags associated with the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+def update_model(
+    model_name_or_id: str,
+    license: Optional[str],
+    description: Optional[str],
+    audience: Optional[str],
+    use_cases: Optional[str],
+    tradeoffs: Optional[str],
+    ethical: Optional[str],
+    limitations: Optional[str],
+    tag: Optional[List[str]],
+) -> None:
+    """Register a new model in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The name of the model.
+        license: The license model created under.
+        description: The description of the model.
+        audience: The target audience of the model.
+        use_cases: The use cases of the model.
+        tradeoffs: The tradeoffs of the model.
+        ethical: The ethical implications of the model.
+        limitations: The know limitations of the model.
+        tag: Tags associated with the model.
+    """
+    model_id = Client().get_model(model_name_or_id=model_name_or_id).id
+    model = Client().update_model(
+        model_id=model_id,
+        model_update=ModelUpdateModel(
+            license=license,
+            description=description,
+            audience=audience,
+            use_cases=use_cases,
+            trade_offs=tradeoffs,
+            ethic=ethical,
+            limitations=limitations,
+            tags=tag,
+            user=Client().active_user.id,
+            workspace=Client().active_workspace.id,
+        ),
+    )
+
+    cli_utils.print_pydantic_models(
+        [
+            model,
+        ],
+        exclude_columns=["user", "workspace"],
+    )
+
+
+@model.command("delete", help="Delete an existing model.")
+@click.argument("model_name_or_id")
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_model(
+    model_name_or_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete an existing model from the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete model '{model_name_or_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Model deletion canceled.")
             return
-        if not yes:
+
+    try:
+        Client().delete_model(
+            model_name_or_id=model_name_or_id,
+        )
+    except (KeyError, ValueError) as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Model '{model_name_or_id}' deleted.")
+
+
+@model.group
+def version() -> None:
+    """Interact with model versions in the Model Control Plane."""
+
+
+@cli_utils.list_options(ModelVersionFilterModel)
+@click.argument("model_name_or_id")
+@version.command("list", help="List model versions with filter.")
+def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
+    """List model versions with filter in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    model_id = Client().get_model(model_name_or_id=model_name_or_id).id
+    model_versions = Client().list_model_versions(
+        ModelVersionFilterModel(model_id=model_id, **kwargs)
+    )
+
+    if not model_versions:
+        cli_utils.declare("No model versions found.")
+        return
+
+    for model_version in model_versions:
+        model_version.artifact_objects_count = len(  # type: ignore[attr-defined]
+            model_version.artifact_object_ids
+        )
+        model_version.model_objects_count = len(model_version.model_object_ids)  # type: ignore[attr-defined]
+        model_version.deployments_count = len(model_version.deployment_ids)  # type: ignore[attr-defined]
+        model_version.pipeline_runs_count = len(model_version.pipeline_run_ids)  # type: ignore[attr-defined]
+
+    cli_utils.print_pydantic_models(
+        model_versions,
+        columns=[
+            "id",
+            "name",
+            "number",
+            "description",
+            "stage",
+            "artifact_objects_count",
+            "model_objects_count",
+            "deployments_count",
+            "pipeline_runs_count",
+            "updated",
+        ],
+    )
+
+
+@version.command("update", help="Update an existing model version stage.")
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@click.option(
+    "--stage",
+    "-s",
+    type=click.Choice(choices=ModelStages.values()),
+    help="The stage of the model version.",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Don't ask for confirmation, if stage already occupied.",
+)
+def update_model_version(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    stage: str,
+    force: bool = False,
+) -> None:
+    """Update an existing model version stage in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The ID, number or name of the model version.
+        stage: The stage of the model version to be set.
+        force: Whether existing model version in target stage should be silently archived.
+    """
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
+    try:
+        Client().update_model_version(
+            model_version_id=model_version.id,
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model_version.model.id, stage=stage, force=force
+            ),
+        )
+    except RuntimeError:
+        if not force:
+            cli_utils.print_pydantic_models(
+                Client().list_model_versions(
+                    ModelVersionFilterModel(
+                        stage=stage,
+                        model_id=model_version.model.id,
+                    )
+                ),
+                columns=[
+                    "id",
+                    "name",
+                    "number",
+                    "description",
+                    "stage",
+                    "artifact_objects_count",
+                    "model_objects_count",
+                    "deployments_count",
+                    "pipeline_runs_count",
+                    "updated",
+                ],
+            )
             confirmation = cli_utils.confirmation(
-                f"Found Model with name {name}. Do you want to "
-                f"delete them?"
+                "Are you sure you want to change the status of this model "
+                f"version to '{stage}'? This stage is already taken by "
+                "another model version and if you will proceed the current "
+                "model version in this stage will be archived."
             )
             if not confirmation:
-                cli_utils.declare("Model deletion canceled.")
+                cli_utils.declare("Model version stage update canceled.")
                 return
-        model_registry.delete_model(name)
-        cli_utils.declare(f"Model {name} deleted successfully.")
-
-    @models.command(
-        "update",
-        help="Update a model in the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--description",
-        "-d",
-        type=str,
-        default=None,
-        help="Description of the model to update.",
-    )
-    @click.option(
-        "--metadata",
-        "-t",
-        type=(str, str),
-        default=None,
-        help="Metadata or Tags to add to the model. Ran be used like: -m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.pass_obj
-    def update_model(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-    ) -> None:
-        """Update a model in the active model registry.
-
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to update.
-            description: Description of the model to update.
-            metadata: Metadata or Tags to add to the model.
-        """
-        try:
-            model_registry.get_model(name)
-        except KeyError:
-            cli_utils.error(f"Model with name {name} does not exist.")
-            return
-        metadata = dict(metadata) if metadata else None
-        model_registry.update_model(
-            name=name,
-            description=description,
-            metadata=metadata,
-        )
-        cli_utils.declare(f"Model {name} updated successfully.")
-
-    @models.command(
-        "get",
-        help="Get a model from the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.pass_obj
-    def get_model(
-        model_registry: "BaseModelRegistry",
-        name: str,
-    ) -> None:
-        """Get a model from the active model registry.
-
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to get.
-        """
-        try:
-            model = model_registry.get_model(name)
-        except KeyError:
-            cli_utils.error(f"Model with name {name} does not exist.")
-            return
-        cli_utils.pretty_print_registered_model_table([model])
-
-    @models.command(
-        "get-version",
-        help="Get a model version from the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--version",
-        "-v",
-        type=str,
-        default=None,
-        help="Version of the model to get.",
-        required=True,
-    )
-    @click.pass_obj
-    def get_model_version(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        version: str,
-    ) -> None:
-        """Get a model version from the active model registry.
-
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to get.
-            version: Version of the model to get.
-        """
-        try:
-            model_version = model_registry.get_model_version(name, version)
-        except KeyError:
-            cli_utils.error(
-                f"Model with name {name} and version {version} does not exist."
+            Client().update_model_version(
+                model_version_id=model_version.id,
+                model_version_update_model=ModelVersionUpdateModel(
+                    model=model_version.model.id, stage=stage, force=True
+                ),
             )
-            return
-        cli_utils.pretty_print_model_version_details(model_version)
+    cli_utils.declare(
+        f"Model version '{model_version.name}' stage updated to '{stage}'."
+    )
 
-    @models.command(
-        "delete-version",
-        help="Delete a model version from the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--version",
-        "-v",
-        type=str,
-        default=None,
-        help="Version of the model to delete.",
-        required=True,
-    )
-    @click.option(
-        "--yes",
-        "-y",
-        is_flag=True,
-        help="Don't ask for confirmation.",
-    )
-    @click.pass_obj
-    def delete_model_version(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        version: str,
-        yes: bool = False,
-    ) -> None:
-        """Delete a model version from the active model registry.
 
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to delete.
-            version: Version of the model to delete.
-            yes: If set, don't ask for confirmation.
-        """
-        try:
-            model_registry.get_model_version(name, version)
-        except KeyError:
-            cli_utils.error(
-                f"Model with name {name} and version {version} does not exist."
-            )
-            return
-        if not yes:
-            confirmation = cli_utils.confirmation(
-                f"Found Model with the name `{name}` and the version `{version}`."
-                f"Do you want to delete it?"
-            )
-            if not confirmation:
-                cli_utils.declare("Model version deletion canceled.")
-                return
-        model_registry.delete_model_version(name, version)
-        cli_utils.declare(
-            f"Model {name} version {version} deleted successfully."
+def _print_artifacts_links_generic(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    only_artifacts: bool = False,
+    only_deployments: bool = False,
+    only_model_objects: bool = False,
+    **kwargs: Any,
+) -> None:
+    """Generic method to print artifacts links.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        only_artifacts: If set, only print artifacts.
+        only_deployments: If set, only print deployments.
+        only_model_objects: If set, only print model objects.
+        **kwargs: Keyword arguments to filter models.
+    """
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
+
+    if (
+        (only_artifacts and not model_version.artifact_object_ids)
+        or (only_deployments and not model_version.deployment_ids)
+        or (only_model_objects and not model_version.model_object_ids)
+    ):
+        _type = (
+            "artifacts"
+            if only_artifacts
+            else "deployments"
+            if only_deployments
+            else "model objects"
         )
+        cli_utils.declare(f"No {_type} linked to the model version found.")
+        return
 
-    @models.command(
-        "update-version",
-        help="Update a model version in the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--version",
-        "-v",
-        type=str,
-        default=None,
-        help="Version of the model to update.",
-        required=True,
-    )
-    @click.option(
-        "--description",
-        "-d",
-        type=str,
-        default=None,
-        help="Description of the model to update.",
-    )
-    @click.option(
-        "--metadata",
-        "-m",
-        type=(str, str),
-        default=None,
-        help="Metadata or Tags to add to the model. can be used like: --m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.option(
-        "--stage",
-        "-s",
-        type=click.Choice(["None", "Staging", "Production", "Archived"]),
-        default=None,
-        help="Stage of the model to update.",
-    )
-    @click.option(
-        "--remove_metadata",
-        "-rm",
-        default=None,
-        help="Metadata or Tags to remove from the model. can be used like: -rm key1 -rm key2",
-        multiple=True,
-    )
-    @click.pass_obj
-    def update_model_version(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        version: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-        stage: Optional[str],
-        remove_metadata: Optional[List[str]],
-    ) -> None:
-        """Update a model version in the active model registry.
-
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to update.
-            version: Version of the model to update.
-            description: Description of the model to update.
-            metadata: Metadata to add to the model version.
-            stage: Stage of the model to update.
-            remove_metadata: Metadata to remove from the model version.
-        """
-        try:
-            model_registry.get_model_version(name, version)
-        except KeyError:
-            cli_utils.error(
-                f"Model with name {name} and version {version} does not exist."
-            )
-            return
-        metadata = dict(metadata) if metadata else {}
-        remove_metadata = list(remove_metadata) if remove_metadata else []
-        updated_version = model_registry.update_model_version(
-            name=name,
-            version=version,
-            description=description,
-            metadata=ModelRegistryModelMetadata(**metadata),
-            stage=ModelVersionStage(stage) if stage else None,
-            remove_metadata=remove_metadata,
+    links = Client().list_model_version_artifact_links(
+        ModelVersionArtifactFilterModel(
+            model_id=model_version.model.id,
+            model_version_id=model_version.id,
+            only_artifacts=only_artifacts,
+            only_deployments=only_deployments,
+            only_model_objects=only_model_objects,
+            **kwargs,
         )
-        cli_utils.declare(
-            f"Model {name} version {version} updated successfully."
-        )
-        cli_utils.pretty_print_model_version_details(updated_version)
+    )
 
-    @models.command(
-        "list-versions",
-        help="List all model versions in the active model registry.",
+    cli_utils.print_pydantic_models(
+        links,
+        columns=[
+            "pipeline_name",
+            "step_name",
+            "name",
+            "link_version",
+            "artifact",
+            "created",
+        ],
     )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--model-uri",
-        "-m",
-        type=str,
-        default=None,
-        help="Model URI of the model to list versions for.",
-    )
-    @click.option(
-        "--metadata",
-        "-m",
-        type=(str, str),
-        default=None,
-        help="Metadata or Tags to filter the model versions by. can be used like: -m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.option(
-        "--count",
-        "-c",
-        type=int,
-        help="Number of model versions to list.",
-    )
-    @click.option(
-        "--order-by-date",
-        type=click.Choice(["asc", "desc"]),
-        default="desc",
-        help="Order by date.",
-    )
-    @click.option(
-        "--created-after",
-        type=click.DateTime(formats=["%Y-%m-%d"]),
-        default=None,
-        help="List model versions created after this date.",
-    )
-    @click.option(
-        "--created-before",
-        type=click.DateTime(formats=["%Y-%m-%d"]),
-        default=None,
-        help="List model versions created before this date.",
-    )
-    @click.pass_obj
-    def list_model_versions(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        model_uri: Optional[str],
-        count: Optional[int],
-        metadata: Optional[Dict[str, str]],
-        order_by_date: str,
-        created_after: Optional[datetime],
-        created_before: Optional[datetime],
-    ) -> None:
-        """List all model versions in the active model registry.
 
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to list versions for.
-            model_uri: Model URI of the model to list versions for.
-            metadata: Metadata or Tags to filter the model versions by.
-            count: Number of model versions to list.
-            order_by_date: Order by date.
-            created_after: List model versions created after this date.
-            created_before: List model versions created before this date.
-        """
-        metadata = dict(metadata) if metadata else {}
-        model_versions = model_registry.list_model_versions(
-            name=name,
-            model_source_uri=model_uri,
-            metadata=ModelRegistryModelMetadata(**metadata),
-            count=count,
-            order_by_date=order_by_date,
-            created_after=created_after,
-            created_before=created_before,
-        )
-        if not model_versions:
-            cli_utils.declare("No model versions found.")
-            return
-        cli_utils.pretty_print_model_version_table(model_versions)
 
-    @models.command(
-        "register-version",
-        help="Register a model version in the active model registry.",
-    )
-    @click.argument(
-        "name",
-        type=click.STRING,
-        required=True,
-    )
-    @click.option(
-        "--description",
-        "-d",
-        type=str,
-        default=None,
-        help="Description of the model version.",
-    )
-    @click.option(
-        "--metadata",
-        "-m",
-        type=(str, str),
-        default=None,
-        help="Metadata or Tags to add to the model version. can be used like: -m key1 value1 -m key2 value",
-        multiple=True,
-    )
-    @click.option(
-        "--version",
-        "-v",
-        type=str,
-        required=True,
-        default=None,
-        help="Version of the model to register.",
-    )
-    @click.option(
-        "--model-uri",
-        "-u",
-        type=str,
-        default=None,
-        help="Model URI of the model to register.",
-        required=True,
-    )
-    @click.option(
-        "--zenml-version",
-        type=str,
-        default=None,
-        help="ZenML version of the model to register.",
-    )
-    @click.option(
-        "--zenml-run-name",
-        type=str,
-        default=None,
-        help="ZenML run name of the model to register.",
-    )
-    @click.option(
-        "--zenml-pipeline-run-id",
-        type=str,
-        default=None,
-        help="ZenML pipeline run ID of the model to register.",
-    )
-    @click.option(
-        "--zenml-pipeline-name",
-        type=str,
-        default=None,
-        help="ZenML pipeline name of the model to register.",
-    )
-    @click.option(
-        "--zenml-step-name",
-        type=str,
-        default=None,
-        help="ZenML step name of the model to register.",
-    )
-    @click.pass_obj
-    def register_model_version(
-        model_registry: "BaseModelRegistry",
-        name: str,
-        version: str,
-        model_uri: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-        zenml_version: Optional[str],
-        zenml_run_name: Optional[str],
-        zenml_pipeline_name: Optional[str],
-        zenml_step_name: Optional[str],
-    ) -> None:
-        """Register a model version in the active model registry.
+@version.command(
+    "artifacts",
+    help="List artifacts linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_artifacts(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List artifacts linked to a model version in the Model Control Plane.
 
-        Args:
-            model_registry: The model registry stack component.
-            name: Name of the model to register.
-            version: Version of the model to register.
-            model_uri: Model URI of the model to register.
-            description: Description of the model to register.
-            metadata: Model version metadata.
-            zenml_version: ZenML version of the model to register.
-            zenml_run_name: ZenML pipeline run name of the model to register.
-            zenml_pipeline_name: ZenML pipeline name of the model to register.
-            zenml_step_name: ZenML step name of the model to register.
-        """
-        # Parse metadata
-        metadata = dict(metadata) if metadata else {}
-        registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
-        registered_metadata.zenml_version = zenml_version
-        registered_metadata.zenml_run_name = zenml_run_name
-        registered_metadata.zenml_pipeline_name = zenml_pipeline_name
-        registered_metadata.zenml_step_name = zenml_step_name
-        model_version = model_registry.register_model_version(
-            name=name,
-            version=version,
-            model_source_uri=model_uri,
-            description=description,
-            metadata=registered_metadata,
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_artifacts=True,
+        **kwargs,
+    )
+
+
+@version.command(
+    "model_objects",
+    help="List model objects linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_model_objects(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List model objects linked to a model version in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_model_objects=True,
+        **kwargs,
+    )
+
+
+@version.command(
+    "deployments",
+    help="List deployments linked to a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionArtifactFilterModel)
+def list_model_version_deployments(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List deployments linked to a model version in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    _print_artifacts_links_generic(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        only_deployments=True,
+        **kwargs,
+    )
+
+
+@version.command(
+    "runs",
+    help="List pipeline runs of a model version.",
+)
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@cli_utils.list_options(ModelVersionPipelineRunFilterModel)
+def list_model_version_pipeline_runs(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    **kwargs: Any,
+) -> None:
+    """List pipeline runs of a model version in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model containing version.
+        model_version_name_or_number_or_id: The name, number or ID of the model version.
+        **kwargs: Keyword arguments to filter models.
+    """
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
+
+    if not model_version.pipeline_run_ids:
+        cli_utils.declare("No pipeline runs attached to model version found.")
+        return
+
+    links = Client().list_model_version_pipeline_run_links(
+        ModelVersionPipelineRunFilterModel(
+            model_id=model_version.model.id,
+            model_version_id=model_version.id,
+            **kwargs,
         )
-        cli_utils.declare(
-            f"Model {name} version {version} registered successfully."
-        )
-        cli_utils.pretty_print_model_version_details(model_version)
+    )
+
+    cli_utils.print_pydantic_models(
+        links,
+        columns=[
+            "name",
+            "pipeline_run",
+            "created",
+        ],
+    )
