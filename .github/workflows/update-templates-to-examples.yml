@@ -70,11 +70,6 @@ jobs:
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
-      - name: Re-install ZenML from local
-        shell: bash
-        run: |
-          pip install ".[dev, server, template]"
-
       - name: Check-out fresh E2E template
         run: |
           mkdir -p examples/e2e
