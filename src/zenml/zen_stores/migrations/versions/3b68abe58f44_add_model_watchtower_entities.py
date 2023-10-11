@@ -1,7 +1,7 @@
 """add Model Control Plane entities [3b68abe58f44].
 
 Revision ID: 3b68abe58f44
-Revises: 0.44.2
+Revises: 37835ce041d2
 Create Date: 2023-09-11 07:53:18.641081
 
 """

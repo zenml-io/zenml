@@ -1,7 +1,7 @@
 """add oauth devices [f3b3964e3a0f].
 
 Revision ID: f3b3964e3a0f
-Revises: 37835ce041d2
+Revises: 3b68abe58f44
 Create Date: 2023-10-03 22:06:04.452359
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f3b3964e3a0f"
-down_revision = "37835ce041d2"
+down_revision = "3b68abe58f44"
 branch_labels = None
 depends_on = None
 
