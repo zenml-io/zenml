@@ -2,6 +2,11 @@
 description: A guide on how to deploy ZenML
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ZenML is designed to live at the interface between all the ingredients to your
 machine learning development environment. As such there is a lot of configuration
 and metadata to keep track of. This means that ZenML does not only give users an
