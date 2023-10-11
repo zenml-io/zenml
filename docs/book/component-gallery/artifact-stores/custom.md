@@ -2,6 +2,11 @@
 description: How to develop a custom artifact store
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ZenML comes equipped with [Artifact Store implementations](./artifact-stores.md#artifact-store-flavors)
 that you can use to store artifacts on a local filesystem or in the managed AWS,
 GCP or Azure cloud object storage services. However, if you need to use a

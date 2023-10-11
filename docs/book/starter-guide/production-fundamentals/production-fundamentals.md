@@ -2,6 +2,11 @@
 description: Connect to a simply deployed ZenML on the cloud.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Collaboration with ZenML Overview
 
 ![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)

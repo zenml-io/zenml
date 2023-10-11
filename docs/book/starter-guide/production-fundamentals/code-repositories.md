@@ -2,6 +2,11 @@
 description: How to track the code of your pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## What is a code repository
 
 A code repository in ZenML refers to a remote storage location for your code.
