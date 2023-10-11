@@ -21,22 +21,22 @@ from pydantic import Field, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.new_models.base import (
-    SharableResponseMetadataModel,
-    ShareableRequestModel,
-    ShareableResponseModel,
+    SharableResponseMetadata,
+    ShareableRequest,
+    ShareableResponse,
     hydrated_property,
     update_model,
 )
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.service_connector_models import (
-        ServiceConnectorResponseModel,
+    from zenml.new_models.core.service_connector import (
+        ServiceConnectorResponse,
     )
 # ------------------ Request Model ------------------
 
 
-class ComponentRequestModel(ShareableRequestModel):
+class ComponentRequest(ShareableRequest):
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
     name: str = Field(
@@ -96,14 +96,14 @@ class ComponentRequestModel(ShareableRequestModel):
 
 
 @update_model
-class ComponentUpdateModel(ComponentRequestModel):
+class ComponentUpdate(ComponentRequest):
     """Update model for stack components."""
 
 
 # ------------------ Response Model ------------------
 
 
-class ComponentResponseMetadataModel(SharableResponseMetadataModel):
+class ComponentResponseMetadata(SharableResponseMetadata):
     """Response metadata model for components."""
 
     configuration: Dict[str, Any] = Field(
@@ -119,7 +119,7 @@ class ComponentResponseMetadataModel(SharableResponseMetadataModel):
     )
 
 
-class ComponentResponseModel(ShareableResponseModel):
+class ComponentResponse(ShareableResponse):
     """Response model for components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
@@ -140,15 +140,15 @@ class ComponentResponseModel(ShareableResponseModel):
         description="The ID of a specific resource instance to "
         "gain access to through the connector",
     )
-    connector: Optional["ServiceConnectorResponseModel"] = Field(
+    connector: Optional["ServiceConnectorResponse"] = Field(
         default=None,
         title="The service connector linked to this stack component.",
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["ComponentResponseMetadataModel"]
+    metadata: Optional["ComponentResponseMetadata"]
 
-    def get_hydrated_version(self) -> "ComponentResponseModel":
+    def get_hydrated_version(self) -> "ComponentResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

@@ -20,9 +20,9 @@ from pydantic import Field, SecretStr
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.new_models.base import (
-    SharableResponseMetadataModel,
-    ShareableRequestModel,
-    ShareableResponseModel,
+    SharableResponseMetadata,
+    ShareableRequest,
+    ShareableResponse,
     hydrated_property,
     update_model,
 )
@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ServiceConnectorRequestModel(ShareableRequestModel):
+class ServiceConnectorRequest(ShareableRequest):
     """Request model for service connectors."""
 
     name: str = Field(
@@ -255,14 +255,14 @@ class ServiceConnectorRequestModel(ShareableRequestModel):
 
 # ------------------ Update Model ------------------
 @update_model
-class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
+class ServiceConnectorUpdate(ServiceConnectorRequest):
     """Model used for service connector updates."""
 
 
 # ------------------ Response Model ------------------
 
 
-class ServiceConnectorResponseMetadataModel(SharableResponseMetadataModel):
+class ServiceConnectorResponseMetadata(SharableResponseMetadata):
     """Response metadata model for service connectors."""
 
     description: str = Field(
@@ -322,7 +322,7 @@ class ServiceConnectorResponseMetadataModel(SharableResponseMetadataModel):
     )
 
 
-class ServiceConnectorResponseModel(ShareableResponseModel):
+class ServiceConnectorResponse(ShareableResponse):
     """Response model for service connectors."""
 
     # Entity fields
@@ -332,9 +332,9 @@ class ServiceConnectorResponseModel(ShareableResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["ServiceConnectorResponseMetadataModel"]
+    metadata: Optional["ServiceConnectorResponseMetadata"]
 
-    def get_hydrated_version(self) -> "ServiceConnectorResponseModel":
+    def get_hydrated_version(self) -> "ServiceConnectorResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

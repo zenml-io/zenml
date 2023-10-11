@@ -29,7 +29,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class WorkspaceRequestModel(BaseRequestModel):
+class WorkspaceRequest(BaseRequestModel):
     """Request model for workspaces."""
 
     name: str = Field(
@@ -47,14 +47,14 @@ class WorkspaceRequestModel(BaseRequestModel):
 
 
 @update_model
-class WorkspaceUpdateModel(WorkspaceRequestModel):
+class WorkspaceUpdate(WorkspaceRequest):
     """Update model for workspaces."""
 
 
 # ------------------ Response Model ------------------
 
 
-class WorkspaceResponseMetadataModel(BaseResponseModelMetadata):
+class WorkspaceResponseMetadata(BaseResponseModelMetadata):
     """Response metadata model for workspaces."""
 
     description: str = Field(
@@ -64,7 +64,7 @@ class WorkspaceResponseMetadataModel(BaseResponseModelMetadata):
     )
 
 
-class WorkspaceResponseModel(BaseResponseModel):
+class WorkspaceResponse(BaseResponseModel):
     """Response model for workspaces."""
 
     # Entity fields
@@ -74,9 +74,9 @@ class WorkspaceResponseModel(BaseResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["WorkspaceResponseMetadataModel"]
+    metadata: Optional["WorkspaceResponseMetadata"]
 
-    def get_hydrated_version(self) -> "WorkspaceResponseModel":
+    def get_hydrated_version(self) -> "WorkspaceResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

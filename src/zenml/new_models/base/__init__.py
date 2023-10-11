@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.new_models.base.base_models import (
+from zenml.new_models.base.base import (
     BaseResponseModel,
     BaseResponseModelMetadata,
     BaseRequestModel,
 )
-from zenml.new_models.base.scoped_models import (
-    UserScopedRequestModel,
-    UserScopedResponseModel,
-    UserScopedResponseMetadataModel,
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
-    WorkspaceScopedResponseMetadataModel,
-    ShareableRequestModel,
-    ShareableResponseModel,
-    SharableResponseMetadataModel,
+from zenml.new_models.base.scoped import (
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseMetadata,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
+    ShareableRequest,
+    ShareableResponse,
+    SharableResponseMetadata,
 )
 from zenml.new_models.base.utils import update_model, hydrated_property

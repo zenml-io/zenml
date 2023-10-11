@@ -27,7 +27,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class LogsRequestModel(BaseRequestModel):
+class LogsRequest(BaseRequestModel):
     """Request model for logs."""
 
     uri: str = Field(
@@ -47,7 +47,7 @@ class LogsRequestModel(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class LogsResponseModelMetadata(BaseResponseModelMetadata):
+class LogsResponseMetadata(BaseResponseModelMetadata):
     """Response model for logs."""
 
     step_run_id: Optional[Union[str, UUID]] = Field(
@@ -66,7 +66,7 @@ class LogsResponseModelMetadata(BaseResponseModelMetadata):
     )
 
 
-class LogsResponseModel(BaseResponseModel):
+class LogsResponse(BaseResponseModel):
     """Response model for logs."""
 
     # Entity fields
@@ -76,9 +76,9 @@ class LogsResponseModel(BaseResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional[LogsResponseModelMetadata]
+    metadata: Optional[LogsResponseMetadata]
 
-    def get_hydrated_version(self) -> "LogsResponseModelMetadata":
+    def get_hydrated_version(self) -> "LogsResponseMetadata":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

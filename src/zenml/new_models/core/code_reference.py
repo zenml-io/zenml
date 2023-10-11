@@ -24,15 +24,15 @@ from zenml.new_models.base import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.code_repository_models import (
-        CodeRepositoryResponseModel,
+    from zenml.new_models.core.code_repository import (
+        CodeRepositoryResponse,
     )
 
 
 # ------------------ Request Model ------------------
 
 
-class CodeReferenceRequestModel(BaseRequestModel):
+class CodeReferenceRequest(BaseRequestModel):
     """Request model for code references."""
 
     commit: str = Field(description="The commit of the code reference.")
@@ -52,11 +52,11 @@ class CodeReferenceRequestModel(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class CodeReferenceResponseMetadataModel(BaseResponseModelMetadata):
+class CodeReferenceResponseMetadata(BaseResponseModelMetadata):
     """Response metadata model for code references."""
 
 
-class CodeReferenceResponseModel(BaseResponseModel):
+class CodeReferenceResponse(BaseResponseModel):
     """Response model for code references."""
 
     # Entity fields
@@ -64,14 +64,14 @@ class CodeReferenceResponseModel(BaseResponseModel):
     subdirectory: str = Field(
         description="The subdirectory of the code reference."
     )
-    code_repository: "CodeRepositoryResponseModel" = Field(
+    code_repository: "CodeRepositoryResponse" = Field(
         description="The repository of the code reference."
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["CodeReferenceResponseMetadataModel"]
+    metadata: Optional["CodeReferenceResponseMetadata"]
 
-    def get_hydrated_version(self) -> "CodeReferenceResponseModel":
+    def get_hydrated_version(self) -> "CodeReferenceResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

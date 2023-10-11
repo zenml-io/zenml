@@ -23,29 +23,29 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.artifact_models import ArtifactResponseModel
-    from zenml.new_models.core.pipeline_build_models import (
-        PipelineBuildResponseModel,
+    from zenml.new_models.core.artifact import ArtifactResponse
+    from zenml.new_models.core.pipeline_build import (
+        PipelineBuildResponse,
     )
-    from zenml.new_models.core.pipeline_models import PipelineResponseModel
-    from zenml.new_models.core.run_metadata_models import (
-        RunMetadataResponseModel,
+    from zenml.new_models.core.pipeline import PipelineResponse
+    from zenml.new_models.core.run_metadata import (
+        RunMetadataResponse,
     )
-    from zenml.new_models.core.schedule_models import ScheduleResponseModel
-    from zenml.new_models.core.stack_models import StackResponseModel
-    from zenml.new_models.core.step_run_models import StepRunResponseModel
+    from zenml.new_models.core.schedule import ScheduleResponse
+    from zenml.new_models.core.stack import StackResponse
+    from zenml.new_models.core.step_run import StepRunResponseModel
 
 # ------------------ Request Model ------------------
 
 
-class PipelineRunRequestModel(WorkspaceScopedRequestModel):
+class PipelineRunRequest(WorkspaceScopedRequest):
     """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
@@ -104,10 +104,10 @@ class PipelineRunUpdateModel(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class PipelineRunResponseModelMetadata(WorkspaceScopedResponseMetadataModel):
+class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     """Pipeline run response metadata for pipeline runs."""
 
-    run_metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
@@ -146,7 +146,7 @@ class PipelineRunResponseModelMetadata(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class PipelineRunResponseModel(WorkspaceScopedResponseModel):
+class PipelineRunResponse(WorkspaceScopedResponse):
     """Response model for pipeline runs."""
 
     # Entity fields
@@ -157,23 +157,23 @@ class PipelineRunResponseModel(WorkspaceScopedResponseModel):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
-    stack: Optional["StackResponseModel"] = Field(
+    stack: Optional["StackResponse"] = Field(
         default=None, title="The stack that was used for this run."
     )
-    pipeline: Optional["PipelineResponseModel"] = Field(
+    pipeline: Optional["PipelineResponse"] = Field(
         default=None, title="The pipeline this run belongs to."
     )
-    build: Optional["PipelineBuildResponseModel"] = Field(
+    build: Optional["PipelineBuildResponse"] = Field(
         default=None, title="The pipeline build that was used for this run."
     )
-    schedule: Optional["ScheduleResponseModel"] = Field(
+    schedule: Optional["ScheduleResponse"] = Field(
         default=None, title="The schedule that was used for this run."
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["PipelineRunResponseModelMetadata"]
+    metadata: Optional["PipelineRunResponseMetadata"]
 
-    def get_hydrated_version(self) -> "PipelineRunResponseModel":
+    def get_hydrated_version(self) -> "PipelineRunResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
@@ -222,7 +222,7 @@ class PipelineRunResponseModel(WorkspaceScopedResponseModel):
     # Helper methods
 
     @property
-    def artifacts(self) -> List["ArtifactResponseModel"]:
+    def artifacts(self) -> List["ArtifactResponse"]:
         """Get all artifacts that are outputs of steps of this pipeline run.
 
         Returns:
@@ -233,7 +233,7 @@ class PipelineRunResponseModel(WorkspaceScopedResponseModel):
         return get_artifacts_of_pipeline_run(self)
 
     @property
-    def produced_artifacts(self) -> List["ArtifactResponseModel"]:
+    def produced_artifacts(self) -> List["ArtifactResponse"]:
         """Get all artifacts produced during this pipeline run.
 
         Returns:

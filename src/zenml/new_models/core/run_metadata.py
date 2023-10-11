@@ -20,16 +20,16 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
 )
 
 # ------------------ Request Model ------------------
 
 
-class RunMetadataRequestModel(WorkspaceScopedRequestModel):
+class RunMetadataRequest(WorkspaceScopedRequest):
     """Request model for run metadata."""
 
     pipeline_run_id: Optional[UUID] = Field(
@@ -65,7 +65,7 @@ class RunMetadataRequestModel(WorkspaceScopedRequestModel):
 # ------------------ Response Model ------------------
 
 
-class RunMetadataResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for run metadata."""
 
     pipeline_run_id: Optional[UUID] = Field(
@@ -90,7 +90,7 @@ class RunMetadataResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class RunMetadataResponseModel(WorkspaceScopedResponseModel):
+class RunMetadataResponse(WorkspaceScopedResponse):
     """Response model for run metadata."""
 
     # Entity fields
@@ -100,9 +100,9 @@ class RunMetadataResponseModel(WorkspaceScopedResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["RunMetadataResponseMetadataModel"]
+    metadata: Optional["RunMetadataResponseMetadata"]
 
-    def get_hydrated_version(self) -> "RunMetadataResponseMetadataModel":
+    def get_hydrated_version(self) -> "RunMetadataResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

@@ -19,9 +19,9 @@ from pydantic import Field, SecretStr
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import SecretScope
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
     update_model,
 )
@@ -29,7 +29,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class SecretRequestModel(WorkspaceScopedRequestModel):
+class SecretRequest(WorkspaceScopedRequest):
     """Request model for secrets."""
 
     name: str = Field(
@@ -70,14 +70,14 @@ class SecretRequestModel(WorkspaceScopedRequestModel):
 
 
 @update_model
-class SecretUpdateModel(SecretRequestModel):
+class SecretUpdate(SecretRequest):
     """Update model for secrets."""
 
 
 # ------------------ Response Model ------------------
 
 
-class SecretResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for secrets."""
 
     scope: SecretScope = Field(
@@ -88,7 +88,7 @@ class SecretResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class SecretResponseModel(WorkspaceScopedResponseModel):
+class SecretResponse(WorkspaceScopedResponse):
     """Response model for secrets."""
 
     # Entity fields
@@ -101,9 +101,9 @@ class SecretResponseModel(WorkspaceScopedResponseModel):
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
 
     # Metadata related field, method and properties
-    metadata: Optional["SecretResponseMetadataModel"]
+    metadata: Optional["SecretResponseMetadata"]
 
-    def get_hydrated_version(self) -> "SecretResponseModel":
+    def get_hydrated_version(self) -> "SecretResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

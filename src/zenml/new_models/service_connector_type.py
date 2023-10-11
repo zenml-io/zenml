@@ -36,9 +36,9 @@ from zenml.logger import get_logger
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.component_models import ComponentResponseModel
-    from zenml.new_models.core.service_connector_models import (
-        ServiceConnectorResponseModel,
+    from zenml.new_models.core.component import ComponentResponse
+    from zenml.new_models.core.service_connector import (
+        ServiceConnectorResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
 logger = get_logger(__name__)
@@ -511,8 +511,8 @@ class ServiceConnectorRequirements(BaseModel):
 
     def is_satisfied_by(
         self,
-        connector: "ServiceConnectorResponseModel",
-        component: "ComponentResponseModel",
+        connector: "ServiceConnectorResponse",
+        component: "ComponentResponse",
     ) -> Tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.
 
@@ -790,7 +790,7 @@ class ServiceConnectorResourcesModel(BaseModel):
     @classmethod
     def from_connector_model(
         cls,
-        connector_model: "ServiceConnectorResponseModel",
+        connector_model: "ServiceConnectorResponse",
         resource_type: Optional[str] = None,
     ) -> "ServiceConnectorResourcesModel":
         """Initialize a resource model from a connector model.

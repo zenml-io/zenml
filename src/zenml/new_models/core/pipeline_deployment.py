@@ -21,28 +21,28 @@ from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.code_reference_models import (
-        CodeReferenceRequestModel,
-        CodeReferenceResponseModel,
+    from zenml.new_models.core.code_reference import (
+        CodeReferenceRequest,
+        CodeReferenceResponse,
     )
-    from zenml.new_models.core.pipeline_build_models import (
-        PipelineBuildResponseModel,
+    from zenml.new_models.core.pipeline_build import (
+        PipelineBuildResponse,
     )
-    from zenml.new_models.core.pipeline_models import PipelineResponseModel
-    from zenml.new_models.core.schedule_models import ScheduleResponseModel
-    from zenml.new_models.core.stack_models import StackResponseModel
+    from zenml.new_models.core.pipeline import PipelineResponse
+    from zenml.new_models.core.schedule import ScheduleResponse
+    from zenml.new_models.core.stack import StackResponse
 
 # ------------------ Request Model ------------------
 
 
-class PipelineDeploymentRequestModel(WorkspaceScopedRequestModel):
+class PipelineDeploymentRequest(WorkspaceScopedRequest):
     """Request model for pipeline deployments."""
 
     stack: UUID = Field(title="The stack associated with the deployment.")
@@ -55,7 +55,7 @@ class PipelineDeploymentRequestModel(WorkspaceScopedRequestModel):
     schedule: Optional[UUID] = Field(
         title="The schedule associated with the deployment."
     )
-    code_reference: Optional["CodeReferenceRequestModel"] = Field(
+    code_reference: Optional["CodeReferenceRequest"] = Field(
         title="The code reference associated with the deployment."
     )
 
@@ -110,9 +110,7 @@ class PipelineDeploymentRequestModel(WorkspaceScopedRequestModel):
 # ------------------ Response Model ------------------
 
 
-class PipelineDeploymentResponseModelMetadata(
-    WorkspaceScopedResponseMetadataModel
-):
+class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response model metadata for pipeline deployments."""
 
     run_name_template: str = Field(
@@ -133,30 +131,30 @@ class PipelineDeploymentResponseModelMetadata(
     server_version: str = Field(
         title="The version of the ZenML installation on the server side."
     )
-    pipeline: Optional["PipelineResponseModel"] = Field(
+    pipeline: Optional["PipelineResponse"] = Field(
         title="The pipeline associated with the deployment."
     )
-    stack: Optional["StackResponseModel"] = Field(
+    stack: Optional["StackResponse"] = Field(
         title="The stack associated with the deployment."
     )
-    build: Optional["PipelineBuildResponseModel"] = Field(
+    build: Optional["PipelineBuildResponse"] = Field(
         title="The pipeline build associated with the deployment."
     )
-    schedule: Optional["ScheduleResponseModel"] = Field(
+    schedule: Optional["ScheduleResponse"] = Field(
         title="The schedule associated with the deployment."
     )
-    code_reference: Optional["CodeReferenceResponseModel"] = Field(
+    code_reference: Optional["CodeReferenceResponse"] = Field(
         title="The code reference associated with the deployment."
     )
 
 
-class PipelineDeploymentResponseModel(WorkspaceScopedResponseModel):
+class PipelineDeploymentResponse(WorkspaceScopedResponse):
     """Response model for pipeline deployments."""
 
     # Metadata related field, method and properties
-    metadata: Optional["PipelineDeploymentResponseModelMetadata"]
+    metadata: Optional["PipelineDeploymentResponseMetadata"]
 
-    def get_hydrated_version(self) -> "PipelineDeploymentResponseModel":
+    def get_hydrated_version(self) -> "PipelineDeploymentResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

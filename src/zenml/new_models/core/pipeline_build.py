@@ -18,21 +18,21 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
 )
 
 if TYPE_CHECKING:
     from zenml.new_models.build_item import BuildItem
-    from zenml.new_models.core.pipeline_models import PipelineResponseModel
-    from zenml.new_models.core.stack_models import StackResponseModel
+    from zenml.new_models.core.pipeline import PipelineResponse
+    from zenml.new_models.core.stack import StackResponse
 
 # ------------------ Request Model ------------------
 
 
-class PipelineBuildRequestModel(WorkspaceScopedRequestModel):
+class PipelineBuildRequest(WorkspaceScopedRequest):
     """Request model for pipelines builds."""
 
     images: Dict[str, "BuildItem"] = Field(
@@ -84,13 +84,13 @@ class PipelineBuildRequestModel(WorkspaceScopedRequestModel):
 # ------------------ Response Model ------------------
 
 
-class PipelineBuildResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for pipeline builds."""
 
-    pipeline: Optional["PipelineResponseModel"] = Field(
+    pipeline: Optional["PipelineResponse"] = Field(
         title="The pipeline that was used for this build."
     )
-    stack: Optional["StackResponseModel"] = Field(
+    stack: Optional["StackResponse"] = Field(
         title="The stack that was used for this build."
     )
     images: Dict[str, BuildItem] = Field(
@@ -112,13 +112,13 @@ class PipelineBuildResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class PipelineBuildResponseModel(WorkspaceScopedResponseModel):
+class PipelineBuildResponse(WorkspaceScopedResponse):
     """Response model for pipeline builds"""
 
     # Metadata related field, method and properties
-    metadata: Optional["PipelineBuildResponseMetadataModel"]
+    metadata: Optional["PipelineBuildResponseMetadata"]
 
-    def get_hydrated_version(self) -> "PipelineBuildResponseModel":
+    def get_hydrated_version(self) -> "PipelineBuildResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

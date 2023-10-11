@@ -22,20 +22,20 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.new_models.base import (
-    SharableResponseMetadataModel,
-    ShareableRequestModel,
-    ShareableResponseModel,
+    SharableResponseMetadata,
+    ShareableRequest,
+    ShareableResponse,
     hydrated_property,
     update_model,
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.component_models import ComponentResponseModel
+    from zenml.new_models.core.component import ComponentResponse
 
 # ------------------ Request Model ------------------
 
 
-class StackRequestModel(ShareableRequestModel):
+class StackRequest(ShareableRequest):
     """Request model for stacks."""
 
     name: str = Field(
@@ -75,14 +75,14 @@ class StackRequestModel(ShareableRequestModel):
 
 
 @update_model
-class StackUpdateModel(StackRequestModel):
+class StackUpdate(StackRequest):
     """Update model for stacks."""
 
 
 # ------------------ Response Model ------------------
 
 
-class StackResponseModelMetadata(SharableResponseMetadataModel):
+class StackResponseMetadata(SharableResponseMetadata):
     """Response metadata model for stacks."""
 
     description: str = Field(
@@ -96,7 +96,7 @@ class StackResponseModelMetadata(SharableResponseMetadataModel):
     )
 
 
-class StackResponseModel(ShareableResponseModel):
+class StackResponse(ShareableResponse):
     """Response model for stacks."""
 
     # Entity fields
@@ -104,16 +104,16 @@ class StackResponseModel(ShareableResponseModel):
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
     components: Dict[
-        StackComponentType, List["ComponentResponseModel"]
+        StackComponentType, List["ComponentResponse"]
     ] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["StackResponseModelMetadata"]
+    metadata: Optional["StackResponseMetadata"]
 
-    def get_hydrated_version(self) -> "StackResponseModel":
+    def get_hydrated_version(self) -> "StackResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

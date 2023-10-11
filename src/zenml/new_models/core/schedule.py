@@ -21,9 +21,9 @@ from pydantic import root_validator
 from zenml.config.schedule import Schedule
 from zenml.logger import get_logger
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
     update_model,
 )
@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ScheduleRequestModel(WorkspaceScopedRequestModel):
+class ScheduleRequest(WorkspaceScopedRequest):
     """Request model for schedules."""
 
     name: str
@@ -92,21 +92,21 @@ class ScheduleRequestModel(WorkspaceScopedRequestModel):
 
 
 @update_model
-class ScheduleUpdateModel(ScheduleRequestModel):
+class ScheduleUpdate(ScheduleRequest):
     """Update model for schedules"""
 
 
 # ------------------ Response Model ------------------
 
 
-class ScheduleResponseModelMetadata(WorkspaceScopedResponseMetadataModel):
+class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response model metadata for schedules."""
 
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
 
 
-class ScheduleResponseModel(Schedule, WorkspaceScopedResponseModel):
+class ScheduleResponse(Schedule, WorkspaceScopedResponse):
     """Response models for schedules."""
 
     # Entity fields
@@ -119,9 +119,9 @@ class ScheduleResponseModel(Schedule, WorkspaceScopedResponseModel):
     catchup: bool = False
 
     # Metadata related field, method and properties
-    metadata: Optional["ScheduleResponseModelMetadata"]
+    metadata: Optional["ScheduleResponseMetadata"]
 
-    def get_hydrated_version(self) -> "ScheduleResponseModel":
+    def get_hydrated_version(self) -> "ScheduleResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

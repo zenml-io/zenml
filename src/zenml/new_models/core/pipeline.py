@@ -20,23 +20,23 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
     update_model,
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.pipeline_run_models import (
-        PipelineRunResponseModel,
+    from zenml.new_models.core.pipeline_run import (
+        PipelineRunResponse,
     )
 
 
 # ------------------ Request Model ------------------
 
 
-class PipelineRequestModel(WorkspaceScopedRequestModel):
+class PipelineRequest(WorkspaceScopedRequest):
     """Request model for pipelines."""
 
     name: str = Field(
@@ -62,14 +62,14 @@ class PipelineRequestModel(WorkspaceScopedRequestModel):
 
 
 @update_model
-class PipelineUpdateModel(PipelineRequestModel):
+class PipelineUpdate(PipelineRequest):
     """Update model for pipelines."""
 
 
 # ------------------ Response Model ------------------
 
 
-class PipelineResponseModelMetadata(WorkspaceScopedResponseMetadataModel):
+class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response model metadata for pipelines."""
 
     version_hash: str = Field(
@@ -88,7 +88,7 @@ class PipelineResponseModelMetadata(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class PipelineResponseModel(WorkspaceScopedResponseModel):
+class PipelineResponse(WorkspaceScopedResponse):
     """Response model for pipelines."""
 
     # Entity fields
@@ -101,9 +101,9 @@ class PipelineResponseModel(WorkspaceScopedResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["PipelineResponseModelMetadata"]
+    metadata: Optional["PipelineResponseMetadata"]
 
-    def get_hydrated_version(self) -> "PipelineResponseModel":
+    def get_hydrated_version(self) -> "PipelineResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
@@ -130,7 +130,7 @@ class PipelineResponseModel(WorkspaceScopedResponseModel):
         return self.metadata.version
 
     # Helper methods
-    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponseModel"]:
+    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
         """Get runs of this pipeline.
 
         Can be used to fetch runs other than `self.runs` and supports
@@ -148,7 +148,7 @@ class PipelineResponseModel(WorkspaceScopedResponseModel):
         return Client().list_pipeline_runs(pipeline_id=self.id, **kwargs).items
 
     @property
-    def runs(self) -> List["PipelineRunResponseModel"]:
+    def runs(self) -> List["PipelineRunResponse"]:
         """Returns the 20 most recent runs of this pipeline in descending order.
 
         Returns:
@@ -168,7 +168,7 @@ class PipelineResponseModel(WorkspaceScopedResponseModel):
         return Client().list_pipeline_runs(pipeline_id=self.id, size=1).total
 
     @property
-    def last_run(self) -> "PipelineRunResponseModel":
+    def last_run(self) -> "PipelineRunResponse":
         """Returns the last run of this pipeline.
 
         Returns:
@@ -185,7 +185,7 @@ class PipelineResponseModel(WorkspaceScopedResponseModel):
         return runs[0]
 
     @property
-    def last_successful_run(self) -> "PipelineRunResponseModel":
+    def last_successful_run(self) -> "PipelineRunResponse":
         """Returns the last successful run of this pipeline.
 
         Returns:

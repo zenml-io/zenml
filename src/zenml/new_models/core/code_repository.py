@@ -21,9 +21,9 @@ from pydantic import Field
 from zenml.config.source import Source
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
     update_model,
 )
@@ -31,7 +31,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class CodeRepositoryRequestModel(WorkspaceScopedRequestModel):
+class CodeRepositoryRequest(WorkspaceScopedRequest):
     """Request model for code repositories."""
 
     name: str = Field(
@@ -56,16 +56,14 @@ class CodeRepositoryRequestModel(WorkspaceScopedRequestModel):
 
 
 @update_model
-class CodeRepositoryUpdateModel(CodeRepositoryRequestModel):
+class CodeRepositoryUpdate(CodeRepositoryRequest):
     """Update model for code repositories."""
 
 
 # ------------------ Response Model ------------------
 
 
-class CodeRepositoryResponseMetadataModel(
-    WorkspaceScopedResponseMetadataModel
-):
+class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for code repositories."""
 
     config: Dict[str, Any] = Field(
@@ -77,7 +75,7 @@ class CodeRepositoryResponseMetadataModel(
     )
 
 
-class CodeRepositoryResponseModel(WorkspaceScopedResponseModel):
+class CodeRepositoryResponse(WorkspaceScopedResponse):
     """Response model for code repositories."""
 
     # Entity fields
@@ -92,9 +90,9 @@ class CodeRepositoryResponseModel(WorkspaceScopedResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["CodeRepositoryResponseMetadataModel"]
+    metadata: Optional["CodeRepositoryResponseMetadata"]
 
-    def get_hydrated_version(self) -> "CodeRepositoryResponseModel":
+    def get_hydrated_version(self) -> "CodeRepositoryResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

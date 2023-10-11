@@ -24,7 +24,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class ArtifactVisualizationRequestModel(BaseRequestModel):
+class ArtifactVisualizationRequest(BaseRequestModel):
     """Request model for artifact visualization."""
 
     type: VisualizationType
@@ -39,11 +39,11 @@ class ArtifactVisualizationRequestModel(BaseRequestModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactVisualizationResponseModelMetadata(BaseResponseModelMetadata):
+class ArtifactVisualizationResponseMetadata(BaseResponseModelMetadata):
     pass
 
 
-class ArtifactVisualizationResponseModel(BaseResponseModel):
+class ArtifactVisualizationResponse(BaseResponseModel):
     pass
 
     type: VisualizationType

@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class UserRequestModel(BaseRequestModel):
+class UserRequest(BaseRequestModel):
     """Request model for users.
 
     This model is used to create a user. The email field is optional but is
@@ -154,7 +154,7 @@ class UserRequestModel(BaseRequestModel):
 
 
 @update_model
-class UserUpdateModel(UserRequestModel):
+class UserUpdate(UserRequest):
     """Update model for users."""
 
     @root_validator
@@ -190,7 +190,7 @@ class UserUpdateModel(UserRequestModel):
 # ------------------ Response Model ------------------
 
 
-class UserResponseMetadataModel(BaseResponseModelMetadata):
+class UserResponseMetadata(BaseResponseModelMetadata):
     """Response metadata model for users."""
 
     full_name: str = Field(
@@ -220,7 +220,7 @@ class UserResponseMetadataModel(BaseResponseModelMetadata):
     )
 
 
-class UserResponseModel(BaseResponseModel):
+class UserResponse(BaseResponseModel):
     """Response model for users.
 
     This returns the activation_token which is required for the
@@ -244,9 +244,9 @@ class UserResponseModel(BaseResponseModel):
     ]
 
     # Metadata related field, method and properties
-    metadata: Optional[UserResponseMetadataModel]
+    metadata: Optional[UserResponseMetadata]
 
-    def get_hydrated_version(self) -> "UserResponseModel":
+    def get_hydrated_version(self) -> "UserResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

@@ -11,25 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.new_models.core.user_models import (
-    UserUpdateModel,
-    UserResponseModel,
-    UserResponseMetadataModel,
-    UserRequestModel,
+from zenml.new_models.core.user import (
+    UserUpdate,
+    UserResponse,
+    UserResponseMetadata,
+    UserRequest,
 )
-from zenml.new_models.core.run_metadata_models import (
+from zenml.new_models.core.run_metadata import (
     RunMetadataResponseMetadataModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
+    RunMetadataRequest,
+    RunMetadataResponse,
 )
-from zenml.new_models.core.artifact_models import (
-    ArtifactResponseModel,
+from zenml.new_models.core.artifact import (
+    ArtifactResponse,
     ArtifactResponseMetadataModel,
-    ArtifactRequestModel,
+    ArtifactRequest,
 )
-from zenml.new_models.core.workspace_models import (
-    WorkspaceResponseModel,
+from zenml.new_models.core.workspace import (
+    WorkspaceResponse,
     WorkspaceResponseMetadataModel,
-    WorkspaceUpdateModel,
-    WorkspaceRequestModel,
+    WorkspaceUpdate,
+    WorkspaceRequest,
 )

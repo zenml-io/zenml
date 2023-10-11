@@ -30,20 +30,20 @@ from zenml.new_models.base import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.artifact_models import ArtifactResponseModel
-    from zenml.new_models.core.logs_models import (
-        LogsRequestModel,
-        LogsResponseModel,
+    from zenml.new_models.core.artifact import ArtifactResponse
+    from zenml.new_models.core.logs import (
+        LogsRequest,
+        LogsResponse,
     )
-    from zenml.new_models.core.run_metadata_models import (
-        RunMetadataResponseModel,
+    from zenml.new_models.core.run_metadata import (
+        RunMetadataResponse,
     )
 
 
 # ------------------ Request Model ------------------
 
 
-class StepRunRequestModel(BaseRequestModel):
+class StepRunRequest(BaseRequestModel):
     """Request model for step runs."""
 
     name: str = Field(
@@ -100,7 +100,7 @@ class StepRunRequestModel(BaseRequestModel):
         title="The IDs of the output artifacts of the step run.",
         default={},
     )
-    logs: Optional["LogsRequestModel"] = Field(
+    logs: Optional["LogsRequest"] = Field(
         title="Logs associated with this step run.",
         default=None,
     )
@@ -113,7 +113,7 @@ class StepRunRequestModel(BaseRequestModel):
 # ------------------ Update Model ------------------
 
 
-class StepRunUpdateModel(BaseModel):
+class StepRunUpdate(BaseModel):
     """Update model for step runs."""
 
     outputs: Dict[str, UUID] = Field(
@@ -133,7 +133,7 @@ class StepRunUpdateModel(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class StepRunResponseModelMetadata(BaseResponseModelMetadata):
+class StepRunResponseMetadata(BaseResponseModelMetadata):
     """Response metadata model for step runs/"""
 
     # Configuration
@@ -173,7 +173,7 @@ class StepRunResponseModelMetadata(BaseResponseModelMetadata):
     )
 
     # References
-    logs: Optional["LogsResponseModel"] = Field(
+    logs: Optional["LogsResponse"] = Field(
         title="Logs associated with this step run.",
         default=None,
     )
@@ -191,13 +191,13 @@ class StepRunResponseModelMetadata(BaseResponseModelMetadata):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    run_metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         title="Metadata associated with this step run.",
         default={},
     )
 
 
-class StepRunResponseModel(BaseResponseModel):
+class StepRunResponse(BaseResponseModel):
     """Response model for step runs."""
 
     # Entity fields
@@ -207,19 +207,19 @@ class StepRunResponseModel(BaseResponseModel):
     )
     status: ExecutionStatus = Field(title="The status of the step.")
 
-    inputs: Dict[str, "ArtifactResponseModel"] = Field(
+    inputs: Dict[str, "ArtifactResponse"] = Field(
         title="The input artifacts of the step run.",
         default={},
     )
-    outputs: Dict[str, "ArtifactResponseModel"] = Field(
+    outputs: Dict[str, "ArtifactResponse"] = Field(
         title="The output artifacts of the step run.",
         default={},
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["StepRunResponseModelMetadata"]
+    metadata: Optional["StepRunResponseMetadata"]
 
-    def get_hydrated_version(self) -> "StepRunResponseModel":
+    def get_hydrated_version(self) -> "StepRunResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
@@ -298,7 +298,7 @@ class StepRunResponseModel(BaseResponseModel):
     # Helper properties
 
     @property
-    def input(self) -> "ArtifactResponseModel":
+    def input(self) -> "ArtifactResponse":
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -317,7 +317,7 @@ class StepRunResponseModel(BaseResponseModel):
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> "ArtifactResponseModel":
+    def output(self) -> "ArtifactResponse":
         """Returns the output artifact that was written by this step.
 
         Returns:

@@ -23,9 +23,9 @@ from zenml.models.service_connector_models import (
     ServiceConnectorRequirements,
 )
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
     update_model,
 )
@@ -33,7 +33,7 @@ from zenml.new_models.base import (
 # ------------------ Request Model ------------------
 
 
-class FlavorRequestModel(WorkspaceScopedRequestModel):
+class FlavorRequest(WorkspaceScopedRequest):
     """Request model for flavors"""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -98,14 +98,14 @@ class FlavorRequestModel(WorkspaceScopedRequestModel):
 
 
 @update_model
-class FlavorUpdateModel(FlavorRequestModel):
+class FlavorUpdate(FlavorRequest):
     """Update model for flavors."""
 
 
 # ------------------ Response Model ------------------
 
 
-class FlavorResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class FlavorResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for flavors"""
 
     config_schema: Dict[str, Any] = Field(
@@ -147,7 +147,7 @@ class FlavorResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     )
 
 
-class FlavorResponseModel(WorkspaceScopedResponseModel):
+class FlavorResponse(WorkspaceScopedResponse):
     """Response model for flavors"""
 
     # Analytics
@@ -174,9 +174,9 @@ class FlavorResponseModel(WorkspaceScopedResponseModel):
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["FlavorResponseMetadataModel"]
+    metadata: Optional["FlavorResponseMetadata"]
 
-    def get_hydrated_version(self) -> "FlavorResponseModel":
+    def get_hydrated_version(self) -> "FlavorResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

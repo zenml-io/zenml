@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.new_models.base.base_models import (
+from zenml.new_models.base.base import (
     BaseRequestModel,
     BaseResponseModel,
     BaseResponseModelMetadata,
@@ -26,14 +26,14 @@ from zenml.new_models.base.base_models import (
 from zenml.new_models.base.utils import hydrated_property
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.user_models import UserResponseModel
-    from zenml.new_models.core.workspace_models import WorkspaceResponseModel
+    from zenml.new_models.core.user import UserResponse
+    from zenml.new_models.core.workspace import WorkspaceResponse
 
 
 # ---------------------- Request Models ----------------------
 
 
-class UserScopedRequestModel(BaseRequestModel):
+class UserScopedRequest(BaseRequestModel):
     """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -52,7 +52,7 @@ class UserScopedRequestModel(BaseRequestModel):
         return metadata
 
 
-class WorkspaceScopedRequestModel(UserScopedRequestModel):
+class WorkspaceScopedRequest(UserScopedRequest):
     """Base workspace-scoped request domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
@@ -73,7 +73,7 @@ class WorkspaceScopedRequestModel(UserScopedRequestModel):
         return metadata
 
 
-class ShareableRequestModel(WorkspaceScopedRequestModel):
+class ShareableRequest(WorkspaceScopedRequest):
     """Base shareable workspace-scoped domain model.
 
     Used as a base class for all domain models that are workspace-scoped and are
@@ -103,28 +103,28 @@ class ShareableRequestModel(WorkspaceScopedRequestModel):
 
 
 # User-scoped models
-class UserScopedResponseMetadataModel(BaseResponseModelMetadata):
+class UserScopedResponseMetadata(BaseResponseModelMetadata):
     """Base user-owned metadata model."""
 
 
-class UserScopedResponseModel(BaseResponseModel):
+class UserScopedResponse(BaseResponseModel):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
 
     # Entity fields
-    user: Optional["UserResponseModel"] = Field(
+    user: Optional["UserResponse"] = Field(
         title="The user who created this resource."
     )
 
     # Metadata related field, method and properties
-    metadata: Optional["UserScopedResponseMetadataModel"] = Field(
+    metadata: Optional["UserScopedResponseMetadata"] = Field(
         title="The metadata related to this resource."
     )
 
     @abstractmethod
-    def get_hydrated_version(self) -> "UserScopedResponseModel":
+    def get_hydrated_version(self) -> "UserScopedResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -145,25 +145,25 @@ class UserScopedResponseModel(BaseResponseModel):
 
 
 # Workspace-scoped models
-class WorkspaceScopedResponseMetadataModel(UserScopedResponseMetadataModel):
+class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
     """Base workspace-scoped metadata model."""
 
-    workspace: "WorkspaceResponseModel" = Field(
+    workspace: "WorkspaceResponse" = Field(
         title="The workspace of this resource."
     )
 
 
-class WorkspaceScopedResponseModel(UserScopedResponseModel):
+class WorkspaceScopedResponse(UserScopedResponse):
     """Base workspace-scoped domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
     """
 
     # Metadata related field, method and properties
-    metadata: Optional["WorkspaceScopedResponseMetadataModel"]
+    metadata: Optional["WorkspaceScopedResponseMetadata"]
 
     @abstractmethod
-    def get_hydrated_version(self) -> "WorkspaceScopedResponseModel":
+    def get_hydrated_version(self) -> "WorkspaceScopedResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -177,11 +177,11 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
 
 
 # Shareable models
-class SharableResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class SharableResponseMetadata(WorkspaceScopedResponseMetadata):
     """Base shareable workspace-scoped metadata model."""
 
 
-class ShareableResponseModel(WorkspaceScopedResponseModel):
+class ShareableResponse(WorkspaceScopedResponse):
     """Base shareable workspace-scoped domain model.
 
     Used as a base class for all domain models that are workspace-scoped and are
@@ -196,10 +196,10 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
         ),
     )
     # Metadata related field, method and properties
-    metadata: Optional["SharableResponseMetadataModel"]
+    metadata: Optional["SharableResponseMetadata"]
 
     @abstractmethod
-    def get_hydrated_version(self) -> "ShareableResponseModel":
+    def get_hydrated_version(self) -> "ShareableResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this

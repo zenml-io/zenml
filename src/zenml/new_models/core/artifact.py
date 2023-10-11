@@ -21,26 +21,26 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
 from zenml.new_models.base import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseMetadataModel,
-    WorkspaceScopedResponseModel,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     hydrated_property,
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.artifact_visualization_models import (
-        ArtifactVisualizationRequestModel,
-        ArtifactVisualizationResponseModel,
+    from zenml.new_models.core.artifact_visualization import (
+        ArtifactVisualizationRequest,
+        ArtifactVisualizationResponse,
     )
-    from zenml.new_models.core.run_metadata_models import (
-        RunMetadataResponseModel,
+    from zenml.new_models.core.run_metadata import (
+        RunMetadataResponse,
     )
 
 
 # ------------------ Request Model ------------------
 
 
-class ArtifactRequestModel(WorkspaceScopedRequestModel):
+class ArtifactRequest(WorkspaceScopedRequest):
     """Request model for artifacts."""
 
     name: str = Field(
@@ -62,7 +62,7 @@ class ArtifactRequestModel(WorkspaceScopedRequestModel):
         title="Data type of the artifact.",
     )
     visualizations: Optional[
-        List["ArtifactVisualizationRequestModel"]
+        List["ArtifactVisualizationRequest"]
     ] = Field(default=None, title="Visualizations of the artifact.")
 
     _convert_source = convert_source_validator("materializer", "data_type")
@@ -75,7 +75,7 @@ class ArtifactRequestModel(WorkspaceScopedRequestModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
+class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for artifacts."""
 
     artifact_store_id: Optional[UUID] = Field(
@@ -87,9 +87,9 @@ class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
         default=None,
     )
     visualizations: Optional[
-        List["ArtifactVisualizationResponseModel"]
+        List["ArtifactVisualizationResponse"]
     ] = Field(default=None, title="Visualizations of the artifact.")
-    run_metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         default={}, title="Metadata of the artifact."
     )
     materializer: Source = Field(
@@ -102,7 +102,7 @@ class ArtifactResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     _convert_source = convert_source_validator("materializer", "data_type")
 
 
-class ArtifactResponseModel(WorkspaceScopedResponseModel):
+class ArtifactResponse(WorkspaceScopedResponse):
     """Response model for artifacts."""
 
     # Entity fields
@@ -116,9 +116,9 @@ class ArtifactResponseModel(WorkspaceScopedResponseModel):
     type: ArtifactType = Field(title="Type of the artifact.")
 
     # Metadata related field, method and properties
-    metadata: Optional[ArtifactResponseMetadataModel]
+    metadata: Optional[ArtifactResponseMetadata]
 
-    def get_hydrated_version(self) -> "ArtifactResponseModel":
+    def get_hydrated_version(self) -> "ArtifactResponse":
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 

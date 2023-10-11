@@ -22,7 +22,6 @@ from zenml.exceptions import HydrationError
 from zenml.new_models.base.utils import hydrated_property
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
 
-# TODO: We can now remove the additional analytics model from the module
 # -------------------- Base Model --------------------
 
 
@@ -106,11 +105,17 @@ class BaseResponseModel(BaseZenModel):
             and a last modified timestamp
     """
 
+    # Entity fields
     id: UUID = Field(title="The unique resource id.")
 
+    # Metadata related field, method and properties
     metadata: Optional[BaseResponseModelMetadata] = Field(
         title="The metadata related to this resource."
     )
+
+    @abstractmethod
+    def get_hydrated_version(self) -> "BaseResponseModel":
+        """Abstract method to fetch the hydrated version of the model."""
 
     @hydrated_property
     def created(self):
@@ -123,7 +128,6 @@ class BaseResponseModel(BaseZenModel):
         return self.metadata.updated
 
     # Helper functions
-
     def __hash__(self) -> int:
         """Implementation of hash magic method.
 
@@ -146,9 +150,6 @@ class BaseResponseModel(BaseZenModel):
         else:
             return False
 
-    @abstractmethod
-    def get_hydrated_version(self) -> "BaseResponseModel":
-        """Abstract method to fetch the hydrated version of the model."""
 
     def _validate_hydrated_version(
         self, hydrated_model: "BaseResponseModel"
@@ -192,6 +193,7 @@ class BaseResponseModel(BaseZenModel):
             self._validate_hydrated_version(hydrated_version)
             self.metadata = hydrated_version.metadata
 
+    # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for base response models.
 

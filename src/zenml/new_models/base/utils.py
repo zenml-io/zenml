@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING, Type, TypeVar
 
 if TYPE_CHECKING:
-    from zenml.new_models.base.base_models import BaseResponseModel
+    from zenml.new_models.base.base import BaseResponseModel
 
 T = TypeVar("T", bound="BaseRequestModel")
 
