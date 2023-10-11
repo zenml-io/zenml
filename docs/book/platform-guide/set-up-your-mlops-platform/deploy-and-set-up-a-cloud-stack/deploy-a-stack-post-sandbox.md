@@ -2,6 +2,11 @@
 description: Deploy a cloud stack when your Sandbox runs out.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy a stack after using the Sandbox
 
 Once your sandbox has run out or you want to work on real projects in a non-temporary environment, you'll want to deploy your own cloud stack and development environment. This guide will show you how to do it.
