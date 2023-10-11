@@ -2,6 +2,11 @@
 description: How to develop a custom annotator
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Annotators are a stack component that enables the use of data annotation as part
 of your ZenML stack and pipelines. You can use the associated CLI command to
 launch annotation, configure your datasets and get stats on how many labeled
