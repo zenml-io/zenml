@@ -2,6 +2,11 @@
 description: Deploying ZenML to Huggingface Spaces.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy using HuggingFace Spaces
 
 A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https://huggingface.co/spaces). HuggingFace
