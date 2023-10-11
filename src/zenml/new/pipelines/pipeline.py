@@ -1107,10 +1107,10 @@ class Pipeline:
 
         if config_path:
             with open(config_path, "r") as f:
-                yaml.load(f, Loader=yaml.SafeLoader)
-            run_config = PipelineRunConfiguration(
-                steps=config_path.get("steps", {})
-            )
+                config: Dict[str, Any] = yaml.load(f, Loader=yaml.SafeLoader)
+                run_config = PipelineRunConfiguration(
+                    steps=config.get("steps", {})
+                )
         else:
             run_config = PipelineRunConfiguration()
 
