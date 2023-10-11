@@ -2,6 +2,11 @@
 description: How to use Great Expectations to run data quality checks in your pipelines and document the results
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The Great Expectations [Data Validator](./data-validators.md) flavor
 provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/)
 to run data profiling and data quality tests on the data circulated through your

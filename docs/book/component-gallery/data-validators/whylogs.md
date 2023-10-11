@@ -2,6 +2,11 @@
 description: How to collect and visualize statistics to track changes in your pipelines data with whylogs/WhyLabs profiling.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The whylogs/WhyLabs [Data Validator](./data-validators.md)
 flavor provided with the ZenML integration uses [whylogs](https://whylabs.ai/whylogs)
 and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly

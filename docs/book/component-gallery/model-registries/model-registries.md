@@ -2,6 +2,11 @@
 description: How to track and manage ML models
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Model registries are centralized storage solutions for managing and tracking
 machine learning models across various stages of development and deployment.
 They help track the different versions and configurations of each model and
