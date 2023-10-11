@@ -2,6 +2,11 @@
 description: ZenML pipelines are fully aware of external, longer-lived services.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Interact with external services
 
 ZenML interacts with external systems (e.g. prediction services, monitoring

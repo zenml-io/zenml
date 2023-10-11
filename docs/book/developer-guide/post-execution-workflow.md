@@ -2,6 +2,11 @@
 description: Inspect a Finished Pipeline Run.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Post Execution Workflow
 
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 

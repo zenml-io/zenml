@@ -2,6 +2,11 @@
 description: Control how data is persisted between steps.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 define how steps are connected and the order in which they are executed. Each
 step should be considered as its very own process that reads and writes its

@@ -2,6 +2,11 @@
 description: Discover the power of caching with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
 fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 
 [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching.)

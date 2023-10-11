@@ -2,6 +2,11 @@
 description: Use a MySQL database to track your metadata non-locally 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Track your Metadata in the Cloud
 
 While the local SQLite-based Metadata Store is a great default to get you 

@@ -1,3 +1,8 @@
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
 # Usage Analytics
 
 In order to help us better understand how the community uses **ZenML**, the pip

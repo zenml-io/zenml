@@ -2,6 +2,11 @@
 description: Execute individual steps in specialized environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Run steps in specialized environments with step operators
 
 The step operator defers the execution of individual steps in a pipeline to

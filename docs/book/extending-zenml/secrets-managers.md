@@ -2,6 +2,11 @@
 description: Using secrets across your ZenML pipeline.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 Most projects involving either cloud infrastructure or of a certain complexity
 will involve secrets of some kind. ZenML provides you a Secrets Manager as 
 stack component to help manage and use these secrets for your pipeline runs.

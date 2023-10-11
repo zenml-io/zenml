@@ -2,6 +2,11 @@
 description: Use the class-based API for Steps and Pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 The class-based ZenML API is defined by the base classes BaseStep and BasePipeline. You'll be subclassing these instead 
 of using the `@step` and `@pipeline` decorators that you have used in the previous sections. These interfaces allow our 
 users to maintain a higher level of control while they are creating a step definition and using it within the context of 

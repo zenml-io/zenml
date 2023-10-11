@@ -2,6 +2,11 @@
 description: Configure Step and Pipeline Parameters for Each Run.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Runtime Configuration
 
 A ZenML pipeline clearly separates business logic from parameter configuration.

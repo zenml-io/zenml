@@ -2,6 +2,11 @@
 description: How to get started with extending ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 While you are working on an ML task, it is very likely that you will require 
 a custom tailored solution. This might not only mean that you have to write 
 custom code, but also custom components for your infrastructure.

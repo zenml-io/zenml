@@ -2,6 +2,11 @@
 description: Contribute to ZenML!
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # 🙋‍♀️ Contributing
 
 We would love to develop ZenML together with our community! The best way to get

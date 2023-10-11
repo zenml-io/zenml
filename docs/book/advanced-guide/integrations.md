@@ -2,6 +2,11 @@
 description: Use these tools out-of-the-box with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Integrations
 
 **ZenML** integrates with many different third-party tools as implementations

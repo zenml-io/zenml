@@ -2,6 +2,11 @@
 description: A good place to start before diving further into the docs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Core Concepts
 
 ZenML consists of a number of components. We mostly follow industry naming

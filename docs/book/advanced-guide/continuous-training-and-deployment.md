@@ -2,6 +2,11 @@
 description: Implement end-to-end ML workflows with Continuous Training and Deployment.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To check the latest version please [visit https://docs.zenml.io](https://docs.zenml.io)
+{% endhint %}
+
+
 # Continuous Training and Continuous Deployment (CT/CD)
 
 As an organization develops across
