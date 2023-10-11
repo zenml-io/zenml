@@ -12,19 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing secrets."""
-from typing import Dict, Optional, ClassVar, List
+from typing import ClassVar, Dict, List, Optional
 
 from pydantic import Field, SecretStr
+
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import SecretScope
 from zenml.new_models.base import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseMetadataModel,
     WorkspaceScopedResponseModel,
-    update_model,
     hydrated_property,
+    update_model,
 )
-
 
 # ------------------ Request Model ------------------
 
@@ -79,6 +79,7 @@ class SecretUpdateModel(SecretRequestModel):
 
 class SecretResponseMetadataModel(WorkspaceScopedResponseMetadataModel):
     """Response metadata model for secrets."""
+
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
     )

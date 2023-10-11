@@ -23,6 +23,7 @@ from zenml.new_models.base import (
     SharableResponseMetadataModel,
     ShareableRequestModel,
     ShareableResponseModel,
+    hydrated_property,
     update_model,
 )
 
@@ -255,28 +256,7 @@ class ServiceConnectorRequestModel(ShareableRequestModel):
 # ------------------ Update Model ------------------
 @update_model
 class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
-    """Model used for service connector updates.
-
-    Most fields in the update model are optional and will not be updated if
-    omitted. However, the following fields are "special" and leaving them out
-    will also cause the corresponding value to be removed from the service
-    connector in the database:
-
-    * the `resource_id` field
-    * the `expiration_seconds` field
-
-    In addition to the above exceptions, the following rules apply:
-
-    * the `configuration` and `secrets` fields together represent a full
-    valid configuration update, not just a partial update. If either is
-    set (i.e. not None) in the update, their values are merged together and
-    will replace the existing configuration and secrets values.
-    * the `secret_id` field value in the update is ignored, given that
-    secrets are managed internally by the ZenML store.
-    * the `labels` field is also a full labels update: if set (i.e. not
-    `None`), all existing labels are removed and replaced by the new labels
-    in the update.
-    """
+    """Model used for service connector updates."""
 
 
 # ------------------ Response Model ------------------
@@ -285,21 +265,13 @@ class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
 class ServiceConnectorResponseMetadataModel(SharableResponseMetadataModel):
     """Response metadata model for service connectors."""
 
-
-class ServiceConnectorResponseModel(ShareableResponseModel):
-    """Response model for service connectors."""
-
-    name: str = Field(
-        title="The service connector name.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    description: str = Field(
+        default="",
+        title="The service connector instance description.",
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
         max_length=STR_FIELD_MAX_LENGTH,
-    )
-    description: str = Field(
-        default="",
-        title="The service connector instance description.",
     )
     auth_method: str = Field(
         title="The authentication method that the connector instance uses to "
@@ -348,6 +320,80 @@ class ServiceConnectorResponseModel(ShareableResponseModel):
         default_factory=dict,
         title="Service connector labels.",
     )
+
+
+class ServiceConnectorResponseModel(ShareableResponseModel):
+    """Response model for service connectors."""
+
+    # Entity fields
+    name: str = Field(
+        title="The service connector name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    # Metadata related field, method and properties
+    metadata: Optional["ServiceConnectorResponseMetadataModel"]
+
+    def get_hydrated_version(self) -> "ServiceConnectorResponseModel":
+        # TODO: Implement it with the parameterized calls
+        from zenml.client import Client
+
+        return Client().get_service_connector(self.id, hydrate=True)
+
+    @hydrated_property
+    def description(self):
+        """The description property."""
+        return self.metadata.description
+
+    @hydrated_property
+    def connector_type(self):
+        """The connector_type property."""
+        return self.metadata.connector_type
+
+    @hydrated_property
+    def auth_method(self):
+        """The auth_method property."""
+        return self.metadata.auth_method
+
+    @hydrated_property
+    def resource_types(self):
+        """The resource_types property."""
+        return self.metadata.resource_types
+
+    @hydrated_property
+    def resource_id(self):
+        """The resource_id property."""
+        return self.metadata.resource_id
+
+    @hydrated_property
+    def supports_instances(self):
+        """The supports_instances property."""
+        return self.metadata.supports_instances
+
+    @hydrated_property
+    def expires_at(self):
+        """The expires_at property."""
+        return self.metadata.expires_at
+
+    @hydrated_property
+    def expiration_seconds(self):
+        """The expiration_seconds property."""
+        return self.metadata.expiration_seconds
+
+    @hydrated_property
+    def configuration(self):
+        """The configuration property."""
+        return self.metadata.configuration
+
+    @hydrated_property
+    def secrets(self):
+        """The secrets property."""
+        return self.metadata.secrets
+
+    @hydrated_property
+    def labels(self):
+        """The labels property."""
+        return self.metadata.labels
 
     # Helper methods
     @property
