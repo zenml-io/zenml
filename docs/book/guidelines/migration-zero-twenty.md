@@ -2,6 +2,11 @@
 description: How to migrate from ZenML 0.13.2 to 0.20.0
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # ZenML 0.13.2 → 0.20.0
 
 The ZenML 0.20.0 release brings a number of big changes to its architecture and

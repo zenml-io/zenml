@@ -2,6 +2,11 @@
 description: How to use step fixtures to access the active ZenML stack from within a step
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Aside from artifacts and step parameters, you can also pass a parameter with 
 the type `StepContext` to the input signature of your step. This object will 
 provide additional context inside your step function, and it will give you 

@@ -2,6 +2,11 @@
 description: How to develop a custom secrets manager
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Base Abstraction
 
 The secret manager acts as the one-stop shop for all the secrets to which your 
