@@ -2,6 +2,11 @@
 description: Creating your custom stack component solutions.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Contribute flavors or components
 
 Before you can start contributing, it is important to know that the stack component deploy CLI also makes use of the

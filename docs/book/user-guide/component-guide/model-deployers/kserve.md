@@ -2,6 +2,11 @@
 description: Deploying models to Kubernetes with KServe.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # KServe
 
 The KServe Model Deployer is one of the available flavors of the [Model Deployer](model-deployers.md) stack component.

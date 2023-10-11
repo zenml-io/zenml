@@ -2,6 +2,11 @@
 description: Managing your data with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Data versioning and artifacts management
 
 ZenML seamlessly integrates data versioning and lineage into its core functionality. When a pipeline is executed, each
