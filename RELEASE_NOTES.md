@@ -16,7 +16,7 @@ This eliminates the need for explicit credential input. The previous method (`ze
 
 **Critical** This change disrupts existing pipeline schedules. After upgrading, manually cancel and reschedule pipelines using the updated version of ZenML.
 
-For more information, read about the device flow in our [documentation](https://docs.zenml.io/deploying-zenml/zenml-cloud/user-management#using-the-zenml-cli-to-connect-to-a-tenant).
+For more information, read about the device flow in our [documentation](https://docs.zenml.io/user-guide/starter-guide/switch-to-production).
 
 ## Performance enhancements (#3207)
 
