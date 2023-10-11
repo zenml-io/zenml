@@ -16,10 +16,10 @@ from uuid import uuid4
 
 import pytest
 
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
-from zenml.materializers import UnmaterializedArtifact
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.models.step_run_models import StepRunResponseModel
 from zenml.orchestrators.step_launcher import StepRunner

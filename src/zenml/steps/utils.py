@@ -20,15 +20,25 @@ import textwrap
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import pydantic.typing as pydantic_typing
+from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
+from zenml.model.artifact_config import ArtifactConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
 logger = get_logger(__name__)
 
 SINGLE_RETURN_OUT_NAME = "output"
+
+
+class OutputSignature(BaseModel):
+    """The signature of an output artifact."""
+
+    resolved_annotation: Any
+    artifact_config: Optional[ArtifactConfig]
+    has_custom_name: bool = False
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
@@ -51,7 +61,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 
 def parse_return_type_annotations(
     func: Callable[..., Any], enforce_type_annotations: bool = False
-) -> Tuple[Dict[str, Any], Dict[str, bool]]:
+) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
     Args:
@@ -66,19 +76,15 @@ def parse_return_type_annotations(
             annotation is missing.
 
     Returns:
-        - A dictionary mapping output names to their type annotations.
-        - A dictionary mapping output names to whether they are custom names.
+        - A dictionary mapping output names to their output signatures.
     """
-    output_signature: Dict[str, Any] = {}
-    output_has_custom_name: Dict[str, bool] = {}
-
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
     output_name: Optional[str]
 
     # Return type annotated as `None`
     if return_annotation is None:
-        return output_signature, output_has_custom_name
+        return {}
 
     # Return type not annotated -> check whether `None` or `Any` should be used
     if return_annotation is signature.empty:
@@ -88,7 +94,7 @@ def parse_return_type_annotations(
                 f"'{func.__name__}'."
             )
         elif has_only_none_returns(func):
-            return output_signature, output_has_custom_name
+            return {}
         else:
             return_annotation = Any
 
@@ -102,15 +108,19 @@ def parse_return_type_annotations(
             "for more information on how to assign custom names to your step "
             "outputs."
         )
-        for output_name, output_type in return_annotation.items():
-            output_signature[output_name] = output_type
-            output_has_custom_name[output_name] = True
-        return output_signature, output_has_custom_name
+        return {
+            output_name: OutputSignature(
+                resolved_annotation=resolve_type_annotation(output_type),
+                artifact_config=None,
+                has_custom_name=True,
+            )
+            for output_name, output_type in return_annotation.items()
+        }
 
-    # Return type annotated as tuple -> check whether multiple outputs or one tuple
-    if pydantic_typing.get_origin(return_annotation) is tuple:
+    elif pydantic_typing.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
+            output_signature: Dict[str, Any] = {}
             args = pydantic_typing.get_args(return_annotation)
             if args[-1] is Ellipsis:
                 raise RuntimeError(
@@ -118,31 +128,36 @@ def parse_return_type_annotations(
                 )
             for i, annotation in enumerate(args):
                 resolved_annotation = resolve_type_annotation(annotation)
-                output_name = get_output_name_from_annotation_metadata(
-                    annotation
+                (
+                    output_name,
+                    artifact_config,
+                ) = get_output_name_from_annotation_metadata(annotation)
+                has_custom_name = output_name is not None
+                output_name = output_name or f"output_{i}"
+                if output_name in output_signature:
+                    raise RuntimeError(f"Duplicate output name {output_name}.")
+
+                output_signature[output_name] = OutputSignature(
+                    resolved_annotation=resolved_annotation,
+                    artifact_config=artifact_config,
+                    has_custom_name=has_custom_name,
                 )
-                if output_name:
-                    if output_name in output_signature:
-                        raise RuntimeError(
-                            f"Duplicate output name {output_name}."
-                        )
-                    output_signature[output_name] = resolved_annotation
-                    output_has_custom_name[output_name] = True
-                else:
-                    output_signature[f"output_{i}"] = resolved_annotation
-                    output_has_custom_name[f"output_{i}"] = False
-            return output_signature, output_has_custom_name
+            return output_signature
 
     # Return type is annotated as single value or is a tuple
     resolved_annotation = resolve_type_annotation(return_annotation)
-    output_name = get_output_name_from_annotation_metadata(return_annotation)
-    if output_name:
-        output_signature[output_name] = resolved_annotation
-        output_has_custom_name[output_name] = True
-    else:
-        output_signature[SINGLE_RETURN_OUT_NAME] = resolved_annotation
-        output_has_custom_name[SINGLE_RETURN_OUT_NAME] = False
-    return output_signature, output_has_custom_name
+    output_name, artifact_config = get_output_name_from_annotation_metadata(
+        return_annotation
+    )
+    has_custom_name = output_name is not None
+    output_name = output_name or SINGLE_RETURN_OUT_NAME
+    return {
+        output_name: OutputSignature(
+            resolved_annotation=resolved_annotation,
+            artifact_config=artifact_config,
+            has_custom_name=has_custom_name,
+        )
+    }
 
 
 def resolve_type_annotation(obj: Any) -> Any:
@@ -168,45 +183,56 @@ def resolve_type_annotation(obj: Any) -> Any:
     return origin
 
 
-def get_output_name_from_annotation_metadata(annotation: Any) -> Optional[str]:
+def get_output_name_from_annotation_metadata(
+    annotation: Any,
+) -> Tuple[Optional[str], Optional[ArtifactConfig]]:
     """Get the output name from a type annotation.
 
     Example:
     ```python
-    get_output_name_from_annotation_metadata(int)  # None
-    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name
+    get_output_name_from_annotation_metadata(int)  # None, None
+    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name, None
+    get_output_name_from_annotation_metadata(Annotated[int, "name", ArtifactConfig(model_name="foo")]  # name, ArtifactConfig(model_name="foo")
     ```
 
     Args:
         annotation: The type annotation.
 
     Raises:
-        ValueError: If the annotation contains multiple metadata fields or a
-            single non-string metadata field.
+        ValueError: If the annotation not following (str,ArtifactConfig) pattern
 
     Returns:
-        The annotation metadata.
+        Tuple of output_name and artifact_config.
     """
     if (pydantic_typing.get_origin(annotation) or annotation) is not Annotated:
-        return None
+        return None, None
 
     annotation, *metadata = pydantic_typing.get_args(annotation)
 
-    if len(metadata) != 1:
-        raise ValueError(
-            "Annotation metadata can only contain a single element which must "
-            "be the output name."
-        )
+    msg = ""
+    if len(metadata) > 2:
+        msg += "Annotation metadata can contain not more than 2 elements: the output name and the instance of `ArtifactConfig`.\n"
 
-    output_name = metadata[0]
+    output_name = None
+    artifact_config = None
+    for metadata_instance in metadata:
+        if isinstance(metadata_instance, str):
+            if output_name is None:
+                output_name = metadata_instance
+            else:
+                msg += "Annotation metadata can not contain multiple output names.\n"
+        elif isinstance(metadata_instance, ArtifactConfig):
+            if artifact_config is None:
+                artifact_config = metadata_instance
+            else:
+                msg += "Annotation metadata can not contain multiple `ArtifactConfig` instances.\n"
+        else:
+            msg += "Annotation metadata can only contain `str` and `ArtifactConfig` instances.\n"
 
-    if not isinstance(output_name, str):
-        raise ValueError(
-            "Annotation metadata must be a string which will be used as the "
-            "output name."
-        )
+    if msg:
+        raise ValueError(msg)
 
-    return output_name
+    return output_name, artifact_config
 
 
 class ReturnVisitor(ast.NodeVisitor):

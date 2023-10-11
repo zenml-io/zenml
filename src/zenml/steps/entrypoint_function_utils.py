@@ -31,8 +31,8 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
+    OutputSignature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -133,7 +133,7 @@ class EntrypointFunctionDefinition(NamedTuple):
     """
 
     inputs: Dict[str, inspect.Parameter]
-    outputs: Dict[str, Any]
+    outputs: Dict[str, OutputSignature]
     context: Optional[inspect.Parameter]
     legacy_params: Optional[inspect.Parameter]
 
@@ -153,7 +153,10 @@ class EntrypointFunctionDefinition(NamedTuple):
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
-        from zenml.materializers import UnmaterializedArtifact
+        from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.artifacts.unmaterialized_artifact import (
+            UnmaterializedArtifact,
+        )
 
         if key not in self.inputs:
             raise KeyError(
@@ -302,7 +305,7 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    outputs, _ = parse_return_type_annotations(
+    outputs = parse_return_type_annotations(
         func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
     )
 

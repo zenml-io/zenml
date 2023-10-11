@@ -30,7 +30,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
-from zenml.cli.model import register_model_registry_subcommands
+from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
@@ -237,6 +237,30 @@ def generate_stack_component_register_command(
         help="Use this flag to share this stack component with other users.",
         type=click.BOOL,
     )
+    @click.option(
+        "--connector",
+        "-c",
+        "connector",
+        help="Use this flag to connect this stack component to a service connector.",
+        type=str,
+    )
+    @click.option(
+        "--connector",
+        "-c",
+        "connector",
+        help="Use this flag to connect this stack component to a service connector.",
+        type=str,
+    )
+    @click.option(
+        "--resource-id",
+        "-r",
+        "resource_id",
+        help="The resource ID to use with the connector. Only required for "
+        "multi-instance connectors that are not already configured with a "
+        "particular resource ID.",
+        required=False,
+        type=str,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
         name: str,
@@ -244,6 +268,8 @@ def generate_stack_component_register_command(
         share: bool,
         args: List[str],
         labels: Optional[List[str]] = None,
+        connector: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> None:
         """Registers a stack component.
 
@@ -253,6 +279,8 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
             labels: Labels to be associated with the component.
+            connector: Name of the service connector to connect the component to.
+            resource_id: The resource ID to use with the connector.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             fail_secrets_manager_creation()
@@ -272,6 +300,14 @@ def generate_stack_component_register_command(
         if share is None:
             share = False
 
+        if connector:
+            try:
+                client.get_service_connector(connector)
+            except KeyError as err:
+                cli_utils.error(
+                    f"Could not find a connector '{connector}': " f"{str(err)}"
+                )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             # Create a new stack component model
             component = client.create_stack_component(
@@ -287,6 +323,16 @@ def generate_stack_component_register_command(
                 f"Successfully registered {component.type} `{component.name}`."
             )
             print_model_url(get_component_url(component))
+
+        if connector:
+            connect_stack_component_with_service_connector(
+                component_type=component_type,
+                name_id_or_prefix=name,
+                connector=connector,
+                interactive=False,
+                no_verify=False,
+                resource_id=resource_id,
+            )
 
     return register_stack_component_command
 
