@@ -2,6 +2,11 @@
 description: What are the usage statistics ZenML collects
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Usage Analytics
 
 In order to help us better understand how the community uses **ZenML**, the pip

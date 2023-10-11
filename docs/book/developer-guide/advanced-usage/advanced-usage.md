@@ -2,6 +2,11 @@
 description: An overview of advanced ZenML use cases
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 The previous sections on [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)
 and [Stacks, Profiles, Repositories](../stacks-profiles-repositories/stacks-profiles-repositories.md)
 already cover most of the concepts you will need for developing ML workflows
