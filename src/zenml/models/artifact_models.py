@@ -65,6 +65,7 @@ class ArtifactBaseModel(BaseModel):
     )
     tags: Optional[List[str]] = Field(
         title="Tags of the artifact.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
         default=None,
     )
     visualizations: Optional[List[VisualizationModel]] = Field(
@@ -211,5 +212,5 @@ class ArtifactRequestModel(ArtifactBaseModel, WorkspaceScopedRequestModel):
 class ArtifactUpdateModel(BaseModel):
     """Artifact update model."""
 
-    name: Optional[str]
-    tags: Optional[List[str]]
+    name: Optional[str] = None
+    tags: Optional[List[str]] = None
