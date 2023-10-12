@@ -67,6 +67,7 @@ def list_artifacts(**kwargs: Any) -> None:
     "--version",
     "-v",
     default=None,
+    type=str,
     help="Version of the artifact to delete.",
 )
 @click.option(

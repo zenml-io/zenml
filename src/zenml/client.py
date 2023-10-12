@@ -2626,7 +2626,7 @@ class Client(metaclass=ClientMetaClass):
                 version.
             ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        return self._get_versioned_entity_by_id_or_name_or_prefix(
+        return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_pipeline,
             list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
@@ -3305,7 +3305,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact.
         """
-        return self._get_versioned_entity_by_id_or_name_or_prefix(
+        return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact,
             list_method=self.list_artifacts,
             name_id_or_prefix=name_id_or_prefix,
@@ -5354,7 +5354,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
     @staticmethod
-    def _get_versioned_entity_by_id_or_name_or_prefix(
+    def _get_entity_version_by_id_or_name_or_prefix(
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],

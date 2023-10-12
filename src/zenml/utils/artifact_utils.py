@@ -375,7 +375,7 @@ def upload_artifact(
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
         version: The version of the artifact. If not provided, a new
-            auto-increment version will be used.
+            auto-incremented version will be used.
 
     Returns:
         The ID of the published artifact.
@@ -434,13 +434,13 @@ def upload_artifact(
 
 
 def _get_new_artifact_version(artifact_name: str) -> int:
-    """Get the next auto-increment version for an artifact name.
+    """Get the next auto-incremented version for an artifact name.
 
     Args:
         artifact_name: The name of the artifact.
 
     Returns:
-        The next auto-increment version.
+        The next auto-incremented version.
     """
     models = depaginate(
         partial(
