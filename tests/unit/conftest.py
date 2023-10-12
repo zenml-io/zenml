@@ -518,7 +518,7 @@ def sample_artifact_model(
     return ArtifactResponseModel(
         id=uuid4(),
         name="sample_artifact",
-        version=1,
+        version="1",
         uri="sample_uri",
         type=ArtifactType.DATA,
         materializer="sample_module.sample_materializer",
@@ -538,7 +538,7 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
     """Return a sample artifact model for testing purposes."""
     return ArtifactRequestModel(
         name="sample_artifact",
-        version=1,
+        version="1",
         uri="sample_uri",
         type=ArtifactType.DATA,
         materializer="sample_materializer",
