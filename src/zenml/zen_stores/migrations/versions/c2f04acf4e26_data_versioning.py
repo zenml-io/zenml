@@ -1,7 +1,7 @@
 """Data Versioning [c2f04acf4e26].
 
 Revision ID: c2f04acf4e26
-Revises: 37835ce041d2
+Revises: f3b3964e3a0f
 Create Date: 2023-10-09 15:01:14.029692
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c2f04acf4e26"
-down_revision = "37835ce041d2"
+down_revision = "f3b3964e3a0f"
 branch_labels = None
 depends_on = None
 
