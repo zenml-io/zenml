@@ -1,7 +1,7 @@
 """Data Versioning [389046140cad].
 
 Revision ID: 389046140cad
-Revises: 37835ce041d2
+Revises: f3b3964e3a0f
 Create Date: 2023-10-09 14:12:01.280877
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "389046140cad"
-down_revision = "37835ce041d2"
+down_revision = "f3b3964e3a0f"
 branch_labels = None
 depends_on = None
 
