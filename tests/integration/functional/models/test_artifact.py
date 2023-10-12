@@ -14,12 +14,15 @@
 """Integration tests for artifact models."""
 
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+from typing_extensions import Annotated
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     visualizable_step,
 )
+from zenml import step
 from zenml.enums import ExecutionStatus
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.run_metadata_models import RunMetadataResponseModel
@@ -29,6 +32,51 @@ from zenml.utils.artifact_utils import load_artifact_visualization
 
 if TYPE_CHECKING:
     from zenml.client import Client
+
+
+def test_default_artifact_name(clean_client: "Client", one_step_pipeline):
+    """Integration test for default artifact names."""
+    step_ = constant_int_output_test_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact = step_run.output
+    assert artifact.name == f"{pipeline_run.pipeline.name}::step_::output"
+
+
+@step
+def custom_artifact_name_test_step() -> Annotated[int, "number_7"]:
+    return 7
+
+
+def test_custom_artifact_name(clean_client: "Client", one_step_pipeline):
+    """Integration test for custom artifact names."""
+    pipe: BasePipeline = one_step_pipeline(custom_artifact_name_test_step)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact = step_run.output
+    assert artifact.name == "number_7"
+
+
+@step
+def multi_output_test_step() -> Tuple[Annotated[int, "number_7"], int]:
+    return 7, 42
+
+
+def test_multi_output_artifact_names(
+    clean_client: "Client", one_step_pipeline
+):
+    """Integration test for multi-output artifact names."""
+    pipe: BasePipeline = one_step_pipeline(multi_output_test_step)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact_1 = step_run.outputs["number_7"]
+    artifact_2 = step_run.outputs["output_1"]
+    assert artifact_1.name == "number_7"
+    assert artifact_2.name == f"{pipeline_run.pipeline.name}::step_::output_1"
 
 
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
