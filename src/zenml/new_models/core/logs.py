@@ -82,7 +82,7 @@ class LogsResponse(BaseResponse):
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
-        return Client().get_run_metadata(self.id, hydrate=True)
+        return Client().get_run_metadata(self.id)
 
     @hydrated_property
     def step_run_id(self):

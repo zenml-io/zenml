@@ -28,3 +28,4 @@ from zenml.new_models.base.scoped import (
     SharableResponseMetadata,
 )
 from zenml.new_models.base.utils import update_model, hydrated_property
+from zenml.new_models.base.page import Page

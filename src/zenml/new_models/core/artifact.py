@@ -122,7 +122,7 @@ class ArtifactResponse(WorkspaceScopedResponse):
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
-        return Client().get_artifact(self.id, hydrate=True)
+        return Client().get_artifact(self.id)
 
     @hydrated_property
     def artifact_store_id(self):

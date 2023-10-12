@@ -338,7 +338,7 @@ class ServiceConnectorResponse(ShareableResponse):
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
-        return Client().get_service_connector(self.id, hydrate=True)
+        return Client().get_service_connector(self.id)
 
     @hydrated_property
     def description(self):

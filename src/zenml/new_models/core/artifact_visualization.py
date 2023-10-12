@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Union
+from typing import Union, Optional
 from uuid import UUID
 
 from zenml.enums import VisualizationType
@@ -20,6 +20,7 @@ from zenml.new_models.base import (
     BaseResponse,
     BaseResponseMetadata,
 )
+
 
 # ------------------ Request Model ------------------
 
@@ -40,16 +41,23 @@ class ArtifactVisualizationRequest(BaseRequest):
 
 
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
-    pass
+    """Response metadata model for artifact visualizations."""
 
 
 class ArtifactVisualizationResponse(BaseResponse):
-    pass
+    """Response model for artifact visualizations."""
 
+    # Entity fields
     type: VisualizationType
     uri: str
     value: Union[str, bytes]
     artifact_id: UUID
 
-    def get_hydrated_version(self) -> "BaseResponse":
-        return self
+    # Metadata related field, method and properties
+    metadata: Optional["ArtifactVisualizationResponseMetadata"]
+
+    def get_hydrated_version(self) -> "ArtifactVisualizationResponse":
+        # TODO: Implement it with the parameterized calls
+        from zenml.client import Client
+
+        return Client().get_artifact_visualization(self.id)

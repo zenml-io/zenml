@@ -80,7 +80,7 @@ class WorkspaceResponse(BaseResponse):
         # TODO: Implement it with the parameterized calls
         from zenml.client import Client
 
-        return Client().get_workspace(self.id, hydrate=True)
+        return Client().get_workspace(self.id)
 
     @hydrated_property
     def description(self):
