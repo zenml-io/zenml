@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 from functools import partial
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import click
 
@@ -24,6 +24,7 @@ from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactFilterModel
 from zenml.utils.pagination_utils import depaginate
+from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
 
@@ -95,7 +96,10 @@ def delete_artifact(
     only_metadata: bool = False,
     yes: bool = False,
 ) -> None:
-    """Delete an artifact.
+    """Delete an artifact by ID or name.
+
+    If an artifact name without a version is provided, all artifacts with that
+    name will be deleted.
 
     Args:
         artifact_name_or_id: Name or ID of the artifact to delete.
@@ -104,25 +108,58 @@ def delete_artifact(
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
+    is_uuid = is_valid_uuid(artifact_name_or_id)
+
     if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete artifact '{artifact_name_or_id}'?"
-        )
+        if is_uuid:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to delete artifact "
+                f"'{artifact_name_or_id}'?"
+            )
+        elif version:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to delete version '{version}' of "
+                f"artifact '{artifact_name_or_id}'?"
+            )
+        else:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to delete all artifacts with name "
+                f"'{artifact_name_or_id}'?"
+            )
         if not confirmation:
             cli_utils.declare("Artifact deletion canceled.")
             return
 
     try:
-        Client().delete_artifact(
-            name_id_or_prefix=artifact_name_or_id,
-            version=version,
-            delete_metadata=not only_artifact,
-            delete_from_artifact_store=not only_metadata,
-        )
+        versions: List[Optional[str]] = [version]
+        if not is_uuid and not version:
+            artifact_models = depaginate(
+                partial(Client().list_artifacts, name=artifact_name_or_id)
+            )
+            versions = [
+                artifact_model.version for artifact_model in artifact_models
+            ]
+        for version_ in versions:
+            Client().delete_artifact(
+                name_id_or_prefix=artifact_name_or_id,
+                version=version_,
+                delete_metadata=not only_artifact,
+                delete_from_artifact_store=not only_metadata,
+            )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
     else:
-        cli_utils.declare(f"Artifact '{artifact_name_or_id}' deleted.")
+        if is_uuid:
+            cli_utils.declare(f"Artifact '{artifact_name_or_id}' deleted.")
+        elif version:
+            cli_utils.declare(
+                f"Version '{version}' of artifact '{artifact_name_or_id}' "
+                f"deleted."
+            )
+        else:
+            cli_utils.declare(
+                f"All artifacts with name '{artifact_name_or_id}' deleted."
+            )
 
 
 @artifact.command("prune", help="Delete all unused artifacts.")
