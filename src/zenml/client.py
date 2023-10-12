@@ -2620,11 +2620,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The pipeline.
-
-        Raises:
-            KeyError: If no pipelines were found for the given ID/name and
-                version.
-            ZenKeyError: If multiple pipelines match the ID prefix.
         """
         return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_pipeline,
