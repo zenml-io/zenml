@@ -14,7 +14,7 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 export EVIDENTLY_DISABLE_TELEMETRY=1
 
-./zen-test environment provision $TEST_ENVIRONMENT
+./zen-test environment provision $TEST_ENVIRONMENT || sleep 30
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
 if [ -n "$1" ]; then
