@@ -327,16 +327,9 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model_config = (
-            self._deployment.step_configurations[
-                step_run.name
-            ].config.model_config
-            or self._deployment.pipeline_configuration.model_config
-        )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
-            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id

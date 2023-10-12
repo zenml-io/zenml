@@ -59,65 +59,31 @@ class MockZenmlClient:
 
 
 @pytest.mark.parametrize(
-    argnames="value,id,pipeline_name,artifact_name,model_name,model_version,model_artifact_name,exception_start",
+    argnames="value,id,artifact_name,exception_start",
     argvalues=[
-        [1, None, None, None, None, None, None, ""],
-        [None, uuid4(), None, None, None, None, None, ""],
-        [None, None, "foo", "bar", None, None, None, ""],
-        [None, None, None, None, "foo", "bar", "artifact", ""],
-        [None, None, None, None, None, None, None, "Either a value,"],
-        [1, uuid4(), None, None, None, None, None, "Only a value,"],
-        [None, uuid4(), "foo", "bar", None, None, None, "Only a value,"],
-        [1, None, "foo", "bar", None, None, None, "Only a value,"],
-        [1, None, None, None, "foo", "bar", "artifact", "Only a value,"],
-        [None, uuid4(), None, None, "foo", "bar", "artifact", "Only a value,"],
-        [None, None, "foo", "bar", "foo", "bar", "artifact", "Only a value,"],
-        [
-            None,
-            None,
-            "foo",
-            None,
-            None,
-            None,
-            None,
-            "`pipeline_name` and `artifact_name`",
-        ],
-        [
-            None,
-            None,
-            None,
-            "bar",
-            None,
-            None,
-            None,
-            "`pipeline_name` and `artifact_name`",
-        ],
+        [1, None, None, None],
+        [None, uuid4(), None, None],
+        [None, None, "name", None],
+        [None, None, None, "Either a value"],
+        [1, uuid4(), None, "Only a value,"],
+        [None, uuid4(), "name", "Only a value,"],
+        [1, None, "name", "Only a value,"],
     ],
     ids=[
         "good_by_value",
         "good_by_id",
-        "good_by_pipeline_artifact",
-        "good_by_model",
+        "good_by_name",
         "bad_all_none",
         "bad_id_and_value",
-        "bad_id_and_pipeline_artifact",
-        "bad_value_and_pipeline_artifact",
-        "bad_value_and_model",
-        "bad_id_and_model",
-        "bad_pipeline_artifact_and_model",
-        "bad_only_pipeline",
-        "bad_only_artifact",
+        "bad_id_and_name",
+        "bad_value_and_name",
     ],
 )
 def test_external_artifact_init(
     value: Optional[Any],
     id: Optional[UUID],
-    pipeline_name: Optional[str],
     artifact_name: Optional[str],
-    model_name: Optional[str],
-    model_version: Optional[str],
-    model_artifact_name: Optional[str],
-    exception_start: str,
+    exception_start: Optional[str],
 ):
     """Tests that initialization logic of `ExternalArtifact` works expectedly."""
     if exception_start:
@@ -125,21 +91,13 @@ def test_external_artifact_init(
             ExternalArtifact(
                 value=value,
                 id=id,
-                pipeline_name=pipeline_name,
                 artifact_name=artifact_name,
-                model_name=model_name,
-                model_version=model_version,
-                model_artifact_name=model_artifact_name,
             )
     else:
         ExternalArtifact(
             value=value,
             id=id,
-            pipeline_name=pipeline_name,
             artifact_name=artifact_name,
-            model_name=model_name,
-            model_version=model_version,
-            model_artifact_name=model_artifact_name,
         )
 
 
