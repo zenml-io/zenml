@@ -30,7 +30,6 @@ from zenml.models.visualization_models import (
     LoadedVisualizationModel,
     VisualizationModel,
 )
-from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -361,6 +360,7 @@ def upload_artifact(
     extract_metadata: bool = True,
     include_visualizations: bool = True,
     has_custom_name: bool = False,
+    user_metadata: Optional[Dict[str, "MetadataType"]] = None,
 ) -> "UUID":
     """Upload and publish an artifact.
 
@@ -374,6 +374,7 @@ def upload_artifact(
         include_visualizations: If artifact visualizations should be generated.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
+        user_metadata: User-provided metadata to store with the artifact.
 
     Returns:
         The ID of the published artifact.
@@ -402,9 +403,7 @@ def upload_artifact(
     if extract_metadata:
         try:
             artifact_metadata = materializer.extract_full_metadata(data)
-            step_context = get_step_context()
-            user_provided_metadata = step_context.get_output_metadata(name)
-            artifact_metadata.update(user_provided_metadata)
+            artifact_metadata.update(user_metadata or {})
         except Exception as e:
             logger.warning(
                 f"Failed to extract metadata for output artifact '{name}': {e}"

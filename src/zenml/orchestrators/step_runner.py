@@ -553,6 +553,7 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         client = Client()
+        step_context = get_step_context()
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
@@ -601,13 +602,15 @@ class StepRunner:
             if has_custom_name:
                 artifact_name = output_name
             else:
-                step_context = get_step_context()
                 if step_context.pipeline_run.pipeline:
                     pipeline_name = step_context.pipeline_run.name
                 else:
                     pipeline_name = "unlisted"
                 step_name = step_context.step_run.name
                 artifact_name = f"{pipeline_name}::{step_name}::{output_name}"
+
+            # Get metadata that the user logged manually
+            user_metadata = step_context.get_output_metadata(output_name)
 
             artifact_id = artifact_utils.upload_artifact(
                 name=artifact_name,
@@ -617,6 +620,7 @@ class StepRunner:
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,
+                user_metadata=user_metadata,
             )
             output_artifacts[output_name] = artifact_id
 
