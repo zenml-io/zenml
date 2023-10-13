@@ -162,9 +162,13 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
         default=None,
         description="Name of the artifact",
     )
-    version: Optional[Union[str, int]] = Field(
+    version: Optional[str] = Field(
         default=None,
         description="Version of the artifact",
+    )
+    version_number: Optional[int] = Field(
+        default=None,
+        description="Version of the artifact if it is an integer",
     )
     uri: Optional[str] = Field(
         default=None,

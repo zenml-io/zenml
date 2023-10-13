@@ -16,7 +16,6 @@
 import base64
 import os
 import tempfile
-from functools import partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
@@ -34,7 +33,6 @@ from zenml.models.visualization_models import (
 from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
-from zenml.utils.pagination_utils import depaginate
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -442,19 +440,19 @@ def _get_new_artifact_version(artifact_name: str) -> int:
     Returns:
         The next auto-incremented version.
     """
-    models = depaginate(
-        partial(
-            Client().list_artifacts,
-            name=artifact_name,
-            sort_by="desc:version",
-        )
+    models = Client().list_artifacts(
+        name=artifact_name,
+        sort_by="desc:version_number",
+        size=1,
     )
-    for model in models:
-        try:
-            return int(model.version) + 1
-        except ValueError:
-            pass
-    return 1
+
+    # If a numbered version exists, increment it
+    try:
+        return int(models[0].version) + 1
+
+    # If no numbered versions exist yet, start at 1
+    except (IndexError, ValueError):
+        return 1
 
 
 def get_producer_step_of_artifact(
