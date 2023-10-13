@@ -1109,10 +1109,16 @@ class Pipeline:
 
         if config_path:
             with open(config_path, "r") as f:
-                config: Dict[str, Any] = yaml.load(f, Loader=yaml.SafeLoader)
-                run_config = PipelineRunConfiguration(
-                    steps=config.get("steps", {})
+                from_config: Dict[str, Any] = yaml.load(
+                    f, Loader=yaml.SafeLoader
                 )
+            # pull out parameters relevant for PipelineRunConfiguration
+            from_config = {
+                k: v
+                for k, v in from_config.items()
+                if k in PipelineRunConfiguration.__fields__
+            }
+            run_config = PipelineRunConfiguration(**from_config)
         else:
             run_config = PipelineRunConfiguration()
 
@@ -1381,11 +1387,21 @@ class Pipeline:
         """
         if config_path:
             with open(config_path, "r") as f:
-                from_config = yaml.load(f, Loader=yaml.SafeLoader)
-            if "steps" in from_config:
-                del from_config["steps"]
+                from_config: Dict[str, Any] = yaml.load(
+                    f, Loader=yaml.SafeLoader
+                )
+            configure_args = inspect.getfullargspec(self.configure)[0]
+            from_config = {
+                k: v for k, v in from_config.items() if k in configure_args
+            }
+            if "model_config" in from_config:
+                from zenml.model.model_config import ModelConfig
+
+                from_config["model_config"] = ModelConfig.parse_obj(
+                    from_config["model_config"]
+                )
         else:
-            from_config = {}
+            from_config: Dict[str, Any] = {}
         from_config = dict_utils.recursive_update(from_config, kwargs)
 
         pipeline_copy = self.copy()
