@@ -167,7 +167,7 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         if self.id:
-            response = client.get_artifact(artifact_id=self.id)
+            response = client.get_artifact(self.id)
         elif self.pipeline_name and self.artifact_name:
             response = self._get_artifact_from_pipeline_run()
         elif self.model_artifact_name:

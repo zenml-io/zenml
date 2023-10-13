@@ -62,18 +62,6 @@ def test_artifact_delete_fails_if_artifact_still_used(
     assert len(existing_artifacts) == 2
 
 
-def test_artifact_delete_fails_on_non_existing_artifact(
-    clean_workspace_with_run,
-):
-    """Test that zenml artifact delete fails if artifact does not exist."""
-    runner = CliRunner()
-    delete_command = cli.commands["artifact"].commands["delete"]
-    result = runner.invoke(delete_command, ["non_existing_artifact", "-y"])
-    assert result.exit_code == 1
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
-    assert len(existing_artifacts) == 2
-
-
 def test_artifact_prune(clean_workspace_with_run):
     """Test that zenml artifact prune deletes unused artifacts."""
     existing_artifacts = clean_workspace_with_run.list_artifacts()

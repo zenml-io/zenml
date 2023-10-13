@@ -360,6 +360,7 @@ def upload_artifact(
     extract_metadata: bool = True,
     include_visualizations: bool = True,
     has_custom_name: bool = False,
+    version: Optional[str] = None,
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
 ) -> "UUID":
     """Upload and publish an artifact.
@@ -372,6 +373,8 @@ def upload_artifact(
             be stored.
         extract_metadata: If artifact metadata should be extracted and returned.
         include_visualizations: If artifact visualizations should be generated.
+        version: The version of the artifact. If not provided, a new
+            auto-incremented version will be used.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
         user_metadata: User-provided metadata to store with the artifact.
@@ -411,6 +414,7 @@ def upload_artifact(
 
     artifact = ArtifactRequestModel(
         name=name,
+        version=version or _get_new_artifact_version(name),
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
@@ -428,6 +432,30 @@ def upload_artifact(
         )
 
     return response.id
+
+
+def _get_new_artifact_version(artifact_name: str) -> int:
+    """Get the next auto-incremented version for an artifact name.
+
+    Args:
+        artifact_name: The name of the artifact.
+
+    Returns:
+        The next auto-incremented version.
+    """
+    models = Client().list_artifacts(
+        name=artifact_name,
+        sort_by="desc:version_number",
+        size=1,
+    )
+
+    # If a numbered version exists, increment it
+    try:
+        return int(models[0].version) + 1
+
+    # If no numbered versions exist yet, start at 1
+    except (IndexError, ValueError):
+        return 1
 
 
 def get_producer_step_of_artifact(

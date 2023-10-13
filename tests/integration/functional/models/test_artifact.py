@@ -79,6 +79,22 @@ def test_multi_output_artifact_names(
     assert artifact_2.name == f"{pipeline_run.pipeline.name}::step_::output_1"
 
 
+# TODO: make more efficient once manual versioning exists
+def test_auto_incremented_artifact_versioning(
+    clean_client: "Client", one_step_pipeline
+):
+    """Test auto-increment default artifact versioning."""
+    step_ = constant_int_output_test_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+
+    for i in range(1, 12):
+        pipe.run(enable_cache=False)
+        pipeline_run = pipe.model.last_run
+        step_run = pipeline_run.steps["step_"]
+        artifact = step_run.output
+        assert artifact.version == str(i)
+
+
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
     """Integration test for `artifact.step` and `artifact.run` properties."""
     step_ = constant_int_output_test_step()
