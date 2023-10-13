@@ -187,7 +187,7 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
             items=[],
         ),
     )
-    assert _get_new_artifact_version(sample_artifact_model.name) == "1"
+    assert _get_new_artifact_version(sample_artifact_model.name) == 1
 
     # If an artifact exists, the next version should be returned
     mocker.patch(
@@ -200,6 +200,7 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
             items=[sample_artifact_model],
         ),
     )
-    assert _get_new_artifact_version(sample_artifact_model.name) == str(
-        int(sample_artifact_model.version) + 1
+    assert (
+        _get_new_artifact_version(sample_artifact_model.name)
+        == int(sample_artifact_model.version) + 1
     )
