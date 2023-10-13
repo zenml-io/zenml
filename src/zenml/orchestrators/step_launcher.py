@@ -380,6 +380,42 @@ class StepLauncher:
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
+                if model_config:
+                    from zenml.model.artifact_config import ArtifactConfig
+                    from zenml.steps.base_step import BaseStep
+                    from zenml.steps.utils import parse_return_type_annotations
+
+                    model_version = model_config.get_or_create_model_version()
+                    step_instance = BaseStep.load_from_source(
+                        self._step.spec.source
+                    )
+                    output_annotations = parse_return_type_annotations(
+                        step_instance.entrypoint
+                    )
+                    for output_name_, output_ in step_run.outputs.items():
+                        if output_name_ in output_annotations:
+                            annotation = output_annotations.get(
+                                output_name_, None
+                            )
+                            artifact_config = (
+                                annotation.artifact_config
+                                if annotation
+                                and annotation.artifact_config is not None
+                                else ArtifactConfig()
+                            )
+                            artifact_config.model_name = (
+                                artifact_config.model_name
+                                or model_version.model.name
+                            )
+                            artifact_config.model_version = (
+                                artifact_config.model_version
+                                or model_version.name
+                            )
+                            artifact_config._pipeline_name = (
+                                self._deployment.pipeline_configuration.name
+                            )
+                            artifact_config._step_name = self._step_name
+                            artifact_config.link_to_model(output_)
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 

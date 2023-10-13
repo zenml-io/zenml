@@ -779,3 +779,56 @@ def test_link_with_manual_linkage_flexible_config(
         assert len(links) == 1
         assert links[0].link_version == 1
         assert links[0].name == "1"
+
+
+@step(enable_cache=True)
+def _cacheable_step_annotated() -> (
+    Annotated[str, "cacheable", ModelArtifactConfig()]
+):
+    return "cacheable"
+
+
+@step(enable_cache=True)
+def _cacheable_step_not_annotated():
+    return "cacheable"
+
+
+@step(enable_cache=False)
+def _non_cacheable_step():
+    return "not cacheable"
+
+
+def test_artifacts_linked_from_cache_steps():
+    """Test that artifacts are linked from cache steps."""
+
+    @pipeline(
+        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        enable_cache=False,
+    )
+    def _inner_pipeline(force_disable_cache: bool = False):
+        _cacheable_step_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _cacheable_step_not_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _non_cacheable_step()
+
+    with model_killer():
+        client = Client()
+
+        for i in range(1, 3):
+            _inner_pipeline(i != 1)
+
+            mv = client.get_model_version(
+                model_name_or_id="foo", model_version_name_or_number_or_id=i
+            )
+            assert len(mv.artifact_object_ids) == 2, f"Failed on {i} run"
+            assert len(mv.model_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_non_cacheable_step::output",
+                "_inner_pipeline::_cacheable_step_not_annotated::output",
+            }, f"Failed on {i} run"
+            assert set(mv.model_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_annotated::cacheable",
+            }, f"Failed on {i} run"
