@@ -869,3 +869,46 @@ def test_artifacts_linked_from_cache_steps():
             ), f"Failed on {i} run"
 
             fake_version._update_default_running_version_name()
+
+
+def test_artifacts_linked_from_cache_steps_same_id():
+    """Test that artifacts are linked from cache steps with same id.
+    This case appears if cached step is executed inside same model version
+    and we need to silently pass linkage without failing on same id.
+    """
+
+    @pipeline(
+        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        enable_cache=False,
+    )
+    def _inner_pipeline(force_disable_cache: bool = False):
+        _cacheable_step_custom_model_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _non_cacheable_step()
+
+    with model_killer():
+        client = Client()
+
+        for i in range(1, 3):
+            ModelConfig(
+                name="bar", create_new_model_version=True
+            ).get_or_create_model_version()
+            _inner_pipeline(i != 1)
+
+            mv = client.get_model_version(
+                model_name_or_id="bar",
+                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
+            )
+            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+            }, f"Failed on {i} run"
+            assert (
+                len(
+                    mv.artifact_object_ids[
+                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
+                    ]
+                )
+                == 1
+            ), f"Failed on {i} run"
