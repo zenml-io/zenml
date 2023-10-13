@@ -17,101 +17,50 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.enums import ModelStages
-from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    ArtifactRequest,
+    ArtifactResponse,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    PipelineUpdate,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleUpdate,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorUpdate,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
+    UserRequest,
+    UserResponse,
+    UserUpdate,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
 )
-from zenml.models.page_model import Page
-from zenml.models.run_metadata_models import RunMetadataFilterModel
-from zenml.models.schedule_model import (
-    ScheduleFilterModel,
-    ScheduleUpdateModel,
-)
-from zenml.models.server_models import ServerModel
 
 
 class ZenStoreInterface(ABC):
@@ -207,12 +156,10 @@ class ZenStoreInterface(ABC):
             The ID of the deployment.
         """
 
-    # ------
-    # Stacks
-    # ------
+    # -------------------- Stacks --------------------
 
     @abstractmethod
-    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
+    def create_stack(self, stack: StackRequest) -> StackResponse:
         """Create a new stack.
 
         Args:
@@ -227,7 +174,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack(self, stack_id: UUID) -> StackResponseModel:
+    def get_stack(self, stack_id: UUID) -> StackResponse:
         """Get a stack by its unique ID.
 
         Args:
@@ -242,8 +189,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stacks(
-        self, stack_filter_model: StackFilterModel
-    ) -> Page[StackResponseModel]:
+        self, stack_filter_model: StackFilter
+    ) -> Page[StackResponse]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -256,8 +203,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_stack(
-        self, stack_id: UUID, stack_update: StackUpdateModel
-    ) -> StackResponseModel:
+        self, stack_id: UUID, stack_update: StackUpdate
+    ) -> StackResponse:
         """Update a stack.
 
         Args:
@@ -282,14 +229,12 @@ class ZenStoreInterface(ABC):
             KeyError: if the stack doesn't exist.
         """
 
-    # ----------------
-    # Stack components
-    # ----------------
+    # -------------------- Components --------------------
 
     @abstractmethod
     def create_stack_component(
-        self, component: ComponentRequestModel
-    ) -> ComponentResponseModel:
+        self, component: ComponentRequest
+    ) -> ComponentResponse:
         """Create a stack component.
 
         Args:
@@ -305,8 +250,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stack_components(
-        self, component_filter_model: ComponentFilterModel
-    ) -> Page[ComponentResponseModel]:
+        self, component_filter_model: ComponentFilter
+    ) -> Page[ComponentResponse]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -318,9 +263,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_component(
-        self, component_id: UUID
-    ) -> ComponentResponseModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponse:
         """Get a stack component by ID.
 
         Args:
@@ -337,8 +280,8 @@ class ZenStoreInterface(ABC):
     def update_stack_component(
         self,
         component_id: UUID,
-        component_update: ComponentUpdateModel,
-    ) -> ComponentResponseModel:
+        component_update: ComponentUpdate,
+    ) -> ComponentResponse:
         """Update an existing stack component.
 
         Args:
@@ -364,15 +307,13 @@ class ZenStoreInterface(ABC):
             ValueError: if the stack component is part of one or more stacks.
         """
 
-    # -----------------------
-    # Stack component flavors
-    # -----------------------
+    # -------------------- Flavors --------------------
 
     @abstractmethod
     def create_flavor(
         self,
-        flavor: FlavorRequestModel,
-    ) -> FlavorResponseModel:
+        flavor: FlavorRequest,
+    ) -> FlavorResponse:
         """Creates a new stack component flavor.
 
         Args:
@@ -388,8 +329,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_flavor(
-        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
-    ) -> FlavorResponseModel:
+        self, flavor_id: UUID, flavor_update: FlavorUpdate
+    ) -> FlavorResponse:
         """Updates an existing user.
 
         Args:
@@ -401,7 +342,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponse:
         """Get a stack component flavor by ID.
 
         Args:
@@ -416,8 +357,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_flavors(
-        self, flavor_filter_model: FlavorFilterModel
-    ) -> Page[FlavorResponseModel]:
+        self, flavor_filter_model: FlavorFilter
+    ) -> Page[FlavorResponse]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -439,12 +380,10 @@ class ZenStoreInterface(ABC):
             KeyError: if the stack component flavor doesn't exist.
         """
 
-    # -----
-    # Users
-    # -----
+    # -------------------- Users --------------------
 
     @abstractmethod
-    def create_user(self, user: UserRequestModel) -> UserResponseModel:
+    def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
 
         Args:
@@ -462,7 +401,7 @@ class ZenStoreInterface(ABC):
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         include_private: bool = False,
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
@@ -477,9 +416,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(
-        self, user_filter_model: UserFilterModel
-    ) -> Page[UserResponseModel]:
+    def list_users(self, user_filter_model: UserFilter) -> Page[UserResponse]:
         """List all users.
 
         Args:
@@ -492,8 +429,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
-    ) -> UserResponseModel:
+        self, user_id: UUID, user_update: UserUpdate
+    ) -> UserResponse:
         """Updates an existing user.
 
         Args:
@@ -518,271 +455,12 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given ID exists.
         """
 
-    # -----
-    # Teams
-    # -----
-
-    @abstractmethod
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-
-    @abstractmethod
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
-        """
-
-    @abstractmethod
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    # -----
-    # Roles
-    # -----
-
-    @abstractmethod
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    @abstractmethod
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            KeyError: if the role does not exist.
-        """
-
-    @abstractmethod
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
-        """
-
-    # ---------------------
-    # User Role assignments
-    # ---------------------
-    @abstractmethod
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Creates a new role assignment.
-
-        Args:
-            user_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            user_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
-    @abstractmethod
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-
-    # --------
-    # Workspaces
-    # --------
+    # -------------------- Workspaces --------------------
 
     @abstractmethod
     def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
         """Creates a new workspace.
 
         Args:
@@ -798,7 +476,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_workspace(
         self, workspace_name_or_id: Union[UUID, str]
-    ) -> WorkspaceResponseModel:
+    ) -> WorkspaceResponse:
         """Get an existing workspace by name or ID.
 
         Args:
@@ -813,8 +491,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_workspaces(
-        self, workspace_filter_model: WorkspaceFilterModel
-    ) -> Page[WorkspaceResponseModel]:
+        self, workspace_filter_model: WorkspaceFilter
+    ) -> Page[WorkspaceResponse]:
         """List all workspace matching the given filter criteria.
 
         Args:
@@ -827,8 +505,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
         """Update an existing workspace.
 
         Args:
@@ -853,15 +531,13 @@ class ZenStoreInterface(ABC):
             KeyError: If no workspace with the given name exists.
         """
 
-    # ---------
-    # Pipelines
-    # ---------
+    # -------------------- Pipelines --------------------
 
     @abstractmethod
     def create_pipeline(
         self,
-        pipeline: PipelineRequestModel,
-    ) -> PipelineResponseModel:
+        pipeline: PipelineRequest,
+    ) -> PipelineResponse:
         """Creates a new pipeline in a workspace.
 
         Args:
@@ -876,7 +552,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponse:
         """Get a pipeline with a given ID.
 
         Args:
@@ -891,8 +567,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_pipelines(
-        self, pipeline_filter_model: PipelineFilterModel
-    ) -> Page[PipelineResponseModel]:
+        self, pipeline_filter_model: PipelineFilter
+    ) -> Page[PipelineResponse]:
         """List all pipelines matching the given filter criteria.
 
         Args:
@@ -907,8 +583,8 @@ class ZenStoreInterface(ABC):
     def update_pipeline(
         self,
         pipeline_id: UUID,
-        pipeline_update: PipelineUpdateModel,
-    ) -> PipelineResponseModel:
+        pipeline_update: PipelineUpdate,
+    ) -> PipelineResponse:
         """Updates a pipeline.
 
         Args:
@@ -933,15 +609,13 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline doesn't exist.
         """
 
-    # ---------
-    # Builds
-    # ---------
+    # -------------------- Pipeline builds --------------------
 
     @abstractmethod
     def create_build(
         self,
-        build: PipelineBuildRequestModel,
-    ) -> PipelineBuildResponseModel:
+        build: PipelineBuildRequest,
+    ) -> PipelineBuildResponse:
         """Creates a new build in a workspace.
 
         Args:
@@ -956,7 +630,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+    def get_build(self, build_id: UUID) -> PipelineBuildResponse:
         """Get a build with a given ID.
 
         Args:
@@ -971,8 +645,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_builds(
-        self, build_filter_model: PipelineBuildFilterModel
-    ) -> Page[PipelineBuildResponseModel]:
+        self, build_filter_model: PipelineBuildFilter
+    ) -> Page[PipelineBuildResponse]:
         """List all builds matching the given filter criteria.
 
         Args:
@@ -994,15 +668,13 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
-    # ----------------------
-    # Pipeline Deployments
-    # ----------------------
+    # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequestModel,
-    ) -> PipelineDeploymentResponseModel:
+        deployment: PipelineDeploymentRequest,
+    ) -> PipelineDeploymentResponse:
         """Creates a new deployment in a workspace.
 
         Args:
@@ -1019,7 +691,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_deployment(
         self, deployment_id: UUID
-    ) -> PipelineDeploymentResponseModel:
+    ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -1034,8 +706,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_deployments(
-        self, deployment_filter_model: PipelineDeploymentFilterModel
-    ) -> Page[PipelineDeploymentResponseModel]:
+        self, deployment_filter_model: PipelineDeploymentFilter
+    ) -> Page[PipelineDeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1057,14 +729,10 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment doesn't exist.
         """
 
-    # ---------
-    # Schedules
-    # ---------
+    # -------------------- Schedules --------------------
 
     @abstractmethod
-    def create_schedule(
-        self, schedule: ScheduleRequestModel
-    ) -> ScheduleResponseModel:
+    def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
         """Creates a new schedule.
 
         Args:
@@ -1075,7 +743,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponse:
         """Get a schedule with a given ID.
 
         Args:
@@ -1090,8 +758,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_schedules(
-        self, schedule_filter_model: ScheduleFilterModel
-    ) -> Page[ScheduleResponseModel]:
+        self, schedule_filter_model: ScheduleFilter
+    ) -> Page[ScheduleResponse]:
         """List all schedules in the workspace.
 
         Args:
@@ -1106,8 +774,8 @@ class ZenStoreInterface(ABC):
     def update_schedule(
         self,
         schedule_id: UUID,
-        schedule_update: ScheduleUpdateModel,
-    ) -> ScheduleResponseModel:
+        schedule_update: ScheduleUpdate,
+    ) -> ScheduleResponse:
         """Updates a schedule.
 
         Args:
@@ -1132,14 +800,12 @@ class ZenStoreInterface(ABC):
             KeyError: if the schedule doesn't exist.
         """
 
-    # --------------
-    # Pipeline runs
-    # --------------
+    # -------------------- Pipeline runs --------------------
 
     @abstractmethod
     def create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
@@ -1154,9 +820,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run(
-        self, run_name_or_id: Union[str, UUID]
-    ) -> PipelineRunResponseModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
@@ -1171,8 +835,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_or_create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> Tuple[PipelineRunResponseModel, bool]:
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -1188,8 +852,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_runs(
-        self, runs_filter_model: PipelineRunFilterModel
-    ) -> Page[PipelineRunResponseModel]:
+        self, runs_filter_model: PipelineRunFilter
+    ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
         Args:
@@ -1202,8 +866,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdateModel
-    ) -> PipelineRunResponseModel:
+        self, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
@@ -1228,14 +892,10 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    # ------------------
-    # Pipeline run steps
-    # ------------------
+    # -------------------- Step runs --------------------
 
     @abstractmethod
-    def create_run_step(
-        self, step_run: StepRunRequestModel
-    ) -> StepRunResponseModel:
+    def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
         """Creates a step run.
 
         Args:
@@ -1250,7 +910,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
         """Get a step run by ID.
 
         Args:
@@ -1265,8 +925,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_run_steps(
-        self, step_run_filter_model: StepRunFilterModel
-    ) -> Page[StepRunResponseModel]:
+        self, step_run_filter_model: StepRunFilter
+    ) -> Page[StepRunResponse]:
         """List all step runs matching the given filter criteria.
 
         Args:
@@ -1281,8 +941,8 @@ class ZenStoreInterface(ABC):
     def update_run_step(
         self,
         step_run_id: UUID,
-        step_run_update: StepRunUpdateModel,
-    ) -> StepRunResponseModel:
+        step_run_update: StepRunUpdate,
+    ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
@@ -1296,14 +956,10 @@ class ZenStoreInterface(ABC):
             KeyError: if the step run doesn't exist.
         """
 
-    # ---------
-    # Artifacts
-    # ---------
+    # -------------------- Artifacts --------------------
 
     @abstractmethod
-    def create_artifact(
-        self, artifact: ArtifactRequestModel
-    ) -> ArtifactResponseModel:
+    def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
         """Creates an artifact.
 
         Args:
@@ -1314,7 +970,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponse:
         """Gets an artifact.
 
         Args:
@@ -1329,8 +985,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_artifacts(
-        self, artifact_filter_model: ArtifactFilterModel
-    ) -> Page[ArtifactResponseModel]:
+        self, artifact_filter_model: ArtifactFilter
+    ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
@@ -1352,14 +1008,12 @@ class ZenStoreInterface(ABC):
             KeyError: if the artifact doesn't exist.
         """
 
-    # ------------
-    # Run Metadata
-    # ------------
+    # -------------------- Run metadata --------------------
 
     @abstractmethod
     def create_run_metadata(
-        self, run_metadata: RunMetadataRequestModel
-    ) -> List[RunMetadataResponseModel]:
+        self, run_metadata: RunMetadataRequest
+    ) -> List[RunMetadataResponse]:
         """Creates run metadata.
 
         Args:
@@ -1372,8 +1026,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_run_metadata(
         self,
-        run_metadata_filter_model: RunMetadataFilterModel,
-    ) -> Page[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilter,
+    ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
         Args:
@@ -1384,14 +1038,12 @@ class ZenStoreInterface(ABC):
             The run metadata.
         """
 
-    # -----------------
-    # Code Repositories
-    # -----------------
+    # -------------------- Code repositories --------------------
 
     @abstractmethod
     def create_code_repository(
-        self, code_repository: CodeRepositoryRequestModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository: CodeRepositoryRequest
+    ) -> CodeRepositoryResponse:
         """Creates a new code repository.
 
         Args:
@@ -1408,7 +1060,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_code_repository(
         self, code_repository_id: UUID
-    ) -> CodeRepositoryResponseModel:
+    ) -> CodeRepositoryResponse:
         """Gets a specific code repository.
 
         Args:
@@ -1423,8 +1075,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_code_repositories(
-        self, filter_model: CodeRepositoryFilterModel
-    ) -> Page[CodeRepositoryResponseModel]:
+        self, filter_model: CodeRepositoryFilter
+    ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
 
         Args:
@@ -1437,8 +1089,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_code_repository(
-        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository_id: UUID, update: CodeRepositoryUpdate
+    ) -> CodeRepositoryResponse:
         """Updates an existing code repository.
 
         Args:
@@ -1463,15 +1115,13 @@ class ZenStoreInterface(ABC):
             KeyError: If no code repository with the given ID exists.
         """
 
-    # ------------------
-    # Service Connectors
-    # ------------------
+    # -------------------- Service Connectors --------------------
 
     @abstractmethod
     def create_service_connector(
         self,
-        service_connector: ServiceConnectorRequestModel,
-    ) -> ServiceConnectorResponseModel:
+        service_connector: ServiceConnectorRequest,
+    ) -> ServiceConnectorResponse:
         """Creates a new service connector.
 
         Args:
@@ -1488,7 +1138,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_service_connector(
         self, service_connector_id: UUID
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
         Args:
@@ -1503,8 +1153,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_service_connectors(
-        self, filter_model: ServiceConnectorFilterModel
-    ) -> Page[ServiceConnectorResponseModel]:
+        self, filter_model: ServiceConnectorFilter
+    ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
         Args:
@@ -1517,8 +1167,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_service_connector(
-        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector_id: UUID, update: ServiceConnectorUpdate
+    ) -> ServiceConnectorResponse:
         """Updates an existing service connector.
 
         The update model contains the fields to be updated. If a field value is
@@ -1693,9 +1343,7 @@ class ZenStoreInterface(ABC):
             KeyError: If no service connector type with the given ID exists.
         """
 
-    #########
-    # Model
-    #########
+    # -------------------- Model --------------------
 
     @abstractmethod
     def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
@@ -1769,9 +1417,7 @@ class ZenStoreInterface(ABC):
             A page of all models.
         """
 
-    #################
-    # Model Versions
-    #################
+    # -------------------- Model versions --------------------
 
     @abstractmethod
     def create_model_version(

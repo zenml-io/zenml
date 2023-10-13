@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Union, Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from zenml.enums import VisualizationType
@@ -20,7 +20,6 @@ from zenml.new_models.base import (
     BaseResponse,
     BaseResponseMetadata,
 )
-
 
 # ------------------ Request Model ------------------
 
@@ -42,7 +41,7 @@ class ArtifactVisualizationRequest(BaseRequest):
 
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     """Response metadata model for artifact visualizations."""
-
+    artifact_id: UUID
 
 class ArtifactVisualizationResponse(BaseResponse):
     """Response model for artifact visualizations."""
@@ -51,7 +50,6 @@ class ArtifactVisualizationResponse(BaseResponse):
     type: VisualizationType
     uri: str
     value: Union[str, bytes]
-    artifact_id: UUID
 
     # Metadata related field, method and properties
     metadata: Optional["ArtifactVisualizationResponseMetadata"]

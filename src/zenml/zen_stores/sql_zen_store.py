@@ -239,7 +239,7 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
-from zenml.zen_stores.schemas.artifact_schemas import (
+from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
