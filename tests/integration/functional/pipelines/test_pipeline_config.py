@@ -71,3 +71,62 @@ def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
 
     assert_model_config_pipeline.with_options(model_config=model_config)()
     assert_model_config_pipeline.with_options(config_path=str(config_path))()
+
+
+def test_pipeline_with_model_config_from_yaml_updated_later(
+    clean_workspace, tmp_path
+):
+    """ """
+    initial_model_config = ModelConfig(name="bar")
+
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(
+        run_name="run_name_in_file",
+        model_config=initial_model_config.dict(),
+    )
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_model_config_pipeline():
+        assert_model_config_step()
+
+    p = assert_model_config_pipeline.with_options(config_path=str(config_path))
+    assert p.configuration.model_config.name == "bar"
+
+    p.configure(
+        model_config=ModelConfig(
+            name="foo",
+            create_new_model_version=True,
+            delete_new_version_on_failure=False,
+            description="description",
+            license="MIT",
+            audience="audience",
+            use_cases="use_cases",
+            limitations="limitations",
+            trade_offs="trade_offs",
+            ethic="ethic",
+            tags=["tag"],
+            version_description="version_description",
+            save_models_to_registry=True,
+        )
+    )
+    assert p.configuration.model_config is not None
+    assert p.configuration.model_config.name == "foo"
+    assert p.configuration.model_config.version == RUNNING_MODEL_VERSION
+    assert p.configuration.model_config.create_new_model_version
+    assert not p.configuration.model_config.delete_new_version_on_failure
+    assert p.configuration.model_config.description == "description"
+    assert p.configuration.model_config.license == "MIT"
+    assert p.configuration.model_config.audience == "audience"
+    assert p.configuration.model_config.use_cases == "use_cases"
+    assert p.configuration.model_config.limitations == "limitations"
+    assert p.configuration.model_config.trade_offs == "trade_offs"
+    assert p.configuration.model_config.ethic == "ethic"
+    assert p.configuration.model_config.tags == ["tag"]
+    assert (
+        p.configuration.model_config.version_description
+        == "version_description"
+    )
+    assert p.configuration.model_config.save_models_to_registry
+
+    p()
