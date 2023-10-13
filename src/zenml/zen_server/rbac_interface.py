@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.enums import StrEnum
+from zenml.models import ComponentResponseModel, StackResponseModel
+from zenml.models.base_models import BaseResponseModel
 
 
 class Action(StrEnum):
@@ -16,8 +18,20 @@ class Action(StrEnum):
 
 class ResourceType(StrEnum):
     STACK = "stack"
-    COMPONENT = "component"
+    FLAVOR = "flavor"
+    STACK_COMPONENT = "stack_component"
     PIPELINE = "pipeline"
+    CODE_REPOSITORY = "code-repository"
+    MODEL = "model"
+    SERVICE_CONNECTOR = "service_connector"
+    ARTIFACT = "artifact"
+    SECRET = "secret"
+
+
+RESOURCE_TYPE_MAPPING: Dict[Type[BaseResponseModel], ResourceType] = {
+    StackResponseModel: ResourceType.STACK,
+    ComponentResponseModel: ResourceType.STACK_COMPONENT,
+}
 
 
 class Resource(BaseModel):

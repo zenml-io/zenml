@@ -36,8 +36,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    TEAM_ROLE_ASSIGNMENTS,
-    USER_ROLE_ASSIGNMENTS,
     VERSION_1,
     WORKSPACES,
 )
@@ -87,10 +85,6 @@ from zenml.models import (
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel,
     WorkspaceFilterModel,
     WorkspaceRequestModel,
     WorkspaceResponseModel,
@@ -227,66 +221,6 @@ def delete_workspace(
         workspace_name_or_id: Name or ID of the workspace.
     """
     zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
-
-
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
-    response_model=Page[UserRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_user_role_assignments_for_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
-    """Returns a list of all roles that are assigned to a team.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        user_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering
-
-    Returns:
-        A list of all roles that are assigned to a team.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    user_role_assignment_filter_model.workspace_id = workspace.id
-    return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
-    )
-
-
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
-    response_model=Page[TeamRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_team_role_assignments_for_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
-        make_dependable(TeamRoleAssignmentFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamRoleAssignmentResponseModel]:
-    """Returns a list of all roles that are assigned to a team.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        team_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering
-
-    Returns:
-        A list of all roles that are assigned to a team.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    team_role_assignment_filter_model.workspace_id = workspace.id
-    return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model
-    )
 
 
 @router.get(

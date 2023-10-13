@@ -24,7 +24,6 @@ from zenml.constants import (
     API,
     DEACTIVATE,
     EMAIL_ANALYTICS,
-    ROLES,
     USERS,
     VERSION_1,
 )
@@ -35,8 +34,6 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel,
     UserUpdateModel,
 )
 from zenml.models.page_model import Page
@@ -363,31 +360,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             raise AuthorizationException(
                 "Users can not opt in on behalf of another " "user."
             )
-
-
-@router.get(
-    "/{user_name_or_id}" + ROLES,
-    response_model=Page[UserRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_role_assignments_for_user(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
-    """Returns a list of all roles that are assigned to a user.
-
-    Args:
-        user_role_assignment_filter_model: filter models for user role assignments
-
-    Returns:
-        A list of all roles that are assigned to a user.
-    """
-    return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
-    )
 
 
 @current_user_router.get(

@@ -27,7 +27,7 @@ from zenml.models import (
     PipelineUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.zen_server.auth import AuthContext, authorize, verify_permissions
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -100,14 +100,6 @@ def get_pipeline(
     Returns:
         A specific pipeline object.
     """
-    from zenml.zen_server.rbac_interface import Action, ResourceType
-
-    verify_permissions(
-        resource_type=ResourceType.PIPELINE,
-        action=Action.READ,
-        resource_id=pipeline_id,
-    )
-
     return zen_store().get_pipeline(pipeline_id=pipeline_id)
 
 
