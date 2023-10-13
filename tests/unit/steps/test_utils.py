@@ -116,7 +116,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_no_output_annotation_and_return,
             {
                 "output": OutputSignature(
-                    resolved_annotation=Any, artifact_config=None
+                    resolved_annotation=Any,
+                    artifact_config=None,
+                    has_custom_name=False,
                 )
             },
         ),
@@ -124,7 +126,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_single_output,
             {
                 "output": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 )
             },
         ),
@@ -132,7 +136,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_single_annotated_output,
             {
                 "custom_output": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=True,
                 )
             },
         ),
@@ -140,7 +146,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_tuple_output,
             {
                 "output": OutputSignature(
-                    resolved_annotation=tuple, artifact_config=None
+                    resolved_annotation=tuple,
+                    artifact_config=None,
+                    has_custom_name=False,
                 )
             },
         ),
@@ -148,7 +156,9 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_annotated_tuple_output,
             {
                 "custom_output": OutputSignature(
-                    resolved_annotation=tuple, artifact_config=None
+                    resolved_annotation=tuple,
+                    artifact_config=None,
+                    has_custom_name=True,
                 )
             },
         ),
@@ -156,10 +166,14 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_multiple_outputs,
             {
                 "output_0": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
                 "output_1": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
             },
         ),
@@ -167,10 +181,14 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_multiple_annotated_outputs,
             {
                 "custom_output": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=True,
                 ),
                 "output_1": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
             },
         ),
@@ -178,10 +196,14 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_multiple_annotated_outputs_and_artifact_config,
             {
                 "custom_output": OutputSignature(
-                    resolved_annotation=int, artifact_config=ArtifactConfig()
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(),
+                    has_custom_name=True,
                 ),
                 "output_1": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
             },
         ),
@@ -193,9 +215,12 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
                     artifact_config=ModelArtifactConfig(
                         save_to_model_registry=False
                     ),
+                    has_custom_name=True,
                 ),
                 "output_1": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
             },
         ),
@@ -205,9 +230,12 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
                 "custom_output": OutputSignature(
                     resolved_annotation=int,
                     artifact_config=DeploymentArtifactConfig(),
+                    has_custom_name=True,
                 ),
                 "output_1": OutputSignature(
-                    resolved_annotation=int, artifact_config=None
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
                 ),
             },
         ),

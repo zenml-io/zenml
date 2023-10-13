@@ -46,11 +46,16 @@ class ArtifactBaseModel(BaseModel):
     """Base model for artifacts."""
 
     name: str = Field(
-        title="Name of the output in the parent step.",
+        title="Name of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     version: Union[str, int] = Field(
-        title="Version of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+        title="Version of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    has_custom_name: bool = Field(
+        title="Whether the name is custom (True) or auto-generated (False).",
+        default=False,
     )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",

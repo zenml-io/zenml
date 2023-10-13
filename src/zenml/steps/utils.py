@@ -38,6 +38,7 @@ class OutputSignature(BaseModel):
 
     resolved_annotation: Any
     artifact_config: Optional[ArtifactConfig]
+    has_custom_name: bool = False
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
@@ -75,14 +76,17 @@ def parse_return_type_annotations(
             annotation is missing.
 
     Returns:
-        The function output artifacts.
+        - A dictionary mapping output names to their output signatures.
     """
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
+    output_name: Optional[str]
 
+    # Return type annotated as `None`
     if return_annotation is None:
         return {}
 
+    # Return type not annotated -> check whether `None` or `Any` should be used
     if return_annotation is signature.empty:
         if enforce_type_annotations:
             raise RuntimeError(
@@ -94,6 +98,7 @@ def parse_return_type_annotations(
         else:
             return_annotation = Any
 
+    # Return type annotated using deprecated `Output(...)`
     if isinstance(return_annotation, Output):
         logger.warning(
             "Using the `Output` class to define the outputs of your steps is "
@@ -107,28 +112,27 @@ def parse_return_type_annotations(
             output_name: OutputSignature(
                 resolved_annotation=resolve_type_annotation(output_type),
                 artifact_config=None,
+                has_custom_name=True,
             )
             for output_name, output_type in return_annotation.items()
         }
 
     elif pydantic_typing.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
-
         if requires_multiple_artifacts:
-            output_signature = {}
-
+            output_signature: Dict[str, Any] = {}
             args = pydantic_typing.get_args(return_annotation)
             if args[-1] is Ellipsis:
                 raise RuntimeError(
                     "Variable length output annotations are not allowed."
                 )
-
             for i, annotation in enumerate(args):
                 resolved_annotation = resolve_type_annotation(annotation)
                 (
                     output_name,
                     artifact_config,
                 ) = get_output_name_from_annotation_metadata(annotation)
+                has_custom_name = output_name is not None
                 output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
                     raise RuntimeError(f"Duplicate output name {output_name}.")
@@ -136,24 +140,24 @@ def parse_return_type_annotations(
                 output_signature[output_name] = OutputSignature(
                     resolved_annotation=resolved_annotation,
                     artifact_config=artifact_config,
+                    has_custom_name=has_custom_name,
                 )
-
             return output_signature
 
+    # Return type is annotated as single value or is a tuple
     resolved_annotation = resolve_type_annotation(return_annotation)
     output_name, artifact_config = get_output_name_from_annotation_metadata(
         return_annotation
     )
+    has_custom_name = output_name is not None
     output_name = output_name or SINGLE_RETURN_OUT_NAME
-
-    output_signature = {
+    return {
         output_name: OutputSignature(
             resolved_annotation=resolved_annotation,
             artifact_config=artifact_config,
+            has_custom_name=has_custom_name,
         )
     }
-
-    return output_signature
 
 
 def resolve_type_annotation(obj: Any) -> Any:
