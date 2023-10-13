@@ -17,11 +17,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
@@ -57,6 +59,15 @@ class StepRunSchema(NamedSchema, table=True):
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
 
+    step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
+
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -72,7 +83,7 @@ class StepRunSchema(NamedSchema, table=True):
         source_column="deployment_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -102,7 +113,7 @@ class StepRunSchema(NamedSchema, table=True):
     # Relationships
     workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
-    deployment: "PipelineDeploymentSchema" = Relationship(
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -172,10 +183,17 @@ class StepRunSchema(NamedSchema, table=True):
             for artifact in self.output_artifacts
         }
 
-        full_step_config = Step.parse_obj(
-            json.loads(self.deployment.step_configurations)[self.name]
-        )
-
+        if self.deployment is not None:
+            full_step_config = Step.parse_obj(
+                json.loads(self.deployment.step_configurations)[self.name]
+            )
+        elif self.step_configuration is not None:
+            full_step_config = Step.parse_raw(self.step_configuration)
+        else:
+            raise RuntimeError(
+                "Step run model creation has failed. Each step run entry "
+                "should at least have a deployment_id or step_configuration."
+            )
         return StepRunResponseModel(
             id=self.id,
             # Attributes from the StepRunBaseModel
@@ -194,10 +212,10 @@ class StepRunSchema(NamedSchema, table=True):
             original_step_run_id=self.original_step_run_id,
             parent_step_ids=[p.parent_id for p in self.parents],
             # Attributes from the WorkspaceScopedResponseModel
-            user=self.deployment.user.to_model(_block_recursion=True)
-            if self.deployment.user
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
             else None,
-            workspace=self.deployment.workspace.to_model(),
+            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
             # Attributes from the StepRunResponseModel

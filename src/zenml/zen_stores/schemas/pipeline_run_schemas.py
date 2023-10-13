@@ -175,8 +175,6 @@ class PipelineRunSchema(NamedSchema, table=True):
             status=self.status,
             config=deployment.pipeline_configuration,
             orchestrator_run_id=self.orchestrator_run_id,
-            client_version=deployment.client_version,
-            server_version=deployment.server_version,
             client_environment=deployment.client_environment,
             orchestrator_environment=orchestrator_environment,
             # Attributes of the WorkspaceScopedResponseModel

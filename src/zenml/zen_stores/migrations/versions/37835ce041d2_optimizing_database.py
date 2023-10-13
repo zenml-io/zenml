@@ -82,18 +82,6 @@ def upgrade() -> None:
     )
     connection.execute(update_server_version_query)
 
-    with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.alter_column(
-            "client_version",
-            existing_type=sqlmodel.sql.sqltypes.AutoString(),
-            nullable=False,
-        )
-        batch_op.alter_column(
-            "server_version",
-            existing_type=sqlmodel.sql.sqltypes.AutoString(),
-            nullable=False,
-        )
-
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
@@ -108,7 +96,14 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("step_configuration")
+        batch_op.alter_column(
+            "step_configuration",
+            existing_type=sa.String(length=16777215).with_variant(
+                mysql.MEDIUMTEXT(), "mysql"
+            ),
+            nullable=True,
+        )
+
         batch_op.drop_column("parameters")
         batch_op.drop_column("enable_artifact_metadata")
         batch_op.drop_column("num_outputs")
@@ -134,13 +129,6 @@ def upgrade() -> None:
         """
     )
     connection.execute(update_deployment_id)
-
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column(
-            "deployment_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
-            nullable=False,
-        )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
@@ -200,13 +188,6 @@ def downgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "parameters", sa.VARCHAR(length=16777215), nullable=False
-            )
-        )
-        batch_op.add_column(
-            sa.Column(
-                "step_configuration",
-                sa.VARCHAR(length=16777215),
-                nullable=False,
             )
         )
         batch_op.drop_constraint(
