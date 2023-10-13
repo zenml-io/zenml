@@ -246,6 +246,7 @@ class StepRunner:
                             output_data=output_data,
                             output_artifact_uris=output_artifact_uris,
                             output_materializers=output_materializers,
+                            output_annotations=output_annotations,
                             artifact_metadata_enabled=artifact_metadata_enabled,
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
@@ -531,6 +532,7 @@ class StepRunner:
         output_data: Dict[str, Any],
         output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
         output_artifact_uris: Dict[str, str],
+        output_annotations: Dict[str, OutputSignature],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
     ) -> Dict[str, UUID]:
@@ -541,6 +543,7 @@ class StepRunner:
                 names to return values.
             output_materializers: The output materializers of the step.
             output_artifact_uris: The output artifact URIs of the step.
+            output_annotations: The output annotations of the step function.
             artifact_metadata_enabled: Whether artifact metadata collection is
                 enabled.
             artifact_visualization_enabled: Whether artifact visualization is
@@ -550,6 +553,7 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         client = Client()
+        step_context = get_step_context()
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
@@ -592,14 +596,31 @@ class StepRunner:
 
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            has_custom_name = output_annotations[output_name].has_custom_name
+
+            # Override the artifact name if it is not a custom name.
+            if has_custom_name:
+                artifact_name = output_name
+            else:
+                if step_context.pipeline_run.pipeline:
+                    pipeline_name = step_context.pipeline_run.pipeline.name
+                else:
+                    pipeline_name = "unlisted"
+                step_name = step_context.step_run.name
+                artifact_name = f"{pipeline_name}::{step_name}::{output_name}"
+
+            # Get metadata that the user logged manually
+            user_metadata = step_context.get_output_metadata(output_name)
 
             artifact_id = artifact_utils.upload_artifact(
-                name=output_name,
+                name=artifact_name,
                 data=return_value,
                 materializer=materializer,
                 artifact_store_id=artifact_store_id,
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
+                has_custom_name=has_custom_name,
+                user_metadata=user_metadata,
             )
             output_artifacts[output_name] = artifact_id
 

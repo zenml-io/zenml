@@ -48,6 +48,7 @@ class ArtifactSchema(NamedSchema, table=True):
     __tablename__ = "artifact"
 
     # Fields
+    has_custom_name: bool
     type: ArtifactType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -119,6 +120,7 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         return cls(
             name=artifact_request.name,
+            has_custom_name=artifact_request.has_custom_name,
             artifact_store_id=artifact_request.artifact_store_id,
             workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
@@ -163,6 +165,7 @@ class ArtifactSchema(NamedSchema, table=True):
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
+            has_custom_name=self.has_custom_name,
             artifact_store_id=self.artifact_store_id,
             user=self.user.to_model(_block_recursion=True)
             if self.user
