@@ -1390,6 +1390,7 @@ class Pipeline:
                 from_config: Dict[str, Any] = yaml.load(
                     f, Loader=yaml.SafeLoader
                 )
+            # pull out parameters relevant for configure method
             configure_args = inspect.getfullargspec(self.configure)[0]
             from_config = {
                 k: v for k, v in from_config.items() if k in configure_args
