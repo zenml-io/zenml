@@ -119,7 +119,7 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     config: "StepConfiguration" = Field(title="The configuration of the step.")
     spec: "StepSpec" = Field(title="The spec of the step.")
 
-    deployment_id: UUID = Field(
+    deployment_id: Optional[UUID] = Field(
         title="The deployment associated with the step run."
     )
 
