@@ -19,6 +19,7 @@ from typing_extensions import Annotated
 from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
 from zenml.client import Client
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.model import (
@@ -793,6 +794,17 @@ def _cacheable_step_not_annotated():
     return "cacheable"
 
 
+@step(enable_cache=True)
+def _cacheable_step_custom_model_annotated() -> (
+    Annotated[
+        str,
+        "cacheable",
+        ArtifactConfig(model_name="bar", model_version=RUNNING_MODEL_VERSION),
+    ]
+):
+    return "cacheable"
+
+
 @step(enable_cache=False)
 def _non_cacheable_step():
     return "not cacheable"
@@ -812,12 +824,18 @@ def test_artifacts_linked_from_cache_steps():
         _cacheable_step_not_annotated.with_options(
             enable_cache=force_disable_cache
         )()
+        _cacheable_step_custom_model_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
         _non_cacheable_step()
 
     with model_killer():
         client = Client()
 
         for i in range(1, 3):
+            fake_version = ModelConfig(
+                name="bar", create_new_model_version=True
+            ).get_or_create_model_version()
             _inner_pipeline(i != 1)
 
             mv = client.get_model_version(
@@ -832,3 +850,22 @@ def test_artifacts_linked_from_cache_steps():
             assert set(mv.model_object_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
+
+            mv = client.get_model_version(
+                model_name_or_id="bar",
+                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
+            )
+            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+            }, f"Failed on {i} run"
+            assert (
+                len(
+                    mv.artifact_object_ids[
+                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
+                    ]
+                )
+                == 1
+            ), f"Failed on {i} run"
+
+            fake_version._update_default_running_version_name()
