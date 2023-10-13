@@ -98,8 +98,8 @@ def delete_artifact(
 ) -> None:
     """Delete an artifact by ID or name.
 
-    If an artifact name without a version is provided, all artifacts with that
-    name will be deleted.
+    If an artifact name without a version is provided, all artifact versions
+    with that name will be deleted.
 
     Args:
         artifact_name_or_id: Name or ID of the artifact to delete.
@@ -123,7 +123,7 @@ def delete_artifact(
             )
         else:
             confirmation = cli_utils.confirmation(
-                f"Are you sure you want to delete all artifacts with name "
+                f"Are you sure you want to delete all versions of artifact "
                 f"'{artifact_name_or_id}'?"
             )
         if not confirmation:
@@ -159,7 +159,7 @@ def delete_artifact(
             )
         else:
             cli_utils.declare(
-                f"All artifacts with name '{artifact_name_or_id}' deleted."
+                f"All versions of artifact '{artifact_name_or_id}' deleted."
             )
 
 
