@@ -33,7 +33,7 @@ from zenml.models import (
 )
 
 
-@step
+@step(enable_cache=False)
 def _assert_that_model_config_set(name="foo", version=RUNNING_MODEL_VERSION):
     """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_config.name == name
@@ -117,12 +117,15 @@ def test_model_config_passed_to_step_context_and_switches():
         _simple_step_pipeline()
 
 
-@step(model_config=ModelConfig(name="foo", create_new_model_version=True))
+@step(
+    model_config=ModelConfig(name="foo", create_new_model_version=True),
+    enable_cache=False,
+)
 def _this_step_creates_a_version():
     return 1
 
 
-@step
+@step(enable_cache=False)
 def _this_step_does_not_create_a_version():
     return 1
 
@@ -219,14 +222,14 @@ def test_create_new_version_only_in_pipeline():
         assert foo_version.name == "2"
 
 
-@step
+@step(enable_cache=False)
 def _this_step_produces_output() -> (
     Annotated[int, "data", ArtifactConfig(overwrite=False)]
 ):
     return 1
 
 
-@step
+@step(enable_cache=False)
 def _this_step_tries_to_recover(run_number: int):
     mv = get_step_context().model_config._get_model_version()
     assert (
@@ -342,12 +345,15 @@ def test_clean_up_after_failure(model_config: ModelConfig):
             )
 
 
-@step(model_config=ModelConfig(name="foo", create_new_model_version=True))
+@step(
+    model_config=ModelConfig(name="foo", create_new_model_version=True),
+    enable_cache=False,
+)
 def _new_version_step():
     return 1
 
 
-@step
+@step(enable_cache=False)
 def _no_model_config_step():
     return 1
 
@@ -540,7 +546,7 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
         }
 
 
-@step
+@step(enable_cache=False)
 def _this_step_has_model_config_on_artifact_level() -> (
     Tuple[
         Annotated[
@@ -664,38 +670,41 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
             }
 
 
-@step
+@step(enable_cache=False)
 def _consumer_step(a: int, b: int):
     assert a == b
 
 
-@step(model_config=ModelConfig(name="step", create_new_model_version=True))
+@step(
+    model_config=ModelConfig(name="step", create_new_model_version=True),
+    enable_cache=False,
+)
 def _producer_step() -> Tuple[int, int, int]:
     return 1, 2, 3
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(model_config=ModelConfig(name="step"))(
         ExternalArtifact(model_artifact_name="output_0"), 1
     )
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def _consumer_pipeline_with_artifact_context():
     _consumer_step(
         ExternalArtifact(model_artifact_name="output_1", model_name="step"), 2
     )
 
 
-@pipeline(model_config=ModelConfig(name="step"))
+@pipeline(model_config=ModelConfig(name="step"), enable_cache=False)
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
         ExternalArtifact(model_artifact_name="output_2", model_name="step"), 3
     )
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def _producer_pipeline():
     _producer_step()
 
@@ -738,7 +747,7 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
     """Test that if one of the steps requests a new version but was cached a new version is still created for other steps."""
     with model_killer():
 
-        @pipeline(model_config=ModelConfig(name="step"))
+        @pipeline(model_config=ModelConfig(name="step"), enable_cache=False)
         def _inner_pipeline():
             # this step requests a new version, but can be cached
             _this_step_produces_output.with_options(
@@ -845,7 +854,7 @@ def test_that_artifact_is_removed_on_deletion():
         assert len(model.versions[0].artifact_object_ids) == 0
 
 
-@step
+@step(enable_cache=False)
 def _this_step_fails():
     raise Exception("make pipeline fail")
 
