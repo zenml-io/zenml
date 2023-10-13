@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2023.09.28-3-g8ae5d7b
+_commit: 2023.10.10
 _src_path: gh:zenml-io/template-e2e-batch
 data_quality_checks: true
 email: ''

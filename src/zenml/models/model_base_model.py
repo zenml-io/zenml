@@ -79,6 +79,7 @@ class ModelConfigModel(ModelBaseModel):
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
+    suppress_warnings: Whether to suppress warnings during validation.
     """
 
     version: Optional[Union[ModelStages, int, str]]
@@ -86,6 +87,7 @@ class ModelConfigModel(ModelBaseModel):
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
+    suppress_warnings: bool = False
 
     class Config:
         """Config class."""
@@ -111,11 +113,13 @@ class ModelConfigModel(ModelBaseModel):
         delete_new_version_on_failure = values.get(
             "delete_new_version_on_failure", True
         )
+        suppress_warnings = values.get("suppress_warnings", False)
         if not delete_new_version_on_failure and not create_new_model_version:
-            logger.warning(
-                "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
-                "Setting `delete_new_version_on_failure` to `True`."
-            )
+            if not suppress_warnings:
+                logger.warning(
+                    "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
+                    "Setting `delete_new_version_on_failure` to `True`."
+                )
             values["delete_new_version_on_failure"] = True
 
         version = values.get("version", None)
@@ -139,16 +143,20 @@ class ModelConfigModel(ModelBaseModel):
             if str(version).isnumeric():
                 raise ValueError(misuse_message.format(set="a numeric value"))
             if version is None:
-                logger.info(
-                    "Creation of new model version was requested, but no version name was explicitly provided."
-                    f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
-                )
+                if not suppress_warnings:
+                    logger.info(
+                        "Creation of new model version was requested, but no version name was explicitly provided. "
+                        f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
+                    )
                 values["version"] = RUNNING_MODEL_VERSION
-        if version in [stage.value for stage in ModelStages]:
+        if (
+            version in [stage.value for stage in ModelStages]
+            and not suppress_warnings
+        ):
             logger.info(
                 f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
             )
-        if str(version).isnumeric():
+        if str(version).isnumeric() and not suppress_warnings:
             logger.info(
                 f"`version` `{version}` is numeric and will be fetched using version number."
             )

@@ -317,7 +317,7 @@ def delete_model(
         cli_utils.declare(f"Model '{model_name_or_id}' deleted.")
 
 
-@model.group
+@model.group()
 def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
