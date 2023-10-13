@@ -1402,7 +1402,7 @@ class Pipeline:
                     from_config["model_config"]
                 )
         else:
-            from_config: Dict[str, Any] = {}
+            from_config = {}
         from_config = dict_utils.recursive_update(from_config, kwargs)
 
         pipeline_copy = self.copy()
