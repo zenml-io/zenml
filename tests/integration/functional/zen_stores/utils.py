@@ -559,7 +559,7 @@ class ModelVersionContext:
                 client.zen_store.create_artifact(
                     ArtifactRequestModel(
                         name=sample_name("sample_artifact"),
-                        version="1",
+                        version=1,
                         data_type="module.class",
                         materializer="module.class",
                         type=ArtifactType.DATA,
@@ -859,7 +859,7 @@ pipeline_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequestModel(
         name=sample_name("sample_artifact"),
-        version="1",
+        version=1,
         data_type="module.class",
         materializer="module.class",
         type=ArtifactType.DATA,

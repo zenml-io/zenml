@@ -137,7 +137,8 @@ def delete_artifact(
                 partial(Client().list_artifacts, name=artifact_name_or_id)
             )
             versions = [
-                artifact_model.version for artifact_model in artifact_models
+                str(artifact_model.version)
+                for artifact_model in artifact_models
             ]
         for version_ in versions:
             Client().delete_artifact(

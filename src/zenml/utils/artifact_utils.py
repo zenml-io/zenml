@@ -433,7 +433,7 @@ def upload_artifact(
     return response.id
 
 
-def _get_new_artifact_version(artifact_name: str) -> str:
+def _get_new_artifact_version(artifact_name: str) -> int:
     """Get the next auto-incremented version for an artifact name.
 
     Args:
@@ -451,10 +451,10 @@ def _get_new_artifact_version(artifact_name: str) -> str:
     )
     for model in models:
         try:
-            return str(int(model.version) + 1)
+            return int(model.version) + 1
         except ValueError:
             pass
-    return "1"
+    return 1
 
 
 def get_producer_step_of_artifact(
