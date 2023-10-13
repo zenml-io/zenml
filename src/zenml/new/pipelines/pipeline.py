@@ -1107,7 +1107,7 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
-        from_pipeline_config = from_config = {
+        from_pipeline_config = {
             k: v
             for k, v in self.configuration.dict().items()
             if k in PipelineRunConfiguration.__fields__ and v
