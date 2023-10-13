@@ -8,6 +8,7 @@ Create Date: 2023-10-13 14:47:03.477356
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import mysql
+from sqlalchemy.engine.base import Connection
 
 # revision identifiers, used by Alembic.
 revision = "7f603e583dd7"
@@ -27,7 +28,7 @@ def upgrade() -> None:
             "server_version", existing_type=sa.VARCHAR(), nullable=True
         )
 
-    bind = op.get_context().bind
+    bind: Connection = op.get_bind()
     column_info = sa.inspect(bind).get_columns("step_run")
     columns = [c["name"] for c in column_info]
 
