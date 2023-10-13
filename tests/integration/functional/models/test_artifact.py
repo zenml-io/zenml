@@ -31,26 +31,20 @@ if TYPE_CHECKING:
     from zenml.client import Client
 
 
+# TODO: make more efficient once manual versioning exists
 def test_auto_incremented_artifact_versioning(
     clean_client: "Client", one_step_pipeline
 ):
     """Test auto-increment default artifact versioning."""
     step_ = constant_int_output_test_step()
     pipe: BasePipeline = one_step_pipeline(step_)
-    pipe.run()
 
-    # Run 1 -> version 1
-    pipeline_run = pipe.model.last_run
-    step_run = pipeline_run.steps["step_"]
-    artifact = step_run.output
-    assert artifact.version == "1"
-
-    # Run 2 -> version 2
-    pipe.run(enable_cache=False)
-    pipeline_run_2 = pipe.model.last_run
-    step_run_2 = pipeline_run_2.steps["step_"]
-    artifact_2 = step_run_2.output
-    assert artifact_2.version == "2"
+    for i in range(1, 12):
+        pipe.run(enable_cache=False)
+        pipeline_run = pipe.model.last_run
+        step_run = pipeline_run.steps["step_"]
+        artifact = step_run.output
+        assert artifact.version == str(i)
 
 
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
