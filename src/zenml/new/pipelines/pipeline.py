@@ -1107,23 +1107,30 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
+        from_pipeline_config = from_config = {
+            k: v
+            for k, v in self.configuration.dict().items()
+            if k in PipelineRunConfiguration.__fields__ and v
+        }
+
         if config_path:
             with open(config_path, "r") as f:
                 from_config: Dict[str, Any] = yaml.load(
                     f, Loader=yaml.SafeLoader
                 )
             # pull out parameters relevant for PipelineRunConfiguration
-            # and not used in configure method
-            configure_args = inspect.getfullargspec(self.configure)[0]
+            # and not meaningfully set in configuration
             from_config = {
                 k: v
                 for k, v in from_config.items()
                 if k in PipelineRunConfiguration.__fields__
-                and k not in configure_args
+                and k not in from_pipeline_config
             }
-            run_config = PipelineRunConfiguration(**from_config)
+            run_config = PipelineRunConfiguration(
+                **from_config, **from_pipeline_config
+            )
         else:
-            run_config = PipelineRunConfiguration()
+            run_config = PipelineRunConfiguration(**from_pipeline_config)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
         update = PipelineRunConfiguration.parse_obj(new_values)
