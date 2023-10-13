@@ -28,8 +28,8 @@ def upgrade() -> None:
         )
 
     bind = op.get_context().bind
-    i = sa.inspect(bind)
-    columns = i.get_columns("step_run")
+    column_info = sa.inspect(bind).get_columns("step_run")
+    columns = [c["name"] for c in column_info]
 
     if "step_configuration" not in columns:
         with op.batch_alter_table("step_run", schema=None) as batch_op:
