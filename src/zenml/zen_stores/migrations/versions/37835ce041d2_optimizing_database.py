@@ -132,15 +132,6 @@ def upgrade() -> None:
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_pipeline_run_stack_id_stack", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_run_build_id_pipeline_build", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_run_schedule_id_schedule", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
             "fk_pipeline_run_deployment_id_pipeline_deployment",
             type_="foreignkey",
         )
@@ -153,15 +144,10 @@ def upgrade() -> None:
         )
         batch_op.drop_column("client_version")
         batch_op.drop_column("git_sha")
-        batch_op.drop_column("stack_id")
-        batch_op.drop_column("schedule_id")
         batch_op.drop_column("server_version")
         batch_op.drop_column("num_steps")
-        batch_op.drop_column("client_environment")
-        batch_op.drop_column("pipeline_configuration")
         batch_op.drop_column("enable_artifact_metadata")
         batch_op.drop_column("enable_cache")
-        batch_op.drop_column("build_id")
 
     # ### end Alembic commands ###
 
