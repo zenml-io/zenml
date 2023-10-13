@@ -190,6 +190,9 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         Returns:
             The created `PipelineRunResponseModel`.
+
+        Raises:
+            RuntimeError: if the model creation fails.
         """
         orchestrator_environment = (
             json.loads(self.orchestrator_environment)
@@ -214,8 +217,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline = deployment.pipeline
             build = deployment.build
             schedule = deployment.schedule
-
-        else:
+        elif self.pipeline_configuration is not None:
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             config = PipelineConfiguration.parse_raw(
@@ -231,6 +233,13 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline = self.pipeline.to_model() if self.pipeline else None
             build = self.build.to_model() if self.build else None
             schedule = self.schedule.to_model() if self.schedule else None
+
+        else:
+            raise RuntimeError(
+                "Pipeline run model creation has failed. Each pipeline run "
+                "entry should either have a deployment_id or "
+                "pipeline_configuration."
+            )
 
         return PipelineRunResponseModel(
             id=self.id,

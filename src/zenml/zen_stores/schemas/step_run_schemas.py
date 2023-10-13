@@ -196,7 +196,7 @@ class StepRunSchema(NamedSchema, table=True):
         else:
             raise RuntimeError(
                 "Step run model creation has failed. Each step run entry "
-                "should at least have a deployment_id or step_configuration."
+                "should either have a deployment_id or step_configuration."
             )
         return StepRunResponseModel(
             id=self.id,

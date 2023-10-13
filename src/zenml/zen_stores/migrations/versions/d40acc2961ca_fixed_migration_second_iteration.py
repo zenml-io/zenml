@@ -31,7 +31,9 @@ def upgrade() -> None:
             )
         else:
             batch_op.alter_column(
-                "pipeline_configuration", existing_type=sa.TEXT(), nullable=True
+                "pipeline_configuration",
+                existing_type=sa.TEXT(),
+                nullable=True,
             )
 
         if "client_environment" not in columns:
