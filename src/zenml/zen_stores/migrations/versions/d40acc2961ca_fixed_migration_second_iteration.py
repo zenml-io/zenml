@@ -27,7 +27,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         if "pipeline_configuration" not in columns:
             batch_op.add_column(
-                sa.Column("pipeline_configuration", sa.TEXT(), nullable=False)
+                sa.Column("pipeline_configuration", sa.TEXT(), nullable=True)
             )
 
         if "client_environment" not in columns:
