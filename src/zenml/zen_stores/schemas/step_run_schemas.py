@@ -167,6 +167,10 @@ class StepRunSchema(NamedSchema, table=True):
 
         Returns:
             The created StepRunModel.
+
+        Raises:
+            RuntimeError: If the step run schema does not have a deployment_id
+                or a step_configuration.
         """
         metadata = {
             metadata_schema.key: metadata_schema.to_model()
