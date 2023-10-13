@@ -1113,10 +1113,13 @@ class Pipeline:
                     f, Loader=yaml.SafeLoader
                 )
             # pull out parameters relevant for PipelineRunConfiguration
+            # and not used in configure method
+            configure_args = inspect.getfullargspec(self.configure)[0]
             from_config = {
                 k: v
                 for k, v in from_config.items()
                 if k in PipelineRunConfiguration.__fields__
+                and k not in configure_args
             }
             run_config = PipelineRunConfiguration(**from_config)
         else:
