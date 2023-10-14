@@ -243,7 +243,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         return PipelineRunResponseModel(
             id=self.id,
-            user=self.user if self.user else None,
+            user=self.user.to_model() if self.user else None,
             workspace=self.workspace,
             # Attributes of the PipelineRunBaseModel
             name=self.name,
