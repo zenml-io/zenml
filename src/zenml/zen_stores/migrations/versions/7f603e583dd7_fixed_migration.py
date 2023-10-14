@@ -6,6 +6,7 @@ Create Date: 2023-10-13 14:47:03.477356
 
 """
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 from sqlalchemy.dialects import mysql
 from sqlalchemy.engine.base import Connection
@@ -68,7 +69,7 @@ def upgrade() -> None:
         if "stack_id" not in columns:
             batch_op.add_column(
                 sa.Column(
-                    "stack_id", sa.sql.sqltypes.GUID(), nullable=True
+                    "stack_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
                 )
             )
             batch_op.create_foreign_key(
@@ -82,7 +83,7 @@ def upgrade() -> None:
         if "build_id" not in columns:
             batch_op.add_column(
                 sa.Column(
-                    "build_id", sa.sql.sqltypes.GUID(), nullable=True
+                    "build_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
                 )
             )
             batch_op.create_foreign_key(
@@ -96,7 +97,7 @@ def upgrade() -> None:
         if "schedule_id" not in columns:
             batch_op.add_column(
                 sa.Column(
-                    "schedule_id", sa.sql.sqltypes.GUID(), nullable=True
+                    "schedule_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
                 )
             )
             batch_op.create_foreign_key(
