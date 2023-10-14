@@ -45,7 +45,6 @@ def upgrade() -> None:
                 )
             )
 
-    bind: Connection = op.get_bind()
     column_info = sa.inspect(bind).get_columns("pipeline_run")
     columns = [c["name"] for c in column_info]
 
