@@ -31,6 +31,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("version_number", sa.Integer(), nullable=True)
         )
+        batch_op.add_column(sa.Column("tags", sa.TEXT(), nullable=True))
     op.execute("UPDATE artifact SET has_custom_name = FALSE")
     op.execute("UPDATE artifact SET version = 'UNVERSIONED'")
     with op.batch_alter_table("artifact", schema=None) as batch_op:
@@ -55,5 +56,6 @@ def downgrade() -> None:
         batch_op.drop_column("has_custom_name")
         batch_op.drop_column("version_number")
         batch_op.drop_column("version")
+        batch_op.drop_column("tags")
 
     # ### end Alembic commands ###
