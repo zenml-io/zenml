@@ -419,17 +419,18 @@ class StepLauncher:
                     if annotation and annotation.artifact_config is not None
                     else ArtifactConfig()
                 )
-                artifact_config.model_name = (
+                artifact_config_ = artifact_config.copy()
+                artifact_config_.model_name = (
                     artifact_config.model_name or model_version.model.name
                 )
-                artifact_config.model_version = (
-                    artifact_config.model_version or model_version.name
+                artifact_config_.model_version = (
+                    artifact_config_.model_version or model_version.name
                 )
-                artifact_config._pipeline_name = (
+                artifact_config_._pipeline_name = (
                     self._deployment.pipeline_configuration.name
                 )
-                artifact_config._step_name = self._step_name
-                artifact_config.link_to_model(output_)
+                artifact_config_._step_name = self._step_name
+                artifact_config_.link_to_model(output_)
 
     def _run_step(
         self,
