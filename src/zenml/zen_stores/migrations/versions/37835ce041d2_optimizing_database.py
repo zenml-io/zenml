@@ -83,8 +83,16 @@ def upgrade() -> None:
     connection.execute(update_server_version_query)
 
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.alter_column("client_version", nullable=False)
-        batch_op.alter_column("server_version", nullable=False)
+        batch_op.alter_column(
+            "client_version",
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+            nullable=False,
+        )
+        batch_op.alter_column(
+            "server_version",
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+            nullable=False,
+        )
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
@@ -128,7 +136,11 @@ def upgrade() -> None:
     connection.execute(update_deployment_id)
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column("deployment_id", nullable=False)
+        batch_op.alter_column(
+            "deployment_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(

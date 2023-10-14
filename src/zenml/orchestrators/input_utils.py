@@ -79,7 +79,7 @@ def resolve_step_inputs(
         artifact_id = external_artifact.get_artifact_id(
             model_config=model_config
         )
-        input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
+        input_artifacts[name] = Client().get_artifact(artifact_id)
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

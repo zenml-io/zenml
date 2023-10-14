@@ -51,6 +51,9 @@ class ArtifactSchema(NamedSchema, table=True):
     __tablename__ = "artifact"
 
     # Fields
+    has_custom_name: bool
+    version: str
+    version_number: Optional[int]
     type: ArtifactType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -121,8 +124,15 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The converted schema.
         """
+        try:
+            version_number = int(artifact_request.version)
+        except ValueError:
+            version_number = None
         return cls(
             name=artifact_request.name,
+            has_custom_name=artifact_request.has_custom_name,
+            version=str(artifact_request.version),
+            version_number=version_number,
             artifact_store_id=artifact_request.artifact_store_id,
             workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
@@ -168,6 +178,8 @@ class ArtifactSchema(NamedSchema, table=True):
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
+            has_custom_name=self.has_custom_name,
+            version=self.version_number or self.version,
             artifact_store_id=self.artifact_store_id,
             user=self.user.to_model(_block_recursion=True)
             if self.user

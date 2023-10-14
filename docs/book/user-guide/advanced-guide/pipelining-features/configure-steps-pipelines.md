@@ -104,6 +104,13 @@ def divide(a: int, b: int) -> Tuple[
     return a // b, a % b
 ```
 
+{% hint style="info" %}
+If you do not give your outputs custom names, the created artifacts will be
+named "{pipeline_name}::{step_name}::output" or 
+"{pipeline_name}::{step_name}::output_{i}" so it is easier for you to
+distinguish them later.
+{% endhint %}
+
 ## Configure steps/pipelines
 
 ### Parameters for your steps

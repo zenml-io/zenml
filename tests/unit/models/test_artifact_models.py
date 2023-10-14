@@ -31,6 +31,7 @@ def test_artifact_base_model_fails_with_long_name():
         long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name=long_name,
+            version=1,
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
@@ -47,6 +48,7 @@ def test_artifact_base_model_fails_with_long_uri():
     with pytest.raises(ValidationError):
         ArtifactBaseModel(
             name="abc",
+            version=1,
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
@@ -63,6 +65,7 @@ def test_artifact_base_model_works_with_long_materializer():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
+            version=1,
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
@@ -79,6 +82,7 @@ def test_artifact_base_model_works_with_long_data_type():
         long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
+            version=1,
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,

@@ -22,9 +22,11 @@ import pytest
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
 from zenml.models import ArtifactResponseModel
+from zenml.models.page_model import Page
 from zenml.utils.artifact_utils import (
     METADATA_DATATYPE,
     METADATA_MATERIALIZER,
+    _get_new_artifact_version,
     _load_artifact,
     load_artifact,
     load_model_from_metadata,
@@ -170,3 +172,35 @@ def test__load_artifact(numpy_file_uri):
     artifact = _load_artifact(materializer, data_type, numpy_file_uri)
     assert artifact is not None
     assert isinstance(artifact, np.ndarray)
+
+
+def test__get_new_artifact_version(mocker, sample_artifact_model):
+    """Unit test for the `_get_new_artifact_version` function."""
+    # If no artifact exists, "1" should be returned
+    mocker.patch(
+        "zenml.client.Client.list_artifacts",
+        return_value=Page(
+            index=1,
+            max_size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
+    )
+    assert _get_new_artifact_version(sample_artifact_model.name) == 1
+
+    # If an artifact exists, the next version should be returned
+    mocker.patch(
+        "zenml.client.Client.list_artifacts",
+        return_value=Page(
+            index=1,
+            max_size=1,
+            total_pages=1,
+            total=1,
+            items=[sample_artifact_model],
+        ),
+    )
+    assert (
+        _get_new_artifact_version(sample_artifact_model.name)
+        == int(sample_artifact_model.version) + 1
+    )
