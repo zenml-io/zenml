@@ -111,7 +111,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade database schema and/or data back to the previous revision."""
+    """Downgrade database schema and/or data back to the previous revision.
+
+    Raises:
+      NotImplementedError: Downgrade is not supported for this migration.
+    """
     raise NotImplementedError(
         "The downgrade migration is not implemented for this version!"
     )
