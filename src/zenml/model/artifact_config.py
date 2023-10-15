@@ -74,7 +74,7 @@ class ArtifactConfig(BaseModel):
         """
         try:
             model_config = get_step_context().model_config
-        except StepContextError:
+        except (StepContextError, RuntimeError):
             model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
         if (self.model_name is not None) and (
