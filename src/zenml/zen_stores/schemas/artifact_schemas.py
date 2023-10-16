@@ -22,6 +22,11 @@ from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
 from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.new_models.core import (
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -32,7 +37,6 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
-from zenml.new_models.core import ArtifactResponse, ArtifactRequest, ArtifactResponseMetadata
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_visualization_schemas import (
         ArtifactVisualizationSchema,
@@ -179,4 +183,3 @@ class ArtifactSchema(NamedSchema, table=True):
             type=self.type,
             metadata=metadata,
         )
-

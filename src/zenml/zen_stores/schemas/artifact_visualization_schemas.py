@@ -19,9 +19,14 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import VisualizationType
+from zenml.new_models.core import (
+    ArtifactVisualizationRequest,
+    ArtifactVisualizationResponse,
+    ArtifactVisualizationResponseMetadata,
+)
 from zenml.zen_stores.schemas import ArtifactSchema, BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.new_models.core import ArtifactVisualizationRequest, ArtifactVisualizationResponse, ArtifactVisualizationResponseMetadata
+
 
 class ArtifactVisualizationSchema(BaseSchema, table=True):
     """SQL Model for visualizations of artifacts."""
@@ -69,11 +74,8 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         Returns:
             The `Visualization`.
         """
-        metadata = None
         if hydrate:
-            ArtifactVisualizationResponseMetadata(
-
-            )
+            ArtifactVisualizationResponseMetadata()
         ArtifactVisualizationResponse(
             id=self.id,
             type=self.type,

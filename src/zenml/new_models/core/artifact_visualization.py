@@ -41,7 +41,9 @@ class ArtifactVisualizationRequest(BaseRequest):
 
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     """Response metadata model for artifact visualizations."""
+
     artifact_id: UUID
+
 
 class ArtifactVisualizationResponse(BaseResponse):
     """Response model for artifact visualizations."""
