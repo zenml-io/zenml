@@ -3,7 +3,7 @@
 # 0.45.2
 
 This release replaces 0.45.0 and 0.45.1, and fixes the major migration bugs that were in
-that yanked release. Please upgrade directly to 0.45.1 and avoid upgrading to
+that yanked release. Please upgrade directly to 0.45.2 and avoid upgrading to
 0.45.0 to avoid unexpected migration issues.
 
 Note that 0.45.0 and 0.45.1 were removed from PyPI due to an issue with the
