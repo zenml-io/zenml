@@ -3160,7 +3160,7 @@ class SqlZenStore(BaseZenStore):
             The newly created schedule.
         """
         with Session(self.engine) as session:
-            new_schedule = ScheduleSchema.from_create_model(model=schedule)
+            new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
             return new_schedule.to_model()
@@ -3239,9 +3239,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the schedule
-            existing_schedule = existing_schedule.from_update_model(
-                schedule_update
-            )
+            existing_schedule = existing_schedule.update(schedule_update)
             session.add(existing_schedule)
             session.commit()
             return existing_schedule.to_model()

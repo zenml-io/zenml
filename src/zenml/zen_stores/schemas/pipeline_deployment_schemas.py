@@ -24,11 +24,12 @@ from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.models import (
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-)
 from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.new_models.core import (
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineDeploymentResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -150,10 +151,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        request: PipelineDeploymentRequestModel,
+        request: PipelineDeploymentRequest,
         code_reference_id: Optional[UUID],
     ) -> "PipelineDeploymentSchema":
-        """Convert a `PipelineDeploymentRequestModel` to a `PipelineDeploymentSchema`.
+        """Convert a `PipelineDeploymentRequest` to a `PipelineDeploymentSchema`.
 
         Args:
             request: The request to convert.
@@ -183,13 +184,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             server_version=request.server_version,
         )
 
-    def to_model(
-        self,
-    ) -> PipelineDeploymentResponseModel:
-        """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponseModel`.
+    def to_model(self, hydrate: bool = False) -> PipelineDeploymentResponse:
+        """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `PipelineDeploymentResponseModel`.
+            The created `PipelineDeploymentResponse`.
         """
         pipeline_configuration = PipelineConfiguration.parse_raw(
             self.pipeline_configuration
@@ -198,25 +201,28 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         for s, c in step_configurations.items():
             step_configurations[s] = Step.parse_obj(c)
 
-        return PipelineDeploymentResponseModel(
+        metadata = None
+        if hydrate:
+            metadata = PipelineDeploymentResponseMetadata(
+                run_name_template=self.run_name_template,
+                pipeline_configuration=pipeline_configuration,
+                step_configurations=step_configurations,
+                workspace=self.workspace.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
+                pipeline=self.pipeline.to_model() if self.pipeline else None,
+                build=self.build.to_model() if self.build else None,
+                schedule=self.schedule.to_model() if self.schedule else None,
+                code_reference=self.code_reference.to_model()
+                if self.code_reference
+                else None,
+                created=self.created,
+                updated=self.updated,
+                client_environment=json.loads(self.client_environment),
+                client_version=self.client_version,
+                server_version=self.server_version,
+            )
+        return PipelineDeploymentResponse(
             id=self.id,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
-            stack=self.stack.to_model() if self.stack else None,
-            pipeline=self.pipeline.to_model() if self.pipeline else None,
-            build=self.build.to_model() if self.build else None,
-            schedule=self.schedule.to_model() if self.schedule else None,
-            code_reference=self.code_reference.to_model()
-            if self.code_reference
-            else None,
-            created=self.created,
-            updated=self.updated,
-            run_name_template=self.run_name_template,
-            pipeline_configuration=pipeline_configuration,
-            step_configurations=step_configurations,
-            client_environment=json.loads(self.client_environment),
-            client_version=self.client_version,
-            server_version=self.server_version,
+            user=self.user.to_model() if self.user else None,
+            metadata=metadata,
         )

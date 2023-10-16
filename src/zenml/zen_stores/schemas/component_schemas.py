@@ -22,9 +22,10 @@ from uuid import UUID
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
-from zenml.models.component_models import (
-    ComponentResponseModel,
-    ComponentUpdateModel,
+from zenml.new_models.core.component import (
+    ComponentResponse,
+    ComponentResponseMetadata,
+    ComponentUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -106,12 +107,12 @@ class StackComponentSchema(ShareableSchema, table=True):
     connector_resource_id: Optional[str]
 
     def update(
-        self, component_update: ComponentUpdateModel
+        self, component_update: "ComponentUpdate"
     ) -> "StackComponentSchema":
-        """Updates a `StackSchema` from a `ComponentUpdateModel`.
+        """Updates a `StackComponentSchema` from a `ComponentUpdate`.
 
         Args:
-            component_update: The `ComponentUpdateModel` to update from.
+            component_update: The `ComponentUpdate` to update from.
 
         Returns:
             The updated `StackComponentSchema`.
@@ -135,29 +136,39 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     def to_model(
         self,
-    ) -> "ComponentResponseModel":
+        hydrate: bool = False,
+    ) -> "ComponentResponse":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             A `ComponentModel`
         """
-        return ComponentResponseModel(
+        metadata = None
+        if hydrate:
+            metadata = ComponentResponseMetadata(
+                labels=json.loads(base64.b64decode(self.labels).decode())
+                if self.labels
+                else None,
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
+                component_spec_path=self.component_spec_path,
+            )
+        return ComponentResponse(
             id=self.id,
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model(True) if self.user else None,
-            workspace=self.workspace.to_model(),
+            user=self.user.to_model() if self.user else None,
             connector=self.connector.to_model() if self.connector else None,
             connector_resource_id=self.connector_resource_id,
             is_shared=self.is_shared,
-            configuration=json.loads(
-                base64.b64decode(self.configuration).decode()
-            ),
-            labels=json.loads(base64.b64decode(self.labels).decode())
-            if self.labels
-            else None,
-            component_spec_path=self.component_spec_path,
-            created=self.created,
-            updated=self.updated,
+            metadata=metadata,
         )

@@ -24,10 +24,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.models.step_run_models import (
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
+from zenml.new_models.core import (
+    StepRunRequest,
+    StepRunResponse,
+    StepRunResponseMetadata,
+    StepRunUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -137,7 +138,7 @@ class StepRunSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
+    def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
         Args:
@@ -162,17 +163,21 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
         )
 
-    def to_model(self) -> StepRunResponseModel:
-        """Convert a `StepRunSchema` to a `StepRunModel`.
+    def to_model(self, hydrate: bool = False) -> StepRunResponse:
+        """Convert a `StepRunSchema` to a `StepRunResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created StepRunModel.
+            The created StepRunResponse.
 
         Raises:
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        metadata = {
+        run_metadata = {
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
@@ -198,38 +203,39 @@ class StepRunSchema(NamedSchema, table=True):
                 "Step run model creation has failed. Each step run entry "
                 "should either have a deployment_id or step_configuration."
             )
-        return StepRunResponseModel(
+
+        metadata = None
+        if hydrate:
+            metadata = StepRunResponseMetadata(
+                start_time=self.start_time,
+                end_time=self.end_time,
+                config=full_step_config.config,
+                spec=full_step_config.spec,
+                cache_key=self.cache_key,
+                code_hash=self.code_hash,
+                docstring=self.docstring,
+                source_code=self.source_code,
+                deployment_id=self.deployment_id,
+                pipeline_run_id=self.pipeline_run_id,
+                original_step_run_id=self.original_step_run_id,
+                parent_step_ids=[p.parent_id for p in self.parents],
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
+                run_metadata=run_metadata,
+                logs=self.logs.to_model() if self.logs else None,
+            )
+        return StepRunResponse(
             id=self.id,
-            # Attributes from the StepRunBaseModel
             name=self.name,
-            start_time=self.start_time,
-            end_time=self.end_time,
             status=self.status,
-            cache_key=self.cache_key,
-            code_hash=self.code_hash,
-            docstring=self.docstring,
-            source_code=self.source_code,
-            config=full_step_config.config,
-            spec=full_step_config.spec,
-            deployment_id=self.deployment_id,
-            pipeline_run_id=self.pipeline_run_id,
-            original_step_run_id=self.original_step_run_id,
-            parent_step_ids=[p.parent_id for p in self.parents],
-            # Attributes from the WorkspaceScopedResponseModel
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
-            workspace=self.workspace.to_model(),
-            created=self.created,
-            updated=self.updated,
-            # Attributes from the StepRunResponseModel
+            user=self.user.to_model() if self.user else None,
             inputs=input_artifacts,
             outputs=output_artifacts,
             metadata=metadata,
-            logs=self.logs.to_model() if self.logs else None,
         )
 
-    def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
+    def update(self, step_update: "StepRunUpdate") -> "StepRunSchema":
         """Update a step run schema with a step run update model.
 
         Args:
@@ -297,7 +303,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     )
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",  # TODO: Find a way for ArtifactSchema.__tablename__
+        target="artifact",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
@@ -331,7 +337,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",  # TODO: Find a way for ArtifactSchema.__tablename__
+        target="artifact",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",

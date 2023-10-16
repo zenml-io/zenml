@@ -23,8 +23,12 @@ from sqlalchemy import Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
-from zenml.models import PipelineBuildRequestModel, PipelineBuildResponseModel
 from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.new_models.core import (
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineBuildResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -105,9 +109,9 @@ class PipelineBuildSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, request: PipelineBuildRequestModel
+        cls, request: PipelineBuildRequest
     ) -> "PipelineBuildSchema":
-        """Convert a `PipelineBuildRequestModel` to a `PipelineBuildSchema`.
+        """Convert a `PipelineBuildRequest` to a `PipelineBuildSchema`.
 
         Args:
             request: The request to convert.
@@ -128,26 +132,33 @@ class PipelineBuildSchema(BaseSchema, table=True):
             checksum=request.checksum,
         )
 
-    def to_model(
-        self,
-    ) -> PipelineBuildResponseModel:
-        """Convert a `PipelineBuildSchema` to a `PipelineBuildResponseModel`.
+    def to_model(self, hydrate: bool = False) -> PipelineBuildResponse:
+        """Convert a `PipelineBuildSchema` to a `PipelineBuildResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `PipelineBuildResponseModel`.
+            The created `PipelineBuildResponse`.
         """
-        return PipelineBuildResponseModel(
+        metadata = False
+        if hydrate:
+            metadata = PipelineBuildResponseMetadata(
+                workspace=self.workspace.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
+                pipeline=self.pipeline.to_model() if self.pipeline else None,
+                images=json.loads(self.images),
+                zenml_version=self.zenml_version,
+                python_version=self.python_version,
+                checksum=self.checksum,
+                created=self.created,
+                updated=self.updated,
+                is_local=self.is_local,
+                contains_code=self.contains_code,
+            )
+        return PipelineBuildResponse(
             id=self.id,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
-            stack=self.stack.to_model() if self.stack else None,
-            pipeline=self.pipeline.to_model() if self.pipeline else None,
-            created=self.created,
-            updated=self.updated,
-            images=json.loads(self.images),
-            is_local=self.is_local,
-            contains_code=self.contains_code,
-            zenml_version=self.zenml_version,
-            python_version=self.python_version,
-            checksum=self.checksum,
+            user=self.user.to_model() if self.user else None,
+            metadata=metadata,
         )

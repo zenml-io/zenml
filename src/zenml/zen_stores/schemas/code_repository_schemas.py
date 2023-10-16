@@ -21,12 +21,14 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.models.code_repository_models import (
-    CodeReferenceRequestModel,
-    CodeReferenceResponseModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
+from zenml.new_models.core import (
+    CodeReferenceRequest,
+    CodeReferenceResponse,
+    CodeReferenceResponseMetadata,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryResponseMetadata,
+    CodeRepositoryUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -71,10 +73,9 @@ class CodeRepositorySchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(
-        cls,
-        request: "CodeRepositoryRequestModel",
+        cls, request: "CodeRepositoryRequest"
     ) -> "CodeRepositorySchema":
-        """Convert a `CodeRepositoryRequestModel` to a `CodeRepositorySchema`.
+        """Convert a `CodeRepositoryRequest` to a `CodeRepositorySchema`.
 
         Args:
             request: The request model to convert.
@@ -92,31 +93,36 @@ class CodeRepositorySchema(NamedSchema, table=True):
             logo_url=request.logo_url,
         )
 
-    def to_model(
-        self,
-    ) -> "CodeRepositoryResponseModel":
-        """Convert a `CodeRepositorySchema` to a `CodeRepositoryResponseModel`.
+    def to_model(self, hydrate: bool = False) -> "CodeRepositoryResponse":
+        """Convert a `CodeRepositorySchema` to a `CodeRepositoryResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created CodeRepositoryResponseModel.
+            The created CodeRepositoryResponse.
         """
-        return CodeRepositoryResponseModel(
+        metadata = None
+        if hydrate:
+            metadata = CodeRepositoryResponseMetadata(
+                workspace=self.workspace.to_model(),
+                config=json.loads(self.config),
+                description=self.description,
+            )
+        return CodeRepositoryResponse(
             id=self.id,
             name=self.name,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
+            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            config=json.loads(self.config),
             source=json.loads(self.source),
-            description=self.description,
             logo_url=self.logo_url,
+            metadata=metadata,
         )
 
-    def update(
-        self, update: "CodeRepositoryUpdateModel"
-    ) -> "CodeRepositorySchema":
-        """Update a `CodeRepositorySchema` with a `CodeRepositoryUpdateModel`.
+    def update(self, update: "CodeRepositoryUpdate") -> "CodeRepositorySchema":
+        """Update a `CodeRepositorySchema` with a `CodeRepositoryUpdate`.
 
         Args:
             update: The update model.
@@ -167,9 +173,9 @@ class CodeReferenceSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, request: "CodeReferenceRequestModel", workspace_id: UUID
+        cls, request: "CodeReferenceRequest", workspace_id: UUID
     ) -> "CodeReferenceSchema":
-        """Convert a `CodeReferenceRequestModel` to a `CodeReferenceSchema`.
+        """Convert a `CodeReferenceRequest` to a `CodeReferenceSchema`.
 
         Args:
             request: The request model to convert.
@@ -185,19 +191,26 @@ class CodeReferenceSchema(BaseSchema, table=True):
             code_repository_id=request.code_repository,
         )
 
-    def to_model(
-        self,
-    ) -> "CodeReferenceResponseModel":
-        """Convert a `CodeReferenceSchema` to a `CodeReferenceResponseModel`.
+    def to_model(self, hydrate: bool = False) -> "CodeReferenceResponse":
+        """Convert a `CodeReferenceSchema` to a `CodeReferenceResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The converted model.
         """
-        return CodeReferenceResponseModel(
+        metadata = None
+        if hydrate:
+            metadata = CodeReferenceResponseMetadata()
+
+        return CodeReferenceResponse(
             id=self.id,
             created=self.created,
             updated=self.updated,
             commit=self.commit,
             subdirectory=self.subdirectory,
             code_repository=self.code_repository.to_model(),
+            metadata=metadata,
         )

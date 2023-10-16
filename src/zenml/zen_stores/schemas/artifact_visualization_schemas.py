@@ -54,7 +54,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     def from_model(
         cls, artifact_visualization_request: ArtifactVisualizationRequest
     ) -> "ArtifactVisualizationSchema":
-        """Convert a `Visualization` to a `ArtifactVisualizationSchema`.
+        """Convert a `ArtifactVisualizationRequest` to a `ArtifactVisualizationSchema`.
 
         Args:
             artifact_visualization_request: The visualization.
@@ -71,14 +71,21 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     def to_model(self, hydrate: bool = False) -> ArtifactVisualizationResponse:
         """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
 
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
+
         Returns:
             The `Visualization`.
         """
+
+        metadata = None
         if hydrate:
-            ArtifactVisualizationResponseMetadata()
-        ArtifactVisualizationResponse(
+            metadata = ArtifactVisualizationResponseMetadata(self.artifact_id)
+
+        return ArtifactVisualizationResponse(
             id=self.id,
             type=self.type,
             uri=self.uri,
+            metadata=metadata,
         )
-        return VisualizationModel(type=self.type, uri=self.uri)

@@ -19,7 +19,12 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from zenml.models import UserRequestModel, UserResponseModel, UserUpdateModel
+from zenml.new_models.core import (
+    UserRequest,
+    UserResponse,
+    UserResponseMetadata,
+    UserUpdate,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
@@ -116,11 +121,11 @@ class UserSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, model: UserRequestModel) -> "UserSchema":
-        """Create a `UserSchema` from a `UserModel`.
+    def from_request(cls, model: UserRequest) -> "UserSchema":
+        """Create a `UserSchema` from a `UserRequest`.
 
         Args:
-            model: The `UserModel` from which to create the schema.
+            model: The `UserRequest` from which to create the schema.
 
         Returns:
             The created `UserSchema`.
@@ -136,11 +141,11 @@ class UserSchema(NamedSchema, table=True):
             email=model.email,
         )
 
-    def update(self, user_update: UserUpdateModel) -> "UserSchema":
-        """Update a `UserSchema` from a `UserUpdateModel`.
+    def update(self, user_update: UserUpdate) -> "UserSchema":
+        """Update a `UserSchema` from a `UserUpdate`.
 
         Args:
-            user_update: The `UserUpdateModel` from which to update the schema.
+            user_update: The `UserUpdate` from which to update the schema.
 
         Returns:
             The updated `UserSchema`.
@@ -159,24 +164,23 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, _block_recursion: bool = False, include_private: bool = False
-    ) -> UserResponseModel:
-        """Convert a `UserSchema` to a `UserResponseModel`.
+        self, hydrate: bool = False, include_private: bool = False
+    ) -> UserResponse:
+        """Convert a `UserSchema` to a `UserResponse`.
 
         Args:
-            _block_recursion: Don't recursively fill attributes
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users
 
         Returns:
-            The converted `UserResponseModel`.
+            The converted `UserResponse`.
         """
-        if _block_recursion:
-            return UserResponseModel(
-                id=self.id,
-                external_user_id=self.external_user_id,
-                name=self.name,
+        metadata = None
+        if hydrate:
+            metadata = UserResponseMetadata(
                 active=self.active,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
@@ -185,18 +189,10 @@ class UserSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
             )
-        else:
-            return UserResponseModel(
-                id=self.id,
-                external_user_id=self.external_user_id,
-                name=self.name,
-                active=self.active,
-                email_opted_in=self.email_opted_in,
-                email=self.email if include_private else None,
-                hub_token=self.hub_token if include_private else None,
-                teams=[t.to_model(_block_recursion=True) for t in self.teams],
-                full_name=self.full_name,
-                created=self.created,
-                updated=self.updated,
-                roles=[ra.role.to_model() for ra in self.assigned_roles],
-            )
+
+        return UserResponse(
+            id=self.id,
+            external_user_id=self.external_user_id,
+            name=self.name,
+            metadata=metadata,
+        )

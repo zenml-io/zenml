@@ -114,7 +114,7 @@ class ArtifactSchema(NamedSchema, table=True):
     def from_request(
         cls, artifact_request: ArtifactRequest
     ) -> "ArtifactSchema":
-        """Convert an `ArtifactRequestModel` to an `ArtifactSchema`.
+        """Convert an `ArtifactRequest` to an `ArtifactSchema`.
 
         Args:
             artifact_request: The request model to convert.
@@ -134,10 +134,14 @@ class ArtifactSchema(NamedSchema, table=True):
         )
 
     def to_model(self, hydrate: bool = False) -> ArtifactResponse:
-        """Convert an `ArtifactSchema` to an `ArtifactModel`.
+        """Convert an `ArtifactSchema` to an `ArtifactResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `ArtifactModel`.
+            The created `ArtifactResponse`.
         """
         try:
             materializer = Source.parse_raw(self.materializer)

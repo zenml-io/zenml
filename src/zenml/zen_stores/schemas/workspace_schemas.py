@@ -17,10 +17,11 @@ from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.models import (
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
+from zenml.new_models.core import (
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceResponseMetadata,
+    WorkspaceUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
@@ -142,26 +143,22 @@ class WorkspaceSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(
-        cls, workspace: WorkspaceRequestModel
-    ) -> "WorkspaceSchema":
-        """Create a `WorkspaceSchema` from a `WorkspaceResponseModel`.
+    def from_request(cls, workspace: WorkspaceRequest) -> "WorkspaceSchema":
+        """Create a `WorkspaceSchema` from a `WorkspaceResponse`.
 
         Args:
-            workspace: The `WorkspaceResponseModel` from which to create the schema.
+            workspace: The `WorkspaceResponse` from which to create the schema.
 
         Returns:
             The created `WorkspaceSchema`.
         """
         return cls(name=workspace.name, description=workspace.description)
 
-    def update(
-        self, workspace_update: WorkspaceUpdateModel
-    ) -> "WorkspaceSchema":
-        """Update a `WorkspaceSchema` from a `WorkspaceUpdateModel`.
+    def update(self, workspace_update: WorkspaceUpdate) -> "WorkspaceSchema":
+        """Update a `WorkspaceSchema` from a `WorkspaceUpdate`.
 
         Args:
-            workspace_update: The `WorkspaceUpdateModel` from which to update the
+            workspace_update: The `WorkspaceUpdate` from which to update the
                 schema.
 
         Returns:
@@ -173,16 +170,25 @@ class WorkspaceSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> WorkspaceResponseModel:
-        """Convert a `WorkspaceSchema` to a `WorkspaceResponseModel`.
+    def to_model(self, hydrate: bool = False) -> WorkspaceResponse:
+        """Convert a `WorkspaceSchema` to a `WorkspaceResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The converted `WorkspaceResponseModel`.
         """
-        return WorkspaceResponseModel(
+        metadata = None
+        if hydrate:
+            metadata = WorkspaceResponseMetadata(
+                description=self.description,
+                created=self.created,
+                updated=self.updated,
+            )
+        return WorkspaceResponse(
             id=self.id,
             name=self.name,
-            description=self.description,
-            created=self.created,
-            updated=self.updated,
+            metadata=metadata,
         )
