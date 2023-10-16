@@ -1,7 +1,7 @@
 """Fix Model Artifacts [6f707b385dc1].
 
 Revision ID: 6f707b385dc1
-Revises: 0.45.0
+Revises: 7f603e583dd7
 Create Date: 2023-10-13 11:34:55.907563
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "6f707b385dc1"
-down_revision = "0.45.0"
+down_revision = "7f603e583dd7"
 branch_labels = None
 depends_on = None
 

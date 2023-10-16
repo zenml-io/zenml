@@ -1,6 +1,6 @@
 <!-- markdown-link-check-disable -->
 
-# 0.45.0
+# 0.45.1
 
 This release introduces a major upgrade to ZenML, featuring a new authentication mechanism, performance improvements, the introduction of the model control plane, and internal enhancements.
 

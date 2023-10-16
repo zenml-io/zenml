@@ -875,7 +875,6 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_a
 
     with model_killer():
         client = Client()
-
         # this pipeline fails, but persists intermediate version
         with pytest.raises(Exception, match="make pipeline fail"):
             run_name_1 = f"multi_run_{uuid4()}"
@@ -887,7 +886,6 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_a
             run_id=run_id,
             run_update=PipelineRunUpdateModel(status=ExecutionStatus.RUNNING),
         )
-
         with pytest.raises(
             RuntimeError,
             match="New model version was requested, but pipeline run",
