@@ -14,6 +14,7 @@
 
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from uuid import UUID
 
 from pydantic import Field, root_validator
 
@@ -82,6 +83,10 @@ class UserRequest(BaseRequest):
     )
     activation_token: Optional[str] = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
     active: bool = Field(default=False, title="Active account.")
@@ -233,6 +238,10 @@ class UserResponse(BaseResponse):
     name: str = Field(
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
     # Analytics fields

@@ -94,6 +94,10 @@ class StackResponseMetadata(SharableResponseMetadata):
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
+    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
+        title="A mapping of stack component types to the actual"
+        "instances of components of this type."
+    )
 
 
 class StackResponse(ShareableResponse):
@@ -102,10 +106,6 @@ class StackResponse(ShareableResponse):
     # Entity fields
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
-        title="A mapping of stack component types to the actual"
-        "instances of components of this type."
     )
 
     # Metadata related field, method and properties
@@ -126,6 +126,11 @@ class StackResponse(ShareableResponse):
     def stack_spec_path(self):
         """The stack_spec_path property."""
         return self.metadata.stack_spec_path
+
+    @hydrated_property
+    def components(self):
+        """The components property."""
+        return self.metadata.components
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:

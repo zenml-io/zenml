@@ -118,6 +118,28 @@ from zenml.new_models.core.workspace import (
     WorkspaceUpdate,
     WorkspaceRequest,
 )
+from zenml.new_models.core.team import (
+    TeamRequest,
+    TeamUpdate,
+    TeamResponse,
+    TeamResponseMetadata,
+)
+from zenml.new_models.core.role import (
+    RoleResponse,
+    RoleResponseMetadata,
+    RoleUpdate,
+    RoleRequest,
+)
+from zenml.new_models.core.team_role import (
+    TeamRoleAssignmentResponse,
+    TeamRoleAssignmentResponseMetadata,
+    TeamRoleAssignmentRequest,
+)
+from zenml.new_models.core.user_role import (
+    UserRoleAssignmentResponse,
+    UserRoleAssignmentResponseMetadata,
+    UserRoleAssignmentRequest,
+)
 
 __all__ = [
     "ArtifactResponse",
@@ -158,6 +180,10 @@ __all__ = [
     "PipelineRunUpdate",
     "PipelineRunRequest",
     "PipelineRunResponseMetadata",
+    "RoleResponse",
+    "RoleRequest",
+    "RoleUpdate",
+    "RoleResponseMetadata",
     "RunMetadataResponseMetadata",
     "RunMetadataRequest",
     "RunMetadataResponse",
@@ -181,10 +207,20 @@ __all__ = [
     "StepRunResponseMetadata",
     "StepRunUpdate",
     "StepRunRequest",
+    "TeamResponse",
+    "TeamResponseMetadata",
+    "TeamRequest",
+    "TeamUpdate",
+    "TeamRoleAssignmentResponse",
+    "TeamRoleAssignmentRequest",
+    "TeamRoleAssignmentResponseMetadata",
     "UserUpdate",
     "UserResponse",
     "UserResponseMetadata",
     "UserRequest",
+    "UserRoleAssignmentResponse",
+    "UserRoleAssignmentRequest",
+    "UserRoleAssignmentResponseMetadata",
     "WorkspaceResponse",
     "WorkspaceResponseMetadata",
     "WorkspaceUpdate",
