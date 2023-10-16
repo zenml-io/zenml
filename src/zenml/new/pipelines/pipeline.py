@@ -286,6 +286,9 @@ class Pipeline:
         """Context manager to suppress warnings in `Pipeline.configure(...)`.
 
         Used to suppress warnings when called from inner code and not user-facing code.
+
+        Yields:
+            Nothing.
         """
         self.__suppress_warnings_flag__ = True
         yield
