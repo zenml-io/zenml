@@ -5949,6 +5949,39 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a link with the given name already exists.
         """
         with Session(self.engine) as session:
+            collision_msg = (
+                "Unable to create model version link {name}: "
+                "An artifact with same ID is already tracked in {version} model version "
+                "with the same name. It has to be deleted first."
+            )
+            existing_model_version_artifact_link_in_other_name = session.exec(
+                select(ModelVersionArtifactSchema)
+                .where(
+                    and_(
+                        or_(
+                            ModelVersionArtifactSchema.name
+                            != model_version_artifact_link.name,
+                            ModelVersionArtifactSchema.pipeline_name
+                            != model_version_artifact_link.pipeline_name,
+                            ModelVersionArtifactSchema.step_name
+                            != model_version_artifact_link.step_name,
+                        ),
+                        ModelVersionArtifactSchema.artifact_id
+                        == model_version_artifact_link.artifact,
+                    )
+                )
+                .where(
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version_artifact_link.model_version
+                )
+            ).first()
+            if existing_model_version_artifact_link_in_other_name is not None:
+                raise EntityExistsError(
+                    collision_msg.format(
+                        name=existing_model_version_artifact_link_in_other_name.name,
+                        version=existing_model_version_artifact_link_in_other_name.model_version,
+                    )
+                )
             existing_model_version_artifact_link = session.exec(
                 select(ModelVersionArtifactSchema)
                 .where(
@@ -5971,16 +6004,21 @@ class SqlZenStore(BaseZenStore):
                 )
                 .order_by(ModelVersionArtifactSchema.version.desc())  # type: ignore[attr-defined]
             ).first()
-            if existing_model_version_artifact_link is not None and (
-                existing_model_version_artifact_link.artifact_id
-                == model_version_artifact_link.artifact
-                or model_version_artifact_link.overwrite
-            ):
-                raise EntityExistsError(
-                    f"Unable to create model version link {existing_model_version_artifact_link.name}: "
-                    f"An artifact with same ID is already tracked in {existing_model_version_artifact_link.model_version} model version "
-                    "with the same name. It has to be deleted first."
-                )
+            if existing_model_version_artifact_link is not None:
+                if model_version_artifact_link.overwrite:
+                    raise EntityExistsError(
+                        collision_msg.format(
+                            name=existing_model_version_artifact_link.name,
+                            version=existing_model_version_artifact_link.model_version,
+                        )
+                    )
+                elif (
+                    model_version_artifact_link.artifact
+                    == existing_model_version_artifact_link.artifact_id
+                ):
+                    return ModelVersionArtifactSchema.to_model(
+                        existing_model_version_artifact_link
+                    )
 
             if (
                 model_version_artifact_link.name is None

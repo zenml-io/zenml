@@ -145,7 +145,7 @@ class ModelConfigModel(ModelBaseModel):
             if version is None:
                 if not suppress_warnings:
                     logger.info(
-                        "Creation of new model version was requested, but no version name was explicitly provided."
+                        "Creation of new model version was requested, but no version name was explicitly provided. "
                         f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
                     )
                 values["version"] = RUNNING_MODEL_VERSION
