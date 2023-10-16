@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import platform
-import subprocess
-import time
 from typing import Tuple
 from unittest import mock
 from uuid import uuid4
@@ -27,8 +24,13 @@ from zenml import get_step_context, pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
+from zenml.enums import ExecutionStatus
 from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
-from zenml.models import ModelRequestModel, ModelVersionRequestModel
+from zenml.models import (
+    ModelRequestModel,
+    ModelVersionRequestModel,
+    PipelineRunUpdateModel,
+)
 
 
 @step
@@ -843,62 +845,54 @@ def test_that_artifact_is_removed_on_deletion():
         assert len(model.versions[0].artifact_object_ids) == 0
 
 
-@pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="Subprocesses on Windows are hardly manageable.",
-)
+@step
+def _this_step_fails():
+    raise Exception("make pipeline fail")
+
+
 @pytest.mark.parametrize(
     "version",
-    ("test running version", ""),
+    ("test running version", None),
     ids=["custom_running_name", "default_running_name"],
 )
 def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_and_with_recovery(
     version,
 ):
     """Test that if second pipeline for same new version is started in parallel - it will fail."""
+
+    @pipeline(
+        name="bar",
+        enable_cache=False,
+        model_config=ModelConfig(
+            name="multi_run",
+            version=version,
+            create_new_model_version=True,
+            delete_new_version_on_failure=False,
+        ),
+    )
+    def _this_pipeline_will_fail():
+        _this_step_fails()
+
     with model_killer():
-        long_runtime = 120
-        long_run_name = f"long_{uuid4()}"
-        # start a long running pipeline with a request for a new version
-        long_process = subprocess.Popen(
-            [
-                "python3",
-                "tests/integration/functional/steps/parallel_pipeline.py",
-                version,
-                long_run_name,
-                str(long_runtime),
-            ],
-        )
-
-        # start concurrent run with same version and request for a new version creation
-        # first wait till first run is actually started
         client = Client()
-        for _ in range(long_runtime // 5):
-            try:
-                client.get_pipeline_run(long_run_name)
-            except KeyError:
-                break
-            finally:
-                print("sleep")
-                time.sleep(5)
+        # this pipeline fails, but persists intermediate version
+        with pytest.raises(Exception, match="make pipeline fail"):
+            run_name_1 = f"multi_run_{uuid4()}"
+            _this_pipeline_will_fail.with_options(run_name=run_name_1)()
 
-        process = subprocess.run(
-            [
-                "python3",
-                "tests/integration/functional/steps/parallel_pipeline.py",
-                version,
-                f"concurrent_{uuid4()}",
-                "0",
-            ],
-            capture_output=True,
+        # here we fake that previous failed pipeline is still running
+        run_id = client.get_pipeline_run(name_id_or_prefix=run_name_1).id
+        client.zen_store.update_run(
+            run_id=run_id,
+            run_update=PipelineRunUpdateModel(status=ExecutionStatus.RUNNING),
         )
-
-        assert process.returncode != 0
-        assert (
-            "New model version was requested, but pipeline run"
-            in process.stderr.decode()
-        )
-        long_process.terminate()
+        with pytest.raises(
+            RuntimeError,
+            match="New model version was requested, but pipeline run",
+        ):
+            _this_pipeline_will_fail.with_options(
+                run_name=f"multi_run_{uuid4()}"
+            )()
 
 
 def test_that_two_pipelines_cannot_create_same_specified_version():
