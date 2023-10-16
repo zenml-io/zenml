@@ -77,7 +77,6 @@ class BaseResponseModel(BaseZenModel):
     )
 
     missing_permissions: bool = False
-    partial: bool = False
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.

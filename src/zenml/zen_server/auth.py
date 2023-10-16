@@ -16,7 +16,8 @@
 import os
 from contextvars import ContextVar
 from datetime import datetime
-from typing import Any, Callable, List, Optional, Set, Union
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -53,7 +54,10 @@ from zenml.models import (
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
 from zenml.models.user_models import UserAuthModel
 from zenml.zen_server.jwt import JWTToken
-from zenml.zen_server.rbac_interface import RESOURCE_TYPE_MAPPING, Resource
+from zenml.zen_server.rbac_interface import (
+    Resource,
+    get_resource_type_for_model,
+)
 from zenml.zen_server.utils import rbac, server_config, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
@@ -674,52 +678,37 @@ def authentication_provider() -> Callable[..., AuthContext]:
 authorize = authentication_provider()
 
 
-from enum import Enum
-from typing import Dict, List, Set, Tuple
+def verify_read_permissions_and_dehydrate(
+    model: "BaseResponseModel",
+) -> "BaseResponseModel":
+    verify_permissions_for_model(model=model, action="READ")
+
+    return dehydrate_response_model(model=model)
 
 
 def dehydrate_response_model(
     model: "BaseResponseModel",
 ) -> "BaseResponseModel":
     dehydrated_fields = {}
-    did_dehydrate = False
 
     for field_name in model.__fields__.keys():
         value = getattr(model, field_name)
-        new_value, value_dehydrated = _maybe_dehydrate_value(value)
-        dehydrated_fields[field_name] = new_value
-        did_dehydrate = did_dehydrate or value_dehydrated
-
-    if did_dehydrate:
-        dehydrated_fields["partial"] = True
+        dehydrated_fields[field_name] = _maybe_dehydrate_value(value)
 
     return type(model).parse_obj(dehydrated_fields)
 
 
-def _maybe_dehydrate_value(value: Any) -> Tuple[Any, bool]:
+def _maybe_dehydrate_value(value: Any) -> Any:
     if isinstance(value, BaseResponseModel):
         if has_read_permissions_for_model(value):
-            dehydrated_model = dehydrate_response_model(value)
-            return dehydrated_model, dehydrated_model.partial
+            return dehydrate_response_model(value)
         else:
-            return get_403_model(value), True
+            return get_403_model(value)
     elif isinstance(value, Dict):
-        dict_ = {}
-        did_dehydrate = False
-        for k, v in value.items():
-            dict_[k], d = _maybe_dehydrate_value(v)
-            did_dehydrate = did_dehydrate or d
-        return dict_, did_dehydrate
+        return {k: _maybe_dehydrate_value(v) for k, v in value.items()}
     elif isinstance(value, (List, Set, Tuple)):
-        items = []
-        did_dehydrate = False
-        for v in value:
-            item, d = _maybe_dehydrate_value(v)
-            items.append(item)
-            did_dehydrate = did_dehydrate or d
-
         type_ = type(value)
-        return type_(items), did_dehydrate
+        return type_(_maybe_dehydrate_value(v) for v in value)
     else:
         return value, False
 
@@ -792,7 +781,7 @@ def verify_permissions_for_model(
         # User is the owner of the model
         return
 
-    resource_type = RESOURCE_TYPE_MAPPING.get(type(model))
+    resource_type = get_resource_type_for_model(model)
     if not resource_type:
         # This model is not tied to any RBAC resource type and therefore doesn't
         # require any special permissions

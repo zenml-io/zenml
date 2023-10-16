@@ -24,8 +24,8 @@ from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
-    dehydrate_response_model,
     verify_permissions_for_model,
+    verify_read_permissions_and_dehydrate,
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -94,16 +94,8 @@ def get_stack(
     Returns:
         The requested stack.
     """
-    from zenml.zen_server.rbac_interface import Action
-
     stack = zen_store().get_stack(stack_id)
-
-    verify_permissions_for_model(
-        model=stack,
-        action=Action.READ,
-    )
-
-    return dehydrate_response_model(stack)
+    return verify_read_permissions_and_dehydrate(stack)
 
 
 @router.put(
@@ -126,6 +118,9 @@ def update_stack(
     Returns:
         The updated stack.
     """
+    stack = zen_store().get_stack(stack_id)
+    verify_permissions_for_model(stack, action="update")
+
     return zen_store().update_stack(
         stack_id=stack_id,
         stack_update=stack_update,
@@ -146,4 +141,7 @@ def delete_stack(
     Args:
         stack_id: Name of the stack.
     """
-    zen_store().delete_stack(stack_id)  # aka 'delete_stack'
+    stack = zen_store().get_stack(stack_id)
+    verify_permissions_for_model(stack, action="delete")
+
+    zen_store().delete_stack(stack_id)

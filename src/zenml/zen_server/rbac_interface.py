@@ -5,7 +5,6 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.enums import StrEnum
-from zenml.models import ComponentResponseModel, StackResponseModel
 from zenml.models.base_models import BaseResponseModel
 
 
@@ -28,10 +27,34 @@ class ResourceType(StrEnum):
     SECRET = "secret"
 
 
-RESOURCE_TYPE_MAPPING: Dict[Type[BaseResponseModel], ResourceType] = {
-    StackResponseModel: ResourceType.STACK,
-    ComponentResponseModel: ResourceType.STACK_COMPONENT,
-}
+def get_resource_type_for_model(
+    model: "BaseResponseModel",
+) -> Optional[ResourceType]:
+    from zenml.models import (
+        ArtifactResponseModel,
+        CodeRepositoryResponseModel,
+        ComponentResponseModel,
+        FlavorResponseModel,
+        ModelResponseModel,
+        PipelineResponseModel,
+        SecretResponseModel,
+        ServiceConnectorResponseModel,
+        StackResponseModel,
+    )
+
+    mapping: Dict[Type[BaseResponseModel], ResourceType] = {
+        FlavorResponseModel: ResourceType.FLAVOR,
+        ServiceConnectorResponseModel: ResourceType.SERVICE_CONNECTOR,
+        ComponentResponseModel: ResourceType.STACK_COMPONENT,
+        StackResponseModel: ResourceType.STACK,
+        PipelineResponseModel: ResourceType.PIPELINE,
+        CodeRepositoryResponseModel: ResourceType.CODE_REPOSITORY,
+        SecretResponseModel: ResourceType.SECRET,
+        ModelResponseModel: ResourceType.MODEL,
+        ArtifactResponseModel: ResourceType.ARTIFACT,
+    }
+
+    return mapping.get(type(model))
 
 
 class Resource(BaseModel):
