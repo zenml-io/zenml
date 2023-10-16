@@ -174,3 +174,30 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
     assert p.configuration.model_config.save_models_to_registry
     with pytest.raises(AssertionError):
         p()
+
+
+def test_pipeline_config_from_file_not_warns_on_new_value(
+    clean_workspace, tmp_path
+):
+    """Test that the pipeline can be configured with an extra
+    from a yaml file, but other values are modifiable without warnings.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(run_name="run_name_in_file", enable_cache=True)
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_extra_pipeline():
+        assert_extra_step()
+
+    p = assert_extra_pipeline.with_options(config_path=str(config_path))
+    assert p.configuration.extra == {}
+
+    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+        p.configure(extra={"a": 1})
+        warning.assert_not_called()
+
+    assert p.configuration.extra == {"a": 1}
+    assert p.configuration.enable_cache
+
+    p()

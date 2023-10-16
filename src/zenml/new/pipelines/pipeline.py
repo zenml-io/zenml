@@ -1389,7 +1389,11 @@ class Pipeline:
             with open(config_path, "r") as f:
                 _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
             _from_config_file = dict_utils.remove_none_values(
-                {k: v for k, v in _from_config_file.items() if k in matcher}
+                {
+                    k: v
+                    for k, v in _from_config_file.items()
+                    if k in matcher and v
+                }
             )
 
             if "model_config" in _from_config_file:
