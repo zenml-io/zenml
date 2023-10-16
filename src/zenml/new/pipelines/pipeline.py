@@ -153,6 +153,7 @@ class Pipeline:
         self._configuration = PipelineConfiguration(
             name=name,
         )
+        self._from_config_file: Dict[str, Any] = {}
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -354,6 +355,35 @@ class Pipeline:
                 else None,
             }
         )
+        to_be_reapplied = []
+        for param_, value_ in values.items():
+            if param_ == "model_config_model":
+                param_ = "model_config"
+            if (
+                param_ in PipelineRunConfiguration.__fields__
+                and param_ in self._from_config_file
+                and value_ != self._from_config_file[param_]
+            ):
+                to_be_reapplied.append(
+                    (param_, self._from_config_file[param_], value_)
+                )
+        if to_be_reapplied:
+            msg = ""
+            reapply_during_run_warning = (
+                "The value of parameter '{name}' has changed from "
+                "'{file_value}' to '{new_value}' set in you configuration file.\n"
+            )
+            for name, file_value, new_value in to_be_reapplied:
+                msg += reapply_during_run_warning.format(
+                    name=name, file_value=file_value, new_value=new_value
+                )
+            msg += (
+                "Configuration file value will be used during pipeline run, "
+                "so you change will not be efficient. Consider updating your "
+                "configuration file instead."
+            )
+            logger.warning(msg)
+
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
@@ -1107,30 +1137,12 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
-        from_pipeline_config = {
-            k: v
-            for k, v in self.configuration.dict().items()
-            if k in PipelineRunConfiguration.__fields__ and v
-        }
+        self._from_config_file = self._parse_config_file(
+            config_path=config_path,
+            matcher=list(PipelineRunConfiguration.__fields__.keys()),
+        )
 
-        if config_path:
-            with open(config_path, "r") as f:
-                from_config: Dict[str, Any] = yaml.load(
-                    f, Loader=yaml.SafeLoader
-                )
-            # pull out parameters relevant for PipelineRunConfiguration
-            # and not meaningfully set in configuration
-            from_config = {
-                k: v
-                for k, v in from_config.items()
-                if k in PipelineRunConfiguration.__fields__
-                and k not in from_pipeline_config
-            }
-            run_config = PipelineRunConfiguration(
-                **from_config, **from_pipeline_config
-            )
-        else:
-            run_config = PipelineRunConfiguration(**from_pipeline_config)
+        run_config = PipelineRunConfiguration(**self._from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
         update = PipelineRunConfiguration.parse_obj(new_values)
@@ -1360,6 +1372,34 @@ class Pipeline:
         """
         Pipeline.ACTIVE_PIPELINE = None
 
+    def _parse_config_file(
+        self, config_path: Optional[str], matcher: List[str]
+    ) -> Dict[str, Any]:
+        """Parses the given configuration file.
+
+        Args:
+            config_path: Path to a yaml configuration file.
+            matcher: List of keys to match in the configuration file.
+
+        Returns:
+            The parsed configuration file as a dictionary.
+        """
+        _from_config_file: Dict[str, Any] = {}
+        if config_path:
+            with open(config_path, "r") as f:
+                _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
+            _from_config_file = dict_utils.remove_none_values(
+                {k: v for k, v in _from_config_file.items() if k in matcher}
+            )
+
+            if "model_config" in _from_config_file:
+                from zenml.model.model_config import ModelConfig
+
+                _from_config_file["model_config"] = ModelConfig.parse_obj(
+                    _from_config_file["model_config"]
+                )
+        return _from_config_file
+
     def with_options(
         self,
         run_name: Optional[str] = None,
@@ -1395,28 +1435,17 @@ class Pipeline:
         Returns:
             The copied pipeline instance.
         """
-        if config_path:
-            with open(config_path, "r") as f:
-                from_config: Dict[str, Any] = yaml.load(
-                    f, Loader=yaml.SafeLoader
-                )
-            # pull out parameters relevant for configure method
-            configure_args = inspect.getfullargspec(self.configure)[0]
-            from_config = {
-                k: v for k, v in from_config.items() if k in configure_args
-            }
-            if "model_config" in from_config:
-                from zenml.model.model_config import ModelConfig
-
-                from_config["model_config"] = ModelConfig.parse_obj(
-                    from_config["model_config"]
-                )
-        else:
-            from_config = {}
-        from_config = dict_utils.recursive_update(from_config, kwargs)
-
         pipeline_copy = self.copy()
-        pipeline_copy.configure(**from_config)
+
+        pipeline_copy._from_config_file = self._parse_config_file(
+            config_path=config_path,
+            matcher=inspect.getfullargspec(self.configure)[0],
+        )
+        pipeline_copy._from_config_file = dict_utils.recursive_update(
+            pipeline_copy._from_config_file, kwargs
+        )
+
+        pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {

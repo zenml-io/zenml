@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 
 
+from unittest.mock import patch
+
+import pytest
 import yaml
 
 from zenml import get_step_context, pipeline, step
@@ -40,8 +43,15 @@ def assert_model_config_step():
     assert model_config.save_models_to_registry
 
 
+@step
+def assert_extra_step():
+    extra = get_step_context().pipeline_run.config.extra
+    assert extra is not None
+    assert extra == {"a": 1}
+
+
 def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
-    """ """
+    """Test that the pipeline can be configured with a model config from a yaml file."""
     model_config = ModelConfig(
         name="foo",
         create_new_model_version=True,
@@ -73,11 +83,42 @@ def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
     assert_model_config_pipeline.with_options(config_path=str(config_path))()
 
 
-def test_pipeline_with_model_config_from_yaml_updated_later(
+def test_pipeline_config_from_file_not_overridden_for_extra(
     clean_workspace, tmp_path
 ):
-    """ """
-    initial_model_config = ModelConfig(name="bar")
+    """Test that the pipeline can be configured with an extra
+    from a yaml file, but the values from yaml are not overridden.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(run_name="run_name_in_file", extra={"a": 1})
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_extra_pipeline():
+        assert_extra_step()
+
+    p = assert_extra_pipeline.with_options(config_path=str(config_path))
+    assert p.configuration.extra == {"a": 1}
+
+    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+        p.configure(extra={"a": 2})
+        warning.assert_called_once()
+
+    assert p.configuration.extra == {"a": 2}
+
+    p()
+
+
+def test_pipeline_config_from_file_not_overridden_for_model_config(
+    clean_workspace, tmp_path
+):
+    """Test that the pipeline can be configured with a model config
+    from a yaml file, but the values from yaml are not overridden.
+    """
+    initial_model_config = ModelConfig(
+        name="bar",
+        create_new_model_version=True,
+    )
 
     config_path = tmp_path / "config.yaml"
     file_config = dict(
@@ -93,23 +134,26 @@ def test_pipeline_with_model_config_from_yaml_updated_later(
     p = assert_model_config_pipeline.with_options(config_path=str(config_path))
     assert p.configuration.model_config.name == "bar"
 
-    p.configure(
-        model_config=ModelConfig(
-            name="foo",
-            create_new_model_version=True,
-            delete_new_version_on_failure=False,
-            description="description",
-            license="MIT",
-            audience="audience",
-            use_cases="use_cases",
-            limitations="limitations",
-            trade_offs="trade_offs",
-            ethic="ethic",
-            tags=["tag"],
-            version_description="version_description",
-            save_models_to_registry=True,
+    with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
+        p.configure(
+            model_config=ModelConfig(
+                name="foo",
+                create_new_model_version=True,
+                delete_new_version_on_failure=False,
+                description="description",
+                license="MIT",
+                audience="audience",
+                use_cases="use_cases",
+                limitations="limitations",
+                trade_offs="trade_offs",
+                ethic="ethic",
+                tags=["tag"],
+                version_description="version_description",
+                save_models_to_registry=True,
+            )
         )
-    )
+        warning.assert_called_once()
+
     assert p.configuration.model_config is not None
     assert p.configuration.model_config.name == "foo"
     assert p.configuration.model_config.version == RUNNING_MODEL_VERSION
@@ -128,5 +172,5 @@ def test_pipeline_with_model_config_from_yaml_updated_later(
         == "version_description"
     )
     assert p.configuration.model_config.save_models_to_registry
-
-    p()
+    with pytest.raises(AssertionError):
+        p()
