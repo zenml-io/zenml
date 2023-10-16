@@ -49,15 +49,6 @@ class ModelConfig(ModelConfigModel):
         default=None
     )
 
-    def __eq__(self, other: "ModelConfig") -> bool:
-        _ignore = {"suppress_warnings"}
-        for key in self.dict():
-            if key not in _ignore and getattr(self, key) != getattr(
-                other, key
-            ):
-                return False
-        return True
-
     def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model Control Plane.
 

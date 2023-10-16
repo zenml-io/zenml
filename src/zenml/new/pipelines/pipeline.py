@@ -16,6 +16,7 @@ import copy
 import hashlib
 import inspect
 from collections import defaultdict
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from types import FunctionType
@@ -154,19 +155,22 @@ class Pipeline:
             name=name,
         )
         self._from_config_file: Dict[str, Any] = {}
-        self.configure(
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
-            enable_artifact_visualization=enable_artifact_visualization,
-            enable_step_logs=enable_step_logs,
-            settings=settings,
-            extra=extra,
-            on_failure=on_failure,
-            on_success=on_success,
-            model_config=model_config,
-        )
+        with self.__suppress_configure_warnings__():
+            self.configure(
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
+                enable_step_logs=enable_step_logs,
+                settings=settings,
+                extra=extra,
+                on_failure=on_failure,
+                on_success=on_success,
+                model_config=model_config,
+            )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
+
+        self.__suppress_warnings_flag__ = False
 
     @property
     def name(self) -> str:
@@ -276,6 +280,12 @@ class Pipeline:
             f"been run and that at least one step has been executed."
         )
 
+    @contextmanager
+    def __suppress_configure_warnings__(self):
+        self.__suppress_warnings_flag__ = True
+        yield
+        self.__suppress_warnings_flag__ = False
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -355,34 +365,35 @@ class Pipeline:
                 else None,
             }
         )
-        to_be_reapplied = []
-        for param_, value_ in values.items():
-            if param_ == "model_config_model":
-                param_ = "model_config"
-            if (
-                param_ in PipelineRunConfiguration.__fields__
-                and param_ in self._from_config_file
-                and value_ != self._from_config_file[param_]
-            ):
-                to_be_reapplied.append(
-                    (param_, self._from_config_file[param_], value_)
+        if not self.__suppress_warnings_flag__:
+            to_be_reapplied = []
+            for param_, value_ in values.items():
+                if param_ == "model_config_model":
+                    param_ = "model_config"
+                if (
+                    param_ in PipelineRunConfiguration.__fields__
+                    and param_ in self._from_config_file
+                    and value_ != self._from_config_file[param_]
+                ):
+                    to_be_reapplied.append(
+                        (param_, self._from_config_file[param_], value_)
+                    )
+            if to_be_reapplied:
+                msg = ""
+                reapply_during_run_warning = (
+                    "The value of parameter '{name}' has changed from "
+                    "'{file_value}' to '{new_value}' set in you configuration file.\n"
                 )
-        if to_be_reapplied:
-            msg = ""
-            reapply_during_run_warning = (
-                "The value of parameter '{name}' has changed from "
-                "'{file_value}' to '{new_value}' set in you configuration file.\n"
-            )
-            for name, file_value, new_value in to_be_reapplied:
-                msg += reapply_during_run_warning.format(
-                    name=name, file_value=file_value, new_value=new_value
+                for name, file_value, new_value in to_be_reapplied:
+                    msg += reapply_during_run_warning.format(
+                        name=name, file_value=file_value, new_value=new_value
+                    )
+                msg += (
+                    "Configuration file value will be used during pipeline run, "
+                    "so you change will not be efficient. Consider updating your "
+                    "configuration file instead."
                 )
-            msg += (
-                "Configuration file value will be used during pipeline run, "
-                "so you change will not be efficient. Consider updating your "
-                "configuration file instead."
-            )
-            logger.warning(msg)
+                logger.warning(msg)
 
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
@@ -1449,7 +1460,8 @@ class Pipeline:
             pipeline_copy._from_config_file, kwargs
         )
 
-        pipeline_copy.configure(**pipeline_copy._from_config_file)
+        with pipeline_copy.__suppress_configure_warnings__():
+            pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {
