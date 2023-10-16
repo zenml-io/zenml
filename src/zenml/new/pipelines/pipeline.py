@@ -26,6 +26,7 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -281,7 +282,11 @@ class Pipeline:
         )
 
     @contextmanager
-    def __suppress_configure_warnings__(self):
+    def __suppress_configure_warnings__(self) -> Iterator[Any]:
+        """Context manager to suppress warnings in `Pipeline.configure(...)`.
+
+        Used to suppress warnings when the called from inner code and not user-facing code.
+        """
         self.__suppress_warnings_flag__ = True
         yield
         self.__suppress_warnings_flag__ = False
