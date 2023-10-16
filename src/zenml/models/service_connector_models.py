@@ -38,12 +38,12 @@ from pydantic import (
 
 from zenml.logger import get_logger
 from zenml.models.base_models import (
-    ShareableRequestModel,
-    ShareableResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.component_models import ComponentBaseModel
@@ -1132,7 +1132,7 @@ class ServiceConnectorResourcesModel(BaseModel):
 
 
 class ServiceConnectorResponseModel(
-    ServiceConnectorBaseModel, ShareableResponseModel
+    ServiceConnectorBaseModel, WorkspaceScopedResponseModel
 ):
     """Response model for service connectors."""
 
@@ -1169,18 +1169,18 @@ class ServiceConnectorResponseModel(
 # ------ #
 
 
-class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
+class ServiceConnectorFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of service connectors."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
         "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_type",
         "labels_str",
         "labels",
@@ -1190,10 +1190,6 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         description="The type to scope this query to.",
     )
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None,
-        description="If the service connector is shared or private",
-    )
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",
@@ -1288,7 +1284,7 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
 
 
 class ServiceConnectorRequestModel(
-    ServiceConnectorBaseModel, ShareableRequestModel
+    ServiceConnectorBaseModel, WorkspaceScopedRequestModel
 ):
     """Request model for service connectors."""
 

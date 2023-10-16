@@ -497,8 +497,7 @@ def print_stack_configuration(
     console.print(rich_table)
     declare(
         f"Stack '{stack.name}' with id '{stack.id}' is "
-        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
-        f"'{'shared' if stack.is_shared else 'private'}'."
+        f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
     )
 
     if stack.stack_spec_path:
@@ -543,8 +542,7 @@ def print_stack_component_configuration(
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
         f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{user_name}' and is "
-        f"'{'shared' if component.is_shared else 'private'}'."
+        f"user '{user_name}'."
     )
 
     if len(component.configuration) == 0:
@@ -1333,16 +1331,16 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
                 declare(f"  {prop_schema['description']}", width=80)
 
 
-def get_shared_emoji(is_shared: bool) -> str:
-    """Returns the emoji for whether a stack is shared or not.
+def get_boolean_emoji(value: bool) -> str:
+    """Returns the emoji for displaying a boolean.
 
     Args:
-        is_shared: Whether the stack is shared or not.
+        value: The boolean value to display
 
     Returns:
-        The emoji for whether the stack is shared or not.
+        The emoji for the boolean
     """
-    return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+    return ":white_heavy_check_mark:" if value else ":heavy_minus_sign:"
 
 
 def replace_emojis(text: str) -> str:
@@ -1403,7 +1401,6 @@ def print_stacks_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
-            "SHARED": get_shared_emoji(stack.is_shared),
             "OWNER": user_name,
             **{
                 component_type.upper(): components[0].name
@@ -1466,7 +1463,6 @@ def print_components_table(
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
-            "SHARED": get_shared_emoji(component.is_shared),
             "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
         }
         configurations.append(component_config)
@@ -1575,7 +1571,6 @@ def print_service_connectors_table(
             "TYPE": connector.emojified_connector_type,
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
-            "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
             "EXPIRES IN": expires_in(
                 connector.expires_at, ":name_badge: Expired!"
@@ -1688,19 +1683,15 @@ def print_service_connector_configuration(
         declare(
             f"Service connector '{connector.name}' of type "
             f"'{connector.type}' with id '{connector.id}' is owned by "
-            f"user '{user_name}' and is "
-            f"'{'shared' if connector.is_shared else 'private'}'."
+            f"user '{user_name}'."
         )
     else:
         declare(
             f"Service connector '{connector.name}' of type "
-            f"'{connector.type}' is "
-            f"'{'shared' if connector.is_shared else 'private'}'."
+            f"'{connector.type}'."
         )
 
-    title_ = (
-        f"'{connector.name}' {connector.type} Service Connector " "Details"
-    )
+    title_ = f"'{connector.name}' {connector.type} Service Connector Details"
 
     if active_status:
         title_ += " (ACTIVE)"
@@ -1734,7 +1725,6 @@ def print_service_connector_configuration(
             else "N/A",
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
-            "SHARED": get_shared_emoji(connector.is_shared),
             "CREATED_AT": connector.created,
             "UPDATED_AT": connector.updated,
         }
@@ -1751,7 +1741,6 @@ def print_service_connector_configuration(
             )
             if connector.expires_at
             else "N/A",
-            "SHARED": get_shared_emoji(connector.is_shared),
         }
 
     for item in properties.items():
@@ -1831,8 +1820,8 @@ def print_service_connector_types_table(
                 connector_type.emojified_resource_types
             ),
             "AUTH METHODS": "\n".join(supported_auth_methods),
-            "LOCAL": get_shared_emoji(connector_type.local),
-            "REMOTE": get_shared_emoji(connector_type.remote),
+            "LOCAL": get_boolean_emoji(connector_type.local),
+            "REMOTE": get_boolean_emoji(connector_type.remote),
         }
         configurations.append(connector_type_config)
     print_table(configurations)
@@ -2091,7 +2080,6 @@ def print_debug_stack() -> None:
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
     console.print(f"ID: {str(stack.id)}")
-    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
     if stack.user and stack.user.name and stack.user.id:  # mypy check
         console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
     console.print(
@@ -2110,9 +2098,6 @@ def print_debug_stack() -> None:
         console.print(f"Type: {component.type.value}")
         console.print(f"Flavor: {component.flavor}")
         console.print(f"Configuration: {_scrub_secret(component.config)}")
-        console.print(
-            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
-        )
         if (
             component_response.user
             and component_response.user.name

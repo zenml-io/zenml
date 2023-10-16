@@ -20,7 +20,7 @@ from uuid import UUID
 from sqlmodel import Relationship, SQLModel
 
 from zenml.models import StackResponseModel
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -62,7 +62,7 @@ class StackCompositionSchema(SQLModel, table=True):
     )
 
 
-class StackSchema(ShareableSchema, table=True):
+class StackSchema(NamedSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
@@ -139,7 +139,6 @@ class StackSchema(ShareableSchema, table=True):
             stack_spec_path=self.stack_spec_path,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
-            is_shared=self.is_shared,
             components={c.type: [c.to_model()] for c in self.components},
             created=self.created,
             updated=self.updated,

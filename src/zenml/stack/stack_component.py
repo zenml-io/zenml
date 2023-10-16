@@ -162,9 +162,6 @@ class StackComponentConfig(BaseModel, ABC):
         resources or capabilities (e.g. local filesystem, local database or
         other services).
 
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
-
         Examples:
           * Artifact Stores that store artifacts in the local filesystem
           * Orchestrators that are connected to local orchestration runtime

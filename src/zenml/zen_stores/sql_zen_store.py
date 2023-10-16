@@ -180,8 +180,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
-    DEFAULT_STACK_COMPONENT_NAME,
-    DEFAULT_STACK_NAME,
+    DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX,
     BaseZenStore,
 )
 from zenml.zen_stores.enums import StoreEvent
@@ -1022,14 +1021,8 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists_for_user(
-                stack=stack, session=session
-            )
-
-            if stack.is_shared:
-                self._fail_if_stack_with_name_already_shared(
-                    stack=stack, session=session
-                )
+            self._fail_if_stack_name_reserved(stack_name=stack.name)
+            self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -1053,7 +1046,6 @@ class SqlZenStore(BaseZenStore):
             new_stack_schema = StackSchema(
                 workspace_id=stack.workspace,
                 user_id=stack.user,
-                is_shared=stack.is_shared,
                 stack_spec_path=stack.stack_spec_path,
                 name=stack.name,
                 description=stack.description,
@@ -1156,7 +1148,12 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update stack with id '{stack_id}': Found no"
                     f"existing stack with this id."
                 )
-            if existing_stack.name == DEFAULT_STACK_NAME:
+            if (
+                existing_stack.name
+                == self._get_default_stack_and_component_name(
+                    existing_stack.user_id
+                )
+            ):
                 raise IllegalOperationError(
                     "The default stack cannot be modified."
                 )
@@ -1164,16 +1161,10 @@ class SqlZenStore(BaseZenStore):
             # with that name
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
-                    self._fail_if_stack_with_name_exists_for_user(
-                        stack=stack_update, session=session
+                    self._fail_if_stack_name_reserved(
+                        stack_name=stack_update.name
                     )
-
-            # Check if stack update makes the stack a shared stack. In that
-            # case, check if a stack with the same name is already shared
-            # within the workspace
-            if stack_update.is_shared:
-                if not existing_stack.is_shared and stack_update.is_shared:
-                    self._fail_if_stack_with_name_already_shared(
+                    self._fail_if_stack_with_name_exists(
                         stack=stack_update, session=session
                     )
 
@@ -1217,7 +1208,9 @@ class SqlZenStore(BaseZenStore):
 
                 if stack is None:
                     raise KeyError(f"Stack with ID {stack_id} not found.")
-                if stack.name == DEFAULT_STACK_NAME:
+                if stack.name == self._get_default_stack_and_component_name(
+                    user_id=stack.user_id
+                ):
                     raise IllegalOperationError(
                         "The default stack cannot be deleted."
                     )
@@ -1227,85 +1220,48 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def _fail_if_stack_with_name_exists_for_user(
+    def _fail_if_stack_with_name_exists(
         self,
         stack: StackRequestModel,
         session: Session,
     ) -> None:
-        """Raise an exception if a Component with same name exists for user.
+        """Raise an exception if a stack with same name exists.
 
         Args:
             stack: The Stack
             session: The Session
 
-        Returns:
-            None
-
         Raises:
-            StackExistsError: If a Stack with the given name is already
-                                       owned by the user
+            StackExistsError: If a Stack with the given name already exists.
         """
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
             .where(StackSchema.workspace_id == stack.workspace)
-            .where(StackSchema.user_id == stack.user)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
                 workspace_name_or_id=stack.workspace, session=session
             )
-            user = self._get_user_schema(
-                user_name_or_id=stack.user, session=session
-            )
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
-                f"name in the active workspace, '{workspace.name}', "
-                f"owned by the same user, '{user.name}'."
+                f"name in the active workspace '{workspace.name}'."
             )
-        return None
 
-    def _fail_if_stack_with_name_already_shared(
-        self,
-        stack: StackRequestModel,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a Stack with same name is already shared.
+    def _fail_if_stack_name_reserved(self, stack_name: str) -> None:
+        """Raise an exception if the stack name is reserved.
 
         Args:
-            stack: The Stack
-            session: The Session
+            stack_name: The stack name.
 
         Raises:
-            StackExistsError: If a stack with the given name is already shared
-                              by a user.
+            IllegalOperationError: If the stack name is reserved.
         """
-        # Check if component with the same name, type is already shared
-        # within the workspace
-        existing_shared_stack = session.exec(
-            select(StackSchema)
-            .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
-            .where(StackSchema.is_shared == stack.is_shared)
-        ).first()
-        if existing_shared_stack is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=stack.workspace, session=session
+        if stack_name == DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX:
+            raise IllegalOperationError(
+                f"Unable to register stack with reserved name '{stack_name}'."
             )
-            error_msg = (
-                f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing shared stack with the same name in workspace "
-                f"'{workspace.name}'"
-            )
-            if existing_shared_stack.user_id:
-                owner_of_shared = self._get_user_schema(
-                    existing_shared_stack.user_id, session=session
-                )
-                error_msg += f" owned by '{owner_of_shared.name}'."
-            else:
-                error_msg += ", which is currently not owned by any user."
-            raise StackExistsError(error_msg)
 
     # ----------------
     # Stack components
@@ -1329,21 +1285,15 @@ class SqlZenStore(BaseZenStore):
                 connector.
         """
         with Session(self.engine) as session:
-            self._fail_if_component_with_name_type_exists_for_user(
+            self._fail_if_component_name_reserved(
+                component_name=component.name
+            )
+            self._fail_if_component_with_name_type_exists(
                 name=component.name,
                 component_type=component.type,
-                user_id=component.user,
                 workspace_id=component.workspace,
                 session=session,
             )
-
-            if component.is_shared:
-                self._fail_if_component_with_name_type_already_shared(
-                    name=component.name,
-                    component_type=component.type,
-                    workspace_id=component.workspace,
-                    session=session,
-                )
 
             service_connector: Optional[ServiceConnectorSchema] = None
             if component.connector:
@@ -1364,7 +1314,6 @@ class SqlZenStore(BaseZenStore):
                 name=component.name,
                 workspace_id=component.workspace,
                 user_id=component.user,
-                is_shared=component.is_shared,
                 component_spec_path=component.component_spec_path,
                 type=component.type,
                 flavor=component.flavor,
@@ -1482,7 +1431,10 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if (
-                existing_component.name == DEFAULT_STACK_COMPONENT_NAME
+                existing_component.name
+                == self._get_default_stack_and_component_name(
+                    user_id=existing_component.user_id
+                )
                 and existing_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
@@ -1496,28 +1448,12 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no component of the same
             # type already exists with that name
             if component_update.name:
-                if (
-                    existing_component.name != component_update.name
-                    and existing_component.user_id is not None
-                ):
-                    self._fail_if_component_with_name_type_exists_for_user(
-                        name=component_update.name,
-                        component_type=existing_component.type,
-                        workspace_id=existing_component.workspace_id,
-                        user_id=existing_component.user_id,
-                        session=session,
+                if existing_component.name != component_update.name:
+                    self._fail_if_component_name_reserved(
+                        component_name=component_update.name
                     )
-
-            # Check if component update makes the component a shared component,
-            # In that case check if a component with the same name, type are
-            # already shared within the workspace
-            if component_update.is_shared:
-                if (
-                    not existing_component.is_shared
-                    and component_update.is_shared
-                ):
-                    self._fail_if_component_with_name_type_already_shared(
-                        name=component_update.name or existing_component.name,
+                    self._fail_if_component_with_name_type_exists(
+                        name=component_update.name,
                         component_type=existing_component.type,
                         workspace_id=existing_component.workspace_id,
                         session=session,
@@ -1569,7 +1505,10 @@ class SqlZenStore(BaseZenStore):
                 if stack_component is None:
                     raise KeyError(f"Stack with ID {component_id} not found.")
                 if (
-                    stack_component.name == DEFAULT_STACK_COMPONENT_NAME
+                    stack_component.name
+                    == self._get_default_stack_and_component_name(
+                        user_id=stack_component.user_id
+                    )
                     and stack_component.type
                     in [
                         StackComponentType.ORCHESTRATOR,
@@ -1598,88 +1537,54 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     @staticmethod
-    def _fail_if_component_with_name_type_exists_for_user(
+    def _fail_if_component_with_name_type_exists(
         name: str,
         component_type: StackComponentType,
         workspace_id: UUID,
-        user_id: UUID,
         session: Session,
     ) -> None:
-        """Raise an exception if a Component with same name/type exists.
+        """Raise an exception if a component with same name/type exists.
 
         Args:
             name: The name of the component
             component_type: The type of the component
             workspace_id: The ID of the workspace
-            user_id: The ID of the user
             session: The Session
-
-        Returns:
-            None
 
         Raises:
             StackComponentExistsError: If a component with the given name and
-                                       type is already owned by the user
+                                       type already exists.
         """
-        assert user_id
-        # Check if component with the same domain key (name, type, workspace,
-        # owner) already exists
+        # Check if component with the same domain key (name, type, workspace)
+        # already exists
         existing_domain_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.workspace_id == workspace_id)
-            .where(StackComponentSchema.user_id == user_id)
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
-            # Theoretically the user schema is optional, in this case there is
-            #  no way that it will be None
-            assert existing_domain_component.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
-                f" workspace, '{existing_domain_component.workspace.name}', "
-                f"owned by the same user, "
-                f"'{existing_domain_component.user.name}'."
+                f" workspace '{existing_domain_component.workspace.name}'."
             )
         return None
 
-    @staticmethod
-    def _fail_if_component_with_name_type_already_shared(
-        name: str,
-        component_type: StackComponentType,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a Component with same name/type already shared.
+    def _fail_if_component_name_reserved(self, component_name: str) -> None:
+        """Raise an exception if the component name is reserved.
 
         Args:
-            name: The name of the component
-            component_type: The type of the component
-            workspace_id: The ID of the workspace
-            session: The Session
+            component_name: The component name.
 
         Raises:
-            StackComponentExistsError: If a component with the given name and
-                type is already shared by a user
+            IllegalOperationError: If the component name is reserved.
         """
-        # Check if component with the same name, type is already shared
-        # within the workspace
-        is_shared = True
-        existing_shared_component = session.exec(
-            select(StackComponentSchema)
-            .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.workspace_id == workspace_id)
-            .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared == is_shared)
-        ).first()
-        if existing_shared_component is not None:
-            raise StackComponentExistsError(
-                f"Unable to shared component of type '{component_type.value}' "
-                f"with name '{name}': Found an existing shared "
-                f"component with the same name and type in workspace "
-                f"'{workspace_id}'."
+        if component_name == DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX:
+            raise IllegalOperationError(
+                f"Unable to register component with reserved name "
+                f"'{component_name}'."
             )
 
     # -----------------------
@@ -3510,10 +3415,9 @@ class SqlZenStore(BaseZenStore):
     # ------------------
 
     @staticmethod
-    def _fail_if_service_connector_with_name_exists_for_user(
+    def _fail_if_service_connector_with_name_exists(
         name: str,
         workspace_id: UUID,
-        user_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a service connector with same name exists.
@@ -3521,70 +3425,26 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the service connector
             workspace_id: The ID of the workspace
-            user_id: The ID of the user
             session: The Session
 
-        Returns:
-            None
-
         Raises:
-            EntityExistsError: If a service connector with the given name is
-                already owned by the user
+            EntityExistsError: If a service connector with the given name
+                already exists.
         """
-        assert user_id
-        # Check if service connector with the same domain key (name, workspace,
-        # owner) already exists
+        # Check if service connector with the same domain key (name, workspace)
+        # already exists
         existing_domain_connector = session.exec(
             select(ServiceConnectorSchema)
             .where(ServiceConnectorSchema.name == name)
             .where(ServiceConnectorSchema.workspace_id == workspace_id)
-            .where(ServiceConnectorSchema.user_id == user_id)
         ).first()
         if existing_domain_connector is not None:
-            # Theoretically the user schema is optional, in this case there is
-            #  no way that it will be None
-            assert existing_domain_connector.user
             raise EntityExistsError(
                 f"Unable to register service connector with name '{name}': "
                 "Found an existing service connector with the same name in the "
-                f"same workspace, '{existing_domain_connector.workspace.name}', "
-                "owned by the same user, "
-                f"{existing_domain_connector.user.name}'."
+                f"same workspace '{existing_domain_connector.workspace.name}'."
             )
         return None
-
-    @staticmethod
-    def _fail_if_service_connector_with_name_already_shared(
-        name: str,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a service connector with same name is already shared.
-
-        Args:
-            name: The name of the service connector
-            workspace_id: The ID of the workspace
-            session: The Session
-
-        Raises:
-            EntityExistsError: If a service connector with the given name is
-                already shared by another user
-        """
-        # Check if a service connector with the same name is already shared
-        # within the workspace
-        is_shared = True
-        existing_shared_connector = session.exec(
-            select(ServiceConnectorSchema)
-            .where(ServiceConnectorSchema.name == name)
-            .where(ServiceConnectorSchema.workspace_id == workspace_id)
-            .where(ServiceConnectorSchema.is_shared == is_shared)
-        ).first()
-        if existing_shared_connector is not None:
-            raise EntityExistsError(
-                f"Unable to share service connector with name '{name}': Found "
-                "an existing shared service connector with the same name in "
-                f"workspace '{workspace_id}'."
-            )
 
     def _create_connector_secret(
         self,
@@ -3707,19 +3567,11 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            self._fail_if_service_connector_with_name_exists_for_user(
+            self._fail_if_service_connector_with_name_exists(
                 name=service_connector.name,
-                user_id=service_connector.user,
                 workspace_id=service_connector.workspace,
                 session=session,
             )
-
-            if service_connector.is_shared:
-                self._fail_if_service_connector_with_name_already_shared(
-                    name=service_connector.name,
-                    workspace_id=service_connector.workspace,
-                    session=session,
-                )
 
             # Create the secret
             secret_id = self._create_connector_secret(

@@ -814,58 +814,6 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         return query
 
 
-class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
-    """Model to enable advanced scoping with workspace and user scoped shareable things."""
-
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
-        "scope_user",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "scope_user",
-    ]
-    scope_user: Optional[UUID] = Field(
-        default=None,
-        description="The user to scope this query to.",
-    )
-
-    def set_scope_user(self, user_id: UUID) -> None:
-        """Set the user that is performing the filtering to scope the response.
-
-        Args:
-            user_id: The user ID to scope the response to.
-        """
-        self.scope_user = user_id
-
-    def apply_filter(
-        self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
-        table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from sqlmodel import or_
-
-        query = super().apply_filter(query=query, table=table)
-
-        if self.scope_user:
-            scope_filter = or_(
-                getattr(table, "user_id") == self.scope_user,
-                getattr(table, "is_shared").is_(True),
-            )
-            query = query.where(scope_filter)
-
-        return query
-
-
 class UserScopedFilterModel(BaseFilterModel):
     """Model to enable advanced user-based scoping."""
 

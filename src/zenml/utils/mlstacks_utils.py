@@ -510,7 +510,6 @@ def import_new_mlstacks_stack(
     imported_stack = Client().create_stack(
         name=stack_name,
         components=component_ids,
-        is_shared=False,
         stack_spec_file=stack_spec_file,
     )
 

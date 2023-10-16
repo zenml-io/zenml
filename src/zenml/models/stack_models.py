@@ -21,13 +21,13 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    ShareableRequestModel,
-    ShareableResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -57,7 +57,7 @@ class StackBaseModel(BaseModel):
 # -------- #
 
 
-class StackResponseModel(StackBaseModel, ShareableResponseModel):
+class StackResponseModel(StackBaseModel, WorkspaceScopedResponseModel):
     """Stack model with Components, User and Workspace fully hydrated."""
 
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
@@ -117,7 +117,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class StackFilterModel(ShareableWorkspaceScopedFilterModel):
+class StackFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all StackModels.
 
     The Stack Model needs additional scoping. As such the `_scope_user` field
@@ -130,13 +130,10 @@ class StackFilterModel(ShareableWorkspaceScopedFilterModel):
     #  rather than a field in the db, hence it needs to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "component_id",  # This is a relationship, not a field
     ]
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None, description="If the stack is shared or private"
-    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the stack",
@@ -160,7 +157,7 @@ class StackFilterModel(ShareableWorkspaceScopedFilterModel):
 # ------- #
 
 
-class StackRequestModel(StackBaseModel, ShareableRequestModel):
+class StackRequestModel(StackBaseModel, WorkspaceScopedRequestModel):
     """Stack model with components, user and workspace as UUIDs."""
 
     components: Optional[Dict[StackComponentType, List[UUID]]] = Field(

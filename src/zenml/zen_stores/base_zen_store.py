@@ -80,7 +80,7 @@ logger = get_logger(__name__)
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_WORKSPACE_NAME = "default"
-DEFAULT_STACK_AND_COMPONENT_NAME = "default"
+DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX = "default"
 
 
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
@@ -307,7 +307,7 @@ class BaseZenStore(
             except KeyError:
                 default_user = self._create_default_user()
             self._get_or_create_default_stack(
-                workspace_id=default_workspace.id,
+                workspace=default_workspace,
                 user_id=default_user.id,
             )
 
@@ -412,19 +412,6 @@ class BaseZenStore(
                     active_stack = self._get_or_create_default_stack(
                         active_workspace
                     )
-                elif not active_stack.is_shared and (
-                    not active_stack.user
-                    or (active_stack.user.id != self.get_user().id)
-                ):
-                    logger.warning(
-                        "The current %s active stack is not shared and not "
-                        "owned by the active user. "
-                        "Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
-                    )
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
@@ -465,17 +452,19 @@ class BaseZenStore(
         return self.get_store_info().is_local()
 
     def _get_or_create_default_stack(
-        self, workspace: "WorkspaceResponseModel"
+        self,
+        workspace: "WorkspaceResponseModel",
+        user_id: Optional[UUID] = None,
     ) -> "StackResponseModel":
         try:
             return self._get_default_stack(
                 workspace_id=workspace.id,
-                user_id=self.get_user().id,
+                user_id=user_id or self.get_user().id,
             )
         except KeyError:
             return self._create_default_stack(
                 workspace_id=workspace.id,
-                user_id=self.get_user().id,
+                user_id=user_id or self.get_user().id,
             )
 
     def _get_or_create_default_workspace(self) -> "WorkspaceResponseModel":
@@ -584,7 +573,6 @@ class BaseZenStore(
             stack = StackRequestModel(
                 name=name,
                 components=components,
-                is_shared=False,
                 workspace=workspace.id,
                 user=user.id,
             )
@@ -599,7 +587,7 @@ class BaseZenStore(
         Returns:
             The default stack/component name.
         """
-        return f"{DEFAULT_STACK_AND_COMPONENT_NAME}-{user_id}"
+        return f"{DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX}-{user_id}"
 
     def _get_default_stack(
         self,

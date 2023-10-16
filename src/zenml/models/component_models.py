@@ -30,12 +30,12 @@ from pydantic import BaseModel, Field, validator
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.models.base_models import (
-    ShareableRequestModel,
-    ShareableResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.service_connector_models import ServiceConnectorResponseModel
 from zenml.utils import secret_utils
 
@@ -92,7 +92,7 @@ class ComponentBaseModel(BaseModel):
 # -------- #
 
 
-class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
+class ComponentResponseModel(ComponentBaseModel, WorkspaceScopedResponseModel):
     """Response model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
@@ -108,7 +108,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
+class ComponentFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all ComponentModels.
 
     The Component Model needs additional scoping. As such the `_scope_user`
@@ -118,11 +118,11 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
     """
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_type",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
     scope_type: Optional[str] = Field(
@@ -130,9 +130,6 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
         description="The type to scope this query to.",
     )
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None, description="If the stack is shared or private"
-    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the stack component",
@@ -190,7 +187,7 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
 # ------- #
 
 
-class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
+class ComponentRequestModel(ComponentBaseModel, WorkspaceScopedRequestModel):
     """Request model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]

@@ -24,7 +24,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
-from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -56,7 +56,7 @@ class ScheduleResponseModel(ScheduleBaseModel, WorkspaceScopedResponseModel):
 # ------ #
 
 
-class ScheduleFilterModel(ShareableWorkspaceScopedFilterModel):
+class ScheduleFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Users."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(

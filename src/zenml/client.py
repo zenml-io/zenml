@@ -1026,6 +1026,13 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The stack.
         """
+        if name_id_or_prefix == "default":
+            name_id_or_prefix = (
+                self.zen_store._get_default_stack_and_component_name(
+                    user_id=self.active_user.id
+                )
+            )
+
         if name_id_or_prefix is not None:
             return self._get_entity_by_id_or_name_or_prefix(
                 get_method=self.zen_store.get_stack,
@@ -1040,7 +1047,6 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
-        is_shared: bool = False,
         stack_spec_file: Optional[str] = None,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
@@ -1048,15 +1054,10 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
-            is_shared: boolean to decide whether the stack is shared
             stack_spec_file: path to the stack spec file
 
         Returns:
             The model of the registered stack.
-
-        Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be registered as shared.
         """
         stack_components = {}
 
@@ -1072,22 +1073,9 @@ class Client(metaclass=ClientMetaClass):
             )
             stack_components[c_type] = [component.id]
 
-            # Raise an error if private components are used in a shared stack.
-            if is_shared and not component.is_shared:
-                raise ValueError(
-                    f"You attempted to include the private {c_type} "
-                    f"'{component.name}' in a shared stack. This is not "
-                    f"supported. You can either share the {c_type} with the "
-                    f"following command:\n"
-                    f"`zenml {c_type.replace('_', '-')} share`{component.id}`\n"
-                    f"or create the stack privately and then share it and all "
-                    f"of its components using:\n`zenml stack share {name} -r`"
-                )
-
         stack = StackRequestModel(
             name=name,
             components=stack_components,
-            is_shared=is_shared,
             stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
@@ -1101,7 +1089,6 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
         stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
@@ -1113,7 +1100,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
-            is_shared: the new shared status of the stack.
             stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
@@ -1123,8 +1109,6 @@ class Client(metaclass=ClientMetaClass):
             The model of the updated stack.
 
         Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be shared.
             EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
@@ -1139,41 +1123,14 @@ class Client(metaclass=ClientMetaClass):
             stack_spec_path=stack_spec_file,
         )
 
-        shared_status = is_shared or stack.is_shared
-
         if name:
-            if self.list_stacks(name=name, is_shared=shared_status):
+            if self.list_stacks(name=name):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
                 )
 
             update_model.name = name
-
-        if is_shared:
-            current_name = update_model.name or stack.name
-            if self.list_stacks(name=current_name, is_shared=True):
-                raise EntityExistsError(
-                    "There are already existing shared stacks with the name "
-                    f"'{current_name}'."
-                )
-
-            for component_type, components in stack.components.items():
-                for c in components:
-                    if not c.is_shared:
-                        raise ValueError(
-                            f"A Stack can only be shared when all its "
-                            f"components are also shared. Component "
-                            f"'{component_type}:{c.name}' is not shared. Set "
-                            f"the {component_type} to shared like this and "
-                            f"then try re-sharing your stack:\n"
-                            f"`zenml {component_type.replace('_', '-')} "
-                            f"share {c.id}`\nAlternatively, you can rerun "
-                            f"your command with `-r` to recursively "
-                            f"share all components within the stack."
-                        )
-
-            update_model.is_shared = is_shared
 
         if description:
             update_model.description = description
@@ -1191,22 +1148,6 @@ class Client(metaclass=ClientMetaClass):
                         )
                         for component_id in component_id_list
                     ]
-
-            # If the stack is shared, ensure all new components are also shared
-            if shared_status:
-                for component_list in components_dict.values():
-                    for component in component_list:
-                        if not component.is_shared:
-                            raise ValueError(
-                                "Private components cannot be added to a "
-                                "shared stack. Component "
-                                f"'{component.type}:{component.name}' is not "
-                                "shared. Set the component to shared like "
-                                "this and then try adding it to your stack "
-                                "again:\n"
-                                f"`zenml {component.type.replace('_', '-')} "
-                                f"share {component.id}`."
-                            )
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
@@ -1295,7 +1236,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -1317,7 +1257,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
-            is_shared: The shared status of the stack to filter by.
 
         Returns:
             A page of stacks.
@@ -1331,7 +1270,6 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             component_id=component_id,
             name=name,
-            is_shared=is_shared,
             description=description,
             id=id,
             created=created,
@@ -1463,6 +1401,11 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no name_id_or_prefix is provided and no such component
                 is part of the active stack.
         """
+        if name_id_or_prefix == "default":
+            self.zen_store._get_default_stack_and_component_name(
+                user_id=self.active_user.id
+            )
+
         # If no `name_id_or_prefix` provided, try to get the active component.
         if not name_id_or_prefix:
             components = self.active_stack_model.components.get(
@@ -1514,7 +1457,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         flavor: Optional[str] = None,
         type: Optional[str] = None,
@@ -1538,7 +1480,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
             name: The name of the component to filter by.
-            is_shared: The shared status of the component to filter by.
 
         Returns:
             A page of stack components.
@@ -1552,7 +1493,6 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             connector_id=connector_id,
             name=name,
-            is_shared=is_shared,
             flavor=flavor,
             type=type,
             id=id,
@@ -1573,7 +1513,6 @@ class Client(metaclass=ClientMetaClass):
         configuration: Dict[str, str],
         component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: bool = False,
     ) -> "ComponentResponseModel":
         """Registers a stack component.
 
@@ -1584,7 +1523,6 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
-            is_shared: Whether the stack component is shared or not.
 
         Returns:
             The model of the registered component.
@@ -1613,7 +1551,6 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             component_spec_path=component_spec_path,
             configuration=configuration,
-            is_shared=is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             labels=labels,
@@ -1632,7 +1569,6 @@ class Client(metaclass=ClientMetaClass):
         component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
@@ -1646,7 +1582,6 @@ class Client(metaclass=ClientMetaClass):
             component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
-            is_shared: The new shared status of the stack component.
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
@@ -1671,32 +1606,16 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if name is not None:
-            shared_status = is_shared or component.is_shared
-
             existing_components = self.list_stack_components(
                 name=name,
-                is_shared=shared_status,
                 type=component_type,
             )
             if existing_components.total > 0:
                 raise EntityExistsError(
-                    f"There are already existing "
-                    f"{'shared' if shared_status else 'unshared'} components "
-                    f"with the name '{name}'."
+                    f"There are already existing components with the "
+                    f"name '{name}'."
                 )
             update_model.name = name
-
-        if is_shared is not None:
-            current_name = update_model.name or component.name
-            existing_components = self.list_stack_components(
-                name=current_name, is_shared=is_shared, type=component_type
-            )
-            if any(e.id != component.id for e in existing_components.items):
-                raise EntityExistsError(
-                    f"There are already existing shared components with "
-                    f"the name '{current_name}'"
-                )
-            update_model.is_shared = is_shared
 
         if configuration is not None:
             existing_configuration = component.configuration
@@ -3652,7 +3571,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         connector_type: Optional[str] = None,
         auth_method: Optional[str] = None,
@@ -3682,7 +3600,6 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             name: The name of the service connector to filter by.
-            is_shared: The shared status of the service connector to filter by.
             labels: The labels of the service connector to filter by.
             secret_id: Filter by the id of the secret that is referenced by the
                 service connector.
@@ -3698,7 +3615,6 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
-            is_shared=is_shared,
             connector_type=connector_type,
             auth_method=auth_method,
             resource_type=resource_type,
@@ -3725,7 +3641,6 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         expiration_seconds: Optional[int] = None,
         expires_at: Optional[datetime] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
@@ -3754,7 +3669,6 @@ class Client(metaclass=ClientMetaClass):
             expiration_seconds: The expiration time of the service connector.
             expires_at: The expiration time of the service connector
                 credentials.
-            is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
@@ -3828,7 +3742,6 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 description=description or "",
-                is_shared=is_shared,
                 labels=labels,
             )
 
@@ -3873,7 +3786,6 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
-                is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
@@ -3948,7 +3860,6 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
         expiration_seconds: Optional[int] = None,
-        is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
         list_resources: bool = True,
@@ -3992,7 +3903,6 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
                 If set to 0, the existing expiration time will be removed.
-            is_shared: Whether the service connector is shared or not.
             labels: The service connector to update or remove. If a label value
                 is set to None, the label will be removed.
             verify: Whether to verify that the service connector configuration
@@ -4056,9 +3966,6 @@ class Client(metaclass=ClientMetaClass):
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
             expiration_seconds=expiration_seconds,
-            is_shared=is_shared
-            if is_shared is not None
-            else connector_model.is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )

@@ -182,12 +182,7 @@ zenml orchestrator list --name "contains:sagemaker"
 ```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
-values to filter the output. For example, to find all orchestrators that are
-currently shared, you would type:
-
-```shell
-zenml orchestrator list --is_shared="True"
-```
+values to filter the output.
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
@@ -227,8 +222,6 @@ registered within your ZenML workspace / repository, type:
 ```bash
 zenml artifact-store list
 ```
-
-If you wish to update/share
 
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
@@ -735,20 +728,6 @@ simply pass along the `--set` flag.
 
 ```bash
 zenml stack register STACK_NAME ... --set
-```
-
-If you want to share the stack and all of its components with everyone using
-the same ZenML deployment, simply pass along the `--share` flag.
-
-```bash
-zenml stack register STACK_NAME ... --share
-```
-
-Even if you haven't done so at creation time of the stack, you can always
-decide to do so at a later stage.
-
-```bash
-zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
