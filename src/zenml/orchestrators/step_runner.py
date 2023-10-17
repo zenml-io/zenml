@@ -256,7 +256,7 @@ class StepRunner:
                             pipeline_run=pipeline_run,
                             artifact_names=list(output_artifact_ids.keys()),
                             external_artifacts=list(
-                                step_run.config.external_input_artifacts.values()
+                                step_run.config.new_external_input_artifacts.values()
                             ),
                         )
                     StepContext._clear()  # Remove the step context singleton

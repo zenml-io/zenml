@@ -23,6 +23,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 from pydantic import root_validator, validator
 
@@ -168,7 +169,10 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
+    # TODO: UUID is for backward compatibility with releases equal or below 0.44.3
+    external_input_artifacts: Mapping[
+        str, Union[ExternalArtifactConfiguration, UUID]
+    ] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the
@@ -192,6 +196,22 @@ class PartialStepConfiguration(StepConfigurationUpdate):
             if deprecated_attribute in values:
                 values.pop(deprecated_attribute)
         return values
+
+    @property
+    def new_external_input_artifacts(
+        self,
+    ) -> Mapping[str, ExternalArtifactConfiguration]:
+        """Remap legacy external input artifacts to new ones.
+
+        Returns:
+            The new external input artifacts mapping.
+        """
+        return {
+            name: artifact
+            if isinstance(artifact, ExternalArtifactConfiguration)
+            else ExternalArtifactConfiguration(id=artifact)
+            for name, artifact in self.external_input_artifacts.items()
+        }
 
 
 class StepConfiguration(PartialStepConfiguration):
