@@ -1483,7 +1483,7 @@ def list_workspace_model_version_pipeline_run_links(
     model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunResponseModel)
+        make_dependable(ModelVersionPipelineRunFilterModel)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ModelVersionPipelineRunResponseModel]:

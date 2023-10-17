@@ -85,7 +85,7 @@ class PipelineSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship()
+    runs: List["PipelineRunSchema"] = Relationship(back_populates="pipeline")
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )

@@ -1,5 +1,98 @@
 <!-- markdown-link-check-disable -->
 
+# 0.45.2
+
+This release replaces 0.45.0 and 0.45.1, and fixes the major migration bugs that were in
+that yanked release. Please upgrade directly to 0.45.2 and avoid upgrading to
+0.45.0 to avoid unexpected migration issues.
+
+Note that 0.45.0 and 0.45.1 were removed from PyPI due to an issue with the
+alembic versions + migration which could affect the database state. This release
+fixes that issue.
+
+If you have already upgraded to 0.45.0 please [let us know in Slack](https://zenml.io/slack-invite/) and we'll happy to assist in rollback and recovery.
+
+This release introduces a major upgrade to ZenML, featuring a new authentication mechanism, performance improvements, the introduction of the model control plane, and internal enhancements.
+
+## New Authentication Mechanism (#4303)
+
+Our improved authentication mechanism offers a more secure way of connecting to the ZenML server. It initiates a device flow that prompts you to log in via the browser dashboard:
+
+```
+zenml connect --url <YOUR_SERVER_URL>
+```
+
+This eliminates the need for explicit credential input. The previous method (`zenml connect --url <URL> --username <USERNAME> --password <PASSWORD>`) remains operational but is less recommended due to security concerns. 
+
+**Critical** This change disrupts existing pipeline schedules. After upgrading, manually cancel and reschedule pipelines using the updated version of ZenML.
+
+For more information, read about the device flow in our [documentation](https://docs.zenml.io/user-guide/starter-guide/switch-to-production).
+
+## Performance enhancements (#3207)
+
+Internal API adjustments have reduced the footprint of ZenML API objects by up to 35%. This will particularly benefit users with large step and pipeline configurations. Further reductions will be implemented in our next release. 
+
+## Model Control Plane debut (#5648)
+
+ZenML now includes a preliminary version of the model control plane, a feature for registering models and their metadata on a single ZenML dashboard view. Future releases will provide more details. To test this early version, follow this [example](https://github.com/zenml-io/zenml-plugins/tree/main/model_control_plane).
+
+## Breaking Changes
+
+- Environment variables `ZENML_AUTH_TYPE` and `ZENML_JWT_SECRET_KEY` have been renamed to `ZENML_SERVER_AUTH_SCHEME` and `ZENML_SERVER_JWT_SECRET_KEY`, respectively.
+- All ZenML server-issued JWT tokens now include an issuer and an audience. After the server update, current scheduled pipelines become invalidated. Reset your schedules and reconnect all clients to the server to obtain new tokens.
+- `UnmaterializedArtifact` has been relocated to `zenml.artifacts`. Change your import statement from `from zenml.materializers import UnmaterializedArtifact` to `from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact`.
+
+## Deprecations
+
+- `zenml.steps.external_artifact.ExternalArtifact` has moved to `zenml.artifacts.external_artifact.ExternalArtifact`.
+
+
+## And the rest:
+
+* Discord alerter integration by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1818. Huge shoutout to you priyadutt - we're sending some swag your way!
+* Update Neptune dependency: `neptune-client` > `neptune` by @fa9r in https://github.com/zenml-io/zenml/pull/1837
+* Disable codeql on pushes to `develop` by @strickvl in https://github.com/zenml-io/zenml/pull/1842
+* Template not updating due to git diff misuse by @avishniakov in https://github.com/zenml-io/zenml/pull/1844
+* Bump feast version to fix api docs generation by @fa9r in https://github.com/zenml-io/zenml/pull/1845
+* CI Fixes / Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1848
+* Fix MLflow registry methods with empty metadata by @fa9r in https://github.com/zenml-io/zenml/pull/1843
+* Use configured template REF in CI by @avishniakov in https://github.com/zenml-io/zenml/pull/1851
+* Fix template REF in CI by @avishniakov in https://github.com/zenml-io/zenml/pull/1852
+* Fix AWS service connector installation requirements by @stefannica in https://github.com/zenml-io/zenml/pull/1850
+* [Docs] Improvements to custom flavor and custom orchestrator pages by @htahir1 in https://github.com/zenml-io/zenml/pull/1747
+* Optimizing the performance through database changes by @bcdurak in https://github.com/zenml-io/zenml/pull/1835
+* Add `README` for `examples` folder by @strickvl in https://github.com/zenml-io/zenml/pull/1860
+* Free up disk space in CI by @strickvl in https://github.com/zenml-io/zenml/pull/1863
+* Make Terraform Optional Again by @fa9r in https://github.com/zenml-io/zenml/pull/1855
+* Model watchtower becomes Model control plane by @strickvl in https://github.com/zenml-io/zenml/pull/1868
+* Update documentation by @VishalKumar-S in https://github.com/zenml-io/zenml/pull/1872
+* Fix CI by freeing up space on runner by @strickvl in https://github.com/zenml-io/zenml/pull/1866
+* Allow for `user` param to be specified (successfully) in `DockerSettings` by @strickvl in https://github.com/zenml-io/zenml/pull/1857
+* Add `get_pipeline_context` by @avishniakov in https://github.com/zenml-io/zenml/pull/1870
+* [Helm] Use GCP creds directly instead of a file. by @wjayesh in https://github.com/zenml-io/zenml/pull/1874
+* External authenticator support, authorized devices and web login by @stefannica in https://github.com/zenml-io/zenml/pull/1814
+* Connect to Service-connector at component registration by @safoinme in https://github.com/zenml-io/zenml/pull/1858
+* Fixing the `upgrade` migration script after the database changes by @bcdurak in https://github.com/zenml-io/zenml/pull/1877
+* [Model Control Plane] v0.1 mega-branch by @avishniakov in https://github.com/zenml-io/zenml/pull/1816
+* Update to templates by @htahir1 in https://github.com/zenml-io/zenml/pull/1878
+* Docs for orgs, rbac and sso by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1875
+* Convert network_config dict to NetworkConfig object in SageMaker orchestrator by @christianversloot in https://github.com/zenml-io/zenml/pull/1873
+* Add missing Docker build options for GCP image builder by @strickvl in https://github.com/zenml-io/zenml/pull/1856
+* Solve alembic branching issue by @avishniakov in https://github.com/zenml-io/zenml/pull/1879
+* Fix typo for 0.45 release by @strickvl in https://github.com/zenml-io/zenml/pull/1881
+* Only import ipinfo when necessary by @schustmi in https://github.com/zenml-io/zenml/pull/1888
+* [Model Control Plane] Suppress excessive logging in model control plane by @avishniakov in https://github.com/zenml-io/zenml/pull/1885
+* Add warning generation scripts for Gitbook docs by @strickvl in https://github.com/zenml-io/zenml/pull/1929
+* Fix calling `click` decorator in model CLI command by @safoinme in https://github.com/zenml-io/zenml/pull/1932
+* Lightweight template CI by @avishniakov in https://github.com/zenml-io/zenml/pull/1930
+* Update `Skypilot` orchestrator setting docs section by @safoinme in https://github.com/zenml-io/zenml/pull/1931
+
+### New Contributors
+* @VishalKumar-S made their first contribution in https://github.com/zenml-io/zenml/pull/1872
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.3...0.45.0
+
+
 # 0.44.3
 
 ## New Orchestrator: SkyPilot (#1765)
