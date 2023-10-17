@@ -107,6 +107,8 @@ class ExternalArtifactConfiguration(BaseModel):
             or self.model_name != model_config.name
             or self.model_version != model_config.version
         ):
+            from zenml.model.model_config import ModelConfig
+
             model_config = ModelConfig(
                 name=self.model_name,
                 version=self.model_version,
