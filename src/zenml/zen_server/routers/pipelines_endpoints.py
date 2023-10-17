@@ -56,7 +56,7 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilterModel = Depends(
         make_dependable(PipelineFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
@@ -85,7 +85,7 @@ def list_pipelines(
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> PipelineResponseModel:
     """Gets a specific pipeline using its unique id.
 

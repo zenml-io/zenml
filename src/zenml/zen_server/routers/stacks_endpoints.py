@@ -23,12 +23,15 @@ from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
+)
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permissions_for_model,
     verify_read_permissions_and_dehydrate,
 )
-from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -38,7 +41,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
     tags=["stacks"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -64,9 +67,8 @@ def list_stacks(
         All stacks.
     """
     allowed_ids = get_allowed_resource_ids(
-        resource_type="stack", action="read"
+        resource_type=ResourceType.STACK, action=Action.READ
     )
-    print(allowed_ids)
     stack_filter_model.set_allowed_ids(allowed_ids)
     page = zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
@@ -88,7 +90,7 @@ def list_stacks(
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> StackResponseModel:
     """Returns the requested stack.
 
@@ -123,7 +125,7 @@ def update_stack(
         The updated stack.
     """
     stack = zen_store().get_stack(stack_id)
-    verify_permissions_for_model(stack, action="update")
+    verify_permissions_for_model(stack, action=Action.UPDATE)
 
     return zen_store().update_stack(
         stack_id=stack_id,
@@ -146,6 +148,6 @@ def delete_stack(
         stack_id: Name of the stack.
     """
     stack = zen_store().get_stack(stack_id)
-    verify_permissions_for_model(stack, action="delete")
+    verify_permissions_for_model(stack, action=Action.DELETE)
 
     zen_store().delete_stack(stack_id)

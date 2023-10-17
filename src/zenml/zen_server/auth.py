@@ -15,8 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Callable, List, Optional, Set, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -50,14 +49,8 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
-from zenml.models.user_models import UserAuthModel
 from zenml.zen_server.jwt import JWTToken
-from zenml.zen_server.rbac_interface import (
-    Resource,
-    get_resource_type_for_model,
-)
-from zenml.zen_server.utils import rbac, server_config, zen_store
+from zenml.zen_server.utils import server_config, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -665,174 +658,3 @@ def authentication_provider() -> Callable[..., AuthContext]:
 
 
 authorize = authentication_provider()
-
-
-def verify_read_permissions_and_dehydrate(
-    model: "BaseResponseModel",
-) -> "BaseResponseModel":
-    if not server_config().rbac_enabled:
-        return model
-
-    verify_permissions_for_model(model=model, action="READ")
-
-    return dehydrate_response_model(model=model)
-
-
-def dehydrate_response_model(
-    model: "BaseResponseModel",
-) -> "BaseResponseModel":
-    dehydrated_fields = {}
-
-    for field_name in model.__fields__.keys():
-        value = getattr(model, field_name)
-        dehydrated_fields[field_name] = _maybe_dehydrate_value(value)
-
-    return type(model).parse_obj(dehydrated_fields)
-
-
-def _maybe_dehydrate_value(value: Any) -> Any:
-    if isinstance(value, BaseResponseModel):
-        if has_read_permissions_for_model(value):
-            return dehydrate_response_model(value)
-        else:
-            return get_403_model(value)
-    elif isinstance(value, Dict):
-        return {k: _maybe_dehydrate_value(v) for k, v in value.items()}
-    elif isinstance(value, (List, Set, Tuple)):
-        type_ = type(value)
-        return type_(_maybe_dehydrate_value(v) for v in value)
-    else:
-        return value
-
-
-def has_read_permissions_for_model(model: "BaseResponseModel") -> bool:
-    try:
-        verify_permissions_for_model(model=model, action="READ")
-        return True
-    except HTTPException:
-        return False
-
-
-def get_403_model(
-    model: "BaseResponseModel", keep_name: bool = True
-) -> "BaseResponseModel":
-    values = {}
-
-    for field_name, field in model.__fields__.items():
-        value = getattr(model, field_name)
-
-        if keep_name and field_name == "name" and isinstance(value, str):
-            pass
-        elif field.allow_none:
-            value = None
-        elif isinstance(value, BaseResponseModel):
-            value = get_403_model(value, keep_name=False)
-        elif isinstance(value, UUID):
-            value = UUID(int=0)
-        elif isinstance(value, datetime):
-            value = datetime.utcnow()
-        elif isinstance(value, Enum):
-            # TODO: handle enums in a more sensible way
-            value = list(type(value))[0]
-        else:
-            type_ = type(value)
-            # For the remaining cases (dict, list, set, tuple, int, float, str),
-            # simply return an empty value
-            value = type_()
-
-        values[field_name] = value
-
-    # TODO: With the new hydration models, make sure we clear metadata here
-    values["missing_permissions"] = True
-
-    return type(model).parse_obj(values)
-
-
-def verify_permissions_for_model(
-    model: "BaseResponseModel",
-    action: str,
-) -> None:
-    """Verifies if a user has permissions to perform an action on a model.
-
-    Args:
-        model: The model the user wants to perform the action on.
-        action: The action the user wants to perform.
-    """
-    if not server_config().rbac_enabled:
-        return
-
-    if (
-        isinstance(model, UserScopedResponseModel)
-        and model.user
-        and model.user.id == get_auth_context().user.id
-    ):
-        # User is the owner of the model
-        return
-
-    resource_type = get_resource_type_for_model(model)
-    if not resource_type:
-        # This model is not tied to any RBAC resource type and therefore doesn't
-        # require any special permissions
-        return
-
-    verify_permissions(
-        resource_type=resource_type, resource_id=model.id, action=action
-    )
-
-
-def verify_permissions(
-    resource_type: str,
-    action: str,
-    resource_id: Optional[UUID] = None,
-) -> None:
-    """Verifies if a user has permissions to perform an action on a resource.
-
-    Args:
-        resource: The resource type the user wants to perform the action on.
-        action: The action the user wants to perform.
-        resource_id: ID of the resource the user wants to perform the action on.
-
-    Raises:
-        HTTPException: If the user is not allowed to perform the action.
-    """
-    if not server_config().rbac_enabled:
-        return
-
-    resource = Resource(type=resource_type, id=resource_id)
-
-    if not rbac().has_permission(
-        user=get_auth_context().user, resource=resource, action=action
-    ):
-        raise HTTPException(status_code=403)
-
-
-def get_allowed_resource_ids(
-    resource_type: str,
-    action: str,
-) -> Optional[List[UUID]]:
-    """Get all resource IDs of a resource type that a user can access.
-
-    Args:
-        resource_type: The resource type.
-        action: The action the user wants to perform on the resource.
-
-    Returns:
-        A list of resource IDs or `None` if the user has full access to the
-        all instances of the resource.
-    """
-    if not server_config().rbac_enabled:
-        return None
-
-    (
-        has_full_resource_access,
-        allowed_ids,
-    ) = rbac().list_allowed_resource_ids(
-        user=get_auth_context().user,
-        resource=Resource(type=resource_type),
-        action=action,
-    )
-
-    if has_full_resource_access:
-        return None
-
-    return [UUID(id) for id in allowed_ids]
