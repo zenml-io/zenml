@@ -23,6 +23,7 @@ from zenml.enums import ArtifactType
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
@@ -75,6 +76,15 @@ class ArtifactRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
+class ArtifactResponseBody(WorkspaceScopedResponseBody):
+    """Response body for artifacts."""
+
+    uri: str = Field(
+        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+    )
+    type: ArtifactType = Field(title="Type of the artifact.")
+
+
 class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata model for artifacts."""
 
@@ -105,24 +115,31 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
 class ArtifactResponse(WorkspaceScopedResponse):
     """Response model for artifacts."""
 
-    # Entity fields
     name: str = Field(
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    type: ArtifactType = Field(title="Type of the artifact.")
 
-    # Metadata related field, method and properties
-    metadata: Optional[ArtifactResponseMetadata]
+    # Body and metadata pair
+    body: "ArtifactResponseBody"
+    metadata: Optional["ArtifactResponseMetadata"]
 
     def get_hydrated_version(self) -> "ArtifactResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this artifact."""
         from zenml.client import Client
 
         return Client().get_artifact(self.id)
+
+    # Body and metadata properties
+    @property
+    def uri(self):
+        """The uri property."""
+        return self.body.uri
+
+    @property
+    def type(self):
+        """The type property."""
+        return self.body.type
 
     @hydrated_property
     def artifact_store_id(self):

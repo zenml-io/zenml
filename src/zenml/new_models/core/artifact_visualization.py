@@ -18,7 +18,9 @@ from zenml.enums import VisualizationType
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
+    hydrated_property,
 )
 
 # ------------------ Request Model ------------------
@@ -39,6 +41,14 @@ class ArtifactVisualizationRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
+class ArtifactVisualizationResponseBody(BaseResponseBody):
+    """Response body for artifact visualizations."""
+
+    type: VisualizationType
+    uri: str
+    value: Union[str, bytes]
+
+
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     """Response metadata model for artifact visualizations."""
 
@@ -48,16 +58,33 @@ class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
 class ArtifactVisualizationResponse(BaseResponse):
     """Response model for artifact visualizations."""
 
-    # Entity fields
-    type: VisualizationType
-    uri: str
-    value: Union[str, bytes]
-
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "ArtifactVisualizationResponseBody"
     metadata: Optional["ArtifactVisualizationResponseMetadata"]
 
     def get_hydrated_version(self) -> "ArtifactVisualizationResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this artifact visualization."""
         from zenml.client import Client
 
         return Client().get_artifact_visualization(self.id)
+
+    # Body and metadata properties
+    @property
+    def type(self):
+        """The type property."""
+        return self.body.type
+
+    @property
+    def uri(self):
+        """The uri property."""
+        return self.body.uri
+
+    @property
+    def value(self):
+        """The value property."""
+        return self.body.value
+
+    @hydrated_property
+    def artifact_id(self):
+        """The artifact_id property"""
+        return self.metadata.artifact_id
