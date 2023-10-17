@@ -87,7 +87,7 @@ class ModelConfig(BaseModel):
             audience: The target audience of the model.
             use_cases: The use cases of the model.
             limitations: The known limitations of the model.
-            trade_offs: The trade offs of the model.
+            trade_offs: The tradeoffs of the model.
             ethic: The ethical implications of the model.
             tags: Tags associated with the model.
             version: The model version name, number or stage is optional and points model context
