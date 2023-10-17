@@ -8,6 +8,8 @@ The Model Control Plane Dashboard is a web-based dashboard that allows you to
 view and manage your models. It is currently in development and will be released
 to ZenML Cloud customers soon.
 
+![](../../../../book/.gitbook/assets/model-control-plane-dashboard.png)
+
 For more information or to get early access, please [message the ZenML team on
 Slack](https://zenml.io/slack-invite/).
 
