@@ -100,7 +100,6 @@ class ModelConfig(BaseModel):
             delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
             kwargs: Other arguments.
         """
-        logger.error(f"INSTANTIATED MODEL CONFIG {name}/{version}!")
         super().__init__(
             name=name,
             license=license,
@@ -203,7 +202,6 @@ class ModelConfig(BaseModel):
             RuntimeError: If there is unfinished pipeline run for requested new model version.
         """
         try:
-            logger.error(f"VALIDATED MODEL {self.name}!")
             model_version = self._get_model_version()
             if self.create_new_model_version:
                 for run_name, run in model_version.pipeline_runs.items():
@@ -237,8 +235,6 @@ class ModelConfig(BaseModel):
 
         from zenml.client import Client
         from zenml.models.model_models import ModelRequestModel
-
-        logger.error(f"RETRIEVED MODEL {self.name}!")
 
         zenml_client = Client()
         try:
@@ -286,7 +282,6 @@ class ModelConfig(BaseModel):
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
 
-        logger.error(f"CREATED VERSION {self.version}!")
         zenml_client = Client()
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
@@ -323,7 +318,6 @@ class ModelConfig(BaseModel):
 
         from zenml.client import Client
 
-        logger.error(f"RETRIEVED VERSION {self.version}!")
         zenml_client = Client()
         if self.version is None:
             # raise if not found
