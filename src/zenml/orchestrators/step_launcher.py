@@ -414,18 +414,20 @@ class StepLauncher:
         for output_name_, output_ in step_run.outputs.items():
             if output_name_ in output_annotations:
                 annotation = output_annotations.get(output_name_, None)
-                artifact_config = (
-                    annotation.artifact_config
-                    if annotation and annotation.artifact_config is not None
-                    else ArtifactConfig()
-                )
-                artifact_config_ = artifact_config.copy()
-                artifact_config_.model_name = (
-                    artifact_config.model_name or model_version.model.name
-                )
-                artifact_config_.model_version = (
-                    artifact_config_.model_version or model_version.name
-                )
+                if annotation and annotation.artifact_config is not None:
+                    artifact_config_ = annotation.artifact_config.copy()
+                else:
+                    artifact_config_ = ArtifactConfig(
+                        artifact_name=output_name_,
+                        model_name=model_version.model.name,
+                        model_version=model_version.name,
+                    )
+                    logger.info(
+                        f"Linking artifact `{artifact_config_.artifact_name}` to "
+                        f"model `{artifact_config_.model_name}` version "
+                        f"`{artifact_config_.model_version}` implicitly."
+                    )
+
                 artifact_config_._pipeline_name = (
                     self._deployment.pipeline_configuration.name
                 )
