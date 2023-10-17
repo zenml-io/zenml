@@ -91,7 +91,7 @@ class ModelConfig(BaseModel):
             ethic: The ethical implications of the model.
             tags: Tags associated with the model.
             version: The model version name, number or stage is optional and points model context
-                to a specific version/stage, if skipped and `create_new_model_version` is False -
+                to a specific version/stage. If skipped and `create_new_model_version` is False -
                 latest model version will be used.
             version_description: The description of the model version.
             create_new_model_version: Whether to create a new model version during execution
