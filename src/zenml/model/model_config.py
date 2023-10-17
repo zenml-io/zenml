@@ -48,7 +48,7 @@ class ModelConfig(BaseModel):
     use_cases: Optional[str]
     limitations: Optional[str]
     trade_offs: Optional[str]
-    ethic: Optional[str]
+    ethics: Optional[str]
     tags: Optional[List[str]]
     version: Optional[Union[ModelStages, int, str]]
     version_description: Optional[str]
@@ -69,7 +69,7 @@ class ModelConfig(BaseModel):
         use_cases: Optional[str] = None,
         limitations: Optional[str] = None,
         trade_offs: Optional[str] = None,
-        ethic: Optional[str] = None,
+        ethics: Optional[str] = None,
         tags: Optional[List[str]] = None,
         version: Optional[Union[ModelStages, int, str]] = None,
         version_description: Optional[str] = None,
@@ -88,7 +88,7 @@ class ModelConfig(BaseModel):
             use_cases: The use cases of the model.
             limitations: The known limitations of the model.
             trade_offs: The tradeoffs of the model.
-            ethic: The ethical implications of the model.
+            ethics: The ethical implications of the model.
             tags: Tags associated with the model.
             version: The model version name, number or stage is optional and points model context
                 to a specific version/stage. If skipped and `create_new_model_version` is False -
@@ -108,7 +108,7 @@ class ModelConfig(BaseModel):
             use_cases=use_cases,
             limitations=limitations,
             trade_offs=trade_offs,
-            ethic=ethic,
+            ethics=ethics,
             tags=tags,
             version=version,
             version_description=version_description,
@@ -248,7 +248,7 @@ class ModelConfig(BaseModel):
                 use_cases=self.use_cases,
                 limitations=self.limitations,
                 trade_offs=self.trade_offs,
-                ethic=self.ethic,
+                ethics=self.ethics,
                 tags=self.tags,
                 user=zenml_client.active_user.id,
                 workspace=zenml_client.active_workspace.id,
@@ -366,7 +366,7 @@ class ModelConfig(BaseModel):
         self.use_cases = self.use_cases or model_config.use_cases
         self.limitations = self.limitations or model_config.limitations
         self.trade_offs = self.trade_offs or model_config.trade_offs
-        self.ethic = self.ethic or model_config.ethic
+        self.ethics = self.ethics or model_config.ethics
         if model_config.tags is not None:
             self.tags = (self.tags or []) + model_config.tags
 

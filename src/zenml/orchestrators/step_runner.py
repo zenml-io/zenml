@@ -627,9 +627,6 @@ class StepRunner:
             mc = get_step_context().model_config
         except StepContextError:
             mc = None
-            logger.warning(
-                "No model context found, unable to auto-link artifacts."
-            )
 
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
@@ -647,6 +644,19 @@ class StepRunner:
                 )
 
             if artifact_config is not None:
+                if mc is None:
+                    if artifact_config.model_name is None:
+                        logger.warning(
+                            "No model context found, unable to auto-link artifacts."
+                        )
+                        return
+                    else:
+                        from zenml.model.model_config import ModelConfig
+
+                        mc = ModelConfig(
+                            name=artifact_config.model_name,
+                            version=artifact_config.model_version,
+                        )
                 artifact_config.artifact_name = (
                     artifact_config.artifact_name or artifact_name
                 )

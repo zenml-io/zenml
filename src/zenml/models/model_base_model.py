@@ -54,7 +54,7 @@ class ModelBaseModel(BaseModel):
         title="The trade offs of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    ethic: Optional[str] = Field(
+    ethics: Optional[str] = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
