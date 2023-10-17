@@ -820,10 +820,10 @@ class Pipeline:
         ] = defaultdict(NewModelVersionRequest)
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_config_model
+            step_model_config = step.config.model_config
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step.config.model_config_model is not None
+                and step.config.model_config is not None
             )
             if (
                 step_model_config
@@ -837,7 +837,7 @@ class Pipeline:
                 )
         if not all_steps_have_own_config:
             pipeline_model_config = (
-                deployment.pipeline_configuration.model_config_model
+                deployment.pipeline_configuration.model_config
             )
             if (
                 pipeline_model_config
@@ -851,7 +851,7 @@ class Pipeline:
                         source="pipeline", name=self.name
                     ),
                 )
-        elif deployment.pipeline_configuration.model_config_model is not None:
+        elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
@@ -898,7 +898,7 @@ class Pipeline:
         for step_name in deployment.step_configurations:
             step_model_config = deployment.step_configurations[
                 step_name
-            ].config.model_config_model
+            ].config.model_config
             if (
                 step_model_config is not None
                 and step_model_config.name in new_version_requests
@@ -907,9 +907,7 @@ class Pipeline:
                     step_model_config.name
                 ].model_config.version
                 step_model_config.create_new_model_version = True
-        pipeline_model_config = (
-            deployment.pipeline_configuration.model_config_model
-        )
+        pipeline_model_config = deployment.pipeline_configuration.model_config
         if (
             pipeline_model_config is not None
             and pipeline_model_config.name in new_version_requests

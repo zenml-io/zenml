@@ -218,10 +218,10 @@ class StepContext(metaclass=SingletonMetaClass):
         Raises:
             StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model_config_model is not None:
-            return self.step_run.config.model_config_model
-        if self.pipeline_run.config.model_config_model is not None:
-            return self.pipeline_run.config.model_config_model
+        if self.step_run.config.model_config is not None:
+            return self.step_run.config.model_config
+        if self.pipeline_run.config.model_config is not None:
+            return self.pipeline_run.config.model_config
         raise StepContextError(
             f"Unable to get ModelConfig in step '{self.step_name}' of pipeline "
             f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."

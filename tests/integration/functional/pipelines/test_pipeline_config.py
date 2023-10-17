@@ -132,7 +132,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
         assert_model_config_step()
 
     p = assert_model_config_pipeline.with_options(config_path=str(config_path))
-    assert p.configuration.model_config_model.name == "bar"
+    assert p.configuration.model_config.name == "bar"
 
     with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
         p.configure(
@@ -154,24 +154,24 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
         )
         warning.assert_called_once()
 
-    assert p.configuration.model_config_model is not None
-    assert p.configuration.model_config_model.name == "foo"
-    assert p.configuration.model_config_model.version == RUNNING_MODEL_VERSION
-    assert p.configuration.model_config_model.create_new_model_version
-    assert not p.configuration.model_config_model.delete_new_version_on_failure
-    assert p.configuration.model_config_model.description == "description"
-    assert p.configuration.model_config_model.license == "MIT"
-    assert p.configuration.model_config_model.audience == "audience"
-    assert p.configuration.model_config_model.use_cases == "use_cases"
-    assert p.configuration.model_config_model.limitations == "limitations"
-    assert p.configuration.model_config_model.trade_offs == "trade_offs"
-    assert p.configuration.model_config_model.ethic == "ethic"
-    assert p.configuration.model_config_model.tags == ["tag"]
+    assert p.configuration.model_config is not None
+    assert p.configuration.model_config.name == "foo"
+    assert p.configuration.model_config.version == RUNNING_MODEL_VERSION
+    assert p.configuration.model_config.create_new_model_version
+    assert not p.configuration.model_config.delete_new_version_on_failure
+    assert p.configuration.model_config.description == "description"
+    assert p.configuration.model_config.license == "MIT"
+    assert p.configuration.model_config.audience == "audience"
+    assert p.configuration.model_config.use_cases == "use_cases"
+    assert p.configuration.model_config.limitations == "limitations"
+    assert p.configuration.model_config.trade_offs == "trade_offs"
+    assert p.configuration.model_config.ethic == "ethic"
+    assert p.configuration.model_config.tags == ["tag"]
     assert (
-        p.configuration.model_config_model.version_description
+        p.configuration.model_config.version_description
         == "version_description"
     )
-    assert p.configuration.model_config_model.save_models_to_registry
+    assert p.configuration.model_config.save_models_to_registry
     with pytest.raises(AssertionError):
         p()
 
