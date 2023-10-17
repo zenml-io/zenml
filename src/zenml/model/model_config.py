@@ -58,6 +58,7 @@ class ModelConfig(BaseModel):
 
     model: Optional[Any] = None
     model_version: Optional[Any] = None
+    user_not_yet_warned: bool = True
 
     def __init__(
         self,
@@ -118,6 +119,7 @@ class ModelConfig(BaseModel):
         )
         self.model = kwargs.get("model", None)
         self.model_version = kwargs.get("model_version", None)
+        self.user_not_yet_warned = kwargs.get("user_not_yet_warned", True)
 
     class Config:
         """Config class."""
@@ -143,11 +145,13 @@ class ModelConfig(BaseModel):
         delete_new_version_on_failure = values.get(
             "delete_new_version_on_failure", True
         )
+        user_not_yet_warned = values.get("user_not_yet_warned", True)
         if not delete_new_version_on_failure and not create_new_model_version:
-            logger.warning(
-                "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
-                "Setting `delete_new_version_on_failure` to `True`."
-            )
+            if user_not_yet_warned:
+                logger.warning(
+                    "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
+                    "Setting `delete_new_version_on_failure` to `True`."
+                )
             values["delete_new_version_on_failure"] = True
 
         version = values.get("version", None)
@@ -171,19 +175,24 @@ class ModelConfig(BaseModel):
             if str(version).isnumeric():
                 raise ValueError(misuse_message.format(set="a numeric value"))
             if version is None:
-                logger.info(
-                    "Creation of new model version was requested, but no version name was explicitly provided. "
-                    f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
-                )
+                if user_not_yet_warned:
+                    logger.info(
+                        "Creation of new model version was requested, but no version name was explicitly provided. "
+                        f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
+                    )
                 values["version"] = RUNNING_MODEL_VERSION
-        if version in [stage.value for stage in ModelStages]:
+        if (
+            version in [stage.value for stage in ModelStages]
+            and user_not_yet_warned
+        ):
             logger.info(
                 f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
             )
-        if str(version).isnumeric():
+        if str(version).isnumeric() and user_not_yet_warned:
             logger.info(
                 f"`version` `{version}` is numeric and will be fetched using version number."
             )
+        values["user_not_yet_warned"] = False
         return values
 
     def _validate_config_in_runtime(self) -> None:
