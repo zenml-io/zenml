@@ -1,0 +1,72 @@
+name: Test database migration
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths: ["src/zenmlcloud/migrations/versions/**"]
+    branches: ["develop", "staging", "main"]
+
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+jobs:
+  test_db_migration:
+    name: Test database migration
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PWD: password
+      DB_NAME: zenmlcloud
+      ZENML_CLOUD_UI_URI: http://dummyvalue.com
+      ZENML_CLOUD_SERVICE_URI: http://dummyvalue.com
+      AUTH0_DOMAIN: dummyvalue
+      OAUTH2_CLIENT_ID: dummyvalue
+      OAUTH2_CLIENT_SECRET: dummyvalue
+      OAUTH2_AUDIENCE: dummyvalue
+      OAUTH2_SIGNING_KEY: dummyvalue
+      AWS_LAMBDA_FUNCTION_NAME: dummyvalue
+      SEGMENT_KEY: dummyvalue
+      OS_SEGMENT_KEY: dummyvalue
+      STRIPE_API_KEY: dummyvalue
+      STRIPE_PRICE_ID: dummyvalue
+      STRIPE_WEBHOOK_SECRET: dummyvalue
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Start database
+        run: |
+          bash scripts/deploy-test-db.sh
+
+      - name: Install ZenML Cloud
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[server,dev]
+
+      - name: Create data
+        run: python scripts/db_migration.py --create
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      - name: Re-install ZenML Cloud
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[server,dev]
+
+      - name: Verify data
+        run: python scripts/db_migration.py --verify
