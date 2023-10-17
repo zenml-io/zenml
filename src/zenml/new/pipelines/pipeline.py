@@ -1385,12 +1385,16 @@ class Pipeline:
             )
 
             if "model_config" in _from_config_file:
-                from zenml.model.model_config import ModelConfig
+                if "model_config" in self._from_config_file:
+                    _from_config_file["model_config"] = self._from_config_file[
+                        "model_config"
+                    ]
+                else:
+                    from zenml.model.model_config import ModelConfig
 
-                _from_config_file["model_config"] = self._from_config_file.get(
-                    "model_config",
-                    ModelConfig.parse_obj(_from_config_file["model_config"]),
-                )
+                    _from_config_file["model_config"] = ModelConfig.parse_obj(
+                        _from_config_file["model_config"]
+                    )
         self._from_config_file = _from_config_file
 
     def with_options(
