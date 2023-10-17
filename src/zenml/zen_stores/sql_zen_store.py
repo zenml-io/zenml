@@ -29,7 +29,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -717,7 +716,6 @@ class SqlZenStore(BaseZenStore):
                 List[AnySchema],
             ]
         ] = None,
-        resource_ids: Optional[Set[UUID]] = None,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -745,9 +743,6 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
-
-        if resource_ids:
-            query = query.where(table.id.in_(resource_ids))
 
         # Get the total amount of items in the database for a given query
         if custom_fetch:

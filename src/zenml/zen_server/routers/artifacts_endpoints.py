@@ -18,7 +18,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
-from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -54,7 +53,7 @@ def list_artifacts(
     artifact_filter_model: ArtifactFilterModel = Depends(
         make_dependable(ArtifactFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ArtifactResponseModel]:
     """Get artifacts according to query filters.
 
@@ -78,7 +77,7 @@ def list_artifacts(
 @handle_exceptions
 def create_artifact(
     artifact: ArtifactRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactResponseModel:
     """Create a new artifact.
 
@@ -99,7 +98,7 @@ def create_artifact(
 @handle_exceptions
 def get_artifact(
     artifact_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactResponseModel:
     """Get an artifact by ID.
 
@@ -119,7 +118,7 @@ def get_artifact(
 @handle_exceptions
 def delete_artifact(
     artifact_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete an artifact by ID.
 
@@ -138,7 +137,7 @@ def delete_artifact(
 def get_artifact_visualization(
     artifact_id: UUID,
     index: int = 0,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> LoadedVisualizationModel:
     """Get the visualization of an artifact.
 

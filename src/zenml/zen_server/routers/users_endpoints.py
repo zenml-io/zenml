@@ -27,7 +27,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, PermissionType
+from zenml.enums import AuthScheme
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -83,7 +83,7 @@ def list_users(
     user_filter_model: UserFilterModel = Depends(
         make_dependable(UserFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[UserResponseModel]:
     """Returns a list of all users.
 
@@ -112,7 +112,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def create_user(
         user: UserRequestModel,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        _: AuthContext = Security(authorize),
     ) -> UserResponseModel:
         """Creates a user.
 
@@ -152,7 +152,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 @handle_exceptions
 def get_user(
     user_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> UserResponseModel:
     """Returns a specific user.
 
@@ -182,7 +182,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def update_user(
         user_name_or_id: Union[str, UUID],
         user_update: UserUpdateModel,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        _: AuthContext = Security(authorize),
     ) -> UserResponseModel:
         """Updates a specific user.
 
@@ -247,7 +247,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def deactivate_user(
         user_name_or_id: Union[str, UUID],
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        _: AuthContext = Security(authorize),
     ) -> UserResponseModel:
         """Deactivates a user and generates a new activation token for it.
 
@@ -282,9 +282,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def delete_user(
         user_name_or_id: Union[str, UUID],
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Deletes a specific user.
 
@@ -319,9 +317,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def email_opt_in_response(
         user_name_or_id: Union[str, UUID],
         user_response: UserUpdateModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.ME]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponseModel:
         """Sets the response of the user to the email prompt.
 
@@ -369,9 +365,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 )
 @handle_exceptions
 def get_current_user(
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> UserResponseModel:
     """Returns the model of the authenticated user.
 
@@ -400,9 +394,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def update_myself(
         user: UserUpdateModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.ME]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponseModel:
         """Updates a specific user.
 

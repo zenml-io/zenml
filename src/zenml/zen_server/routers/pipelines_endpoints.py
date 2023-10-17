@@ -18,7 +18,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
     PipelineFilterModel,
     PipelineResponseModel,
@@ -57,9 +56,7 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilterModel = Depends(
         make_dependable(PipelineFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
@@ -88,9 +85,7 @@ def list_pipelines(
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> PipelineResponseModel:
     """Gets a specific pipeline using its unique id.
 
@@ -112,7 +107,7 @@ def get_pipeline(
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineResponseModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -135,7 +130,7 @@ def update_pipeline(
 @handle_exceptions
 def delete_pipeline(
     pipeline_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific pipeline.
 
@@ -155,7 +150,7 @@ def list_pipeline_runs(
     pipeline_run_filter_model: PipelineRunFilterModel = Depends(
         make_dependable(PipelineRunFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
@@ -177,7 +172,7 @@ def list_pipeline_runs(
 @handle_exceptions
 def get_pipeline_spec(
     pipeline_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineSpec:
     """Gets the spec of a specific pipeline using its unique id.
 

@@ -603,11 +603,6 @@ def oauth2_authentication(
     token: str = Depends(
         CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
-            scopes={
-                "read": "Read permissions on all entities",
-                "write": "Write permissions on all entities",
-                "me": "Editing permissions to own user",
-            },
         )
     ),
 ) -> AuthContext:
@@ -623,18 +618,13 @@ def oauth2_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
-    if security_scopes.scopes:
-        pass
-    else:
-        authenticate_value = "Bearer"
-
     try:
         auth_context = authenticate_credentials(access_token=token)
     except AuthorizationException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-            headers={"WWW-Authenticate": authenticate_value},
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     return auth_context

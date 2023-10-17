@@ -17,7 +17,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_BUILDS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import PipelineBuildFilterModel, PipelineBuildResponseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -45,7 +44,7 @@ def list_builds(
     build_filter_model: PipelineBuildFilterModel = Depends(
         make_dependable(PipelineBuildFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineBuildResponseModel]:
     """Gets a list of builds.
 
@@ -67,7 +66,7 @@ def list_builds(
 @handle_exceptions
 def get_build(
     build_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineBuildResponseModel:
     """Gets a specific build using its unique id.
 
@@ -87,7 +86,7 @@ def get_build(
 @handle_exceptions
 def delete_build(
     build_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific build.
 

@@ -26,7 +26,7 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, PermissionType
+from zenml.enums import ExecutionStatus
 from zenml.models import (
     StepRunFilterModel,
     StepRunRequestModel,
@@ -63,7 +63,7 @@ def list_run_steps(
     step_run_filter_model: StepRunFilterModel = Depends(
         make_dependable(StepRunFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[StepRunResponseModel]:
     """Get run steps according to query filters.
 
@@ -87,7 +87,7 @@ def list_run_steps(
 @handle_exceptions
 def create_run_step(
     step: StepRunRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponseModel:
     """Create a run step.
 
@@ -108,7 +108,7 @@ def create_run_step(
 @handle_exceptions
 def get_step(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponseModel:
     """Get one specific step.
 
@@ -130,7 +130,7 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponseModel:
     """Updates a step.
 
@@ -154,7 +154,7 @@ def update_step(
 @handle_exceptions
 def get_step_configuration(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Dict[str, Any]:
     """Get the configuration of a specific step.
 
@@ -175,7 +175,7 @@ def get_step_configuration(
 @handle_exceptions
 def get_step_status(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ExecutionStatus:
     """Get the status of a specific step.
 
@@ -196,7 +196,7 @@ def get_step_status(
 @handle_exceptions
 def get_step_logs(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> str:
     """Get the logs of a specific step.
 

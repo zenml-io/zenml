@@ -27,7 +27,7 @@ from zenml.constants import (
     RUNS,
     VERSION_1,
 )
-from zenml.enums import ModelStages, PermissionType
+from zenml.enums import ModelStages
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
@@ -70,7 +70,7 @@ def list_models(
     model_filter_model: ModelFilterModel = Depends(
         make_dependable(ModelFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ModelResponseModel]:
     """Get models according to query filters.
 
@@ -95,7 +95,7 @@ def list_models(
 @handle_exceptions
 def get_model(
     model_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Get a model by name or ID.
 
@@ -117,7 +117,7 @@ def get_model(
 def update_model(
     model_id: UUID,
     model_update: ModelUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Updates a model.
 
@@ -141,7 +141,7 @@ def update_model(
 @handle_exceptions
 def delete_model(
     model_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a model by name or ID.
 
@@ -166,7 +166,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilterModel = Depends(
         make_dependable(ModelVersionFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponseModel]:
     """Get model versions according to query filters.
 
@@ -196,7 +196,7 @@ def get_model_version(
         str, int, UUID, ModelStages
     ] = LATEST_MODEL_VERSION_PLACEHOLDER,
     is_number: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ModelVersionResponseModel:
     """Get a model version by name or ID.
 
@@ -226,7 +226,7 @@ def get_model_version(
 def update_model_version(
     model_version_id: UUID,
     model_version_update_model: ModelVersionUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ModelVersionResponseModel:
     """Get all model versions by filter.
 
@@ -251,7 +251,7 @@ def update_model_version(
 def delete_model_version(
     model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a model by name or ID.
 
@@ -282,7 +282,7 @@ def list_model_version_artifact_links(
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ModelVersionArtifactResponseModel]:
     """Get model version to artifact links according to query filters.
 
@@ -311,7 +311,7 @@ def delete_model_version_artifact_link(
     model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
     model_version_artifact_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a model version link.
 
@@ -345,7 +345,7 @@ def list_model_version_pipeline_run_links(
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
         make_dependable(ModelVersionPipelineRunFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ModelVersionPipelineRunResponseModel]:
     """Get model version to pipeline run links according to query filters.
 
@@ -374,7 +374,7 @@ def delete_model_version_pipeline_run_link(
     model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
     model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a model version link.
 

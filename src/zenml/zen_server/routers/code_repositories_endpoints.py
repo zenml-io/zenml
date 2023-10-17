@@ -17,7 +17,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, CODE_REPOSITORIES, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
     CodeRepositoryFilterModel,
     CodeRepositoryResponseModel,
@@ -49,7 +48,7 @@ def list_code_repositories(
     filter_model: CodeRepositoryFilterModel = Depends(
         make_dependable(CodeRepositoryFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[CodeRepositoryResponseModel]:
     """Gets a page of code repositories.
 
@@ -71,7 +70,7 @@ def list_code_repositories(
 @handle_exceptions
 def get_code_repository(
     code_repository_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponseModel:
     """Gets a specific code repository using its unique ID.
 
@@ -95,7 +94,7 @@ def get_code_repository(
 def update_code_repository(
     code_repository_id: UUID,
     update: CodeRepositoryUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponseModel:
     """Updates a code repository.
 
@@ -118,7 +117,7 @@ def update_code_repository(
 @handle_exceptions
 def delete_code_repository(
     code_repository_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific code repository.
 

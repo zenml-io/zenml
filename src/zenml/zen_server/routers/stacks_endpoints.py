@@ -18,12 +18,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
+    dehydrate_response_model,
+    get_allowed_resource_ids,
     verify_permissions_for_model,
     verify_read_permissions_and_dehydrate,
 )
@@ -51,9 +52,7 @@ def list_stacks(
     stack_filter_model: StackFilterModel = Depends(
         make_dependable(StackFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[StackResponseModel]:
     """Returns all stacks.
 
@@ -64,7 +63,16 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+    allowed_ids = get_allowed_resource_ids(
+        resource_type="stack", action="read"
+    )
+    print(allowed_ids)
+    stack_filter_model.set_allowed_ids(allowed_ids)
+    page = zen_store().list_stacks(stack_filter_model=stack_filter_model)
+
+    # TODO: make this better, this is sending a ton of requests here
+    page.items = [dehydrate_response_model(model) for model in page.items]
+    return page
 
 
 @router.get(
@@ -80,9 +88,7 @@ def list_stacks(
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> StackResponseModel:
     """Returns the requested stack.
 
@@ -105,7 +111,7 @@ def get_stack(
 def update_stack(
     stack_id: UUID,
     stack_update: StackUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> StackResponseModel:
     """Updates a stack.
 
@@ -132,7 +138,7 @@ def update_stack(
 @handle_exceptions
 def delete_stack(
     stack_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a stack.
 

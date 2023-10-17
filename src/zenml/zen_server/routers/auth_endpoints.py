@@ -43,7 +43,6 @@ from zenml.enums import (
     AuthScheme,
     OAuthDeviceStatus,
     OAuthGrantTypes,
-    PermissionType,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -464,9 +463,7 @@ def api_token(
     pipeline_id: Optional[UUID] = None,
     schedule_id: Optional[UUID] = None,
     expires_minutes: Optional[int] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Get a workload API token for the current user.
 

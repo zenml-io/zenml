@@ -17,7 +17,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import (
     ScheduleFilterModel,
@@ -49,7 +48,7 @@ def list_schedules(
     schedule_filter_model: ScheduleFilterModel = Depends(
         make_dependable(ScheduleFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ScheduleResponseModel]:
     """Gets a list of schedules.
 
@@ -73,7 +72,7 @@ def list_schedules(
 @handle_exceptions
 def get_schedule(
     schedule_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ScheduleResponseModel:
     """Gets a specific schedule using its unique id.
 
@@ -95,7 +94,7 @@ def get_schedule(
 def update_schedule(
     schedule_id: UUID,
     schedule_update: ScheduleUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ScheduleResponseModel:
     """Updates the attribute on a specific schedule using its unique id.
 
@@ -118,7 +117,7 @@ def update_schedule(
 @handle_exceptions
 def delete_schedule(
     schedule_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific schedule using its unique id.
 

@@ -67,9 +67,7 @@ def list_service_connectors(
         make_dependable(ServiceConnectorFilterModel)
     ),
     expand_secrets: bool = True,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[ServiceConnectorResponseModel]:
     """Get a list of all service connectors for a specific type.
 
@@ -107,9 +105,7 @@ def list_service_connectors(
 def get_service_connector(
     connector_id: UUID,
     expand_secrets: bool = True,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponseModel:
     """Returns the requested service connector.
 
@@ -156,9 +152,7 @@ def get_service_connector(
 def update_service_connector(
     connector_id: UUID,
     connector_update: ServiceConnectorUpdateModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponseModel:
     """Updates a service connector.
 
@@ -197,9 +191,7 @@ def update_service_connector(
 @handle_exceptions
 def delete_service_connector(
     connector_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a service connector.
 
@@ -234,7 +226,7 @@ def delete_service_connector(
 def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequestModel,
     list_resources: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector configuration has access to resources.
 
@@ -268,9 +260,7 @@ def validate_and_verify_service_connector(
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
     list_resources: bool = True,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector instance has access to one or more resources.
 
@@ -323,9 +313,7 @@ def get_service_connector_client(
     connector_id: UUID,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponseModel:
     """Get a service connector client for a service connector and given resource.
 
@@ -374,7 +362,7 @@ def list_service_connector_types(
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
     auth_method: Optional[str] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> List[ServiceConnectorTypeModel]:
     """Get a list of service connector types.
 
@@ -403,7 +391,7 @@ def list_service_connector_types(
 @handle_exceptions
 def get_service_connector_type(
     connector_type: str,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ServiceConnectorTypeModel:
     """Returns the requested service connector type.
 

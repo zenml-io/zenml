@@ -17,7 +17,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
     PipelineDeploymentFilterModel,
     PipelineDeploymentResponseModel,
@@ -48,7 +47,7 @@ def list_deployments(
     deployment_filter_model: PipelineDeploymentFilterModel = Depends(
         make_dependable(PipelineDeploymentFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineDeploymentResponseModel]:
     """Gets a list of deployment.
 
@@ -72,7 +71,7 @@ def list_deployments(
 @handle_exceptions
 def get_deployment(
     deployment_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineDeploymentResponseModel:
     """Gets a specific deployment using its unique id.
 
@@ -92,7 +91,7 @@ def get_deployment(
 @handle_exceptions
 def delete_deployment(
     deployment_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific deployment.
 

@@ -299,6 +299,8 @@ class BaseFilterModel(BaseModel):
         default=None, description="Updated"
     )
 
+    _allowed_ids: Optional[List[UUID]] = None
+
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand.
@@ -389,6 +391,17 @@ class BaseFilterModel(BaseModel):
             operator = SorterOps(split_value[0])
 
         return column, operator
+
+    def set_allowed_ids(self, allowed_ids: Optional[List[UUID]]) -> None:
+        """Set allowed IDs for the query.
+
+        Args:
+            allowed_ids: List of IDs to limit the query to. If given, the
+                remaining filters will be applied to entities within this list
+                only. If `None`, the remaining filters will applied to all
+                entries in the table.
+        """
+        self._allowed_ids = allowed_ids
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
@@ -754,12 +767,22 @@ class BaseFilterModel(BaseModel):
         Returns:
             The query with filter applied.
         """
+        if self._allowed_ids is not None:
+            query = query.where(table.id.in_(self._allowed_ids))
+
         filters = self.generate_filter(table=table)
 
         if filters is not None:
             query = query.where(filters)
 
         return query
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True
 
 
 class WorkspaceScopedFilterModel(BaseFilterModel):

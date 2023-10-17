@@ -24,7 +24,7 @@ from zenml.constants import (
     DEVICES,
     VERSION_1,
 )
-from zenml.enums import OAuthDeviceStatus, PermissionType
+from zenml.enums import OAuthDeviceStatus
 from zenml.models import (
     OAuthDeviceFilterModel,
     OAuthDeviceInternalUpdateModel,
@@ -59,9 +59,7 @@ def list_authorized_devices(
     filter_model: OAuthDeviceFilterModel = Depends(
         make_dependable(OAuthDeviceFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[OAuthDeviceResponseModel]:
     """Gets a page of OAuth2 authorized devices belonging to the current user.
 
@@ -86,9 +84,7 @@ def list_authorized_devices(
 def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponseModel:
     """Gets a specific OAuth2 authorized device using its unique ID.
 
@@ -134,9 +130,7 @@ def get_authorization_device(
 def update_authorized_device(
     device_id: UUID,
     update: OAuthDeviceUpdateModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponseModel:
     """Updates a specific OAuth2 authorized device using its unique ID.
 
@@ -173,9 +167,7 @@ def update_authorized_device(
 def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponseModel:
     """Verifies a specific OAuth2 authorized device using its unique ID.
 
@@ -274,9 +266,7 @@ def verify_authorized_device(
 @handle_exceptions
 def delete_authorized_device(
     device_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific OAuth2 authorized device using its unique ID.
 

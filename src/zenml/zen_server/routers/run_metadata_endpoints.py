@@ -17,7 +17,6 @@
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import RunMetadataResponseModel
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
@@ -46,7 +45,7 @@ def list_run_metadata(
     run_metadata_filter_model: RunMetadataFilterModel = Depends(
         make_dependable(RunMetadataFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[RunMetadataResponseModel]:
     """Get run metadata according to query filters.
 

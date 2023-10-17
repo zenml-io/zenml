@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
-from zenml.enums import PermissionType, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models import (
     ComponentFilterModel,
     ComponentResponseModel,
@@ -56,9 +56,7 @@ def list_stack_components(
     component_filter_model: ComponentFilterModel = Depends(
         make_dependable(ComponentFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[ComponentResponseModel]:
     """Get a list of all stack components for a specific type.
 
@@ -83,7 +81,7 @@ def list_stack_components(
 @handle_exceptions
 def get_stack_component(
     component_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponseModel:
     """Returns the requested stack component.
 
@@ -105,7 +103,7 @@ def get_stack_component(
 def update_stack_component(
     component_id: UUID,
     component_update: ComponentUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponseModel:
     """Updates a stack component.
 
@@ -129,7 +127,7 @@ def update_stack_component(
 @handle_exceptions
 def deregister_stack_component(
     component_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a stack component.
 
@@ -146,7 +144,7 @@ def deregister_stack_component(
 )
 @handle_exceptions
 def get_stack_component_types(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize),
 ) -> List[str]:
     """Get a list of all stack component types.
 

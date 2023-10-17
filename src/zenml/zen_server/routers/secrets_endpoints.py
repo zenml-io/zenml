@@ -50,9 +50,7 @@ def list_secrets(
     secret_filter_model: SecretFilterModel = Depends(
         make_dependable(SecretFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[SecretResponseModel]:
     """Gets a list of secrets.
 
@@ -83,9 +81,7 @@ def list_secrets(
 @handle_exceptions
 def get_secret(
     secret_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Gets a specific secret using its unique id.
 
@@ -116,7 +112,7 @@ def update_secret(
     secret_id: UUID,
     secret_update: SecretUpdateModel,
     patch_values: Optional[bool] = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Updates the attribute on a specific secret using its unique id.
 
@@ -150,7 +146,7 @@ def update_secret(
 @handle_exceptions
 def delete_secret(
     secret_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific secret using its unique id.
 

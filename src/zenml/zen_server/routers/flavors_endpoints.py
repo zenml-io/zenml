@@ -18,7 +18,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     FlavorFilterModel,
@@ -52,7 +51,7 @@ def list_flavors(
     flavor_filter_model: FlavorFilterModel = Depends(
         make_dependable(FlavorFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[FlavorResponseModel]:
     """Returns all flavors.
 
@@ -75,7 +74,7 @@ def list_flavors(
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> FlavorResponseModel:
     """Returns the requested flavor.
 
@@ -97,9 +96,7 @@ def get_flavor(
 @handle_exceptions
 def create_flavor(
     flavor: FlavorRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> FlavorResponseModel:
     """Creates a stack component flavor.
 
@@ -136,7 +133,7 @@ def create_flavor(
 def update_flavor(
     flavor_id: UUID,
     flavor_update: FlavorUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> FlavorResponseModel:
     """Updates a flavor.
 
@@ -161,7 +158,7 @@ def update_flavor(
 @handle_exceptions
 def delete_flavor(
     flavor_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a flavor.
 
@@ -177,7 +174,7 @@ def delete_flavor(
 )
 @handle_exceptions
 def sync_flavors(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Purge all in-built and integration flavors from the DB and sync.
 
