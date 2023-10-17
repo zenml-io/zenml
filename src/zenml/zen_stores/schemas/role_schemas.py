@@ -20,8 +20,18 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
-
-from zenml.new_models.core import RoleUpdate, RoleRequest, RoleResponse, RoleResponseMetadata, UserRoleAssignmentResponseMetadata, UserRoleAssignmentRequest, UserRoleAssignmentResponse, TeamRoleAssignmentRequest, TeamRoleAssignmentResponseMetadata, TeamRoleAssignmentResponse
+from zenml.new_models.core import (
+    RoleRequest,
+    RoleResponse,
+    RoleResponseMetadata,
+    RoleUpdate,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+    TeamRoleAssignmentResponseMetadata,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserRoleAssignmentResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.team_schemas import TeamSchema
@@ -169,11 +179,13 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         metadata = None
         if hydrate:
             metadata = UserRoleAssignmentResponseMetadata(
-            workspace=self.workspace.to_model() if self.workspace else None,
-            user=self.user.to_model() if self.user else None,
-            role=self.role.to_model(),
-            created=self.created,
-            updated=self.updated,
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
+                user=self.user.to_model() if self.user else None,
+                role=self.role.to_model(),
+                created=self.created,
+                updated=self.updated,
             )
         return UserRoleAssignmentResponse(
             id=self.id,
@@ -249,7 +261,9 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         metadata = None
         if hydrate:
             metadata = TeamRoleAssignmentResponseMetadata(
-                workspace=self.workspace.to_model() if self.workspace else None,
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
                 team=self.team.to_model(),
                 role=self.role.to_model(),
                 created=self.created,
