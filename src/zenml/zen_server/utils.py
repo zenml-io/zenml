@@ -80,7 +80,9 @@ def initialize_rbac() -> None:
     if rbac_source := server_config().rbac_implementation_source:
         from zenml.utils import source_utils
 
-        implementation_class = source_utils.load(rbac_source)
+        implementation_class = source_utils.load_and_validate_class(
+            rbac_source, expected_class=RBACInterface
+        )
         _rbac = implementation_class()
 
 
