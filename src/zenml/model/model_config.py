@@ -82,7 +82,7 @@ class ModelConfig(BaseModel):
 
         Args:
             name: The name of the model.
-            license: The license model created under.
+            license: The license under which the model is created.
             description: The description of the model.
             audience: The target audience of the model.
             use_cases: The use cases of the model.
