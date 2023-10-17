@@ -761,7 +761,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config": model_config,
+                "model_config_model": model_config,
             }
         )
         config = StepConfigurationUpdate(**values)

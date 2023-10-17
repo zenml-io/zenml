@@ -331,8 +331,8 @@ class StepLauncher:
         model_config = (
             self._deployment.step_configurations[
                 step_run.name
-            ].config.model_config
-            or self._deployment.pipeline_configuration.model_config
+            ].config.model_config_model
+            or self._deployment.pipeline_configuration.model_config_model
         )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
