@@ -153,6 +153,8 @@ class ArtifactConfig(BaseModel):
                 only_artifacts=not (is_model_object or is_deployment),
                 only_deployments=is_deployment,
                 only_model_objects=is_model_object,
+                pipeline_name=self._pipeline_name,
+                step_name=self._step_name,
             )
         )
         if len(existing_links):
