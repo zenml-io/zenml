@@ -26,6 +26,15 @@ Pipelines and steps are defined in code using Python _decorators_ or _classes_. 
 
 Artifacts represent the data that goes through your steps as inputs and outputs and they are stored in the artifact store. The serialization and deserialization logic of artifacts is defined by Materializers.
 
+#### Models
+
+Models are a special type of artifact that are used to represent the outputs of
+a training process along with all metadata associated with that output. In other
+words: models in ZenML are more broadly defined as the weights as well as any
+associated information. Models are a first-class citizen in ZenML and as such
+viewing and using them is unified and centralized in the ZenML API, client as
+well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
+
 #### Materializers
 
 Materializers define how Artifacts live in-between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
