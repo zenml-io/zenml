@@ -654,7 +654,9 @@ class StepRunner:
                     get_step_context().pipeline.name
                 )
                 artifact_config._step_name = get_step_context().step_run.name
-                artifact_config.link_to_model(artifact_uuid=artifact_uuid)
+                artifact_config.link_to_model(
+                    artifact_uuid=artifact_uuid, model_config=mc
+                )
 
     def _get_model_versions_from_artifacts(
         self,

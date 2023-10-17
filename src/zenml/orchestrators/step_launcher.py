@@ -430,7 +430,9 @@ class StepLauncher:
                     self._deployment.pipeline_configuration.name
                 )
                 artifact_config_._step_name = self._step_name
-                artifact_config_.link_to_model(output_)
+                artifact_config_.link_to_model(
+                    artifact_uuid=output_, model_config=model_config
+                )
 
     def _run_step(
         self,
