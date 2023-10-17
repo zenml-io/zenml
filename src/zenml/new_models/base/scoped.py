@@ -21,6 +21,7 @@ from pydantic import Field
 from zenml.new_models.base.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
 )
 from zenml.new_models.base.utils import hydrated_property
@@ -103,25 +104,35 @@ class ShareableRequest(WorkspaceScopedRequest):
 
 
 # User-scoped models
-class UserScopedResponseMetadata(BaseResponseMetadata):
-    """Base user-owned metadata model."""
+class UserScopedResponseBody(BaseResponseBody):
+    """Base user-owned body."""
 
-
-class UserScopedResponse(BaseResponse):
-    """Base user-owned domain model.
-
-    Used as a base class for all domain models that are "owned" by a user.
-    """
-
-    # Entity fields
     user: Optional["UserResponse"] = Field(
         title="The user who created this resource."
     )
 
-    # Metadata related field, method and properties
+
+class UserScopedResponseMetadata(BaseResponseMetadata):
+    """Base user-owned metadata."""
+
+
+class UserScopedResponse(BaseResponse):
+    """Base user-owned model.
+
+    Used as a base class for all domain models that are "owned" by a user.
+    """
+
+    # Body and metadata pair
+    body: UserScopedResponseBody = Field("The body of this resource.")
     metadata: Optional["UserScopedResponseMetadata"] = Field(
         title="The metadata related to this resource."
     )
+
+    # Body and metadata properties
+    @property
+    def user(self):
+        """The user property."""
+        return self.body.user
 
     @abstractmethod
     def get_hydrated_version(self) -> "UserScopedResponse":
@@ -145,8 +156,14 @@ class UserScopedResponse(BaseResponse):
 
 
 # Workspace-scoped models
+
+
+class WorkspaceScopedResponseBody(UserScopedResponseBody):
+    """Base workspace-scoped body."""
+
+
 class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
-    """Base workspace-scoped metadata model."""
+    """Base workspace-scoped metadata."""
 
     workspace: "WorkspaceResponse" = Field(
         title="The workspace of this resource."
@@ -159,8 +176,15 @@ class WorkspaceScopedResponse(UserScopedResponse):
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    # Metadata related field, method and properties
+    # Body and metadata definition
+    body: "WorkspaceScopedResponseBody"
     metadata: Optional["WorkspaceScopedResponseMetadata"]
+
+    # Body and metadata properties
+    @hydrated_property
+    def workspace(self):
+        """The workspace property."""
+        return self.metadata.workspace
 
     @abstractmethod
     def get_hydrated_version(self) -> "WorkspaceScopedResponse":
@@ -170,15 +194,21 @@ class WorkspaceScopedResponse(UserScopedResponse):
         is to populate this field by making an additional call to the API.
         """
 
-    @hydrated_property
-    def workspace(self):
-        """The workspace property."""
-        return self.metadata.workspace
-
 
 # Shareable models
+class SharableResponseBody(WorkspaceScopedResponseBody):
+    """Base shareable workspace-scoped body."""
+
+    is_shared: bool = Field(
+        title=(
+            "Flag describing if this resource is shared with other users in "
+            "the same workspace."
+        ),
+    )
+
+
 class SharableResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Base shareable workspace-scoped metadata model."""
+    """Base shareable workspace-scoped metadata."""
 
 
 class ShareableResponse(WorkspaceScopedResponse):
@@ -188,15 +218,15 @@ class ShareableResponse(WorkspaceScopedResponse):
     shareable.
     """
 
-    # Entity properties
-    is_shared: bool = Field(
-        title=(
-            "Flag describing if this resource is shared with other users in "
-            "the same workspace."
-        ),
-    )
-    # Metadata related field, method and properties
+    # Body and metadata definition
+    body: "SharableResponseBody"
     metadata: Optional["SharableResponseMetadata"]
+
+    # Body and metadata properties
+    @property
+    def is_shared(self):
+        """The is_shared property."""
+        return self.body.is_shared
 
     @abstractmethod
     def get_hydrated_version(self) -> "ShareableResponse":

@@ -234,7 +234,7 @@ class NumericFilter(Filter):
 # ---------------------- Pagination models ----------------------
 
 
-class BaseFilterModel(BaseModel):
+class BaseFilter(BaseModel):
     """Class to unify all filter, paginate and sort request parameters.
 
     This Model allows fine-grained filtering, sorting and pagination of
@@ -755,15 +755,15 @@ class BaseFilterModel(BaseModel):
         return query
 
 
-class WorkspaceScopedFilterModel(BaseFilterModel):
+class WorkspaceScopedFilter(BaseFilter):
     """Model to enable advanced scoping with workspace."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "scope_workspace",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilterModel.CLI_EXCLUDE_FIELDS,
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "scope_workspace",
     ]
     scope_workspace: Optional[UUID] = Field(
@@ -807,15 +807,15 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         return query
 
 
-class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
+class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and user scoped shareable things."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_user",
     ]
     scope_user: Optional[UUID] = Field(
@@ -859,15 +859,15 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
         return query
 
 
-class UserScopedFilterModel(BaseFilterModel):
+class UserScopedFilter(BaseFilter):
     """Model to enable advanced user-based scoping."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "scope_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilterModel.CLI_EXCLUDE_FIELDS,
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "scope_user",
     ]
     scope_user: Optional[UUID] = Field(

@@ -80,7 +80,7 @@ class BaseRequest(BaseZenModel):
 class BaseResponseMetadata(BaseModel):
     """Base metadata model.
 
-    Used as a base class for all metadata models associated with domain models.
+    Used as a base class for all metadata models associated with responses.
     Features a creation and update timestamp.
     """
 
@@ -92,6 +92,13 @@ class BaseResponseMetadata(BaseModel):
         title="The timestamp when this resource was last updated.",
         default=None,
     )
+
+
+class BaseResponseBody(BaseModel):
+    """Base body model.
+
+    Used as a base class for all body models associated with responses.
+    """
 
 
 class BaseResponse(BaseZenModel):
@@ -107,6 +114,9 @@ class BaseResponse(BaseZenModel):
 
     # Entity fields
     id: UUID = Field(title="The unique resource id.")
+
+    # Body related field
+    body: "BaseResponseBody" = Field(title="The body of the resource.")
 
     # Metadata related field, method and properties
     metadata: Optional["BaseResponseMetadata"] = Field(

@@ -12,20 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.new_models.base.base import (
-    BaseResponse,
-    BaseResponseMetadata,
     BaseRequest,
+    BaseResponseBody,
+    BaseResponseMetadata,
+    BaseResponse,
 )
 from zenml.new_models.base.scoped import (
     UserScopedRequest,
-    UserScopedResponse,
+    UserScopedResponseBody,
     UserScopedResponseMetadata,
+    UserScopedResponse,
     WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponse,
     ShareableRequest,
-    ShareableResponse,
+    SharableResponseBody,
     SharableResponseMetadata,
+    ShareableResponse,
 )
 from zenml.new_models.base.utils import update_model, hydrated_property
 from zenml.new_models.base.page import Page
