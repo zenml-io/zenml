@@ -30,7 +30,7 @@
     * [Handle custom data types](user-guide/advanced-guide/artifact-management/handle-custom-data-types.md)
     * [Visualize artifacts](user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
   * [Model management](user-guide/advanced-guide/artifact-management/model-management.md)
-    * [SOMETHING](user-guide/advanced-guide/artifact-management/SOMETHING.md)
+    * [Models on the dashboard](user-guide/advanced-guide/artifact-management/model-control-plane-dashboard.md)
     * [SOMETHING](user-guide/advanced-guide/artifact-management/SOMETHING.md)
     * [SOMETHING](user-guide/advanced-guide/artifact-management/SOMETHING.md)
     * [SOMETHING](user-guide/advanced-guide/artifact-management/SOMETHING.md)
