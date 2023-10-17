@@ -122,7 +122,7 @@ class PipelineRunSchema(NamedSchema, table=True):
 
     # Temporary fields and foreign keys to be deprecated
     pipeline_configuration: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=False)
+        sa_column=Column(TEXT, nullable=True)
     )
     client_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
