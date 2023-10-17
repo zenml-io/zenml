@@ -116,10 +116,10 @@ class ModelConfig(BaseModel):
             create_new_model_version=create_new_model_version,
             save_models_to_registry=save_models_to_registry,
             delete_new_version_on_failure=delete_new_version_on_failure,
+            model=kwargs.get("model", None),
+            model_version=kwargs.get("model_version", None),
+            user_not_yet_warned=kwargs.get("user_not_yet_warned", True),
         )
-        self.model = kwargs.get("model", None)
-        self.model_version = kwargs.get("model_version", None)
-        self.user_not_yet_warned = kwargs.get("user_not_yet_warned", True)
 
     class Config:
         """Config class."""
