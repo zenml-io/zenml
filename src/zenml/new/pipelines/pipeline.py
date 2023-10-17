@@ -369,6 +369,8 @@ class Pipeline:
         if not self.__suppress_warnings_flag__:
             to_be_reapplied = []
             for param_, value_ in values.items():
+                if param_ == "model_config_model":
+                    param_ = "model_config"
                 if (
                     param_ in PipelineRunConfiguration.__fields__
                     and param_ in self._from_config_file
