@@ -53,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -66,7 +66,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
-from zenml.models.model_base_model import ModelConfigModel
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
@@ -354,8 +353,6 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
-        if model_config:
-            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -366,18 +363,12 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config_model": ModelConfigModel.parse_obj(
-                    model_config.dict()
-                )
-                if model_config is not None
-                else None,
+                "model_config": model_config,
             }
         )
         if not self.__suppress_warnings_flag__:
             to_be_reapplied = []
             for param_, value_ in values.items():
-                if param_ == "model_config_model":
-                    param_ = "model_config"
                 if (
                     param_ in PipelineRunConfiguration.__fields__
                     and param_ in self._from_config_file
@@ -827,10 +818,10 @@ class Pipeline:
         ] = defaultdict(NewModelVersionRequest)
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_config_model
+            step_model_config = step.config.model_config
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step.config.model_config_model is not None
+                and step.config.model_config is not None
             )
             if (
                 step_model_config
@@ -844,7 +835,7 @@ class Pipeline:
                 )
         if not all_steps_have_own_config:
             pipeline_model_config = (
-                deployment.pipeline_configuration.model_config_model
+                deployment.pipeline_configuration.model_config
             )
             if (
                 pipeline_model_config
@@ -858,7 +849,7 @@ class Pipeline:
                         source="pipeline", name=self.name
                     ),
                 )
-        elif deployment.pipeline_configuration.model_config_model is not None:
+        elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
@@ -875,11 +866,6 @@ class Pipeline:
 
         Args:
             new_versions_requested: A dict of new model version request objects.
-
-        Raises:
-            RuntimeError: If there is unfinished pipeline run for requested model version.
-            RuntimeError: If recovery not requested, but model version already exists.
-
         """
         for model_name, data in new_versions_requested.items():
             if len(data.requesters) > 1:
@@ -888,25 +874,7 @@ class Pipeline:
                     f"{data.requesters}\n We recommend that `create_new_model_version` is configured "
                     "only in one place of the pipeline."
                 )
-            try:
-                model_version = data.model_config._get_model_version()
-
-                for run_name, run in model_version.pipeline_runs.items():
-                    if run.status == ExecutionStatus.RUNNING:
-                        raise RuntimeError(
-                            f"New model version was requested, but pipeline run `{run_name}` "
-                            f"is still running with version `{model_version.name}`."
-                        )
-                if (
-                    data.model_config.version
-                    and data.model_config.delete_new_version_on_failure
-                ):
-                    raise RuntimeError(
-                        f"Cannot create version `{data.model_config.version}` "
-                        f"for model `{data.model_config.name}` since it already exists"
-                    )
-            except KeyError:
-                pass
+            data.model_config._validate_config_in_runtime()
 
     def update_new_versions_requests(
         self,
@@ -928,7 +896,7 @@ class Pipeline:
         for step_name in deployment.step_configurations:
             step_model_config = deployment.step_configurations[
                 step_name
-            ].config.model_config_model
+            ].config.model_config
             if (
                 step_model_config is not None
                 and step_model_config.name in new_version_requests
@@ -937,9 +905,7 @@ class Pipeline:
                     step_model_config.name
                 ].model_config.version
                 step_model_config.create_new_model_version = True
-        pipeline_model_config = (
-            deployment.pipeline_configuration.model_config_model
-        )
+        pipeline_model_config = deployment.pipeline_configuration.model_config
         if (
             pipeline_model_config is not None
             and pipeline_model_config.name in new_version_requests

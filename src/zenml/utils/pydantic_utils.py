@@ -54,8 +54,12 @@ def update_model(
             update_dict = update
     else:
         update_dict = update.dict(exclude_unset=True)
+        if "model_config" in update_dict:
+            update_dict["model_config"] = getattr(update, "model_config")
 
     original_dict = original.dict(exclude_unset=True)
+    if "model_config" in original_dict:
+        original_dict["model_config"] = getattr(original, "model_config")
     if recursive:
         values = dict_utils.recursive_update(original_dict, update_dict)
     else:

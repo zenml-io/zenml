@@ -21,10 +21,6 @@ from zenml import get_step_context
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
-from zenml.models.model_models import (
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-)
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
@@ -87,7 +83,6 @@ class ArtifactConfig(BaseModel):
                 name=self.model_name,
                 version=self.model_version,
                 create_new_model_version=False,
-                suppress_warnings=True,
             )
             return on_the_fly_config
 
@@ -134,6 +129,10 @@ class ArtifactConfig(BaseModel):
             is_deployment: Whether the artifact is a deployment. Defaults to False.
         """
         from zenml.client import Client
+        from zenml.models.model_models import (
+            ModelVersionArtifactFilterModel,
+            ModelVersionArtifactRequestModel,
+        )
 
         # Create a ZenML client
         client = Client()
