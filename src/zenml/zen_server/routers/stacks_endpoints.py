@@ -55,20 +55,17 @@ def list_stacks(
     stack_filter_model: StackFilterModel = Depends(
         make_dependable(StackFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[StackResponseModel]:
     """Returns all stacks.
 
     Args:
         stack_filter_model: Filter model used for pagination, sorting, filtering
-        auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    allowed_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.STACK, action=Action.READ
-    )
+    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.STACK)
     stack_filter_model.set_allowed_ids(allowed_ids)
     page = zen_store().list_stacks(stack_filter_model=stack_filter_model)
 

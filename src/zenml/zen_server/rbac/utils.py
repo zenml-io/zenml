@@ -218,7 +218,7 @@ def verify_permissions(
 
 def get_allowed_resource_ids(
     resource_type: str,
-    action: str,
+    action: str = Action.READ,
 ) -> Optional[List[UUID]]:
     """Get all resource IDs of a resource type that a user can access.
 
