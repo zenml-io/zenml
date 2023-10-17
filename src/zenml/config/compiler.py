@@ -100,7 +100,8 @@ class Compiler:
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
-        pipeline.configure(settings=pipeline_settings, merge=False)
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
         settings_to_passdown = {
             key: settings
@@ -195,14 +196,16 @@ class Compiler:
             KeyError: If the run configuration contains options for a
                 non-existent step.
         """
-        pipeline.configure(
-            enable_cache=config.enable_cache,
-            enable_artifact_metadata=config.enable_artifact_metadata,
-            enable_artifact_visualization=config.enable_artifact_visualization,
-            enable_step_logs=config.enable_step_logs,
-            settings=config.settings,
-            extra=config.extra,
-        )
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(
+                enable_cache=config.enable_cache,
+                enable_artifact_metadata=config.enable_artifact_metadata,
+                enable_artifact_visualization=config.enable_artifact_visualization,
+                enable_step_logs=config.enable_step_logs,
+                settings=config.settings,
+                extra=config.extra,
+                model_config=config.model_config,
+            )
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
@@ -262,7 +265,8 @@ class Compiler:
             else:
                 pipeline_settings[settings_key] = default_settings
 
-        pipeline.configure(settings=pipeline_settings, merge=False)
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
     def _get_default_settings(
         self,
