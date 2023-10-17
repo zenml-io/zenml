@@ -252,7 +252,6 @@ def list_workspace_stacks(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     stack_filter_model.set_scope_workspace(workspace.id)
-    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
@@ -330,7 +329,6 @@ def list_workspace_stack_components(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     component_filter_model.set_scope_workspace(workspace.id)
-    component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
         component_filter_model=component_filter_model
     )

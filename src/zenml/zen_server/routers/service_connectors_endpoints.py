@@ -82,7 +82,6 @@ def list_service_connectors(
     Returns:
         Page with list of service connectors for a specific type.
     """
-    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
     connectors = zen_store().list_service_connectors(
         filter_model=connector_filter_model
     )

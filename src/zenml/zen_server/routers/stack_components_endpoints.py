@@ -70,7 +70,6 @@ def list_stack_components(
     Returns:
         List of stack components for a specific type.
     """
-    component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
         component_filter_model=component_filter_model
     )

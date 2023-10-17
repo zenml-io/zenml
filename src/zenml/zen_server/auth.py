@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Authentication module for ZenML server."""
 
-import os
 from contextvars import ContextVar
 from datetime import datetime
 from enum import Enum
@@ -681,6 +680,9 @@ authorize = authentication_provider()
 def verify_read_permissions_and_dehydrate(
     model: "BaseResponseModel",
 ) -> "BaseResponseModel":
+    if not server_config().rbac_enabled:
+        return model
+
     verify_permissions_for_model(model=model, action="READ")
 
     return dehydrate_response_model(model=model)
@@ -710,7 +712,7 @@ def _maybe_dehydrate_value(value: Any) -> Any:
         type_ = type(value)
         return type_(_maybe_dehydrate_value(v) for v in value)
     else:
-        return value, False
+        return value
 
 
 def has_read_permissions_for_model(model: "BaseResponseModel") -> bool:
@@ -760,17 +762,13 @@ def verify_permissions_for_model(
     model: "BaseResponseModel",
     action: str,
 ) -> None:
-    """Verifies if a user has permissions to perform an action on a resource.
+    """Verifies if a user has permissions to perform an action on a model.
 
     Args:
-        resource: The resource type the user wants to perform the action on.
+        model: The model the user wants to perform the action on.
         action: The action the user wants to perform.
-        resource_id: ID of the resource the user wants to perform the action on.
-
-    Raises:
-        HTTPException: If the user is not allowed to perform the action.
     """
-    if "ZENML_CLOUD" not in os.environ:
+    if not server_config().rbac_enabled:
         return
 
     if (
@@ -807,20 +805,13 @@ def verify_permissions(
     Raises:
         HTTPException: If the user is not allowed to perform the action.
     """
-    if "ZENML_CLOUD" not in os.environ:
+    if not server_config().rbac_enabled:
         return
 
-    if resource_type != "stack":
-        raise HTTPException(status_code=403)
-
-    return
-
-    user_id = get_auth_context().user.external_user_id
-    assert user_id
     resource = Resource(type=resource_type, id=resource_id)
 
     if not rbac().has_permission(
-        user=user_id, resource=resource, action=action
+        user=get_auth_context().user, resource=resource, action=action
     ):
         raise HTTPException(status_code=403)
 
@@ -839,17 +830,16 @@ def get_allowed_resource_ids(
         A list of resource IDs or `None` if the user has full access to the
         all instances of the resource.
     """
-    if "ZENML_CLOUD" not in os.environ:
-        # Full access in any case
+    if not server_config().rbac_enabled:
         return None
 
-    user_id = get_auth_context().user.external_user_id
-    assert user_id
     (
         has_full_resource_access,
         allowed_ids,
     ) = rbac().list_allowed_resource_ids(
-        user=user_id, resource=Resource(type=resource_type), action=action
+        user=get_auth_context().user,
+        resource=Resource(type=resource_type),
+        action=action,
     )
 
     if has_full_resource_access:

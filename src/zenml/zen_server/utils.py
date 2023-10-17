@@ -75,10 +75,13 @@ def rbac() -> RBACInterface:
 
 def initialize_rbac() -> None:
     """Initialize the RBAC component."""
-    from zenml.zen_server.cloud_rbac import CloudRBAC
-
     global _rbac
-    _rbac = CloudRBAC()
+
+    if rbac_source := server_config().rbac_implementation_source:
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load(rbac_source)
+        _rbac = implementation_class()
 
 
 def initialize_zen_store() -> None:

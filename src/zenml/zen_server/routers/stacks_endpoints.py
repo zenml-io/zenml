@@ -64,8 +64,6 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-
     return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 

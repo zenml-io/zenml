@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field, SecretStr
@@ -109,6 +119,35 @@ class BaseResponseModel(BaseZenModel):
         metadata = super().get_analytics_metadata()
         metadata["entity_id"] = self.id
         return metadata
+
+    @property
+    def partial(self) -> bool:
+        """Returns if this model is incomplete.
+
+        A model is incomplete if the user has no permissions to read the
+        model itself or any submodel contained in this model.
+
+        Returns:
+            True if the model is incomplete, False otherwise.
+        """
+        if self.missing_permissions:
+            return True
+
+        def _helper(value: Any) -> bool:
+            if isinstance(value, BaseResponseModel):
+                if value.partial:
+                    return True
+            elif isinstance(value, Dict):
+                return any(_helper(v) for v in value.values())
+            elif isinstance(value, (List, Set, Tuple)):
+                return any(_helper(v) for v in value)
+
+        for field_name in self.__fields__.keys():
+            value = getattr(self, field_name)
+            if _helper(value):
+                return True
+
+        return False
 
 
 class UserScopedResponseModel(BaseResponseModel):

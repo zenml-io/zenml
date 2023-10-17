@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.enums import StrEnum
 from zenml.models.base_models import BaseResponseModel
+
+if TYPE_CHECKING:
+    from zenml.models import UserResponseModel
 
 
 class Action(StrEnum):
@@ -65,12 +68,12 @@ class Resource(BaseModel):
 class RBACInterface(ABC):
     @abstractmethod
     def has_permission(
-        self, user: UUID, resource: Resource, action: str
+        self, user: "UserResponseModel", resource: Resource, action: str
     ) -> bool:
         """Checks if a user has permission to perform an action on a resource.
 
         Args:
-            user: ID of the user which wants to access a resource.
+            user: User which wants to access a resource.
             resource: The resource the user wants to access.
             action: The action that the user wants to perform on the resource.
 
@@ -80,12 +83,12 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def list_allowed_resource_ids(
-        self, user: UUID, resource: Resource, action: str
+        self, user: "UserResponseModel", resource: Resource, action: str
     ) -> Tuple[bool, List[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 
         Args:
-            user: ID of the user which wants to access a resource.
+            user: User which wants to access a resource.
             resource: The resource the user wants to access.
             action: The action that the user wants to perform on the resource.
 
