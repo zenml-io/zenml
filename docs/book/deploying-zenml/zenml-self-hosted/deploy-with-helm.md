@@ -82,7 +82,7 @@ It is common practice to install additional infrastructure-related services in a
 To use the Helm chart with custom values that includes path to files like the database SSL certificates, you need to pull the chart to your local directory first. You can do this with the following command:
 
 ```bash
-helm pull oci://public.ecr.aws/zenml/zenml-server --version <VERSION> --untar
+helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
 ```
 
 Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml-server/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
