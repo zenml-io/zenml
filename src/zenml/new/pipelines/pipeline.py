@@ -390,7 +390,7 @@ class Pipeline:
                 msg = ""
                 reapply_during_run_warning = (
                     "The value of parameter '{name}' has changed from "
-                    "'{file_value}' to '{new_value}' set in you configuration file.\n"
+                    "'{file_value}' to '{new_value}' set in your configuration file.\n"
                 )
                 for name, file_value, new_value in to_be_reapplied:
                     msg += reapply_during_run_warning.format(
