@@ -468,7 +468,16 @@ def _print_artifacts_links_generic(
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        model_version_name_or_number_or_id=None
+        if model_version_name_or_number_or_id == "0"
+        else model_version_name_or_number_or_id,
+    )
+    type_ = (
+        "artifacts"
+        if only_artifacts
+        else "deployments"
+        if only_deployments
+        else "model objects"
     )
 
     if (
@@ -476,15 +485,12 @@ def _print_artifacts_links_generic(
         or (only_deployments and not model_version.deployment_ids)
         or (only_model_objects and not model_version.model_object_ids)
     ):
-        _type = (
-            "artifacts"
-            if only_artifacts
-            else "deployments"
-            if only_deployments
-            else "model objects"
-        )
-        cli_utils.declare(f"No {_type} linked to the model version found.")
+        cli_utils.declare(f"No {type_} linked to the model version found.")
         return
+
+    cli_utils.title(
+        f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
+    )
 
     links = Client().list_model_version_artifact_links(
         ModelVersionArtifactFilterModel(
@@ -515,7 +521,7 @@ def _print_artifacts_links_generic(
     help="List artifacts linked to a model version.",
 )
 @click.argument("model_name_or_id")
-@click.argument("model_version_name_or_number_or_id")
+@click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
 def list_model_version_artifacts(
     model_name_or_id: str,
@@ -527,6 +533,7 @@ def list_model_version_artifacts(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
+            Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
@@ -542,7 +549,7 @@ def list_model_version_artifacts(
     help="List model objects linked to a model version.",
 )
 @click.argument("model_name_or_id")
-@click.argument("model_version_name_or_number_or_id")
+@click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
 def list_model_version_model_objects(
     model_name_or_id: str,
@@ -554,6 +561,7 @@ def list_model_version_model_objects(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
+            Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
@@ -569,7 +577,7 @@ def list_model_version_model_objects(
     help="List deployments linked to a model version.",
 )
 @click.argument("model_name_or_id")
-@click.argument("model_version_name_or_number_or_id")
+@click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
 def list_model_version_deployments(
     model_name_or_id: str,
@@ -581,6 +589,7 @@ def list_model_version_deployments(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
+            Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
@@ -596,7 +605,7 @@ def list_model_version_deployments(
     help="List pipeline runs of a model version.",
 )
 @click.argument("model_name_or_id")
-@click.argument("model_version_name_or_number_or_id")
+@click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionPipelineRunFilterModel)
 def list_model_version_pipeline_runs(
     model_name_or_id: str,
@@ -608,6 +617,7 @@ def list_model_version_pipeline_runs(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
+            Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
     model_version = Client().get_model_version(
@@ -618,6 +628,9 @@ def list_model_version_pipeline_runs(
     if not model_version.pipeline_run_ids:
         cli_utils.declare("No pipeline runs attached to model version found.")
         return
+    cli_utils.title(
+        f"Pipeline runs linked to the model version `{model_version.name}[{model_version.number}]`:"
+    )
 
     links = Client().list_model_version_pipeline_run_links(
         ModelVersionPipelineRunFilterModel(
