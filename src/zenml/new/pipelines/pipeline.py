@@ -1128,7 +1128,7 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
-        self._from_config_file = self._parse_config_file(
+        self._parse_config_file(
             config_path=config_path,
             matcher=list(PipelineRunConfiguration.__fields__.keys()),
         )
@@ -1365,15 +1365,12 @@ class Pipeline:
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
-    ) -> Dict[str, Any]:
-        """Parses the given configuration file.
+    ) -> None:
+        """Parses the given configuration file and sets `self._from_config_file`.
 
         Args:
             config_path: Path to a yaml configuration file.
             matcher: List of keys to match in the configuration file.
-
-        Returns:
-            The parsed configuration file as a dictionary.
         """
         _from_config_file: Dict[str, Any] = {}
         if config_path:
@@ -1390,10 +1387,11 @@ class Pipeline:
             if "model_config" in _from_config_file:
                 from zenml.model.model_config import ModelConfig
 
-                _from_config_file["model_config"] = ModelConfig.parse_obj(
-                    _from_config_file["model_config"]
+                _from_config_file["model_config"] = self._from_config_file.get(
+                    "model_config",
+                    ModelConfig.parse_obj(_from_config_file["model_config"]),
                 )
-        return _from_config_file
+        self._from_config_file = _from_config_file
 
     def with_options(
         self,
@@ -1432,7 +1430,7 @@ class Pipeline:
         """
         pipeline_copy = self.copy()
 
-        pipeline_copy._from_config_file = self._parse_config_file(
+        pipeline_copy._parse_config_file(
             config_path=config_path,
             matcher=inspect.getfullargspec(self.configure)[0],
         )
