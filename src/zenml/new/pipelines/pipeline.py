@@ -816,6 +816,7 @@ class Pipeline:
         new_versions_requested: Dict[
             str, NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
+        other_model_configs: List["ModelConfig"] = []
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
             step_model_config = step.config.model_config
@@ -823,38 +824,43 @@ class Pipeline:
                 all_steps_have_own_config
                 and step.config.model_config is not None
             )
-            if (
-                step_model_config
-                and step_model_config.create_new_model_version
-            ):
-                new_versions_requested[step_model_config.name].update_request(
-                    step_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="step", name=step.config.name
-                    ),
-                )
+            if step_model_config:
+                if step_model_config.create_new_model_version:
+                    new_versions_requested[
+                        step_model_config.name
+                    ].update_request(
+                        step_model_config,
+                        NewModelVersionRequest.Requester(
+                            source="step", name=step.config.name
+                        ),
+                    )
+                else:
+                    other_model_configs.append(step_model_config)
         if not all_steps_have_own_config:
             pipeline_model_config = (
                 deployment.pipeline_configuration.model_config
             )
-            if (
-                pipeline_model_config
-                and pipeline_model_config.create_new_model_version
-            ):
-                new_versions_requested[
-                    pipeline_model_config.name
-                ].update_request(
-                    pipeline_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="pipeline", name=self.name
-                    ),
-                )
+            if pipeline_model_config:
+                if pipeline_model_config.create_new_model_version:
+                    new_versions_requested[
+                        pipeline_model_config.name
+                    ].update_request(
+                        pipeline_model_config,
+                        NewModelVersionRequest.Requester(
+                            source="pipeline", name=self.name
+                        ),
+                    )
+                else:
+                    other_model_configs.append(pipeline_model_config)
         elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
 
         self._validate_new_version_requests(new_versions_requested)
+
+        for other_model_config in other_model_configs:
+            other_model_config._validate_config_in_runtime()
 
         return new_versions_requested
 

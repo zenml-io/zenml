@@ -196,21 +196,19 @@ class ModelConfig(BaseModel):
         try:
             logger.error(f"VALIDATED MODEL {self.name}!")
             model_version = self._get_model_version()
-            for run_name, run in model_version.pipeline_runs.items():
-                if run.status == ExecutionStatus.RUNNING:
-                    raise RuntimeError(
-                        f"New model version was requested, but pipeline run `{run_name}` "
-                        f"is still running with version `{model_version.name}`."
-                    )
+            if self.create_new_model_version:
+                for run_name, run in model_version.pipeline_runs.items():
+                    if run.status == ExecutionStatus.RUNNING:
+                        raise RuntimeError(
+                            f"New model version was requested, but pipeline run `{run_name}` "
+                            f"is still running with version `{model_version.name}`."
+                        )
 
-            if (
-                self.create_new_model_version
-                and not self.delete_new_version_on_failure
-            ):
-                raise RuntimeError(
-                    f"Cannot create version `{self.version}` "
-                    f"for model `{self.name}` since it already exists"
-                )
+                if not self.delete_new_version_on_failure:
+                    raise RuntimeError(
+                        f"Cannot create version `{self.version}` "
+                        f"for model `{self.name}` since it already exists"
+                    )
         except KeyError:
             pass
         self.get_or_create_model_version()
