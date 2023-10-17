@@ -194,6 +194,7 @@ class ModelConfig(BaseModel):
             RuntimeError: If there is unfinished pipeline run for requested new model version.
         """
         try:
+            logger.error(f"VALIDATED MODEL {self.name}!")
             model_version = self._get_model_version()
             for run_name, run in model_version.pipeline_runs.items():
                 if run.status == ExecutionStatus.RUNNING:
