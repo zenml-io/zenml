@@ -288,7 +288,7 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "step_operator",
 ]
 
-# Model parameters
+# Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
