@@ -209,7 +209,7 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class ScheduleFilterModel(WorkspaceScopedFilter):
+class ScheduleFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(

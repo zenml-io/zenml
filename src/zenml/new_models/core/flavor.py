@@ -299,7 +299,7 @@ class FlavorResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class FlavorFilterModel(WorkspaceScopedFilter):
+class FlavorFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Flavors."""
 
     name: Optional[str] = Field(

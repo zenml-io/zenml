@@ -292,7 +292,7 @@ class PipelineRunResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilterModel(WorkspaceScopedFilter):
+class PipelineRunFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [

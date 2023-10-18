@@ -41,6 +41,9 @@ from zenml.new_models.base import (
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel import SQLModel
+
     from zenml.new_models.core.service_connector import (
         ServiceConnectorResponse,
     )
@@ -211,7 +214,7 @@ class ComponentResponse(ShareableResponse):
 # ------------------ Filter Model ------------------
 
 
-class ComponentFilterModel(ShareableFilter):
+class ComponentFilter(ShareableFilter):
     """Model to enable advanced filtering of all ComponentModels.
 
     The Component Model needs additional scoping. As such the `_scope_user`

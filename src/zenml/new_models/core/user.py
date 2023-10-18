@@ -307,7 +307,7 @@ class UserResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class UserFilterModel(BaseFilter):
+class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
     name: Optional[str] = Field(

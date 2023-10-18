@@ -151,7 +151,7 @@ class RunMetadataResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class RunMetadataFilterModel(WorkspaceScopedFilter):
+class RunMetadataFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of run metadata."""
 
     pipeline_run_id: Optional[Union[str, UUID]] = None

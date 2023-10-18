@@ -191,7 +191,7 @@ class StackResponse(ShareableResponse):
 # ------------------ Filter Model ------------------
 
 
-class StackFilterModel(ShareableFilter):
+class StackFilter(ShareableFilter):
     """Model to enable advanced filtering of all StackModels.
 
     The Stack Model needs additional scoping. As such the `_scope_user` field

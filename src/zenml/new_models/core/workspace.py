@@ -97,7 +97,7 @@ class WorkspaceResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class WorkspaceFilterModel(BaseFilter):
+class WorkspaceFilter(BaseFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(

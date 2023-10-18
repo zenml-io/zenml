@@ -167,7 +167,7 @@ class SecretResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class SecretFilterModel(WorkspaceScopedFilter):
+class SecretFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Secrets."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [

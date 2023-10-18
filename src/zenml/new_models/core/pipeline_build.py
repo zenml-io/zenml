@@ -255,7 +255,7 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class PipelineBuildFilterModel(WorkspaceScopedFilter):
+class PipelineBuildFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
     workspace_id: Union[UUID, str, None] = Field(

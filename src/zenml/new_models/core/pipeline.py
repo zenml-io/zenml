@@ -220,7 +220,7 @@ class PipelineResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class PipelineFilterModel(WorkspaceScopedFilter):
+class PipelineFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(

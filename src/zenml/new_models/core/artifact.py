@@ -177,7 +177,7 @@ class ArtifactResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilterModel(WorkspaceScopedFilter):
+class ArtifactFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Artifacts."""
 
     # `only_unused` refers to a property of the artifacts relationship

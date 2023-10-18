@@ -123,7 +123,7 @@ class TeamResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class TeamFilterModel(BaseFilter):
+class TeamFilter(BaseFilter):
     """Model to enable advanced filtering of all Teams."""
 
     name: Optional[str] = Field(

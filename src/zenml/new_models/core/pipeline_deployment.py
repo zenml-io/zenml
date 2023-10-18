@@ -226,7 +226,7 @@ class PipelineDeploymentResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class PipelineDeploymentFilterModel(WorkspaceScopedFilter):
+class PipelineDeploymentFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all pipeline deployments."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(

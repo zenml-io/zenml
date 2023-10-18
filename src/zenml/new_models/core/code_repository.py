@@ -130,7 +130,7 @@ class CodeRepositoryResponse(WorkspaceScopedResponse):
 # ------------------ Filter Model ------------------
 
 
-class CodeRepositoryFilterModel(WorkspaceScopedFilter):
+class CodeRepositoryFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all code repositories."""
 
     name: Optional[str] = Field(

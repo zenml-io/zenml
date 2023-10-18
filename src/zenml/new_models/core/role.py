@@ -88,7 +88,7 @@ class RoleResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class RoleFilterModel(BaseFilter):
+class RoleFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
     name: Optional[str] = Field(

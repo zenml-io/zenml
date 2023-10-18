@@ -105,7 +105,7 @@ class UserRoleAssignmentResponse(BaseResponse):
 # ------------------ Filter Model ------------------
 
 
-class UserRoleAssignmentFilterModel(BaseFilter):
+class UserRoleAssignmentFilter(BaseFilter):
     """Model to enable advanced filtering of all Role Assignments."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(

@@ -531,7 +531,7 @@ class ServiceConnectorResponse(ShareableResponse):
 # ------------------ Filter Model ------------------
 
 
-class ServiceConnectorFilterModel(ShareableFilter):
+class ServiceConnectorFilter(ShareableFilter):
     """Model to enable advanced filtering of service connectors."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
