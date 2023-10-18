@@ -637,8 +637,6 @@ class StepRunner:
             if artifact_config_ is None:
                 if model_config_from_context is not None:
                     artifact_config_ = ArtifactConfig(
-                        model_name=model_config_from_context.name,
-                        model_version=model_config_from_context.version,
                         artifact_name=artifact_name,
                     )
                     logger.info(
