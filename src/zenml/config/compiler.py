@@ -84,7 +84,6 @@ class Compiler:
         Returns:
             The compiled pipeline deployment and spec
         """
-        from zenml.model.model_config import ModelConfig
 
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -103,8 +102,7 @@ class Compiler:
             stack=stack,
         )
         with pipeline.__suppress_configure_warnings__():
-            with ModelConfig.__suppress_validation_warnings__():
-                pipeline.configure(settings=pipeline_settings, merge=False)
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
         settings_to_passdown = {
             key: settings
@@ -199,19 +197,17 @@ class Compiler:
             KeyError: If the run configuration contains options for a
                 non-existent step.
         """
-        from zenml.model.model_config import ModelConfig
 
         with pipeline.__suppress_configure_warnings__():
-            with ModelConfig.__suppress_validation_warnings__():
-                pipeline.configure(
-                    enable_cache=config.enable_cache,
-                    enable_artifact_metadata=config.enable_artifact_metadata,
-                    enable_artifact_visualization=config.enable_artifact_visualization,
-                    enable_step_logs=config.enable_step_logs,
-                    settings=config.settings,
-                    extra=config.extra,
-                    model_config=config.model_config,
-                )
+            pipeline.configure(
+                enable_cache=config.enable_cache,
+                enable_artifact_metadata=config.enable_artifact_metadata,
+                enable_artifact_visualization=config.enable_artifact_visualization,
+                enable_step_logs=config.enable_step_logs,
+                settings=config.settings,
+                extra=config.extra,
+                model_config=config.model_config,
+            )
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
@@ -252,7 +248,6 @@ class Compiler:
             pipeline: The pipeline to which to apply the default settings.
             stack: The stack containing potential default settings.
         """
-        from zenml.model.model_config import ModelConfig
 
         pipeline_settings = pipeline.configuration.settings
 
@@ -274,8 +269,7 @@ class Compiler:
                 pipeline_settings[settings_key] = default_settings
 
         with pipeline.__suppress_configure_warnings__():
-            with ModelConfig.__suppress_validation_warnings__():
-                pipeline.configure(settings=pipeline_settings, merge=False)
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
     def _get_default_settings(
         self,

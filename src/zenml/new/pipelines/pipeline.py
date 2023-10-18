@@ -148,7 +148,6 @@ class Pipeline:
                 function (e.g. `module.my_function`).
             model_config: Model(Version) configuration for this step as `ModelConfig` instance.
         """
-        from zenml.model.model_config import ModelConfig
 
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -158,18 +157,17 @@ class Pipeline:
         )
         self._from_config_file: Dict[str, Any] = {}
         with self.__suppress_configure_warnings__():
-            with ModelConfig.__suppress_validation_warnings__():
-                self.configure(
-                    enable_cache=enable_cache,
-                    enable_artifact_metadata=enable_artifact_metadata,
-                    enable_artifact_visualization=enable_artifact_visualization,
-                    enable_step_logs=enable_step_logs,
-                    settings=settings,
-                    extra=extra,
-                    on_failure=on_failure,
-                    on_success=on_success,
-                    model_config=model_config,
-                )
+            self.configure(
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
+                enable_step_logs=enable_step_logs,
+                settings=settings,
+                extra=extra,
+                on_failure=on_failure,
+                on_success=on_success,
+                model_config=model_config,
+            )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
 
@@ -1128,7 +1126,6 @@ class Pipeline:
         """
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
-        from zenml.model.model_config import ModelConfig
 
         integration_registry.activate_integrations()
 
@@ -1143,8 +1140,7 @@ class Pipeline:
         update = PipelineRunConfiguration.parse_obj(new_values)
 
         # Update with the values in code so they take precedence
-        with ModelConfig.__suppress_validation_warnings__():
-            run_config = pydantic_utils.update_model(run_config, update=update)
+        run_config = pydantic_utils.update_model(run_config, update=update)
 
         deployment, pipeline_spec = Compiler().compile(
             pipeline=self,
@@ -1437,7 +1433,6 @@ class Pipeline:
         Returns:
             The copied pipeline instance.
         """
-        from zenml.model.model_config import ModelConfig
 
         pipeline_copy = self.copy()
 
@@ -1450,8 +1445,7 @@ class Pipeline:
         )
 
         with pipeline_copy.__suppress_configure_warnings__():
-            with ModelConfig.__suppress_validation_warnings__():
-                pipeline_copy.configure(**pipeline_copy._from_config_file)
+            pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {
