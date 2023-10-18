@@ -82,19 +82,18 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipelines."""
 
+    version: str = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     version_hash: str = Field(
         title="The version hash of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    spec: PipelineSpec = Field(title="The spec of the pipeline.")
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    spec: PipelineSpec = Field(title="The spec of the pipeline.")
-
-    version: str = Field(
-        title="The version of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 

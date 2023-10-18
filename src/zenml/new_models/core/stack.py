@@ -90,7 +90,11 @@ class StackResponseBody(SharableResponseBody):
 class StackResponseMetadata(SharableResponseMetadata):
     """Response metadata for stacks."""
 
-    description: str = Field(
+    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
+        title="A mapping of stack component types to the actual"
+        "instances of components of this type."
+    )
+    description: Optional[str] = Field(
         default="",
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -98,10 +102,6 @@ class StackResponseMetadata(SharableResponseMetadata):
     stack_spec_path: Optional[str] = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
-    )
-    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
-        title="A mapping of stack component types to the actual"
-        "instances of components of this type."
     )
 
 

@@ -305,6 +305,15 @@ class ServiceConnectorResponseMetadata(SharableResponseMetadata):
         title="Indicates whether the connector instance can be used to access "
         "multiple instances of the configured resource type.",
     )
+    configuration: Dict[str, Any] = Field(
+        default_factory=dict,
+        title="The service connector configuration, not including secrets.",
+    )
+    secret_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the secret that contains the service connector "
+        "secret configuration values.",
+    )
     expires_at: Optional[datetime] = Field(
         default=None,
         title="Time when the authentication credentials configured for the "
@@ -317,10 +326,6 @@ class ServiceConnectorResponseMetadata(SharableResponseMetadata):
         "connectors and authentication methods that involve generating "
         "temporary credentials from the ones configured in the connector.",
     )
-    configuration: Dict[str, Any] = Field(
-        default_factory=dict,
-        title="The service connector configuration, not including secrets.",
-    )
     secrets: Dict[str, Optional[SecretStr]] = Field(
         default_factory=dict,
         title="The service connector secrets.",
@@ -328,11 +333,6 @@ class ServiceConnectorResponseMetadata(SharableResponseMetadata):
     labels: Dict[str, str] = Field(
         default_factory=dict,
         title="Service connector labels.",
-    )
-    secret_id: Optional[UUID] = Field(
-        default=None,
-        title="The ID of the secret that contains the service connector "
-        "secret configuration values.",
     )
 
 
