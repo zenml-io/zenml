@@ -34,7 +34,7 @@ from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
-from zenml.zen_server.rbac_interface import RBACInterface
+from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
