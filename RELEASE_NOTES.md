@@ -6,7 +6,7 @@ This minor update fixes a database migration bug that you could potentially
 encounter while upgrading your ZenML version and relates to use of the
 `ExternalArtifact` object.
 
-**PROBLEMS?**: If you upgraded do ZenML v0.45.2 and are experiencing
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 and are experiencing
 issues with your database, please either [reach out to us on Slack directly](https://zenml.io/slack-invite/) or
 feel free to [use this migration
 script](https://gist.github.com/strickvl/2178d93c8693f068768a82587fd4db75) that will
