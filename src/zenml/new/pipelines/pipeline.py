@@ -148,6 +148,8 @@ class Pipeline:
                 function (e.g. `module.my_function`).
             model_config: Model(Version) configuration for this step as `ModelConfig` instance.
         """
+        from zenml.model.model_config import ModelConfig
+
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
 
@@ -156,17 +158,18 @@ class Pipeline:
         )
         self._from_config_file: Dict[str, Any] = {}
         with self.__suppress_configure_warnings__():
-            self.configure(
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                enable_artifact_visualization=enable_artifact_visualization,
-                enable_step_logs=enable_step_logs,
-                settings=settings,
-                extra=extra,
-                on_failure=on_failure,
-                on_success=on_success,
-                model_config=model_config,
-            )
+            with ModelConfig.__suppress_validation_warnings__():
+                self.configure(
+                    enable_cache=enable_cache,
+                    enable_artifact_metadata=enable_artifact_metadata,
+                    enable_artifact_visualization=enable_artifact_visualization,
+                    enable_step_logs=enable_step_logs,
+                    settings=settings,
+                    extra=extra,
+                    on_failure=on_failure,
+                    on_success=on_success,
+                    model_config=model_config,
+                )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
 
@@ -1432,6 +1435,8 @@ class Pipeline:
         Returns:
             The copied pipeline instance.
         """
+        from zenml.model.model_config import ModelConfig
+
         pipeline_copy = self.copy()
 
         pipeline_copy._parse_config_file(
@@ -1443,7 +1448,8 @@ class Pipeline:
         )
 
         with pipeline_copy.__suppress_configure_warnings__():
-            pipeline_copy.configure(**pipeline_copy._from_config_file)
+            with ModelConfig.__suppress_validation_warnings__():
+                pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {

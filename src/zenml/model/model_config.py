@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """ModelConfig user facing interface to pass into pipeline or step."""
 
+from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
     Union,
@@ -75,12 +78,20 @@ class ModelConfig(BaseModel):
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
 
-    suppress_class_validation_warning: bool = False
+    __SUPPRESS_VALIDATION_WARNINGS__: ClassVar[bool] = False
 
     class Config:
         """Config class."""
 
         smart_union = True
+
+    @classmethod
+    @contextmanager
+    def __suppress_validation_warnings__(cls) -> Iterator[Any]:
+        """Suppress validation warning."""
+        cls.__SUPPRESS_VALIDATION_WARNINGS__ = True
+        yield
+        cls.__SUPPRESS_VALIDATION_WARNINGS__ = False
 
     @root_validator
     def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -97,9 +108,6 @@ class ModelConfig(BaseModel):
         """
         create_new_model_version = values.get(
             "create_new_model_version", False
-        )
-        suppress_class_validation_warning = values.get(
-            "suppress_class_validation_warning", False
         )
         version = values.get("version", None)
 
@@ -122,7 +130,7 @@ class ModelConfig(BaseModel):
             if str(version).isnumeric():
                 raise ValueError(misuse_message.format(set="a numeric value"))
             if version is None:
-                if not suppress_class_validation_warning:
+                if not cls.__SUPPRESS_VALIDATION_WARNINGS__:
                     logger.info(
                         "Creation of new model version was requested, but no version name was explicitly provided. "
                         f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
@@ -130,16 +138,18 @@ class ModelConfig(BaseModel):
                 values["version"] = RUNNING_MODEL_VERSION
         if (
             version in [stage.value for stage in ModelStages]
-            and not suppress_class_validation_warning
+            and not cls.__SUPPRESS_VALIDATION_WARNINGS__
         ):
             logger.info(
                 f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
             )
-        if str(version).isnumeric() and not suppress_class_validation_warning:
+        if (
+            str(version).isnumeric()
+            and not cls.__SUPPRESS_VALIDATION_WARNINGS__
+        ):
             logger.info(
                 f"`version` `{version}` is numeric and will be fetched using version number."
             )
-        values["suppress_class_validation_warning"] = True
         return values
 
     def _validate_config_in_runtime(self) -> None:
