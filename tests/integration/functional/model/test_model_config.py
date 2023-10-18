@@ -173,14 +173,10 @@ class TestModelConfig:
 
     def test_init_recovery_without_create_new_version_warns(self):
         """Test that use of `recovery` warn on `create_new_model_version` set to False."""
-        with mock.patch(
-            "zenml.models.model_base_model.logger.warning"
-        ) as logger:
+        with mock.patch("zenml.model.model_config.logger.warning") as logger:
             ModelConfig(name=MODEL_NAME, delete_new_version_on_failure=False)
             logger.assert_called_once()
-        with mock.patch(
-            "zenml.models.model_base_model.logger.warning"
-        ) as logger:
+        with mock.patch("zenml.model.model_config.logger.warning") as logger:
             ModelConfig(
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
@@ -190,7 +186,7 @@ class TestModelConfig:
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
-        with mock.patch("zenml.models.model_base_model.logger.info") as logger:
+        with mock.patch("zenml.model.model_config.logger.info") as logger:
             mc = ModelConfig(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,
