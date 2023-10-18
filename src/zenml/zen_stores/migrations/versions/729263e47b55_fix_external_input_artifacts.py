@@ -39,13 +39,13 @@ def upgrade() -> None:
         data_dict = json.loads(data)
         for k in data_dict:
             for eip_name in data_dict[k]["config"]["external_input_artifacts"]:
-                data_dict[k]["config"]["external_input_artifacts"][
+                current = data_dict[k]["config"]["external_input_artifacts"][
                     eip_name
-                ] = {
-                    "id": data_dict[k]["config"]["external_input_artifacts"][
+                ]
+                if not isinstance(current, dict):
+                    data_dict[k]["config"]["external_input_artifacts"][
                         eip_name
-                    ]
-                }
+                    ] = {"id": current}
         data = json.dumps(data_dict)
         session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
 
@@ -56,9 +56,11 @@ def upgrade() -> None:
     for id_, data in rows_sr:
         data_dict = json.loads(data)
         for eip_name in data_dict["config"]["external_input_artifacts"]:
-            data_dict["config"]["external_input_artifacts"][eip_name] = {
-                "id": data_dict["config"]["external_input_artifacts"][eip_name]
-            }
+            current = data_dict["config"]["external_input_artifacts"][eip_name]
+            if not isinstance(current, dict):
+                data_dict["config"]["external_input_artifacts"][eip_name] = {
+                    "id": current
+                }
         data = json.dumps(data_dict)
         session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
     session.commit()
@@ -78,13 +80,13 @@ def downgrade() -> None:
         data_dict = json.loads(data)
         for k in data_dict:
             for eip_name in data_dict[k]["config"]["external_input_artifacts"]:
-                data_dict[k]["config"]["external_input_artifacts"][
+                current = data_dict[k]["config"]["external_input_artifacts"][
                     eip_name
-                ] = data_dict[k]["config"]["external_input_artifacts"][
-                    eip_name
-                ][
-                    "id"
                 ]
+                if isinstance(current, dict):
+                    data_dict[k]["config"]["external_input_artifacts"][
+                        eip_name
+                    ] = current["id"]
         data = json.dumps(data_dict)
         session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
 
@@ -95,9 +97,11 @@ def downgrade() -> None:
     for id_, data in rows_sr:
         data_dict = json.loads(data)
         for eip_name in data_dict["config"]["external_input_artifacts"]:
-            data_dict["config"]["external_input_artifacts"][
-                eip_name
-            ] = data_dict["config"]["external_input_artifacts"][eip_name]["id"]
+            current = data_dict["config"]["external_input_artifacts"][eip_name]
+            if isinstance(current, dict):
+                data_dict["config"]["external_input_artifacts"][
+                    eip_name
+                ] = current["id"]
         data = json.dumps(data_dict)
         session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
 
