@@ -49,7 +49,7 @@ What would you need to get a quick understanding of the ZenML framework and star
             <td>
                 This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT or GPT-2 based model and testing locally it with gradio
             </td>
-        </tr> -->
+        </tr>
     </tbody>
 </table>
 
