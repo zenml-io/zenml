@@ -25,6 +25,7 @@ from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
@@ -40,13 +41,13 @@ if TYPE_CHECKING:
     )
     from zenml.new_models.core.schedule import ScheduleResponse
     from zenml.new_models.core.stack import StackResponse
-    from zenml.new_models.core.step_run import StepRunResponseModel
+    from zenml.new_models.core.step_run import StepRunResponse
 
 # ------------------ Request Model ------------------
 
 
 class PipelineRunRequest(WorkspaceScopedRequest):
-    """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
+    """Request model for pipeline runs."""
 
     id: UUID
     name: str = Field(
@@ -104,14 +105,34 @@ class PipelineRunUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
+class PipelineRunResponseBody(WorkspaceScopedResponseBody):
+    """Response body for pipeline runs."""
+
+    status: ExecutionStatus = Field(
+        title="The status of the pipeline run.",
+    )
+    stack: Optional["StackResponse"] = Field(
+        default=None, title="The stack that was used for this run."
+    )
+    pipeline: Optional["PipelineResponse"] = Field(
+        default=None, title="The pipeline this run belongs to."
+    )
+    build: Optional["PipelineBuildResponse"] = Field(
+        default=None, title="The pipeline build that was used for this run."
+    )
+    schedule: Optional["ScheduleResponse"] = Field(
+        default=None, title="The schedule that was used for this run."
+    )
+
+
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Pipeline run response metadata for pipeline runs."""
+    """Response metadata for pipeline runs."""
 
     run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
-    steps: Dict[str, "StepRunResponseModel"] = Field(
+    steps: Dict[str, "StepRunResponse"] = Field(
         default={}, title="The steps of this run."
     )
     config: PipelineConfiguration = Field(
@@ -149,78 +170,22 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineRunResponse(WorkspaceScopedResponse):
     """Response model for pipeline runs."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    status: ExecutionStatus = Field(
-        title="The status of the pipeline run.",
-    )
-    stack: Optional["StackResponse"] = Field(
-        default=None, title="The stack that was used for this run."
-    )
-    pipeline: Optional["PipelineResponse"] = Field(
-        default=None, title="The pipeline this run belongs to."
-    )
-    build: Optional["PipelineBuildResponse"] = Field(
-        default=None, title="The pipeline build that was used for this run."
-    )
-    schedule: Optional["ScheduleResponse"] = Field(
-        default=None, title="The schedule that was used for this run."
-    )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "PipelineRunResponseBody"
     metadata: Optional["PipelineRunResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineRunResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this pipeline run."""
         from zenml.client import Client
 
         return Client().get_pipeline_run(self.id)
 
-    @hydrated_property
-    def run_metadata(self):
-        """The run_metadata property"""
-        return self.metadata.run_metadata
-
-    @hydrated_property
-    def steps(self):
-        """The steps property"""
-        return self.metadata.steps
-
-    @hydrated_property
-    def config(self):
-        """The config property"""
-        return self.metadata.config
-
-    @hydrated_property
-    def start_time(self):
-        """The start_time property"""
-        return self.metadata.start_time
-
-    @hydrated_property
-    def end_time(self):
-        """The end_time property"""
-        return self.metadata.end_time
-
-    @hydrated_property
-    def client_environment(self):
-        """The client_environment property"""
-        return self.metadata.client_environment
-
-    @hydrated_property
-    def orchestrator_environment(self):
-        """The orchestrator_environment property"""
-        return self.metadata.orchestrator_environment
-
-    @hydrated_property
-    def orchestrator_run_id(self):
-        """The orchestrator_run_id property"""
-        return self.metadata.orchestrator_run_id
-
     # Helper methods
-
     @property
     def artifacts(self) -> List["ArtifactResponse"]:
         """Get all artifacts that are outputs of steps of this pipeline run.
@@ -242,3 +207,69 @@ class PipelineRunResponse(WorkspaceScopedResponse):
         from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
 
         return get_artifacts_of_pipeline_run(self, only_produced=True)
+
+    # Body and metadata properties
+    @property
+    def status(self):
+        """The `status` property."""
+        return self.body.status
+
+    @property
+    def stack(self):
+        """The `stack` property."""
+        return self.body.stack
+
+    @property
+    def pipeline(self):
+        """The `pipeline` property."""
+        return self.body.pipeline
+
+    @property
+    def build(self):
+        """The `build` property."""
+        return self.body.build
+
+    @property
+    def schedule(self):
+        """The `schedule` property."""
+        return self.body.schedule
+
+    @hydrated_property
+    def run_metadata(self):
+        """The `run_metadata` property"""
+        return self.metadata.run_metadata
+
+    @hydrated_property
+    def steps(self):
+        """The `steps` property"""
+        return self.metadata.steps
+
+    @hydrated_property
+    def config(self):
+        """The `config` property"""
+        return self.metadata.config
+
+    @hydrated_property
+    def start_time(self):
+        """The `start_time` property"""
+        return self.metadata.start_time
+
+    @hydrated_property
+    def end_time(self):
+        """The `end_time` property"""
+        return self.metadata.end_time
+
+    @hydrated_property
+    def client_environment(self):
+        """The `client_environment` property"""
+        return self.metadata.client_environment
+
+    @hydrated_property
+    def orchestrator_environment(self):
+        """The `orchestrator_environment` property"""
+        return self.metadata.orchestrator_environment
+
+    @hydrated_property
+    def orchestrator_run_id(self):
+        """The `orchestrator_run_id` property"""
+        return self.metadata.orchestrator_run_id

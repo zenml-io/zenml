@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing artifact visualizations."""
+
 from typing import Optional, Union
 from uuid import UUID
 
@@ -71,20 +73,20 @@ class ArtifactVisualizationResponse(BaseResponse):
     # Body and metadata properties
     @property
     def type(self):
-        """The type property."""
+        """The `type` property."""
         return self.body.type
 
     @property
     def uri(self):
-        """The uri property."""
+        """The `uri` property."""
         return self.body.uri
 
     @property
     def value(self):
-        """The value property."""
+        """The `value` property."""
         return self.body.value
 
     @hydrated_property
     def artifact_id(self):
-        """The artifact_id property"""
+        """The `artifact_id` property"""
         return self.metadata.artifact_id

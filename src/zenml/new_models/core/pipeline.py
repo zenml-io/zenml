@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing pipelines."""
+
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from pydantic import Field
@@ -22,6 +23,7 @@ from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
@@ -69,8 +71,16 @@ class PipelineUpdate(PipelineRequest):
 # ------------------ Response Model ------------------
 
 
+class PipelineResponseBody(WorkspaceScopedResponseBody):
+    """Response body for pipelines."""
+
+    status: Optional[List[ExecutionStatus]] = Field(
+        default=None, title="The status of the last 3 Pipeline Runs."
+    )
+
+
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response model metadata for pipelines."""
+    """Response metadata for pipelines."""
 
     version_hash: str = Field(
         title="The version hash of the pipeline.",
@@ -91,43 +101,20 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineResponse(WorkspaceScopedResponse):
     """Response model for pipelines."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    status: Optional[List[ExecutionStatus]] = Field(
-        default=None, title="The status of the last 3 Pipeline Runs."
-    )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "PipelineResponseBody"
     metadata: Optional["PipelineResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this pipeline"""
         from zenml.client import Client
 
         return Client().get_pipeline(self.id)
-
-    @hydrated_property
-    def version_hash(self):
-        """The version_hash property."""
-        return self.metadata.version_hash
-
-    @hydrated_property
-    def docstring(self):
-        """The docstring property."""
-        return self.metadata.docstring
-
-    @hydrated_property
-    def spec(self):
-        """The spec property."""
-        return self.metadata.spec
-
-    @hydrated_property
-    def version(self):
-        """The version property."""
-        return self.metadata.version
 
     # Helper methods
     def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
@@ -201,3 +188,29 @@ class PipelineResponse(WorkspaceScopedResponse):
                 f"{self.id}."
             )
         return runs[0]
+
+    # Body and metadata properties
+    @property
+    def status(self):
+        """The `status` property."""
+        return self.body.status
+
+    @hydrated_property
+    def version_hash(self):
+        """The `version_hash` property."""
+        return self.metadata.version_hash
+
+    @hydrated_property
+    def docstring(self):
+        """The `docstring` property."""
+        return self.metadata.docstring
+
+    @hydrated_property
+    def spec(self):
+        """The `spec` property."""
+        return self.metadata.spec
+
+    @hydrated_property
+    def version(self):
+        """The `version` property."""
+        return self.metadata.version

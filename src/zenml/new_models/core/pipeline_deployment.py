@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
+
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
@@ -23,6 +24,7 @@ from zenml.config.step_configurations import Step
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
@@ -58,7 +60,6 @@ class PipelineDeploymentRequest(WorkspaceScopedRequest):
     code_reference: Optional["CodeReferenceRequest"] = Field(
         title="The code reference associated with the deployment."
     )
-
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",
     )
@@ -110,8 +111,12 @@ class PipelineDeploymentRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
+class PipelineDeploymentResponseBody(WorkspaceScopedResponseBody):
+    """Response body for pipeline deployments."""
+
+
 class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response model metadata for pipeline deployments."""
+    """Response metadata for pipeline deployments."""
 
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",
@@ -151,66 +156,67 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineDeploymentResponse(WorkspaceScopedResponse):
     """Response model for pipeline deployments."""
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
     metadata: Optional["PipelineDeploymentResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
-        # TODO: Implement it with the parameterized calls
+        """Return the hydrated version of this pipeline deployment."""
         from zenml.client import Client
 
         return Client().get_deployment(self.id)
 
+    # Body and metadata properties
     @hydrated_property
     def run_name_template(self):
-        """The run_name_template property."""
+        """The `run_name_template` property."""
         return self.metadata.run_name_template
 
     @hydrated_property
     def pipeline_configuration(self):
-        """The pipeline_configuration property."""
+        """The `pipeline_configuration` property."""
         return self.metadata.pipeline_configuration
 
     @hydrated_property
     def step_configurations(self):
-        """The step_configurations property."""
+        """The `step_configurations` property."""
         return self.metadata.step_configurations
 
     @hydrated_property
     def client_environment(self):
-        """The client_environment property."""
+        """The `client_environment` property."""
         return self.metadata.client_environment
 
     @hydrated_property
     def client_version(self):
-        """The client_version property."""
+        """The `client_version` property."""
         return self.metadata.client_version
 
     @hydrated_property
     def server_version(self):
-        """The server_version property."""
+        """The `server_version` property."""
         return self.metadata.server_version
 
     @hydrated_property
     def pipeline(self):
-        """The pipeline property."""
+        """The `pipeline` property."""
         return self.metadata.pipeline
 
     @hydrated_property
     def stack(self):
-        """The stack property."""
+        """The `stack` property."""
         return self.metadata.stack
 
     @hydrated_property
     def build(self):
-        """The build property."""
+        """The `build` property."""
         return self.metadata.build
 
     @hydrated_property
     def schedule(self):
-        """The schedule property."""
+        """The `schedule` property."""
         return self.metadata.schedule
 
     @hydrated_property
     def code_reference(self):
-        """The code_reference property."""
+        """The `code_reference` property."""
         return self.metadata.code_reference

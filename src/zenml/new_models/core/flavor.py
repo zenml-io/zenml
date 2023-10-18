@@ -13,27 +13,33 @@
 #  permissions and limitations under the License.
 """Models representing flavors."""
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.service_connector_models import (
-    ServiceConnectorRequirements,
-)
 from zenml.new_models.base import (
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseMetadata,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
     hydrated_property,
     update_model,
 )
 
+if TYPE_CHECKING:
+    from zenml.new_models.core.user import UserResponse
+    from zenml.new_models.core.workspace import WorkspaceResponse
+    from zenml.new_models.service_connector_type import (
+        ServiceConnectorRequirements,
+    )
+
 # ------------------ Request Model ------------------
 
 
-class FlavorRequest(WorkspaceScopedRequest):
+class FlavorRequest(BaseRequest):
     """Request model for flavors"""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -92,6 +98,12 @@ class FlavorRequest(WorkspaceScopedRequest):
         title="Whether or not this flavor is a custom, user created flavor.",
         default=True,
     )
+    user: Optional[UUID] = Field(
+        default=None, title="The id of the user that created this resource."
+    )
+    workspace: Optional[UUID] = Field(
+        default=None, title="The workspace to which this resource belongs."
+    )
 
 
 # ------------------ Update Model ------------------
@@ -105,9 +117,30 @@ class FlavorUpdate(FlavorRequest):
 # ------------------ Response Model ------------------
 
 
-class FlavorResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for flavors"""
+class FlavorResponseBody(BaseResponseBody):
+    """Response body for flavor."""
 
+    user: Union["UserResponse", None] = Field(
+        title="The user that created this resource.", nullable=True
+    )
+    type: StackComponentType = Field(title="The type of the Flavor.")
+    integration: Optional[str] = Field(
+        title="The name of the integration that the Flavor belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to a png,"
+        "svg or jpg can be attached.",
+    )
+
+
+class FlavorResponseMetadata(BaseResponseMetadata):
+    """Response metadata for flavors"""
+
+    workspace: Optional["WorkspaceResponse"] = Field(
+        title="The project of this resource."
+    )
     config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
     )
@@ -147,7 +180,7 @@ class FlavorResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class FlavorResponse(WorkspaceScopedResponse):
+class FlavorResponse(BaseResponse):
     """Response model for flavors"""
 
     # Analytics
@@ -157,79 +190,35 @@ class FlavorResponse(WorkspaceScopedResponse):
         "integration",
     ]
 
-    # Entity fields
     name: str = Field(
         title="The name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    type: StackComponentType = Field(title="The type of the Flavor.")
-    integration: Optional[str] = Field(
-        title="The name of the integration that the Flavor belongs to.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    logo_url: Optional[str] = Field(
-        default=None,
-        title="Optionally, a url pointing to a png,"
-        "svg or jpg can be attached.",
-    )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "FlavorResponseBody"
     metadata: Optional["FlavorResponseMetadata"]
 
     def get_hydrated_version(self) -> "FlavorResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of the flavor"""
         from zenml.client import Client
 
         return Client().get_flavor(self.id)
 
-    @hydrated_property
-    def config_schema(self):
-        """The config_schema property."""
-        return self.metadata.config_schema
-
-    @hydrated_property
-    def connector_type(self):
-        """The connector_type property."""
-        return self.metadata.connector_type
-
-    @hydrated_property
-    def connector_resource_type(self):
-        """The connector_resource_type property."""
-        return self.metadata.connector_resource_type
-
-    @hydrated_property
-    def connector_resource_id_attr(self):
-        """The connector_resource_id_attr property."""
-        return self.metadata.connector_resource_id_attr
-
-    @hydrated_property
-    def source(self):
-        """The source property."""
-        return self.metadata.source
-
-    @hydrated_property
-    def docs_url(self):
-        """The docs_url property."""
-        return self.metadata.docs_url
-
-    @hydrated_property
-    def sdk_docs_url(self):
-        """The sdk_docs_url property."""
-        return self.metadata.sdk_docs_url
-
-    @hydrated_property
-    def is_custom(self):
-        """The is_custom property."""
-        return self.metadata.is_custom
-
     # Helper methods
     @property
-    def connector_requirements(self) -> Optional[ServiceConnectorRequirements]:
+    def connector_requirements(
+        self,
+    ) -> Optional["ServiceConnectorRequirements"]:
         """Returns the connector requirements for the flavor.
 
         Returns:
             The connector requirements for the flavor.
         """
+        from zenml.models.service_connector_models import (
+            ServiceConnectorRequirements,
+        )
+
         if not self.connector_resource_type:
             return None
 
@@ -238,3 +227,69 @@ class FlavorResponse(WorkspaceScopedResponse):
             resource_type=self.connector_resource_type,
             resource_id_attr=self.connector_resource_id_attr,
         )
+
+    # Body and metadata properties
+    @property
+    def user(self):
+        """The `user` property."""
+        return self.body.user
+
+    @property
+    def type(self):
+        """The `type` property."""
+        return self.body.type
+
+    @property
+    def integration(self):
+        """The `integration` property."""
+        return self.body.integration
+
+    @property
+    def logo_url(self):
+        """The `logo_url` property."""
+        return self.body.logo_url
+
+    @hydrated_property
+    def workspace(self):
+        """The `workspace` property."""
+        return self.metadata.workspace
+
+    @hydrated_property
+    def config_schema(self):
+        """The `config_schema` property."""
+        return self.metadata.config_schema
+
+    @hydrated_property
+    def connector_type(self):
+        """The `connector_type` property."""
+        return self.metadata.connector_type
+
+    @hydrated_property
+    def connector_resource_type(self):
+        """The `connector_resource_type` property."""
+        return self.metadata.connector_resource_type
+
+    @hydrated_property
+    def connector_resource_id_attr(self):
+        """The `connector_resource_id_attr` property."""
+        return self.metadata.connector_resource_id_attr
+
+    @hydrated_property
+    def source(self):
+        """The `source` property."""
+        return self.metadata.source
+
+    @hydrated_property
+    def docs_url(self):
+        """The `docs_url` property."""
+        return self.metadata.docs_url
+
+    @hydrated_property
+    def sdk_docs_url(self):
+        """The `sdk_docs_url` property."""
+        return self.metadata.sdk_docs_url
+
+    @hydrated_property
+    def is_custom(self):
+        """The `is_custom` property."""
+        return self.metadata.is_custom

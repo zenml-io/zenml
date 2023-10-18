@@ -22,6 +22,7 @@ from zenml.enums import PermissionType
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     update_model,
 )
@@ -30,7 +31,7 @@ from zenml.new_models.base import (
 
 
 class RoleRequest(BaseRequest):
-    """Request models for roles."""
+    """Request model for roles."""
 
     name: str = Field(
         title="The unique name of the role.",
@@ -48,27 +49,36 @@ class RoleUpdate(RoleRequest):
 
 
 # ------------------ Response Model ------------------
+class RoleResponseBody(BaseResponseBody):
+    """Response body for roles."""
+
+    permissions: Set[PermissionType]
 
 
 class RoleResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for roles."""
+    """Response metadata for roles."""
 
 
 class RoleResponse(BaseResponse):
     """Response model for roles."""
 
-    # Entity fields
     name: str = Field(
         title="The unique name of the role.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    permissions: Set[PermissionType]
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "RoleResponseBody"
     metadata: Optional["RoleResponseMetadata"]
 
     def get_hydrated_version(self) -> "RoleResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this role."""
         from zenml.client import Client
 
         return Client().get_role(self.id)
+
+    # Body and metadata properties
+    @property
+    def permissions(self):
+        """The `permissions` property."""
+        return self.body.permissions

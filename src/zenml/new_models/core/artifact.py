@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing artifacts."""
 
 from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
@@ -86,7 +87,7 @@ class ArtifactResponseBody(WorkspaceScopedResponseBody):
 
 
 class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for artifacts."""
+    """Response metadata for artifacts."""
 
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
@@ -133,40 +134,40 @@ class ArtifactResponse(WorkspaceScopedResponse):
     # Body and metadata properties
     @property
     def uri(self):
-        """The uri property."""
+        """The `uri` property."""
         return self.body.uri
 
     @property
     def type(self):
-        """The type property."""
+        """The `type` property."""
         return self.body.type
 
     @hydrated_property
     def artifact_store_id(self):
-        """The artifact_store_id property."""
+        """The `artifact_store_id` property."""
         return self.metadata.artifact_store_id
 
     @hydrated_property
     def producer_step_run_id(self):
-        """The producer_step_run_id property."""
+        """The `producer_step_run_id` property."""
         return self.metadata.producer_step_run_id
 
     @hydrated_property
     def visualizations(self):
-        """The visualizations property."""
+        """The `visualizations` property."""
         return self.metadata.visualizations
 
     @hydrated_property
     def run_metadata(self):
-        """The metadata property."""
+        """The `metadata` property."""
         return self.metadata.run_metadata
 
     @hydrated_property
     def materializer(self):
-        """The materializer property."""
+        """The `materializer` property."""
         return self.metadata.materializer
 
     @hydrated_property
     def data_type(self):
-        """The data_type property."""
+        """The `data_type` property."""
         return self.metadata.data_type

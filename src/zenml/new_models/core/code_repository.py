@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-
 from typing import Any, Dict, Optional
 
 from pydantic import Field
@@ -23,6 +22,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
@@ -63,8 +63,18 @@ class CodeRepositoryUpdate(CodeRepositoryRequest):
 # ------------------ Response Model ------------------
 
 
+class CodeRepositoryResponseBody(WorkspaceScopedResponseBody):
+    """Response body for code repositories."""
+
+    source: Source = Field(description="The code repository source.")
+    logo_url: Optional[str] = Field(
+        description="Optional URL of a logo (png, jpg or svg) for the "
+        "code repository."
+    )
+
+
 class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for code repositories."""
+    """Response metadata for code repositories."""
 
     config: Dict[str, Any] = Field(
         description="Configuration for the code repository."
@@ -78,32 +88,38 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
 class CodeRepositoryResponse(WorkspaceScopedResponse):
     """Response model for code repositories."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the code repository.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    source: Source = Field(description="The code repository source.")
-    logo_url: Optional[str] = Field(
-        description="Optional URL of a logo (png, jpg or svg) for the "
-        "code repository."
-    )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "CodeRepositoryResponseBody"
     metadata: Optional["CodeRepositoryResponseMetadata"]
 
     def get_hydrated_version(self) -> "CodeRepositoryResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this code repository."""
         from zenml.client import Client
 
         return Client().get_code_repository(self.id)
 
+    # Body and metadata properties
+    @property
+    def source(self):
+        """The `source` property."""
+        return self.body.source
+
+    @property
+    def logo_url(self):
+        """The `logo_url` property."""
+        return self.body.logo_url
+
     @hydrated_property
     def config(self):
-        """The config property."""
+        """The `config` property."""
         return self.metadata.config
 
     @hydrated_property
     def description(self):
-        """The description property."""
+        """The `description` property."""
         return self.metadata.description

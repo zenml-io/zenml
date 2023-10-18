@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing run metadata."""
 
 from typing import Optional
 from uuid import UUID
@@ -22,6 +23,7 @@ from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
@@ -44,10 +46,6 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
     )
-    key: str = Field(
-        title="The key of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     value: MetadataType = Field(
         title="The value of the metadata.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -65,8 +63,17 @@ class RunMetadataRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
+class RunMetadataResponseBody(WorkspaceScopedResponseBody):
+    """Response body for run metadata."""
+
+    key: str = Field(
+        title="The key of the metadata.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for run metadata."""
+    """Response metadata for run metadata."""
 
     pipeline_run_id: Optional[UUID] = Field(
         title="The ID of the pipeline run that this metadata belongs to.",
@@ -93,47 +100,48 @@ class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
 class RunMetadataResponse(WorkspaceScopedResponse):
     """Response model for run metadata."""
 
-    # Entity fields
-    key: str = Field(
-        title="The key of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "RunMetadataResponseBody"
     metadata: Optional["RunMetadataResponseMetadata"]
 
     def get_hydrated_version(self) -> "RunMetadataResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this run metadata."""
         from zenml.client import Client
 
         return Client().get_run_metadata(self.id)
 
+    # Body and metadata properties
+    @property
+    def key(self):
+        """The `key` property."""
+        return self.body.key
+
     @hydrated_property
     def pipeline_run_id(self):
-        """The pipeline_run_id property."""
+        """The `pipeline_run_id` property."""
         return self.metadata.pipeline_run_id
 
     @hydrated_property
     def step_run_id(self):
-        """The step_run_id property."""
+        """The `step_run_id` property."""
         return self.metadata.step_run_id
 
     @hydrated_property
     def artifact_id(self):
-        """The artifact_id property."""
+        """The `artifact_id` property."""
         return self.metadata.artifact_id
 
     @hydrated_property
     def stack_component_id(self):
-        """The stack_component_id property."""
+        """The `stack_component_id` property."""
         return self.metadata.stack_component_id
 
     @hydrated_property
     def value(self):
-        """The value property."""
+        """The `value` property."""
         return self.metadata.value
 
     @hydrated_property
     def type(self):
-        """The type property."""
+        """The `type` property."""
         return self.metadata.type

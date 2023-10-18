@@ -21,6 +21,7 @@ from pydantic import Field
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
 )
@@ -51,8 +52,12 @@ class TeamRoleAssignmentRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
+class TeamRoleAssignmentResponseBody(BaseResponseBody):
+    """Response model for team role assignments."""
+
+
 class TeamRoleAssignmentResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for team role assignments."""
+    """Response metadata for team role assignments."""
 
     workspace: Optional["WorkspaceResponse"] = Field(
         title="The workspace scope of this role assignment.", default=None
@@ -68,26 +73,28 @@ class TeamRoleAssignmentResponseMetadata(BaseResponseMetadata):
 class TeamRoleAssignmentResponse(BaseResponse):
     """Response model for team role assignments."""
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "TeamRoleAssignmentResponseBody"
     metadata: Optional["TeamRoleAssignmentResponseMetadata"]
 
     def get_hydrated_version(self) -> "TeamRoleAssignmentResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of the team role assignment."""
         from zenml.client import Client
 
         return Client().get_team_role_assignment(self.id)
 
+    # Body and metadata properties
     @hydrated_property
     def workspace(self):
-        """The workspace property."""
+        """The `workspace` property."""
         return self.metadata.workspace
 
     @hydrated_property
     def team(self):
-        """The team property."""
+        """The `team` property."""
         return self.metadata.team
 
     @hydrated_property
     def role(self):
-        """The role property."""
+        """The `role` property."""
         return self.metadata.role

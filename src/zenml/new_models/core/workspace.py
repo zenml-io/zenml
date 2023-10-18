@@ -21,6 +21,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
     update_model,
@@ -54,8 +55,12 @@ class WorkspaceUpdate(WorkspaceRequest):
 # ------------------ Response Model ------------------
 
 
+class WorkspaceResponseBody(BaseResponseBody):
+    """Response body for workspaces."""
+
+
 class WorkspaceResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for workspaces."""
+    """Response metadata for workspaces."""
 
     description: str = Field(
         default="",
@@ -67,22 +72,22 @@ class WorkspaceResponseMetadata(BaseResponseMetadata):
 class WorkspaceResponse(BaseResponse):
     """Response model for workspaces."""
 
-    # Entity fields
     name: str = Field(
         title="The unique name of the workspace.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
     metadata: Optional["WorkspaceResponseMetadata"]
 
     def get_hydrated_version(self) -> "WorkspaceResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this workspace."""
         from zenml.client import Client
 
         return Client().get_workspace(self.id)
 
+    # Body and metadata properties
     @hydrated_property
     def description(self):
-        """The description property."""
+        """The `description` property."""
         return self.metadata.description

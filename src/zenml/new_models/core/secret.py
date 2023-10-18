@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing secrets."""
+
 from typing import ClassVar, Dict, List, Optional
 
 from pydantic import Field, SecretStr
@@ -21,6 +22,7 @@ from zenml.enums import SecretScope
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
@@ -75,10 +77,12 @@ class SecretUpdate(SecretRequest):
 
 
 # ------------------ Response Model ------------------
+class SecretResponseBody(WorkspaceScopedResponseBody):
+    """Response body for secrets."""
 
 
 class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for secrets."""
+    """Response metadata for secrets."""
 
     scope: SecretScope = Field(
         SecretScope.WORKSPACE, title="The scope of the secret."
@@ -91,7 +95,6 @@ class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
 class SecretResponse(WorkspaceScopedResponse):
     """Response model for secrets."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -100,24 +103,15 @@ class SecretResponse(WorkspaceScopedResponse):
     # Analytics
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "SecretResponseBody"
     metadata: Optional["SecretResponseMetadata"]
 
     def get_hydrated_version(self) -> "SecretResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this secret."""
         from zenml.client import Client
 
         return Client().get_secret(self.id)
-
-    @hydrated_property
-    def scope(self):
-        """The scope property."""
-        return self.metadata.scope
-
-    @hydrated_property
-    def values(self):
-        """The values property."""
-        return self.metadata.values
 
     # Helper methods
     @property
@@ -150,6 +144,13 @@ class SecretResponse(WorkspaceScopedResponse):
         """
         return any(v is None for v in self.values.values())
 
-    def remove_secrets(self) -> None:
-        """Removes all secret values from the secret but keep the keys."""
-        self.values = {k: None for k in self.values.keys()}
+    # Body and metadata properties
+    @hydrated_property
+    def scope(self):
+        """The `scope` property."""
+        return self.metadata.scope
+
+    @hydrated_property
+    def values(self):
+        """The `values` property."""
+        return self.metadata.values

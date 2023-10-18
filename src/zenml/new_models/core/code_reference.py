@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing code references."""
+
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from pydantic import Field
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
 )
 
@@ -52,14 +54,9 @@ class CodeReferenceRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class CodeReferenceResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for code references."""
+class CodeReferenceResponseBody(BaseResponseBody):
+    """Response body for code references."""
 
-
-class CodeReferenceResponse(BaseResponse):
-    """Response model for code references."""
-
-    # Entity fields
     commit: str = Field(description="The commit of the code reference.")
     subdirectory: str = Field(
         description="The subdirectory of the code reference."
@@ -68,11 +65,36 @@ class CodeReferenceResponse(BaseResponse):
         description="The repository of the code reference."
     )
 
-    # Metadata related field, method and properties
+
+class CodeReferenceResponseMetadata(BaseResponseMetadata):
+    """Response metadata for code references."""
+
+
+class CodeReferenceResponse(BaseResponse):
+    """Response model for code references."""
+
+    # Body and metadata pair
+    body: "CodeReferenceResponseBody"
     metadata: Optional["CodeReferenceResponseMetadata"]
 
     def get_hydrated_version(self) -> "CodeReferenceResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this code reference."""
         from zenml.client import Client
 
         return Client().get_code_reference(self.id)
+
+    # Body and metadata properties
+    @property
+    def commit(self):
+        """The `commit` property."""
+        return self.body.commit
+
+    @property
+    def subdirectory(self):
+        """The `subdirectory` property."""
+        return self.body.subdirectory
+
+    @property
+    def code_repository(self):
+        """The `code_repository` property."""
+        return self.body.code_repository

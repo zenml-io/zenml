@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing users."""
 
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
@@ -22,6 +23,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
     update_model,
@@ -35,12 +37,7 @@ if TYPE_CHECKING:
 
 
 class UserRequest(BaseRequest):
-    """Request model for users.
-
-    This model is used to create a user. The email field is optional but is
-    more commonly set on the UpdateRequestModel which inherits from this model.
-    Users can also optionally set their password during creation.
-    """
+    """Request model for users."""
 
     # Analytics fields for user request models
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -195,8 +192,17 @@ class UserUpdate(UserRequest):
 # ------------------ Response Model ------------------
 
 
+class UserResponseBody(BaseResponseBody):
+    """Response body for users."""
+
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
+
+
 class UserResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for users."""
+    """Response metadata for users."""
 
     full_name: str = Field(
         default="",
@@ -226,23 +232,7 @@ class UserResponseMetadata(BaseResponseMetadata):
 
 
 class UserResponse(BaseResponse):
-    """Response model for users.
-
-    This returns the activation_token which is required for the
-    user-invitation-flow of the frontend. This also optionally includes the
-    team the user is a part of. The email is returned optionally as well
-    for use by the analytics on the client-side.
-    """
-
-    # Entity fields
-    name: str = Field(
-        title="The unique username for the account.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    external_user_id: Optional[UUID] = Field(
-        default=None,
-        title="The external user ID associated with the account.",
-    )
+    """Response model for users."""
 
     # Analytics fields
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -252,41 +242,53 @@ class UserResponse(BaseResponse):
         "email_opted_in",
     ]
 
-    # Metadata related field, method and properties
-    metadata: Optional[UserResponseMetadata]
+    name: str = Field(
+        title="The unique username for the account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    # Body and metadata pair
+    body: "UserResponseBody"
+    metadata: Optional["UserResponseMetadata"]
 
     def get_hydrated_version(self) -> "UserResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this user."""
         from zenml.client import Client
 
         return Client().get_user(self.id)
 
+    # Body and metadata properties
+    @property
+    def external_user_id(self):
+        """The `external_user_id` property."""
+        return self.body.external_user_id
+
     @hydrated_property
     def full_name(self):
-        """The full_name property of the instance"""
+        """The `full_name` property."""
         return self.metadata.full_name
 
     @hydrated_property
     def email(self):
-        """The email property of the instance"""
+        """The `email` property."""
         return self.metadata.email
 
     @hydrated_property
     def email_opted_in(self):
-        """The email_opted_in property of the instance"""
+        """The `email_opted_in` property."""
         return self.metadata.email_opted_in
 
     @hydrated_property
     def active(self):
-        """The active property of the instance"""
+        """The `active` property`"""
         return self.metadata.active
 
     @hydrated_property
     def activation_token(self):
-        """The activation_token property of the instance"""
+        """The `activation_token` property."""
         return self.metadata.activation_token
 
     @hydrated_property
     def hub_token(self):
-        """The hub_token property of the instance"""
+        """The `hub_token` property."""
         return self.metadata.hub_token

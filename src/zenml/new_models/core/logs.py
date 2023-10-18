@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing logs."""
+
 from typing import Optional, Union
 from uuid import UUID
 
@@ -20,6 +22,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
 )
@@ -47,8 +50,17 @@ class LogsRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
+class LogsResponseBody(BaseResponseBody):
+    """Response body for logs."""
+
+    uri: str = Field(
+        title="The uri of the logs file",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+
 class LogsResponseMetadata(BaseResponseMetadata):
-    """Response model for logs."""
+    """Response metadata for logs."""
 
     step_run_id: Optional[Union[str, UUID]] = Field(
         title="Step ID to associate the logs with.",
@@ -69,32 +81,33 @@ class LogsResponseMetadata(BaseResponseMetadata):
 class LogsResponse(BaseResponse):
     """Response model for logs."""
 
-    # Entity fields
-    uri: str = Field(
-        title="The uri of the logs file",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    # Metadata related field, method and properties
-    metadata: Optional[LogsResponseMetadata]
+    # Body and metadata pair
+    body: "LogsResponseBody"
+    metadata: Optional["LogsResponseMetadata"]
 
     def get_hydrated_version(self) -> "LogsResponseMetadata":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of these logs."""
         from zenml.client import Client
 
         return Client().get_run_metadata(self.id)
 
+    # Body and metadata properties
+    @property
+    def uri(self):
+        """The `uri` property."""
+        return self.body.uri
+
     @hydrated_property
     def step_run_id(self):
-        """The step_run_id property."""
+        """The `step_run_id` property."""
         return self.metadata.step_run_id
 
     @hydrated_property
     def pipeline_run_id(self):
-        """The pipeline_run_id property."""
+        """The `pipeline_run_id` property."""
         return self.metadata.pipeline_run_id
 
     @hydrated_property
     def artifact_store_id(self):
-        """The artifact_store_id property."""
+        """The `artifact_store_id` property."""
         return self.metadata.artifact_store_id

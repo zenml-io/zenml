@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
+
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from pydantic import Field
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from zenml.new_models.build_item import BuildItem
     from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.stack import StackResponse
+
 
 # ------------------ Request Model ------------------
 
@@ -81,11 +84,14 @@ class PipelineBuildRequest(WorkspaceScopedRequest):
 
 # There is no update model for pipeline build models.
 
+
 # ------------------ Response Model ------------------
+class PipelineBuildResponseBody(WorkspaceScopedResponseBody):
+    """Response body for pipeline builds."""
 
 
 class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata model for pipeline builds."""
+    """Response metadata for pipeline builds."""
 
     pipeline: Optional["PipelineResponse"] = Field(
         title="The pipeline that was used for this build."
@@ -115,54 +121,15 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineBuildResponse(WorkspaceScopedResponse):
     """Response model for pipeline builds"""
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "PipelineBuildResponseBody"
     metadata: Optional["PipelineBuildResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineBuildResponse":
-        # TODO: Implement it with the parameterized calls
+        """Return the hydrated version of this pipeline build."""
         from zenml.client import Client
 
         return Client().get_build(self.id)
-
-    @hydrated_property
-    def pipeline(self):
-        """The pipeline property."""
-        return self.metadata.pipeline
-
-    @hydrated_property
-    def stack(self):
-        """The stack property."""
-        return self.metadata.stack
-
-    @hydrated_property
-    def images(self):
-        """The images property."""
-        return self.metadata.images
-
-    @hydrated_property
-    def zenml_version(self):
-        """The zenml_version property."""
-        return self.metadata.zenml_version
-
-    @hydrated_property
-    def python_version(self):
-        """The python_version property."""
-        return self.metadata.python_version
-
-    @hydrated_property
-    def checksum(self):
-        """The checksum property."""
-        return self.metadata.checksum
-
-    @hydrated_property
-    def is_local(self):
-        """The is_local property."""
-        return self.metadata.is_local
-
-    @hydrated_property
-    def contains_code(self):
-        """The contains_code property."""
-        return self.metadata.contains_code
 
     # Helper methods
     @property
@@ -241,3 +208,44 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
                 f"Unable to find image for key {component_key}. Available keys: "
                 f"{set(self.images)}."
             )
+
+    # Body and metadata properties
+    @hydrated_property
+    def pipeline(self):
+        """The `pipeline` property."""
+        return self.metadata.pipeline
+
+    @hydrated_property
+    def stack(self):
+        """The `stack` property."""
+        return self.metadata.stack
+
+    @hydrated_property
+    def images(self):
+        """The `images` property."""
+        return self.metadata.images
+
+    @hydrated_property
+    def zenml_version(self):
+        """The `zenml_version` property."""
+        return self.metadata.zenml_version
+
+    @hydrated_property
+    def python_version(self):
+        """The `python_version` property."""
+        return self.metadata.python_version
+
+    @hydrated_property
+    def checksum(self):
+        """The `checksum` property."""
+        return self.metadata.checksum
+
+    @hydrated_property
+    def is_local(self):
+        """The `is_local` property."""
+        return self.metadata.is_local
+
+    @hydrated_property
+    def contains_code(self):
+        """The `contains_code` property."""
+        return self.metadata.contains_code

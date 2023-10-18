@@ -11,18 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model representing schedules."""
+"""Models representing schedules."""
+
 import datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from zenml.config.schedule import Schedule
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.new_models.base import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
     update_model,
@@ -99,18 +102,9 @@ class ScheduleUpdate(ScheduleRequest):
 # ------------------ Response Model ------------------
 
 
-class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response model metadata for schedules."""
+class ScheduleResponseBody(WorkspaceScopedResponseBody):
+    """Response body for schedules."""
 
-    orchestrator_id: Optional[UUID]
-    pipeline_id: Optional[UUID]
-
-
-class ScheduleResponse(Schedule, WorkspaceScopedResponse):
-    """Response models for schedules."""
-
-    # Entity fields
-    name: str
     active: bool
     cron_expression: Optional[str] = None
     start_time: Optional[datetime.datetime] = None
@@ -118,24 +112,31 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
     interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
 
-    # Metadata related field, method and properties
+
+class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
+    """Response metadata for schedules."""
+
+    orchestrator_id: Optional[UUID]
+    pipeline_id: Optional[UUID]
+
+
+class ScheduleResponse(Schedule, WorkspaceScopedResponse):
+    """Response model for schedules."""
+
+    name: str = Field(
+        title="Name of this schedule.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    # Body and metadata pair
+    body: "ScheduleResponseBody"
     metadata: Optional["ScheduleResponseMetadata"]
 
     def get_hydrated_version(self) -> "ScheduleResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this schedule"""
         from zenml.client import Client
 
         return Client().get_schedule(self.id)
-
-    @hydrated_property
-    def orchestrator_id(self):
-        """The orchestrator_id property."""
-        return self.metadata.orchestrator_id
-
-    @hydrated_property
-    def pipeline_id(self):
-        """The pipeline_id property."""
-        return self.metadata.pipeline_id
 
     # Helper methods
     @property
@@ -161,3 +162,44 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
             return None
 
         return self.end_time.astimezone(datetime.timezone.utc).isoformat()
+
+    # Body and metadata properties
+    @property
+    def active(self):
+        """The `active` property."""
+        return self.body.active
+
+    @property
+    def cron_expression(self):
+        """The `cron_expression` property."""
+        return self.body.cron_expression
+
+    @property
+    def start_time(self):
+        """The `start_time` property."""
+        return self.body.start_time
+
+    @property
+    def end_time(self):
+        """The `end_time` property."""
+        return self.body.end_time
+
+    @property
+    def interval_second(self):
+        """The `interval_second` property."""
+        return self.body.interval_second
+
+    @property
+    def catchup(self):
+        """The `catchup` property."""
+        return self.body.catchup
+
+    @hydrated_property
+    def orchestrator_id(self):
+        """The `orchestrator_id` property."""
+        return self.metadata.orchestrator_id
+
+    @hydrated_property
+    def pipeline_id(self):
+        """The `pipeline_id` property."""
+        return self.metadata.pipeline_id

@@ -21,6 +21,7 @@ from pydantic import Field, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.new_models.base import (
+    SharableResponseBody,
     SharableResponseMetadata,
     ShareableRequest,
     ShareableResponse,
@@ -37,6 +38,8 @@ if TYPE_CHECKING:
 
 
 class ComponentRequest(ShareableRequest):
+    """Request model for components."""
+
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
     name: str = Field(
@@ -101,10 +104,20 @@ class ComponentUpdate(ComponentRequest):
 
 
 # ------------------ Response Model ------------------
+class ComponentResponseBody(SharableResponseBody):
+    """Response body for components."""
+
+    type: StackComponentType = Field(
+        title="The type of the stack component.",
+    )
+    flavor: str = Field(
+        title="The flavor of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 class ComponentResponseMetadata(SharableResponseMetadata):
-    """Response metadata model for components."""
+    """Response metadata for components."""
 
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
@@ -117,6 +130,15 @@ class ComponentResponseMetadata(SharableResponseMetadata):
         default=None,
         title="The path to the component spec used for mlstacks deployments.",
     )
+    connector_resource_id: Optional[str] = Field(
+        default=None,
+        description="The ID of a specific resource instance to "
+        "gain access to through the connector",
+    )
+    connector: Optional["ServiceConnectorResponse"] = Field(
+        default=None,
+        title="The service connector linked to this stack component.",
+    )
 
 
 class ComponentResponse(ShareableResponse):
@@ -128,43 +150,49 @@ class ComponentResponse(ShareableResponse):
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    type: StackComponentType = Field(
-        title="The type of the stack component.",
-    )
-    flavor: str = Field(
-        title="The flavor of the stack component.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    connector_resource_id: Optional[str] = Field(
-        default=None,
-        description="The ID of a specific resource instance to "
-        "gain access to through the connector",
-    )
-    connector: Optional["ServiceConnectorResponse"] = Field(
-        default=None,
-        title="The service connector linked to this stack component.",
-    )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "ComponentResponseBody"
     metadata: Optional["ComponentResponseMetadata"]
 
     def get_hydrated_version(self) -> "ComponentResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this component."""
         from zenml.client import Client
 
         return Client().get_stack_component(self.id)
 
+    # Body and metadata properties
+    @property
+    def type(self):
+        """The `type` property."""
+        return self.body.type
+
+    @property
+    def flavor(self):
+        """The `flavor` property."""
+        return self.body.flavor
+
     @hydrated_property
     def configuration(self):
-        """The configuration property."""
+        """The `configuration` property."""
         return self.metadata.configuration
 
     @hydrated_property
     def labels(self):
-        """The labels property."""
+        """The `labels` property."""
         return self.metadata.labels
 
     @hydrated_property
     def component_spec_path(self):
-        """The component_spec_path property."""
+        """The `component_spec_path` property."""
         return self.metadata.component_spec_path
+
+    @hydrated_property
+    def connector_resource_id(self):
+        """The `connector_resource_id` property."""
+        return self.metadata.connector_resource_id
+
+    @hydrated_property
+    def connector(self):
+        """The `connector` property."""
+        return self.metadata.connector

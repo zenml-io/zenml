@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing steps of pipeline runs."""
+"""Models representing steps runs."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
@@ -25,6 +25,7 @@ from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
 )
@@ -82,7 +83,6 @@ class StepRunRequest(BaseRequest):
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
     )
-
     original_step_run_id: Optional[UUID] = Field(
         title="The ID of the original step run if this step was cached.",
         default=None,
@@ -91,7 +91,6 @@ class StepRunRequest(BaseRequest):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-
     inputs: Dict[str, UUID] = Field(
         title="The IDs of the input artifacts of the step run.",
         default={},
@@ -131,10 +130,22 @@ class StepRunUpdate(BaseModel):
 
 
 # ------------------ Response Model ------------------
+class StepRunResponseBody(BaseResponseBody):
+    """Response body for step runs."""
+
+    status: ExecutionStatus = Field(title="The status of the step.")
+    inputs: Dict[str, "ArtifactResponse"] = Field(
+        title="The input artifacts of the step run.",
+        default={},
+    )
+    outputs: Dict[str, "ArtifactResponse"] = Field(
+        title="The output artifacts of the step run.",
+        default={},
+    )
 
 
 class StepRunResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for step runs/"""
+    """Response metadata for step runs."""
 
     # Configuration
     config: "StepConfiguration" = Field(title="The configuration of the step.")
@@ -200,103 +211,22 @@ class StepRunResponseMetadata(BaseResponseMetadata):
 class StepRunResponse(BaseResponse):
     """Response model for step runs."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    status: ExecutionStatus = Field(title="The status of the step.")
 
-    inputs: Dict[str, "ArtifactResponse"] = Field(
-        title="The input artifacts of the step run.",
-        default={},
-    )
-    outputs: Dict[str, "ArtifactResponse"] = Field(
-        title="The output artifacts of the step run.",
-        default={},
-    )
-
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "StepRunResponseBody"
     metadata: Optional["StepRunResponseMetadata"]
 
     def get_hydrated_version(self) -> "StepRunResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this step run."""
         from zenml.client import Client
 
         return Client().get_run_step(self.id)
 
-    @hydrated_property
-    def config(self):
-        """The config property of the instance."""
-        return self.metadata.config
-
-    @hydrated_property
-    def spec(self):
-        """The spec property of the instance."""
-        return self.metadata.spec
-
-    @hydrated_property
-    def cache_key(self):
-        """The cache_key property of the instance."""
-        return self.metadata.cache_key
-
-    @hydrated_property
-    def code_hash(self):
-        """The code_hash property of the instance."""
-        return self.metadata.code_hash
-
-    @hydrated_property
-    def docstring(self):
-        """The docstring property of the instance."""
-        return self.metadata.docstring
-
-    @hydrated_property
-    def source_code(self):
-        """The source_code property of the instance."""
-        return self.metadata.source_code
-
-    @hydrated_property
-    def start_time(self):
-        """The start_time property of the instance."""
-        return self.metadata.start_time
-
-    @hydrated_property
-    def end_time(self):
-        """The end_time property of the instance."""
-        return self.metadata.end_time
-
-    @hydrated_property
-    def logs(self):
-        """The logs property of the instance."""
-        return self.metadata.logs
-
-    @hydrated_property
-    def deployment_id(self):
-        """The deployment_id property of the instance."""
-        return self.metadata.deployment_id
-
-    @hydrated_property
-    def pipeline_run_id(self):
-        """The pipeline_run_id property of the instance."""
-        return self.metadata.pipeline_run_id
-
-    @hydrated_property
-    def original_step_run_id(self):
-        """The original_step_run_id property of the instance."""
-        return self.metadata.original_step_run_id
-
-    @hydrated_property
-    def parent_step_ids(self):
-        """The parent_step_ids property of the instance."""
-        return self.metadata.parent_step_ids
-
-    @hydrated_property
-    def run_metadata(self):
-        """The metadata property of the instance."""
-        return self.metadata.run_metadata
-
     # Helper properties
-
     @property
     def input(self) -> "ArtifactResponse":
         """Returns the input artifact that was used to run this step.
@@ -334,3 +264,89 @@ class StepRunResponse(BaseResponse):
                 "ambiguous. Please use `Step.outputs` instead."
             )
         return next(iter(self.outputs.values()))
+
+    # Body and metadata properties
+    @property
+    def status(self):
+        """The `status` property."""
+        return self.body.status
+
+    @property
+    def inputs(self):
+        """The `inputs` property."""
+        return self.body.inputs
+
+    @property
+    def outputs(self):
+        """The `outputs` property."""
+        return self.body.outputs
+
+    @hydrated_property
+    def config(self):
+        """The `config` property."""
+        return self.metadata.config
+
+    @hydrated_property
+    def spec(self):
+        """The `spec` property."""
+        return self.metadata.spec
+
+    @hydrated_property
+    def cache_key(self):
+        """The `cache_key` property."""
+        return self.metadata.cache_key
+
+    @hydrated_property
+    def code_hash(self):
+        """The `code_hash` property."""
+        return self.metadata.code_hash
+
+    @hydrated_property
+    def docstring(self):
+        """The `docstring` property."""
+        return self.metadata.docstring
+
+    @hydrated_property
+    def source_code(self):
+        """The `source_code` property."""
+        return self.metadata.source_code
+
+    @hydrated_property
+    def start_time(self):
+        """The `start_time` property."""
+        return self.metadata.start_time
+
+    @hydrated_property
+    def end_time(self):
+        """The `end_time` property."""
+        return self.metadata.end_time
+
+    @hydrated_property
+    def logs(self):
+        """The `logs` property."""
+        return self.metadata.logs
+
+    @hydrated_property
+    def deployment_id(self):
+        """The `deployment_id` property."""
+        return self.metadata.deployment_id
+
+    @hydrated_property
+    def pipeline_run_id(self):
+        """The `pipeline_run_id` property."""
+        return self.metadata.pipeline_run_id
+
+    @hydrated_property
+    def original_step_run_id(self):
+        """The `original_step_run_id` property."""
+        return self.metadata.original_step_run_id
+
+    @hydrated_property
+    def parent_step_ids(self):
+        """The `parent_step_ids` property."""
+        return self.metadata.parent_step_ids
+
+    @hydrated_property
+    def run_metadata(self):
+        """The `run_metadata` property."""
+        return self.metadata.run_metadata

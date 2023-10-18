@@ -22,6 +22,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
     BaseRequest,
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     hydrated_property,
     update_model,
@@ -56,8 +57,12 @@ class TeamUpdate(TeamRequest):
 # ------------------ Response Model ------------------
 
 
+class TeamResponseBody(BaseResponseBody):
+    """Response body for teams."""
+
+
 class TeamResponseMetadata(BaseResponseMetadata):
-    """Response metadata model for teams."""
+    """Response metadata for teams."""
 
     users: List["UserResponse"] = Field(
         title="The list of users within this team."
@@ -67,25 +72,20 @@ class TeamResponseMetadata(BaseResponseMetadata):
 class TeamResponse(BaseResponse):
     """Response model  for teams."""
 
-    # Entity fields
     name: str = Field(
         title="The unique name of the team.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "TeamResponseBody"
     metadata: Optional["TeamResponseMetadata"]
 
     def get_hydrated_version(self) -> "TeamResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this team."""
         from zenml.client import Client
 
         return Client().get_team(self.id)
-
-    @hydrated_property
-    def users(self) -> List["UserResponse"]:
-        """The users property."""
-        return self.metadata.users
 
     # Helper methods
     @property
@@ -111,3 +111,9 @@ class TeamResponse(BaseResponse):
             return [u.name for u in self.users]
         else:
             return []
+
+    # Body and metadata properties
+    @hydrated_property
+    def users(self) -> List["UserResponse"]:
+        """The `users` property."""
+        return self.metadata.users
