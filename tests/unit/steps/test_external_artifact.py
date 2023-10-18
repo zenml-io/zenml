@@ -33,13 +33,19 @@ class MockZenmlClient:
                 self.name = name
                 self.id = id
 
-        class MockPipelineResponse:
+        class MockPipelineRunResponse:
             def __init__(self):
-                self.last_successful_run = MagicMock()
-                self.last_successful_run.artifacts = [
+                self.name = "foo"
+                self.artifacts = [
                     MockZenmlClient.Client.MockArtifactResponse("foo"),
                     MockZenmlClient.Client.MockArtifactResponse("bar"),
                 ]
+
+        class MockPipelineResponse:
+            def __init__(self):
+                self.last_successful_run = (
+                    MockZenmlClient.Client.MockPipelineRunResponse()
+                )
 
         def __init__(self):
             self.active_stack = MagicMock()
@@ -56,6 +62,9 @@ class MockZenmlClient:
 
         def get_pipeline(self, *args, **kwargs):
             return MockZenmlClient.Client.MockPipelineResponse()
+
+        def get_pipeline_run(self, *args, **kwargs):
+            return MockZenmlClient.Client.MockPipelineRunResponse()
 
 
 @pytest.mark.parametrize(
@@ -153,6 +162,24 @@ def test_get_artifact_by_id():
         assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
 
 
+def test_get_artifact_by_pipeline_run_and_artifact():
+    """Tests that `get_artifact` works as expected for pipeline run lookup."""
+    ea = ExternalArtifact(pipeline_run_name="foo", name="bar")
+    assert ea.value is None
+    assert ea.pipeline_name is None
+    assert ea.name is not None
+    assert ea.id is None
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
+    assert ea.id == GLOBAL_ARTIFACT_ID
+
+
 def test_get_artifact_by_pipeline_and_artifact():
     """Tests that `get_artifact` works as expected for pipeline lookup."""
     ea = ExternalArtifact(pipeline_name="foo", name="bar")
@@ -194,16 +221,20 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
 
 
-def test_get_artifact_by_pipeline_and_artifact_name_not_found():
-    """Tests that `get_artifact` raises in case artifact not found in pipeline."""
-    with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
-        with patch.dict(
-            "sys.modules",
-            {
-                "zenml.utils.artifact_utils": MagicMock(),
-                "zenml.client": MockZenmlClient,
-            },
-        ):
+def test_get_artifact_not_found_in_pipeline_run():
+    """Tests that `get_artifact` raises in case artifact not found in run."""
+    with patch.dict(
+        "sys.modules",
+        {
+            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.client": MockZenmlClient,
+        },
+    ):
+        with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
+            ExternalArtifact(
+                pipeline_run_name="foo", name="foobar"
+            ).get_artifact_id()
+        with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
             ExternalArtifact(
                 pipeline_name="foo", name="foobar"
             ).get_artifact_id()
