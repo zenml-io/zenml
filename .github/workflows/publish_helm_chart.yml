@@ -42,7 +42,7 @@ jobs:
           mask-password: 'true'
           registry-type: public
 
-      - name: install helm with version greater than v3.13.1
+      - name: install helm with version 3.9.2
         uses: azure/setup-helm@v3
         with:
           version: "v3.9.2" # default is latest (stable)
