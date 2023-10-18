@@ -451,7 +451,7 @@ def update_model_version(
 def _print_artifacts_links_generic(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
-    only_artifacts: bool = False,
+    only_artifact_objects: bool = False,
     only_deployments: bool = False,
     only_model_objects: bool = False,
     **kwargs: Any,
@@ -461,7 +461,7 @@ def _print_artifacts_links_generic(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
-        only_artifacts: If set, only print artifacts.
+        only_artifact_objects: If set, only print artifacts.
         only_deployments: If set, only print deployments.
         only_model_objects: If set, only print model objects.
         **kwargs: Keyword arguments to filter models.
@@ -474,14 +474,14 @@ def _print_artifacts_links_generic(
     )
     type_ = (
         "artifacts"
-        if only_artifacts
+        if only_artifact_objects
         else "deployments"
         if only_deployments
         else "model objects"
     )
 
     if (
-        (only_artifacts and not model_version.artifact_object_ids)
+        (only_artifact_objects and not model_version.artifact_object_ids)
         or (only_deployments and not model_version.deployment_ids)
         or (only_model_objects and not model_version.model_object_ids)
     ):
@@ -496,7 +496,7 @@ def _print_artifacts_links_generic(
         ModelVersionArtifactFilterModel(
             model_id=model_version.model.id,
             model_version_id=model_version.id,
-            only_artifacts=only_artifacts,
+            only_artifacts=only_artifact_objects,
             only_deployments=only_deployments,
             only_model_objects=only_model_objects,
             **kwargs,
@@ -539,7 +539,7 @@ def list_model_version_artifacts(
     _print_artifacts_links_generic(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        only_artifacts=True,
+        only_artifact_objects=True,
         **kwargs,
     )
 
