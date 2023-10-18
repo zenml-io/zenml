@@ -128,12 +128,6 @@ class UserScopedResponse(BaseResponse):
         title="The metadata related to this resource."
     )
 
-    # Body and metadata properties
-    @property
-    def user(self):
-        """The user property."""
-        return self.body.user
-
     @abstractmethod
     def get_hydrated_version(self) -> "UserScopedResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
@@ -153,6 +147,12 @@ class UserScopedResponse(BaseResponse):
         if self.user is not None:
             metadata["user_id"] = self.user.id
         return metadata
+
+    # Body and metadata properties
+    @property
+    def user(self):
+        """The `user` property."""
+        return self.body.user
 
 
 # Workspace-scoped models
@@ -180,12 +180,6 @@ class WorkspaceScopedResponse(UserScopedResponse):
     body: "WorkspaceScopedResponseBody"
     metadata: Optional["WorkspaceScopedResponseMetadata"]
 
-    # Body and metadata properties
-    @hydrated_property
-    def workspace(self):
-        """The workspace property."""
-        return self.metadata.workspace
-
     @abstractmethod
     def get_hydrated_version(self) -> "WorkspaceScopedResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
@@ -193,6 +187,12 @@ class WorkspaceScopedResponse(UserScopedResponse):
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
+
+    # Body and metadata properties
+    @hydrated_property
+    def workspace(self):
+        """The workspace property."""
+        return self.metadata.workspace
 
 
 # Shareable models
@@ -222,12 +222,6 @@ class ShareableResponse(WorkspaceScopedResponse):
     body: "SharableResponseBody"
     metadata: Optional["SharableResponseMetadata"]
 
-    # Body and metadata properties
-    @property
-    def is_shared(self):
-        """The is_shared property."""
-        return self.body.is_shared
-
     @abstractmethod
     def get_hydrated_version(self) -> "ShareableResponse":
         """Abstract method that needs to be implemented to hydrate the instance.
@@ -246,3 +240,9 @@ class ShareableResponse(WorkspaceScopedResponse):
         metadata = super().get_analytics_metadata()
         metadata["is_shared"] = self.is_shared
         return metadata
+
+    # Body and metadata properties
+    @property
+    def is_shared(self):
+        """The is_shared property."""
+        return self.body.is_shared

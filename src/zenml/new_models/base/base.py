@@ -77,6 +77,13 @@ class BaseRequest(BaseZenModel):
 # -------------------- Response Model --------------------
 
 
+class BaseResponseBody(BaseModel):
+    """Base body model.
+
+    Used as a base class for all body models associated with responses.
+    """
+
+
 class BaseResponseMetadata(BaseModel):
     """Base metadata model.
 
@@ -94,31 +101,13 @@ class BaseResponseMetadata(BaseModel):
     )
 
 
-class BaseResponseBody(BaseModel):
-    """Base body model.
-
-    Used as a base class for all body models associated with responses.
-    """
-
-
 class BaseResponse(BaseZenModel):
-    """Base domain model.
+    """Base domain model."""
 
-    Used as a base class for all domain models that have the following common
-    characteristics:
-
-      * are uniquely identified by a UUID
-      * have a dedicated metadata class which features a creation timestamp
-            and a last modified timestamp
-    """
-
-    # Entity fields
     id: UUID = Field(title="The unique resource id.")
 
-    # Body related field
+    # Body and metadata pair
     body: "BaseResponseBody" = Field(title="The body of the resource.")
-
-    # Metadata related field, method and properties
     metadata: Optional["BaseResponseMetadata"] = Field(
         title="The metadata related to this resource."
     )
@@ -126,16 +115,6 @@ class BaseResponse(BaseZenModel):
     @abstractmethod
     def get_hydrated_version(self) -> "BaseResponse":
         """Abstract method to fetch the hydrated version of the model."""
-
-    @hydrated_property
-    def created(self):
-        """The created property"""
-        return self.metadata.created
-
-    @hydrated_property
-    def updated(self):
-        """The updated property."""
-        return self.metadata.updated
 
     # Helper functions
     def __hash__(self) -> int:
@@ -212,3 +191,14 @@ class BaseResponse(BaseZenModel):
         metadata = super().get_analytics_metadata()
         metadata["entity_id"] = self.id
         return metadata
+
+    # Body and metadata properties
+    @hydrated_property
+    def created(self):
+        """The`created` property"""
+        return self.metadata.created
+
+    @hydrated_property
+    def updated(self):
+        """The `updated` property."""
+        return self.metadata.updated

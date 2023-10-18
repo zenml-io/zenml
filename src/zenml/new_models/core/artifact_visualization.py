@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifact visualizations."""
 
-from typing import Optional, Union
+from typing import Optional
 from uuid import UUID
 
 from zenml.enums import VisualizationType
@@ -48,7 +48,6 @@ class ArtifactVisualizationResponseBody(BaseResponseBody):
 
     type: VisualizationType
     uri: str
-    value: Union[str, bytes]
 
 
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
@@ -80,11 +79,6 @@ class ArtifactVisualizationResponse(BaseResponse):
     def uri(self):
         """The `uri` property."""
         return self.body.uri
-
-    @property
-    def value(self):
-        """The `value` property."""
-        return self.body.value
 
     @hydrated_property
     def artifact_id(self):
