@@ -211,6 +211,8 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         if artifact_update.name:
             self.name = artifact_update.name
+        if artifact_update.version:
+            self.version = str(artifact_update.version)
         if artifact_update.tags:
             self.tags = json.dumps(artifact_update.tags)
         self.updated = datetime.utcnow()
