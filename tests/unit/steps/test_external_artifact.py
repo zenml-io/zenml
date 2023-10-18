@@ -91,13 +91,13 @@ def test_external_artifact_init(
             ExternalArtifact(
                 value=value,
                 id=id,
-                artifact_name=artifact_name,
+                name=artifact_name,
             )
     else:
         ExternalArtifact(
             value=value,
             id=id,
-            artifact_name=artifact_name,
+            name=artifact_name,
         )
 
 
@@ -118,7 +118,7 @@ def test_upload_by_value(mocked_fileio):
     assert ea.id is not None
     assert ea.value is None
     assert ea.pipeline_name is None
-    assert ea.artifact_name is None
+    assert ea.name is None
 
 
 def test_get_artifact_by_value_before_upload_raises():
@@ -141,7 +141,7 @@ def test_get_artifact_by_id():
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
     assert ea.value is None
     assert ea.pipeline_name is None
-    assert ea.artifact_name is None
+    assert ea.name is None
     assert ea.id is not None
     with patch.dict(
         "sys.modules",
@@ -155,10 +155,10 @@ def test_get_artifact_by_id():
 
 def test_get_artifact_by_pipeline_and_artifact():
     """Tests that `get_artifact` works as expected for pipeline lookup."""
-    ea = ExternalArtifact(pipeline_name="foo", artifact_name="bar")
+    ea = ExternalArtifact(pipeline_name="foo", name="bar")
     assert ea.value is None
     assert ea.pipeline_name is not None
-    assert ea.artifact_name is not None
+    assert ea.name is not None
     assert ea.id is None
     with patch.dict(
         "sys.modules",
@@ -188,7 +188,7 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
                 },
             ):
                 ExternalArtifact(
-                    pipeline_name="foo", artifact_name="bar"
+                    pipeline_name="foo", name="bar"
                 ).get_artifact_id()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
@@ -205,5 +205,5 @@ def test_get_artifact_by_pipeline_and_artifact_name_not_found():
             },
         ):
             ExternalArtifact(
-                pipeline_name="foo", artifact_name="foobar"
+                pipeline_name="foo", name="foobar"
             ).get_artifact_id()

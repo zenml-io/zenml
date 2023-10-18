@@ -190,8 +190,8 @@ def main(
     )
 
     artifact = ExternalArtifact(
+        name="predictions",
         pipeline_name=MetaConfig.pipeline_name_batch_inference,
-        artifact_name="predictions",
     )
     logger.info(
         "Batch inference pipeline finished successfully! "

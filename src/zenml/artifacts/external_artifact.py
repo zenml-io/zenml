@@ -57,15 +57,15 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         value: The artifact value.
         id: The ID of an artifact that should be referenced by this external
             artifact.
-        artifact_name: Name of an artifact to search. If none of
-            `artifact_version`, `pipeline_run_name`, or `pipeline_name` are
-            set, the latest version of the artifact will be used.
-        artifact_version: Version of the artifact to search. Only used when
-            `artifact_name` is provided.
-        pipeline_run_name: Name of a pipeline run to search artifacts in.
-            Only used when `artifact_name` is provided.
-        pipeline_name: Name of a pipeline in which to search for the
-            artifact. Only used when `artifact_name` is provided.
+        name: Name of an artifact to search. If none of
+            `version`, `pipeline_run_name`, or `pipeline_name` are set, the
+            latest version of the artifact will be used.
+        version: Version of the artifact to search. Only used when `name` is
+            provided.
+        pipeline_run_name: Name of a pipeline run to search artifacts in. Only
+            used when `name` is provided.
+        pipeline_name: Name of a pipeline in which to search for the artifact.
+            Only used when `name` is provided.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -98,11 +98,10 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     @root_validator
     def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        value = values.get("value", None)
-        id = values.get("id", None)
-        artifact_name = values.get("artifact_name", None)
-
-        options = [value is not None, id, artifact_name]
+        options = [
+            values.get(field, None) is not None
+            for field in ["value", "id", "name"]
+        ]
         if sum(options) > 1:
             raise ValueError(
                 "Only a value, an ID, or an artifact name can be provided "
@@ -172,8 +171,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """
         return ExternalArtifactConfiguration(
             id=self.id,
-            artifact_name=self.artifact_name,
-            artifact_version=self.artifact_version,
+            name=self.name,
+            version=self.version,
             pipeline_run_name=self.pipeline_run_name,
             pipeline_name=self.pipeline_name,
         )

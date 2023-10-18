@@ -59,16 +59,16 @@ def e2e_use_case_batch_inference():
     df_inference = inference_data_preprocessor(
         dataset_inf=df_inference,
         preprocess_pipeline=ExternalArtifact(
+            name="preprocess_pipeline",
             pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="preprocess_pipeline",
         ),
         target=target,
     )
     ########## DataQuality stage  ##########
     report, _ = evidently_report_step(
         reference_dataset=ExternalArtifact(
+            name="dataset_trn",
             pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="dataset_trn",
         ),
         comparison_dataset=df_inference,
         ignored_cols=["target"],

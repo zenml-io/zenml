@@ -37,8 +37,8 @@ class ExternalArtifactConfiguration(BaseModel):
     """
 
     id: Optional[UUID] = None
-    artifact_name: Optional[str] = None
-    artifact_version: Optional[str] = None
+    name: Optional[str] = None
+    version: Optional[str] = None
     pipeline_run_name: Optional[str] = None
     pipeline_name: Optional[str] = None
 
@@ -69,12 +69,12 @@ class ExternalArtifactConfiguration(BaseModel):
             )
 
         for artifact in pipeline_run.artifacts:
-            if artifact.name == self.artifact_name:
+            if artifact.name == self.name:
                 return artifact
 
         raise RuntimeError(
-            f"Artifact with name `{self.artifact_name}` was not found in "
-            f"pipeline run `{pipeline_run.name}`. "
+            f"Artifact with name `{self.name}` was not found in pipeline run "
+            f"{pipeline_run.name}`. "
         )
 
     def get_artifact_id(self) -> UUID:
@@ -95,15 +95,13 @@ class ExternalArtifactConfiguration(BaseModel):
 
         if self.id:
             response = client.get_artifact(self.id)
-        elif self.artifact_name:
-            if self.artifact_version:
-                response = client.get_artifact(
-                    self.artifact_name, version=self.artifact_version
-                )
+        elif self.name:
+            if self.version:
+                response = client.get_artifact(self.name, version=self.version)
             elif self.pipeline_run_name or self.pipeline_name:
                 response = self._get_artifact_from_pipeline_run()
             else:
-                response = client.get_artifact(self.artifact_name)
+                response = client.get_artifact(self.name)
         else:
             raise RuntimeError(
                 "Either the ID or name of the artifact must be provided. "
