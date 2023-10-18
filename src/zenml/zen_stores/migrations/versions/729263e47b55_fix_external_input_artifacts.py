@@ -33,7 +33,13 @@ def upgrade() -> None:
     session = Session(bind=bind)
     # update pipeline_deployment
     rows_pd = session.execute(
-        text("SELECT id, step_configurations FROM pipeline_deployment")
+        text(
+            """
+             SELECT id, step_configurations 
+             FROM pipeline_deployment 
+             WHERE step_configurations IS NOT NULL
+             """
+        )
     )
     for id_, data in rows_pd:
         data_dict = json.loads(data)
@@ -51,7 +57,13 @@ def upgrade() -> None:
 
     # update step_run
     rows_sr = session.execute(
-        text("SELECT id, step_configuration FROM step_run")
+        text(
+            """
+             SELECT id, step_configuration 
+             FROM step_run 
+             WHERE step_configuration IS NOT NULL
+             """
+        )
     )
     for id_, data in rows_sr:
         data_dict = json.loads(data)
@@ -74,7 +86,13 @@ def downgrade() -> None:
     session = Session(bind=bind)
     # update pipeline_deployment
     rows = session.execute(
-        text("SELECT id,step_configurations FROM pipeline_deployment")
+        text(
+            """
+             SELECT id,step_configurations 
+             FROM pipeline_deployment 
+             WHERE step_configurations IS NOT NULL
+             """
+        )
     )
     for id_, data in rows:
         data_dict = json.loads(data)
@@ -92,7 +110,13 @@ def downgrade() -> None:
 
     # update step_run
     rows_sr = session.execute(
-        text("SELECT id, step_configuration FROM step_run")
+        text(
+            """
+             SELECT id, step_configuration 
+             FROM step_run 
+             WHERE step_configuration IS NOT NULL
+             """
+        )
     )
     for id_, data in rows_sr:
         data_dict = json.loads(data)
