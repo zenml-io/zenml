@@ -1128,6 +1128,7 @@ class Pipeline:
         """
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
+        from zenml.model.model_config import ModelConfig
 
         integration_registry.activate_integrations()
 
@@ -1142,7 +1143,8 @@ class Pipeline:
         update = PipelineRunConfiguration.parse_obj(new_values)
 
         # Update with the values in code so they take precedence
-        run_config = pydantic_utils.update_model(run_config, update=update)
+        with ModelConfig.__suppress_validation_warnings__():
+            run_config = pydantic_utils.update_model(run_config, update=update)
 
         deployment, pipeline_spec = Compiler().compile(
             pipeline=self,
