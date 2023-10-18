@@ -41,7 +41,7 @@ What would you need to get a quick understanding of the ZenML framework and star
         </tr>
         <tr>
             <td>
-                <a href="https://github.com/zenml-io/zenml-project-templates/tree/main/nlp">NLP Training Pipeline</a> [<code>nlp</code>]
+                <a href="https://github.com/zenml-io/template-nlp">NLP Training Pipeline</a> [<code>nlp</code>]
             </td>
             <td>
                 <code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code> <code>gradio</code> <code>huggingface</code>
