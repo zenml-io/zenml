@@ -48,7 +48,7 @@ jobs:
       - name: install helm with version greater than v3.13.1
         uses: azure/setup-helm@v3
         with:
-          version: "v3.13.1" # default is latest (stable)
+          version: "v3.9.2" # default is latest (stable)
         id: install-helm
 
       - name: Package and push helm chart to Amazon ECR Public
