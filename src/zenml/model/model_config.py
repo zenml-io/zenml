@@ -39,7 +39,26 @@ logger = get_logger(__name__)
 
 
 class ModelConfig(BaseModel):
-    """ModelConfig class to pass into pipeline or step to set it into a model context."""
+    """ModelConfig class to pass into pipeline or step to set it into a model context.
+
+    name: The name of the model.
+    license: The license under which the model is created.
+    description: The description of the model.
+    audience: The target audience of the model.
+    use_cases: The use cases of the model.
+    limitations: The known limitations of the model.
+    trade_offs: The tradeoffs of the model.
+    ethics: The ethical implications of the model.
+    tags: Tags associated with the model.
+    version: The model version name, number or stage is optional and points model context
+        to a specific version/stage. If skipped and `create_new_model_version` is False -
+        latest model version will be used.
+    version_description: The description of the model version.
+    create_new_model_version: Whether to create a new model version during execution
+    save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
+        if available in active stack.
+    delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
+    """
 
     name: str
     license: Optional[str]
@@ -56,69 +75,7 @@ class ModelConfig(BaseModel):
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
 
-    model: Optional[Any] = None
-    model_version: Optional[Any] = None
-    user_not_yet_warned: bool = True
-
-    def __init__(
-        self,
-        name: str,
-        license: Optional[str] = None,
-        description: Optional[str] = None,
-        audience: Optional[str] = None,
-        use_cases: Optional[str] = None,
-        limitations: Optional[str] = None,
-        trade_offs: Optional[str] = None,
-        ethics: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        version: Optional[Union[ModelStages, int, str]] = None,
-        version_description: Optional[str] = None,
-        create_new_model_version: bool = False,
-        save_models_to_registry: bool = True,
-        delete_new_version_on_failure: bool = True,
-        **kwargs: Dict[str, Any],
-    ):
-        """ModelConfig class to pass into pipeline or step to set it into a model context.
-
-        Args:
-            name: The name of the model.
-            license: The license under which the model is created.
-            description: The description of the model.
-            audience: The target audience of the model.
-            use_cases: The use cases of the model.
-            limitations: The known limitations of the model.
-            trade_offs: The tradeoffs of the model.
-            ethics: The ethical implications of the model.
-            tags: Tags associated with the model.
-            version: The model version name, number or stage is optional and points model context
-                to a specific version/stage. If skipped and `create_new_model_version` is False -
-                latest model version will be used.
-            version_description: The description of the model version.
-            create_new_model_version: Whether to create a new model version during execution
-            save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
-                if available in active stack.
-            delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
-            kwargs: Other arguments.
-        """
-        super().__init__(
-            name=name,
-            license=license,
-            description=description,
-            audience=audience,
-            use_cases=use_cases,
-            limitations=limitations,
-            trade_offs=trade_offs,
-            ethics=ethics,
-            tags=tags,
-            version=version,
-            version_description=version_description,
-            create_new_model_version=create_new_model_version,
-            save_models_to_registry=save_models_to_registry,
-            delete_new_version_on_failure=delete_new_version_on_failure,
-            model=kwargs.get("model", None),
-            model_version=kwargs.get("model_version", None),
-            user_not_yet_warned=kwargs.get("user_not_yet_warned", True),
-        )
+    suppress_class_validation_warning: bool = False
 
     class Config:
         """Config class."""
@@ -141,18 +98,9 @@ class ModelConfig(BaseModel):
         create_new_model_version = values.get(
             "create_new_model_version", False
         )
-        delete_new_version_on_failure = values.get(
-            "delete_new_version_on_failure", True
+        suppress_class_validation_warning = values.get(
+            "suppress_class_validation_warning", False
         )
-        user_not_yet_warned = values.get("user_not_yet_warned", True)
-        if not delete_new_version_on_failure and not create_new_model_version:
-            if user_not_yet_warned:
-                logger.warning(
-                    "Using `delete_new_version_on_failure=False` and `create_new_model_version=False` has no effect."
-                    "Setting `delete_new_version_on_failure` to `True`."
-                )
-            values["delete_new_version_on_failure"] = True
-
         version = values.get("version", None)
 
         if create_new_model_version:
@@ -174,7 +122,7 @@ class ModelConfig(BaseModel):
             if str(version).isnumeric():
                 raise ValueError(misuse_message.format(set="a numeric value"))
             if version is None:
-                if user_not_yet_warned:
+                if not suppress_class_validation_warning:
                     logger.info(
                         "Creation of new model version was requested, but no version name was explicitly provided. "
                         f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
@@ -182,16 +130,16 @@ class ModelConfig(BaseModel):
                 values["version"] = RUNNING_MODEL_VERSION
         if (
             version in [stage.value for stage in ModelStages]
-            and user_not_yet_warned
+            and not suppress_class_validation_warning
         ):
             logger.info(
                 f"`version` `{version}` matches one of the possible `ModelStages` and will be fetched using stage."
             )
-        if str(version).isnumeric() and user_not_yet_warned:
+        if str(version).isnumeric() and not suppress_class_validation_warning:
             logger.info(
                 f"`version` `{version}` is numeric and will be fetched using version number."
             )
-        values["user_not_yet_warned"] = False
+        values["suppress_class_validation_warning"] = True
         return values
 
     def _validate_config_in_runtime(self) -> None:
@@ -227,17 +175,12 @@ class ModelConfig(BaseModel):
         Returns:
             The model based on configuration.
         """
-        from zenml.models.model_models import ModelResponseModel
-
-        if self.model is not None:
-            return ModelResponseModel(**dict(self.model))
-
         from zenml.client import Client
         from zenml.models.model_models import ModelRequestModel
 
         zenml_client = Client()
         try:
-            self.model = zenml_client.get_model(model_name_or_id=self.name)
+            model = zenml_client.get_model(model_name_or_id=self.name)
         except KeyError:
             model_request = ModelRequestModel(
                 name=self.name,
@@ -254,13 +197,13 @@ class ModelConfig(BaseModel):
             )
             model_request = ModelRequestModel.parse_obj(model_request)
             try:
-                self.model = zenml_client.create_model(model=model_request)
+                model = zenml_client.create_model(model=model_request)
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
-                self.model = zenml_client.get_model(model_name_or_id=self.name)
+                model = zenml_client.get_model(model_name_or_id=self.name)
 
-        return self.model
+        return model
 
     def _create_model_version(
         self, model: "ModelResponseModel"
@@ -290,14 +233,14 @@ class ModelConfig(BaseModel):
                 model_name_or_id=self.name,
                 model_version_name_or_number_or_id=self.version,
             )
-            self.model_version = mv
+            model_version = mv
         except KeyError:
-            self.model_version = zenml_client.create_model_version(
+            model_version = zenml_client.create_model_version(
                 model_version=mv_request
             )
             logger.info(f"New model version `{self.version}` was created.")
 
-        return self.model_version
+        return model_version
 
     def _get_model_version(self) -> "ModelVersionResponseModel":
         """This method gets a model version from Model Control Plane.
@@ -310,17 +253,17 @@ class ModelConfig(BaseModel):
         zenml_client = Client()
         if self.version is None:
             # raise if not found
-            self.model_version = zenml_client.get_model_version(
+            model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name
             )
         else:
             # by version name or stage or number
             # raise if not found
-            self.model_version = zenml_client.get_model_version(
+            model_version = zenml_client.get_model_version(
                 model_name_or_id=self.name,
                 model_version_name_or_number_or_id=self.version,
             )
-        return self.model_version
+        return model_version
 
     def get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model Control Plane.

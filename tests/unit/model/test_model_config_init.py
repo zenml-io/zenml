@@ -9,14 +9,12 @@ from zenml.model import ModelConfig
 @pytest.mark.parametrize(
     "version_name,create_new_model_version,delete_new_version_on_failure,logger",
     [
-        [None, False, False, "warning"],
         [None, True, False, "info"],
         ["staging", False, False, "info"],
         ["1", False, False, "info"],
         [1, False, False, "info"],
     ],
     ids=[
-        "No new version, but recovery",
         "Default running version",
         "Pick model by text stage",
         "Pick model by text version number",
