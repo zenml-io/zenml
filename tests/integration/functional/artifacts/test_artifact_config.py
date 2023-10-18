@@ -18,16 +18,12 @@ from typing_extensions import Annotated
 
 from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
-from zenml.model import (
-    ArtifactConfig,
-    DeploymentArtifactConfig,
-    ModelArtifactConfig,
-    ModelConfig,
-    link_output_to_model,
-)
+from zenml.model.model_config import ModelConfig
+from zenml.model.utils import link_output_to_model
 from zenml.models import (
     ModelRequestModel,
     ModelVersionArtifactFilterModel,
@@ -45,7 +41,7 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
 def single_output_step_from_context_model() -> (
-    Annotated[int, ModelArtifactConfig(save_to_model_registry=True)]
+    Annotated[int, ArtifactConfig(is_model_artifact=True)]
 ):
     """Untyped single output linked as Model Object from step context."""
     return 1
@@ -53,7 +49,7 @@ def single_output_step_from_context_model() -> (
 
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
 def single_output_step_from_context_deployment() -> (
-    Annotated[int, DeploymentArtifactConfig()]
+    Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
 ):
     """Untyped single output linked as Deployment from step context."""
     return 1
@@ -315,7 +311,7 @@ def multi_named_output_step_mixed_linkage() -> (
 @step
 def pipeline_configuration_is_used_here() -> (
     Tuple[
-        Annotated[int, "1", ArtifactConfig(artifact_name="custom_name")],
+        Annotated[int, "1", ArtifactConfig(name="custom_name")],
         Annotated[str, "4"],
     ]
 ):
@@ -413,7 +409,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
 
 @step(model_config=ModelConfig(name=MODEL_NAME, version="good_one"))
 def single_output_step_no_versioning() -> (
-    Annotated[int, ArtifactConfig(overwrite=True)]
+    Annotated[int, ArtifactConfig(overwrite_model_link=True)]
 ):
     """Single output with overwrite and step context."""
     return 1
@@ -477,7 +473,7 @@ def test_link_no_versioning():
 
 @step
 def single_output_step_with_versioning() -> (
-    Annotated[int, "predictions", ArtifactConfig(overwrite=False)]
+    Annotated[int, "predictions", ArtifactConfig(overwrite_model_link=False)]
 ):
     """Single output with overwrite disabled and step context."""
     return 1

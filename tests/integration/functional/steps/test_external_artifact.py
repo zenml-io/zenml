@@ -18,15 +18,16 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
-from zenml.model import ArtifactConfig, ModelConfig
+from zenml.model.model_config import ModelConfig
 
 
 @step
 def producer(
     run_number: int,
-) -> Annotated[int, "predictions", ArtifactConfig(overwrite=False)]:
+) -> Annotated[int, "predictions", ArtifactConfig(overwrite_model_link=False)]:
     """Step producing versioned output and linking it to a model."""
     return run_number
 

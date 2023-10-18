@@ -41,17 +41,21 @@ class ModelVersionBaseModel(BaseModel):
     name: Optional[str] = Field(
         description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     number: Optional[int] = Field(
         description="The number of the model version",
+        default=None,
     )
     description: Optional[str] = Field(
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     stage: Optional[str] = Field(
         description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 
@@ -400,14 +404,17 @@ class ModelVersionArtifactBaseModel(BaseModel):
     name: Optional[str] = Field(
         description="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     pipeline_name: Optional[str] = Field(
         description="The name of the pipeline creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     step_name: Optional[str] = Field(
         description="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     artifact: UUID
     model: UUID
@@ -458,14 +465,17 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     name: Optional[str] = Field(
         description="The name of the artifact inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     pipeline_name: Optional[str] = Field(
         description="The name of the pipeline creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     step_name: Optional[str] = Field(
         description="The name of the step creating this artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -498,6 +508,7 @@ class ModelVersionPipelineRunBaseModel(BaseModel):
     name: Optional[str] = Field(
         description="The name of the pipeline run inside model version.",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     pipeline_run: UUID
     model: UUID
@@ -615,11 +626,11 @@ class ModelFilterModel(WorkspaceScopedFilterModel):
 class ModelUpdateModel(BaseModel):
     """Model update model."""
 
-    license: Optional[str]
-    description: Optional[str]
-    audience: Optional[str]
-    use_cases: Optional[str]
-    limitations: Optional[str]
-    trade_offs: Optional[str]
-    ethic: Optional[str]
-    tags: Optional[List[str]]
+    license: Optional[str] = None
+    description: Optional[str] = None
+    audience: Optional[str] = None
+    use_cases: Optional[str] = None
+    limitations: Optional[str] = None
+    trade_offs: Optional[str] = None
+    ethic: Optional[str] = None
+    tags: Optional[List[str]] = None

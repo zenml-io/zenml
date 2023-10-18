@@ -44,6 +44,7 @@ from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.model.utils import link_step_artifacts_to_model
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -250,7 +251,7 @@ class StepRunner:
                             artifact_metadata_enabled=artifact_metadata_enabled,
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
-                        self._link_artifacts_to_model(
+                        link_step_artifacts_to_model(
                             artifact_ids=output_artifact_ids
                         )
                         self._link_pipeline_run_to_model_from_artifacts(
@@ -596,7 +597,14 @@ class StepRunner:
 
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
-            has_custom_name = output_annotations[output_name].has_custom_name
+            artifact_config = output_annotations[output_name].artifact_config
+
+            if artifact_config is not None:
+                has_custom_name = bool(artifact_config.name)
+                version = artifact_config.version
+                tags = artifact_config.tags
+            else:
+                has_custom_name, version, tags = False, None, None
 
             # Override the artifact name if it is not a custom name.
             if has_custom_name:
@@ -620,6 +628,8 @@ class StepRunner:
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,
+                version=version,
+                tags=tags,
                 user_metadata=user_metadata,
             )
             output_artifacts[output_name] = artifact_id
@@ -632,50 +642,6 @@ class StepRunner:
             model_config.get_or_create_model_version()
         except StepContextError:
             return
-
-    def _link_artifacts_to_model(
-        self,
-        artifact_ids: Dict[str, UUID],
-    ) -> None:
-        """Links the output artifacts of the step to the model.
-
-        Args:
-            artifact_ids: The IDs of the published output artifacts.
-        """
-        from zenml.model.artifact_config import ArtifactConfig
-
-        try:
-            mc = get_step_context().model_config
-        except StepContextError:
-            mc = None
-            logger.warning(
-                "No model context found, unable to auto-link artifacts."
-            )
-
-        for artifact_name in artifact_ids:
-            artifact_uuid = artifact_ids[artifact_name]
-            artifact_config = (
-                get_step_context()._get_output(artifact_name).artifact_config
-            )
-            if artifact_config is None and mc is not None:
-                artifact_config = ArtifactConfig(
-                    model_name=mc.name,
-                    model_version=mc.version,
-                    artifact_name=artifact_name,
-                )
-                logger.info(
-                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
-                )
-
-            if artifact_config is not None:
-                artifact_config.artifact_name = (
-                    artifact_config.artifact_name or artifact_name
-                )
-                artifact_config._pipeline_name = (
-                    get_step_context().pipeline.name
-                )
-                artifact_config._step_name = get_step_context().step_run.name
-                artifact_config.link_to_model(artifact_uuid=artifact_uuid)
 
     def _get_model_versions_from_artifacts(
         self,
@@ -695,12 +661,10 @@ class StepRunner:
                 get_step_context()._get_output(artifact_name).artifact_config
             )
             if artifact_config is not None:
-                try:
-                    model_version = (
-                        artifact_config._model_config._get_model_version()
-                    )
+                if (model_config := artifact_config._model_config) is not None:
+                    model_version = model_config._get_model_version()
                     models.add((model_version.model.id, model_version.id))
-                except RuntimeError:
+                else:
                     break
         return models
 

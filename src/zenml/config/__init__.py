@@ -26,6 +26,9 @@ order to persist the configuration across sessions.
 from zenml.config.docker_settings import DockerSettings
 from zenml.config.resource_settings import ResourceSettings
 
+# Need to import zenml.models before zenml.config to avoid circular imports
+from zenml.models import BaseResponseModel  # noqa: F401
+
 __all__ = [
     "DockerSettings",
     "ResourceSettings",

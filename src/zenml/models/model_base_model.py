@@ -37,33 +37,41 @@ class ModelBaseModel(BaseModel):
     license: Optional[str] = Field(
         title="The license model created under",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     description: Optional[str] = Field(
         title="The description of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     audience: Optional[str] = Field(
         title="The target audience of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     use_cases: Optional[str] = Field(
         title="The use cases of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     limitations: Optional[str] = Field(
         title="The know limitations of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     trade_offs: Optional[str] = Field(
         title="The trade offs of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     ethic: Optional[str] = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
+        default=None,
     )
 
 
@@ -82,8 +90,8 @@ class ModelConfigModel(ModelBaseModel):
     suppress_warnings: Whether to suppress warnings during validation.
     """
 
-    version: Optional[Union[ModelStages, int, str]]
-    version_description: Optional[str]
+    version: Optional[Union[ModelStages, int, str]] = None
+    version_description: Optional[str] = None
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True

@@ -23,6 +23,7 @@ from tests.integration.functional.conftest import (
     visualizable_step,
 )
 from zenml import step
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.enums import ExecutionStatus
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.run_metadata_models import RunMetadataResponseModel
@@ -79,20 +80,72 @@ def test_multi_output_artifact_names(
     assert artifact_2.name == f"{pipeline_run.pipeline.name}::step_::output_1"
 
 
-# TODO: make more efficient once manual versioning exists
-def test_auto_incremented_artifact_versioning(
-    clean_client: "Client", one_step_pipeline
-):
-    """Test auto-increment default artifact versioning."""
-    step_ = constant_int_output_test_step()
-    pipe: BasePipeline = one_step_pipeline(step_)
+@step
+def auto_versioned_step() -> Annotated[int, ArtifactConfig(name="aria")]:
+    return 1
 
-    for i in range(1, 12):
-        pipe.run(enable_cache=False)
-        pipeline_run = pipe.model.last_run
-        step_run = pipeline_run.steps["step_"]
-        artifact = step_run.output
-        assert artifact.version == str(i)
+
+@step
+def manual_string_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version="cat")]
+):
+    return 1
+
+
+@step
+def manual_int_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version=10)]
+):
+    return 1
+
+
+def test_artifact_versioning(clean_client: "Client", one_step_pipeline):
+    """Test artifact versioning."""
+    # First auto-incremented artifact version starts at 1
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "1"
+
+    # Manual version should be applied
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "cat"
+
+    # Next auto-incremented artifact version is 2
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "2"
+
+    # Manual int version should be applied too
+    pipe: BasePipeline = one_step_pipeline(manual_int_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "10"
+
+    # Next auto-incremented artifact version is 11
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "11"
+
+
+@step
+def tagged_artifact_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", tags=["cat", "grumpy"])]
+):
+    return 7
+
+
+def test_artifact_tagging(clean_client: "Client", one_step_pipeline):
+    """Test artifact tagging."""
+
+    pipe: BasePipeline = one_step_pipeline(tagged_artifact_step)
+    pipe.run()
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.tags == ["cat", "grumpy"]
 
 
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):

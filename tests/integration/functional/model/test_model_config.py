@@ -18,7 +18,7 @@ import pytest
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
-from zenml.model import ModelConfig
+from zenml.model.model_config import ModelConfig
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
 MODEL_NAME = "super_model"

@@ -3231,6 +3231,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         version: Optional[Union[str, int]] = None,
+        version_number: Optional[int] = None,
         artifact_store_id: Optional[Union[str, UUID]] = None,
         type: Optional[ArtifactType] = None,
         data_type: Optional[str] = None,
@@ -3252,6 +3253,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the run to filter by.
             version: The version of the artifact to filter by.
+            version_number: The version number of the artifact to filter by.
             artifact_store_id: The id of the artifact store to filter by.
             type: The type of the artifact to filter by.
             data_type: The data type of the artifact to filter by.
@@ -3274,6 +3276,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             version=version,
+            version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
             data_type=data_type,
