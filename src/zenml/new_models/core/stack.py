@@ -22,6 +22,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.new_models.base import (
+    SharableResponseBody,
     SharableResponseMetadata,
     ShareableRequest,
     ShareableResponse,
@@ -82,8 +83,12 @@ class StackUpdate(StackRequest):
 # ------------------ Response Model ------------------
 
 
+class StackResponseBody(SharableResponseBody):
+    """Response body for stacks."""
+
+
 class StackResponseMetadata(SharableResponseMetadata):
-    """Response metadata model for stacks."""
+    """Response metadata for stacks."""
 
     description: str = Field(
         default="",
@@ -103,45 +108,19 @@ class StackResponseMetadata(SharableResponseMetadata):
 class StackResponse(ShareableResponse):
     """Response model for stacks."""
 
-    # Entity fields
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
 
-    # Metadata related field, method and properties
+    # Body and metadata pair
+    body: "StackResponseBody"
     metadata: Optional["StackResponseMetadata"]
 
     def get_hydrated_version(self) -> "StackResponse":
-        # TODO: Implement it with the parameterized calls
+        """Get the hydrated version of this stack."""
         from zenml.client import Client
 
         return Client().get_stack(self.id)
-
-    @hydrated_property
-    def description(self):
-        """The description property."""
-        return self.metadata.description
-
-    @hydrated_property
-    def stack_spec_path(self):
-        """The stack_spec_path property."""
-        return self.metadata.stack_spec_path
-
-    @hydrated_property
-    def components(self):
-        """The components property."""
-        return self.metadata.components
-
-    # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Add the stack components to the stack analytics metadata.
-
-        Returns:
-            Dict of analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
-        return metadata
 
     # Helper methods
     @property
@@ -179,3 +158,30 @@ class StackResponse(ShareableResponse):
         }
 
         return yaml_data
+
+    # Analytics
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
+        return metadata
+
+    # Body and metadata properties
+    @hydrated_property
+    def description(self):
+        """The `description` property."""
+        return self.metadata.description
+
+    @hydrated_property
+    def stack_spec_path(self):
+        """The `stack_spec_path` property."""
+        return self.metadata.stack_spec_path
+
+    @hydrated_property
+    def components(self):
+        """The `components` property."""
+        return self.metadata.components
