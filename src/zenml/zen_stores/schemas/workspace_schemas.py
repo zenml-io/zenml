@@ -20,6 +20,7 @@ from sqlmodel import Relationship
 from zenml.new_models.core import (
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceResponseBody,
     WorkspaceResponseMetadata,
     WorkspaceUpdate,
 )
@@ -190,5 +191,6 @@ class WorkspaceSchema(NamedSchema, table=True):
         return WorkspaceResponse(
             id=self.id,
             name=self.name,
+            body=WorkspaceResponseBody(),
             metadata=metadata,
         )

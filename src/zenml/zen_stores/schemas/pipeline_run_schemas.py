@@ -25,6 +25,7 @@ from zenml.enums import ExecutionStatus
 from zenml.new_models.core import (
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunUpdate,
 )
@@ -246,30 +247,33 @@ class PipelineRunSchema(NamedSchema, table=True):
                 "pipeline_configuration."
             )
 
-        metadata = None
-        if hydrate:
-            metadata = PipelineRunResponseMetadata(
-                workspace=self.workspace.to_model(),
-                config=config,
-                run_metadata=run_metadata,
-                steps=steps,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                created=self.created,
-                updated=self.updated,
-                orchestrator_run_id=self.orchestrator_run_id,
-                client_environment=client_environment,
-                orchestrator_environment=orchestrator_environment,
-            )
-        return PipelineRunResponse(
-            id=self.id,
+        body = PipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            name=self.name,
             status=self.status,
             stack=stack,
             pipeline=pipeline,
             build=build,
             schedule=schedule,
+        )
+        metadata = None
+        if hydrate:
+            metadata = PipelineRunResponseMetadata(
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
+                run_metadata=run_metadata,
+                config=config,
+                steps=steps,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
+                orchestrator_run_id=self.orchestrator_run_id,
+            )
+        return PipelineRunResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
             metadata=metadata,
         )
 

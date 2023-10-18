@@ -23,13 +23,16 @@ from zenml.enums import PermissionType
 from zenml.new_models.core import (
     RoleRequest,
     RoleResponse,
+    RoleResponseBody,
     RoleResponseMetadata,
     RoleUpdate,
     TeamRoleAssignmentRequest,
     TeamRoleAssignmentResponse,
+    TeamRoleAssignmentResponseBody,
     TeamRoleAssignmentResponseMetadata,
     UserRoleAssignmentRequest,
     UserRoleAssignmentResponse,
+    UserRoleAssignmentResponseBody,
     UserRoleAssignmentResponseMetadata,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -93,16 +96,20 @@ class RoleSchema(NamedSchema, table=True):
         Returns:
             The converted `RoleResponseModel`.
         """
+        body = RoleResponseBody(
+            permissions={PermissionType(p.name) for p in self.permissions},
+        )
         metadata = None
         if hydrate:
-            metadata = RoleResponseMetadata()
+            metadata = RoleResponseMetadata(
+                created=self.created,
+                updated=self.updated,
+            )
 
         return RoleResponse(
             id=self.id,
             name=self.name,
-            created=self.created,
-            updated=self.updated,
-            permissions={PermissionType(p.name) for p in self.permissions},
+            body=body,
             metadata=metadata,
         )
 
@@ -175,20 +182,21 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         Returns:
             The converted `UserRoleAssignmentResponse`.
         """
-
+        body = UserRoleAssignmentResponseBody()
         metadata = None
         if hydrate:
             metadata = UserRoleAssignmentResponseMetadata(
+                created=self.created,
+                updated=self.updated,
                 workspace=self.workspace.to_model()
                 if self.workspace
                 else None,
                 user=self.user.to_model() if self.user else None,
                 role=self.role.to_model(),
-                created=self.created,
-                updated=self.updated,
             )
         return UserRoleAssignmentResponse(
             id=self.id,
+            body=body,
             metadata=metadata,
         )
 
@@ -258,19 +266,21 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         Returns:
             The converted `TeamRoleAssignmentResponse`.
         """
+        body = TeamRoleAssignmentResponseBody()
         metadata = None
         if hydrate:
             metadata = TeamRoleAssignmentResponseMetadata(
+                created=self.created,
+                updated=self.updated,
                 workspace=self.workspace.to_model()
                 if self.workspace
                 else None,
                 team=self.team.to_model(),
                 role=self.role.to_model(),
-                created=self.created,
-                updated=self.updated,
             )
         return TeamRoleAssignmentResponse(
             id=self.id,
+            body=body,
             metadata=metadata,
         )
 

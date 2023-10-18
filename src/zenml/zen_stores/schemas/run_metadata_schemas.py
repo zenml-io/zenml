@@ -24,6 +24,7 @@ from sqlmodel import Field, Relationship
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.new_models.core import (
     RunMetadataResponse,
+    RunMetadataResponseBody,
     RunMetadataResponseMetadata,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
@@ -123,23 +124,26 @@ class RunMetadataSchema(BaseSchema, table=True):
         Returns:
             The created `RunMetadataResponse`.
         """
+        body = RunMetadataResponseBody(
+            user=self.user.to_model() if self.user else None,
+            key=self.key,
+        )
         metadata = None
         if hydrate:
             metadata = RunMetadataResponseMetadata(
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
                 pipeline_run_id=self.pipeline_run_id,
                 step_run_id=self.step_run_id,
                 artifact_id=self.artifact_id,
                 stack_component_id=self.stack_component_id,
-                workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
-                key=self.key,
                 value=json.loads(self.value),
                 type=self.type,
             )
 
         return RunMetadataResponse(
             id=self.id,
-            user=self.user.to_model() if self.user else None,
+            body=body,
             metadata=metadata,
         )

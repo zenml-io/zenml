@@ -21,6 +21,7 @@ from sqlmodel import Relationship, SQLModel
 
 from zenml.new_models.core import (
     TeamResponse,
+    TeamResponseBody,
     TeamResponseMetadata,
     TeamUpdate,
 )
@@ -97,7 +98,6 @@ class TeamSchema(NamedSchema, table=True):
         Returns:
             The converted `TeamResponse`.
         """
-
         metadata = None
         if hydrate:
             metadata = TeamResponseMetadata(
@@ -109,5 +109,6 @@ class TeamSchema(NamedSchema, table=True):
         return TeamResponse(
             id=self.id,
             name=self.name,
+            body=TeamResponseBody(),
             metadata=metadata,
         )

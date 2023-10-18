@@ -27,6 +27,7 @@ from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     StepRunRequest,
     StepRunResponse,
+    StepRunResponseBody,
     StepRunResponseMetadata,
     StepRunUpdate,
 )
@@ -204,34 +205,37 @@ class StepRunSchema(NamedSchema, table=True):
                 "should either have a deployment_id or step_configuration."
             )
 
+        body = StepRunResponseBody(
+            user=self.user.to_model() if self.user else None,
+            status=self.status,
+            inputs=input_artifacts,
+            outputs=output_artifacts,
+        )
         metadata = None
         if hydrate:
             metadata = StepRunResponseMetadata(
-                start_time=self.start_time,
-                end_time=self.end_time,
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
                 config=full_step_config.config,
                 spec=full_step_config.spec,
                 cache_key=self.cache_key,
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                logs=self.logs.to_model() if self.logs else None,
                 deployment_id=self.deployment_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
                 parent_step_ids=[p.parent_id for p in self.parents],
-                workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 run_metadata=run_metadata,
-                logs=self.logs.to_model() if self.logs else None,
             )
         return StepRunResponse(
             id=self.id,
             name=self.name,
-            status=self.status,
-            user=self.user.to_model() if self.user else None,
-            inputs=input_artifacts,
-            outputs=output_artifacts,
+            body=body,
             metadata=metadata,
         )
 

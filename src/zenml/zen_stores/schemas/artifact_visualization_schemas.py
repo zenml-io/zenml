@@ -22,6 +22,7 @@ from zenml.enums import VisualizationType
 from zenml.new_models.core import (
     ArtifactVisualizationRequest,
     ArtifactVisualizationResponse,
+    ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
 from zenml.zen_stores.schemas import ArtifactSchema, BaseSchema
@@ -79,13 +80,21 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             The `Visualization`.
         """
 
+        body = ArtifactVisualizationResponseBody(
+            type=self.type,
+            uri=self.uri,
+        )
+
         metadata = None
         if hydrate:
-            metadata = ArtifactVisualizationResponseMetadata(self.artifact_id)
+            metadata = ArtifactVisualizationResponseMetadata(
+                artifact_id=self.artifact_id,
+                created=self.created,
+                updated=self.updated,
+            )
 
         return ArtifactVisualizationResponse(
             id=self.id,
-            type=self.type,
-            uri=self.uri,
+            body=body,
             metadata=metadata,
         )

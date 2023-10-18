@@ -27,6 +27,7 @@ from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.new_models.core import (
     SecretRequest,
     SecretResponse,
+    SecretResponseBody,
     SecretResponseMetadata,
     SecretUpdate,
 )
@@ -217,21 +218,23 @@ class SecretSchema(NamedSchema, table=True):
         Returns:
             The secret model.
         """
+        body = SecretResponseBody(
+            user=self.user.to_model() if self.user else None,
+        )
         metadata = None
-
         if hydrate:
             metadata = SecretResponseMetadata(
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
                 scope=self.scope,
                 values=self._load_secret_values(self.values, encryption_engine)
                 if include_values
                 else {},
-                workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
             )
         return SecretResponse(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
+            body=body,
             metadata=metadata,
         )

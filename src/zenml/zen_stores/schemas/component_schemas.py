@@ -24,6 +24,7 @@ from sqlmodel import Relationship
 from zenml.enums import StackComponentType
 from zenml.new_models.core.component import (
     ComponentResponse,
+    ComponentResponseBody,
     ComponentResponseMetadata,
     ComponentUpdate,
 )
@@ -138,7 +139,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         self,
         hydrate: bool = False,
     ) -> "ComponentResponse":
-        """Creates a `ComponentModel` from an instance of a `StackSchema`.
+        """Creates a `ComponentModel` from an instance of a `StackComponentSchema`.
 
         Args:
             hydrate: bool to decide whether to return a hydrated version of the
@@ -147,28 +148,33 @@ class StackComponentSchema(ShareableSchema, table=True):
         Returns:
             A `ComponentModel`
         """
+        body = ComponentResponseBody(
+            type=self.type,
+            flavor=self.flavor,
+            user=self.user.to_model() if self.user else None,
+            is_shared=self.is_shared,
+        )
         metadata = None
         if hydrate:
             metadata = ComponentResponseMetadata(
-                labels=json.loads(base64.b64decode(self.labels).decode())
-                if self.labels
-                else None,
-                configuration=json.loads(
-                    base64.b64decode(self.configuration).decode()
-                ),
                 workspace=self.workspace.to_model(),
                 created=self.created,
                 updated=self.updated,
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+                labels=json.loads(base64.b64decode(self.labels).decode())
+                if self.labels
+                else None,
                 component_spec_path=self.component_spec_path,
+                connector_resource_id=self.connector_resource_id,
+                connector=self.connector.to_model()
+                if self.connector
+                else None,
             )
         return ComponentResponse(
             id=self.id,
             name=self.name,
-            type=self.type,
-            flavor=self.flavor,
-            user=self.user.to_model() if self.user else None,
-            connector=self.connector.to_model() if self.connector else None,
-            connector_resource_id=self.connector_resource_id,
-            is_shared=self.is_shared,
+            body=body,
             metadata=metadata,
         )

@@ -23,6 +23,7 @@ from sqlmodel import Field, Relationship
 from zenml.enums import StackComponentType
 from zenml.new_models.core import (
     FlavorResponse,
+    FlavorResponseBody,
     FlavorResponseMetadata,
     FlavorUpdate,
 )
@@ -110,29 +111,32 @@ class FlavorSchema(NamedSchema, table=True):
         Returns:
             The flavor model.
         """
+        body = FlavorResponseBody(
+            user=self.user.to_model() if self.user else None,
+            type=self.type,
+            integration=self.integration,
+            logo_url=self.logo_url,
+        )
         metadata = None
         if hydrate:
             metadata = FlavorResponseMetadata(
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
+                created=self.created,
+                updated=self.updated,
                 config_schema=json.loads(self.config_schema),
                 connector_type=self.connector_type,
                 connector_resource_type=self.connector_resource_type,
                 connector_resource_id_attr=self.connector_resource_id_attr,
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
                 source=self.source,
-                sdk_docs_url=self.sdk_docs_url,
                 docs_url=self.docs_url,
+                sdk_docs_url=self.sdk_docs_url,
                 is_custom=self.is_custom,
-                created=self.created,
-                updated=self.updated,
             )
         return FlavorResponse(
             id=self.id,
             name=self.name,
-            type=self.type,
-            integration=self.integration,
-            user=self.user.to_model() if self.user else None,
-            logo_url=self.logo_url,
+            body=body,
             metadata=metadata,
         )

@@ -28,6 +28,7 @@ from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -201,28 +202,31 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         for s, c in step_configurations.items():
             step_configurations[s] = Step.parse_obj(c)
 
+        body = PipelineDeploymentResponseBody(
+            user=self.user.to_model() if self.user else None,
+        )
         metadata = None
         if hydrate:
             metadata = PipelineDeploymentResponseMetadata(
+                workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
-                workspace=self.workspace.to_model(),
-                stack=self.stack.to_model() if self.stack else None,
+                client_environment=json.loads(self.client_environment),
+                client_version=self.client_version,
+                server_version=self.server_version,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
+                stack=self.stack.to_model() if self.stack else None,
                 build=self.build.to_model() if self.build else None,
                 schedule=self.schedule.to_model() if self.schedule else None,
                 code_reference=self.code_reference.to_model()
                 if self.code_reference
                 else None,
-                created=self.created,
-                updated=self.updated,
-                client_environment=json.loads(self.client_environment),
-                client_version=self.client_version,
-                server_version=self.server_version,
             )
         return PipelineDeploymentResponse(
             id=self.id,
-            user=self.user.to_model() if self.user else None,
+            body=body,
             metadata=metadata,
         )

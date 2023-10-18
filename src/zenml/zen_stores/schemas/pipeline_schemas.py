@@ -26,6 +26,7 @@ from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     PipelineRequest,
     PipelineResponse,
+    PipelineResponseBody,
     PipelineResponseMetadata,
     PipelineUpdate,
 )
@@ -133,6 +134,10 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The created PipelineResponse.
         """
+        body = PipelineResponseBody(
+            user=self.user.to_model() if self.user else None,
+            status=[run.status for run in self.runs[:last_x_runs]],
+        )
         metadata = None
         if hydrate:
             metadata = PipelineResponseMetadata(
@@ -148,8 +153,7 @@ class PipelineSchema(NamedSchema, table=True):
         return PipelineResponse(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
-            status=[run.status for run in self.runs[:last_x_runs]],
+            body=body,
             metadata=metadata,
         )
 

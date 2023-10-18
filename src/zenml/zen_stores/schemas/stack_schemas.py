@@ -21,6 +21,7 @@ from sqlmodel import Relationship, SQLModel
 
 from zenml.new_models.core import (
     StackResponse,
+    StackResponseBody,
     StackResponseMetadata,
     StackUpdate,
 )
@@ -140,20 +141,23 @@ class StackSchema(ShareableSchema, table=True):
         Returns:
             The converted model.
         """
+        body = StackResponseBody(
+            user=self.user.to_model() if self.user else None,
+            is_shared=self.is_shared,
+        )
         metadata = None
         if hydrate:
             metadata = StackResponseMetadata(
-                stack_spec_path=self.stack_spec_path,
-                components={c.type: [c.to_model()] for c in self.components},
+                workspace=self.workspace.to_model(),
                 created=self.created,
                 updated=self.updated,
-                workspace=self.workspace.to_model(),
+                components={c.type: [c.to_model()] for c in self.components},
+                stack_spec_path=self.stack_spec_path,
             )
 
         return StackResponse(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
-            is_shared=self.is_shared,
+            body=body,
             metadata=metadata,
         )

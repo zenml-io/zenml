@@ -22,6 +22,7 @@ from sqlmodel import Field, Relationship
 from zenml.new_models.core import (
     UserRequest,
     UserResponse,
+    UserResponseBody,
     UserResponseMetadata,
     UserUpdate,
 )
@@ -178,21 +179,24 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The converted `UserResponse`.
         """
+        body = UserResponseBody(
+            external_user_id=self.external_user_id,
+        )
         metadata = None
         if hydrate:
             metadata = UserResponseMetadata(
-                active=self.active,
-                email_opted_in=self.email_opted_in,
-                email=self.email if include_private else None,
-                hub_token=self.hub_token if include_private else None,
-                full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
+                full_name=self.full_name,
+                email=self.email if include_private else None,
+                email_opted_in=self.email_opted_in,
+                active=self.active,
+                hub_token=self.hub_token if include_private else None,
             )
 
         return UserResponse(
             id=self.id,
-            external_user_id=self.external_user_id,
             name=self.name,
+            body=body,
             metadata=metadata,
         )

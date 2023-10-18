@@ -27,6 +27,7 @@ from zenml.new_models.core import (
     CodeReferenceResponseMetadata,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
     CodeRepositoryUpdate,
 )
@@ -103,22 +104,25 @@ class CodeRepositorySchema(NamedSchema, table=True):
         Returns:
             The created CodeRepositoryResponse.
         """
+        body = CodeRepositoryResponseBody(
+            user=self.user.to_model() if self.user else None,
+            source=json.loads(self.source),
+            logo_url=self.logo_url,
+        )
         metadata = None
         if hydrate:
             metadata = CodeRepositoryResponseMetadata(
                 workspace=self.workspace.to_model(),
+                created=self.created,
+                updated=self.updated,
                 config=json.loads(self.config),
                 description=self.description,
             )
         return CodeRepositoryResponse(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
-            created=self.created,
-            updated=self.updated,
-            source=json.loads(self.source),
-            logo_url=self.logo_url,
             metadata=metadata,
+            body=body,
         )
 
     def update(self, update: "CodeRepositoryUpdate") -> "CodeRepositorySchema":
@@ -201,16 +205,20 @@ class CodeReferenceSchema(BaseSchema, table=True):
         Returns:
             The converted model.
         """
-        metadata = None
-        if hydrate:
-            metadata = CodeReferenceResponseMetadata()
-
-        return CodeReferenceResponse(
-            id=self.id,
-            created=self.created,
-            updated=self.updated,
+        body = CodeRepositoryResponseBody(
             commit=self.commit,
             subdirectory=self.subdirectory,
             code_repository=self.code_repository.to_model(),
+        )
+        metadata = None
+        if hydrate:
+            metadata = CodeReferenceResponseMetadata(
+                created=self.created,
+                updated=self.updated,
+            )
+
+        return CodeReferenceResponse(
+            id=self.id,
+            body=body,
             metadata=metadata,
         )

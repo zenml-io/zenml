@@ -22,6 +22,7 @@ from sqlmodel import Field, Relationship
 from zenml.new_models.core import (
     ScheduleRequest,
     ScheduleResponse,
+    ScheduleResponseBody,
     ScheduleResponseMetadata,
     ScheduleUpdate,
 )
@@ -168,19 +169,7 @@ class ScheduleSchema(NamedSchema, table=True):
         else:
             interval_second = None
 
-        metadata = None
-        if hydrate:
-            metadata = ScheduleResponseMetadata(
-                pipeline_id=self.pipeline_id,
-                orchestrator_id=self.orchestrator_id,
-                updated=self.updated,
-                created=self.created,
-                workspace=self.workspace.to_model(),
-            )
-
-        return ScheduleResponse(
-            id=self.id,
-            name=self.name,
+        body = ScheduleResponseBody(
             user=self.user.to_model() if self.user else None,
             active=self.active,
             cron_expression=self.cron_expression,
@@ -188,5 +177,20 @@ class ScheduleSchema(NamedSchema, table=True):
             end_time=self.end_time,
             interval_second=interval_second,
             catchup=self.catchup,
+        )
+        metadata = None
+        if hydrate:
+            metadata = ScheduleResponseMetadata(
+                workspace=self.workspace.to_model(),
+                updated=self.updated,
+                created=self.created,
+                pipeline_id=self.pipeline_id,
+                orchestrator_id=self.orchestrator_id,
+            )
+
+        return ScheduleResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
             metadata=metadata,
         )

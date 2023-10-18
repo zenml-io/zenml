@@ -27,6 +27,7 @@ from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     PipelineBuildRequest,
     PipelineBuildResponse,
+    PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -142,23 +143,26 @@ class PipelineBuildSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineBuildResponse`.
         """
+        body = PipelineBuildResponseBody(
+            user=self.user.to_model() if self.user else None,
+        )
         metadata = False
         if hydrate:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
-                stack=self.stack.to_model() if self.stack else None,
+                created=self.created,
+                updated=self.updated,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
+                stack=self.stack.to_model() if self.stack else None,
                 images=json.loads(self.images),
                 zenml_version=self.zenml_version,
                 python_version=self.python_version,
                 checksum=self.checksum,
-                created=self.created,
-                updated=self.updated,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
             )
         return PipelineBuildResponse(
             id=self.id,
-            user=self.user.to_model() if self.user else None,
+            body=body,
             metadata=metadata,
         )

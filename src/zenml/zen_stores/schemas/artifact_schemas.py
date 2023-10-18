@@ -25,6 +25,7 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.new_models.core import (
     ArtifactRequest,
     ArtifactResponse,
+    ArtifactResponseBody,
     ArtifactResponseMetadata,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -164,8 +165,14 @@ class ArtifactSchema(NamedSchema, table=True):
             else:
                 producer_step_run_id = step_run.original_step_run_id
 
-        metadata = None
+        # Create the body and metadata of the model
+        body = ArtifactResponseBody(
+            user=self.user.to_model() if self.user else None,
+            uri=self.uri,
+            type=self.type,
+        )
 
+        metadata = None
         if hydrate:
             metadata = ArtifactResponseMetadata(
                 workspace=self.workspace.to_model(),
@@ -181,9 +188,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         return ArtifactResponse(
             id=self.id,
-            user=self.user.to_model() if self.user else None,
             name=self.name,
-            uri=self.uri,
-            type=self.type,
+            body=body,
             metadata=metadata,
         )

@@ -25,6 +25,7 @@ from sqlmodel import Field, Relationship
 from zenml.new_models.core import (
     ServiceConnectorRequest,
     ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
     ServiceConnectorUpdate,
 )
@@ -238,14 +239,17 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         Returns:
             A `ServiceConnectorModel`
         """
+        body = ServiceConnectorResponseBody(
+            user=self.user.to_model() if self.user else None,
+            is_shared=self.is_shared,
+        )
         metadata = None
-
         if hydrate:
             metadata = ServiceConnectorResponseMetadata(
-                description=self.description,
                 workspace=self.workspace.to_model(),
                 created=self.created,
                 updated=self.updated,
+                description=self.description,
                 connector_type=self.connector_type,
                 auth_method=self.auth_method,
                 resource_types=self.resource_types_list,
@@ -264,7 +268,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         return ServiceConnectorResponse(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
-            is_shared=self.is_shared,
+            body=body,
             metadata=metadata,
         )

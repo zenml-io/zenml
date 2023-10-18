@@ -20,7 +20,11 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.new_models.core import LogsResponse, LogsResponseMetadata
+from zenml.new_models.core import (
+    LogsResponse,
+    LogsResponseBody,
+    LogsResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -81,17 +85,20 @@ class LogsSchema(BaseSchema, table=True):
         Returns:
             The created `LogsResponse`.
         """
+        body = LogsResponseBody(
+            uri=self.uri,
+        )
         metadata = None
         if hydrate:
             metadata = LogsResponseMetadata(
-                pipeline_run_id=self.pipeline_run_id,
-                step_run_id=self.step_run_id,
-                artifact_store_id=self.artifact_store_id,
                 created=self.created,
                 updated=self.updated,
+                step_run_id=self.step_run_id,
+                pipeline_run_id=self.pipeline_run_id,
+                artifact_store_id=self.artifact_store_id,
             )
         return LogsResponse(
             id=self.id,
-            uri=self.uri,
+            body=body,
             metadata=metadata,
         )
