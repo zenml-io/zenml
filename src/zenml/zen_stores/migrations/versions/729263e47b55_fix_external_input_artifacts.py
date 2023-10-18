@@ -17,6 +17,10 @@ down_revision = "0.45.2"
 branch_labels = None
 depends_on = None
 
+update_query = text(
+    "UPDATE pipeline_deployment SET step_configurations = :data WHERE id = :id_"
+)
+
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
@@ -38,11 +42,7 @@ def upgrade() -> None:
                     ]
                 }
         data = json.dumps(data_dict)
-        session.execute(
-            text(
-                f"UPDATE pipeline_deployment SET step_configurations='{data}' WHERE id='{id_}'"
-            )
-        )
+        session.execute(update_query, params=(dict(data=data, id_=id_)))
     session.commit()
     # ### end Alembic commands ###
 
@@ -67,10 +67,6 @@ def downgrade() -> None:
                     "id"
                 ]
         data = json.dumps(data_dict)
-        session.execute(
-            text(
-                f"UPDATE pipeline_deployment SET step_configurations='{data}' WHERE id='{id_}'"
-            )
-        )
+        session.execute(update_query, params=(dict(data=data, id_=id_)))
     session.commit()
     # ### end Alembic commands ###
