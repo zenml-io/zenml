@@ -82,7 +82,7 @@ class ModelConfig(BaseModel):
 
         smart_union = True
 
-    @root_validator
+    @root_validator(pre=True)
     def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate all in one.
 
@@ -140,7 +140,6 @@ class ModelConfig(BaseModel):
                 f"`version` `{version}` is numeric and will be fetched using version number."
             )
         values["suppress_class_validation_warnings"] = True
-        cls.__fields_set__.add("suppress_class_validation_warnings")
         return values
 
     def _validate_config_in_runtime(self) -> None:
