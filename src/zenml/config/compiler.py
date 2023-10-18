@@ -84,7 +84,6 @@ class Compiler:
         Returns:
             The compiled pipeline deployment and spec
         """
-
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
         # we don't mess with the pipeline object/step objects in any way
@@ -197,7 +196,6 @@ class Compiler:
             KeyError: If the run configuration contains options for a
                 non-existent step.
         """
-
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(
                 enable_cache=config.enable_cache,
@@ -248,7 +246,6 @@ class Compiler:
             pipeline: The pipeline to which to apply the default settings.
             stack: The stack containing potential default settings.
         """
-
         pipeline_settings = pipeline.configuration.settings
 
         for component in stack.components.values():

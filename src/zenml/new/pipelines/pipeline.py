@@ -148,7 +148,6 @@ class Pipeline:
                 function (e.g. `module.my_function`).
             model_config: Model(Version) configuration for this step as `ModelConfig` instance.
         """
-
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
 
@@ -1433,7 +1432,6 @@ class Pipeline:
         Returns:
             The copied pipeline instance.
         """
-
         pipeline_copy = self.copy()
 
         pipeline_copy._parse_config_file(
