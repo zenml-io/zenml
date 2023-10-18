@@ -13,17 +13,19 @@
 #  permissions and limitations under the License.
 """Models representing service connectors."""
 
+import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.new_models.base import (
     SharableResponseBody,
     SharableResponseMetadata,
+    ShareableFilter,
     ShareableRequest,
     ShareableResponse,
     hydrated_property,
@@ -524,3 +526,119 @@ class ServiceConnectorResponse(ShareableResponse):
     def secret_id(self):
         """The `secret_id` property."""
         return self.metadata.secret_id
+
+
+# ------------------ Filter Model ------------------
+
+
+class ServiceConnectorFilterModel(ShareableFilter):
+    """Model to enable advanced filtering of service connectors."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableFilter.FILTER_EXCLUDE_FIELDS,
+        "scope_type",
+        "resource_type",
+        "labels_str",
+        "labels",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableFilter.CLI_EXCLUDE_FIELDS,
+        "scope_type",
+        "labels_str",
+        "labels",
+    ]
+    scope_type: Optional[str] = Field(
+        default=None,
+        description="The type to scope this query to.",
+    )
+
+    is_shared: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="If the service connector is shared or private",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        description="The name to filter by",
+    )
+    connector_type: Optional[str] = Field(
+        default=None,
+        description="The type of service connector to filter by",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace to filter by"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User to filter by"
+    )
+    auth_method: Optional[str] = Field(
+        default=None,
+        title="Filter by the authentication method configured for the "
+        "connector",
+    )
+    resource_type: Optional[str] = Field(
+        default=None,
+        title="Filter by the type of resource that the connector can be used "
+        "to access",
+    )
+    resource_id: Optional[str] = Field(
+        default=None,
+        title="Filter by the ID of the resource instance that the connector "
+        "is configured to access",
+    )
+    labels_str: Optional[str] = Field(
+        default=None,
+        title="Filter by one or more labels. This field can be either a JSON "
+        "formatted dictionary of label names and values, where the values are "
+        'optional and can be set to None (e.g. `{"label1":"value1", "label2": '
+        "null}` ), or a comma-separated list of label names and values (e.g "
+        "`label1=value1,label2=`. If a label name is specified without a "
+        "value, the filter will match all service connectors that have that "
+        "label present, regardless of value.",
+    )
+    secret_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        title="Filter by the ID of the secret that contains the service "
+        "connector's credentials",
+    )
+
+    # Use this internally to configure and access the labels as a dictionary
+    labels: Optional[Dict[str, Optional[str]]] = Field(
+        default=None,
+        title="The labels to filter by, as a dictionary",
+    )
+
+    @root_validator
+    def validate_labels(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse the labels string into a label dictionary and vice-versa.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        labels_str = values.get("labels_str")
+        labels = values.get("labels")
+        if labels_str is not None:
+            try:
+                values["labels"] = json.loads(labels_str)
+            except json.JSONDecodeError:
+                # Interpret as comma-separated values instead
+                values["labels"] = {
+                    label.split("=", 1)[0]: label.split("=", 1)[1]
+                    if "=" in label
+                    else None
+                    for label in labels_str.split(",")
+                }
+        elif labels is not None:
+            values["labels_str"] = json.dumps(values["labels"])
+
+        return values
+
+    class Config:
+        """Pydantic config class."""
+
+        # Exclude the labels field from the serialized response
+        # (it is only used internally). The labels_str field is a string
+        # representation of the labels that can be used in the API.
+        exclude = ["labels"]

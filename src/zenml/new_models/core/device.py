@@ -12,3 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing devices."""
+
+# ------------------ Request Model ------------------
+
+# ------------------ Update Model ------------------
+
+# ------------------ Response Model ------------------
+
+# ------------------ Filter Model ------------------

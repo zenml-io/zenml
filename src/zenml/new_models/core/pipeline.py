@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+from uuid import UUID
 
 from pydantic import Field
 
@@ -21,6 +22,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -213,3 +215,33 @@ class PipelineResponse(WorkspaceScopedResponse):
     def version(self):
         """The `version` property."""
         return self.metadata.version
+
+
+# ------------------ Filter Model ------------------
+
+
+class PipelineFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all Workspaces."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the Pipeline",
+    )
+    version: Optional[str] = Field(
+        default=None,
+        description="Version of the Pipeline",
+    )
+    version_hash: Optional[str] = Field(
+        default=None,
+        description="Version hash of the Pipeline",
+    )
+    docstring: Optional[str] = Field(
+        default=None,
+        description="Docstring of the Pipeline",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Pipeline"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the Pipeline"
+    )

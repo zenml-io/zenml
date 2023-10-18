@@ -111,3 +111,8 @@ class LogsResponse(BaseResponse):
     def artifact_store_id(self):
         """The `artifact_store_id` property."""
         return self.metadata.artifact_store_id
+
+
+# ------------------ Filter Model ------------------
+
+# There is no filter model for logs.

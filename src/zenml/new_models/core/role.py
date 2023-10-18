@@ -20,6 +20,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PermissionType
 from zenml.new_models.base import (
+    BaseFilter,
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -82,3 +83,15 @@ class RoleResponse(BaseResponse):
     def permissions(self):
         """The `permissions` property."""
         return self.body.permissions
+
+
+# ------------------ Filter Model ------------------
+
+
+class RoleFilterModel(BaseFilter):
+    """Model to enable advanced filtering of all Users."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the role",
+    )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -21,6 +21,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -145,3 +146,17 @@ class RunMetadataResponse(WorkspaceScopedResponse):
     def type(self):
         """The `type` property."""
         return self.metadata.type
+
+
+# ------------------ Filter Model ------------------
+
+
+class RunMetadataFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of run metadata."""
+
+    pipeline_run_id: Optional[Union[str, UUID]] = None
+    step_run_id: Optional[Union[str, UUID]] = None
+    artifact_id: Optional[Union[str, UUID]] = None
+    stack_component_id: Optional[Union[str, UUID]] = None
+    key: Optional[str] = None
+    type: Optional[Union[str, MetadataTypeEnum]] = None

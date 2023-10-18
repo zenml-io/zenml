@@ -807,7 +807,7 @@ class WorkspaceScopedFilter(BaseFilter):
         return query
 
 
-class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilter):
+class ShareableFilter(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and user scoped shareable things."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [

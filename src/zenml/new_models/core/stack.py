@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -24,6 +24,7 @@ from zenml.enums import StackComponentType
 from zenml.new_models.base import (
     SharableResponseBody,
     SharableResponseMetadata,
+    ShareableFilter,
     ShareableRequest,
     ShareableResponse,
     hydrated_property,
@@ -185,3 +186,44 @@ class StackResponse(ShareableResponse):
     def components(self):
         """The `components` property."""
         return self.metadata.components
+
+
+# ------------------ Filter Model ------------------
+
+
+class StackFilterModel(ShareableFilter):
+    """Model to enable advanced filtering of all StackModels.
+
+    The Stack Model needs additional scoping. As such the `_scope_user` field
+    can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
+
+    # `component_id` refers to a relationship through a link-table
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableFilter.FILTER_EXCLUDE_FIELDS,
+        "component_id",  # This is a relationship, not a field
+    ]
+
+    is_shared: Optional[Union[bool, str]] = Field(
+        default=None, description="If the stack is shared or private"
+    )
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the stack",
+    )
+    description: Optional[str] = Field(
+        default=None, description="Description of the stack"
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the stack"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )
+    component_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Component in the stack"
+    )

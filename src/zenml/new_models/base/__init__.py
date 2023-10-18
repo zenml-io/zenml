@@ -31,5 +31,11 @@ from zenml.new_models.base.scoped import (
     SharableResponseMetadata,
     ShareableResponse,
 )
+from zenml.new_models.base.filter import (
+    BaseFilter,
+    UserScopedFilter,
+    WorkspaceScopedFilter,
+    ShareableFilter,
+)
 from zenml.new_models.base.utils import update_model, hydrated_property
 from zenml.new_models.base.page import Page

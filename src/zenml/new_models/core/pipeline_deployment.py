@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -22,6 +22,7 @@ from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -220,3 +221,29 @@ class PipelineDeploymentResponse(WorkspaceScopedResponse):
     def code_reference(self):
         """The `code_reference` property."""
         return self.metadata.code_reference
+
+
+# ------------------ Filter Model ------------------
+
+
+class PipelineDeploymentFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all pipeline deployments."""
+
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace for this deployment."
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created this deployment."
+    )
+    pipeline_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Pipeline associated with the deployment."
+    )
+    stack_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Stack associated with the deployment."
+    )
+    build_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Build associated with the deployment."
+    )
+    schedule_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Schedule associated with the deployment."
+    )

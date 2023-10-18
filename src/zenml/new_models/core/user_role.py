@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Models representing user role assignments."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.new_models.base import (
+    BaseFilter,
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -99,3 +100,20 @@ class UserRoleAssignmentResponse(BaseResponse):
     def role(self):
         """The `role` property."""
         return self.metadata.role
+
+
+# ------------------ Filter Model ------------------
+
+
+class UserRoleAssignmentFilterModel(BaseFilter):
+    """Model to enable advanced filtering of all Role Assignments."""
+
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the RoleAssignment"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User in the RoleAssignment"
+    )
+    role_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Role in the RoleAssignment"
+    )

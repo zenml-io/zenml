@@ -98,3 +98,8 @@ class CodeReferenceResponse(BaseResponse):
     def code_repository(self):
         """The `code_repository` property."""
         return self.body.code_repository
+
+
+# ------------------ Filter Model ------------------
+
+# There is no filter model for code references.

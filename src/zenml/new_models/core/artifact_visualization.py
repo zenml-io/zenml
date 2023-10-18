@@ -84,3 +84,8 @@ class ArtifactVisualizationResponse(BaseResponse):
     def artifact_id(self):
         """The `artifact_id` property"""
         return self.metadata.artifact_id
+
+
+# ------------------ Filter Model ------------------
+
+# There is no filter model for artifact visualizations.

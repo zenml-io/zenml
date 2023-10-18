@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
+    BaseFilter,
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -117,3 +118,15 @@ class TeamResponse(BaseResponse):
     def users(self) -> List["UserResponse"]:
         """The `users` property."""
         return self.metadata.users
+
+
+# ------------------ Filter Model ------------------
+
+
+class TeamFilterModel(BaseFilter):
+    """Model to enable advanced filtering of all Teams."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the team",
+    )

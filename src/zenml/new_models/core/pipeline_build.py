@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -249,3 +250,37 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
     def contains_code(self):
         """The `contains_code` property."""
         return self.metadata.contains_code
+
+
+# ------------------ Filter Model ------------------
+
+
+class PipelineBuildFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all pipeline builds."""
+
+    workspace_id: Union[UUID, str, None] = Field(
+        description="Workspace for this pipeline build."
+    )
+    user_id: Union[UUID, str, None] = Field(
+        description="User that produced this pipeline build."
+    )
+    pipeline_id: Union[UUID, str, None] = Field(
+        description="Pipeline associated with the pipeline build.",
+    )
+    stack_id: Union[UUID, str, None] = Field(
+        description="Stack used for the Pipeline Run"
+    )
+    is_local: Optional[bool] = Field(
+        description="Whether the build images are stored in a container "
+        "registry or locally.",
+    )
+    contains_code: Optional[bool] = Field(
+        description="Whether any image of the build contains user code.",
+    )
+    zenml_version: Optional[str] = Field(
+        description="The version of ZenML used for this build."
+    )
+    python_version: Optional[str] = Field(
+        description="The Python version used for this build."
+    )
+    checksum: Optional[str] = Field(description="The build checksum.")

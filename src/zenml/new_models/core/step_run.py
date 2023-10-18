@@ -14,7 +14,7 @@
 """Models representing steps runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,10 +23,11 @@ from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
-    BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseMetadata,
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
 
@@ -44,7 +45,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class StepRunRequest(BaseRequest):
+class StepRunRequest(WorkspaceScopedRequest):
     """Request model for step runs."""
 
     name: str = Field(
@@ -130,7 +131,7 @@ class StepRunUpdate(BaseModel):
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(BaseResponseBody):
+class StepRunResponseBody(WorkspaceScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
@@ -144,7 +145,7 @@ class StepRunResponseBody(BaseResponseBody):
     )
 
 
-class StepRunResponseMetadata(BaseResponseMetadata):
+class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for step runs."""
 
     # Configuration
@@ -208,7 +209,7 @@ class StepRunResponseMetadata(BaseResponseMetadata):
     )
 
 
-class StepRunResponse(BaseResponse):
+class StepRunResponse(WorkspaceScopedResponse):
     """Response model for step runs."""
 
     name: str = Field(
@@ -350,3 +351,45 @@ class StepRunResponse(BaseResponse):
     def run_metadata(self):
         """The `run_metadata` property."""
         return self.metadata.run_metadata
+
+
+# ------------------ Filter Model ------------------
+
+
+class StepRunFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the step run",
+    )
+    code_hash: Optional[str] = Field(
+        default=None,
+        description="Code hash for this step run",
+    )
+    cache_key: Optional[str] = Field(
+        default=None,
+        description="Cache key for this step run",
+    )
+    status: Optional[str] = Field(
+        default=None,
+        description="Status of the Step Run",
+    )
+    start_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="Start time for this run"
+    )
+    end_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="End time for this run"
+    )
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Pipeline run of this step run"
+    )
+    original_step_run_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Original id for this step run"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that produced this step run"
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of this step run"
+    )

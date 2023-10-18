@@ -19,6 +19,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
+    BaseFilter,
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -91,3 +92,15 @@ class WorkspaceResponse(BaseResponse):
     def description(self):
         """The `description` property."""
         return self.metadata.description
+
+
+# ------------------ Filter Model ------------------
+
+
+class WorkspaceFilterModel(BaseFilter):
+    """Model to enable advanced filtering of all Workspaces."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the workspace",
+    )

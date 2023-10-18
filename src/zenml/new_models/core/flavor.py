@@ -25,6 +25,7 @@ from zenml.new_models.base import (
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
+    WorkspaceScopedFilter,
     hydrated_property,
     update_model,
 )
@@ -293,3 +294,29 @@ class FlavorResponse(BaseResponse):
     def is_custom(self):
         """The `is_custom` property."""
         return self.metadata.is_custom
+
+
+# ------------------ Filter Model ------------------
+
+
+class FlavorFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all Flavors."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the flavor",
+    )
+    type: Optional[str] = Field(
+        default=None,
+        description="Stack Component Type of the stack flavor",
+    )
+    integration: Optional[str] = Field(
+        default=None,
+        description="Integration associated with the flavor",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the stack"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )

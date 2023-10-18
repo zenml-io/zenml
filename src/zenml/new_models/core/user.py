@@ -14,13 +14,23 @@
 """Models representing users."""
 
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import Field, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
+    BaseFilter,
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -292,3 +302,35 @@ class UserResponse(BaseResponse):
     def hub_token(self):
         """The `hub_token` property."""
         return self.metadata.hub_token
+
+
+# ------------------ Filter Model ------------------
+
+
+class UserFilterModel(BaseFilter):
+    """Model to enable advanced filtering of all Users."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the user",
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    email: Optional[str] = Field(
+        default=None,
+        description="Email of the user",
+    )
+    active: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="Whether the user is active",
+    )
+    email_opted_in: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="Whether the user has opted in to emails",
+    )
+    external_user_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )

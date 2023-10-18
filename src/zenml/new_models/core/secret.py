@@ -13,13 +13,21 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from typing import ClassVar, Dict, List, Optional
+from datetime import datetime
+from typing import Any, ClassVar, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import SecretScope
+from zenml.enums import (
+    GenericFilterOps,
+    LogicalOperators,
+    SecretScope,
+    SorterOps,
+)
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -154,3 +162,128 @@ class SecretResponse(WorkspaceScopedResponse):
     def values(self):
         """The `values` property."""
         return self.metadata.values
+
+
+# ------------------ Filter Model ------------------
+
+
+class SecretFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all Secrets."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "values",
+    ]
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the secret",
+    )
+
+    scope: Optional[Union[SecretScope, str]] = Field(
+        default=None,
+        description="Scope in which to filter secrets",
+    )
+
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Secret"
+    )
+
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created the Secret"
+    )
+
+    @staticmethod
+    def _get_filtering_value(value: Optional[Any]) -> str:
+        """Convert the value to a string that can be used for lexicographical filtering and sorting.
+
+        Args:
+            value: The value to convert.
+
+        Returns:
+            The value converted to string format that can be used for
+            lexicographical sorting and filtering.
+        """
+        if value is None:
+            return ""
+        str_value = str(value)
+        if isinstance(value, datetime):
+            str_value = value.strftime("%Y-%m-%d %H:%M:%S")
+        return str_value
+
+    def secret_matches(self, secret: "SecretResponse") -> bool:
+        """Checks if a secret matches the filter criteria.
+
+        Args:
+            secret: The secret to check.
+
+        Returns:
+            True if the secret matches the filter criteria, False otherwise.
+        """
+        for filter in self.list_of_filters:
+            column_value: Optional[Any] = None
+            if filter.column == "workspace_id":
+                column_value = secret.workspace.id
+            elif filter.column == "user_id":
+                column_value = secret.user.id if secret.user else None
+            else:
+                column_value = getattr(secret, filter.column)
+
+            # Convert the values to strings for lexicographical comparison.
+            str_column_value = self._get_filtering_value(column_value)
+            str_filter_value = self._get_filtering_value(filter.value)
+
+            # Compare the lexicographical values according to the operation.
+            if filter.operation == GenericFilterOps.EQUALS:
+                result = str_column_value == str_filter_value
+            elif filter.operation == GenericFilterOps.CONTAINS:
+                result = str_filter_value in str_column_value
+            elif filter.operation == GenericFilterOps.STARTSWITH:
+                result = str_column_value.startswith(str_filter_value)
+            elif filter.operation == GenericFilterOps.ENDSWITH:
+                result = str_column_value.endswith(str_filter_value)
+            elif filter.operation == GenericFilterOps.GT:
+                result = str_column_value > str_filter_value
+            elif filter.operation == GenericFilterOps.GTE:
+                result = str_column_value >= str_filter_value
+            elif filter.operation == GenericFilterOps.LT:
+                result = str_column_value < str_filter_value
+            elif filter.operation == GenericFilterOps.LTE:
+                result = str_column_value <= str_filter_value
+
+            # Exit early if the result is False for AND, and True for OR
+            if self.logical_operator == LogicalOperators.AND:
+                if not result:
+                    return False
+            else:
+                if result:
+                    return True
+
+        # If we get here, all filters have been checked and the result is
+        # True for AND, and False for OR
+        if self.logical_operator == LogicalOperators.AND:
+            return True
+        else:
+            return False
+
+    def sort_secrets(
+        self, secrets: List["SecretResponse"]
+    ) -> List["SecretResponse"]:
+        """Sorts a list of secrets according to the filter criteria.
+
+        Args:
+            secrets: The list of secrets to sort.
+
+        Returns:
+            The sorted list of secrets.
+        """
+        column, sort_op = self.sorting_params
+        sorted_secrets = sorted(
+            secrets,
+            key=lambda secret: self._get_filtering_value(
+                getattr(secret, column)
+            ),
+            reverse=sort_op == SorterOps.DESCENDING,
+        )
+
+        return sorted_secrets

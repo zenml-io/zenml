@@ -14,7 +14,16 @@
 """Models representing pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,14 +32,19 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     hydrated_property,
 )
+from zenml.new_models.base.filter import LogicalOperators
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel import SQLModel
+
     from zenml.new_models.core.artifact import ArtifactResponse
     from zenml.new_models.core.pipeline import PipelineResponse
     from zenml.new_models.core.pipeline_build import (
@@ -273,3 +287,132 @@ class PipelineRunResponse(WorkspaceScopedResponse):
     def orchestrator_run_id(self):
         """The `orchestrator_run_id` property"""
         return self.metadata.orchestrator_run_id
+
+
+# ------------------ Filter Model ------------------
+
+
+class PipelineRunFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all Workspaces."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "unlisted",
+        "code_repository_id",
+    ]
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the Pipeline Run",
+    )
+    orchestrator_run_id: Optional[str] = Field(
+        default=None,
+        description="Name of the Pipeline Run within the orchestrator",
+    )
+    pipeline_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Pipeline associated with the Pipeline Run"
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Pipeline Run"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created the Pipeline Run"
+    )
+    stack_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Stack used for the Pipeline Run"
+    )
+    schedule_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Schedule that triggered the Pipeline Run"
+    )
+    build_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Build used for the Pipeline Run"
+    )
+    deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Deployment used for the Pipeline Run"
+    )
+    code_repository_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Code repository used for the Pipeline Run"
+    )
+    status: Optional[str] = Field(
+        default=None,
+        description="Name of the Pipeline Run",
+    )
+    start_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="Start time for this run"
+    )
+    end_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="End time for this run"
+    )
+    unlisted: Optional[bool] = None
+
+    def generate_filter(
+        self, table: Type["SQLModel"]
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
+        from sqlalchemy import and_
+        from sqlmodel import or_
+
+        base_filter = super().generate_filter(table)
+
+        operator = (
+            or_ if self.logical_operator == LogicalOperators.OR else and_
+        )
+
+        if self.unlisted is not None:
+            if self.unlisted is True:
+                unlisted_filter = getattr(table, "pipeline_id").is_(None)
+            else:
+                unlisted_filter = getattr(table, "pipeline_id").is_not(None)
+
+            base_filter = operator(base_filter, unlisted_filter)
+
+        from zenml.zen_stores.schemas import (
+            CodeReferenceSchema,
+            PipelineBuildSchema,
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+            ScheduleSchema,
+            StackSchema,
+        )
+
+        if self.code_repository_id:
+            code_repo_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.code_reference_id
+                == CodeReferenceSchema.id,
+                CodeReferenceSchema.code_repository_id
+                == self.code_repository_id,
+            )
+            base_filter = operator(base_filter, code_repo_filter)
+
+        if self.stack_id:
+            stack_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                StackSchema.id == self.stack_id,
+            )
+            base_filter = operator(base_filter, stack_filter)
+
+        if self.schedule_id:
+            schedule_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
+                ScheduleSchema.id == self.schedule_id,
+            )
+            base_filter = operator(base_filter, schedule_filter)
+
+        if self.build_id:
+            pipeline_build_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
+                PipelineBuildSchema.id == self.build_id,
+            )
+            base_filter = operator(base_filter, pipeline_build_filter)
+
+        return base_filter

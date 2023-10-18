@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
+from uuid import UUID
 
 from pydantic import Field
 
 from zenml.config.source import Source
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.new_models.base import (
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -123,3 +125,20 @@ class CodeRepositoryResponse(WorkspaceScopedResponse):
     def description(self):
         """The `description` property."""
         return self.metadata.description
+
+
+# ------------------ Filter Model ------------------
+
+
+class CodeRepositoryFilterModel(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all code repositories."""
+
+    name: Optional[str] = Field(
+        description="Name of the code repository.",
+    )
+    workspace_id: Union[UUID, str, None] = Field(
+        description="Workspace of the code repository."
+    )
+    user_id: Union[UUID, str, None] = Field(
+        description="User that created the code repository."
+    )
