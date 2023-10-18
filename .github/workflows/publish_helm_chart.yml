@@ -30,7 +30,7 @@ jobs:
       # It replaces the line that starts with "version: " with "version: <tag version>"
       - name: Add tag version to Chart.yaml
         run: |
-          sed -i "s/version: .*/version: \"test\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
+          sed -i "s/version: .*/version: \"0.1\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -58,4 +58,4 @@ jobs:
           REPOSITORY: zenml
         run: |
           helm package src/zenml/zen_server/deploy/helm
-          helm push $REPOSITORY-test.tgz oci://$REGISTRY/$REGISTRY_ALIAS
+          helm push $REPOSITORY-0.1.tgz oci://$REGISTRY/$REGISTRY_ALIAS
