@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 
 
-from zenml.config.step_configurations import InputSpec, StepSpec
+from uuid import uuid4
+
+from zenml.artifacts.external_artifact_config import (
+    ExternalArtifactConfiguration,
+)
+from zenml.config.step_configurations import (
+    InputSpec,
+    PartialStepConfiguration,
+    StepSpec,
+)
 
 
 def test_step_spec_source_equality():
@@ -93,3 +102,30 @@ def test_step_spec_pipeline_parameter_name_equality():
         upstream_steps=[],
         pipeline_parameter_name="different_name",
     )
+
+
+def test_step_config_can_recover_from_json():
+    """Tests that step spec can be recovered from json."""
+    uuid = uuid4()
+    from_json = PartialStepConfiguration.parse_raw(
+        '{"name":"foo","external_input_artifacts": {"bar":"'
+        + str(uuid)
+        + '"}}'
+    )
+    from_object = PartialStepConfiguration(
+        name="foo", external_input_artifacts={"bar": uuid}
+    )
+    assert from_json == from_object
+
+    from_json = PartialStepConfiguration.parse_raw(
+        '{"name":"foo","external_input_artifacts": {"bar":{"id":"'
+        + str(uuid)
+        + '"}}}'
+    )
+    from_object = PartialStepConfiguration(
+        name="foo",
+        external_input_artifacts={
+            "bar": ExternalArtifactConfiguration(id=uuid)
+        },
+    )
+    assert from_json == from_object
