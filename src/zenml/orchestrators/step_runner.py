@@ -624,48 +624,55 @@ class StepRunner:
         from zenml.model.artifact_config import ArtifactConfig
 
         try:
-            mc = get_step_context().model_config
+            model_config_from_context = get_step_context().model_config
         except StepContextError:
-            mc = None
+            model_config_from_context = None
 
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
-            artifact_config = (
+            artifact_config_ = (
                 get_step_context()._get_output(artifact_name).artifact_config
             )
-            if artifact_config is None and mc is not None:
-                artifact_config = ArtifactConfig(
-                    model_name=mc.name,
-                    model_version=mc.version,
-                    artifact_name=artifact_name,
-                )
-                logger.info(
-                    f"Linking artifact `{artifact_name}` to model `{mc.name}` version `{mc.version}` implicitly."
-                )
+            if artifact_config_ is None:
+                if model_config_from_context is not None:
+                    artifact_config_ = ArtifactConfig(
+                        model_name=model_config_from_context.name,
+                        model_version=model_config_from_context.version,
+                        artifact_name=artifact_name,
+                    )
+                    logger.info(
+                        f"Linking artifact `{artifact_name}` to model `{model_config_from_context.name}` version `{model_config_from_context.version}` implicitly."
+                    )
+            else:
+                artifact_config_ = artifact_config_.copy()
 
-            if artifact_config is not None:
-                if mc is None:
-                    if artifact_config.model_name is None:
+            if artifact_config_ is not None:
+                if model_config_from_context is None:
+                    if artifact_config_.model_name is None:
                         logger.warning(
                             "No model context found, unable to auto-link artifacts."
                         )
                         return
-                    else:
-                        from zenml.model.model_config import ModelConfig
+                if artifact_config_.model_name is not None:
+                    from zenml.model.model_config import ModelConfig
 
-                        mc = ModelConfig(
-                            name=artifact_config.model_name,
-                            version=artifact_config.model_version,
-                        )
-                artifact_config.artifact_name = (
-                    artifact_config.artifact_name or artifact_name
+                    model_config = ModelConfig(
+                        name=artifact_config_.model_name,
+                        version=artifact_config_.model_version,
+                    )
+                else:
+                    model_config = model_config_from_context
+
+                artifact_config_.artifact_name = (
+                    artifact_config_.artifact_name or artifact_name
                 )
-                artifact_config._pipeline_name = (
+                artifact_config_._pipeline_name = (
                     get_step_context().pipeline.name
                 )
-                artifact_config._step_name = get_step_context().step_run.name
-                artifact_config.link_to_model(
-                    artifact_uuid=artifact_uuid, model_config=mc
+                artifact_config_._step_name = get_step_context().step_run.name
+                artifact_config_.link_to_model(
+                    artifact_uuid=artifact_uuid,
+                    model_config=model_config,
                 )
 
     def _get_model_versions_from_artifacts(

@@ -211,14 +211,13 @@ class ModelConfig(BaseModel):
                             f"is still running with version `{model_version.name}`."
                         )
 
-                if not self.delete_new_version_on_failure:
+                if self.delete_new_version_on_failure:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
                         f"for model `{self.name}` since it already exists"
                     )
         except KeyError:
-            pass
-        self.get_or_create_model_version()
+            self.get_or_create_model_version()
 
     def get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model Control Plane.
@@ -274,11 +273,6 @@ class ModelConfig(BaseModel):
         Returns:
             The model version based on configuration.
         """
-        if self.model_version is not None:
-            from zenml.models.model_models import ModelVersionResponseModel
-
-            return ModelVersionResponseModel(**dict(self.model_version))
-
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
 
@@ -311,11 +305,6 @@ class ModelConfig(BaseModel):
         Returns:
             The model version based on configuration.
         """
-        if self.model_version is not None:
-            from zenml.models.model_models import ModelVersionResponseModel
-
-            return ModelVersionResponseModel(**dict(self.model_version))
-
         from zenml.client import Client
 
         zenml_client = Client()
@@ -368,7 +357,9 @@ class ModelConfig(BaseModel):
         self.trade_offs = self.trade_offs or model_config.trade_offs
         self.ethics = self.ethics or model_config.ethics
         if model_config.tags is not None:
-            self.tags = (self.tags or []) + model_config.tags
+            self.tags = list(
+                {t for t in self.tags or []}.union(set(model_config.tags))
+            )
 
         self.delete_new_version_on_failure &= (
             model_config.delete_new_version_on_failure
