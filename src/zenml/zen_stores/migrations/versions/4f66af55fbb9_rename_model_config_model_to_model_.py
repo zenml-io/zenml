@@ -44,6 +44,18 @@ def upgrade() -> None:
         """
     )
     connection.execute(update_config_fields)
+
+    update_config_fields = text(
+        """
+        UPDATE step_run
+        SET step_configuration = REPLACE(
+            step_configuration,
+            '"model_config_model"',
+            '"model_config"'
+        )
+        """
+    )
+    connection.execute(update_config_fields)
     # ### end Alembic commands ###
 
 
@@ -69,6 +81,18 @@ def downgrade() -> None:
         ),
         step_configurations = REPLACE(
             step_configurations,
+            '"model_config"',
+            '"model_config_model"'
+        )
+        """
+    )
+    connection.execute(update_config_fields)
+
+    update_config_fields = text(
+        """
+        UPDATE step_run
+        SET step_configuration = REPLACE(
+            step_configuration,
             '"model_config"',
             '"model_config_model"'
         )
