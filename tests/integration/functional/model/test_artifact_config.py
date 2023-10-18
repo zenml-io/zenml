@@ -228,13 +228,13 @@ def multi_named_output_step_from_self() -> (
     return 1, 2, 3
 
 
-@pipeline(enable_cache=False)
-def multi_named_pipeline_from_self():
+@pipeline
+def multi_named_pipeline_from_self(enable_cache: bool):
     """Multi output linking from Annotated."""
-    multi_named_output_step_from_self()
+    multi_named_output_step_from_self.with_options(enable_cache=enable_cache)()
 
 
-def test_link_multiple_named_outputs_with_self_context():
+def test_link_multiple_named_outputs_with_self_context_and_caching():
     """Test multi output linking with context defined in Annotated."""
     with model_killer():
         client = Client()
@@ -266,32 +266,42 @@ def test_link_multiple_named_outputs_with_self_context():
             )
         )
 
-        multi_named_pipeline_from_self()
+        for run_count in range(1, 3):
+            multi_named_pipeline_from_self(run_count == 2)
 
-        al1 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=mv1.model.id,
-                model_version_id=mv1.id,
+            al1 = client.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=mv1.model.id,
+                    model_version_id=mv1.id,
+                )
             )
-        )
-        al2 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=mv2.model.id,
-                model_version_id=mv2.id,
+            al2 = client.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=mv2.model.id,
+                    model_version_id=mv2.id,
+                )
             )
-        )
-        assert al1.size == 2
-        assert al2.size == 1
+            assert al1.size == 2
+            assert al2.size == 1
 
-        assert {al.name for al in al1} == {
-            "1",
-            "2",
-        }
-        assert al2[0].name == "3"
+            assert {al.name for al in al1} == {
+                "1",
+                "2",
+            }
+            assert al2[0].name == "3"
+
+            # clean-up links to test caching linkage
+            for mv, al in zip([mv1, mv2], [al1, al2]):
+                for al_ in al:
+                    client.zen_store.delete_model_version_artifact_link(
+                        model_name_or_id=mv.model.id,
+                        model_version_name_or_id=mv.id,
+                        model_version_artifact_link_name_or_id=al_.id,
+                    )
 
 
 @step(model_config=ModelConfig(name="step", version="step"))
