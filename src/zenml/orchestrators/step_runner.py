@@ -655,16 +655,16 @@ class StepRunner:
                             "No model context found, unable to auto-link artifacts."
                         )
                         return
-                else:
-                    if artifact_config_.model_name is not None:
-                        from zenml.model.model_config import ModelConfig
 
-                        model_config = ModelConfig(
-                            name=artifact_config_.model_name,
-                            version=artifact_config_.model_version,
-                        )
-                    else:
-                        model_config = model_config_from_context
+                if artifact_config_.model_name is not None:
+                    from zenml.model.model_config import ModelConfig
+
+                    model_config = ModelConfig(
+                        name=artifact_config_.model_name,
+                        version=artifact_config_.model_version,
+                    )
+                else:
+                    model_config = model_config_from_context
 
                 if model_config:
                     artifact_config_.artifact_name = (
