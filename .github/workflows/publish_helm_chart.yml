@@ -4,6 +4,9 @@ name: Publish Helm Chart
 on: 
   workflow_call:
   workflow_dispatch:
+  push:
+    branches:
+      - fix/helm-400-error
 
 jobs:
   publish_to_ecr:
@@ -27,7 +30,7 @@ jobs:
       # It replaces the line that starts with "version: " with "version: <tag version>"
       - name: Add tag version to Chart.yaml
         run: |
-          sed -i "s/version: .*/version: \"${{ github.ref_name }}\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
+          sed -i "s/version: .*/version: \"test\"/" src/zenml/zen_server/deploy/helm/Chart.yaml
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -42,6 +45,12 @@ jobs:
           mask-password: 'true'
           registry-type: public
 
+      - name: install helm with version greater than v3.13.1
+        uses: azure/setup-helm@v3
+        with:
+          version: "v3.13.1" # default is latest (stable)
+        id: install-helm
+
       - name: Package and push helm chart to Amazon ECR Public
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
@@ -49,4 +58,4 @@ jobs:
           REPOSITORY: zenml
         run: |
           helm package src/zenml/zen_server/deploy/helm
-          helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS
+          helm push $REPOSITORY-test.tgz oci://$REGISTRY/$REGISTRY_ALIAS
