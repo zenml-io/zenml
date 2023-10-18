@@ -50,7 +50,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     - By providing an artifact name and a pipeline run name.
     - By providing an artifact name and a pipeline name, in which case the
         artifact will be searched in the latest run of the pipeline.
-    - By only prividing an artifact name, in which case the latest version
+    - By only providing an artifact name, in which case the latest version
       of the artifact will be used.
 
     Args:
