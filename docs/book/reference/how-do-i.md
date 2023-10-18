@@ -58,15 +58,6 @@ Read [the documentation on self-hosted ZenML
 deployments](https://docs.zenml.io/deploying-zenml/zenml-self-hosted) in which
 several options are presented.
 
-- **dynamic pipelines and steps**?
-
-Please read our [general information on how to compose steps + pipelines
-together](../user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
-to start with. You might also find the code examples in [our guide to
-implementing hyperparameter
-tuning](../user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
-which is related to this topic.
-
 - **hyperparameter tuning**?
 
 [Our dedicated documentation
@@ -80,12 +71,23 @@ metadata database and reset your client. Note that this is a destructive action,
 so feel free to [reach out to us on Slack](https://zenml.io/slack-invite/)
 before doing this if you are unsure.
 
+- **steps that create other steps AKA dynamic pipelines and steps**?
+
+Please read our [general information on how to compose steps + pipelines
+together](../user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
+to start with. You might also find the code examples in [our guide to
+implementing hyperparameter
+tuning](../user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
+which is related to this topic.
+
 - **templates**: using starter code with ZenML?
 
 [Project templates](../user-guide/starter-guide/using-project-templates) allow
 you to get going quickly with ZenML. We recommend the Starter template
 (`starter`) for most use cases which gives you a basic scaffold and structure
-around which you can write your own code.
+around which you can write your own code. You can also build templates for
+others inside a Git repository and use them with ZenML's templates
+functionality.
 
 - **upgrade** my ZenML client and/or server?
 
@@ -96,7 +98,7 @@ section](../deploying-zenml/zenml-self-hosted/manage-the-deployed-services/upgra
 which covers most of the ways you might do this as well as common
 troubleshooting steps.
 
-- use a <YOUR_FAVORITE_COMPONENT_GOES_HERE> stack component?
+- use a <YOUR_COMPONENT_GOES_HERE> stack component?
 
 For information on how to use a specific stack component, please refer to [the
 component guide](../stacks-and-components/component-guide/component-guide.md)

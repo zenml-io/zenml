@@ -56,7 +56,9 @@ to make this work completely smoothly. Here are some of the known issues:
   warnings when installing `label_studio` via `zenml integration install ...`.
   We have found these warnings to be mostly harmless. You might find you need to
   separate your installations of Label Studio and any other integrations you
-  need for your environment / pipeline, however. Note [the warning on our own documentation page](../../../stacks-and-components/component-guide/annotators/label-studio.md#how-to-deploy-it)
+  need for your environment / pipeline, however. Note [the warning on our own
+  documentation
+  page](../../../stacks-and-components/component-guide/annotators/label-studio.md#how-to-deploy-it)
   for the Label Studio integration which currently breaks ZenML's CLI.
 - `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on
   account of another dependency of ZenML. Using versions of `click` in your own
@@ -68,13 +70,13 @@ It is possible to skip ZenML's integration installation process and install
 dependencies manually. This is not recommended, but it is possible and can be
 run at your own risk.
 
-{% hint style="info" %}
-Note that the `zenml integration install ...` command runs a `pip install ...`
-under the hood as part of its implementation, taking the dependencies listed in
-the integration object and installing them. For example, `zenml integration
-install gcp` will run `pip install "kfp==1.8.16" "gcsfs"
-"google-cloud-secret-manager" ...` and so on, since they are [specified in the
-integration definition](https://github.com/zenml-io/zenml/blob/ec2283473e5e0c5a2f1b7868875539a83e617f8c/src/zenml/integrations/gcp/__init__.py#L45).
+{% hint style="info" %} Note that the `zenml integration install ...` command
+runs a `pip install ...` under the hood as part of its implementation, taking
+the dependencies listed in the integration object and installing them. For
+example, `zenml integration install gcp` will run `pip install "kfp==1.8.16"
+"gcsfs" "google-cloud-secret-manager" ...` and so on, since they are [specified
+in the integration
+definition](https://github.com/zenml-io/zenml/blob/ec2283473e5e0c5a2f1b7868875539a83e617f8c/src/zenml/integrations/gcp/__init__.py#L45).
 {% endhint %}
 
 To do this, you will need to install the dependencies for the integration you
