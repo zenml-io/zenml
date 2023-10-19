@@ -73,12 +73,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -91,82 +85,75 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
 )
-from zenml.new_models.base import (
-    BaseResponse, Page
-)
+from zenml.new_models.base import BaseResponse, Page
 from zenml.new_models.core import (
     ArtifactFilter,
-    ArtifactRequest,
     ArtifactResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
-    CodeRepositoryUpdate,
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    ComponentUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
-    FlavorUpdate,
-    StackResponse,
-    UserFilter,
-    UserUpdate,
-    UserResponse,
-    UserRequest,
-    TeamFilter,
-    TeamRequest,
-    TeamResponse,
-    TeamUpdate,
-    PipelineUpdate,
-    PipelineFilter,
-    PipelineRequest,
-    PipelineResponse,
-    PipelineBuildRequest,
-    PipelineBuildResponse,
     PipelineBuildFilter,
+    PipelineBuildResponse,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
-    PipelineRunUpdate,
-    PipelineRunResponse,
+    PipelineFilter,
+    PipelineResponse,
     PipelineRunFilter,
-    PipelineRunRequest,
-    RoleUpdate,
+    PipelineRunResponse,
     RoleFilter,
     RoleRequest,
     RoleResponse,
-    RunMetadataResponse,
     RunMetadataFilter,
     RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleResponse,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorResponse,
     ServiceConnectorUpdate,
-    ServiceConnectorRequest,
-    ServiceConnectorFilter,
-    ScheduleUpdate,
-    ScheduleFilter,
-    ScheduleRequest,
-    StepRunUpdate,
-    StepRunFilter,
-    StepRunRequest,
-    StepRunResponse,
-    ScheduleResponse,
-    UserRoleAssignmentRequest,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentResponse,
-    StackUpdate,
     StackFilter,
     StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunResponse,
+    TeamFilter,
+    TeamRequest,
+    TeamResponse,
     TeamRoleAssignmentFilter,
     TeamRoleAssignmentRequest,
     TeamRoleAssignmentResponse,
+    TeamUpdate,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserUpdate,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.new_models.service_connector_type import ServiceConnectorTypeModel, ServiceConnectorResourcesModel
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
+)
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -207,9 +194,7 @@ class ClientConfiguration(FileSyncModel):
                 "workspace."
             )
 
-    def set_active_workspace(
-        self, workspace: "WorkspaceResponse"
-    ) -> None:
+    def set_active_workspace(self, workspace: "WorkspaceResponse") -> None:
         """Set the workspace for the local client.
 
         Args:
@@ -1440,9 +1425,7 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdate(
-            name=new_name or workspace.name
-        )
+        workspace_update = WorkspaceUpdate(name=new_name or workspace.name)
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(
@@ -2805,9 +2788,7 @@ class Client(metaclass=ClientMetaClass):
 
     # ----------------------------- Deployments -----------------------------
 
-    def get_deployment(
-        self, id_or_prefix: str
-    ) -> PipelineDeploymentResponse:
+    def get_deployment(self, id_or_prefix: str) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
@@ -3345,7 +3326,7 @@ class Client(metaclass=ClientMetaClass):
             self._delete_artifact_metadata(artifact=artifact)
 
     def _delete_artifact_from_artifact_store(
-            self, artifact: ArtifactResponse
+        self, artifact: ArtifactResponse
     ) -> None:
         """Delete an artifact from the artifact store.
 
@@ -3386,9 +3367,7 @@ class Client(metaclass=ClientMetaClass):
                 f"Deleted artifact '{artifact.uri}' from the artifact store."
             )
 
-    def _delete_artifact_metadata(
-        self, artifact: ArtifactResponse
-    ) -> None:
+    def _delete_artifact_metadata(self, artifact: ArtifactResponse) -> None:
         """Delete the metadata of an artifact from the database.
 
         Args:
@@ -3869,7 +3848,7 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_secret(secret_id=secret.id)
 
     def get_secret_by_name_and_scope(
-            self, name: str, scope: Optional[SecretScope] = None
+        self, name: str, scope: Optional[SecretScope] = None
     ) -> SecretResponseModel:
         """Fetches a registered secret with a given name and optional scope.
 
@@ -3918,8 +3897,8 @@ class Client(metaclass=ClientMetaClass):
         raise KeyError(msg)
 
     def list_secrets_in_scope(
-            self,
-            scope: SecretScope,
+        self,
+        scope: SecretScope,
     ) -> Page[SecretResponseModel]:
         """Fetches the list of secret in a given scope.
 
