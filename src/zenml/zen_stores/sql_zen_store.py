@@ -4586,8 +4586,9 @@ class SqlZenStore(BaseZenStore):
                     # The secret already exists, try again
                     continue
 
+    @staticmethod
     def _populate_connector_type(
-        self, *service_connectors: ServiceConnectorResponse
+        *service_connectors: ServiceConnectorResponse
     ) -> None:
         """Populates the connector type of the given service connectors.
 
@@ -4608,8 +4609,8 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
+    @staticmethod
     def _list_filtered_service_connectors(
-        self,
         session: Session,
         query: Union[
             Select[ServiceConnectorSchema],
