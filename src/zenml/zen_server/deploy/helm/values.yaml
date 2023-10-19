@@ -347,6 +347,11 @@ zenml:
   # mounted as environment variables in the ZenML server container.
   secretEnvironment: {}
 
+  # Source pointing to a class implementing the RBAC interface defined by
+  # `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
+  # RBAC will not be enabled for this server.
+  rbacImplementationSource:
+
   service:
     type: ClusterIP
     port: 80
