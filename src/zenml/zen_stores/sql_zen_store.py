@@ -4588,7 +4588,7 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _populate_connector_type(
-        *service_connectors: ServiceConnectorResponse
+        *service_connectors: ServiceConnectorResponse,
     ) -> None:
         """Populates the connector type of the given service connectors.
 
