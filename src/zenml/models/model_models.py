@@ -618,5 +618,5 @@ class ModelUpdateModel(BaseModel):
     use_cases: Optional[str]
     limitations: Optional[str]
     trade_offs: Optional[str]
-    ethic: Optional[str]
+    ethics: Optional[str]
     tags: Optional[List[str]]

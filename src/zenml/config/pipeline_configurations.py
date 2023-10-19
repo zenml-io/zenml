@@ -19,11 +19,10 @@ from pydantic import validator
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
-from zenml.models.model_base_model import ModelConfigModel
+from zenml.model.model_config import ModelConfig
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.model.model_config import ModelConfig
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 
@@ -41,27 +40,11 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
-    model_config_model: Optional[ModelConfigModel] = None
+    model_config: Optional[ModelConfig] = None
 
     _convert_source = convert_source_validator(
         "failure_hook_source", "success_hook_source"
     )
-
-    @property
-    def model_config(self) -> Optional["ModelConfig"]:
-        """Gets a ModelConfig object out of the model config model.
-
-        This is a technical circular import resolver.
-
-        Returns:
-            The model config object, if configured.
-        """
-        if self.model_config_model is None:
-            return None
-
-        from zenml.model.model_config import ModelConfig
-
-        return ModelConfig.parse_obj(self.model_config_model.dict())
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
