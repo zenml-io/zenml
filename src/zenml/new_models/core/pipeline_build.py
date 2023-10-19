@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.new_models.base import (
+    BaseZenModel,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -36,8 +37,8 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class PipelineBuildRequest(WorkspaceScopedRequest):
-    """Request model for pipelines builds."""
+class PipelineBuildBase(BaseZenModel):
+    """Base model for pipeline builds."""
 
     images: Dict[str, "BuildItem"] = Field(
         default={}, title="The images of this build."
@@ -55,14 +56,18 @@ class PipelineBuildRequest(WorkspaceScopedRequest):
     python_version: Optional[str] = Field(
         title="The Python version used for this build."
     )
-    checksum: Optional[str] = Field(title="The build checksum.")
 
-    stack: Optional[UUID] = Field(
-        title="The stack that was used for this build."
-    )
-    pipeline: Optional[UUID] = Field(
-        title="The pipeline that was used for this build."
-    )
+    # Helper methods
+    @property
+    def requires_code_download(self) -> bool:
+        """Whether the build requires code download.
+
+        Returns:
+            Whether the build requires code download.
+        """
+        return any(
+            item.requires_code_download for item in self.images.values()
+        )
 
     @staticmethod
     def get_image_key(component_key: str, step: Optional[str] = None) -> str:
@@ -79,6 +84,85 @@ class PipelineBuildRequest(WorkspaceScopedRequest):
             return f"{step}.{component_key}"
         else:
             return component_key
+
+    def get_image(self, component_key: str, step: Optional[str] = None) -> str:
+        """Get the image built for a specific key.
+
+        Args:
+            component_key: The key for which to get the image.
+            step: The pipeline step for which to get the image. If no image
+                exists for this step, will fall back to the pipeline image for
+                the same key.
+
+        Returns:
+            The image name or digest.
+        """
+        return self._get_item(component_key=component_key, step=step).image
+
+    def get_settings_checksum(
+        self, component_key: str, step: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the settings checksum for a specific key.
+
+        Args:
+            component_key: The key for which to get the checksum.
+            step: The pipeline step for which to get the checksum. If no
+                image exists for this step, will fall back to the pipeline image
+                for the same key.
+
+        Returns:
+            The settings checksum.
+        """
+        return self._get_item(
+            component_key=component_key, step=step
+        ).settings_checksum
+
+    def _get_item(
+        self, component_key: str, step: Optional[str] = None
+    ) -> BuildItem:
+        """Get the item for a specific key.
+
+        Args:
+            component_key: The key for which to get the item.
+            step: The pipeline step for which to get the item. If no item
+                exists for this step, will fall back to the item for
+                the same key.
+
+        Raises:
+            KeyError: If no item exists for the given key.
+
+        Returns:
+            The build item.
+        """
+        if step:
+            try:
+                combined_key = self.get_image_key(
+                    component_key=component_key, step=step
+                )
+                return self.images[combined_key]
+            except KeyError:
+                pass
+
+        try:
+            return self.images[component_key]
+        except KeyError:
+            raise KeyError(
+                f"Unable to find image for key {component_key}. Available keys: "
+                f"{set(self.images)}."
+            )
+
+
+class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
+    """Request model for pipelines builds."""
+
+    checksum: Optional[str] = Field(title="The build checksum.")
+
+    stack: Optional[UUID] = Field(
+        title="The stack that was used for this build."
+    )
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline that was used for this build."
+    )
 
 
 # ------------------ Update Model ------------------
@@ -143,6 +227,22 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
         return any(
             item.requires_code_download for item in self.images.values()
         )
+
+    @staticmethod
+    def get_image_key(component_key: str, step: Optional[str] = None) -> str:
+        """Get the image key.
+
+        Args:
+            component_key: The component key.
+            step: The pipeline step for which the image was built.
+
+        Returns:
+            The image key.
+        """
+        if step:
+            return f"{step}.{component_key}"
+        else:
+            return component_key
 
     def get_image(self, component_key: str, step: Optional[str] = None) -> str:
         """Get the image built for a specific key.

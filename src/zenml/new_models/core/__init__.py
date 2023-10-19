@@ -69,6 +69,7 @@ from zenml.new_models.core.pipeline import (
     PipelineResponseMetadata,
 )
 from zenml.new_models.core.pipeline_build import (
+    PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildFilter,
     PipelineBuildResponse,
@@ -76,6 +77,7 @@ from zenml.new_models.core.pipeline_build import (
     PipelineBuildResponseMetadata,
 )
 from zenml.new_models.core.pipeline_deployment import (
+    PipelineDeploymentBase,
     PipelineDeploymentRequest,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
@@ -229,11 +231,13 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
+    "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",
     "PipelineBuildResponse",
     "PipelineBuildResponseBody",
     "PipelineBuildResponseMetadata",
+    "PipelineDeploymentBase",
     "PipelineDeploymentRequest",
     "PipelineDeploymentFilter",
     "PipelineDeploymentResponse",

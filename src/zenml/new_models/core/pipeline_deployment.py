@@ -22,6 +22,7 @@ from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.new_models.base import (
+    BaseZenModel,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -45,22 +46,9 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class PipelineDeploymentRequest(WorkspaceScopedRequest):
-    """Request model for pipeline deployments."""
+class PipelineDeploymentBase(BaseZenModel):
+    """Base model for pipeline deployments."""
 
-    stack: UUID = Field(title="The stack associated with the deployment.")
-    pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the deployment."
-    )
-    build: Optional[UUID] = Field(
-        title="The build associated with the deployment."
-    )
-    schedule: Optional[UUID] = Field(
-        title="The schedule associated with the deployment."
-    )
-    code_reference: Optional["CodeReferenceRequest"] = Field(
-        title="The code reference associated with the deployment."
-    )
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",
     )
@@ -73,10 +61,10 @@ class PipelineDeploymentRequest(WorkspaceScopedRequest):
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
     )
-    client_version: str = Field(
+    client_version: Optional[str] = Field(
         title="The version of the ZenML installation on the client side."
     )
-    server_version: str = Field(
+    server_version: Optional[str] = Field(
         title="The version of the ZenML installation on the server side."
     )
 
@@ -103,6 +91,26 @@ class PipelineDeploymentRequest(WorkspaceScopedRequest):
             step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
             for step in self.step_configurations.values()
         )
+
+
+class PipelineDeploymentRequest(
+    PipelineDeploymentBase, WorkspaceScopedRequest
+):
+    """Request model for pipeline deployments."""
+
+    stack: UUID = Field(title="The stack associated with the deployment.")
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline associated with the deployment."
+    )
+    build: Optional[UUID] = Field(
+        title="The build associated with the deployment."
+    )
+    schedule: Optional[UUID] = Field(
+        title="The schedule associated with the deployment."
+    )
+    code_reference: Optional["CodeReferenceRequest"] = Field(
+        title="The code reference associated with the deployment."
+    )
 
 
 # ------------------ Update Model ------------------
