@@ -43,17 +43,23 @@ def upgrade() -> None:
     )
     for id_, data in rows_pd:
         data_dict = json.loads(data)
+        has_changes = False
         for k in data_dict:
-            for eip_name in data_dict[k]["config"]["external_input_artifacts"]:
-                current = data_dict[k]["config"]["external_input_artifacts"][
-                    eip_name
-                ]
-                if not isinstance(current, dict):
-                    data_dict[k]["config"]["external_input_artifacts"][
-                        eip_name
-                    ] = {"id": current}
-        data = json.dumps(data_dict)
-        session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
+            if "external_input_artifacts" in data_dict[k]["config"]:
+                for eip_name in data_dict[k]["config"][
+                    "external_input_artifacts"
+                ]:
+                    current = data_dict[k]["config"][
+                        "external_input_artifacts"
+                    ][eip_name]
+                    if not isinstance(current, dict):
+                        data_dict[k]["config"]["external_input_artifacts"][
+                            eip_name
+                        ] = {"id": current}
+                        has_changes = True
+        if has_changes:
+            data = json.dumps(data_dict)
+            session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
 
     # update step_run
     rows_sr = session.execute(
@@ -67,14 +73,20 @@ def upgrade() -> None:
     )
     for id_, data in rows_sr:
         data_dict = json.loads(data)
-        for eip_name in data_dict["config"]["external_input_artifacts"]:
-            current = data_dict["config"]["external_input_artifacts"][eip_name]
-            if not isinstance(current, dict):
-                data_dict["config"]["external_input_artifacts"][eip_name] = {
-                    "id": current
-                }
-        data = json.dumps(data_dict)
-        session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
+        has_changes = False
+        if "external_input_artifacts" in data_dict["config"]:
+            for eip_name in data_dict["config"]["external_input_artifacts"]:
+                current = data_dict["config"]["external_input_artifacts"][
+                    eip_name
+                ]
+                if not isinstance(current, dict):
+                    data_dict["config"]["external_input_artifacts"][
+                        eip_name
+                    ] = {"id": current}
+                    has_changes = True
+        if has_changes:
+            data = json.dumps(data_dict)
+            session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
     session.commit()
     # ### end Alembic commands ###
 
@@ -97,16 +109,22 @@ def downgrade() -> None:
     for id_, data in rows:
         data_dict = json.loads(data)
         for k in data_dict:
-            for eip_name in data_dict[k]["config"]["external_input_artifacts"]:
-                current = data_dict[k]["config"]["external_input_artifacts"][
-                    eip_name
-                ]
-                if isinstance(current, dict):
-                    data_dict[k]["config"]["external_input_artifacts"][
-                        eip_name
-                    ] = current["id"]
-        data = json.dumps(data_dict)
-        session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
+            has_changes = False
+            if "external_input_artifacts" in data_dict[k]["config"]:
+                for eip_name in data_dict[k]["config"][
+                    "external_input_artifacts"
+                ]:
+                    current = data_dict[k]["config"][
+                        "external_input_artifacts"
+                    ][eip_name]
+                    if isinstance(current, dict):
+                        data_dict[k]["config"]["external_input_artifacts"][
+                            eip_name
+                        ] = current["id"]
+                        has_changes = True
+        if has_changes:
+            data = json.dumps(data_dict)
+            session.execute(update_query_pd, params=(dict(data=data, id_=id_)))
 
     # update step_run
     rows_sr = session.execute(
@@ -120,14 +138,20 @@ def downgrade() -> None:
     )
     for id_, data in rows_sr:
         data_dict = json.loads(data)
-        for eip_name in data_dict["config"]["external_input_artifacts"]:
-            current = data_dict["config"]["external_input_artifacts"][eip_name]
-            if isinstance(current, dict):
-                data_dict["config"]["external_input_artifacts"][
+        has_changes = False
+        if "external_input_artifacts" in data_dict[k]["config"]:
+            for eip_name in data_dict["config"]["external_input_artifacts"]:
+                current = data_dict["config"]["external_input_artifacts"][
                     eip_name
-                ] = current["id"]
-        data = json.dumps(data_dict)
-        session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
+                ]
+                if isinstance(current, dict):
+                    data_dict["config"]["external_input_artifacts"][
+                        eip_name
+                    ] = current["id"]
+                    has_changes = True
+        if has_changes:
+            data = json.dumps(data_dict)
+            session.execute(update_query_sr, params=(dict(data=data, id_=id_)))
 
     session.commit()
     # ### end Alembic commands ###
