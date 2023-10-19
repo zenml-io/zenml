@@ -31,7 +31,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
-from aws_profile_manager import Common  # type: ignore[import]
+from aws_profile_manager import Common  # type: ignore[import-untyped]
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner

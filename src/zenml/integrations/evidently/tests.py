@@ -30,8 +30,8 @@ from evidently.tests.base_test import (  # type: ignore[import-untyped]
     Test,
     generate_column_tests,
 )
-from evidently.utils.generators import (
-    BaseGenerator,  # type: ignore[import-untyped]
+from evidently.utils.generators import (  # type: ignore[import-untyped]
+    BaseGenerator,
 )
 from pydantic import BaseModel, Field
 

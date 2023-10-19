@@ -19,7 +19,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
-from great_expectations.core import ExpectationSuite  # type: ignore[import]
+from great_expectations.core import (
+    ExpectationSuite,  # type: ignore[import-untyped]
+)
 from great_expectations.core.expectation_validation_result import (  # type: ignore[import-untyped]
     ExpectationSuiteValidationResult,
 )

@@ -34,7 +34,7 @@ from zenml.stack import Flavor
 
 # Fix numba errors in Docker and suppress logs and deprecation warning spam
 try:
-    from numba.core.errors import (  # type: ignore[import-untyped]
+    from numba.core.errors import (  # type: ignore[import-not-found]
         NumbaDeprecationWarning,
         NumbaPendingDeprecationWarning,
     )
