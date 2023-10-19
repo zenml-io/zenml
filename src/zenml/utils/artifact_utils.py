@@ -25,12 +25,8 @@ from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ArtifactRequestModel, ArtifactResponseModel
-from zenml.models.visualization_models import (
-    LoadedVisualizationModel,
-    VisualizationModel,
-)
 from zenml.new.steps.step_context import get_step_context
+from zenml.new_models.loaded_visualization import LoadedVisualization
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -40,8 +36,11 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.new_models.core import (
+        ArtifactResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
@@ -51,15 +50,17 @@ METADATA_DATATYPE = "datatype"
 METADATA_MATERIALIZER = "materializer"
 
 
-def save_model_metadata(model_artifact: "ArtifactResponseModel") -> str:
+def save_model_metadata(model_artifact: "ArtifactResponse") -> str:
     """Save a zenml model artifact metadata to a YAML file.
 
-    This function is used to extract and save information from a zenml model artifact
-    such as the model type and materializer. The extracted information will be
-    the key to loading the model into memory in the inference environment.
+    This function is used to extract and save information from a zenml model
+    artifact such as the model type and materializer. The extracted information
+    will be the key to loading the model into memory in the inference
+    environment.
 
     datatype: the model type. This is the path to the model class.
-    materializer: the materializer class. This is the path to the materializer class.
+    materializer: the materializer class. This is the path to the materializer
+        class.
 
     Args:
         model_artifact: the artifact to extract the metadata from.
@@ -114,7 +115,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
     return model
 
 
-def load_artifact(artifact: "ArtifactResponseModel") -> Any:
+def load_artifact(artifact: "ArtifactResponse") -> Any:
     """Load the given artifact into memory.
 
     Args:
@@ -205,11 +206,11 @@ def _load_artifact(
 
 
 def load_artifact_visualization(
-    artifact: "ArtifactResponseModel",
+    artifact: "ArtifactResponse",
     index: int = 0,
     zen_store: Optional["BaseZenStore"] = None,
     encode_image: bool = False,
-) -> LoadedVisualizationModel:
+) -> LoadedVisualization:
     """Load a visualization of the given artifact.
 
     Args:
@@ -259,7 +260,7 @@ def load_artifact_visualization(
     if visualization.type == VisualizationType.IMAGE and encode_image:
         value = base64.b64encode(bytes(value))
 
-    return LoadedVisualizationModel(type=visualization.type, value=value)
+    return LoadedVisualization(type=visualization.type, value=value)
 
 
 def _load_artifact_store(
@@ -375,16 +376,21 @@ def upload_artifact(
     Returns:
         The ID of the published artifact.
     """
+    from zenml.new_models.core import (
+        ArtifactRequest,
+        ArtifactVisualizationRequest,
+    )
+
     data_type = type(data)
     materializer.validate_type_compatibility(data_type)
     materializer.save(data)
 
-    visualizations: List[VisualizationModel] = []
+    visualizations: List["ArtifactVisualizationRequest"] = []
     if include_visualizations:
         try:
             vis_data = materializer.save_visualizations(data)
             for vis_uri, vis_type in vis_data.items():
-                vis_model = VisualizationModel(
+                vis_model = ArtifactVisualizationRequest(
                     type=vis_type,
                     uri=vis_uri,
                 )
@@ -407,7 +413,7 @@ def upload_artifact(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
             )
 
-    artifact = ArtifactRequestModel(
+    artifact = ArtifactRequest(
         name=name,
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
@@ -428,8 +434,8 @@ def upload_artifact(
 
 
 def get_producer_step_of_artifact(
-    artifact: "ArtifactResponseModel",
-) -> "StepRunResponseModel":
+    artifact: "ArtifactResponse",
+) -> "StepRunResponse":
     """Get the step run that produced a given artifact.
 
     Args:
@@ -450,8 +456,8 @@ def get_producer_step_of_artifact(
 
 
 def get_artifacts_of_pipeline_run(
-    pipeline_run: "PipelineRunResponseModel", only_produced: bool = False
-) -> List["ArtifactResponseModel"]:
+    pipeline_run: "PipelineRunResponse", only_produced: bool = False
+) -> List["ArtifactResponse"]:
     """Get all artifacts produced during a pipeline run.
 
     Args:
@@ -462,7 +468,7 @@ def get_artifacts_of_pipeline_run(
     Returns:
         A list of all artifacts produced during the pipeline run.
     """
-    artifacts: List["ArtifactResponseModel"] = []
+    artifacts: List["ArtifactResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
             artifacts.extend(step.outputs.values())

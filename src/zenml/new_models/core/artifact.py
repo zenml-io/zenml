@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -21,6 +21,7 @@ from pydantic import Field
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
+from zenml.logger import get_logger
 from zenml.new_models.base import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -35,10 +36,13 @@ if TYPE_CHECKING:
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
     )
+    from zenml.new_models.core.pipeline_run import PipelineRunResponse
     from zenml.new_models.core.run_metadata import (
         RunMetadataResponse,
     )
+    from zenml.new_models.core.step_run import StepRunResponse
 
+logger = get_logger(__name__)
 
 # ------------------ Request Model ------------------
 
@@ -172,6 +176,59 @@ class ArtifactResponse(WorkspaceScopedResponse):
     def data_type(self):
         """The `data_type` property."""
         return self.metadata.data_type
+
+    # Helper methods
+    @property
+    def step(self) -> "StepRunResponse":
+        """Get the step that produced this artifact.
+
+        Returns:
+            The step that produced this artifact.
+        """
+        from zenml.utils.artifact_utils import get_producer_step_of_artifact
+
+        return get_producer_step_of_artifact(self)
+
+    @property
+    def run(self) -> "PipelineRunResponse":
+        """Get the pipeline run that produced this artifact.
+
+        Returns:
+            The pipeline run that produced this artifact.
+        """
+        return self.step.run
+
+    def load(self) -> Any:
+        """Materializes (loads) the data stored in this artifact.
+
+        Returns:
+            The materialized data.
+        """
+        from zenml.utils.artifact_utils import load_artifact
+
+        return load_artifact(self)
+
+    def read(self) -> Any:
+        """(Deprecated) Materializes (loads) the data stored in this artifact.
+
+        Returns:
+            The materialized data.
+        """
+        logger.warning(
+            "`artifact.read()` is deprecated and will be removed in a future "
+            "release. Please use `artifact.load()` instead."
+        )
+        return self.load()
+
+    def visualize(self, title: Optional[str] = None) -> None:
+        """Visualize the artifact in notebook environments.
+
+        Args:
+            title: Optional title to show before the visualizations.
+        """
+        from zenml.utils.visualization_utils import visualize_artifact
+
+        visualize_artifact(self, title=title)
 
 
 # ------------------ Filter Model ------------------

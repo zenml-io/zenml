@@ -33,7 +33,6 @@ class ArtifactVisualizationRequest(BaseRequest):
 
     type: VisualizationType
     uri: str
-    artifact_id: UUID
 
 
 # ------------------ Update Model ------------------

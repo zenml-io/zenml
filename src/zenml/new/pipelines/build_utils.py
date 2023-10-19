@@ -27,15 +27,13 @@ import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.logger import get_logger
-from zenml.models import (
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
+from zenml.new_models.build_item import BuildItem
+from zenml.new_models.core import (
+    PipelineBuildBase,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentBase,
 )
-from zenml.models.pipeline_build_models import (
-    BuildItem,
-    PipelineBuildBaseModel,
-)
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 from zenml.utils import (
     source_utils,
@@ -52,12 +50,12 @@ logger = get_logger(__name__)
 
 
 def reuse_or_create_pipeline_build(
-    deployment: "PipelineDeploymentBaseModel",
+    deployment: "PipelineDeploymentBase",
     allow_build_reuse: bool,
     pipeline_id: Optional[UUID] = None,
-    build: Union["UUID", "PipelineBuildBaseModel", None] = None,
+    build: Union["UUID", "PipelineBuildBase", None] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
-) -> Optional["PipelineBuildResponseModel"]:
+) -> Optional["PipelineBuildResponse"]:
     """Loads or creates a pipeline build.
 
     Args:
@@ -99,12 +97,10 @@ def reuse_or_create_pipeline_build(
             code_repository=code_repository,
         )
 
-    build_model = None
-
     if isinstance(build, UUID):
         build_model = Client().zen_store.get_build(build_id=build)
     else:
-        build_request = PipelineBuildRequestModel(
+        build_request = PipelineBuildRequest(
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
             stack=Client().active_stack_model.id,
@@ -123,9 +119,9 @@ def reuse_or_create_pipeline_build(
 
 
 def find_existing_build(
-    deployment: "PipelineDeploymentBaseModel",
+    deployment: "PipelineDeploymentBase",
     code_repository: "BaseCodeRepository",
-) -> Optional["PipelineBuildResponseModel"]:
+) -> Optional["PipelineBuildResponse"]:
     """Find an existing build for a deployment.
 
     Args:
@@ -156,9 +152,9 @@ def find_existing_build(
         # The build is local and it's not clear whether the images
         # exist on the current machine or if they've been overwritten.
         # TODO: Should we support this by storing the unique Docker ID for
-        # the image and checking if an image with that ID exists locally?
+        #   the image and checking if an image with that ID exists locally?
         is_local=False,
-        # The build contains some code which might be different than the
+        # The build contains some code which might be different from the
         # local code the user is expecting to run
         contains_code=False,
         zenml_version=zenml.__version__,
@@ -174,10 +170,10 @@ def find_existing_build(
 
 
 def create_pipeline_build(
-    deployment: "PipelineDeploymentBaseModel",
+    deployment: "PipelineDeploymentBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
-) -> Optional["PipelineBuildResponseModel"]:
+) -> Optional["PipelineBuildResponse"]:
     """Builds images and registers the output in the server.
 
     Args:
@@ -211,7 +207,7 @@ def create_pipeline_build(
     checksums: Dict[str, str] = {}
 
     for build_config in required_builds:
-        combined_key = PipelineBuildBaseModel.get_image_key(
+        combined_key = PipelineBuildBase.get_image_key(
             component_key=build_config.key, step=build_config.step_name
         )
         checksum = build_config.compute_settings_checksum(
@@ -288,7 +284,7 @@ def create_pipeline_build(
         required_builds, stack=stack, code_repository=code_repository
     )
 
-    build_request = PipelineBuildRequestModel(
+    build_request = PipelineBuildRequest(
         user=client.active_user.id,
         workspace=client.active_workspace.id,
         stack=client.active_stack_model.id,
@@ -324,7 +320,7 @@ def compute_build_checksum(
     hash_ = hashlib.md5()  # nosec
 
     for item in items:
-        key = PipelineBuildBaseModel.get_image_key(
+        key = PipelineBuildBase.get_image_key(
             component_key=item.key, step=item.step_name
         )
 
@@ -340,7 +336,7 @@ def compute_build_checksum(
 
 
 def verify_local_repository_context(
-    deployment: "PipelineDeploymentBaseModel",
+    deployment: "PipelineDeploymentBase",
     local_repo_context: Optional["LocalRepositoryContext"],
 ) -> Optional[BaseCodeRepository]:
     """Verifies the local repository.
@@ -400,8 +396,8 @@ def verify_local_repository_context(
 
 
 def verify_custom_build(
-    build: "PipelineBuildResponseModel",
-    deployment: "PipelineDeploymentBaseModel",
+    build: "PipelineBuildResponse",
+    deployment: "PipelineDeploymentBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> None:
     """Verify a custom build for a pipeline deployment.

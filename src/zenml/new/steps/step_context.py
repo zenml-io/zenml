@@ -33,9 +33,11 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.artifact_config import ArtifactConfig
     from zenml.model.model_config import ModelConfig
-    from zenml.models.pipeline_models import PipelineResponseModel
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.new_models.core import (
+        PipelineResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
@@ -87,8 +89,8 @@ class StepContext(metaclass=SingletonMetaClass):
 
     def __init__(
         self,
-        pipeline_run: "PipelineRunResponseModel",
-        step_run: "StepRunResponseModel",
+        pipeline_run: "PipelineRunResponse",
+        step_run: "StepRunResponse",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
@@ -187,7 +189,7 @@ class StepContext(metaclass=SingletonMetaClass):
             return next(iter(self._outputs.values()))
 
     @property
-    def pipeline(self) -> "PipelineResponseModel":
+    def pipeline(self) -> "PipelineResponse":
         """Returns the current pipeline.
 
         Returns:

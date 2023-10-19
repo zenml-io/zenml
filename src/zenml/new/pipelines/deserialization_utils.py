@@ -25,12 +25,12 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_spec import PipelineSpec
-    from zenml.models import PipelineResponseModel
+    from zenml.new_models.core import PipelineResponse
 
 logger = get_logger(__name__)
 
 
-def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
+def load_pipeline(model: "PipelineResponse") -> "Pipeline":
     """Load a pipeline from a model.
 
     Args:
@@ -70,7 +70,7 @@ def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
     return pipeline_instance
 
 
-def load_pipeline_v_0_4(model: "PipelineResponseModel") -> "Pipeline":
+def load_pipeline_v_0_4(model: "PipelineResponse") -> "Pipeline":
     """Load a pipeline from a model with spec version 0.4.
 
     Args:
@@ -94,7 +94,7 @@ def load_pipeline_v_0_4(model: "PipelineResponseModel") -> "Pipeline":
     return pipeline
 
 
-def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
+def load_pipeline_v_0_3(model: "PipelineResponse") -> "Pipeline":
     """Load a pipeline from a model with spec version 0.3.
 
     Args:
@@ -106,7 +106,7 @@ def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
     return _load_legacy_pipeline(model=model, use_pipeline_parameter_name=True)
 
 
-def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
+def load_pipeline_v_0_2(model: "PipelineResponse") -> "Pipeline":
     """Load a pipeline from a model with spec version 0.2.
 
     Args:
@@ -121,7 +121,7 @@ def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
 
 
 def _load_legacy_pipeline(
-    model: "PipelineResponseModel", use_pipeline_parameter_name: bool
+    model: "PipelineResponse", use_pipeline_parameter_name: bool
 ) -> "Pipeline":
     """Load a legacy pipeline.
 

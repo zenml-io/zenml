@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 from zenml.logger import get_logger
-from zenml.models.code_repository_models import CodeRepositoryResponseModel
+from zenml.new_models.core import CodeRepositoryResponse
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -65,9 +65,7 @@ class BaseCodeRepository(ABC):
         return BaseCodeRepositoryConfig(**self._config)
 
     @classmethod
-    def from_model(
-        cls, model: CodeRepositoryResponseModel
-    ) -> "BaseCodeRepository":
+    def from_model(cls, model: CodeRepositoryResponse) -> "BaseCodeRepository":
         """Loads a code repository from a model.
 
         Args:
