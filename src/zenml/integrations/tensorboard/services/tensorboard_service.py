@@ -15,8 +15,8 @@
 
 from typing import Any, Dict, Union
 
-from tensorboard import default, program  # type: ignore [import]
-from tensorboard.uploader import uploader_subcommand  # type: ignore [import]
+from tensorboard import default, program  # type: ignore [import-untyped]
+from tensorboard.uploader import uploader_subcommand  # type: ignore [import-untyped]
 
 from zenml.logger import get_logger
 from zenml.services import (

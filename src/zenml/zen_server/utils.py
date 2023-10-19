@@ -274,7 +274,7 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
     Returns:
         A tuple of city, region, country.
     """
-    import ipinfo  # type: ignore[import]
+    import ipinfo  # type: ignore[import-untyped]
 
     try:
         handler = ipinfo.getHandler()

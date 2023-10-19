@@ -16,21 +16,21 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.core.expectation_validation_result import (  # type: ignore[import]
+from great_expectations.core.expectation_validation_result import (  # type: ignore[import-untyped]
     ExpectationSuiteValidationResult,
 )
-from great_expectations.data_context.types.base import (  # type: ignore[import]
+from great_expectations.data_context.types.base import (  # type: ignore[import-untyped]
     CheckpointConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import-untyped]
     ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
 )
-from great_expectations.types import (  # type: ignore[import]
+from great_expectations.types import (  # type: ignore[import-untyped]
     SerializableDictDot,
 )
 

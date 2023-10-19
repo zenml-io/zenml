@@ -125,8 +125,8 @@ class EvidentlyDataValidator(BaseDataValidator):
             ImportError: if NLTK is not installed.
         """
         try:
-            import nltk  # type: ignore[import]
-            from nltk.data import path as nltk_path  # type: ignore[import]
+            import nltk  # type: ignore[import-untyped]
+            from nltk.data import path as nltk_path  # type: ignore[import-untyped]
         except ImportError:
             raise ImportError(
                 "NLTK is not installed. Please install NLTK to use "
