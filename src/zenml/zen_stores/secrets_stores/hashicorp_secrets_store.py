@@ -29,7 +29,10 @@ from typing import (
 from uuid import UUID
 
 import hvac  # type: ignore[import-not-found]
-from hvac.exceptions import InvalidPath, VaultError  # type: ignore[import-not-found]
+from hvac.exceptions import (  # type: ignore[import-not-found]
+    InvalidPath,
+    VaultError,
+)
 from pydantic import SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent

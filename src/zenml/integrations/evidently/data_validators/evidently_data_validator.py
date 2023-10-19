@@ -126,7 +126,9 @@ class EvidentlyDataValidator(BaseDataValidator):
         """
         try:
             import nltk  # type: ignore[import-untyped]
-            from nltk.data import path as nltk_path  # type: ignore[import-untyped]
+            from nltk.data import (
+                path as nltk_path,  # type: ignore[import-untyped]
+            )
         except ImportError:
             raise ImportError(
                 "NLTK is not installed. Please install NLTK to use "
