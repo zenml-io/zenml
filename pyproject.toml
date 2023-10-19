@@ -75,7 +75,7 @@ ipinfo = { version = ">=4.4.3", optional = true}
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-black = { version = "^23.3.0", optional = true }
+black = { version = "^23.10.0", optional = true }
 ruff = { version = "^0.1.0", optional = true }
 
 # Optional terraform dependency for stack recipes and ZenServer deployments
