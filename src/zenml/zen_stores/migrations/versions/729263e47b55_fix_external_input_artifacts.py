@@ -42,10 +42,16 @@ def upgrade() -> None:
         )
     )
     for id_, data in rows_pd:
-        data_dict = json.loads(data)
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            continue
         has_changes = False
         for k in data_dict:
-            if "external_input_artifacts" in data_dict[k]["config"]:
+            if (
+                "config" in data_dict[k]
+                and "external_input_artifacts" in data_dict[k]["config"]
+            ):
                 for eip_name in data_dict[k]["config"][
                     "external_input_artifacts"
                 ]:
@@ -72,9 +78,15 @@ def upgrade() -> None:
         )
     )
     for id_, data in rows_sr:
-        data_dict = json.loads(data)
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            continue
         has_changes = False
-        if "external_input_artifacts" in data_dict["config"]:
+        if (
+            "config" in data_dict
+            and "external_input_artifacts" in data_dict["config"]
+        ):
             for eip_name in data_dict["config"]["external_input_artifacts"]:
                 current = data_dict["config"]["external_input_artifacts"][
                     eip_name
@@ -107,10 +119,16 @@ def downgrade() -> None:
         )
     )
     for id_, data in rows:
-        data_dict = json.loads(data)
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            continue
         for k in data_dict:
             has_changes = False
-            if "external_input_artifacts" in data_dict[k]["config"]:
+            if (
+                "config" in data_dict[k]
+                and "external_input_artifacts" in data_dict[k]["config"]
+            ):
                 for eip_name in data_dict[k]["config"][
                     "external_input_artifacts"
                 ]:
@@ -137,9 +155,15 @@ def downgrade() -> None:
         )
     )
     for id_, data in rows_sr:
-        data_dict = json.loads(data)
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            continue
         has_changes = False
-        if "external_input_artifacts" in data_dict[k]["config"]:
+        if (
+            "config" in data_dict
+            and "external_input_artifacts" in data_dict["config"]
+        ):
             for eip_name in data_dict["config"]["external_input_artifacts"]:
                 current = data_dict["config"]["external_input_artifacts"][
                     eip_name
