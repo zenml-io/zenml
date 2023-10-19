@@ -19,11 +19,11 @@ from zenml.client import Client
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
-from zenml.models import (
-    ComponentResponseModel,
-    StackResponseModel,
+from zenml.new_models.core import (
+    ComponentResponse,
+    PipelineRunResponse,
+    StackResponse,
 )
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 logger = get_logger(__name__)
 
@@ -46,7 +46,7 @@ def get_base_url() -> Optional[str]:
     return None
 
 
-def get_stack_url(stack: StackResponseModel) -> Optional[str]:
+def get_stack_url(stack: StackResponse) -> Optional[str]:
     """Function to get the dashboard URL of a given stack model.
 
     Args:
@@ -61,7 +61,7 @@ def get_stack_url(stack: StackResponseModel) -> Optional[str]:
     return None
 
 
-def get_component_url(component: ComponentResponseModel) -> Optional[str]:
+def get_component_url(component: ComponentResponse) -> Optional[str]:
     """Function to get the dashboard URL of a given component model.
 
     Args:
@@ -79,7 +79,7 @@ def get_component_url(component: ComponentResponseModel) -> Optional[str]:
     return None
 
 
-def get_run_url(run: PipelineRunResponseModel) -> Optional[str]:
+def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     """Function to get the dashboard URL of a given pipeline run.
 
     Args:
