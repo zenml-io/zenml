@@ -1144,7 +1144,8 @@ class SqlZenStore(BaseZenStore):
                     f"existing stack with this id."
                 )
             if (
-                existing_stack.name
+                existing_stack.user_id
+                and existing_stack.name
                 == self._get_default_stack_and_component_name(
                     existing_stack.user_id
                 )
@@ -1203,8 +1204,12 @@ class SqlZenStore(BaseZenStore):
 
                 if stack is None:
                     raise KeyError(f"Stack with ID {stack_id} not found.")
-                if stack.name == self._get_default_stack_and_component_name(
-                    user_id=stack.user_id
+                if (
+                    stack.user_id
+                    and stack.name
+                    == self._get_default_stack_and_component_name(
+                        user_id=stack.user_id
+                    )
                 ):
                     raise IllegalOperationError(
                         "The default stack cannot be deleted."
@@ -1426,7 +1431,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if (
-                existing_component.name
+                existing_component.user_id
+                and existing_component.name
                 == self._get_default_stack_and_component_name(
                     user_id=existing_component.user_id
                 )
@@ -1500,7 +1506,8 @@ class SqlZenStore(BaseZenStore):
                 if stack_component is None:
                     raise KeyError(f"Stack with ID {component_id} not found.")
                 if (
-                    stack_component.name
+                    stack_component.user_id
+                    and stack_component.name
                     == self._get_default_stack_and_component_name(
                         user_id=stack_component.user_id
                     )

@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -25,10 +25,12 @@ from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
 
+M = TypeVar("M", bound=BaseResponseModel)
+
 
 def verify_read_permissions_and_dehydrate(
-    model: "BaseResponseModel",
-) -> "BaseResponseModel":
+    model: M,
+) -> M:
     """Verify read permissions of the model and dehydrate it if necessary.
 
     Args:
@@ -46,8 +48,8 @@ def verify_read_permissions_and_dehydrate(
 
 
 def dehydrate_response_model(
-    model: "BaseResponseModel",
-) -> "BaseResponseModel":
+    model: M,
+) -> M:
     """Dehydrate a model if necessary.
 
     Args:
@@ -81,7 +83,7 @@ def _maybe_dehydrate_value(value: Any) -> Any:
             return get_permission_denied_model(value)
     elif isinstance(value, Dict):
         return {k: _maybe_dehydrate_value(v) for k, v in value.items()}
-    elif isinstance(value, (List, Set, Tuple)):
+    elif isinstance(value, (List, Set, tuple)):
         type_ = type(value)
         return type_(_maybe_dehydrate_value(v) for v in value)
     else:
@@ -105,9 +107,7 @@ def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
         return False
 
 
-def get_permission_denied_model(
-    model: "BaseResponseModel", keep_name: bool = True
-) -> "BaseResponseModel":
+def get_permission_denied_model(model: M, keep_name: bool = True) -> M:
     """Get a model to return in case of missing read permissions.
 
     This function replaces all attributes except name and ID in the given model.
@@ -166,10 +166,13 @@ def verify_permissions_for_model(
     if not server_config().rbac_enabled:
         return
 
+    auth_context = get_auth_context()
+    assert auth_context
+
     if (
         isinstance(model, UserScopedResponseModel)
         and model.user
-        and model.user.id == get_auth_context().user.id
+        and model.user.id == auth_context.user.id
     ):
         # User is the owner of the model
         return
@@ -204,10 +207,13 @@ def verify_permissions(
     if not server_config().rbac_enabled:
         return
 
+    auth_context = get_auth_context()
+    assert auth_context
+
     resource = Resource(type=resource_type, id=resource_id)
 
     if not rbac().has_permission(
-        user=get_auth_context().user, resource=resource, action=action
+        user=auth_context.user, resource=resource, action=action
     ):
         raise HTTPException(
             status_code=403,
@@ -230,6 +236,9 @@ def get_allowed_resource_ids(
         A list of resource IDs or `None` if the user has full access to the
         all instances of the resource.
     """
+    auth_context = get_auth_context()
+    assert auth_context
+
     if not server_config().rbac_enabled:
         return None
 
@@ -237,7 +246,7 @@ def get_allowed_resource_ids(
         has_full_resource_access,
         allowed_ids,
     ) = rbac().list_allowed_resource_ids(
-        user=get_auth_context().user,
+        user=auth_context.user,
         resource=Resource(type=resource_type),
         action=action,
     )

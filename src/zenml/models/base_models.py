@@ -19,7 +19,6 @@ from typing import (
     Dict,
     List,
     Set,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -135,12 +134,13 @@ class BaseResponseModel(BaseZenModel):
 
         def _helper(value: Any) -> bool:
             if isinstance(value, BaseResponseModel):
-                if value.partial:
-                    return True
+                return value.partial
             elif isinstance(value, Dict):
                 return any(_helper(v) for v in value.values())
-            elif isinstance(value, (List, Set, Tuple)):
+            elif isinstance(value, (List, Set, tuple)):
                 return any(_helper(v) for v in value)
+            else:
+                return False
 
         for field_name in self.__fields__.keys():
             value = getattr(self, field_name)

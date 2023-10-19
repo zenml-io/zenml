@@ -768,7 +768,7 @@ class BaseFilterModel(BaseModel):
             The query with filter applied.
         """
         if self._allowed_ids is not None:
-            query = query.where(table.id.in_(self._allowed_ids))
+            query = query.where(table.id.in_(self._allowed_ids))  # type: ignore[attr-defined]
 
         filters = self.generate_filter(table=table)
 

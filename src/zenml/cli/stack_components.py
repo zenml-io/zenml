@@ -199,7 +199,7 @@ def generate_stack_component_list_command(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, bool, List[str]], None]:
+) -> Callable[[str, str, List[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
     Args:

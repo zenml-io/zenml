@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 
 
 class Action(StrEnum):
