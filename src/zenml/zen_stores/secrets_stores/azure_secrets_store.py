@@ -30,13 +30,11 @@ from typing import (
 from uuid import UUID
 
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
-from azure.identity import (  # type: ignore [import-untyped]
+from azure.identity import (
     ClientSecretCredential,
     DefaultAzureCredential,
 )
-from azure.keyvault.secrets import (
-    SecretClient,  # type: ignore [import-untyped]
-)
+from azure.keyvault.secrets import SecretClient
 from pydantic import SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent

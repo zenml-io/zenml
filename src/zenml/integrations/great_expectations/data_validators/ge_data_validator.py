@@ -21,8 +21,8 @@ import yaml
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
-from great_expectations.core import (
-    ExpectationSuite,  # type: ignore[import-untyped]
+from great_expectations.core import (  # type: ignore[import-untyped]
+    ExpectationSuite,
 )
 from great_expectations.data_context.data_context import (  # type: ignore[import-untyped]
     BaseDataContext,

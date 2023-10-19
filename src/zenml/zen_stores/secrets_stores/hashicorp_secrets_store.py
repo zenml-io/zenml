@@ -28,8 +28,8 @@ from typing import (
 )
 from uuid import UUID
 
-import hvac  # type: ignore[import-not-found]
-from hvac.exceptions import (  # type: ignore[import-not-found]
+import hvac  # type: ignore[import-untyped]
+from hvac.exceptions import (  # type: ignore[import-untyped]
     InvalidPath,
     VaultError,
 )
