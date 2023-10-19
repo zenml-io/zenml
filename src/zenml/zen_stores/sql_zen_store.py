@@ -19,7 +19,6 @@ import logging
 import math
 import os
 import re
-from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path, PurePath
 from typing import (
@@ -78,24 +77,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-    BaseFilterModel,
-    BaseResponseModel,
-    CodeReferenceRequestModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -116,72 +97,91 @@ from zenml.models import (
     OAuthDeviceInternalUpdateModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-    Page,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataFilterModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleFilterModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ScheduleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
-    UserAuthModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
 )
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.new_models.base import BaseFilter, BaseResponse, Page
+from zenml.new_models.core import (
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    PipelineUpdate,
+    RoleFilter,
+    RoleRequest,
+    RoleResponse,
+    RoleUpdate,
+    RunMetadataFilter,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
+    TeamFilter,
+    TeamRequest,
+    TeamResponse,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+    TeamUpdate,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
+)
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
+)
+from zenml.new_models.user_auth import UserAuthModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -249,10 +249,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponseModel)
-
-params_value: ContextVar[BaseFilterModel] = ContextVar("params_value")
-
+B = TypeVar("B", bound=BaseResponse)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -271,7 +268,7 @@ def _is_mysql_missing_database_error(error: OperationalError) -> bool:
         error: The error to check.
 
     Returns:
-        If the error if because the MySQL database doesn't exist.
+        If the error because the MySQL database doesn't exist.
     """
     from pymysql.constants.ER import BAD_DB_ERROR
 
@@ -721,7 +718,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
-        filter_model: BaseFilterModel,
+        filter_model: BaseFilter,
         custom_schema_to_model_conversion: Optional[
             Callable[[AnySchema], B]
         ] = None,
@@ -730,7 +727,7 @@ class SqlZenStore(BaseZenStore):
                 [
                     Session,
                     Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-                    BaseFilterModel,
+                    BaseFilter,
                 ],
                 List[AnySchema],
             ]
@@ -1021,11 +1018,10 @@ class SqlZenStore(BaseZenStore):
                 )
             return identity.id
 
-    # ------
-    # Stacks
-    # ------
+    # ----------------------------- Stacks -----------------------------
+
     @track_decorator(AnalyticsEvent.REGISTERED_STACK)
-    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
+    def create_stack(self, stack: StackRequest) -> StackResponse:
         """Register a new stack.
 
         Args:
@@ -1079,7 +1075,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_stack_schema.to_model()
 
-    def get_stack(self, stack_id: UUID) -> StackResponseModel:
+    def get_stack(self, stack_id: UUID) -> StackResponse:
         """Get a stack by its unique ID.
 
         Args:
@@ -1101,8 +1097,8 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def list_stacks(
-        self, stack_filter_model: StackFilterModel
-    ) -> Page[StackResponseModel]:
+        self, stack_filter_model: StackFilter
+    ) -> Page[StackResponse]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -1128,23 +1124,10 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
-    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
-        """Count all stacks, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting stacks
-
-        Returns:
-            The number of stacks in the workspace.
-        """
-        return self._count_entity(
-            schema=StackSchema, workspace_id=workspace_id
-        )
-
     @track_decorator(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
-        self, stack_id: UUID, stack_update: StackUpdateModel
-    ) -> StackResponseModel:
+        self, stack_id: UUID, stack_update: StackUpdate
+    ) -> StackResponse:
         """Update a stack.
 
         Args:
@@ -1159,8 +1142,8 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, workspace, owner) already
-            #  exists
+            # Check if stack with the domain key (name, workspace, owner)
+            # already exists
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
@@ -1240,9 +1223,22 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
+        """Count all stacks, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting stacks
+
+        Returns:
+            The number of stacks in the workspace.
+        """
+        return self._count_entity(
+            schema=StackSchema, workspace_id=workspace_id
+        )
+
     def _fail_if_stack_with_name_exists_for_user(
         self,
-        stack: StackRequestModel,
+        stack: StackRequest,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name exists for user.
@@ -1281,7 +1277,7 @@ class SqlZenStore(BaseZenStore):
 
     def _fail_if_stack_with_name_already_shared(
         self,
-        stack: StackRequestModel,
+        stack: StackRequest,
         session: Session,
     ) -> None:
         """Raise an exception if a Stack with same name is already shared.
@@ -1320,15 +1316,13 @@ class SqlZenStore(BaseZenStore):
                 error_msg += ", which is currently not owned by any user."
             raise StackExistsError(error_msg)
 
-    # ----------------
-    # Stack components
-    # ----------------
+    # ----------------------------- Components -----------------------------
 
     @track_decorator(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
-        component: ComponentRequestModel,
-    ) -> ComponentResponseModel:
+        component: ComponentRequest,
+    ) -> ComponentResponse:
         """Create a stack component.
 
         Args:
@@ -1398,9 +1392,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_component.to_model()
 
-    def get_stack_component(
-        self, component_id: UUID
-    ) -> ComponentResponseModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponse:
         """Get a stack component by ID.
 
         Args:
@@ -1427,8 +1419,8 @@ class SqlZenStore(BaseZenStore):
             return stack_component.to_model()
 
     def list_stack_components(
-        self, component_filter_model: ComponentFilterModel
-    ) -> Page[ComponentResponseModel]:
+        self, component_filter_model: ComponentFilter
+    ) -> Page[ComponentResponse]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -1441,7 +1433,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
             paged_components: Page[
-                ComponentResponseModel
+                ComponentResponse
             ] = self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1450,22 +1442,9 @@ class SqlZenStore(BaseZenStore):
             )
             return paged_components
 
-    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
-        """Count all components, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting components
-
-        Returns:
-            The number of components in the workspace.
-        """
-        return self._count_entity(
-            schema=StackComponentSchema, workspace_id=workspace_id
-        )
-
     def update_stack_component(
-        self, component_id: UUID, component_update: ComponentUpdateModel
-    ) -> ComponentResponseModel:
+        self, component_id: UUID, component_update: ComponentUpdate
+    ) -> ComponentResponse:
         """Update an existing stack component.
 
         Args:
@@ -1610,6 +1589,19 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
+        """Count all components, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting components
+
+        Returns:
+            The number of components in the workspace.
+        """
+        return self._count_entity(
+            schema=StackComponentSchema, workspace_id=workspace_id
+        )
+
     @staticmethod
     def _fail_if_component_with_name_type_exists_for_user(
         name: str,
@@ -1695,12 +1687,10 @@ class SqlZenStore(BaseZenStore):
                 f"'{workspace_id}'."
             )
 
-    # -----------------------
-    # Stack component flavors
-    # -----------------------
+    # ----------------------------- Flavors -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_FLAVOR)
-    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
+    def create_flavor(self, flavor: FlavorRequest) -> FlavorResponse:
         """Creates a new stack component flavor.
 
         Args:
@@ -1764,9 +1754,50 @@ class SqlZenStore(BaseZenStore):
 
                 return new_flavor.to_model()
 
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponse:
+        """Get a flavor by ID.
+
+        Args:
+            flavor_id: The ID of the flavor to fetch.
+
+        Returns:
+            The stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        with Session(self.engine) as session:
+            flavor_in_db = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+            if flavor_in_db is None:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            return flavor_in_db.to_model()
+
+    def list_flavors(
+        self, flavor_filter_model: FlavorFilter
+    ) -> Page[FlavorResponse]:
+        """List all stack component flavors matching the given filter criteria.
+
+        Args:
+            flavor_filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            List of all the stack component flavors matching the given criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(FlavorSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=FlavorSchema,
+                filter_model=flavor_filter_model,
+            )
+
     def update_flavor(
-        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
-    ) -> FlavorResponseModel:
+        self, flavor_id: UUID, flavor_update: FlavorUpdate
+    ) -> FlavorResponse:
         """Updates an existing user.
 
         Args:
@@ -1794,47 +1825,6 @@ class SqlZenStore(BaseZenStore):
             # Refresh the Model that was just created
             session.refresh(existing_flavor)
             return existing_flavor.to_model()
-
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
-        """Get a flavor by ID.
-
-        Args:
-            flavor_id: The ID of the flavor to fetch.
-
-        Returns:
-            The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
-        """
-        with Session(self.engine) as session:
-            flavor_in_db = session.exec(
-                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-            ).first()
-            if flavor_in_db is None:
-                raise KeyError(f"Flavor with ID {flavor_id} not found.")
-            return flavor_in_db.to_model()
-
-    def list_flavors(
-        self, flavor_filter_model: FlavorFilterModel
-    ) -> Page[FlavorResponseModel]:
-        """List all stack component flavors matching the given filter criteria.
-
-        Args:
-            flavor_filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            List of all the stack component flavors matching the given criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(FlavorSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=FlavorSchema,
-                filter_model=flavor_filter_model,
-            )
 
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -1875,11 +1865,9 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    # -----
-    # Users
-    # -----
+    # ----------------------------- Users -----------------------------
 
-    def create_user(self, user: UserRequestModel) -> UserResponseModel:
+    def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
 
         Args:
@@ -1913,7 +1901,7 @@ class SqlZenStore(BaseZenStore):
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         include_private: bool = False,
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Gets a specific user, when no id is specified the active user is returned.
 
         Raises a KeyError in case a user with that id does not exist.
@@ -1933,34 +1921,7 @@ class SqlZenStore(BaseZenStore):
 
             return user.to_model(include_private=include_private)
 
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> UserAuthModel:
-        """Gets the auth model to a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-        """
-        with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-            return UserAuthModel(
-                id=user.id,
-                name=user.name,
-                full_name=user.full_name,
-                email_opted_in=user.email_opted_in,
-                active=user.active,
-                created=user.created,
-                updated=user.updated,
-                password=user.password,
-                activation_token=user.activation_token,
-            )
-
-    def list_users(
-        self, user_filter_model: UserFilterModel
-    ) -> Page[UserResponseModel]:
+    def list_users(self, user_filter_model: UserFilter) -> Page[UserResponse]:
         """List all users.
 
         Args:
@@ -1972,7 +1933,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_user: Page[UserResponseModel] = self.filter_and_paginate(
+            paged_user: Page[UserResponse] = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=UserSchema,
@@ -1981,8 +1942,8 @@ class SqlZenStore(BaseZenStore):
             return paged_user
 
     def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
-    ) -> UserResponseModel:
+        self, user_id: UUID, user_update: UserUpdate
+    ) -> UserResponse:
         """Updates an existing user.
 
         Args:
@@ -2036,11 +1997,34 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
-    # -----
-    # Teams
-    # -----
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
+        """Gets the auth model to a specific user.
 
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
+            return UserAuthModel(
+                id=user.id,
+                name=user.name,
+                full_name=user.full_name,
+                email_opted_in=user.email_opted_in,
+                active=user.active,
+                created=user.created,
+                updated=user.updated,
+                password=user.password,
+                activation_token=user.activation_token,
+            )
+
+    # ----------------------------- Teams -----------------------------
+
+    def create_team(self, team: TeamRequest) -> TeamResponse:
         """Creates a new team.
 
         Args:
@@ -2081,7 +2065,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_team.to_model()
 
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponse:
         """Gets a specific team.
 
         Args:
@@ -2094,9 +2078,7 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
             return team.to_model()
 
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
+    def list_teams(self, team_filter_model: TeamFilter) -> Page[TeamResponse]:
         """List all teams matching the given filter criteria.
 
         Args:
@@ -2116,8 +2098,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
+        self, team_id: UUID, team_update: TeamUpdate
+    ) -> TeamResponse:
         """Update an existing team.
 
         Args:
@@ -2171,11 +2153,9 @@ class SqlZenStore(BaseZenStore):
             session.delete(team)
             session.commit()
 
-    # -----
-    # Roles
-    # -----
+    # ----------------------------- Roles -----------------------------
 
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
+    def create_role(self, role: RoleRequest) -> RoleResponse:
         """Creates a new role.
 
         Args:
@@ -2210,7 +2190,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return role_schema.to_model()
 
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponse:
         """Gets a specific role.
 
         Args:
@@ -2223,9 +2203,7 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
+    def list_roles(self, role_filter_model: RoleFilter) -> Page[RoleResponse]:
         """List all roles matching the given filter criteria.
 
         Args:
@@ -2245,8 +2223,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
+        self, role_id: UUID, role_update: RoleUpdate
+    ) -> RoleResponse:
         """Update an existing role.
 
         Args:
@@ -2359,34 +2337,10 @@ class SqlZenStore(BaseZenStore):
                 session.delete(role)
                 session.commit()
 
-    # ----------------
-    # Role assignments
-    # ----------------
-
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(UserRoleAssignmentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserRoleAssignmentSchema,
-                filter_model=user_role_assignment_filter_model,
-            )
-
+    # ------------------------- User role assignments -------------------------
     def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
+        self, user_role_assignment: UserRoleAssignmentRequest
+    ) -> UserRoleAssignmentResponse:
         """Assigns a role to a user or team, scoped to a specific workspace.
 
         Args:
@@ -2438,7 +2392,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_user_role_assignment(
         self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponse:
         """Gets a role assignment by ID.
 
         Args:
@@ -2465,6 +2419,27 @@ class SqlZenStore(BaseZenStore):
                     f"'{user_role_assignment_id}': No user role assignment "
                     f"with this ID found."
                 )
+
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilter
+    ) -> Page[UserRoleAssignmentResponse]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            user_role_assignment_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(UserRoleAssignmentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserRoleAssignmentSchema,
+                filter_model=user_role_assignment_filter_model,
+            )
 
     def delete_user_role_assignment(
         self, user_role_assignment_id: UUID
@@ -2493,13 +2468,11 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
+    # -------------------------- Team role assignments -------------------------
 
     def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
+        self, team_role_assignment: TeamRoleAssignmentRequest
+    ) -> TeamRoleAssignmentResponse:
         """Creates a new team role assignment.
 
         Args:
@@ -2551,7 +2524,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_team_role_assignment(
         self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
+    ) -> TeamRoleAssignmentResponse:
         """Gets a specific role assignment.
 
         Args:
@@ -2578,6 +2551,27 @@ class SqlZenStore(BaseZenStore):
                     f"'{team_role_assignment_id}': No team role assignment "
                     f"with this ID found."
                 )
+
+    def list_team_role_assignments(
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilter
+    ) -> Page[TeamRoleAssignmentResponse]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TeamRoleAssignmentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamRoleAssignmentSchema,
+                filter_model=team_role_assignment_filter_model,
+            )
 
     def delete_team_role_assignment(
         self, team_role_assignment_id: UUID
@@ -2606,35 +2600,12 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamRoleAssignmentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TeamRoleAssignmentSchema,
-                filter_model=team_role_assignment_filter_model,
-            )
-
-    # ----------
-    # Workspaces
-    # ----------
+    # ----------------------------- Workspaces -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
     def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
         """Creates a new workspace.
 
         Args:
@@ -2671,7 +2642,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_workspace(
         self, workspace_name_or_id: Union[str, UUID]
-    ) -> WorkspaceResponseModel:
+    ) -> WorkspaceResponse:
         """Get an existing workspace by name or ID.
 
         Args:
@@ -2687,8 +2658,8 @@ class SqlZenStore(BaseZenStore):
         return workspace.to_model()
 
     def list_workspaces(
-        self, workspace_filter_model: WorkspaceFilterModel
-    ) -> Page[WorkspaceResponseModel]:
+        self, workspace_filter_model: WorkspaceFilter
+    ) -> Page[WorkspaceResponse]:
         """List all workspace matching the given filter criteria.
 
         Args:
@@ -2708,8 +2679,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
         """Update an existing workspace.
 
         Args:
@@ -2779,14 +2750,13 @@ class SqlZenStore(BaseZenStore):
             session.delete(workspace)
             session.commit()
 
-    # ---------
-    # Pipelines
-    # ---------
+    # ----------------------------- Pipelines -----------------------------
+
     @track_decorator(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self,
-        pipeline: PipelineRequestModel,
-    ) -> PipelineResponseModel:
+        pipeline: PipelineRequest,
+    ) -> PipelineResponse:
         """Creates a new pipeline in a workspace.
 
         Args:
@@ -2821,7 +2791,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_pipeline.to_model()
 
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponse:
         """Get a pipeline with a given ID.
 
         Args:
@@ -2847,8 +2817,8 @@ class SqlZenStore(BaseZenStore):
             return pipeline.to_model()
 
     def list_pipelines(
-        self, pipeline_filter_model: PipelineFilterModel
-    ) -> Page[PipelineResponseModel]:
+        self, pipeline_filter_model: PipelineFilter
+    ) -> Page[PipelineResponse]:
         """List all pipelines matching the given filter criteria.
 
         Args:
@@ -2883,8 +2853,8 @@ class SqlZenStore(BaseZenStore):
     def update_pipeline(
         self,
         pipeline_id: UUID,
-        pipeline_update: PipelineUpdateModel,
-    ) -> PipelineResponseModel:
+        pipeline_update: PipelineUpdate,
+    ) -> PipelineResponse:
         """Updates a pipeline.
 
         Args:
@@ -2939,14 +2909,12 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
-    # ------
-    # Builds
-    # ------
+    # ----------------------------- Builds -----------------------------
 
     def create_build(
         self,
-        build: PipelineBuildRequestModel,
-    ) -> PipelineBuildResponseModel:
+        build: PipelineBuildRequest,
+    ) -> PipelineBuildResponse:
         """Creates a new build in a workspace.
 
         Args:
@@ -2964,7 +2932,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_build.to_model()
 
-    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+    def get_build(self, build_id: UUID) -> PipelineBuildResponse:
         """Get a build with a given ID.
 
         Args:
@@ -2992,8 +2960,8 @@ class SqlZenStore(BaseZenStore):
             return build.to_model()
 
     def list_builds(
-        self, build_filter_model: PipelineBuildFilterModel
-    ) -> Page[PipelineBuildResponseModel]:
+        self, build_filter_model: PipelineBuildFilter
+    ) -> Page[PipelineBuildResponse]:
         """List all builds matching the given filter criteria.
 
         Args:
@@ -3037,14 +3005,12 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    # --------------------
-    # Pipeline Deployments
-    # --------------------
+    # ------------------------------ Deployments -----------------------------
 
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequestModel,
-    ) -> PipelineDeploymentResponseModel:
+        deployment: PipelineDeploymentRequest,
+    ) -> PipelineDeploymentResponse:
         """Creates a new deployment in a workspace.
 
         Args:
@@ -3071,7 +3037,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_deployment(
         self, deployment_id: UUID
-    ) -> PipelineDeploymentResponseModel:
+    ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -3099,8 +3065,8 @@ class SqlZenStore(BaseZenStore):
             return deployment.to_model()
 
     def list_deployments(
-        self, deployment_filter_model: PipelineDeploymentFilterModel
-    ) -> Page[PipelineDeploymentResponseModel]:
+        self, deployment_filter_model: PipelineDeploymentFilter
+    ) -> Page[PipelineDeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -3144,13 +3110,9 @@ class SqlZenStore(BaseZenStore):
             session.delete(deployment)
             session.commit()
 
-    # ---------
-    # Schedules
-    # ---------
+    # ----------------------------- Schedules -----------------------------
 
-    def create_schedule(
-        self, schedule: ScheduleRequestModel
-    ) -> ScheduleResponseModel:
+    def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
         """Creates a new schedule.
 
         Args:
@@ -3165,7 +3127,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return new_schedule.to_model()
 
-    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponse:
         """Get a schedule with a given ID.
 
         Args:
@@ -3190,8 +3152,8 @@ class SqlZenStore(BaseZenStore):
             return schedule.to_model()
 
     def list_schedules(
-        self, schedule_filter_model: ScheduleFilterModel
-    ) -> Page[ScheduleResponseModel]:
+        self, schedule_filter_model: ScheduleFilter
+    ) -> Page[ScheduleResponse]:
         """List all schedules in the workspace.
 
         Args:
@@ -3213,8 +3175,8 @@ class SqlZenStore(BaseZenStore):
     def update_schedule(
         self,
         schedule_id: UUID,
-        schedule_update: ScheduleUpdateModel,
-    ) -> ScheduleResponseModel:
+        schedule_update: ScheduleUpdate,
+    ) -> ScheduleResponse:
         """Updates a schedule.
 
         Args:
@@ -3268,13 +3230,11 @@ class SqlZenStore(BaseZenStore):
             session.delete(schedule)
             session.commit()
 
-    # --------------
-    # Pipeline runs
-    # --------------
+    # ----------------------------- Pipeline runs -----------------------------
 
     def create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
@@ -3318,9 +3278,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_run.to_model()
 
-    def get_run(
-        self, run_name_or_id: Union[str, UUID]
-    ) -> PipelineRunResponseModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
@@ -3334,37 +3292,9 @@ class SqlZenStore(BaseZenStore):
                 run_name_or_id, session=session
             ).to_model()
 
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> Tuple[PipelineRunResponseModel, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-        # We want to have the 'create' statement in the try block since running
-        # it first will reduce concurrency issues.
-        try:
-            return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError):
-            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
-            # since either one can be raised by the database when trying
-            # to create a new pipeline run with duplicate ID or name.
-            try:
-                return self.get_run(pipeline_run.id), False
-            except KeyError:
-                return self.get_run(pipeline_run.name), False
-
     def list_runs(
-        self, runs_filter_model: PipelineRunFilterModel
-    ) -> Page[PipelineRunResponseModel]:
+        self, runs_filter_model: PipelineRunFilter
+    ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
         Args:
@@ -3383,22 +3313,9 @@ class SqlZenStore(BaseZenStore):
                 filter_model=runs_filter_model,
             )
 
-    def count_runs(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipeline runs, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipeline runs
-
-        Returns:
-            The number of pipeline runs in the workspace.
-        """
-        return self._count_entity(
-            schema=PipelineRunSchema, workspace_id=workspace_id
-        )
-
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdateModel
-    ) -> PipelineRunResponseModel:
+        self, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
@@ -3454,13 +3371,50 @@ class SqlZenStore(BaseZenStore):
             session.delete(existing_run)
             session.commit()
 
-    # ------------------
-    # Pipeline run steps
-    # ------------------
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
 
-    def create_run_step(
-        self, step_run: StepRunRequestModel
-    ) -> StepRunResponseModel:
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
+        """
+        # We want to have the 'create' statement in the try block since running
+        # it first will reduce concurrency issues.
+        try:
+            return self.create_run(pipeline_run), True
+        except (EntityExistsError, IntegrityError):
+            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
+            # since either one can be raised by the database when trying
+            # to create a new pipeline run with duplicate ID or name.
+            try:
+                return self.get_run(pipeline_run.id), False
+            except KeyError:
+                return self.get_run(pipeline_run.name), False
+
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipeline runs, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipeline runs
+
+        Returns:
+            The number of pipeline runs in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineRunSchema, workspace_id=workspace_id
+        )
+
+    # ----------------------------- Step runs -----------------------------
+
+    def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
         """Creates a step run.
 
         Args:
@@ -3544,8 +3498,102 @@ class SqlZenStore(BaseZenStore):
 
             return step_schema.to_model()
 
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
+
+        Returns:
+            The step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+            ).first()
+            if step_run is None:
+                raise KeyError(
+                    f"Unable to get step run with ID {step_run_id}: No step "
+                    "run with this ID found."
+                )
+            return step_run.to_model()
+
+    def list_run_steps(
+        self, step_run_filter_model: StepRunFilter
+    ) -> Page[StepRunResponse]:
+        """List all step runs matching the given filter criteria.
+
+        Args:
+            step_run_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of all step runs matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(StepRunSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StepRunSchema,
+                filter_model=step_run_filter_model,
+            )
+
+    def update_run_step(
+        self,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdate,
+    ) -> StepRunResponse:
+        """Updates a step run.
+
+        Args:
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
+
+        Returns:
+            The updated step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if the step exists
+            existing_step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+            ).first()
+            if existing_step_run is None:
+                raise KeyError(
+                    f"Unable to update step with ID {step_run_id}: "
+                    f"No step with this ID found."
+                )
+
+            # Update the step
+            existing_step_run.update(step_run_update)
+            session.add(existing_step_run)
+
+            # Update the output artifacts.
+            for name, artifact_id in step_run_update.outputs.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=name,
+                    session=session,
+                )
+
+            # Input artifacts and parent steps cannot be updated after the
+            # step has been created.
+
+            session.commit()
+            session.refresh(existing_step_run)
+
+            return existing_step_run.to_model()
+
+    @staticmethod
     def _set_run_step_parent_step(
-        self, child_id: UUID, parent_id: UUID, session: Session
+        child_id: UUID, parent_id: UUID, session: Session
     ) -> None:
         """Sets the parent step run for a step run.
 
@@ -3593,8 +3641,9 @@ class SqlZenStore(BaseZenStore):
         )
         session.add(assignment)
 
+    @staticmethod
     def _set_run_step_input_artifact(
-        self, run_step_id: UUID, artifact_id: UUID, name: str, session: Session
+        run_step_id: UUID, artifact_id: UUID, name: str, session: Session
     ) -> None:
         """Sets an artifact as an input of a step run.
 
@@ -3643,8 +3692,8 @@ class SqlZenStore(BaseZenStore):
         )
         session.add(assignment)
 
+    @staticmethod
     def _set_run_step_output_artifact(
-        self,
         step_run_id: UUID,
         artifact_id: UUID,
         name: str,
@@ -3698,106 +3747,9 @@ class SqlZenStore(BaseZenStore):
         )
         session.add(assignment)
 
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
-        """Get a step run by ID.
+    # ----------------------------- Artifacts -----------------------------
 
-        Args:
-            step_run_id: The ID of the step run to get.
-
-        Returns:
-            The step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to get step run with ID {step_run_id}: No step "
-                    "run with this ID found."
-                )
-            return step_run.to_model()
-
-    def list_run_steps(
-        self, step_run_filter_model: StepRunFilterModel
-    ) -> Page[StepRunResponseModel]:
-        """List all step runs matching the given filter criteria.
-
-        Args:
-            step_run_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all step runs matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(StepRunSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=StepRunSchema,
-                filter_model=step_run_filter_model,
-            )
-
-    def update_run_step(
-        self,
-        step_run_id: UUID,
-        step_run_update: StepRunUpdateModel,
-    ) -> StepRunResponseModel:
-        """Updates a step run.
-
-        Args:
-            step_run_id: The ID of the step to update.
-            step_run_update: The update to be applied to the step.
-
-        Returns:
-            The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if the step exists
-            existing_step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if existing_step_run is None:
-                raise KeyError(
-                    f"Unable to update step with ID {step_run_id}: "
-                    f"No step with this ID found."
-                )
-
-            # Update the step
-            existing_step_run.update(step_run_update)
-            session.add(existing_step_run)
-
-            # Update the output artifacts.
-            for name, artifact_id in step_run_update.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_id=artifact_id,
-                    name=name,
-                    session=session,
-                )
-
-            # Input artifacts and parent steps cannot be updated after the
-            # step has been created.
-
-            session.commit()
-            session.refresh(existing_step_run)
-
-            return existing_step_run.to_model()
-
-    # ---------
-    # Artifacts
-    # ---------
-
-    def create_artifact(
-        self, artifact: ArtifactRequestModel
-    ) -> ArtifactResponseModel:
+    def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
         """Creates an artifact.
 
         Args:
@@ -3814,15 +3766,13 @@ class SqlZenStore(BaseZenStore):
             # Save visualizations of the artifact.
             if artifact.visualizations:
                 for vis in artifact.visualizations:
-                    vis_schema = ArtifactVisualizationSchema.from_model(
-                        visualization=vis, artifact_id=artifact_schema.id
-                    )
+                    vis_schema = ArtifactVisualizationSchema.from_model(vis)
                     session.add(vis_schema)
 
             session.commit()
             return artifact_schema.to_model()
 
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponse:
         """Gets an artifact.
 
         Args:
@@ -3846,8 +3796,8 @@ class SqlZenStore(BaseZenStore):
             return artifact.to_model()
 
     def list_artifacts(
-        self, artifact_filter_model: ArtifactFilterModel
-    ) -> Page[ArtifactResponseModel]:
+        self, artifact_filter_model: ArtifactFilter
+    ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
@@ -3898,13 +3848,11 @@ class SqlZenStore(BaseZenStore):
             session.delete(artifact)
             session.commit()
 
-    # ------------
-    # Run Metadata
-    # ------------
+    # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(
-        self, run_metadata: RunMetadataRequestModel
-    ) -> List[RunMetadataResponseModel]:
+        self, run_metadata: RunMetadataRequest
+    ) -> List[RunMetadataResponse]:
         """Creates run metadata.
 
         Args:
@@ -3913,7 +3861,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        return_value: List[RunMetadataResponseModel] = []
+        return_value: List[RunMetadataResponse] = []
         with Session(self.engine) as session:
             for key, value in run_metadata.values.items():
                 type_ = run_metadata.types[key]
@@ -3935,8 +3883,8 @@ class SqlZenStore(BaseZenStore):
 
     def list_run_metadata(
         self,
-        run_metadata_filter_model: RunMetadataFilterModel,
-    ) -> Page[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilter,
+    ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
         Args:
@@ -3955,13 +3903,11 @@ class SqlZenStore(BaseZenStore):
                 filter_model=run_metadata_filter_model,
             )
 
-    # -----------------
-    # Code Repositories
-    # -----------------
+    # --------------------------- Code Repositories ---------------------------
 
     def create_code_repository(
-        self, code_repository: CodeRepositoryRequestModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository: CodeRepositoryRequest
+    ) -> CodeRepositoryResponse:
         """Creates a new code repository.
 
         Args:
@@ -3999,7 +3945,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_code_repository(
         self, code_repository_id: UUID
-    ) -> CodeRepositoryResponseModel:
+    ) -> CodeRepositoryResponse:
         """Gets a specific code repository.
 
         Args:
@@ -4027,8 +3973,8 @@ class SqlZenStore(BaseZenStore):
             return repo.to_model()
 
     def list_code_repositories(
-        self, filter_model: CodeRepositoryFilterModel
-    ) -> Page[CodeRepositoryResponseModel]:
+        self, filter_model: CodeRepositoryFilter
+    ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
 
         Args:
@@ -4048,8 +3994,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_code_repository(
-        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository_id: UUID, update: CodeRepositoryUpdate
+    ) -> CodeRepositoryResponse:
         """Updates an existing code repository.
 
         Args:
@@ -4107,179 +4053,12 @@ class SqlZenStore(BaseZenStore):
             session.delete(existing_repo)
             session.commit()
 
-    # ------------------
-    # Service Connectors
-    # ------------------
-
-    @staticmethod
-    def _fail_if_service_connector_with_name_exists_for_user(
-        name: str,
-        workspace_id: UUID,
-        user_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a service connector with same name exists.
-
-        Args:
-            name: The name of the service connector
-            workspace_id: The ID of the workspace
-            user_id: The ID of the user
-            session: The Session
-
-        Returns:
-            None
-
-        Raises:
-            EntityExistsError: If a service connector with the given name is
-                already owned by the user
-        """
-        assert user_id
-        # Check if service connector with the same domain key (name, workspace,
-        # owner) already exists
-        existing_domain_connector = session.exec(
-            select(ServiceConnectorSchema)
-            .where(ServiceConnectorSchema.name == name)
-            .where(ServiceConnectorSchema.workspace_id == workspace_id)
-            .where(ServiceConnectorSchema.user_id == user_id)
-        ).first()
-        if existing_domain_connector is not None:
-            # Theoretically the user schema is optional, in this case there is
-            #  no way that it will be None
-            assert existing_domain_connector.user
-            raise EntityExistsError(
-                f"Unable to register service connector with name '{name}': "
-                "Found an existing service connector with the same name in the "
-                f"same workspace, '{existing_domain_connector.workspace.name}', "
-                "owned by the same user, "
-                f"{existing_domain_connector.user.name}'."
-            )
-        return None
-
-    @staticmethod
-    def _fail_if_service_connector_with_name_already_shared(
-        name: str,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a service connector with same name is already shared.
-
-        Args:
-            name: The name of the service connector
-            workspace_id: The ID of the workspace
-            session: The Session
-
-        Raises:
-            EntityExistsError: If a service connector with the given name is
-                already shared by another user
-        """
-        # Check if a service connector with the same name is already shared
-        # within the workspace
-        is_shared = True
-        existing_shared_connector = session.exec(
-            select(ServiceConnectorSchema)
-            .where(ServiceConnectorSchema.name == name)
-            .where(ServiceConnectorSchema.workspace_id == workspace_id)
-            .where(ServiceConnectorSchema.is_shared == is_shared)
-        ).first()
-        if existing_shared_connector is not None:
-            raise EntityExistsError(
-                f"Unable to share service connector with name '{name}': Found "
-                "an existing shared service connector with the same name in "
-                f"workspace '{workspace_id}'."
-            )
-
-    def _create_connector_secret(
-        self,
-        connector_name: str,
-        user: UUID,
-        workspace: UUID,
-        is_shared: bool,
-        secrets: Optional[Dict[str, Optional[SecretStr]]],
-    ) -> Optional[UUID]:
-        """Creates a new secret to store the service connector secret credentials.
-
-        Args:
-            connector_name: The name of the service connector for which to
-                create a secret.
-            user: The ID of the user who owns the service connector.
-            workspace: The ID of the workspace in which the service connector
-                is registered.
-            is_shared: Whether the service connector is shared.
-            secrets: The secret credentials to store.
-
-        Returns:
-            The ID of the newly created secret or None, if the service connector
-            does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
-        """
-        if not secrets:
-            return None
-
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
-
-        # Generate a unique name for the secret
-        # Replace all non-alphanumeric characters with a dash because
-        # the secret name must be a valid DNS subdomain name in some
-        # secrets stores
-        connector_name = re.sub(r"[^a-zA-Z0-9-]", "-", connector_name)
-        # Generate unique names using a random suffix until we find a name
-        # that is not already in use
-        while True:
-            secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
-            existing_secrets = self.secrets_store.list_secrets(
-                SecretFilterModel(
-                    name=secret_name,
-                )
-            )
-            if not existing_secrets.size:
-                try:
-                    return self.secrets_store.create_secret(
-                        SecretRequestModel(
-                            name=secret_name,
-                            user=user,
-                            workspace=workspace,
-                            scope=SecretScope.WORKSPACE
-                            if is_shared
-                            else SecretScope.USER,
-                            values=secrets,
-                        )
-                    ).id
-                except KeyError:
-                    # The secret already exists, try again
-                    continue
-
-    def _populate_connector_type(
-        self, *service_connectors: ServiceConnectorResponseModel
-    ) -> None:
-        """Populates the connector type of the given service connectors.
-
-        If the connector type is not locally available, the connector type
-        field is left as is.
-
-        Args:
-            service_connectors: The service connectors to populate.
-        """
-        for service_connector in service_connectors:
-            if not service_connector_registry.is_registered(
-                service_connector.type
-            ):
-                continue
-            service_connector.connector_type = (
-                service_connector_registry.get_service_connector_type(
-                    service_connector.type
-                )
-            )
+    # --------------------------- Service Connectors ---------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_CONNECTOR)
     def create_service_connector(
-        self, service_connector: ServiceConnectorRequestModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector: ServiceConnectorRequest
+    ) -> ServiceConnectorResponse:
         """Creates a new service connector.
 
         Args:
@@ -4360,7 +4139,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_service_connector(
         self, service_connector_id: UUID
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
         Args:
@@ -4389,50 +4168,9 @@ class SqlZenStore(BaseZenStore):
             self._populate_connector_type(connector)
             return connector
 
-    def _list_filtered_service_connectors(
-        self,
-        session: Session,
-        query: Union[
-            Select[ServiceConnectorSchema],
-            SelectOfScalar[ServiceConnectorSchema],
-        ],
-        filter_model: ServiceConnectorFilterModel,
-    ) -> List[ServiceConnectorSchema]:
-        """Refine a service connector query.
-
-        Applies resource type and label filters to the query.
-
-        Args:
-            session: The database session.
-            query: The query to filter.
-            filter_model: The filter model.
-
-        Returns:
-            The filtered list of service connectors.
-        """
-        items: List[ServiceConnectorSchema] = (
-            session.exec(query).unique().all()
-        )
-
-        # filter out items that don't match the resource type
-        if filter_model.resource_type:
-            items = [
-                item
-                for item in items
-                if filter_model.resource_type in item.resource_types_list
-            ]
-
-        # filter out items that don't match the labels
-        if filter_model.labels:
-            items = [
-                item for item in items if item.has_labels(filter_model.labels)
-            ]
-
-        return items
-
     def list_service_connectors(
-        self, filter_model: ServiceConnectorFilterModel
-    ) -> Page[ServiceConnectorResponseModel]:
+        self, filter_model: ServiceConnectorFilter
+    ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
         Args:
@@ -4449,7 +4187,7 @@ class SqlZenStore(BaseZenStore):
                 Select[ServiceConnectorSchema],
                 SelectOfScalar[ServiceConnectorSchema],
             ],
-            filter_model: BaseFilterModel,
+            filter_model: BaseFilter,
         ) -> List[ServiceConnectorSchema]:
             """Custom fetch function for connector filtering and pagination.
 
@@ -4463,7 +4201,7 @@ class SqlZenStore(BaseZenStore):
             Returns:
                 The filtered and paginated results.
             """
-            assert isinstance(filter_model, ServiceConnectorFilterModel)
+            assert isinstance(filter_model, ServiceConnectorFilter)
             items = self._list_filtered_service_connectors(
                 session=session, query=query, filter_model=filter_model
             )
@@ -4473,7 +4211,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
             paged_connectors: Page[
-                ServiceConnectorResponseModel
+                ServiceConnectorResponse
             ] = self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -4485,84 +4223,9 @@ class SqlZenStore(BaseZenStore):
             self._populate_connector_type(*paged_connectors.items)
             return paged_connectors
 
-    def _update_connector_secret(
-        self,
-        existing_connector: ServiceConnectorResponseModel,
-        updated_connector: ServiceConnectorUpdateModel,
-    ) -> Optional[UUID]:
-        """Updates the secret for a service connector.
-
-        If the secrets field in the service connector update is set (i.e. not
-        None), the existing secret, if any, is replaced. If the secrets field is
-        set to an empty dict, the existing secret is deleted.
-
-        Args:
-            existing_connector: Existing service connector for which to update a
-                secret.
-            updated_connector: Updated service connector.
-
-        Returns:
-            The ID of the updated secret or None, if the new service connector
-            does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
-        """
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
-
-        is_shared = (
-            existing_connector.is_shared
-            if updated_connector.is_shared is None
-            else updated_connector.is_shared
-        )
-        scope_changed = is_shared != existing_connector.is_shared
-
-        if updated_connector.secrets is None:
-            if scope_changed and existing_connector.secret_id:
-                # Update the scope of the existing secret
-                self.secrets_store.update_secret(
-                    secret_id=existing_connector.secret_id,
-                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
-                        scope=SecretScope.WORKSPACE
-                        if is_shared
-                        else SecretScope.USER,
-                    ),
-                )
-
-            # If the connector update does not contain a secrets update, keep
-            # the existing secret (if any)
-            return existing_connector.secret_id
-
-        # Delete the existing secret (if any), to be replaced by the new secret
-        if existing_connector.secret_id:
-            try:
-                self.secrets_store.delete_secret(existing_connector.secret_id)
-            except KeyError:
-                # Ignore if the secret no longer exists
-                pass
-
-        # If the new service connector does not contain any secret credentials,
-        # return None
-        if not updated_connector.secrets:
-            return None
-
-        assert existing_connector.user is not None
-        # A secret does not exist yet, create a new one
-        return self._create_connector_secret(
-            connector_name=updated_connector.name or existing_connector.name,
-            user=existing_connector.user.id,
-            workspace=existing_connector.workspace.id,
-            is_shared=is_shared,
-            secrets=updated_connector.secrets,
-        )
-
     def update_service_connector(
-        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector_id: UUID, update: ServiceConnectorUpdate
+    ) -> ServiceConnectorResponse:
         """Updates an existing service connector.
 
         The update model contains the fields to be updated. If a field value is
@@ -4780,9 +4443,290 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    @staticmethod
+    def _fail_if_service_connector_with_name_exists_for_user(
+        name: str,
+        workspace_id: UUID,
+        user_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name exists.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            user_id: The ID of the user
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already owned by the user
+        """
+        assert user_id
+        # Check if service connector with the same domain key (name, workspace,
+        # owner) already exists
+        existing_domain_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.user_id == user_id)
+        ).first()
+        if existing_domain_connector is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_connector.user
+            raise EntityExistsError(
+                f"Unable to register service connector with name '{name}': "
+                "Found an existing service connector with the same name in the "
+                f"same workspace, '{existing_domain_connector.workspace.name}', "
+                "owned by the same user, "
+                f"{existing_domain_connector.user.name}'."
+            )
+        return None
+
+    @staticmethod
+    def _fail_if_service_connector_with_name_already_shared(
+        name: str,
+        workspace_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name is already shared.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            session: The Session
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already shared by another user
+        """
+        # Check if a service connector with the same name is already shared
+        # within the workspace
+        is_shared = True
+        existing_shared_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.is_shared == is_shared)
+        ).first()
+        if existing_shared_connector is not None:
+            raise EntityExistsError(
+                f"Unable to share service connector with name '{name}': Found "
+                "an existing shared service connector with the same name in "
+                f"workspace '{workspace_id}'."
+            )
+
+    def _create_connector_secret(
+        self,
+        connector_name: str,
+        user: UUID,
+        workspace: UUID,
+        is_shared: bool,
+        secrets: Optional[Dict[str, Optional[SecretStr]]],
+    ) -> Optional[UUID]:
+        """Creates a new secret to store the service connector secret credentials.
+
+        Args:
+            connector_name: The name of the service connector for which to
+                create a secret.
+            user: The ID of the user who owns the service connector.
+            workspace: The ID of the workspace in which the service connector
+                is registered.
+            is_shared: Whether the service connector is shared.
+            secrets: The secret credentials to store.
+
+        Returns:
+            The ID of the newly created secret or None, if the service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not secrets:
+            return None
+
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        # Generate a unique name for the secret
+        # Replace all non-alphanumeric characters with a dash because
+        # the secret name must be a valid DNS subdomain name in some
+        # secrets stores
+        connector_name = re.sub(r"[^a-zA-Z0-9-]", "-", connector_name)
+        # Generate unique names using a random suffix until we find a name
+        # that is not already in use
+        while True:
+            secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
+            existing_secrets = self.secrets_store.list_secrets(
+                SecretFilterModel(
+                    name=secret_name,
+                )
+            )
+            if not existing_secrets.size:
+                try:
+                    return self.secrets_store.create_secret(
+                        SecretRequestModel(
+                            name=secret_name,
+                            user=user,
+                            workspace=workspace,
+                            scope=SecretScope.WORKSPACE
+                            if is_shared
+                            else SecretScope.USER,
+                            values=secrets,
+                        )
+                    ).id
+                except KeyError:
+                    # The secret already exists, try again
+                    continue
+
+    def _populate_connector_type(
+        self, *service_connectors: ServiceConnectorResponse
+    ) -> None:
+        """Populates the connector type of the given service connectors.
+
+        If the connector type is not locally available, the connector type
+        field is left as is.
+
+        Args:
+            service_connectors: The service connectors to populate.
+        """
+        for service_connector in service_connectors:
+            if not service_connector_registry.is_registered(
+                service_connector.type
+            ):
+                continue
+            service_connector.connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+
+    def _list_filtered_service_connectors(
+        self,
+        session: Session,
+        query: Union[
+            Select[ServiceConnectorSchema],
+            SelectOfScalar[ServiceConnectorSchema],
+        ],
+        filter_model: ServiceConnectorFilter,
+    ) -> List[ServiceConnectorSchema]:
+        """Refine a service connector query.
+
+        Applies resource type and label filters to the query.
+
+        Args:
+            session: The database session.
+            query: The query to filter.
+            filter_model: The filter model.
+
+        Returns:
+            The filtered list of service connectors.
+        """
+        items: List[ServiceConnectorSchema] = (
+            session.exec(query).unique().all()
+        )
+
+        # filter out items that don't match the resource type
+        if filter_model.resource_type:
+            items = [
+                item
+                for item in items
+                if filter_model.resource_type in item.resource_types_list
+            ]
+
+        # filter out items that don't match the labels
+        if filter_model.labels:
+            items = [
+                item for item in items if item.has_labels(filter_model.labels)
+            ]
+
+        return items
+
+    def _update_connector_secret(
+        self,
+        existing_connector: ServiceConnectorResponse,
+        updated_connector: ServiceConnectorUpdate,
+    ) -> Optional[UUID]:
+        """Updates the secret for a service connector.
+
+        If the secrets field in the service connector update is set (i.e. not
+        None), the existing secret, if any, is replaced. If the secrets field is
+        set to an empty dict, the existing secret is deleted.
+
+        Args:
+            existing_connector: Existing service connector for which to update a
+                secret.
+            updated_connector: Updated service connector.
+
+        Returns:
+            The ID of the updated secret or None, if the new service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        is_shared = (
+            existing_connector.is_shared
+            if updated_connector.is_shared is None
+            else updated_connector.is_shared
+        )
+        scope_changed = is_shared != existing_connector.is_shared
+
+        if updated_connector.secrets is None:
+            if scope_changed and existing_connector.secret_id:
+                # Update the scope of the existing secret
+                self.secrets_store.update_secret(
+                    secret_id=existing_connector.secret_id,
+                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
+                        scope=SecretScope.WORKSPACE
+                        if is_shared
+                        else SecretScope.USER,
+                    ),
+                )
+
+            # If the connector update does not contain a secrets update, keep
+            # the existing secret (if any)
+            return existing_connector.secret_id
+
+        # Delete the existing secret (if any), to be replaced by the new secret
+        if existing_connector.secret_id:
+            try:
+                self.secrets_store.delete_secret(existing_connector.secret_id)
+            except KeyError:
+                # Ignore if the secret no longer exists
+                pass
+
+        # If the new service connector does not contain any secret credentials,
+        # return None
+        if not updated_connector.secrets:
+            return None
+
+        assert existing_connector.user is not None
+        # A secret does not exist yet, create a new one
+        return self._create_connector_secret(
+            connector_name=updated_connector.name or existing_connector.name,
+            user=existing_connector.user.id,
+            workspace=existing_connector.workspace.id,
+            is_shared=is_shared,
+            secrets=updated_connector.secrets,
+        )
+
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequestModel,
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -4839,7 +4783,7 @@ class SqlZenStore(BaseZenStore):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
         Args:
@@ -4899,7 +4843,7 @@ class SqlZenStore(BaseZenStore):
         """
         user = self.get_user(user_name_or_id)
         workspace = self.get_workspace(workspace_name_or_id)
-        connector_filter_model = ServiceConnectorFilterModel(
+        connector_filter_model = ServiceConnectorFilter(
             connector_type=connector_type,
             resource_type=resource_type,
             is_shared=True,
@@ -4910,7 +4854,7 @@ class SqlZenStore(BaseZenStore):
             filter_model=connector_filter_model
         ).items
 
-        connector_filter_model = ServiceConnectorFilterModel(
+        connector_filter_model = ServiceConnectorFilter(
             connector_type=connector_type,
             resource_type=resource_type,
             is_shared=False,

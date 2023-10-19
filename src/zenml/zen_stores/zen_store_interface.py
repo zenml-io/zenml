@@ -17,49 +17,88 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.enums import ModelStages
+from zenml.models import (
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
+    ServerModel,
+)
 from zenml.new_models.base import Page
 from zenml.new_models.core import (
+    ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
+    CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
     CodeRepositoryUpdate,
+    ComponentFilter,
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    FlavorFilter,
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
+    PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineFilter,
     PipelineRequest,
     PipelineResponse,
+    PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
+    ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResponse,
     ServiceConnectorUpdate,
+    StackFilter,
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepRunFilter,
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
+    WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
+)
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
 )
 
 
@@ -1214,7 +1253,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequestModel,
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -1267,7 +1306,7 @@ class ZenStoreInterface(ABC):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
         Args:
