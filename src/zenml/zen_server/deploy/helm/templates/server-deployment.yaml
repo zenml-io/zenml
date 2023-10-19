@@ -48,7 +48,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
-          args: ["status"]
+          args: ["migrate-database"]
           command: ['zenml']
           env:
             {{- if .Values.zenml.debug }}

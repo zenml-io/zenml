@@ -36,7 +36,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     REPOSITORY_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource
+from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry
@@ -594,3 +594,22 @@ def info(
 
     if stack:
         cli_utils.print_debug_stack()
+
+
+@cli.command(
+    "migrate-database", help="Migrate the ZenML database.", hidden=True
+)
+def migrate_database() -> None:
+    """Migrate the ZenML database."""
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+
+    global_config = GlobalConfiguration()
+    if global_config.store.type == StoreType.SQL:
+        BaseZenStore.create_store(
+            global_config.store, skip_default_registrations=True
+        )
+        cli_utils.declare("Database migration finished.")
+    else:
+        cli_utils.warning(
+            "Unable to migrate database while connected to a ZenML server."
+        )
