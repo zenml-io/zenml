@@ -33,10 +33,10 @@ from pydantic import (
 )
 
 from zenml.logger import get_logger
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.component import ComponentResponse
+    from zenml.new_models.core.component import ComponentBase
     from zenml.new_models.core.service_connector import (
         ServiceConnectorResponse,
     )
@@ -512,7 +512,7 @@ class ServiceConnectorRequirements(BaseModel):
     def is_satisfied_by(
         self,
         connector: "ServiceConnectorResponse",
-        component: "ComponentResponse",
+        component: "ComponentBase",
     ) -> Tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.
 
