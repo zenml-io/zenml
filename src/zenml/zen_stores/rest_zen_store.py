@@ -84,22 +84,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-    BaseFilterModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -117,70 +101,91 @@ from zenml.models import (
     OAuthDeviceFilterModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ScheduleUpdateModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
 )
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    WorkspaceScopedRequestModel,
-)
-from zenml.models.page_model import Page
-from zenml.models.run_metadata_models import RunMetadataFilterModel
-from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
-from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
+from zenml.new_models.base import (
+    BaseFilter,
+    BaseRequest,
+    BaseResponse,
+    Page,
+    WorkspaceScopedRequest,
+)
+from zenml.new_models.core import (
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    PipelineUpdate,
+    RoleFilter,
+    RoleRequest,
+    RoleResponse,
+    RoleUpdate,
+    RunMetadataFilter,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
+    TeamFilter,
+    TeamRequest,
+    TeamResponse,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+    TeamUpdate,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
+)
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
+)
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -198,8 +203,7 @@ logger = get_logger(__name__)
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
-AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponse)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -469,7 +473,7 @@ class RestZenStore(BaseZenStore):
     # Stacks
     # ------
 
-    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
+    def create_stack(self, stack: StackRequest) -> StackResponse:
         """Register a new stack.
 
         Args:
@@ -481,10 +485,10 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=stack,
             route=STACKS,
-            response_model=StackResponseModel,
+            response_model=StackResponse,
         )
 
-    def get_stack(self, stack_id: UUID) -> StackResponseModel:
+    def get_stack(self, stack_id: UUID) -> StackResponse:
         """Get a stack by its unique ID.
 
         Args:
@@ -496,12 +500,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=stack_id,
             route=STACKS,
-            response_model=StackResponseModel,
+            response_model=StackResponse,
         )
 
     def list_stacks(
-        self, stack_filter_model: StackFilterModel
-    ) -> Page[StackResponseModel]:
+        self, stack_filter_model: StackFilter
+    ) -> Page[StackResponse]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -513,13 +517,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=STACKS,
-            response_model=StackResponseModel,
+            response_model=StackResponse,
             filter_model=stack_filter_model,
         )
 
     def update_stack(
-        self, stack_id: UUID, stack_update: StackUpdateModel
-    ) -> StackResponseModel:
+        self, stack_id: UUID, stack_update: StackUpdate
+    ) -> StackResponse:
         """Update a stack.
 
         Args:
@@ -533,7 +537,7 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             resource_update=stack_update,
             route=STACKS,
-            response_model=StackResponseModel,
+            response_model=StackResponse,
         )
 
     def delete_stack(self, stack_id: UUID) -> None:
@@ -553,8 +557,8 @@ class RestZenStore(BaseZenStore):
 
     def create_stack_component(
         self,
-        component: ComponentRequestModel,
-    ) -> ComponentResponseModel:
+        component: ComponentRequest,
+    ) -> ComponentResponse:
         """Create a stack component.
 
         Args:
@@ -566,12 +570,10 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=component,
             route=STACK_COMPONENTS,
-            response_model=ComponentResponseModel,
+            response_model=ComponentResponse,
         )
 
-    def get_stack_component(
-        self, component_id: UUID
-    ) -> ComponentResponseModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponse:
         """Get a stack component by ID.
 
         Args:
@@ -583,12 +585,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=component_id,
             route=STACK_COMPONENTS,
-            response_model=ComponentResponseModel,
+            response_model=ComponentResponse,
         )
 
     def list_stack_components(
-        self, component_filter_model: ComponentFilterModel
-    ) -> Page[ComponentResponseModel]:
+        self, component_filter_model: ComponentFilter
+    ) -> Page[ComponentResponse]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -600,15 +602,15 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=STACK_COMPONENTS,
-            response_model=ComponentResponseModel,
+            response_model=ComponentResponse,
             filter_model=component_filter_model,
         )
 
     def update_stack_component(
         self,
         component_id: UUID,
-        component_update: ComponentUpdateModel,
-    ) -> ComponentResponseModel:
+        component_update: ComponentUpdate,
+    ) -> ComponentResponse:
         """Update an existing stack component.
 
         Args:
@@ -622,7 +624,7 @@ class RestZenStore(BaseZenStore):
             resource_id=component_id,
             resource_update=component_update,
             route=STACK_COMPONENTS,
-            response_model=ComponentResponseModel,
+            response_model=ComponentResponse,
         )
 
     def delete_stack_component(self, component_id: UUID) -> None:
@@ -640,7 +642,7 @@ class RestZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
+    def create_flavor(self, flavor: FlavorRequest) -> FlavorResponse:
         """Creates a new stack component flavor.
 
         Args:
@@ -652,12 +654,12 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=flavor,
             route=FLAVORS,
-            response_model=FlavorResponseModel,
+            response_model=FlavorResponse,
         )
 
     def update_flavor(
-        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
-    ) -> FlavorResponseModel:
+        self, flavor_id: UUID, flavor_update: FlavorUpdate
+    ) -> FlavorResponse:
         """Updates an existing user.
 
         Args:
@@ -671,10 +673,10 @@ class RestZenStore(BaseZenStore):
             resource_id=flavor_id,
             resource_update=flavor_update,
             route=FLAVORS,
-            response_model=FlavorResponseModel,
+            response_model=FlavorResponse,
         )
 
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponse:
         """Get a stack component flavor by ID.
 
         Args:
@@ -686,12 +688,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=flavor_id,
             route=FLAVORS,
-            response_model=FlavorResponseModel,
+            response_model=FlavorResponse,
         )
 
     def list_flavors(
-        self, flavor_filter_model: FlavorFilterModel
-    ) -> Page[FlavorResponseModel]:
+        self, flavor_filter_model: FlavorFilter
+    ) -> Page[FlavorResponse]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -703,7 +705,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=FLAVORS,
-            response_model=FlavorResponseModel,
+            response_model=FlavorResponse,
             filter_model=flavor_filter_model,
         )
 
@@ -722,7 +724,7 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    def create_user(self, user: UserRequestModel) -> UserResponseModel:
+    def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
 
         Args:
@@ -734,15 +736,15 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=user,
             route=USERS + "?assign_default_role=False",
-            response_model=UserResponseModel,
+            response_model=UserResponse,
         )
 
     def get_user(
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         include_private: bool = False,
-    ) -> UserResponseModel:
-        """Gets a specific user, when no id is specified the active user is returned.
+    ) -> UserResponse:
+        """Gets a specific user, when no id is specified get the active user.
 
         The `include_private` parameter is ignored here as it is handled
         implicitly by the /current-user endpoint that is queried when no
@@ -760,15 +762,13 @@ class RestZenStore(BaseZenStore):
             return self._get_resource(
                 resource_id=user_name_or_id,
                 route=USERS,
-                response_model=UserResponseModel,
+                response_model=UserResponse,
             )
         else:
             body = self.get(CURRENT_USER)
-            return UserResponseModel.parse_obj(body)
+            return UserResponse.parse_obj(body)
 
-    def list_users(
-        self, user_filter_model: UserFilterModel
-    ) -> Page[UserResponseModel]:
+    def list_users(self, user_filter_model: UserFilter) -> Page[UserResponse]:
         """List all users.
 
         Args:
@@ -780,13 +780,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=USERS,
-            response_model=UserResponseModel,
+            response_model=UserResponse,
             filter_model=user_filter_model,
         )
 
     def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
-    ) -> UserResponseModel:
+        self, user_id: UUID, user_update: UserUpdate
+    ) -> UserResponse:
         """Updates an existing user.
 
         Args:
@@ -800,7 +800,7 @@ class RestZenStore(BaseZenStore):
             resource_id=user_id,
             resource_update=user_update,
             route=USERS,
-            response_model=UserResponseModel,
+            response_model=UserResponse,
         )
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
@@ -818,7 +818,7 @@ class RestZenStore(BaseZenStore):
     # Teams
     # -----
 
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
+    def create_team(self, team: TeamRequest) -> TeamResponse:
         """Creates a new team.
 
         Args:
@@ -830,10 +830,10 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=team,
             route=TEAMS,
-            response_model=TeamResponseModel,
+            response_model=TeamResponse,
         )
 
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponse:
         """Gets a specific team.
 
         Args:
@@ -845,12 +845,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=team_name_or_id,
             route=TEAMS,
-            response_model=TeamResponseModel,
+            response_model=TeamResponse,
         )
 
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
+    def list_teams(self, team_filter_model: TeamFilter) -> Page[TeamResponse]:
         """List all teams matching the given filter criteria.
 
         Args:
@@ -862,13 +860,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=TEAMS,
-            response_model=TeamResponseModel,
+            response_model=TeamResponse,
             filter_model=team_filter_model,
         )
 
     def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
+        self, team_id: UUID, team_update: TeamUpdate
+    ) -> TeamResponse:
         """Update an existing team.
 
         Args:
@@ -882,7 +880,7 @@ class RestZenStore(BaseZenStore):
             resource_id=team_id,
             resource_update=team_update,
             route=TEAMS,
-            response_model=TeamResponseModel,
+            response_model=TeamResponse,
         )
 
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
@@ -900,7 +898,7 @@ class RestZenStore(BaseZenStore):
     # Roles
     # -----
 
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
+    def create_role(self, role: RoleRequest) -> RoleResponse:
         """Creates a new role.
 
         Args:
@@ -912,10 +910,10 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=role,
             route=ROLES,
-            response_model=RoleResponseModel,
+            response_model=RoleResponse,
         )
 
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponse:
         """Gets a specific role.
 
         Args:
@@ -927,12 +925,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=role_name_or_id,
             route=ROLES,
-            response_model=RoleResponseModel,
+            response_model=RoleResponse,
         )
 
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
+    def list_roles(self, role_filter_model: RoleFilter) -> Page[RoleResponse]:
         """List all roles matching the given filter criteria.
 
         Args:
@@ -944,13 +940,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=ROLES,
-            response_model=RoleResponseModel,
+            response_model=RoleResponse,
             filter_model=role_filter_model,
         )
 
     def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
+        self, role_id: UUID, role_update: RoleUpdate
+    ) -> RoleResponse:
         """Update an existing role.
 
         Args:
@@ -964,7 +960,7 @@ class RestZenStore(BaseZenStore):
             resource_id=role_id,
             resource_update=role_update,
             route=ROLES,
-            response_model=RoleResponseModel,
+            response_model=RoleResponse,
         )
 
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
@@ -983,8 +979,8 @@ class RestZenStore(BaseZenStore):
     # ----------------
 
     def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilter
+    ) -> Page[UserRoleAssignmentResponse]:
         """List all roles assignments matching the given filter criteria.
 
         Args:
@@ -996,13 +992,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
+            response_model=UserRoleAssignmentResponse,
             filter_model=user_role_assignment_filter_model,
         )
 
     def get_user_role_assignment(
         self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponse:
         """Get an existing role assignment by name or ID.
 
         Args:
@@ -1014,7 +1010,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=user_role_assignment_id,
             route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
+            response_model=UserRoleAssignmentResponse,
         )
 
     def delete_user_role_assignment(
@@ -1031,8 +1027,8 @@ class RestZenStore(BaseZenStore):
         )
 
     def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
+        self, user_role_assignment: UserRoleAssignmentRequest
+    ) -> UserRoleAssignmentResponse:
         """Creates a new role assignment.
 
         Args:
@@ -1044,7 +1040,7 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=user_role_assignment,
             route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponseModel,
+            response_model=UserRoleAssignmentResponse,
         )
 
     # ---------------------
@@ -1052,8 +1048,8 @@ class RestZenStore(BaseZenStore):
     # ---------------------
 
     def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
+        self, team_role_assignment: TeamRoleAssignmentRequest
+    ) -> TeamRoleAssignmentResponse:
         """Creates a new team role assignment.
 
         Args:
@@ -1065,12 +1061,12 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=team_role_assignment,
             route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
+            response_model=TeamRoleAssignmentResponse,
         )
 
     def get_team_role_assignment(
         self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
+    ) -> TeamRoleAssignmentResponse:
         """Gets a specific role assignment.
 
         Args:
@@ -1082,7 +1078,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=team_role_assignment_id,
             route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
+            response_model=TeamRoleAssignmentResponse,
         )
 
     def delete_team_role_assignment(
@@ -1099,8 +1095,8 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilter
+    ) -> Page[TeamRoleAssignmentResponse]:
         """List all roles assignments matching the given filter criteria.
 
         Args:
@@ -1112,7 +1108,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponseModel,
+            response_model=TeamRoleAssignmentResponse,
             filter_model=team_role_assignment_filter_model,
         )
 
@@ -1121,8 +1117,8 @@ class RestZenStore(BaseZenStore):
     # --------
 
     def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
         """Creates a new workspace.
 
         Args:
@@ -1134,12 +1130,12 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=workspace,
             route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
+            response_model=WorkspaceResponse,
         )
 
     def get_workspace(
         self, workspace_name_or_id: Union[UUID, str]
-    ) -> WorkspaceResponseModel:
+    ) -> WorkspaceResponse:
         """Get an existing workspace by name or ID.
 
         Args:
@@ -1151,12 +1147,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=workspace_name_or_id,
             route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
+            response_model=WorkspaceResponse,
         )
 
     def list_workspaces(
-        self, workspace_filter_model: WorkspaceFilterModel
-    ) -> Page[WorkspaceResponseModel]:
+        self, workspace_filter_model: WorkspaceFilter
+    ) -> Page[WorkspaceResponse]:
         """List all workspace matching the given filter criteria.
 
         Args:
@@ -1168,13 +1164,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
+            response_model=WorkspaceResponse,
             filter_model=workspace_filter_model,
         )
 
     def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
         """Update an existing workspace.
 
         Args:
@@ -1188,7 +1184,7 @@ class RestZenStore(BaseZenStore):
             resource_id=workspace_id,
             resource_update=workspace_update,
             route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
+            response_model=WorkspaceResponse,
         )
 
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
@@ -1206,9 +1202,7 @@ class RestZenStore(BaseZenStore):
     # Pipelines
     # ---------
 
-    def create_pipeline(
-        self, pipeline: PipelineRequestModel
-    ) -> PipelineResponseModel:
+    def create_pipeline(self, pipeline: PipelineRequest) -> PipelineResponse:
         """Creates a new pipeline in a workspace.
 
         Args:
@@ -1220,10 +1214,10 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=pipeline,
             route=PIPELINES,
-            response_model=PipelineResponseModel,
+            response_model=PipelineResponse,
         )
 
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponse:
         """Get a pipeline with a given ID.
 
         Args:
@@ -1235,12 +1229,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=pipeline_id,
             route=PIPELINES,
-            response_model=PipelineResponseModel,
+            response_model=PipelineResponse,
         )
 
     def list_pipelines(
-        self, pipeline_filter_model: PipelineFilterModel
-    ) -> Page[PipelineResponseModel]:
+        self, pipeline_filter_model: PipelineFilter
+    ) -> Page[PipelineResponse]:
         """List all pipelines matching the given filter criteria.
 
         Args:
@@ -1252,13 +1246,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=PIPELINES,
-            response_model=PipelineResponseModel,
+            response_model=PipelineResponse,
             filter_model=pipeline_filter_model,
         )
 
     def update_pipeline(
-        self, pipeline_id: UUID, pipeline_update: PipelineUpdateModel
-    ) -> PipelineResponseModel:
+        self, pipeline_id: UUID, pipeline_update: PipelineUpdate
+    ) -> PipelineResponse:
         """Updates a pipeline.
 
         Args:
@@ -1272,7 +1266,7 @@ class RestZenStore(BaseZenStore):
             resource_id=pipeline_id,
             resource_update=pipeline_update,
             route=PIPELINES,
-            response_model=PipelineResponseModel,
+            response_model=PipelineResponse,
         )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
@@ -1292,8 +1286,8 @@ class RestZenStore(BaseZenStore):
 
     def create_build(
         self,
-        build: PipelineBuildRequestModel,
-    ) -> PipelineBuildResponseModel:
+        build: PipelineBuildRequest,
+    ) -> PipelineBuildResponse:
         """Creates a new build in a workspace.
 
         Args:
@@ -1305,10 +1299,10 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=build,
             route=PIPELINE_BUILDS,
-            response_model=PipelineBuildResponseModel,
+            response_model=PipelineBuildResponse,
         )
 
-    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+    def get_build(self, build_id: UUID) -> PipelineBuildResponse:
         """Get a build with a given ID.
 
         Args:
@@ -1320,12 +1314,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=build_id,
             route=PIPELINE_BUILDS,
-            response_model=PipelineBuildResponseModel,
+            response_model=PipelineBuildResponse,
         )
 
     def list_builds(
-        self, build_filter_model: PipelineBuildFilterModel
-    ) -> Page[PipelineBuildResponseModel]:
+        self, build_filter_model: PipelineBuildFilter
+    ) -> Page[PipelineBuildResponse]:
         """List all builds matching the given filter criteria.
 
         Args:
@@ -1337,7 +1331,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=PIPELINE_BUILDS,
-            response_model=PipelineBuildResponseModel,
+            response_model=PipelineBuildResponse,
             filter_model=build_filter_model,
         )
 
@@ -1358,8 +1352,8 @@ class RestZenStore(BaseZenStore):
 
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequestModel,
-    ) -> PipelineDeploymentResponseModel:
+        deployment: PipelineDeploymentRequest,
+    ) -> PipelineDeploymentResponse:
         """Creates a new deployment in a workspace.
 
         Args:
@@ -1371,12 +1365,12 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=deployment,
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponseModel,
+            response_model=PipelineDeploymentResponse,
         )
 
     def get_deployment(
         self, deployment_id: UUID
-    ) -> PipelineDeploymentResponseModel:
+    ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -1388,12 +1382,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponseModel,
+            response_model=PipelineDeploymentResponse,
         )
 
     def list_deployments(
-        self, deployment_filter_model: PipelineDeploymentFilterModel
-    ) -> Page[PipelineDeploymentResponseModel]:
+        self, deployment_filter_model: PipelineDeploymentFilter
+    ) -> Page[PipelineDeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1405,7 +1399,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponseModel,
+            response_model=PipelineDeploymentResponse,
             filter_model=deployment_filter_model,
         )
 
@@ -1424,9 +1418,7 @@ class RestZenStore(BaseZenStore):
     # Schedules
     # ---------
 
-    def create_schedule(
-        self, schedule: ScheduleRequestModel
-    ) -> ScheduleResponseModel:
+    def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
         """Creates a new schedule.
 
         Args:
@@ -1438,10 +1430,10 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=schedule,
             route=SCHEDULES,
-            response_model=ScheduleResponseModel,
+            response_model=ScheduleResponse,
         )
 
-    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponse:
         """Get a schedule with a given ID.
 
         Args:
@@ -1453,12 +1445,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
-            response_model=ScheduleResponseModel,
+            response_model=ScheduleResponse,
         )
 
     def list_schedules(
-        self, schedule_filter_model: ScheduleFilterModel
-    ) -> Page[ScheduleResponseModel]:
+        self, schedule_filter_model: ScheduleFilter
+    ) -> Page[ScheduleResponse]:
         """List all schedules in the workspace.
 
         Args:
@@ -1470,15 +1462,15 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=SCHEDULES,
-            response_model=ScheduleResponseModel,
+            response_model=ScheduleResponse,
             filter_model=schedule_filter_model,
         )
 
     def update_schedule(
         self,
         schedule_id: UUID,
-        schedule_update: ScheduleUpdateModel,
-    ) -> ScheduleResponseModel:
+        schedule_update: ScheduleUpdate,
+    ) -> ScheduleResponse:
         """Updates a schedule.
 
         Args:
@@ -1492,7 +1484,7 @@ class RestZenStore(BaseZenStore):
             resource_id=schedule_id,
             resource_update=schedule_update,
             route=SCHEDULES,
-            response_model=ScheduleResponseModel,
+            response_model=ScheduleResponse,
         )
 
     def delete_schedule(self, schedule_id: UUID) -> None:
@@ -1511,8 +1503,8 @@ class RestZenStore(BaseZenStore):
     # --------------
 
     def create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
@@ -1523,13 +1515,11 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=pipeline_run,
-            response_model=PipelineRunResponseModel,
+            response_model=PipelineRunResponse,
             route=RUNS,
         )
 
-    def get_run(
-        self, run_name_or_id: Union[UUID, str]
-    ) -> PipelineRunResponseModel:
+    def get_run(self, run_name_or_id: Union[UUID, str]) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
@@ -1541,12 +1531,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
-            response_model=PipelineRunResponseModel,
+            response_model=PipelineRunResponse,
         )
 
     def get_or_create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> Tuple[PipelineRunResponseModel, bool]:
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -1562,12 +1552,12 @@ class RestZenStore(BaseZenStore):
         return self._get_or_create_workspace_scoped_resource(
             resource=pipeline_run,
             route=RUNS,
-            response_model=PipelineRunResponseModel,
+            response_model=PipelineRunResponse,
         )
 
     def list_runs(
-        self, runs_filter_model: PipelineRunFilterModel
-    ) -> Page[PipelineRunResponseModel]:
+        self, runs_filter_model: PipelineRunFilter
+    ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
         Args:
@@ -1579,13 +1569,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=RUNS,
-            response_model=PipelineRunResponseModel,
+            response_model=PipelineRunResponse,
             filter_model=runs_filter_model,
         )
 
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdateModel
-    ) -> PipelineRunResponseModel:
+        self, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
@@ -1599,7 +1589,7 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=run_id,
             resource_update=run_update,
-            response_model=PipelineRunResponseModel,
+            response_model=PipelineRunResponse,
             route=RUNS,
         )
 
@@ -1618,9 +1608,7 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def create_run_step(
-        self, step_run: StepRunRequestModel
-    ) -> StepRunResponseModel:
+    def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
         """Creates a step run.
 
         Args:
@@ -1631,11 +1619,11 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=step_run,
-            response_model=StepRunResponseModel,
+            response_model=StepRunResponse,
             route=STEPS,
         )
 
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
         """Get a step run by ID.
 
         Args:
@@ -1647,12 +1635,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=step_run_id,
             route=STEPS,
-            response_model=StepRunResponseModel,
+            response_model=StepRunResponse,
         )
 
     def list_run_steps(
-        self, step_run_filter_model: StepRunFilterModel
-    ) -> Page[StepRunResponseModel]:
+        self, step_run_filter_model: StepRunFilter
+    ) -> Page[StepRunResponse]:
         """List all step runs matching the given filter criteria.
 
         Args:
@@ -1664,15 +1652,15 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=STEPS,
-            response_model=StepRunResponseModel,
+            response_model=StepRunResponse,
             filter_model=step_run_filter_model,
         )
 
     def update_run_step(
         self,
         step_run_id: UUID,
-        step_run_update: StepRunUpdateModel,
-    ) -> StepRunResponseModel:
+        step_run_update: StepRunUpdate,
+    ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
@@ -1685,7 +1673,7 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=step_run_id,
             resource_update=step_run_update,
-            response_model=StepRunResponseModel,
+            response_model=StepRunResponse,
             route=STEPS,
         )
 
@@ -1693,9 +1681,7 @@ class RestZenStore(BaseZenStore):
     # Artifacts
     # ---------
 
-    def create_artifact(
-        self, artifact: ArtifactRequestModel
-    ) -> ArtifactResponseModel:
+    def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
         """Creates an artifact.
 
         Args:
@@ -1706,11 +1692,11 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=artifact,
-            response_model=ArtifactResponseModel,
+            response_model=ArtifactResponse,
             route=ARTIFACTS,
         )
 
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponse:
         """Gets an artifact.
 
         Args:
@@ -1722,12 +1708,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=artifact_id,
             route=ARTIFACTS,
-            response_model=ArtifactResponseModel,
+            response_model=ArtifactResponse,
         )
 
     def list_artifacts(
-        self, artifact_filter_model: ArtifactFilterModel
-    ) -> Page[ArtifactResponseModel]:
+        self, artifact_filter_model: ArtifactFilter
+    ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
@@ -1739,7 +1725,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=ARTIFACTS,
-            response_model=ArtifactResponseModel,
+            response_model=ArtifactResponse,
             filter_model=artifact_filter_model,
         )
 
@@ -1756,8 +1742,8 @@ class RestZenStore(BaseZenStore):
     # ------------
 
     def create_run_metadata(
-        self, run_metadata: RunMetadataRequestModel
-    ) -> List[RunMetadataResponseModel]:
+        self, run_metadata: RunMetadataRequest
+    ) -> List[RunMetadataResponse]:
         """Creates run metadata.
 
         Args:
@@ -1768,16 +1754,16 @@ class RestZenStore(BaseZenStore):
         """
         route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
         response_body = self.post(f"{route}", body=run_metadata)
-        result: List[RunMetadataResponseModel] = []
+        result: List[RunMetadataResponse] = []
         if isinstance(response_body, list):
             for metadata in response_body or []:
-                result.append(RunMetadataResponseModel.parse_obj(metadata))
+                result.append(RunMetadataResponse.parse_obj(metadata))
         return result
 
     def list_run_metadata(
         self,
-        run_metadata_filter_model: RunMetadataFilterModel,
-    ) -> Page[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilter,
+    ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
         Args:
@@ -1789,7 +1775,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=RUN_METADATA,
-            response_model=RunMetadataResponseModel,
+            response_model=RunMetadataResponse,
             filter_model=run_metadata_filter_model,
         )
 
@@ -1798,8 +1784,8 @@ class RestZenStore(BaseZenStore):
     # -----------------
 
     def create_code_repository(
-        self, code_repository: CodeRepositoryRequestModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository: CodeRepositoryRequest
+    ) -> CodeRepositoryResponse:
         """Creates a new code repository.
 
         Args:
@@ -1810,13 +1796,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=code_repository,
-            response_model=CodeRepositoryResponseModel,
+            response_model=CodeRepositoryResponse,
             route=CODE_REPOSITORIES,
         )
 
     def get_code_repository(
         self, code_repository_id: UUID
-    ) -> CodeRepositoryResponseModel:
+    ) -> CodeRepositoryResponse:
         """Gets a specific code repository.
 
         Args:
@@ -1828,12 +1814,12 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=code_repository_id,
             route=CODE_REPOSITORIES,
-            response_model=CodeRepositoryResponseModel,
+            response_model=CodeRepositoryResponse,
         )
 
     def list_code_repositories(
-        self, filter_model: CodeRepositoryFilterModel
-    ) -> Page[CodeRepositoryResponseModel]:
+        self, filter_model: CodeRepositoryFilter
+    ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
 
         Args:
@@ -1845,13 +1831,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=CODE_REPOSITORIES,
-            response_model=CodeRepositoryResponseModel,
+            response_model=CodeRepositoryResponse,
             filter_model=filter_model,
         )
 
     def update_code_repository(
-        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
-    ) -> CodeRepositoryResponseModel:
+        self, code_repository_id: UUID, update: CodeRepositoryUpdate
+    ) -> CodeRepositoryResponse:
         """Updates an existing code repository.
 
         Args:
@@ -1864,7 +1850,7 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=code_repository_id,
             resource_update=update,
-            response_model=CodeRepositoryResponseModel,
+            response_model=CodeRepositoryResponse,
             route=CODE_REPOSITORIES,
         )
 
@@ -1885,7 +1871,7 @@ class RestZenStore(BaseZenStore):
     def _populate_connector_type(
         self,
         *connector_models: Union[
-            ServiceConnectorResponseModel, ServiceConnectorResourcesModel
+            ServiceConnectorResponse, ServiceConnectorResourcesModel
         ],
     ) -> None:
         """Populates or updates the connector type of the given connector or resource models.
@@ -1920,8 +1906,8 @@ class RestZenStore(BaseZenStore):
             service_connector.connector_type = connector_type
 
     def create_service_connector(
-        self, service_connector: ServiceConnectorRequestModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector: ServiceConnectorRequest
+    ) -> ServiceConnectorResponse:
         """Creates a new service connector.
 
         Args:
@@ -1933,14 +1919,14 @@ class RestZenStore(BaseZenStore):
         connector_model = self._create_workspace_scoped_resource(
             resource=service_connector,
             route=SERVICE_CONNECTORS,
-            response_model=ServiceConnectorResponseModel,
+            response_model=ServiceConnectorResponse,
         )
         self._populate_connector_type(connector_model)
         return connector_model
 
     def get_service_connector(
         self, service_connector_id: UUID
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
         Args:
@@ -1952,15 +1938,15 @@ class RestZenStore(BaseZenStore):
         connector_model = self._get_resource(
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
-            response_model=ServiceConnectorResponseModel,
+            response_model=ServiceConnectorResponse,
             params={"expand_secrets": False},
         )
         self._populate_connector_type(connector_model)
         return connector_model
 
     def list_service_connectors(
-        self, filter_model: ServiceConnectorFilterModel
-    ) -> Page[ServiceConnectorResponseModel]:
+        self, filter_model: ServiceConnectorFilter
+    ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
         Args:
@@ -1972,7 +1958,7 @@ class RestZenStore(BaseZenStore):
         """
         connector_models = self._list_paginated_resources(
             route=SERVICE_CONNECTORS,
-            response_model=ServiceConnectorResponseModel,
+            response_model=ServiceConnectorResponse,
             filter_model=filter_model,
             params={"expand_secrets": False},
         )
@@ -1980,8 +1966,8 @@ class RestZenStore(BaseZenStore):
         return connector_models
 
     def update_service_connector(
-        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector_id: UUID, update: ServiceConnectorUpdate
+    ) -> ServiceConnectorResponse:
         """Updates an existing service connector.
 
         The update model contains the fields to be updated. If a field value is
@@ -2012,7 +1998,7 @@ class RestZenStore(BaseZenStore):
         connector_model = self._update_resource(
             resource_id=service_connector_id,
             resource_update=update,
-            response_model=ServiceConnectorResponseModel,
+            response_model=ServiceConnectorResponse,
             route=SERVICE_CONNECTORS,
         )
         self._populate_connector_type(connector_model)
@@ -2030,7 +2016,7 @@ class RestZenStore(BaseZenStore):
 
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequestModel,
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -2095,7 +2081,7 @@ class RestZenStore(BaseZenStore):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
         Args:
@@ -2117,7 +2103,7 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        connector = ServiceConnectorResponseModel.parse_obj(response_body)
+        connector = ServiceConnectorResponse.parse_obj(response_body)
         self._populate_connector_type(connector)
         return connector
 
@@ -2419,8 +2405,10 @@ class RestZenStore(BaseZenStore):
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_name_or_id: name or id of the model containing the model
+                version.
+            model_version_name_or_id: name or id of the model version to be
+                deleted.
         """
         self._delete_resource(
             resource_id=model_version_name_or_id,
@@ -2437,9 +2425,11 @@ class RestZenStore(BaseZenStore):
         """Get an existing model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+            model_name_or_id: name or id of the model containing the model
+                version.
+            model_version_name_or_number_or_id: name, id, stage or number of
+                the model version to be retrieved. If skipped latest version
+                will be retrieved.
 
         Returns:
             The model version of interest.
@@ -2463,8 +2453,8 @@ class RestZenStore(BaseZenStore):
         """Get all model versions by filter.
 
         Args:
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            model_version_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
             A page of all model versions.
@@ -2507,7 +2497,8 @@ class RestZenStore(BaseZenStore):
         """Creates a new model version link.
 
         Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link
+                to be created.
 
         Returns:
             The newly created model version to artifact link.
@@ -2525,8 +2516,8 @@ class RestZenStore(BaseZenStore):
         """Get all model version to artifact links by filter.
 
         Args:
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_artifact_link_filter_model: All filter parameters
+                including pagination params.
 
         Returns:
             A page of all model version to artifact links.
@@ -2546,9 +2537,12 @@ class RestZenStore(BaseZenStore):
         """Deletes a model version to artifact link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_name_or_id: name or ID of the model containing the model
+                version.
+            model_version_name_or_id: name or ID of the model version
+                containing the link.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_artifact_link_name_or_id,
@@ -2566,11 +2560,14 @@ class RestZenStore(BaseZenStore):
         """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+            model_version_pipeline_run_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns the existing link.
-            - Otherwise, returns the newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
         return self._create_workspace_scoped_resource(
             resource=model_version_pipeline_run_link,
@@ -2606,9 +2603,12 @@ class RestZenStore(BaseZenStore):
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_name_or_id: name or ID of the model containing the model
+                version.
+            model_version_name_or_id: name or ID of the model version
+                containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_pipeline_run_link_name_or_id,
@@ -3004,7 +3004,7 @@ class RestZenStore(BaseZenStore):
 
     def _create_resource(
         self,
-        resource: BaseRequestModel,
+        resource: BaseRequest,
         response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
@@ -3026,7 +3026,7 @@ class RestZenStore(BaseZenStore):
 
     def _create_workspace_scoped_resource(
         self,
-        resource: WorkspaceScopedRequestModel,
+        resource: WorkspaceScopedRequest,
         response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
@@ -3052,7 +3052,7 @@ class RestZenStore(BaseZenStore):
 
     def _get_or_create_resource(
         self,
-        resource: BaseRequestModel,
+        resource: BaseRequest,
         response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
@@ -3102,7 +3102,7 @@ class RestZenStore(BaseZenStore):
 
     def _get_or_create_workspace_scoped_resource(
         self,
-        resource: WorkspaceScopedRequestModel,
+        resource: WorkspaceScopedRequest,
         response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
@@ -3152,7 +3152,7 @@ class RestZenStore(BaseZenStore):
         self,
         route: str,
         response_model: Type[AnyResponseModel],
-        filter_model: BaseFilterModel,
+        filter_model: BaseFilter,
         params: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
