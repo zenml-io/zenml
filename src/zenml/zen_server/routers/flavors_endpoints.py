@@ -20,13 +20,13 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
-from zenml.models import (
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -44,16 +44,14 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[FlavorResponseModel],
+    response_model=Page[FlavorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_flavors(
-    flavor_filter_model: FlavorFilterModel = Depends(
-        make_dependable(FlavorFilterModel)
-    ),
+    flavor_filter_model: FlavorFilter = Depends(make_dependable(FlavorFilter)),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[FlavorResponseModel]:
+) -> Page[FlavorResponse]:
     """Returns all flavors.
 
     Args:
@@ -69,14 +67,14 @@ def list_flavors(
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Returns the requested flavor.
 
     Args:
@@ -91,16 +89,16 @@ def get_flavor(
 
 @router.post(
     "",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_flavor(
-    flavor: FlavorRequestModel,
+    flavor: FlavorRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Creates a stack component flavor.
 
     Args:
@@ -129,15 +127,15 @@ def create_flavor(
 
 @router.put(
     "/{team_id}",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_flavor(
     flavor_id: UUID,
-    flavor_update: FlavorUpdateModel,
+    flavor_update: FlavorUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Updates a flavor.
 
     # noqa: DAR401

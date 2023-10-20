@@ -28,14 +28,14 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.lineage_graph.lineage_graph import LineageGraph
-from zenml.models import (
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    StepRunFilterModel,
-    StepRunResponseModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    PipelineRunFilter,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    StepRunFilter,
+    StepRunResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -53,16 +53,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_runs(
-    runs_filter_model: PipelineRunFilterModel = Depends(
-        make_dependable(PipelineRunFilterModel)
+    runs_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -76,14 +76,14 @@ def list_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunResponseModel,
+    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run(
     run_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineRunResponseModel:
+) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
 
     Args:
@@ -97,15 +97,15 @@ def get_run(
 
 @router.put(
     "/{run_id}",
-    response_model=PipelineRunResponseModel,
+    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_run(
     run_id: UUID,
-    run_model: PipelineRunUpdateModel,
+    run_model: PipelineRunUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> PipelineRunResponseModel:
+) -> PipelineRunResponse:
     """Updates a run.
 
     Args:
@@ -161,16 +161,16 @@ def get_run_dag(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=Page[StepRunResponseModel],
+    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run_steps(
-    step_run_filter_model: StepRunFilterModel = Depends(
-        make_dependable(StepRunFilterModel)
+    step_run_filter_model: StepRunFilter = Depends(
+        make_dependable(StepRunFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[StepRunResponseModel]:
+) -> Page[StepRunResponse]:
     """Get all steps for a given pipeline run.
 
     Args:

@@ -54,8 +54,8 @@ from zenml.models import (
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
-    UserRoleAssignmentFilterModel,
 )
+from zenml.new_models.core import UserRoleAssignmentFilter
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -194,7 +194,7 @@ def generate_access_token(
         An authentication response with an access token.
     """
     role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
+        user_role_assignment_filter_model=UserRoleAssignmentFilter(
             user_id=user_id
         )
     )

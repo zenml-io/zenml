@@ -18,12 +18,12 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, USER_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import (
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -41,16 +41,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserRoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_user_role_assignments(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
+    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
+        make_dependable(UserRoleAssignmentFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all role assignments.
 
     Args:
@@ -66,14 +66,14 @@ def list_user_role_assignments(
 
 @router.post(
     "",
-    response_model=UserRoleAssignmentResponseModel,
+    response_model=UserRoleAssignmentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_role_assignment(
-    role_assignment: UserRoleAssignmentRequestModel,
+    role_assignment: UserRoleAssignmentRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> UserRoleAssignmentResponseModel:
+) -> UserRoleAssignmentResponse:
     """Creates a role assignment.
 
     # noqa: DAR401
@@ -91,14 +91,14 @@ def create_role_assignment(
 
 @router.get(
     "/{role_assignment_id}",
-    response_model=UserRoleAssignmentResponseModel,
+    response_model=UserRoleAssignmentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_role_assignment(
     role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> UserRoleAssignmentResponseModel:
+) -> UserRoleAssignmentResponse:
     """Returns a specific role assignment.
 
     Args:

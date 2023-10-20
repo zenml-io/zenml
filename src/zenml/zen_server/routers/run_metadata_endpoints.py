@@ -18,9 +18,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import RunMetadataResponseModel
-from zenml.models.page_model import Page
-from zenml.models.run_metadata_models import RunMetadataFilterModel
+from zenml.new_models.base import Page
+from zenml.new_models.core import RunMetadataFilter, RunMetadataResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -38,16 +37,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[RunMetadataResponseModel],
+    response_model=Page[RunMetadataResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_metadata(
-    run_metadata_filter_model: RunMetadataFilterModel = Depends(
-        make_dependable(RunMetadataFilterModel)
+    run_metadata_filter_model: RunMetadataFilter = Depends(
+        make_dependable(RunMetadataFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[RunMetadataResponseModel]:
+) -> Page[RunMetadataResponse]:
     """Get run metadata according to query filters.
 
     Args:

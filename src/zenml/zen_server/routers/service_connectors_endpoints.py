@@ -26,15 +26,17 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType
-from zenml.models import (
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorUpdate,
 )
-from zenml.models.page_model import Page
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -58,19 +60,19 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ServiceConnectorResponseModel],
+    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_service_connectors(
-    connector_filter_model: ServiceConnectorFilterModel = Depends(
-        make_dependable(ServiceConnectorFilterModel)
+    connector_filter_model: ServiceConnectorFilter = Depends(
+        make_dependable(ServiceConnectorFilter)
     ),
     expand_secrets: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[ServiceConnectorResponseModel]:
+) -> Page[ServiceConnectorResponse]:
     """Get a list of all service connectors for a specific type.
 
     Args:
@@ -101,7 +103,7 @@ def list_service_connectors(
 
 @router.get(
     "/{connector_id}",
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -111,7 +113,7 @@ def get_service_connector(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Returns the requested service connector.
 
     Args:
@@ -150,17 +152,17 @@ def get_service_connector(
 
 @router.put(
     "/{connector_id}",
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_service_connector(
     connector_id: UUID,
-    connector_update: ServiceConnectorUpdateModel,
+    connector_update: ServiceConnectorUpdate,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Updates a service connector.
 
     Args:
@@ -233,7 +235,7 @@ def delete_service_connector(
 )
 @handle_exceptions
 def validate_and_verify_service_connector_config(
-    connector: ServiceConnectorRequestModel,
+    connector: ServiceConnectorRequest,
     list_resources: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ServiceConnectorResourcesModel:
@@ -316,7 +318,7 @@ def validate_and_verify_service_connector(
 
 @router.get(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -327,7 +329,7 @@ def get_service_connector_client(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Get a service connector client for a service connector and given resource.
 
     This requires the service connector implementation to be installed

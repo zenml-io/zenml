@@ -27,13 +27,9 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
-from zenml.models import (
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-)
-from zenml.models.page_model import Page
+
+from zenml.new_models.base import Page
+from zenml.new_models.core import StepRunFilter, StepRunResponse, StepRunUpdate, StepRunRequest
 from zenml.utils.artifact_utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
@@ -55,16 +51,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StepRunResponseModel],
+    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_steps(
-    step_run_filter_model: StepRunFilterModel = Depends(
-        make_dependable(StepRunFilterModel)
+    step_run_filter_model: StepRunFilter = Depends(
+        make_dependable(StepRunFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[StepRunResponseModel]:
+) -> Page[StepRunResponse]:
     """Get run steps according to query filters.
 
     Args:
@@ -81,14 +77,14 @@ def list_run_steps(
 
 @router.post(
     "",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_run_step(
-    step: StepRunRequestModel,
+    step: StepRunRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Create a run step.
 
     Args:
@@ -102,14 +98,14 @@ def create_run_step(
 
 @router.get(
     "/{step_id}",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_step(
     step_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Get one specific step.
 
     Args:
@@ -123,15 +119,15 @@ def get_step(
 
 @router.put(
     "/{step_id}",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_step(
     step_id: UUID,
-    step_model: StepRunUpdateModel,
+    step_model: StepRunUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Updates a step.
 
     Args:

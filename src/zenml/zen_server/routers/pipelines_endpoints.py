@@ -19,14 +19,14 @@ from fastapi import APIRouter, Depends, Security
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import (
-    PipelineFilterModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    PipelineUpdateModel,
-)
 from zenml.models.page_model import Page
+from zenml.new_models.core import (
+    PipelineFilter,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    PipelineUpdate,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -44,16 +44,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineResponseModel],
+    response_model=Page[PipelineResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipelines(
-    pipeline_filter_model: PipelineFilterModel = Depends(
-        make_dependable(PipelineFilterModel)
+    pipeline_filter_model: PipelineFilter = Depends(
+        make_dependable(PipelineFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineResponseModel]:
+) -> Page[PipelineResponse]:
     """Gets a list of pipelines.
 
     Args:
@@ -70,14 +70,14 @@ def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=PipelineResponseModel,
+    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineResponseModel:
+) -> PipelineResponse:
     """Gets a specific pipeline using its unique id.
 
     Args:
@@ -91,15 +91,15 @@ def get_pipeline(
 
 @router.put(
     "/{pipeline_id}",
-    response_model=PipelineResponseModel,
+    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_pipeline(
     pipeline_id: UUID,
-    pipeline_update: PipelineUpdateModel,
+    pipeline_update: PipelineUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> PipelineResponseModel:
+) -> PipelineResponse:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
@@ -133,16 +133,16 @@ def delete_pipeline(
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Page[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipeline_runs(
-    pipeline_run_filter_model: PipelineRunFilterModel = Depends(
-        make_dependable(PipelineRunFilterModel)
+    pipeline_run_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:

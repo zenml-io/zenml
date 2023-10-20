@@ -31,15 +31,8 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, PermissionType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import (
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-)
-from zenml.models.page_model import Page
+from zenml.new_models.core import UserResponse, UserFilter, UserRequest, UserUpdate, UserRoleAssignmentFilter, UserRoleAssignmentRequest, UserRoleAssignmentResponse
+from zenml.new_models.base import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -78,16 +71,16 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponseModel],
+    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_users(
-    user_filter_model: UserFilterModel = Depends(
-        make_dependable(UserFilterModel)
+    user_filter_model: UserFilter = Depends(
+        make_dependable(UserFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserResponseModel]:
+) -> Page[UserResponse]:
     """Returns a list of all users.
 
     Args:
@@ -105,7 +98,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -114,9 +107,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @handle_exceptions
     def create_user(
-        user: UserRequestModel,
+        user: UserRequest,
         _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Creates a user.
 
         # noqa: DAR401
@@ -149,14 +142,14 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponseModel,
+    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_user(
     user_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> UserResponseModel:
+) -> UserResponse:
     """Returns a specific user.
 
     Args:
@@ -174,7 +167,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -184,9 +177,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def update_user(
         user_name_or_id: Union[str, UUID],
-        user_update: UserUpdateModel,
+        user_update: UserUpdate,
         _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Updates a specific user.
 
         Args:
@@ -205,7 +198,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -215,8 +208,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def activate_user(
         user_name_or_id: Union[str, UUID],
-        user_update: UserUpdateModel,
-    ) -> UserResponseModel:
+        user_update: UserUpdate,
+    ) -> UserResponse:
         """Activates a specific user.
 
         Args:
@@ -240,7 +233,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -251,7 +244,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def deactivate_user(
         user_name_or_id: Union[str, UUID],
         _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Deactivates a user and generates a new activation token for it.
 
         Args:
@@ -262,7 +255,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
 
-        user_update = UserUpdateModel(
+        user_update = UserUpdate(
             name=user.name,
             active=False,
         )
@@ -311,7 +304,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -321,11 +314,11 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def email_opt_in_response(
         user_name_or_id: Union[str, UUID],
-        user_response: UserUpdateModel,
+        user_response: UserUpdate,
         auth_context: AuthContext = Security(
             authorize, scopes=[PermissionType.ME]
         ),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Sets the response of the user to the email prompt.
 
         Args:
@@ -343,7 +336,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         user = zen_store().get_user(user_name_or_id)
 
         if str(auth_context.user.id) == str(user_name_or_id):
-            user_update = UserUpdateModel(
+            user_update = UserUpdate(
                 name=user.name,
                 email=user_response.email,
                 email_opted_in=user_response.email_opted_in,
@@ -367,16 +360,16 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=Page[UserRoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_role_assignments_for_user(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
+    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
+        make_dependable(UserRoleAssignmentFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
@@ -392,7 +385,7 @@ def list_role_assignments_for_user(
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponseModel,
+    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -400,7 +393,7 @@ def get_current_user(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> UserResponseModel:
+) -> UserResponse:
     """Returns the model of the authenticated user.
 
     Args:
@@ -418,7 +411,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -427,11 +420,11 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @handle_exceptions
     def update_myself(
-        user: UserUpdateModel,
+        user: UserUpdate,
         auth_context: AuthContext = Security(
             authorize, scopes=[PermissionType.ME]
         ),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Updates a specific user.
 
         Args:

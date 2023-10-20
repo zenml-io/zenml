@@ -18,12 +18,12 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, CODE_REPOSITORIES, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import (
-    CodeRepositoryFilterModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    CodeRepositoryFilter,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -41,16 +41,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[CodeRepositoryResponseModel],
+    response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_code_repositories(
-    filter_model: CodeRepositoryFilterModel = Depends(
-        make_dependable(CodeRepositoryFilterModel)
+    filter_model: CodeRepositoryFilter = Depends(
+        make_dependable(CodeRepositoryFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[CodeRepositoryResponseModel]:
+) -> Page[CodeRepositoryResponse]:
     """Gets a page of code repositories.
 
     Args:
@@ -65,14 +65,14 @@ def list_code_repositories(
 
 @router.get(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponseModel,
+    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_code_repository(
     code_repository_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> CodeRepositoryResponseModel:
+) -> CodeRepositoryResponse:
     """Gets a specific code repository using its unique ID.
 
     Args:
@@ -88,15 +88,15 @@ def get_code_repository(
 
 @router.put(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponseModel,
+    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_code_repository(
     code_repository_id: UUID,
-    update: CodeRepositoryUpdateModel,
+    update: CodeRepositoryUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> CodeRepositoryResponseModel:
+) -> CodeRepositoryResponse:
     """Updates a code repository.
 
     Args:

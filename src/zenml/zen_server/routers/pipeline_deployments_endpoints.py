@@ -18,11 +18,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import (
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentResponseModel,
+from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    PipelineDeploymentFilter,
+    PipelineDeploymentResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -40,16 +40,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineDeploymentResponseModel],
+    response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_deployments(
-    deployment_filter_model: PipelineDeploymentFilterModel = Depends(
-        make_dependable(PipelineDeploymentFilterModel)
+    deployment_filter_model: PipelineDeploymentFilter = Depends(
+        make_dependable(PipelineDeploymentFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineDeploymentResponseModel]:
+) -> Page[PipelineDeploymentResponse]:
     """Gets a list of deployment.
 
     Args:
@@ -66,14 +66,14 @@ def list_deployments(
 
 @router.get(
     "/{deployment_id}",
-    response_model=PipelineDeploymentResponseModel,
+    response_model=PipelineDeploymentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_deployment(
     deployment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineDeploymentResponseModel:
+) -> PipelineDeploymentResponse:
     """Gets a specific deployment using its unique id.
 
     Args:

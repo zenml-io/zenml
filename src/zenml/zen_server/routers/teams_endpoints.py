@@ -19,15 +19,9 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import (
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
-)
-from zenml.models.page_model import Page
+
+from zenml.new_models.core import TeamRoleAssignmentResponse, TeamRoleAssignmentFilter, TeamFilter, TeamRequest, TeamResponse, TeamUpdate
+from zenml.new_models.base import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -45,16 +39,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[TeamResponseModel],
+    response_model=Page[TeamResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_teams(
-    team_filter_model: TeamFilterModel = Depends(
-        make_dependable(TeamFilterModel)
+    team_filter_model: TeamFilter = Depends(
+        make_dependable(TeamFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamResponseModel]:
+) -> Page[TeamResponse]:
     """Returns a list of all teams.
 
     Args:
@@ -68,14 +62,14 @@ def list_teams(
 
 @router.post(
     "",
-    response_model=TeamResponseModel,
+    response_model=TeamResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_team(
-    team: TeamRequestModel,
+    team: TeamRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> TeamResponseModel:
+) -> TeamResponse:
     """Creates a team.
 
     # noqa: DAR401
@@ -91,14 +85,14 @@ def create_team(
 
 @router.get(
     "/{team_name_or_id}",
-    response_model=TeamResponseModel,
+    response_model=TeamResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_team(
     team_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> TeamResponseModel:
+) -> TeamResponse:
     """Returns a specific team.
 
     Args:
@@ -112,15 +106,15 @@ def get_team(
 
 @router.put(
     "/{team_id}",
-    response_model=TeamResponseModel,
+    response_model=TeamResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_team(
     team_id: UUID,
-    team_update: TeamUpdateModel,
+    team_update: TeamUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> TeamResponseModel:
+) -> TeamResponse:
     """Updates a team.
 
     # noqa: DAR401
@@ -154,16 +148,16 @@ def delete_team(
 
 @router.get(
     "/{team_name_or_id}" + ROLES,
-    response_model=Page[TeamRoleAssignmentResponseModel],
+    response_model=Page[TeamRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_role_assignments_for_team(
-    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
-        make_dependable(TeamRoleAssignmentFilterModel)
+    team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
+        make_dependable(TeamRoleAssignmentFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamRoleAssignmentResponseModel]:
+) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:

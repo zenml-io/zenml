@@ -19,8 +19,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
-from zenml.models.page_model import Page
+from zenml.new_models.core import StackRequest, StackUpdate, StackResponse, StackFilter
+from zenml.new_models.base import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -38,18 +38,18 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StackResponseModel],
+    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stacks(
-    stack_filter_model: StackFilterModel = Depends(
-        make_dependable(StackFilterModel)
+    stack_filter_model: StackFilter = Depends(
+        make_dependable(StackFilter)
     ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[StackResponseModel]:
+) -> Page[StackResponse]:
     """Returns all stacks.
 
     Args:
@@ -66,14 +66,14 @@ def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StackResponseModel:
+) -> StackResponse:
     """Returns the requested stack.
 
     Args:
@@ -87,15 +87,15 @@ def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_stack(
     stack_id: UUID,
-    stack_update: StackUpdateModel,
+    stack_update: StackUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StackResponseModel:
+) -> StackResponse:
     """Updates a stack.
 
     Args:

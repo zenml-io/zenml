@@ -18,8 +18,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_BUILDS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import PipelineBuildFilterModel, PipelineBuildResponseModel
-from zenml.models.page_model import Page
+from zenml.new_models.base import Page
+from zenml.new_models.core import PipelineBuildFilter, PipelineBuildResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -37,16 +37,16 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineBuildResponseModel],
+    response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_builds(
-    build_filter_model: PipelineBuildFilterModel = Depends(
-        make_dependable(PipelineBuildFilterModel)
+    build_filter_model: PipelineBuildFilter = Depends(
+        make_dependable(PipelineBuildFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineBuildResponseModel]:
+) -> Page[PipelineBuildResponse]:
     """Gets a list of builds.
 
     Args:
@@ -61,14 +61,14 @@ def list_builds(
 
 @router.get(
     "/{build_id}",
-    response_model=PipelineBuildResponseModel,
+    response_model=PipelineBuildResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_build(
     build_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineBuildResponseModel:
+) -> PipelineBuildResponse:
     """Gets a specific build using its unique id.
 
     Args:
