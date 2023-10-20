@@ -61,23 +61,14 @@ from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
 )
-from zenml.models import BaseFilterModel
-from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import (
-    BoolFilter,
-    NumericFilter,
-    StrFilter,
-    UUIDFilter,
-)
-from zenml.models.page_model import Page
+from zenml.new_models.base import Page, BaseResponse, NumericFilter, StrFilter, BoolFilter, UUIDFilter, BaseFilter
+from zenml.models import BaseResponseModel
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
-
-logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -87,21 +78,27 @@ if TYPE_CHECKING:
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.models import (
+    from zenml.new_models.core import (
+        ComponentResponse,
+        FlavorResponse,
+        PipelineRunResponse,
+        ServiceConnectorRequest,
+        ServiceConnectorResponse,
+        StackResponse,
+    )
+    from zenml.new_models.service_connector_type import (
         AuthenticationMethodModel,
-        ComponentResponseModel,
-        FlavorResponseModel,
-        PipelineRunResponseModel,
         ResourceTypeModel,
-        ServiceConnectorRequestModel,
         ServiceConnectorResourcesModel,
-        ServiceConnectorResponseModel,
         ServiceConnectorTypeModel,
-        StackResponseModel,
     )
     from zenml.stack import Stack
 
+logger = get_logger(__name__)
+
 MAX_ARGUMENT_VALUE_SIZE = 10240
+
+T = TypeVar("T", BaseResponse, BaseResponseModel)
 
 
 def title(text: str) -> None:
@@ -245,9 +242,6 @@ def print_table(
     console.print(rich_table)
 
 
-T = TypeVar("T", bound=BaseResponseModel)
-
-
 def print_pydantic_models(
     models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
@@ -284,9 +278,18 @@ def print_pydantic_models(
         """
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
-            include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
-            ]
+            if isinstance(model, BaseResponse):
+                include_columns = [
+                    k for k in model.body.dict().keys()
+                    if k not in exclude_columns
+                ] + [
+                    k for k in model.metadata.dict().keys()
+                    if k not in exclude_columns
+                ]
+            else:
+                include_columns = [
+                    k for k in model.dict().keys() if k not in exclude_columns
+                ]
         else:
             include_columns = columns
 
@@ -297,7 +300,7 @@ def print_pydantic_models(
             # In case the response model contains nested `BaseResponseModels`
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
-            if isinstance(value, BaseResponseModel):
+            if isinstance(value, (BaseResponse, BaseResponseModel)):
                 if "name" in value.__fields__:
                     items[k] = str(value.name)  # type: ignore[attr-defined]
                 else:
@@ -305,14 +308,13 @@ def print_pydantic_models(
 
             # If it is a list of `BaseResponseModels` access each Model within
             #  the list and extract either name or id
-            elif isinstance(value, list) and issubclass(
-                model.__fields__[k].type_, BaseResponseModel
-            ):
+            elif isinstance(value, list):
                 for v in value:
-                    if "name" in v.__fields__:
-                        items.setdefault(k, []).append(str(v.name))
-                    else:
-                        items.setdefault(k, []).append(str(v.id))
+                    if isinstance(v, (BaseResponse, BaseResponseModel)):
+                        if "name" in v.__fields__:
+                            items.setdefault(k, []).append(str(v.name))
+                        else:
+                            items.setdefault(k, []).append(str(v.id))
             elif isinstance(value, Set) or isinstance(value, List):
                 items[k] = [str(v) for v in value]
             else:
@@ -429,7 +431,7 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_outputs(stack: "StackResponseModel") -> None:
+def print_stack_outputs(stack: "StackResponse") -> None:
     """Prints outputs for stacks deployed with mlstacks.
 
     Args:
@@ -466,9 +468,7 @@ def print_stack_outputs(stack: "StackResponseModel") -> None:
     console.print(rich_table)
 
 
-def print_stack_configuration(
-    stack: "StackResponseModel", active: bool
-) -> None:
+def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:
@@ -505,7 +505,7 @@ def print_stack_configuration(
         declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
-def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
     """Prints the list of flavors.
 
     Args:
@@ -527,7 +527,7 @@ def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentResponseModel", active_status: bool
+    component: "ComponentResponse", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -1367,7 +1367,7 @@ def replace_emojis(text: str) -> str:
 
 def print_stacks_table(
     client: "Client",
-    stacks: Sequence["StackResponseModel"],
+    stacks: Sequence["StackResponse"],
     show_active: bool = False,
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
@@ -1418,7 +1418,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: Sequence["ComponentResponseModel"],
+    components: Sequence["ComponentResponse"],
     show_active: bool = False,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -1518,7 +1518,7 @@ def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
 
 def print_service_connectors_table(
     client: "Client",
-    connectors: Sequence["ServiceConnectorResponseModel"],
+    connectors: Sequence["ServiceConnectorResponse"],
     show_active: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connectors.
@@ -1532,7 +1532,7 @@ def print_service_connectors_table(
     if len(connectors) == 0:
         return
 
-    active_connectors: List["ServiceConnectorResponseModel"] = []
+    active_connectors: List["ServiceConnectorResponse"] = []
     for components in client.active_stack_model.components.values():
         for component in components:
             if component.connector:
@@ -1659,9 +1659,7 @@ def print_service_connector_resource_table(
 
 
 def print_service_connector_configuration(
-    connector: Union[
-        "ServiceConnectorResponseModel", "ServiceConnectorRequestModel"
-    ],
+    connector: Union["ServiceConnectorResponse", "ServiceConnectorRequest"],
     active_status: bool,
     show_secrets: bool,
 ) -> None:
@@ -2168,7 +2166,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    pipeline_runs: Sequence["PipelineRunResponseModel"],
+    pipeline_runs: Sequence["PipelineRunResponse"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
@@ -2239,7 +2237,7 @@ F = TypeVar("F", bound=Callable[..., None])
 
 
 def create_filter_help_text(
-    filter_model: Type[BaseFilterModel], field: str
+    filter_model: Type[BaseFilter], field: str
 ) -> str:
     """Create the help text used in the click option help text.
 
@@ -2291,7 +2289,7 @@ def create_filter_help_text(
 
 
 def create_data_type_help_text(
-    filter_model: Type[BaseFilterModel], field: str
+    filter_model: Type[BaseFilter], field: str
 ) -> str:
     """Create a general help text for a fields datatype.
 
@@ -2331,7 +2329,7 @@ def create_data_type_help_text(
         return f"{field}"
 
 
-def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
+def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
     The Outer decorator (`list_options`) is responsible for creating the inner

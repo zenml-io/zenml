@@ -25,14 +25,14 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import (
-    PipelineBuildFilterModel,
-    PipelineFilterModel,
-    PipelineRunFilterModel,
-)
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
-from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.new.pipelines.pipeline import Pipeline
+from zenml.new_models.core import (
+    PipelineBuildBase,
+    PipelineBuildFilter,
+    PipelineFilter,
+    PipelineRunFilter,
+    ScheduleFilter,
+)
 from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
@@ -284,12 +284,12 @@ def run_pipeline(
         name_id_or_prefix=pipeline_name_or_id, version=version
     )
 
-    build: Union[str, "PipelineBuildBaseModel", None] = None
+    build: Union[str, PipelineBuildBase, None] = None
     if build_path_or_id:
         if uuid_utils.is_valid_uuid(build_path_or_id):
             build = build_path_or_id
         elif os.path.exists(build_path_or_id):
-            build = PipelineBuildBaseModel.from_yaml(build_path_or_id)
+            build = PipelineBuildBase.from_yaml(build_path_or_id)
         else:
             cli_utils.error(
                 f"The specified build {build_path_or_id} is not a valid UUID "
@@ -307,7 +307,7 @@ def run_pipeline(
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@list_options(PipelineFilterModel)
+@list_options(PipelineFilter)
 def list_pipelines(**kwargs: Any) -> None:
     """List all registered pipelines.
 
@@ -383,7 +383,7 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@list_options(ScheduleFilterModel)
+@list_options(ScheduleFilter)
 def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
@@ -442,7 +442,7 @@ def runs() -> None:
 
 
 @runs.command("list", help="List all registered pipeline runs.")
-@list_options(PipelineRunFilterModel)
+@list_options(PipelineRunFilter)
 def list_pipeline_runs(**kwargs: Any) -> None:
     """List all registered pipeline runs for the filter.
 
@@ -508,7 +508,7 @@ def builds() -> None:
 
 
 @builds.command("list", help="List all pipeline builds.")
-@list_options(PipelineBuildFilterModel)
+@list_options(PipelineBuildFilter)
 def list_pipeline_builds(**kwargs: Any) -> None:
     """List all pipeline builds for the filter.
 
