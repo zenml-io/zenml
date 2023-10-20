@@ -61,12 +61,24 @@ spec:
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
               value: {{ .Values.zenml.defaultUsername | quote }}
-            {{- if .Values.zenml.database.url }}
+            - name: ZENML_SERVER_AUTH_SCHEME
+              value: {{ .Values.zenml.authType | default .Values.zenml.auth.authType | quote }}
+            {{- if .Values.zenml.auth.externalLoginURL }}
+            - name: ZENML_SERVER_EXTERNAL_LOGIN_URL
+              value: {{ .Values.zenml.auth.externalLoginURL | quote }}
+            {{- end }}
+            {{- if .Values.zenml.auth.externalUserInfoURL }}
+            - name: ZENML_SERVER_EXTERNAL_USER_INFO_URL
+              value: {{ .Values.zenml.auth.externalUserInfoURL | quote }}
+            {{- end }}
+            {{- if .Values.zenml.auth.externalCookieName }}
+            - name: ZENML_SERVER_EXTERNAL_COOKIE_NAME
+              value: {{ .Values.zenml.auth.externalCookieName | quote }}
+            {{- end }}
             - name: ZENML_STORE_TYPE
               value: sql
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
-            {{- end }}
             {{- if .Values.zenml.secretsStore.enabled }}
             - name: ZENML_SECRETS_STORE_TYPE
               value: {{ .Values.zenml.secretsStore.type | quote }}
