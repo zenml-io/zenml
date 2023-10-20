@@ -1,0 +1,11 @@
+.DS_Store
+.venv*
+.hypothesis
+.local
+.vscode
+.*cache
+__pycache__
+src/zenml/*
+zenml_examples
+examples/*
+.zen
