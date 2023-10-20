@@ -25,9 +25,7 @@ from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -76,7 +74,7 @@ class BaseOrchestrator(StackComponent, ABC):
     the pipeline to some remote infrastructure.
     """
 
-    _active_deployment: Optional["PipelineDeploymentResponseModel"] = None
+    _active_deployment: Optional["PipelineDeploymentResponse"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -101,7 +99,7 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -147,7 +145,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def run(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> Any:
         """Runs a pipeline on a stack.
@@ -207,9 +205,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(
-        self, deployment: "PipelineDeploymentResponseModel"
-    ) -> None:
+    def _prepare_run(self, deployment: "PipelineDeploymentResponse") -> None:
         """Prepares a run.
 
         Args:
