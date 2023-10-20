@@ -1,5 +1,22 @@
 <!-- markdown-link-check-disable -->
 
+# 0.45.4
+
+This minor update fixes a database migration bug that you could potentially
+encounter while upgrading your ZenML version and relates to use of the
+`ExternalArtifact` object. 
+If you are upgrading from <0.45.x version, this is the recommended release.
+
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 or v0.45.3 and are experiencing
+issues with your database, please consider upgrading to v0.45.4 instead.
+
+## What's Changed
+* Increase reuse of `ModelConfig` by @avishniakov in https://github.com/zenml-io/zenml/pull/1954
+* resolve alembic branches by @avishniakov in https://github.com/zenml-io/zenml/pull/1964
+* Fix corrupted migration for old dbs by @avishniakov in https://github.com/zenml-io/zenml/pull/1966
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.3...0.45.4
+
 # 0.45.3
 
 This minor update fixes a database migration bug that you could potentially
