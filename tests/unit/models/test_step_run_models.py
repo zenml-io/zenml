@@ -19,7 +19,7 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.step_run_models import StepRunBaseModel
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"

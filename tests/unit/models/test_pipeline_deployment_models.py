@@ -18,9 +18,7 @@ from pydantic import ValidationError
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
 )
-from zenml.models.constants import (
-    MEDIUMTEXT_MAX_LENGTH,
-)
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 
 

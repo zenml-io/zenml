@@ -17,7 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import TEXT_FIELD_MAX_LENGTH, STR_FIELD_MAX_LENGTH
 from zenml.models.pipeline_models import PipelineBaseModel
 
 

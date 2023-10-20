@@ -16,7 +16,7 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.user_models import UserRequestModel
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"

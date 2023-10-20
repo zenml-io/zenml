@@ -20,7 +20,7 @@ from pydantic import ValidationError
 
 from zenml.enums import ArtifactType
 from zenml.models.artifact_models import ArtifactBaseModel
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
