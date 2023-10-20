@@ -56,7 +56,6 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-
 from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelVersionRequest
 from zenml.new_models.core import (
@@ -885,7 +884,6 @@ class Pipeline:
                     "only in one place of the pipeline."
                 )
             data.model_config._validate_config_in_runtime()
-
 
     def update_new_versions_requests(
         self,
