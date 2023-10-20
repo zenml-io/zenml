@@ -22,13 +22,8 @@ from pydantic.error_wrappers import ValidationError
 import zenml.exceptions
 from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps, SorterOps
-from zenml.models.filter_models import (
-    BaseFilterModel,
-    Filter,
-    NumericFilter,
-    StrFilter,
-    UUIDFilter,
-)
+from zenml.new_models.base import NumericFilter, StrFilter, UUIDFilter
+from zenml.new_models.base.filter import BaseFilterModel, Filter
 
 
 class SomeFilterModel(BaseFilterModel):

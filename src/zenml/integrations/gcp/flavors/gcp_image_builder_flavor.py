@@ -22,7 +22,9 @@ from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.image_builders import GCPImageBuilder

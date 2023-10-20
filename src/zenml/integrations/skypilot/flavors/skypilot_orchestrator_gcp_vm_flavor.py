@@ -24,7 +24,9 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 logger = get_logger(__name__)

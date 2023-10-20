@@ -22,7 +22,9 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
 from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.container_registries import (

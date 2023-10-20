@@ -16,8 +16,8 @@
 import pytest
 from pydantic import ValidationError
 
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.constants import TEXT_FIELD_MAX_LENGTH, STR_FIELD_MAX_LENGTH
 from zenml.models.flavor_models import FlavorBaseModel
 
 

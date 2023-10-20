@@ -20,7 +20,9 @@ from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,

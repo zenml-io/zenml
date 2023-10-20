@@ -19,7 +19,9 @@ from pydantic import root_validator
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:

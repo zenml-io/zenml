@@ -31,8 +31,6 @@ from zenml.enums import (
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
-    AuthenticationMethodModel,
-    BaseFilterModel,
     CodeRepositoryFilterModel,
     CodeRepositoryRequestModel,
     CodeRepositoryUpdateModel,
@@ -54,7 +52,6 @@ from zenml.models import (
     PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineUpdateModel,
-    ResourceTypeModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -62,7 +59,6 @@ from zenml.models import (
     SecretRequestModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackRequestModel,
     StepRunFilterModel,
@@ -78,6 +74,12 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
+from zenml.new_models.base.filter import BaseFilterModel
+from zenml.new_models.service_connector_type import (
+    AuthenticationMethodModel,
+    ResourceTypeModel,
+    ServiceConnectorTypeModel,
+)
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
