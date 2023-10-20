@@ -18,7 +18,6 @@ from typing import List, Optional
 from pydantic import BaseModel, PrivateAttr
 
 from zenml.model.model_config import ModelConfig
-from zenml.models.model_base_model import ModelConfigModel
 
 
 class NewModelVersionRequest(BaseModel):
@@ -57,7 +56,7 @@ class NewModelVersionRequest(BaseModel):
 
     def update_request(
         self,
-        model_config: ModelConfigModel,
+        model_config: ModelConfig,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
         """Update from Model Config Model object in place.
@@ -72,7 +71,7 @@ class NewModelVersionRequest(BaseModel):
         """
         self.requesters.append(requester)
         if self._model_config is None:
-            self._model_config = ModelConfig.parse_obj(model_config)
+            self._model_config = model_config
 
         if self._model_config.version != model_config.version:
             raise ValueError(
@@ -82,4 +81,4 @@ class NewModelVersionRequest(BaseModel):
                 f"names must match or left default."
             )
 
-        self._model_config._merge_with_config(model_config)
+        self._model_config._merge(model_config)

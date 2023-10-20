@@ -34,12 +34,11 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.models.model_base_model import ModelConfigModel
+from zenml.model.model_config import ModelConfig
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
-    from zenml.model.model_config import ModelConfig
 
 logger = get_logger(__name__)
 
@@ -135,7 +134,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
-    model_config_model: Optional[ModelConfigModel] = None
+    model_config: Optional[ModelConfig] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -145,22 +144,6 @@ class StepConfigurationUpdate(StrictBaseModel):
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "name"
     )
-
-    @property
-    def model_config(self) -> Optional["ModelConfig"]:
-        """Gets a ModelConfig object out of the model config model.
-
-        This is a technical circular import resolver.
-
-        Returns:
-            The model config object, if configured.
-        """
-        if self.model_config_model is None:
-            return None
-
-        from zenml.model.model_config import ModelConfig
-
-        return ModelConfig.parse_obj(self.model_config_model.dict())
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):

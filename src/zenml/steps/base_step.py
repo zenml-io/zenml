@@ -700,7 +700,6 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook
-        from zenml.models.model_base_model import ModelConfigModel
 
         if name:
             logger.warning("Configuring the name of a step is deprecated.")
@@ -749,8 +748,6 @@ class BaseStep(metaclass=BaseStepMeta):
         if isinstance(parameters, BaseParameters):
             parameters = parameters.dict()
 
-        if model_config:
-            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -765,11 +762,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config_model": ModelConfigModel.parse_obj(
-                    model_config.dict()
-                )
-                if model_config is not None
-                else None,
+                "model_config": model_config,
             }
         )
         config = StepConfigurationUpdate(**values)
