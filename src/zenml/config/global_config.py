@@ -42,7 +42,7 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.models import StackResponseModel, WorkspaceResponseModel
+    from zenml.new_models.core import StackResponse, WorkspaceResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -133,7 +133,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_workspace: Optional["WorkspaceResponseModel"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -658,8 +658,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self._zen_store
 
     def set_active_workspace(
-        self, workspace: "WorkspaceResponseModel"
-    ) -> "WorkspaceResponseModel":
+        self, workspace: "WorkspaceResponse"
+    ) -> "WorkspaceResponse":
         """Set the workspace for the local client.
 
         Args:
@@ -674,7 +674,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._sanitize_config()
         return workspace
 
-    def set_active_stack(self, stack: "StackResponseModel") -> None:
+    def set_active_stack(self, stack: "StackResponse") -> None:
         """Set the active stack for the local client.
 
         Args:
@@ -682,7 +682,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         self.active_stack_id = stack.id
 
-    def get_active_workspace(self) -> "WorkspaceResponseModel":
+    def get_active_workspace(self) -> "WorkspaceResponse":
         """Get a model of the active workspace for the local client.
 
         Returns:

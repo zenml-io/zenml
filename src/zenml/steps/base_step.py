@@ -687,7 +687,8 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_config: Model(Version) configuration for this step as
+                `ModelConfig` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will

@@ -32,7 +32,7 @@ from zenml.models import (
     OAuthDeviceUpdateModel,
     OAuthDeviceVerificationRequest,
 )
-from zenml.models.page_model import Page
+from zenml.new_models.base import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (

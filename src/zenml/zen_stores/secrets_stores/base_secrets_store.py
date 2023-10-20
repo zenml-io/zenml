@@ -39,8 +39,7 @@ from zenml.models.secret_models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.user_models import UserResponseModel
-from zenml.models.workspace_models import WorkspaceResponseModel
+from zenml.new_models.core import UserResponse, WorkspaceResponse
 from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 from zenml.zen_stores.enums import StoreEvent
@@ -321,7 +320,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
     def _validate_user_and_workspace(
         self, user_id: UUID, workspace_id: UUID
-    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
+    ) -> Tuple[UserResponse, WorkspaceResponse]:
         """Validates that the given user and workspace IDs are valid.
 
         This method calls the ZenML store to validate the user and workspace

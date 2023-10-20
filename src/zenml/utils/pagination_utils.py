@@ -15,12 +15,10 @@
 
 from typing import Callable, List, TypeVar
 
-from zenml.models import (
-    BaseResponseModel,
-    Page,
-)
+from zenml.models import BaseResponseModel
+from zenml.new_models.base import BaseResponse, Page
 
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+AnyResponseModel = TypeVar("AnyResponseModel", BaseResponse, BaseResponseModel)
 
 
 def depaginate(

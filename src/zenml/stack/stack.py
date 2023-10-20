@@ -39,7 +39,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models import StackResponseModel
+from zenml.new_models.core import StackResponse
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
@@ -58,9 +58,9 @@ if TYPE_CHECKING:
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-        PipelineDeploymentResponseModel,
+    from zenml.new_models.core import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
@@ -137,7 +137,7 @@ class Stack:
         self._image_builder = image_builder
 
     @classmethod
-    def from_model(cls, stack_model: StackResponseModel) -> "Stack":
+    def from_model(cls, stack_model: "StackResponse") -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -787,7 +787,7 @@ class Stack:
             self._image_builder = image_builder
 
     def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeploymentResponseModel"
+        self, deployment: "PipelineDeploymentResponse"
     ) -> None:
         """Prepares the stack for a pipeline deployment.
 
@@ -839,7 +839,7 @@ class Stack:
             )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
@@ -858,7 +858,7 @@ class Stack:
 
     def deploy_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
     ) -> Any:
         """Deploys a pipeline on this stack.
 

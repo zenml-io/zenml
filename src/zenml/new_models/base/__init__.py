@@ -37,6 +37,10 @@ from zenml.new_models.base.filter import (
     UserScopedFilter,
     WorkspaceScopedFilter,
     ShareableFilter,
+    NumericFilter,
+    StrFilter,
+    BoolFilter,
+    UUIDFilter,
 )
 from zenml.new_models.base.utils import update_model, hydrated_property
 from zenml.new_models.base.page import Page

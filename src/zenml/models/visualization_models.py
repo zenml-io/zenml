@@ -12,28 +12,3 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models representing visualizations."""
-
-
-from typing import Union
-
-from pydantic import BaseModel
-
-from zenml.enums import VisualizationType
-
-
-class BaseVisualizationModel(BaseModel):
-    """Base model for visualizations."""
-
-    type: VisualizationType
-
-
-class VisualizationModel(BaseVisualizationModel):
-    """Model for unloaded visualization."""
-
-    uri: str
-
-
-class LoadedVisualizationModel(BaseVisualizationModel):
-    """Model for loaded visualization."""
-
-    value: Union[str, bytes]

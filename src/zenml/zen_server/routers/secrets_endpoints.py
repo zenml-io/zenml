@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SECRETS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.page_model import Page
+from zenml.new_models.base import Page
 from zenml.models.secret_models import (
     SecretFilterModel,
     SecretResponseModel,

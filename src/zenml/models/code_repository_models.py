@@ -13,97 +13,14 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.source import Source
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
-    update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
-
-# ---- #
-# BASE #
-# ---- #
-
-
-class CodeRepositoryBaseModel(BaseModel):
-    """Base model for code repositories."""
-
-    name: str = Field(
-        title="The name of the code repository.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    config: Dict[str, Any] = Field(
-        description="Configuration for the code repository."
-    )
-    source: Source = Field(description="The code repository source.")
-    logo_url: Optional[str] = Field(
-        description="Optional URL of a logo (png, jpg or svg) for the code repository."
-    )
-    description: Optional[str] = Field(
-        description="Code repository description.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-
-
-# -------- #
-# RESPONSE #
-# -------- #
-
-
-class CodeRepositoryResponseModel(
-    CodeRepositoryBaseModel, WorkspaceScopedResponseModel
-):
-    """Code repository response model."""
-
-
-# ------ #
-# FILTER #
-# ------ #
-
-
-class CodeRepositoryFilterModel(WorkspaceScopedFilterModel):
-    """Model to enable advanced filtering of all code repositories."""
-
-    name: Optional[str] = Field(
-        description="Name of the code repository.",
-    )
-    workspace_id: Union[UUID, str, None] = Field(
-        description="Workspace of the code repository."
-    )
-    user_id: Union[UUID, str, None] = Field(
-        description="User that created the code repository."
-    )
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class CodeRepositoryRequestModel(
-    CodeRepositoryBaseModel, WorkspaceScopedRequestModel
-):
-    """Code repository request model."""
-
-
-# ------ #
-# UPDATE #
-# ------ #
-
-
-@update_model
-class CodeRepositoryUpdateModel(CodeRepositoryRequestModel):
-    """Code repository update model."""
-
 
 # --------------- #
 # CODE REFERENCES #
