@@ -19,9 +19,15 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
-
-from zenml.new_models.core import TeamRoleAssignmentResponse, TeamRoleAssignmentFilter, TeamFilter, TeamRequest, TeamResponse, TeamUpdate
 from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    TeamFilter,
+    TeamRequest,
+    TeamResponse,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentResponse,
+    TeamUpdate,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -44,9 +50,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_teams(
-    team_filter_model: TeamFilter = Depends(
-        make_dependable(TeamFilter)
-    ),
+    team_filter_model: TeamFilter = Depends(make_dependable(TeamFilter)),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamResponse]:
     """Returns a list of all teams.

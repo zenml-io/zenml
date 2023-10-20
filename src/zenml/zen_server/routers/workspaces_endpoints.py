@@ -44,8 +44,6 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    SecretRequestModel,
-SecretResponseModel,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -58,9 +56,10 @@ SecretResponseModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
-
+    SecretRequestModel,
+    SecretResponseModel,
 )
-from zenml.new_models.service_connector_type import ServiceConnectorResourcesModel
+from zenml.new_models.base import Page
 from zenml.new_models.core import (
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -99,7 +98,9 @@ from zenml.new_models.core import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.new_models.base import Page
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -122,10 +123,10 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_workspaces(
-        workspace_filter_model: WorkspaceFilter = Depends(
-            make_dependable(WorkspaceFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_filter_model: WorkspaceFilter = Depends(
+        make_dependable(WorkspaceFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[WorkspaceResponse]:
     """Lists all workspaces in the organization.
 
@@ -148,8 +149,8 @@ def list_workspaces(
 )
 @handle_exceptions
 def create_workspace(
-        workspace: WorkspaceRequest,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    workspace: WorkspaceRequest,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> WorkspaceResponse:
     """Creates a workspace based on the requestBody.
 
@@ -171,8 +172,8 @@ def create_workspace(
 )
 @handle_exceptions
 def get_workspace(
-        workspace_name_or_id: Union[str, UUID],
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> WorkspaceResponse:
     """Get a workspace for given name.
 
@@ -194,9 +195,9 @@ def get_workspace(
 )
 @handle_exceptions
 def update_workspace(
-        workspace_name_or_id: UUID,
-        workspace_update: WorkspaceUpdate,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    workspace_name_or_id: UUID,
+    workspace_update: WorkspaceUpdate,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> WorkspaceResponse:
     """Get a workspace for given name.
 
@@ -221,8 +222,8 @@ def update_workspace(
 )
 @handle_exceptions
 def delete_workspace(
-        workspace_name_or_id: Union[str, UUID],
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    workspace_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a workspace.
 
@@ -239,11 +240,11 @@ def delete_workspace(
 )
 @handle_exceptions
 def list_user_role_assignments_for_workspace(
-        workspace_name_or_id: Union[str, UUID],
-        user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
-            make_dependable(UserRoleAssignmentFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
+        make_dependable(UserRoleAssignmentFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -269,11 +270,11 @@ def list_user_role_assignments_for_workspace(
 )
 @handle_exceptions
 def list_team_role_assignments_for_workspace(
-        workspace_name_or_id: Union[str, UUID],
-        team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
-            make_dependable(TeamRoleAssignmentFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
+        make_dependable(TeamRoleAssignmentFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -299,13 +300,11 @@ def list_team_role_assignments_for_workspace(
 )
 @handle_exceptions
 def list_workspace_stacks(
-        workspace_name_or_id: Union[str, UUID],
-        stack_filter_model: StackFilter = Depends(
-            make_dependable(StackFilter)
-        ),
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.READ]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> Page[StackResponse]:
     """Get stacks that are part of a specific workspace for the user.
 
@@ -332,11 +331,11 @@ def list_workspace_stacks(
 )
 @handle_exceptions
 def create_stack(
-        workspace_name_or_id: Union[str, UUID],
-        stack: StackRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    stack: StackRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> StackResponse:
     """Creates a stack for a particular workspace.
 
@@ -376,13 +375,13 @@ def create_stack(
 )
 @handle_exceptions
 def list_workspace_stack_components(
-        workspace_name_or_id: Union[str, UUID],
-        component_filter_model: ComponentFilter = Depends(
-            make_dependable(ComponentFilter)
-        ),
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.READ]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    component_filter_model: ComponentFilter = Depends(
+        make_dependable(ComponentFilter)
+    ),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> Page[ComponentResponse]:
     """List stack components that are part of a specific workspace.
 
@@ -412,11 +411,11 @@ def list_workspace_stack_components(
 )
 @handle_exceptions
 def create_stack_component(
-        workspace_name_or_id: Union[str, UUID],
-        component: ComponentRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    component: ComponentRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ComponentResponse:
     """Creates a stack component.
 
@@ -460,11 +459,11 @@ def create_stack_component(
 )
 @handle_exceptions
 def list_workspace_pipelines(
-        workspace_name_or_id: Union[str, UUID],
-        pipeline_filter_model: PipelineFilter = Depends(
-            make_dependable(PipelineFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    pipeline_filter_model: PipelineFilter = Depends(
+        make_dependable(PipelineFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponse]:
     """Gets pipelines defined for a specific workspace.
 
@@ -492,11 +491,11 @@ def list_workspace_pipelines(
 )
 @handle_exceptions
 def create_pipeline(
-        workspace_name_or_id: Union[str, UUID],
-        pipeline: PipelineRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    pipeline: PipelineRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> PipelineResponse:
     """Creates a pipeline.
 
@@ -536,11 +535,11 @@ def create_pipeline(
 )
 @handle_exceptions
 def list_workspace_builds(
-        workspace_name_or_id: Union[str, UUID],
-        build_filter_model: PipelineBuildFilter = Depends(
-            make_dependable(PipelineBuildFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    build_filter_model: PipelineBuildFilter = Depends(
+        make_dependable(PipelineBuildFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineBuildResponse]:
     """Gets builds defined for a specific workspace.
 
@@ -566,11 +565,11 @@ def list_workspace_builds(
 )
 @handle_exceptions
 def create_build(
-        workspace_name_or_id: Union[str, UUID],
-        build: PipelineBuildRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    build: PipelineBuildRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> PipelineBuildResponse:
     """Creates a build.
 
@@ -610,11 +609,11 @@ def create_build(
 )
 @handle_exceptions
 def list_workspace_deployments(
-        workspace_name_or_id: Union[str, UUID],
-        deployment_filter_model: PipelineDeploymentFilter = Depends(
-            make_dependable(PipelineDeploymentFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    deployment_filter_model: PipelineDeploymentFilter = Depends(
+        make_dependable(PipelineDeploymentFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineDeploymentResponse]:
     """Gets deployments defined for a specific workspace.
 
@@ -642,11 +641,11 @@ def list_workspace_deployments(
 )
 @handle_exceptions
 def create_deployment(
-        workspace_name_or_id: Union[str, UUID],
-        deployment: PipelineDeploymentRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    deployment: PipelineDeploymentRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> PipelineDeploymentResponse:
     """Creates a deployment.
 
@@ -687,11 +686,11 @@ def create_deployment(
 )
 @handle_exceptions
 def list_runs(
-        workspace_name_or_id: Union[str, UUID],
-        runs_filter_model: PipelineRunFilter = Depends(
-            make_dependable(PipelineRunFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    runs_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
@@ -716,11 +715,11 @@ def list_runs(
 )
 @handle_exceptions
 def create_schedule(
-        workspace_name_or_id: Union[str, UUID],
-        schedule: ScheduleRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    schedule: ScheduleRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ScheduleResponse:
     """Creates a schedule.
 
@@ -759,12 +758,12 @@ def create_schedule(
 )
 @handle_exceptions
 def create_pipeline_run(
-        workspace_name_or_id: Union[str, UUID],
-        pipeline_run: PipelineRunRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
-        get_if_exists: bool = False,
+    workspace_name_or_id: Union[str, UUID],
+    pipeline_run: PipelineRunRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+    get_if_exists: bool = False,
 ) -> PipelineRunResponse:
     """Creates a pipeline run.
 
@@ -809,11 +808,11 @@ def create_pipeline_run(
 )
 @handle_exceptions
 def get_or_create_pipeline_run(
-        workspace_name_or_id: Union[str, UUID],
-        pipeline_run: PipelineRunRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    pipeline_run: PipelineRunRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> Tuple[PipelineRunResponse, bool]:
     """Get or create a pipeline run.
 
@@ -853,11 +852,11 @@ def get_or_create_pipeline_run(
 )
 @handle_exceptions
 def create_run_metadata(
-        workspace_name_or_id: Union[str, UUID],
-        run_metadata: RunMetadataRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    run_metadata: RunMetadataRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> List[RunMetadataResponse]:
     """Creates run metadata.
 
@@ -898,11 +897,11 @@ def create_run_metadata(
 )
 @handle_exceptions
 def create_secret(
-        workspace_name_or_id: Union[str, UUID],
-        secret: SecretRequestModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    secret: SecretRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> SecretResponseModel:
     """Creates a secret.
 
@@ -941,11 +940,11 @@ def create_secret(
 )
 @handle_exceptions
 def list_workspace_code_repositories(
-        workspace_name_or_id: Union[str, UUID],
-        filter_model: CodeRepositoryFilter = Depends(
-            make_dependable(CodeRepositoryFilter)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    filter_model: CodeRepositoryFilter = Depends(
+        make_dependable(CodeRepositoryFilter)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[CodeRepositoryResponse]:
     """Gets code repositories defined for a specific workspace.
 
@@ -971,11 +970,11 @@ def list_workspace_code_repositories(
 )
 @handle_exceptions
 def create_code_repository(
-        workspace_name_or_id: Union[str, UUID],
-        code_repository: CodeRepositoryRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    code_repository: CodeRepositoryRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> CodeRepositoryResponse:
     """Creates a code repository.
 
@@ -1016,8 +1015,8 @@ def create_code_repository(
 )
 @handle_exceptions
 def get_workspace_statistics(
-        workspace_name_or_id: Union[str, UUID],
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Dict[str, int]:
     """Gets statistics of a workspace.
 
@@ -1048,13 +1047,13 @@ def get_workspace_statistics(
 )
 @handle_exceptions
 def list_workspace_service_connectors(
-        workspace_name_or_id: Union[str, UUID],
-        connector_filter_model: ServiceConnectorFilter = Depends(
-            make_dependable(ServiceConnectorFilter)
-        ),
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.READ]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    connector_filter_model: ServiceConnectorFilter = Depends(
+        make_dependable(ServiceConnectorFilter)
+    ),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> Page[ServiceConnectorResponse]:
     """List service connectors that are part of a specific workspace.
 
@@ -1084,11 +1083,11 @@ def list_workspace_service_connectors(
 )
 @handle_exceptions
 def create_service_connector(
-        workspace_name_or_id: Union[str, UUID],
-        connector: ServiceConnectorRequest,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    connector: ServiceConnectorRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ServiceConnectorResponse:
     """Creates a service connector.
 
@@ -1132,13 +1131,13 @@ def create_service_connector(
 )
 @handle_exceptions
 def list_service_connector_resources(
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.READ]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> List[ServiceConnectorResourcesModel]:
     """List resources that can be accessed by service connectors.
 
@@ -1169,11 +1168,11 @@ def list_service_connector_resources(
 )
 @handle_exceptions
 def create_model(
-        workspace_name_or_id: Union[str, UUID],
-        model: ModelRequestModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    model: ModelRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ModelResponseModel:
     """Create a new model.
 
@@ -1213,11 +1212,11 @@ def create_model(
 )
 @handle_exceptions
 def list_workspace_models(
-        workspace_name_or_id: Union[str, UUID],
-        model_filter_model: ModelFilterModel = Depends(
-            make_dependable(ModelFilterModel)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    model_filter_model: ModelFilterModel = Depends(
+        make_dependable(ModelFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ModelResponseModel]:
     """Get models according to query filters.
 
@@ -1248,12 +1247,12 @@ def list_workspace_models(
 )
 @handle_exceptions
 def create_model_version(
-        workspace_name_or_id: Union[str, UUID],
-        model_name_or_id: Union[str, UUID],
-        model_version: ModelVersionRequestModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version: ModelVersionRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ModelVersionResponseModel:
     """Create a new model version.
 
@@ -1295,11 +1294,11 @@ def create_model_version(
 )
 @handle_exceptions
 def list_workspace_model_versions(
-        workspace_name_or_id: Union[str, UUID],
-        model_version_filter_model: ModelVersionFilterModel = Depends(
-            make_dependable(ModelVersionFilterModel)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    model_version_filter_model: ModelVersionFilterModel = Depends(
+        make_dependable(ModelVersionFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ModelVersionResponseModel]:
     """Get model versions according to query filters.
 
@@ -1331,13 +1330,13 @@ def list_workspace_model_versions(
 )
 @handle_exceptions
 def create_model_version_artifact_link(
-        workspace_name_or_id: Union[str, UUID],
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_artifact_link: ModelVersionArtifactRequestModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ModelVersionArtifactResponseModel:
     """Create a new model version to artifact link.
 
@@ -1386,13 +1385,13 @@ def create_model_version_artifact_link(
 )
 @handle_exceptions
 def list_workspace_model_version_artifact_links(
-        workspace_name_or_id: Union[str, UUID],
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-            make_dependable(ModelVersionArtifactFilterModel)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
+        make_dependable(ModelVersionArtifactFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ModelVersionArtifactResponseModel]:
     """Get model version to artifact links according to query filters.
 
@@ -1426,13 +1425,13 @@ def list_workspace_model_version_artifact_links(
 )
 @handle_exceptions
 def create_model_version_pipeline_run_link(
-        workspace_name_or_id: Union[str, UUID],
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ModelVersionPipelineRunResponseModel:
     """Create a new model version to pipeline run link.
 
@@ -1482,13 +1481,13 @@ def create_model_version_pipeline_run_link(
 )
 @handle_exceptions
 def list_workspace_model_version_pipeline_run_links(
-        workspace_name_or_id: Union[str, UUID],
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-            make_dependable(ModelVersionPipelineRunFilterModel)
-        ),
-        _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
+    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
+        make_dependable(ModelVersionPipelineRunFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ModelVersionPipelineRunResponseModel]:
     """Get model version to pipeline links according to query filters.
 

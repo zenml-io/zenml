@@ -31,8 +31,15 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, PermissionType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.new_models.core import UserResponse, UserFilter, UserRequest, UserUpdate, UserRoleAssignmentFilter, UserRoleAssignmentRequest, UserRoleAssignmentResponse
 from zenml.new_models.base import Page
+from zenml.new_models.core import (
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentResponse,
+    UserUpdate,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -76,9 +83,7 @@ current_user_router = APIRouter(
 )
 @handle_exceptions
 def list_users(
-    user_filter_model: UserFilter = Depends(
-        make_dependable(UserFilter)
-    ),
+    user_filter_model: UserFilter = Depends(make_dependable(UserFilter)),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserResponse]:
     """Returns a list of all users.

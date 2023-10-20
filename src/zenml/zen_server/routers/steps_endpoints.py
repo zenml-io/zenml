@@ -27,9 +27,13 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
-
 from zenml.new_models.base import Page
-from zenml.new_models.core import StepRunFilter, StepRunResponse, StepRunUpdate, StepRunRequest
+from zenml.new_models.core import (
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
+)
 from zenml.utils.artifact_utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,

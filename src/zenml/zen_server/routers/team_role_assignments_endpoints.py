@@ -18,9 +18,12 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, TEAM_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-
 from zenml.new_models.base import Page
-from zenml.new_models.core import TeamRoleAssignmentFilter, TeamRoleAssignmentRequest, TeamRoleAssignmentResponse
+from zenml.new_models.core import (
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
