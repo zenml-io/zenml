@@ -23,7 +23,7 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Field, Relationship
 
 from zenml.enums import SecretScope
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.new_models.core import (
     SecretRequest,
     SecretResponse,

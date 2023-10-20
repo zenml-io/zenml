@@ -39,6 +39,7 @@ from zenml.new_models.core.code_repository import (
     CodeRepositoryResponseMetadata,
 )
 from zenml.new_models.core.component import (
+    ComponentBase,
     ComponentRequest,
     ComponentUpdate,
     ComponentFilter,
@@ -209,6 +210,7 @@ __all__ = [
     "CodeRepositoryResponse",
     "CodeRepositoryResponseBody",
     "CodeRepositoryResponseMetadata",
+    "ComponentBase",
     "ComponentRequest",
     "ComponentUpdate",
     "ComponentFilter",

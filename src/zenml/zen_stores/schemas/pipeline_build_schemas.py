@@ -23,7 +23,7 @@ from sqlalchemy import Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
-from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     PipelineBuildRequest,
     PipelineBuildResponse,

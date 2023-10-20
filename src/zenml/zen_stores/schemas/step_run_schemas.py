@@ -23,7 +23,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.new_models.core import (
     StepRunRequest,
     StepRunResponse,
