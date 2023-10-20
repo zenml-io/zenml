@@ -599,14 +599,29 @@ def info(
 @cli.command(
     "migrate-database", help="Migrate the ZenML database.", hidden=True
 )
-def migrate_database() -> None:
-    """Migrate the ZenML database."""
+@click.option(
+    "--skip_default_registrations",
+    is_flag=True,
+    default=False,
+    help="Skip registering default workspace, user and stack.",
+    type=bool,
+)
+def migrate_database(skip_default_registrations: bool = False) -> None:
+    """Migrate the ZenML database.
+
+    Args:
+        skip_default_registrations: If `True`, registration of default
+            components will be skipped.
+    """
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    global_config = GlobalConfiguration()
-    if global_config.store.type == StoreType.SQL:
+    store_config = (
+        GlobalConfiguration().store
+        or GlobalConfiguration().get_default_store()
+    )
+    if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
-            global_config.store, skip_default_registrations=True
+            store_config, skip_default_registrations=skip_default_registrations
         )
         cli_utils.declare("Database migration finished.")
     else:
