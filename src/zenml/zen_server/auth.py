@@ -51,10 +51,12 @@ from zenml.models import (
     OAuthDeviceInternalResponseModel,
     OAuthDeviceInternalUpdateModel,
     UserAuthModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentRequestModel,
-    UserUpdateModel,
+)
+from zenml.new_models.core import (
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentRequest,
+    UserUpdate,
 )
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
@@ -94,7 +96,7 @@ def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
 class AuthContext(BaseModel):
     """The authentication context."""
 
-    user: UserResponseModel
+    user: UserResponse
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponseModel] = None
@@ -511,7 +513,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         # Update the user information
         user = store.update_user(
             user_id=user.id,
-            user_update=UserUpdateModel(
+            user_update=UserUpdate(
                 name=external_user.email,
                 full_name=external_user.name or "",
                 email_opted_in=True,
@@ -525,7 +527,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
             f"server database. Creating a new user."
         )
         user = store.create_user(
-            UserRequestModel(
+            UserRequest(
                 name=external_user.email,
                 full_name=external_user.name or "",
                 external_user_id=external_user.id,
@@ -544,7 +546,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
         # Create a new user role assignment for the new user
         store.create_user_role_assignment(
-            UserRoleAssignmentRequestModel(
+            UserRoleAssignmentRequest(
                 role=store._admin_role.id,
                 user=user.id,
                 workspace=None,
