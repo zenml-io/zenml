@@ -32,9 +32,7 @@ from zenml.utils.string_utils import random_str
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -111,7 +109,7 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 

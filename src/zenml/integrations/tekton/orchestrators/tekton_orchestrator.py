@@ -45,9 +45,7 @@ from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentResponse
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -346,7 +344,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -362,7 +360,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If you try to run the pipelines in a notebook environment.
+            RuntimeError: If you try to run the pipelines in a notebook
+                environment.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():

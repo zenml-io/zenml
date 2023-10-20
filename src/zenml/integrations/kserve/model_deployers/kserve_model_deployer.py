@@ -59,9 +59,7 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -190,7 +188,7 @@ class KServeModelDeployer(BaseModelDeployer):
         return self._client
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 

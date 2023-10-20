@@ -84,9 +84,7 @@ from zenml.utils.io_utils import get_global_config_directory
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.schedule import Schedule
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentResponse
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -229,7 +227,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
@@ -310,7 +308,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:

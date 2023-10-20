@@ -58,9 +58,7 @@ if TYPE_CHECKING:
         TaskConfiguration,
     )
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentResponse
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -198,7 +196,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> None:
         """Builds a Docker image to run pipeline steps.
@@ -212,7 +210,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:

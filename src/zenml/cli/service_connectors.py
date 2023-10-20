@@ -14,7 +14,7 @@
 """Service connector CLI commands."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 import click
@@ -31,9 +31,12 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import AuthorizationException, IllegalOperationError
-from zenml.models import (
-    ServiceConnectorBaseModel,
-    ServiceConnectorFilterModel,
+from zenml.new_models.core import (
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+)
+from zenml.new_models.service_connector_type import (
     ServiceConnectorResourcesModel,
 )
 
@@ -589,10 +592,12 @@ def register_service_connector(
             auto_configure = False
 
         auth_method = None
-        connector_model: Optional[ServiceConnectorBaseModel] = None
+        connector_model: Optional[
+            Union[ServiceConnectorRequest, ServiceConnectorResponse]
+        ] = None
         connector_resources: Optional[ServiceConnectorResourcesModel] = None
         if auto_configure:
-            # Try to auto-configure the service connector
+            # Try to autoconfigure the service connector
             try:
                 with console.status("Auto-configuring service connector...\n"):
                     (
@@ -871,7 +876,7 @@ def register_service_connector(
     help="""List available service connectors.
 """,
 )
-@list_options(ServiceConnectorFilterModel)
+@list_options(ServiceConnectorFilter)
 @click.option(
     "--label",
     "-l",

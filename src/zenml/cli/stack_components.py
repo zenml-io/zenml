@@ -48,8 +48,10 @@ from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
-from zenml.new_models.service_connector_type import ServiceConnectorResourcesModel
 from zenml.new_models.core import ComponentFilter
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
+)
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -1222,7 +1224,7 @@ def generate_stack_component_deploy_command(
         "extra_config",
         multiple=True,
         help="Extra configurations as key=value pairs. This option can be "
-             "used multiple times.",
+        "used multiple times.",
     )
     @click.option(
         "--tags",

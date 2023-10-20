@@ -61,8 +61,16 @@ from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
 )
-from zenml.new_models.base import Page, BaseResponse, NumericFilter, StrFilter, BoolFilter, UUIDFilter, BaseFilter
 from zenml.models import BaseResponseModel
+from zenml.new_models.base import (
+    BaseFilter,
+    BaseResponse,
+    BoolFilter,
+    NumericFilter,
+    Page,
+    StrFilter,
+    UUIDFilter,
+)
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
@@ -280,10 +288,12 @@ def print_pydantic_models(
         if not columns:
             if isinstance(model, BaseResponse):
                 include_columns = [
-                    k for k in model.body.dict().keys()
+                    k
+                    for k in model.body.dict().keys()
                     if k not in exclude_columns
                 ] + [
-                    k for k in model.metadata.dict().keys()
+                    k
+                    for k in model.metadata.dict().keys()
                     if k not in exclude_columns
                 ]
             else:
@@ -2236,9 +2246,7 @@ def print_page_info(page: Page[T]) -> None:
 F = TypeVar("F", bound=Callable[..., None])
 
 
-def create_filter_help_text(
-    filter_model: Type[BaseFilter], field: str
-) -> str:
+def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
     """Create the help text used in the click option help text.
 
     Args:

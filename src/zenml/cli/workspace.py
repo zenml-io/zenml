@@ -28,8 +28,6 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 
-from zenml.new_models.core import WorkspaceFilter
-
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def workspace() -> None:
