@@ -25,7 +25,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "obj.pt"
 
 
-class BasePyTorchMaterliazer(BaseMaterializer):
+class BasePyTorchMaterializer(BaseMaterializer):
     """Base class for PyTorch materializers."""
 
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
