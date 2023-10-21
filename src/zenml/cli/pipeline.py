@@ -25,14 +25,14 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.new.pipelines.pipeline import Pipeline
-from zenml.new_models.core import (
+from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
     PipelineFilter,
     PipelineRunFilter,
     ScheduleFilter,
 )
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)

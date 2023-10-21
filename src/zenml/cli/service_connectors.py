@@ -31,13 +31,11 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import AuthorizationException, IllegalOperationError
-from zenml.new_models.core import (
+from zenml.models import (
     ServiceConnectorFilter,
     ServiceConnectorRequest,
-    ServiceConnectorResponse,
-)
-from zenml.new_models.service_connector_type import (
     ServiceConnectorResourcesModel,
+    ServiceConnectorResponse,
 )
 
 

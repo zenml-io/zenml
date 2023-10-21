@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.new_models.core import RoleFilter, UserRoleAssignmentFilter
+from zenml.models import RoleFilter, UserRoleAssignmentFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

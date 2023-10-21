@@ -61,10 +61,10 @@ from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
 )
-from zenml.models import BaseResponseModel
-from zenml.new_models.base import (
+from zenml.models import (
     BaseFilter,
     BaseResponse,
+    BaseResponseModel,
     BoolFilter,
     NumericFilter,
     Page,
@@ -86,19 +86,17 @@ if TYPE_CHECKING:
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.new_models.core import (
+    from zenml.models import (
+        AuthenticationMethodModel,
         ComponentResponse,
         FlavorResponse,
         PipelineRunResponse,
-        ServiceConnectorRequest,
-        ServiceConnectorResponse,
-        StackResponse,
-    )
-    from zenml.new_models.service_connector_type import (
-        AuthenticationMethodModel,
         ResourceTypeModel,
+        ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
+        ServiceConnectorResponse,
         ServiceConnectorTypeModel,
+        StackResponse,
     )
     from zenml.stack import Stack
 

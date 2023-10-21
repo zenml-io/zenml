@@ -23,7 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.new_models.core import ArtifactFilter
+from zenml.models import ArtifactFilter
 from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)

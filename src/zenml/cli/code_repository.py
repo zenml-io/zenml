@@ -25,7 +25,7 @@ from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.new_models.core import CodeRepositoryFilter
+from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)

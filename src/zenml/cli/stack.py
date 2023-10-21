@@ -52,7 +52,7 @@ from zenml.exceptions import (
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.new_models.core import StackFilter
+from zenml.models import StackFilter
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -67,7 +67,7 @@ from zenml.utils.mlstacks_utils import (
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import StackResponse
+    from zenml.models import StackResponse
 
 logger = get_logger(__name__)
 

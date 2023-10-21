@@ -48,8 +48,8 @@ from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
-from zenml.new_models.core import ComponentFilter
-from zenml.new_models.service_connector_type import (
+from zenml.models import (
+    ComponentFilter,
     ServiceConnectorResourcesModel,
 )
 from zenml.utils import source_utils
