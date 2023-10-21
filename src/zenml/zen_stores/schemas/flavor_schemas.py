@@ -21,7 +21,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.new_models.core import (
+from zenml.models import (
     FlavorResponse,
     FlavorResponseBody,
     FlavorResponseMetadata,

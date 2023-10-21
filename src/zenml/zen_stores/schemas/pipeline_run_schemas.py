@@ -22,7 +22,7 @@ from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus
-from zenml.new_models.core import (
+from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,

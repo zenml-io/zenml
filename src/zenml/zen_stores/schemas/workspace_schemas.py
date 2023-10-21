@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.new_models.core import (
+from zenml.models import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceResponseBody,

@@ -31,10 +31,11 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
 )
 from zenml.models.model_base_model import ModelBaseModel
-from zenml.new_models.base.filter import WorkspaceScopedFilter
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import ArtifactResponse, PipelineResponse
+    from zenml.models.v2.core.artifact import ArtifactResponse
+    from zenml.models.v2.core.pipeline import PipelineResponse
 
 logger = get_logger(__name__)
 

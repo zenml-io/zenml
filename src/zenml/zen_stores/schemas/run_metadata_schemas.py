@@ -22,7 +22,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.new_models.core import (
+from zenml.models import (
     RunMetadataResponse,
     RunMetadataResponseBody,
     RunMetadataResponseMetadata,

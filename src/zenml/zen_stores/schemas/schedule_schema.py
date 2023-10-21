@@ -19,7 +19,7 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from zenml.new_models.core import (
+from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleResponseBody,

@@ -19,7 +19,7 @@ from uuid import UUID
 
 from sqlmodel import Relationship, SQLModel
 
-from zenml.new_models.core import (
+from zenml.models import (
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,

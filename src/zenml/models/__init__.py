@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pydantic models for the various concepts in ZenML."""
-from zenml.new_models.core.user import UserResponse
-from zenml.new_models.core.workspace import WorkspaceResponse
+
+# ------------------------------------- V1 -------------------------------------
+
 from zenml.models.auth_models import (
     OAuthDeviceAuthorizationRequest,
     OAuthDeviceAuthorizationResponse,
@@ -62,6 +63,226 @@ from zenml.models.model_models import (
     ModelVersionUpdateModel,
 )
 
+# ------------------------------------- V2 -------------------------------------
+
+# V2 Base
+from zenml.models.v2.base.base import (
+    BaseRequest,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
+    BaseZenModel,
+)
+from zenml.models.v2.base.scoped import (
+    UserScopedRequest,
+    UserScopedFilter,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    WorkspaceScopedRequest,
+    WorkspaceScopedFilter,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
+    ShareableRequest,
+    ShareableFilter,
+    ShareableResponse,
+    SharableResponseBody,
+    SharableResponseMetadata,
+)
+from zenml.models.v2.base.filter import (
+    BaseFilter,
+    StrFilter,
+    BoolFilter,
+    NumericFilter,
+    UUIDFilter,
+)
+from zenml.models.v2.base.page import Page
+
+# V2 Core
+from zenml.models.v2.core.artifact import (
+    ArtifactRequest,
+    ArtifactFilter,
+    ArtifactResponse,
+    ArtifactResponseBody,
+    ArtifactResponseMetadata,
+)
+from zenml.models.v2.core.artifact_visualization import (
+    ArtifactVisualizationRequest,
+    ArtifactVisualizationResponse,
+    ArtifactVisualizationResponseBody,
+    ArtifactVisualizationResponseMetadata,
+)
+from zenml.models.v2.core.code_reference import (
+    CodeReferenceRequest,
+    CodeReferenceResponse,
+    CodeReferenceResponseBody,
+    CodeReferenceResponseMetadata,
+)
+from zenml.models.v2.core.code_repository import (
+    CodeRepositoryRequest,
+    CodeRepositoryUpdate,
+    CodeRepositoryFilter,
+    CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
+    CodeRepositoryResponseMetadata,
+)
+from zenml.models.v2.core.component import (
+    ComponentBase,
+    ComponentRequest,
+    ComponentUpdate,
+    ComponentFilter,
+    ComponentResponse,
+    ComponentResponseBody,
+    ComponentResponseMetadata,
+)
+from zenml.models.v2.core.flavor import (
+    FlavorRequest,
+    FlavorUpdate,
+    FlavorFilter,
+    FlavorResponse,
+    FlavorResponseBody,
+    FlavorResponseMetadata,
+)
+from zenml.models.v2.core.logs import (
+    LogsRequest,
+    LogsResponse,
+    LogsResponseBody,
+    LogsResponseMetadata,
+)
+from zenml.models.v2.core.pipeline import (
+    PipelineRequest,
+    PipelineUpdate,
+    PipelineFilter,
+    PipelineResponse,
+    PipelineResponseBody,
+    PipelineResponseMetadata,
+)
+from zenml.models.v2.core.pipeline_build import (
+    PipelineBuildBase,
+    PipelineBuildRequest,
+    PipelineBuildFilter,
+    PipelineBuildResponse,
+    PipelineBuildResponseBody,
+    PipelineBuildResponseMetadata,
+)
+from zenml.models.v2.core.pipeline_deployment import (
+    PipelineDeploymentBase,
+    PipelineDeploymentRequest,
+    PipelineDeploymentFilter,
+    PipelineDeploymentResponse,
+    PipelineDeploymentResponseBody,
+    PipelineDeploymentResponseMetadata,
+)
+from zenml.models.v2.core.pipeline_run import (
+    PipelineRunRequest,
+    PipelineRunUpdate,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    PipelineRunResponseBody,
+    PipelineRunResponseMetadata,
+)
+from zenml.models.v2.core.role import (
+    RoleRequest,
+    RoleUpdate,
+    RoleFilter,
+    RoleResponse,
+    RoleResponseBody,
+    RoleResponseMetadata,
+)
+from zenml.models.v2.core.run_metadata import (
+    RunMetadataRequest,
+    RunMetadataFilter,
+    RunMetadataResponse,
+    RunMetadataResponseBody,
+    RunMetadataResponseMetadata,
+)
+from zenml.models.v2.core.schedule import (
+    ScheduleRequest,
+    ScheduleUpdate,
+    ScheduleFilter,
+    ScheduleResponse,
+    ScheduleResponseBody,
+    ScheduleResponseMetadata,
+)
+from zenml.models.v2.core.service_connector import (
+    ServiceConnectorRequest,
+    ServiceConnectorUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
+    ServiceConnectorResponseMetadata,
+)
+from zenml.models.v2.core.stack import (
+    StackRequest,
+    StackUpdate,
+    StackFilter,
+    StackResponse,
+    StackResponseBody,
+    StackResponseMetadata,
+)
+from zenml.models.v2.core.step_run import (
+    StepRunRequest,
+    StepRunUpdate,
+    StepRunFilter,
+    StepRunResponse,
+    StepRunResponseBody,
+    StepRunResponseMetadata,
+)
+from zenml.models.v2.core.team import (
+    TeamRequest,
+    TeamUpdate,
+    TeamFilter,
+    TeamResponse,
+    TeamResponseBody,
+    TeamResponseMetadata,
+)
+from zenml.models.v2.core.team_role import (
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentResponse,
+    TeamRoleAssignmentResponseBody,
+    TeamRoleAssignmentResponseMetadata,
+)
+from zenml.models.v2.core.user import (
+    UserRequest,
+    UserUpdate,
+    UserFilter,
+    UserResponse,
+    UserResponseBody,
+    UserResponseMetadata,
+)
+from zenml.models.v2.core.user_role import (
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentResponse,
+    UserRoleAssignmentResponseBody,
+    UserRoleAssignmentResponseMetadata,
+)
+from zenml.models.v2.core.workspace import (
+    WorkspaceRequest,
+    WorkspaceUpdate,
+    WorkspaceFilter,
+    WorkspaceResponse,
+    WorkspaceResponseBody,
+    WorkspaceResponseMetadata,
+)
+
+# V2 Misc
+from zenml.models.v2.service_connector_type import (
+    AuthenticationMethodModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorTypedResourcesModel,
+    ResourceTypeModel,
+)
+from zenml.models.v2.user_auth import UserAuthModel
+from zenml.models.v2.build_item import BuildItem
+from zenml.models.v2.loaded_visualization import LoadedVisualization
+
+
+# ----------------------------- Forward References -----------------------------
+
 SecretResponseModel.update_forward_refs(
     UserResponseModel=UserResponse,
     WorkspaceResponseModel=WorkspaceResponse,
@@ -106,6 +327,7 @@ OAuthDeviceInternalResponseModel.update_forward_refs(
 )
 
 __all__ = [
+    # V1
     "BaseRequestModel",
     "BaseResponseModel",
     "ExternalUserModel",
@@ -147,4 +369,164 @@ __all__ = [
     "SecretUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
+    # V2 Base
+    "BaseRequest",
+    "BaseResponse",
+    "BaseResponseBody",
+    "BaseResponseMetadata",
+    "BaseZenModel",
+    "UserScopedRequest",
+    "UserScopedFilter",
+    "UserScopedResponse",
+    "UserScopedResponseBody",
+    "UserScopedResponseMetadata",
+    "WorkspaceScopedRequest",
+    "WorkspaceScopedFilter",
+    "WorkspaceScopedResponse",
+    "WorkspaceScopedResponseBody",
+    "WorkspaceScopedResponseMetadata",
+    "ShareableRequest",
+    "ShareableFilter",
+    "ShareableResponse",
+    "SharableResponseBody",
+    "SharableResponseMetadata",
+    "BaseFilter",
+    "StrFilter",
+    "BoolFilter",
+    "NumericFilter",
+    "UUIDFilter",
+    "Page",
+    # V2 Core
+    "ArtifactRequest",
+    "ArtifactFilter",
+    "ArtifactResponse",
+    "ArtifactResponseBody",
+    "ArtifactResponseMetadata",
+    "ArtifactVisualizationRequest",
+    "ArtifactVisualizationResponse",
+    "ArtifactVisualizationResponseBody",
+    "ArtifactVisualizationResponseMetadata",
+    "CodeReferenceRequest",
+    "CodeReferenceResponse",
+    "CodeReferenceResponseBody",
+    "CodeReferenceResponseMetadata",
+    "CodeRepositoryUpdate",
+    "CodeRepositoryFilter",
+    "CodeRepositoryRequest",
+    "CodeRepositoryResponse",
+    "CodeRepositoryResponseBody",
+    "CodeRepositoryResponseMetadata",
+    "ComponentBase",
+    "ComponentRequest",
+    "ComponentUpdate",
+    "ComponentFilter",
+    "ComponentResponse",
+    "ComponentResponseBody",
+    "ComponentResponseMetadata",
+    "FlavorRequest",
+    "FlavorUpdate",
+    "FlavorFilter",
+    "FlavorResponse",
+    "FlavorResponseBody",
+    "FlavorResponseMetadata",
+    "LogsRequest",
+    "LogsResponse",
+    "LogsResponseBody",
+    "LogsResponseMetadata",
+    "PipelineRequest",
+    "PipelineUpdate",
+    "PipelineFilter",
+    "PipelineResponse",
+    "PipelineResponseBody",
+    "PipelineResponseMetadata",
+    "PipelineBuildBase",
+    "PipelineBuildRequest",
+    "PipelineBuildFilter",
+    "PipelineBuildResponse",
+    "PipelineBuildResponseBody",
+    "PipelineBuildResponseMetadata",
+    "PipelineDeploymentBase",
+    "PipelineDeploymentRequest",
+    "PipelineDeploymentFilter",
+    "PipelineDeploymentResponse",
+    "PipelineDeploymentResponseBody",
+    "PipelineDeploymentResponseMetadata",
+    "PipelineRunRequest",
+    "PipelineRunUpdate",
+    "PipelineRunFilter",
+    "PipelineRunResponse",
+    "PipelineRunResponseBody",
+    "PipelineRunResponseMetadata",
+    "RoleRequest",
+    "RoleUpdate",
+    "RoleFilter",
+    "RoleResponse",
+    "RoleResponseBody",
+    "RoleResponseMetadata",
+    "RunMetadataRequest",
+    "RunMetadataFilter",
+    "RunMetadataResponse",
+    "RunMetadataResponseBody",
+    "RunMetadataResponseMetadata",
+    "ScheduleRequest",
+    "ScheduleUpdate",
+    "ScheduleFilter",
+    "ScheduleResponse",
+    "ScheduleResponseBody",
+    "ScheduleResponseMetadata",
+    "ServiceConnectorRequest",
+    "ServiceConnectorUpdate",
+    "ServiceConnectorFilter",
+    "ServiceConnectorResponse",
+    "ServiceConnectorResponseBody",
+    "ServiceConnectorResponseMetadata",
+    "StackRequest",
+    "StackUpdate",
+    "StackFilter",
+    "StackResponse",
+    "StackResponseBody",
+    "StackResponseMetadata",
+    "StepRunRequest",
+    "StepRunUpdate",
+    "StepRunFilter",
+    "StepRunResponse",
+    "StepRunResponseBody",
+    "StepRunResponseMetadata",
+    "TeamRequest",
+    "TeamUpdate",
+    "TeamFilter",
+    "TeamResponse",
+    "TeamResponseBody",
+    "TeamResponseMetadata",
+    "TeamRoleAssignmentRequest",
+    "TeamRoleAssignmentFilter",
+    "TeamRoleAssignmentResponse",
+    "TeamRoleAssignmentResponseBody",
+    "TeamRoleAssignmentResponseMetadata",
+    "UserRequest",
+    "UserUpdate",
+    "UserFilter",
+    "UserResponse",
+    "UserResponseBody",
+    "UserResponseMetadata",
+    "UserRoleAssignmentRequest",
+    "UserRoleAssignmentFilter",
+    "UserRoleAssignmentResponse",
+    "UserRoleAssignmentResponseBody",
+    "UserRoleAssignmentResponseMetadata",
+    "WorkspaceRequest",
+    "WorkspaceUpdate",
+    "WorkspaceFilter",
+    "WorkspaceResponse",
+    "WorkspaceResponseBody",
+    "WorkspaceResponseMetadata",
+    # V2 Misc
+    "AuthenticationMethodModel",
+    "ServiceConnectorResourcesModel",
+    "ServiceConnectorTypeModel",
+    "ServiceConnectorTypedResourcesModel",
+    "ResourceTypeModel",
+    "UserAuthModel",
+    "BuildItem",
+    "LoadedVisualization",
 ]

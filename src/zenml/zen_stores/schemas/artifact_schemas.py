@@ -22,7 +22,7 @@ from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
 from zenml.enums import ArtifactType, ExecutionStatus
-from zenml.new_models.core import (
+from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     ArtifactResponseBody,

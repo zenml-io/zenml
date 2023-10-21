@@ -22,7 +22,7 @@ from uuid import UUID
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
-from zenml.new_models.core.component import (
+from zenml.models import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,

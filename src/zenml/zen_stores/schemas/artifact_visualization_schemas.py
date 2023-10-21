@@ -19,7 +19,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import VisualizationType
-from zenml.new_models.core import (
+from zenml.models import (
     ArtifactVisualizationRequest,
     ArtifactVisualizationResponse,
     ArtifactVisualizationResponseBody,
@@ -53,12 +53,15 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
 
     @classmethod
     def from_model(
-        cls, artifact_visualization_request: ArtifactVisualizationRequest
+        cls,
+        artifact_visualization_request: ArtifactVisualizationRequest,
+        artifact_id: UUID,
     ) -> "ArtifactVisualizationSchema":
         """Convert a `ArtifactVisualizationRequest` to a `ArtifactVisualizationSchema`.
 
         Args:
             artifact_visualization_request: The visualization.
+            artifact_id: The UUID of the artifact.
 
         Returns:
             The `ArtifactVisualizationSchema`.
@@ -66,7 +69,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         return cls(
             type=artifact_visualization_request.type,
             uri=artifact_visualization_request.uri,
-            artifact_id=artifact_visualization_request.artifact_id,
+            artifact_id=artifact_id,
         )
 
     def to_model(self, hydrate: bool = False) -> ArtifactVisualizationResponse:

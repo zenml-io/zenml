@@ -23,7 +23,7 @@ from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.new_models.core import (
+from zenml.models import (
     PipelineRequest,
     PipelineResponse,
     PipelineResponseBody,

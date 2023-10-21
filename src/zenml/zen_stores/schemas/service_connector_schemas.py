@@ -22,7 +22,7 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.new_models.core import (
+from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,

@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
+# TODO: IS UNUSED UNTIL WE REFACTOR THE SECRET STORES
+
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -26,34 +28,101 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
 )
-from zenml.models.base_models import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
-    update_model,
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.base.utils import hydrated_property, update_model
 
-# ---- #
-# BASE #
-# ---- #
+# ------------------ Request Model ------------------
 
 
-class SecretBaseModel(BaseModel):
-    """Base model for secrets."""
+class SecretRequest(WorkspaceScopedRequest):
+    """Request model for secrets."""
+
+    name: str = Field(
+        title="The name of the secret.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    scope: SecretScope = Field(
+        SecretScope.WORKSPACE, title="The scope of the secret."
+    )
+    values: Dict[str, Optional[SecretStr]] = Field(
+        default_factory=dict, title="The values stored in this secret."
+    )
+
+    # Analytics
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+
+    # Helper methods
+    @property
+    def secret_values(self) -> Dict[str, str]:
+        """A dictionary with all un-obfuscated values stored in this secret.
+
+        The values are returned as strings, not SecretStr. If a value is
+        None, it is not included in the returned dictionary. This is to enable
+        the use of None values in the update model to indicate that a secret
+        value should be deleted.
+
+        Returns:
+            A dictionary containing the secret's values.
+        """
+        return {
+            k: v.get_secret_value()
+            for k, v in self.values.items()
+            if v is not None
+        }
+
+
+# ------------------ Update Model ------------------
+
+
+@update_model
+class SecretUpdate(SecretRequest):
+    """Update model for secrets."""
+
+
+# ------------------ Response Model ------------------
+class SecretResponseBody(WorkspaceScopedResponseBody):
+    """Response body for secrets."""
+
+
+class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
+    """Response metadata for secrets."""
+
+    scope: SecretScope = Field(
+        SecretScope.WORKSPACE, title="The scope of the secret."
+    )
+    values: Dict[str, Optional[SecretStr]] = Field(
+        default_factory=dict, title="The values stored in this secret."
+    )
+
+
+class SecretResponse(WorkspaceScopedResponse):
+    """Response model for secrets."""
 
     name: str = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    scope: SecretScope = Field(
-        SecretScope.WORKSPACE, title="The scope of the secret."
-    )
+    # Analytics
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
 
-    values: Dict[str, Optional[SecretStr]] = Field(
-        default_factory=dict, title="The values stored in this secret."
-    )
+    # Body and metadata pair
+    body: "SecretResponseBody"
+    metadata: Optional["SecretResponseMetadata"]
 
+    def get_hydrated_version(self) -> "SecretResponse":
+        """Get the hydrated version of this secret."""
+        from zenml.client import Client
+
+        return Client().get_secret(self.id)
+
+    # Helper methods
     @property
     def secret_values(self) -> Dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
@@ -84,45 +153,22 @@ class SecretBaseModel(BaseModel):
         """
         return any(v is None for v in self.values.values())
 
-    def add_secret(self, key: str, value: str) -> None:
-        """Adds a secret value to the secret.
+    # Body and metadata properties
+    @hydrated_property
+    def scope(self):
+        """The `scope` property."""
+        return self.metadata.scope
 
-        Args:
-            key: The key of the secret value.
-            value: The secret value.
-        """
-        self.values[key] = SecretStr(value)
-
-    def remove_secret(self, key: str) -> None:
-        """Removes a secret value from the secret.
-
-        Args:
-            key: The key of the secret value.
-        """
-        del self.values[key]
-
-    def remove_secrets(self) -> None:
-        """Removes all secret values from the secret but keep the keys."""
-        self.values = {k: None for k in self.values.keys()}
+    @hydrated_property
+    def values(self):
+        """The `values` property."""
+        return self.metadata.values
 
 
-# -------- #
-# RESPONSE #
-# -------- #
+# ------------------ Filter Model ------------------
 
 
-class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
-    """Secret response model with user and workspace hydrated."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
-
-
-# ------ #
-# FILTER #
-# ------ #
-
-
-class SecretFilterModel(WorkspaceScopedFilter):
+class SecretFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Secrets."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
@@ -166,7 +212,7 @@ class SecretFilterModel(WorkspaceScopedFilter):
             str_value = value.strftime("%Y-%m-%d %H:%M:%S")
         return str_value
 
-    def secret_matches(self, secret: SecretResponseModel) -> bool:
+    def secret_matches(self, secret: "SecretResponse") -> bool:
         """Checks if a secret matches the filter criteria.
 
         Args:
@@ -206,7 +252,7 @@ class SecretFilterModel(WorkspaceScopedFilter):
             elif filter.operation == GenericFilterOps.LTE:
                 result = str_column_value <= str_filter_value
 
-            # Exit early if the result is False for AND and True for OR
+            # Exit early if the result is False for AND, and True for OR
             if self.logical_operator == LogicalOperators.AND:
                 if not result:
                     return False
@@ -215,15 +261,15 @@ class SecretFilterModel(WorkspaceScopedFilter):
                     return True
 
         # If we get here, all filters have been checked and the result is
-        # True for AND and False for OR
+        # True for AND, and False for OR
         if self.logical_operator == LogicalOperators.AND:
             return True
         else:
             return False
 
     def sort_secrets(
-        self, secrets: List[SecretResponseModel]
-    ) -> List[SecretResponseModel]:
+        self, secrets: List["SecretResponse"]
+    ) -> List["SecretResponse"]:
         """Sorts a list of secrets according to the filter criteria.
 
         Args:
@@ -242,28 +288,3 @@ class SecretFilterModel(WorkspaceScopedFilter):
         )
 
         return sorted_secrets
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class SecretRequestModel(SecretBaseModel, WorkspaceScopedRequestModel):
-    """Secret request model."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
-
-
-# ------ #
-# UPDATE #
-# ------ #
-
-
-@update_model
-class SecretUpdateModel(SecretRequestModel):
-    """Secret update model."""
-
-    scope: Optional[SecretScope] = Field(  # type: ignore[assignment]
-        default=None, title="The scope of the secret."
-    )

@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
-from zenml.new_models.core import (
+from zenml.models import (
     RoleRequest,
     RoleResponse,
     RoleResponseBody,

@@ -21,7 +21,7 @@ from pydantic import Field, SecretStr
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import UserResponse, WorkspaceResponse
+    from zenml.models import UserResponse, WorkspaceResponse
 
 
 # ------------#
