@@ -31,7 +31,7 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
     update_model,
 )
-from zenml.new_models.base.filter import WorkspaceScopedFilterModel
+from zenml.new_models.base.filter import WorkspaceScopedFilter
 
 # ---- #
 # BASE #
@@ -122,11 +122,11 @@ class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
 # ------ #
 
 
-class SecretFilterModel(WorkspaceScopedFilterModel):
+class SecretFilterModel(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Secrets."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
 

@@ -31,7 +31,7 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
 )
 from zenml.models.model_base_model import ModelBaseModel
-from zenml.new_models.base.filter import WorkspaceScopedFilterModel
+from zenml.new_models.base.filter import WorkspaceScopedFilter
 
 if TYPE_CHECKING:
     from zenml.new_models.core import ArtifactResponse, PipelineResponse
@@ -344,7 +344,7 @@ class ModelVersionResponseModel(
     #     """Return HTML/PDF based on input template"""
 
 
-class ModelVersionFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionFilterModel(WorkspaceScopedFilter):
     """Filter Model for Model Version."""
 
     model_id: Union[str, UUID] = Field(
@@ -369,7 +369,7 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     )
 
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "model_id",
     ]
 
@@ -453,7 +453,7 @@ class ModelVersionArtifactResponseModel(
     link_version: int
 
 
-class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
     model_id: Union[str, UUID] = Field(
@@ -482,7 +482,7 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     only_deployments: Optional[bool] = False
 
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "model_id",
         "model_version_id",
         "only_artifacts",
@@ -520,7 +520,7 @@ class ModelVersionPipelineRunResponseModel(
     """Model version link with pipeline run response model."""
 
 
-class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
     model_id: Union[str, UUID] = Field(
@@ -537,7 +537,7 @@ class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
     )
 
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "model_id",
         "model_version_id",
     ]
@@ -601,7 +601,7 @@ class ModelResponseModel(
             )
 
 
-class ModelFilterModel(WorkspaceScopedFilterModel):
+class ModelFilterModel(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(

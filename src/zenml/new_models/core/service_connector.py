@@ -52,7 +52,7 @@ class ServiceConnectorRequest(ShareableRequest):
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        # max_length=STR_FIELD_MAX_LENGTH,  # TODO: There is some issue here
     )
     description: str = Field(
         default="",
@@ -282,7 +282,7 @@ class ServiceConnectorResponseMetadata(SharableResponseMetadata):
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        # max_length=STR_FIELD_MAX_LENGTH, # TODO: Same issue as the request
     )
     auth_method: str = Field(
         title="The authentication method that the connector instance uses to "

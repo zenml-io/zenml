@@ -45,7 +45,7 @@ from pydantic.generics import GenericModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.base_models import BaseResponseModel
-from zenml.new_models.base.filter import BaseFilterModel
+from zenml.new_models.base import BaseFilter
 
 B = TypeVar("B", bound=BaseResponseModel)
 
@@ -59,7 +59,7 @@ class Page(GenericModel, Generic[B]):
     total: NonNegativeInt
     items: List[B]
 
-    __params_type__ = BaseFilterModel
+    __params_type__ = BaseFilter
 
     @property
     def size(self) -> int:

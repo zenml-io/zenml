@@ -24,7 +24,7 @@ from zenml.enums import OAuthDeviceStatus
 from zenml.models.base_models import (
     UserScopedResponseModel,
 )
-from zenml.new_models.base.filter import UserScopedFilterModel
+from zenml.new_models.base.filter import UserScopedFilter
 
 # ---- #
 # BASE #
@@ -162,7 +162,7 @@ class OAuthDeviceInternalResponseModel(OAuthDeviceResponseModel):
 # ------ #
 
 
-class OAuthDeviceFilterModel(UserScopedFilterModel):
+class OAuthDeviceFilterModel(UserScopedFilter):
     """Model to enable advanced filtering of OAuth2 devices."""
 
     expires: Optional[Union[datetime, str, None]] = Field(
