@@ -26,16 +26,14 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
-    ServiceConnectorResponse,
-    ServiceConnectorUpdate,
-)
-from zenml.new_models.service_connector_type import (
     ServiceConnectorResourcesModel,
+    ServiceConnectorResponse,
     ServiceConnectorTypeModel,
+    ServiceConnectorUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

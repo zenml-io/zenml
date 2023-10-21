@@ -28,8 +28,8 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.lineage_graph.lineage_graph import LineageGraph
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     PipelineRunFilter,
     PipelineRunResponse,
     PipelineRunUpdate,

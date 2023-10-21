@@ -18,8 +18,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, USER_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     UserRoleAssignmentFilter,
     UserRoleAssignmentRequest,
     UserRoleAssignmentResponse,

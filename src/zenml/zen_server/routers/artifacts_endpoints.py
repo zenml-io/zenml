@@ -19,13 +19,13 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
+    LoadedVisualization,
+    Page,
 )
-from zenml.new_models.loaded_visualization import LoadedVisualization
 from zenml.utils.artifact_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

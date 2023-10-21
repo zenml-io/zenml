@@ -39,8 +39,8 @@ from zenml.models import (
     ModelVersionPipelineRunResponseModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
+    Page,
 )
-from zenml.new_models.base import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (

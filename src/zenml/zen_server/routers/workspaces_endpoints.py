@@ -44,6 +44,12 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -56,17 +62,7 @@ from zenml.models import (
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
-    SecretRequestModel,
-    SecretResponseModel,
-)
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
-    CodeRepositoryFilter,
-    CodeRepositoryRequest,
-    CodeRepositoryResponse,
-    ComponentFilter,
-    ComponentRequest,
-    ComponentResponse,
+    Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -83,8 +79,11 @@ from zenml.new_models.core import (
     RunMetadataResponse,
     ScheduleRequest,
     ScheduleResponse,
+    SecretRequestModel,
+    SecretResponseModel,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
     StackFilter,
     StackRequest,
@@ -97,9 +96,6 @@ from zenml.new_models.core import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
-)
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

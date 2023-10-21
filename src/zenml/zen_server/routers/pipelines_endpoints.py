@@ -19,8 +19,8 @@ from fastapi import APIRouter, Depends, Security
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,

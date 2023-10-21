@@ -54,8 +54,8 @@ from zenml.models import (
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
+    UserRoleAssignmentFilter,
 )
-from zenml.new_models.core import UserRoleAssignmentFilter
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,

@@ -18,8 +18,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import RunMetadataFilter, RunMetadataResponse
+from zenml.models import Page, RunMetadataFilter, RunMetadataResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (

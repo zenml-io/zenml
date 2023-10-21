@@ -18,8 +18,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
 )

@@ -31,8 +31,8 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, PermissionType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
+    Page,
     UserFilter,
     UserRequest,
     UserResponse,

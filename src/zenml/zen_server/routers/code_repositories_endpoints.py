@@ -18,11 +18,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, CODE_REPOSITORIES, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
     CodeRepositoryFilter,
     CodeRepositoryResponse,
     CodeRepositoryUpdate,
+    Page,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
