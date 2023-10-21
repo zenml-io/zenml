@@ -74,8 +74,8 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.new_models.base.filter import BaseFilterModel
-from zenml.new_models.service_connector_type import (
+from zenml.models.v2.base import BaseFilterModel
+from zenml.models.v2.service_connector_type import (
     AuthenticationMethodModel,
     ResourceTypeModel,
     ServiceConnectorTypeModel,
