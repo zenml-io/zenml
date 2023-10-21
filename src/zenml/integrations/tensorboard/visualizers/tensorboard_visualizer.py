@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import psutil
 from rich import print
-from tensorboard import notebook  # type: ignore [import]
-from tensorboard.manager import (  # type: ignore [import]
+from tensorboard import notebook  # type: ignore[import]
+from tensorboard.manager import (  # type: ignore[import]
     TensorBoardInfo,
     get_all,
 )
@@ -35,7 +35,7 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import StepRunResponse
+    from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -146,7 +146,7 @@ class TensorboardVisualizer:
 
     def stop(
         self,
-        object: "StepRunResponseModel",
+        object: "StepRunResponse",
     ) -> None:
         """Stop the TensorBoard server previously started for a pipeline step.
 
@@ -180,7 +180,7 @@ class TensorboardVisualizer:
                 return
 
 
-def get_step(pipeline_name: str, step_name: str) -> "StepRunResponseModel":
+def get_step(pipeline_name: str, step_name: str) -> "StepRunResponse":
     """Get the StepRunResponseModel for the specified pipeline and step name.
 
     Args:

@@ -59,7 +59,7 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import PipelineDeploymentBase
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 

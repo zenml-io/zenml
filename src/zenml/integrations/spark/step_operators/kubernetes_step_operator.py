@@ -33,7 +33,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 if TYPE_CHECKING:
     from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.new_models.core import PipelineDeploymentBase
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 

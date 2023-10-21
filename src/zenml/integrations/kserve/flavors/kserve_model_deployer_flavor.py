@@ -21,9 +21,7 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.kserve.model_deployers import KServeModelDeployer

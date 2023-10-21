@@ -45,7 +45,7 @@ from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 

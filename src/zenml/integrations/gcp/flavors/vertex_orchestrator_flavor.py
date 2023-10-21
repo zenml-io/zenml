@@ -21,9 +21,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
 

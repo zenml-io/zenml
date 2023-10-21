@@ -36,7 +36,7 @@ from zenml.stack import StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 

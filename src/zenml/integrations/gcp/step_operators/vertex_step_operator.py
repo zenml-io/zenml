@@ -47,7 +47,7 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.new_models.core import PipelineDeploymentBase
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 

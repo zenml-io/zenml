@@ -29,7 +29,7 @@ from pydantic import Field, SecretStr
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.new_models.service_connector_type import (
+from zenml.models import (
     AuthenticationMethodModel,
     ResourceTypeModel,
     ServiceConnectorTypeModel,

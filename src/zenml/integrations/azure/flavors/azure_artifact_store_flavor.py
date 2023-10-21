@@ -20,9 +20,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:

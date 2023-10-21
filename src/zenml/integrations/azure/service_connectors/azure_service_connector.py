@@ -40,7 +40,7 @@ from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     BLOB_RESOURCE_TYPE,
 )
 from zenml.logger import get_logger
-from zenml.new_models.service_connector_type import (
+from zenml.models import (
     AuthenticationMethodModel,
     ResourceTypeModel,
     ServiceConnectorTypeModel,

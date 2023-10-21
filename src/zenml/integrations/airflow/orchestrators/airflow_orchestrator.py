@@ -58,7 +58,7 @@ if TYPE_CHECKING:
         TaskConfiguration,
     )
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
