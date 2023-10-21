@@ -233,10 +233,10 @@ class ScheduleFilter(WorkspaceScopedFilter):
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: Optional[Union[datetime.datetime, str]] = Field(
         default=None, description="Start time"
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: Optional[Union[datetime.datetime, str]] = Field(
         default=None, description="End time"
     )
     interval_second: Optional[Optional[float]] = Field(

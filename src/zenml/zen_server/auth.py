@@ -50,7 +50,6 @@ from zenml.models import (
     ExternalUserModel,
     OAuthDeviceInternalResponseModel,
     OAuthDeviceInternalUpdateModel,
-    UserAuthModel,
 )
 from zenml.new_models.core import (
     UserRequest,
@@ -58,6 +57,7 @@ from zenml.new_models.core import (
     UserRoleAssignmentRequest,
     UserUpdate,
 )
+from zenml.new_models.user_auth import UserAuthModel
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME

@@ -14,23 +14,27 @@
 """Model implementation to support Model Control Plane feature."""
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
-from zenml.constants import RUNNING_MODEL_VERSION
+from zenml.constants import (
+    RUNNING_MODEL_VERSION,
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.enums import ModelStages
 from zenml.logger import get_logger
-from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.new_models.base.filter import WorkspaceScopedFilterModel
+
+if TYPE_CHECKING:
+    from zenml.new_models.core import ArtifactResponse, PipelineResponse
 
 logger = get_logger(__name__)
 
@@ -93,11 +97,12 @@ class ModelVersionResponseModel(
     )
 
     @property
-    def model_objects(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def model_objects(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all model objects linked to this model version.
 
         Returns:
-            Dictionary of Model Objects with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Model Objects with versions as
+                Dict[str, ArtifactResponse]
         """
         from zenml.client import Client
 
@@ -110,11 +115,11 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def artifacts(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all artifacts linked to this model version.
 
         Returns:
-            Dictionary of Artifacts with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Artifacts with versions as Dict[str, ArtifactResponse]
         """
         from zenml.client import Client
 
@@ -127,11 +132,11 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def deployments(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def deployments(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all deployments linked to this model version.
 
         Returns:
-            Dictionary of Deployments with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Deployments with versions as Dict[str, PipelineDeploymentResponse]
         """
         from zenml.client import Client
 
@@ -144,7 +149,7 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def pipeline_runs(self) -> Dict[str, PipelineRunResponseModel]:
+    def pipeline_runs(self) -> Dict[str, "PipelineResponse"]:
         """Get all pipeline runs linked to this version.
 
         Returns:
@@ -164,7 +169,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get model object linked to this model version.
 
         Args:
@@ -214,7 +219,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get model object linked to this model version.
 
         Args:
@@ -236,7 +241,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get artifact linked to this model version.
 
         Args:
@@ -258,7 +263,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get deployment linked to this model version.
 
         Args:
@@ -274,7 +279,7 @@ class ModelVersionResponseModel(
             self.deployment_ids, name, version, pipeline_name, step_name
         )
 
-    def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
+    def get_pipeline_run(self, name: str) -> "PipelineResponse":
         """Get pipeline run linked to this version.
 
         Args:
@@ -294,7 +299,8 @@ class ModelVersionResponseModel(
 
         Args:
             stage: the target stage for model version.
-            force: whether to force archiving of current model version in target stage or raise.
+            force: whether to force archiving of current model version in
+                target stage or raise.
 
         Returns:
             Model Version as a response model.
@@ -378,8 +384,8 @@ class ModelVersionUpdateModel(BaseModel):
         description="Target model version stage to be set", default=None
     )
     force: bool = Field(
-        description="Whether existing model version in target stage should be silently archived "
-        "or an error should be raised.",
+        description="Whether existing model version in target stage should be "
+        "silently archived or an error should be raised.",
         default=False,
     )
     name: Optional[str] = Field(
@@ -422,7 +428,8 @@ class ModelVersionArtifactBaseModel(BaseModel):
         is_model_object = values.get("is_model_object", False)
         if is_model_object and is_deployment:
             raise ValueError(
-                "Artifact cannot be a model object and deployment at the same time."
+                "Artifact cannot be a model object and deployment at the "
+                "same time."
             )
         return is_deployment
 

@@ -1682,7 +1682,7 @@ def print_service_connector_configuration(
     """
     from uuid import UUID
 
-    from zenml.models import ServiceConnectorResponseModel
+    from zenml.models import ServiceConnectorResponse
 
     if connector.user:
         if isinstance(connector.user, UUID):
@@ -1692,7 +1692,7 @@ def print_service_connector_configuration(
     else:
         user_name = "[DELETED]"
 
-    if isinstance(connector, ServiceConnectorResponseModel):
+    if isinstance(connector, ServiceConnectorResponse):
         declare(
             f"Service connector '{connector.name}' of type "
             f"'{connector.type}' with id '{connector.id}' is owned by "
@@ -1725,7 +1725,7 @@ def print_service_connector_configuration(
     else:
         expiration = str(connector.expiration_seconds) + "s"
 
-    if isinstance(connector, ServiceConnectorResponseModel):
+    if isinstance(connector, ServiceConnectorResponse):
         properties = {
             "ID": connector.id,
             "NAME": connector.name,

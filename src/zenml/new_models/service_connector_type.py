@@ -11,36 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models for service connector types."""
-
+"""Model definitions for ZenML service connectors."""
 import json
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    Field,
-    validator,
-)
+from pydantic import BaseModel, Field, validator
 
-from zenml.logger import get_logger
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.new_models.core.component import ComponentBase
-    from zenml.new_models.core.service_connector import (
+    from zenml.new_models.core import (
+        ComponentBase,
+        ServiceConnectorRequest,
         ServiceConnectorResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
+
 logger = get_logger(__name__)
 
 
@@ -511,7 +499,9 @@ class ServiceConnectorRequirements(BaseModel):
 
     def is_satisfied_by(
         self,
-        connector: "ServiceConnectorResponse",
+        connector: Union[
+            "ServiceConnectorResponse", "ServiceConnectorRequest"
+        ],
         component: "ComponentBase",
     ) -> Tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.

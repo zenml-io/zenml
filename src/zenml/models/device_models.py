@@ -24,7 +24,7 @@ from zenml.enums import OAuthDeviceStatus
 from zenml.models.base_models import (
     UserScopedResponseModel,
 )
-from zenml.models.filter_models import UserScopedFilterModel
+from zenml.new_models.base.filter import UserScopedFilterModel
 
 # ---- #
 # BASE #

@@ -216,7 +216,7 @@ class FlavorResponse(BaseResponse):
         Returns:
             The connector requirements for the flavor.
         """
-        from zenml.models.service_connector_models import (
+        from zenml.new_models.service_connector_type import (
             ServiceConnectorRequirements,
         )
 

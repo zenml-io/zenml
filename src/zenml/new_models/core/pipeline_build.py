@@ -119,7 +119,7 @@ class PipelineBuildBase(BaseZenModel):
 
     def _get_item(
         self, component_key: str, step: Optional[str] = None
-    ) -> BuildItem:
+    ) -> "BuildItem":
         """Get the item for a specific key.
 
         Args:
@@ -184,7 +184,7 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     stack: Optional["StackResponse"] = Field(
         title="The stack that was used for this build."
     )
-    images: Dict[str, BuildItem] = Field(
+    images: Dict[str, "BuildItem"] = Field(
         default={}, title="The images of this build."
     )
     zenml_version: Optional[str] = Field(
@@ -278,7 +278,7 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
 
     def _get_item(
         self, component_key: str, step: Optional[str] = None
-    ) -> BuildItem:
+    ) -> "BuildItem":
         """Get the item for a specific key.
 
         Args:

@@ -25,7 +25,7 @@ from zenml.utils.pydantic_utils import YAMLSerializationMixin
 # -------------------- Base Model --------------------
 
 
-class BaseZenModel(BaseModel, YAMLSerializationMixin):
+class BaseZenModel(YAMLSerializationMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides

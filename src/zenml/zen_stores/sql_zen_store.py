@@ -57,7 +57,8 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
-    LATEST_MODEL_VERSION_PLACEHOLDER, TEXT_FIELD_MAX_LENGTH,
+    LATEST_MODEL_VERSION_PLACEHOLDER,
+    TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import (
     LoggingLevels,

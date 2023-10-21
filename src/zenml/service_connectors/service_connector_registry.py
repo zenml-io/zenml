@@ -13,14 +13,18 @@
 #  permissions and limitations under the License.
 """Implementation of a service connector registry."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorBaseModel, ServiceConnectorTypeModel
+from zenml.new_models.service_connector_type import ServiceConnectorTypeModel
 
 if TYPE_CHECKING:
+    from zenml.new_models.core import (
+        ServiceConnectorRequest,
+        ServiceConnectorResponse,
+        ServiceConnectorUpdate,
+    )
     from zenml.service_connectors.service_connector import ServiceConnector
-
 logger = get_logger(__name__)
 
 
@@ -157,7 +161,11 @@ class ServiceConnectorRegistry:
 
     def instantiate_connector(
         self,
-        model: ServiceConnectorBaseModel,
+        model: Union[
+            "ServiceConnectorRequest",
+            "ServiceConnectorResponse",
+            "ServiceConnectorUpdate",
+        ],
     ) -> "ServiceConnector":
         """Validate a service connector model and create an instance from it.
 

@@ -25,7 +25,9 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorRequirements
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorRequirements,
+)
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:

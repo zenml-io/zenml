@@ -17,8 +17,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 
 logger = get_logger(__name__)
 

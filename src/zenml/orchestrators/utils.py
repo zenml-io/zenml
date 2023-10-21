@@ -34,9 +34,7 @@ from zenml.logger import get_logger
 from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.new_models.core import PipelineDeploymentResponse
     from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
@@ -99,7 +97,7 @@ def is_setting_enabled(
 
 
 def get_config_environment_vars(
-    deployment: Optional["PipelineDeploymentResponseModel"] = None,
+    deployment: Optional["PipelineDeploymentResponse"] = None,
 ) -> Dict[str, str]:
     """Gets environment variables to set for mirroring the active config.
 

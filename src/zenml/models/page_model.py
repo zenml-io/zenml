@@ -45,7 +45,7 @@ from pydantic.generics import GenericModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import BaseFilterModel
+from zenml.new_models.base.filter import BaseFilterModel
 
 B = TypeVar("B", bound=BaseResponseModel)
 

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing base filters."""
+"""Base filter model definitions."""
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -229,9 +229,6 @@ class NumericFilter(Filter):
         if self.operation == GenericFilterOps.LT:
             return column < self.value
         return column == self.value
-
-
-# ---------------------- Pagination models ----------------------
 
 
 class BaseFilter(BaseModel):
@@ -808,7 +805,8 @@ class WorkspaceScopedFilter(BaseFilter):
 
 
 class ShareableFilter(WorkspaceScopedFilter):
-    """Model to enable advanced scoping with workspace and user scoped shareable things."""
+    """Model to enable advanced scoping with workspace and user scoped
+    shareable things."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,

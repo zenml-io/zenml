@@ -15,7 +15,17 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import (
@@ -32,17 +42,18 @@ from zenml.constants import (
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import (
-    ServiceConnectorBaseModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
+from zenml.new_models.core import (
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
+    ServiceConnectorResponseMetadata,
+    UserResponse,
+    WorkspaceResponse,
 )
-from zenml.models.service_connector_models import (
+from zenml.new_models.service_connector_type import (
+    ServiceConnectorResourcesModel,
     ServiceConnectorTypedResourcesModel,
+    ServiceConnectorTypeModel,
 )
 
 logger = get_logger(__name__)
@@ -586,7 +597,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     @classmethod
     def from_model(
-        cls, model: "ServiceConnectorBaseModel"
+        cls,
+        model: Union["ServiceConnectorRequest", "ServiceConnectorResponse"],
     ) -> "ServiceConnector":
         """Creates a service connector instance from a service connector model.
 
@@ -626,10 +638,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         # Unpack the authentication configuration
         config = model.configuration.copy()
-        if (
-            isinstance(model, ServiceConnectorResponseModel)
-            and model.secret_id
-        ):
+        if isinstance(model, ServiceConnectorResponse) and model.secret_id:
             try:
                 secret = Client().get_secret(model.secret_id)
             except KeyError as e:
@@ -682,7 +691,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             expires_at=model.expires_at,
             expiration_seconds=expiration_seconds,
         )
-        if isinstance(model, ServiceConnectorResponseModel):
+        if isinstance(model, ServiceConnectorResponse):
             connector.id = model.id
             connector.name = model.name
 
@@ -696,7 +705,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
-    ) -> "ServiceConnectorRequestModel":
+    ) -> "ServiceConnectorRequest":
         """Convert the connector instance to a service connector model.
 
         Args:
@@ -722,7 +731,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "connector configuration is not valid: name must be set"
             )
 
-        model = ServiceConnectorRequestModel(
+        model = ServiceConnectorRequest(
             connector_type=spec.connector_type,
             name=name,
             description=description,
@@ -748,14 +757,14 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_response_model(
         self,
-        workspace: WorkspaceResponseModel,
-        user: Optional[UserResponseModel] = None,
+        workspace: WorkspaceResponse,
+        user: Optional[UserResponse] = None,
         name: Optional[str] = None,
         id: Optional[UUID] = None,
         is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
-    ) -> "ServiceConnectorResponseModel":
+    ) -> "ServiceConnectorResponse":
         """Convert the connector instance to a service connector response model.
 
         Args:
@@ -783,20 +792,24 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "connector configuration is not valid: name and ID must be set"
             )
 
-        model = ServiceConnectorResponseModel(
+        model = ServiceConnectorResponse(
             id=id,
-            created=datetime.utcnow(),
-            updated=datetime.utcnow(),
-            connector_type=self.get_type(),
             name=name,
-            description=description,
-            user=user,
-            workspace=workspace,
-            is_shared=is_shared,
-            auth_method=self.auth_method,
-            expires_at=self.expires_at,
-            expiration_seconds=self.expiration_seconds,
-            labels=labels or {},
+            body=ServiceConnectorResponseBody(
+                user=user,
+            ),
+            metadata=ServiceConnectorResponseMetadata(
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+                workspace=workspace,
+                is_shared=is_shared,
+                description=description,
+                connector_type=self.get_type(),
+                auth_method=self.auth_method,
+                expires_at=self.expires_at,
+                expiration_seconds=self.expiration_seconds,
+                labels=labels or {},
+            ),
         )
 
         # Validate the connector configuration.

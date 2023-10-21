@@ -19,6 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     GenericFilterOps,
     LogicalOperators,
@@ -30,8 +31,7 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.new_models.base.filter import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
