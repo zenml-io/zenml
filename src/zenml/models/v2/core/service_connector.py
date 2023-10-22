@@ -139,6 +139,35 @@ class ServiceConnectorRequest(ShareableRequest):
             return self.connector_type
         return self.connector_type.connector_type
 
+    @property
+    def emojified_connector_type(self) -> str:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return self.connector_type.emojified_connector_type
+
+        return self.connector_type
+
+    @property
+    def emojified_resource_types(self) -> List[str]:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return [
+                self.connector_type.resource_type_dict[
+                    resource_type
+                ].emojified_resource_type
+                for resource_type in self.resource_types
+            ]
+
+        return self.resource_types
+
     def validate_and_configure_resources(
         self,
         connector_type: "ServiceConnectorTypeModel",

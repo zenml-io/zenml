@@ -28,11 +28,12 @@ from zenml.lineage_graph.node import (
 from zenml.lineage_graph.node.artifact_node import ArtifactNodeStatus
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import (
+    from zenml.models import (
         ArtifactResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
+
 
 ARTIFACT_PREFIX = "artifact_"
 STEP_PREFIX = "step_"
@@ -53,7 +54,8 @@ class LineageGraph(BaseModel):
             run: The PipelineRunResponseModel to generate the lineage graph for.
         """
         self.run_metadata = [
-            (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
+            (m.key, str(m.value), str(m.type))
+            for m in run.run_metadata.values()
         ]
 
         for step in run.steps.values():
@@ -155,7 +157,7 @@ class LineageGraph(BaseModel):
 
     def add_step_node(
         self,
-        step: "StepRunResponseModel",
+        step: "StepRunResponse",
         id: str,
     ) -> None:
         """Adds a step node to the lineage graph.
@@ -185,7 +187,7 @@ class LineageGraph(BaseModel):
                     outputs={k: v.uri for k, v in step.outputs.items()},
                     metadata=[
                         (m.key, str(m.value), str(m.type))
-                        for m in step.metadata.values()
+                        for m in step.run_metadata.values()
                     ],
                 ),
             )
@@ -222,7 +224,7 @@ class LineageGraph(BaseModel):
                 uri=artifact.uri,
                 metadata=[
                     (m.key, str(m.value), str(m.type))
-                    for m in artifact.metadata.values()
+                    for m in artifact.run_metadata.values()
                 ],
             ),
         )

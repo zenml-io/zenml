@@ -50,13 +50,14 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.logger import get_logger
-from zenml.models import ServerDatabaseType, ServerModel
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
+from zenml.models import (
     ComponentRequest,
+    Page,
     RoleFilter,
     RoleRequest,
     RoleResponse,
+    ServerDatabaseType,
+    ServerModel,
     StackFilter,
     StackRequest,
     StackResponse,

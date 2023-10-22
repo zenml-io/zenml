@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.config.step_configurations import StepConfigurationUpdate
-    from zenml.new_models.core import PipelineBuildBase
+    from zenml.models import PipelineBuildBase
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate

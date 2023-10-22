@@ -25,7 +25,7 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_spec import PipelineSpec
-    from zenml.new_models.core import PipelineResponse
+    from zenml.models import PipelineResponse
 
 logger = get_logger(__name__)
 
@@ -223,7 +223,7 @@ def _load_and_verify_steps(
 
 
 def _generate_connect_method(
-    model: "PipelineResponseModel", use_pipeline_parameter_name: bool = False
+    model: "PipelineResponse", use_pipeline_parameter_name: bool = False
 ) -> Callable[..., None]:
     """Dynamically generates a connect method for a pipeline model.
 

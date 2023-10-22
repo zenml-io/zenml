@@ -16,10 +16,10 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from zenml.logger import get_logger
-from zenml.new_models.service_connector_type import ServiceConnectorTypeModel
+from zenml.models import ServiceConnectorTypeModel
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import (
+    from zenml.models import (
         ServiceConnectorRequest,
         ServiceConnectorResponse,
         ServiceConnectorUpdate,

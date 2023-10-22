@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.new_models.core import (
+from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     StepRunResponse,

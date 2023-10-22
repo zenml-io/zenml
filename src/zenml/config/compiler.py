@@ -37,7 +37,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
-from zenml.new_models.core import PipelineDeploymentBase
+from zenml.models import PipelineDeploymentBase
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:

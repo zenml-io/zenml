@@ -27,8 +27,8 @@ import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.logger import get_logger
-from zenml.new_models.build_item import BuildItem
-from zenml.new_models.core import (
+from zenml.models import (
+    BuildItem,
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,

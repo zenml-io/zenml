@@ -31,7 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
-from zenml.new_models.core import (
+from zenml.models import (
     ArtifactResponse,
     LogsRequest,
     PipelineDeploymentResponse,

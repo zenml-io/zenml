@@ -19,11 +19,11 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.new_models.core import StepRunFilter
+from zenml.models import StepRunFilter
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
-    from zenml.new_models.core import ArtifactResponse
+    from zenml.models import ArtifactResponse
 
 
 def resolve_step_inputs(

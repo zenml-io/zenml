@@ -43,7 +43,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 

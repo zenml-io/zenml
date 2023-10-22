@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 from zenml.logger import get_logger
-from zenml.new_models.core import CodeRepositoryResponse
+from zenml.models import CodeRepositoryResponse
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:

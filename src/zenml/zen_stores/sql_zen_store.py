@@ -78,6 +78,23 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    BaseFilter,
+    BaseResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -98,29 +115,7 @@ from zenml.models import (
     OAuthDeviceInternalUpdateModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretUpdateModel,
-    ServerDatabaseType,
-    ServerModel,
-)
-from zenml.new_models.base import BaseFilter, BaseResponse, Page
-from zenml.new_models.core import (
-    ArtifactFilter,
-    ArtifactRequest,
-    ArtifactResponse,
-    CodeRepositoryFilter,
-    CodeRepositoryRequest,
-    CodeRepositoryResponse,
-    CodeRepositoryUpdate,
-    ComponentFilter,
-    ComponentRequest,
-    ComponentResponse,
-    ComponentUpdate,
-    FlavorFilter,
-    FlavorRequest,
-    FlavorResponse,
-    FlavorUpdate,
+    Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -146,9 +141,16 @@ from zenml.new_models.core import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretUpdateModel,
+    ServerDatabaseType,
+    ServerModel,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
     StackFilter,
     StackRequest,
@@ -165,6 +167,7 @@ from zenml.new_models.core import (
     TeamRoleAssignmentRequest,
     TeamRoleAssignmentResponse,
     TeamUpdate,
+    UserAuthModel,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -177,11 +180,6 @@ from zenml.new_models.core import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
-    ServiceConnectorTypeModel,
-)
-from zenml.new_models.user_auth import UserAuthModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -3766,7 +3764,10 @@ class SqlZenStore(BaseZenStore):
             # Save visualizations of the artifact.
             if artifact.visualizations:
                 for vis in artifact.visualizations:
-                    vis_schema = ArtifactVisualizationSchema.from_model(vis)
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        artifact_visualization_request=vis,
+                        artifact_id=artifact.id,
+                    )
                     session.add(vis_schema)
 
             session.commit()

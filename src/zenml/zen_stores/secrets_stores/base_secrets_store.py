@@ -33,13 +33,14 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretScope, SecretsStoreType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models.secret_models import (
+from zenml.models import (
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    UserResponse,
+    WorkspaceResponse,
 )
-from zenml.new_models.core import UserResponse, WorkspaceResponse
 from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 from zenml.zen_stores.enums import StoreEvent

@@ -23,7 +23,7 @@ from zenml.environment import Environment
 from zenml.utils.artifact_utils import load_artifact_visualization
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import ArtifactResponse
+    from zenml.models import ArtifactResponse
 
 
 def visualize_artifact(

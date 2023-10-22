@@ -42,7 +42,7 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import StackResponse, WorkspaceResponse
+    from zenml.models import StackResponse, WorkspaceResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)

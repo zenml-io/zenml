@@ -18,6 +18,21 @@ from uuid import UUID
 
 from zenml.enums import ModelStages
 from zenml.models import (
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -35,25 +50,7 @@ from zenml.models import (
     OAuthDeviceFilterModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-    ServerModel,
-)
-from zenml.new_models.base import Page
-from zenml.new_models.core import (
-    ArtifactFilter,
-    ArtifactRequest,
-    ArtifactResponse,
-    CodeRepositoryFilter,
-    CodeRepositoryRequest,
-    CodeRepositoryResponse,
-    CodeRepositoryUpdate,
-    ComponentFilter,
-    ComponentRequest,
-    ComponentResponse,
-    ComponentUpdate,
-    FlavorFilter,
-    FlavorRequest,
-    FlavorResponse,
-    FlavorUpdate,
+    Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -75,9 +72,12 @@ from zenml.new_models.core import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    ServerModel,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
     StackFilter,
     StackRequest,
@@ -95,10 +95,6 @@ from zenml.new_models.core import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
-)
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
-    ServiceConnectorTypeModel,
 )
 
 

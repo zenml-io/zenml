@@ -26,7 +26,7 @@ MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
-    from zenml.new_models.core import ArtifactResponse
+    from zenml.models import ArtifactResponse
 
 
 logger = get_logger(__name__)
@@ -62,7 +62,9 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         response = None
-        pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
+        pipeline = client.get_pipeline(  # type:ignore[arg-type]
+            self.pipeline_name
+        )
         for artifact in pipeline.last_successful_run.artifacts:
             if artifact.name == self.artifact_name:
                 response = artifact

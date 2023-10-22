@@ -17,7 +17,7 @@ from typing import List
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.new_models.core import PipelineRunResponse
+from zenml.models import PipelineRunResponse
 
 logger = get_logger(__name__)
 

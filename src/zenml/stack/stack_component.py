@@ -25,7 +25,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.new_models.service_connector_type import (
+from zenml.models import (
     ServiceConnectorRequirements,
 )
 from zenml.utils import secret_utils, settings_utils
@@ -33,7 +33,7 @@ from zenml.utils import secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.new_models.core import (
+    from zenml.models import (
         ComponentResponse,
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
@@ -445,7 +445,12 @@ class StackComponent:
 
     def get_settings(
         self,
-        container: Union["Step", "StepRunInfo", "PipelineDeploymentBase"],
+        container: Union[
+            "Step",
+            "StepRunInfo",
+            "PipelineDeploymentBase",
+            "PipelineDeploymentResponse",
+        ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 

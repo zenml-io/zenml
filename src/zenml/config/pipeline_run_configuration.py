@@ -20,7 +20,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model_config import ModelConfig
-from zenml.new_models.core import PipelineBuildBase
+from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
 
 

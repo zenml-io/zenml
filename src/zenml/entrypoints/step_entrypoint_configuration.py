@@ -23,7 +23,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 

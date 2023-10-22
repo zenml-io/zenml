@@ -17,10 +17,7 @@ from typing import List, Optional
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
-from zenml.new_models.core import (
-    PipelineDeploymentBase,
-    PipelineDeploymentResponse,
-)
+from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
 from zenml.orchestrators import BaseOrchestrator
 
 

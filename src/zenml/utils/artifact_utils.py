@@ -25,8 +25,8 @@ from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import LoadedVisualization
 from zenml.new.steps.step_context import get_step_context
-from zenml.new_models.loaded_visualization import LoadedVisualization
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.new_models.core import (
+    from zenml.models import (
         ArtifactResponse,
         PipelineRunResponse,
         StepRunResponse,
@@ -376,7 +376,7 @@ def upload_artifact(
     Returns:
         The ID of the published artifact.
     """
-    from zenml.new_models.core import (
+    from zenml.models import (
         ArtifactRequest,
         ArtifactVisualizationRequest,
     )

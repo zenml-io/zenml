@@ -14,7 +14,7 @@
 """Unmaterialized artifact class."""
 
 
-from zenml.new_models.core import (
+from zenml.models import (
     ArtifactResponse,
     RunMetadataResponse,
     UserResponse,

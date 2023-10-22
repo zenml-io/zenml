@@ -42,18 +42,16 @@ from zenml.constants import (
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.new_models.core import (
+from zenml.models import (
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
-    UserResponse,
-    WorkspaceResponse,
-)
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
     ServiceConnectorTypedResourcesModel,
     ServiceConnectorTypeModel,
+    UserResponse,
+    WorkspaceResponse,
 )
 
 logger = get_logger(__name__)

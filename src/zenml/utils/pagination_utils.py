@@ -15,8 +15,7 @@
 
 from typing import Callable, List, TypeVar
 
-from zenml.models import BaseResponseModel
-from zenml.new_models.base import BaseResponse, Page
+from zenml.models import BaseResponse, BaseResponseModel, Page
 
 AnyResponseModel = TypeVar("AnyResponseModel", BaseResponse, BaseResponseModel)
 

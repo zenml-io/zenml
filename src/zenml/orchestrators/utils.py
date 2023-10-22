@@ -34,7 +34,7 @@ from zenml.logger import get_logger
 from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
     from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)

@@ -84,6 +84,24 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    BaseFilter,
+    BaseRequest,
+    BaseResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -101,31 +119,7 @@ from zenml.models import (
     OAuthDeviceFilterModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-)
-from zenml.models.server_models import ServerModel
-from zenml.new_models.base import (
-    BaseFilter,
-    BaseRequest,
-    BaseResponse,
     Page,
-    WorkspaceScopedRequest,
-)
-from zenml.new_models.core import (
-    ArtifactFilter,
-    ArtifactRequest,
-    ArtifactResponse,
-    CodeRepositoryFilter,
-    CodeRepositoryRequest,
-    CodeRepositoryResponse,
-    CodeRepositoryUpdate,
-    ComponentFilter,
-    ComponentRequest,
-    ComponentResponse,
-    ComponentUpdate,
-    FlavorFilter,
-    FlavorRequest,
-    FlavorResponse,
-    FlavorUpdate,
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -153,7 +147,9 @@ from zenml.new_models.core import (
     ScheduleUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
     StackFilter,
     StackRequest,
@@ -180,12 +176,10 @@ from zenml.new_models.core import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceScopedRequest,
     WorkspaceUpdate,
 )
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
-    ServiceConnectorTypeModel,
-)
+from zenml.models.server_models import ServerModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )

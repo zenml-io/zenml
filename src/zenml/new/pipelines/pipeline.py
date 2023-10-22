@@ -56,9 +56,7 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.new.pipelines import build_utils
-from zenml.new.pipelines.model_utils import NewModelVersionRequest
-from zenml.new_models.core import (
+from zenml.models import (
     CodeReferenceRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
@@ -70,6 +68,8 @@ from zenml.new_models.core import (
     PipelineRunResponse,
     ScheduleRequest,
 )
+from zenml.new.pipelines import build_utils
+from zenml.new.pipelines.model_utils import NewModelVersionRequest
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (

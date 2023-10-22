@@ -25,7 +25,7 @@ from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 

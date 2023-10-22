@@ -64,7 +64,11 @@ if TYPE_CHECKING:
     )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
-    from zenml.new_models.core import ArtifactResponse, PipelineRunResponse
+    from zenml.models import (
+        ArtifactResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -96,9 +100,9 @@ class StepRunner:
 
     def run(
         self,
-        pipeline_run: "PipelineRunResponseModel",
-        step_run: "StepRunResponseModel",
-        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        pipeline_run: "PipelineRunResponse",
+        step_run: "StepRunResponse",
+        input_artifacts: Dict[str, "ArtifactResponse"],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:

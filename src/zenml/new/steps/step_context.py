@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.artifact_config import ArtifactConfig
     from zenml.model.model_config import ModelConfig
-    from zenml.new_models.core import (
+    from zenml.models import (
         PipelineResponse,
         PipelineRunResponse,
         StepRunResponse,

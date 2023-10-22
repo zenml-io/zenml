@@ -39,7 +39,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.new_models.core import StackResponse
+from zenml.models import StackResponse
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
@@ -58,10 +58,7 @@ if TYPE_CHECKING:
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
-    from zenml.new_models.core import (
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
-    )
+    from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent

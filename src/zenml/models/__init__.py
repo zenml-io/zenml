@@ -272,6 +272,7 @@ from zenml.models.v2.core.workspace import (
 from zenml.models.v2.service_connector_type import (
     AuthenticationMethodModel,
     ServiceConnectorResourcesModel,
+    ServiceConnectorRequirements,
     ServiceConnectorTypeModel,
     ServiceConnectorTypedResourcesModel,
     ResourceTypeModel,
@@ -525,6 +526,7 @@ __all__ = [
     "ServiceConnectorResourcesModel",
     "ServiceConnectorTypeModel",
     "ServiceConnectorTypedResourcesModel",
+    "ServiceConnectorRequirements",
     "ResourceTypeModel",
     "UserAuthModel",
     "BuildItem",

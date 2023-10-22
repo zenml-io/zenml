@@ -30,7 +30,7 @@ from zenml.logger import get_logger
 from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.new_models.core import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [

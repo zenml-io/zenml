@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.new_models.core import StepRunResponse
+    from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
 

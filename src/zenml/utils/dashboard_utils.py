@@ -19,11 +19,7 @@ from zenml.client import Client
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
-from zenml.new_models.core import (
-    ComponentResponse,
-    PipelineRunResponse,
-    StackResponse,
-)
+from zenml.models import ComponentResponse, PipelineRunResponse, StackResponse
 
 logger = get_logger(__name__)
 

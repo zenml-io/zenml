@@ -20,7 +20,7 @@ from zenml.analytics.utils import analytics_disabler
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.new_models.core import (
+from zenml.models import (
     FlavorFilter,
     FlavorResponse,
     FlavorUpdate,

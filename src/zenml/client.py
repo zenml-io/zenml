@@ -73,6 +73,19 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactFilter,
+    ArtifactResponse,
+    BaseResponse,
+    BaseResponseModel,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -88,23 +101,7 @@ from zenml.models import (
     OAuthDeviceFilterModel,
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-)
-from zenml.new_models.base import BaseResponse, Page
-from zenml.new_models.core import (
-    ArtifactFilter,
-    ArtifactResponse,
-    CodeRepositoryFilter,
-    CodeRepositoryRequest,
-    CodeRepositoryResponse,
-    ComponentFilter,
-    ComponentRequest,
-    ComponentResponse,
-    FlavorFilter,
-    FlavorRequest,
-    FlavorResponse,
+    Page,
     PipelineBuildFilter,
     PipelineBuildResponse,
     PipelineDeploymentFilter,
@@ -121,9 +118,14 @@ from zenml.new_models.core import (
     RunMetadataResponse,
     ScheduleFilter,
     ScheduleResponse,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
     StackFilter,
     StackRequest,
@@ -150,10 +152,6 @@ from zenml.new_models.core import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorResourcesModel,
-    ServiceConnectorTypeModel,
-)
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -165,7 +163,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)
+
+AnyResponse = TypeVar("AnyResponse", BaseResponse, BaseResponseModel)
 
 
 class ClientConfiguration(FileSyncModel):

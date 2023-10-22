@@ -19,9 +19,7 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements
 
 
 class AzureContainerRegistryFlavor(BaseContainerRegistryFlavor):

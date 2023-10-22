@@ -27,7 +27,7 @@ from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.new_models.core import PipelineDeploymentBase
+    from zenml.models import PipelineDeploymentBase
 
 STEP_RUN_ID_OPTION = "step_run_id"
 

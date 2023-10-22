@@ -20,9 +20,7 @@ from pydantic import validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.enums import StackComponentType
-from zenml.new_models.service_connector_type import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements
 from zenml.secret.schemas import BasicAuthSecretSchema
 from zenml.stack.authentication_mixin import (
     AuthenticationConfigMixin,
