@@ -84,6 +84,7 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseResponse,
+    CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -5743,7 +5744,7 @@ class SqlZenStore(BaseZenStore):
     def _create_or_reuse_code_reference(
         session: Session,
         workspace_id: UUID,
-        code_reference: Optional["CodeReferenceRequestModel"],
+        code_reference: Optional["CodeReferenceRequest"],
     ) -> Optional[UUID]:
         """Creates or reuses a code reference.
 
