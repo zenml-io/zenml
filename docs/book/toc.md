@@ -37,6 +37,7 @@
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
     * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
+    * [Handling dependencies](user-guide/advanced-guide/environment-management/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
@@ -164,6 +165,7 @@
 
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
+* [📚 How do I...?](reference/how-do-i.md)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
   * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)
