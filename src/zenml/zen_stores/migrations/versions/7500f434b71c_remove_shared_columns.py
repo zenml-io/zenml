@@ -1,7 +1,7 @@
 """Remove shared columns [7500f434b71c].
 
 Revision ID: 7500f434b71c
-Revises: 0.45.1
+Revises: 0.45.4
 Create Date: 2023-10-16 15:15:34.865337
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "7500f434b71c"
-down_revision = "0.45.1"
+down_revision = "0.45.4"
 branch_labels = None
 depends_on = None
 
