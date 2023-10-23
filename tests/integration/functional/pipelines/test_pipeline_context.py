@@ -1,12 +1,24 @@
 import pytest
+import yaml
 
-from zenml import get_pipeline_context, pipeline, step
+from zenml import get_pipeline_context, get_step_context, pipeline, step
 
 
 @step
 def assert_pipeline_context_in_step():
     with pytest.raises(RuntimeError, match="Inside a step"):
         get_pipeline_context()
+
+    context = get_step_context()
+    assert (
+        context.pipeline.name == "assert_pipeline_context_in_pipeline"
+    ), "Not accessible inside running step"
+    assert (
+        context.pipeline_run.config.enable_cache is False
+    ), "Not accessible inside running step"
+    assert context.pipeline_run.config.extra == {
+        "foo": "bar"
+    }, "Not accessible inside running step"
 
 
 @pipeline(enable_cache=False)
@@ -30,3 +42,13 @@ def test_pipeline_context():
         get_pipeline_context()
 
     assert_pipeline_context_in_pipeline.with_options(extra={"foo": "bar"})()
+
+
+def test_pipeline_context_available_as_config_yaml(tmp_path):
+    """Tests that the pipeline context is available as a config yaml."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.dump({"extra": {"foo": "bar"}}))
+
+    assert_pipeline_context_in_pipeline.with_options(
+        config_path=str(config_path)
+    )

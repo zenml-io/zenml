@@ -1,6 +1,60 @@
 <!-- markdown-link-check-disable -->
 
-# 0.45.1
+# 0.45.4
+
+This minor update fixes a database migration bug that you could potentially
+encounter while upgrading your ZenML version and relates to use of the
+`ExternalArtifact` object. 
+If you are upgrading from <0.45.x version, this is the recommended release.
+
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 or v0.45.3 and are experiencing
+issues with your database, please consider upgrading to v0.45.4 instead.
+
+## What's Changed
+* Increase reuse of `ModelConfig` by @avishniakov in https://github.com/zenml-io/zenml/pull/1954
+* resolve alembic branches by @avishniakov in https://github.com/zenml-io/zenml/pull/1964
+* Fix corrupted migration for old dbs by @avishniakov in https://github.com/zenml-io/zenml/pull/1966
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.3...0.45.4
+
+# 0.45.3
+
+This minor update fixes a database migration bug that you could potentially
+encounter while upgrading your ZenML version and relates to use of the
+`ExternalArtifact` object.
+
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 and are experiencing
+issues with your database, please either [reach out to us on Slack directly](https://zenml.io/slack-invite/) or
+feel free to [use this migration
+script](https://gist.github.com/strickvl/2178d93c8693f068768a82587fd4db75) that will
+manually fix the issue.
+
+This release also includes a bugfix from @cameronraysmith relating to the
+resolution of our Helm chart OCI location. Thank you!
+
+## What's Changed
+* fix: match chart name in docs to publish workflow by @cameronraysmith in https://github.com/zenml-io/zenml/pull/1942
+* Evaluate YAML based config early + OSS-2511 by @avishniakov in https://github.com/zenml-io/zenml/pull/1876
+* Fixing nullable parameter to avoid extra migrations by @bcdurak in https://github.com/zenml-io/zenml/pull/1955
+* Pin Helm version to avoid 400 Bad Request error by @wjayesh in https://github.com/zenml-io/zenml/pull/1958
+* `external_input_artifact` backward compatibility with alembic by @avishniakov in https://github.com/zenml-io/zenml/pull/1957
+
+## New Contributors
+* @cameronraysmith made their first contribution in https://github.com/zenml-io/zenml/pull/1942
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.2...0.45.3
+
+# 0.45.2
+
+This release replaces 0.45.0 and 0.45.1, and fixes the major migration bugs that were in
+that yanked release. Please upgrade directly to 0.45.2 and avoid upgrading to
+0.45.0 to avoid unexpected migration issues.
+
+Note that 0.45.0 and 0.45.1 were removed from PyPI due to an issue with the
+alembic versions + migration which could affect the database state. This release
+fixes that issue.
+
+If you have already upgraded to 0.45.0 please [let us know in Slack](https://zenml.io/slack-invite/) and we'll happy to assist in rollback and recovery.
 
 This release introduces a major upgrade to ZenML, featuring a new authentication mechanism, performance improvements, the introduction of the model control plane, and internal enhancements.
 
