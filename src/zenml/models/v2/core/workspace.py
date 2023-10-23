@@ -84,7 +84,7 @@ class WorkspaceResponse(BaseResponse):
         """Get the hydrated version of this workspace."""
         from zenml.client import Client
 
-        return Client().get_workspace(self.id)
+        return Client().zen_store.get_workspace(self.id)
 
     # Body and metadata properties
     @hydrated_property

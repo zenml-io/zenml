@@ -358,6 +358,9 @@ ComponentResponseMetadata.update_forward_refs(
 FlavorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
+FlavorResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -375,6 +378,9 @@ PipelineBuildResponseMetadata.update_forward_refs(
     PipelineResponse=PipelineResponse,
     StackResponse=StackResponse,
     BuildItem=BuildItem,
+)
+PipelineDeploymentRequest.update_forward_refs(
+    CodeReferenceRequest=CodeReferenceRequest,
 )
 PipelineDeploymentResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -425,6 +431,9 @@ StackResponseBody.update_forward_refs(
 StackResponseMetadata.update_forward_refs(
     ComponentResponse=ComponentResponse,
     WorkspaceResponse=WorkspaceResponse,
+)
+StepRunRequest.update_forward_refs(
+    LogsRequest=LogsRequest,
 )
 StepRunResponseBody.update_forward_refs(
     UserResponse=UserResponse,

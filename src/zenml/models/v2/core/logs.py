@@ -85,11 +85,11 @@ class LogsResponse(BaseResponse):
     body: "LogsResponseBody"
     metadata: Optional["LogsResponseMetadata"]
 
-    def get_hydrated_version(self) -> "LogsResponseMetadata":
+    def get_hydrated_version(self) -> "LogsResponse":
         """Get the hydrated version of these logs."""
         from zenml.client import Client
 
-        return Client().get_run_metadata(self.id)
+        return Client().zen_store.get_logs(self.id)
 
     # Body and metadata properties
     @property

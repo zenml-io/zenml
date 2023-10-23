@@ -214,7 +214,7 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
         """Return the hydrated version of this pipeline build."""
         from zenml.client import Client
 
-        return Client().get_build(self.id)
+        return Client().zen_store.get_build(self.id)
 
     # Helper methods
     @property

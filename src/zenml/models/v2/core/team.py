@@ -85,7 +85,7 @@ class TeamResponse(BaseResponse):
         """Get the hydrated version of this team."""
         from zenml.client import Client
 
-        return Client().get_team(self.id)
+        return Client().zen_store.get_team(self.id)
 
     # Helper methods
     @property

@@ -382,7 +382,7 @@ class ServiceConnectorResponse(ShareableResponse):
         """Get the hydrated version of this service connector."""
         from zenml.client import Client
 
-        return Client().get_service_connector(self.id)
+        return Client().zen_store.get_service_connector(self.id)
 
     # Helper methods
     @property

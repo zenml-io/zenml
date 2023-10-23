@@ -225,7 +225,7 @@ class StepRunResponse(WorkspaceScopedResponse):
         """Get the hydrated version of this step run."""
         from zenml.client import Client
 
-        return Client().get_run_step(self.id)
+        return Client().zen_store.get_run_step(self.id)
 
     # Helper properties
     @property

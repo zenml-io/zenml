@@ -120,7 +120,7 @@ class StackResponse(ShareableResponse):
         """Get the hydrated version of this stack."""
         from zenml.client import Client
 
-        return Client().get_stack(self.id)
+        return Client().zen_store.get_stack(self.id)
 
     # Helper methods
     @property

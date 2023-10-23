@@ -109,7 +109,7 @@ class RunMetadataResponse(WorkspaceScopedResponse):
         """Get the hydrated version of this run metadata."""
         from zenml.client import Client
 
-        return Client().get_run_metadata(self.id)
+        return Client().zen_store.get_run_metadata(self.id)
 
     # Body and metadata properties
     @property

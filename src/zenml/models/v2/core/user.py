@@ -264,7 +264,7 @@ class UserResponse(BaseResponse):
         """Get the hydrated version of this user."""
         from zenml.client import Client
 
-        return Client().get_user(self.id)
+        return Client().zen_store.get_user(self.id)
 
     # Body and metadata properties
     @property

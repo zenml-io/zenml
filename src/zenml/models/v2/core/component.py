@@ -180,7 +180,7 @@ class ComponentResponse(ShareableResponse):
         """Get the hydrated version of this component."""
         from zenml.client import Client
 
-        return Client().get_stack_component(self.id)
+        return Client().zen_store.get_stack_component(self.id)
 
     # Body and metadata properties
     @property

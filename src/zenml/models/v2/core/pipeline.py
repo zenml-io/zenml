@@ -114,7 +114,7 @@ class PipelineResponse(WorkspaceScopedResponse):
         """Get the hydrated version of this pipeline"""
         from zenml.client import Client
 
-        return Client().get_pipeline(self.id)
+        return Client().zen_store.get_pipeline(self.id)
 
     # Helper methods
     def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:

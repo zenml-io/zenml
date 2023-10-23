@@ -83,7 +83,7 @@ class UserRoleAssignmentResponse(BaseResponse):
         """Get the hydrated version of this user role assignment."""
         from zenml.client import Client
 
-        return Client().get_user_role_assignment(self.id)
+        return Client().zen_store.get_user_role_assignment(self.id)
 
     # Body and metadata properties
     @hydrated_property

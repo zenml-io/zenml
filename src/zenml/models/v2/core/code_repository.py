@@ -105,7 +105,7 @@ class CodeRepositoryResponse(WorkspaceScopedResponse):
         """Get the hydrated version of this code repository."""
         from zenml.client import Client
 
-        return Client().get_code_repository(self.id)
+        return Client().zen_store.get_code_repository(self.id)
 
     # Body and metadata properties
     @property

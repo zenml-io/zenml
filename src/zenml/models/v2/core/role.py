@@ -76,7 +76,7 @@ class RoleResponse(BaseResponse):
         """Get the hydrated version of this role."""
         from zenml.client import Client
 
-        return Client().get_role(self.id)
+        return Client().zen_store.get_role(self.id)
 
     # Body and metadata properties
     @property

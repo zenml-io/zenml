@@ -136,7 +136,7 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
         """Get the hydrated version of this schedule"""
         from zenml.client import Client
 
-        return Client().get_schedule(self.id)
+        return Client().zen_store.get_schedule(self.id)
 
     # Helper methods
     @property

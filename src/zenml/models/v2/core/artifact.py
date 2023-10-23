@@ -134,7 +134,7 @@ class ArtifactResponse(WorkspaceScopedResponse):
         """Get the hydrated version of this artifact."""
         from zenml.client import Client
 
-        return Client().get_artifact(self.id)
+        return Client().zen_store.get_artifact(self.id)
 
     # Body and metadata properties
     @property

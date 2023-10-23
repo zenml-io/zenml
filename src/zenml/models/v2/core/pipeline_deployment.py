@@ -172,7 +172,7 @@ class PipelineDeploymentResponse(WorkspaceScopedResponse):
         """Return the hydrated version of this pipeline deployment."""
         from zenml.client import Client
 
-        return Client().get_deployment(self.id)
+        return Client().zen_store.get_deployment(self.id)
 
     # Body and metadata properties
     @hydrated_property

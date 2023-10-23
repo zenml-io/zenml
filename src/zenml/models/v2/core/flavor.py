@@ -203,7 +203,7 @@ class FlavorResponse(BaseResponse):
         """Get the hydrated version of the flavor"""
         from zenml.client import Client
 
-        return Client().get_flavor(self.id)
+        return Client().zen_store.get_flavor(self.id)
 
     # Helper methods
     @property

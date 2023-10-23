@@ -66,7 +66,7 @@ class ArtifactVisualizationResponse(BaseResponse):
         """Get the hydrated version of this artifact visualization."""
         from zenml.client import Client
 
-        return Client().get_artifact_visualization(self.id)
+        return Client().zen_store.get_artifact_visualization(self.id)
 
     # Body and metadata properties
     @property
