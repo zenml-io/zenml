@@ -14,8 +14,8 @@
 """Implementation of the HashiCorp Vault Secrets Manager integration."""
 from typing import Any, ClassVar, List, Set, cast
 
-import hvac  # type: ignore[import]
-from hvac.exceptions import InvalidPath  # type: ignore[import]
+import hvac  # type: ignore[import-untyped]
+from hvac.exceptions import InvalidPath  # type: ignore[import-untyped]
 
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.exceptions import SecretExistsError

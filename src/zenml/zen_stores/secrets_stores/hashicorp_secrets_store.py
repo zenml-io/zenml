@@ -28,8 +28,11 @@ from typing import (
 )
 from uuid import UUID
 
-import hvac  # type: ignore[import]
-from hvac.exceptions import InvalidPath, VaultError  # type: ignore[import]
+import hvac  # type: ignore[import-untyped]
+from hvac.exceptions import (  # type: ignore[import-untyped]
+    InvalidPath,
+    VaultError,
+)
 from pydantic import SecretStr
 
 from zenml.analytics.enums import AnalyticsEvent
