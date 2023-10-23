@@ -179,9 +179,6 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The converted `UserResponse`.
         """
-        body = UserResponseBody(
-            external_user_id=self.external_user_id,
-        )
         metadata = None
         if hydrate:
             metadata = UserResponseMetadata(
@@ -192,11 +189,12 @@ class UserSchema(NamedSchema, table=True):
                 email_opted_in=self.email_opted_in,
                 active=self.active,
                 hub_token=self.hub_token if include_private else None,
+                external_user_id=self.external_user_id,
             )
 
         return UserResponse(
             id=self.id,
             name=self.name,
-            body=body,
+            body=UserResponseBody(),
             metadata=metadata,
         )

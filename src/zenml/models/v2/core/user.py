@@ -204,11 +204,6 @@ class UserUpdate(UserRequest):
 class UserResponseBody(BaseResponseBody):
     """Response body for users."""
 
-    external_user_id: Optional[UUID] = Field(
-        default=None,
-        title="The external user ID associated with the account.",
-    )
-
 
 class UserResponseMetadata(BaseResponseMetadata):
     """Response metadata for users."""
@@ -237,6 +232,10 @@ class UserResponseMetadata(BaseResponseMetadata):
         default=None,
         title="JWT Token for the connected Hub account.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
 
@@ -267,11 +266,6 @@ class UserResponse(BaseResponse):
         return Client().zen_store.get_user(self.id)
 
     # Body and metadata properties
-    @property
-    def external_user_id(self):
-        """The `external_user_id` property."""
-        return self.body.external_user_id
-
     @hydrated_property
     def full_name(self):
         """The `full_name` property."""
@@ -302,6 +296,10 @@ class UserResponse(BaseResponse):
         """The `hub_token` property."""
         return self.metadata.hub_token
 
+    @hydrated_property
+    def external_user_id(self):
+        """The `external_user_id` property."""
+        return self.metadata.external_user_id
 
 # ------------------ Filter Model ------------------
 
