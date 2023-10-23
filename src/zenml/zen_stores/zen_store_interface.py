@@ -551,7 +551,7 @@ class ZenStoreInterface(ABC):
 
     # -------------------- Logs --------------------
     @abstractmethod
-    def get_logs(self, logs_id: UUID, hydrate: bool=True) -> LogsResponse:
+    def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Get logs by its unique ID.
 
         Args:
