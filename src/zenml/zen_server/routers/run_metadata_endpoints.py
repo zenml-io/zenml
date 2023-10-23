@@ -31,7 +31,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + RUN_METADATA,
     tags=["run_metadata"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 

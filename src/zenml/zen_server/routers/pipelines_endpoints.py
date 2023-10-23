@@ -37,7 +37,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -46,7 +46,6 @@ router = APIRouter(
     response_model=Page[PipelineResponseModel],
     responses={
         401: error_response,
-        403: error_response,
         404: error_response,
         422: error_response,
     },
@@ -77,7 +76,6 @@ def list_pipelines(
     response_model=PipelineResponseModel,
     responses={
         401: error_response,
-        403: error_response,
         404: error_response,
         422: error_response,
     },

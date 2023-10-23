@@ -30,7 +30,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_BUILDS,
     tags=["builds"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 

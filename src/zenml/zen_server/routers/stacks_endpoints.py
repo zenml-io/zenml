@@ -79,7 +79,6 @@ def list_stacks(
     response_model=StackResponseModel,
     responses={
         401: error_response,
-        403: error_response,
         404: error_response,
         422: error_response,
     },
