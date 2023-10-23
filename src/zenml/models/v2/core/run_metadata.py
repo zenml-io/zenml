@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 from uuid import UUID
 
 from pydantic import Field
@@ -47,13 +47,11 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
     )
-    value: MetadataType = Field(
-        title="The value of the metadata.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
+    values: Dict[str, "MetadataType"] = Field(
+        title="The metadata to be created.",
     )
-    type: MetadataTypeEnum = Field(
-        title="The type of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    types: Dict[str, "MetadataTypeEnum"] = Field(
+        title="The types of the metadata to be created.",
     )
 
 
