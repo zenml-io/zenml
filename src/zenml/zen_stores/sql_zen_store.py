@@ -1046,7 +1046,7 @@ class SqlZenStore(BaseZenStore):
                 for vis in artifact.visualizations:
                     vis_schema = ArtifactVisualizationSchema.from_model(
                         artifact_visualization_request=vis,
-                        artifact_id=artifact.id,
+                        artifact_id=artifact_schema.id,
                     )
                     session.add(vis_schema)
 
@@ -4964,6 +4964,7 @@ class SqlZenStore(BaseZenStore):
             )
 
     # ------------------------- User role assignments -------------------------
+
     def create_user_role_assignment(
         self, user_role_assignment: UserRoleAssignmentRequest
     ) -> UserRoleAssignmentResponse:

@@ -24,7 +24,11 @@ from zenml.models.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    WorkspaceScopedRequestModel,
+)
 from zenml.models.device_models import (
     OAuthDeviceFilterModel,
     OAuthDeviceInternalRequestModel,
@@ -500,6 +504,7 @@ __all__ = [
     "SecretUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
+    "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",
     "BaseResponse",
