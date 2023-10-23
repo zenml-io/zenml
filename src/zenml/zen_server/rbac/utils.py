@@ -156,13 +156,16 @@ def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
         return False
 
 
-def get_permission_denied_model(model: M, keep_name: bool = True) -> M:
+def get_permission_denied_model(
+    model: M, keep_id: bool = True, keep_name: bool = True
+) -> M:
     """Get a model to return in case of missing read permissions.
 
     This function replaces all attributes except name and ID in the given model.
 
     Args:
         model: The original model.
+        keep_id: If `True`, the model ID will not be replaced.
         keep_name: If `True`, the model name will not be replaced.
 
     Returns:
@@ -173,14 +176,16 @@ def get_permission_denied_model(model: M, keep_name: bool = True) -> M:
     for field_name, field in model.__fields__.items():
         value = getattr(model, field_name)
 
-        if field_name == "id" and isinstance(value, UUID):
+        if keep_id and field_name == "id" and isinstance(value, UUID):
             pass
         elif keep_name and field_name == "name" and isinstance(value, str):
             pass
         elif field.allow_none:
             value = None
         elif isinstance(value, BaseResponseModel):
-            value = get_permission_denied_model(value, keep_name=False)
+            value = get_permission_denied_model(
+                value, keep_id=False, keep_name=False
+            )
         elif isinstance(value, UUID):
             value = UUID(int=0)
         elif isinstance(value, datetime):
@@ -196,7 +201,6 @@ def get_permission_denied_model(model: M, keep_name: bool = True) -> M:
 
         values[field_name] = value
 
-    # TODO: With the new hydration models, make sure we clear metadata here
     values["missing_permissions"] = True
 
     return type(model).parse_obj(values)
