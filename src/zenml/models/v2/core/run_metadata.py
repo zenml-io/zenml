@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field

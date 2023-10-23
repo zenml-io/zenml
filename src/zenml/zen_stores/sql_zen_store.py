@@ -1955,9 +1955,6 @@ class SqlZenStore(BaseZenStore):
                 )
             return logs.to_model(hydrate=hydrate)
 
-
-
-
     # ----------------------------- Pipelines -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATE_PIPELINE)
@@ -4171,7 +4168,6 @@ class SqlZenStore(BaseZenStore):
             else:
                 error_msg += ", which is currently not owned by any user."
             raise StackExistsError(error_msg)
-
 
     # ----------------------------- Step runs -----------------------------
 

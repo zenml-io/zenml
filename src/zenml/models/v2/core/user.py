@@ -301,6 +301,7 @@ class UserResponse(BaseResponse):
         """The `external_user_id` property."""
         return self.metadata.external_user_id
 
+
 # ------------------ Filter Model ------------------
 
 
