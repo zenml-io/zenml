@@ -107,7 +107,7 @@ class ZenMLCloudRBAC(RBACInterface):
     def check_permissions(
         self, user: "UserResponseModel", resources: Set[Resource], action: str
     ) -> Dict[Resource, bool]:
-        """Checks if a user has permission to perform an action on a resource.
+        """Checks if a user has permissions to perform an action on resources.
 
         Args:
             user: User which wants to access a resource.
