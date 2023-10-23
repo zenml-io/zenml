@@ -365,7 +365,7 @@ PipelineResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
 PipelineBuildBase.update_forward_refs(
-BuildItem=BuildItem,
+    BuildItem=BuildItem,
 )
 PipelineBuildResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -374,7 +374,7 @@ PipelineBuildResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     PipelineResponse=PipelineResponse,
     StackResponse=StackResponse,
-BuildItem=BuildItem,
+    BuildItem=BuildItem,
 )
 PipelineDeploymentResponseBody.update_forward_refs(
     UserResponse=UserResponse,
