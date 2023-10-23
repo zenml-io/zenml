@@ -512,6 +512,7 @@ class RestZenStore(BaseZenStore):
             resource_id=artifact_id,
             route=ARTIFACTS,
             response_model=ArtifactResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_artifacts(
@@ -534,6 +535,7 @@ class RestZenStore(BaseZenStore):
             route=ARTIFACTS,
             response_model=ArtifactResponse,
             filter_model=artifact_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_artifact(self, artifact_id: UUID) -> None:
@@ -567,6 +569,7 @@ class RestZenStore(BaseZenStore):
             resource_id=artifact_visualization_id,
             route=ARTIFACT_VISUALIZATIONS,
             response_model=ArtifactVisualizationResponse,
+            params={"hydrate": hydrate},
         )
 
     # ------------------------ Code References ------------------------
@@ -591,6 +594,7 @@ class RestZenStore(BaseZenStore):
             resource_id=code_reference_id,
             route=CODE_REFERENCES,
             response_model=CodeReferenceResponse,
+            params={"hydrate": hydrate},
         )
 
     # --------------------------- Code Repositories ---------------------------
@@ -629,6 +633,7 @@ class RestZenStore(BaseZenStore):
             resource_id=code_repository_id,
             route=CODE_REPOSITORIES,
             response_model=CodeRepositoryResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_code_repositories(
@@ -651,6 +656,7 @@ class RestZenStore(BaseZenStore):
             route=CODE_REPOSITORIES,
             response_model=CodeRepositoryResponse,
             filter_model=filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_code_repository(
@@ -719,6 +725,7 @@ class RestZenStore(BaseZenStore):
             resource_id=component_id,
             route=STACK_COMPONENTS,
             response_model=ComponentResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_stack_components(
@@ -741,6 +748,7 @@ class RestZenStore(BaseZenStore):
             route=STACK_COMPONENTS,
             response_model=ComponentResponse,
             filter_model=component_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_stack_component(
@@ -809,6 +817,7 @@ class RestZenStore(BaseZenStore):
             resource_id=flavor_id,
             route=FLAVORS,
             response_model=FlavorResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_flavors(
@@ -831,6 +840,7 @@ class RestZenStore(BaseZenStore):
             route=FLAVORS,
             response_model=FlavorResponse,
             filter_model=flavor_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_flavor(
@@ -865,7 +875,7 @@ class RestZenStore(BaseZenStore):
 
     # ------------------------ Logs ------------------------
 
-    def get_logs(self, logs_id: UUID, hydrate=True) -> LogsResponse:
+    def get_logs(self, logs_id: UUID, hydrate: bool =True) -> LogsResponse:
         """Gets logs with the given ID.
 
         Args:
@@ -883,6 +893,7 @@ class RestZenStore(BaseZenStore):
             resource_id=logs_id,
             route=LOGS,
             response_model=LogsResponse,
+            params={"hydrate": hydrate},
         )
 
     # ----------------------------- Pipelines -----------------------------
@@ -919,6 +930,7 @@ class RestZenStore(BaseZenStore):
             resource_id=pipeline_id,
             route=PIPELINES,
             response_model=PipelineResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_pipelines(
@@ -941,6 +953,7 @@ class RestZenStore(BaseZenStore):
             route=PIPELINES,
             response_model=PipelineResponse,
             filter_model=pipeline_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_pipeline(
@@ -1010,6 +1023,7 @@ class RestZenStore(BaseZenStore):
             resource_id=build_id,
             route=PIPELINE_BUILDS,
             response_model=PipelineBuildResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_builds(
@@ -1032,6 +1046,7 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
             response_model=PipelineBuildResponse,
             filter_model=build_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_build(self, build_id: UUID) -> None:
@@ -1086,6 +1101,7 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
             response_model=PipelineDeploymentResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_deployments(
@@ -1108,6 +1124,7 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_DEPLOYMENTS,
             response_model=PipelineDeploymentResponse,
             filter_model=deployment_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_deployment(self, deployment_id: UUID) -> None:
@@ -1157,6 +1174,7 @@ class RestZenStore(BaseZenStore):
             resource_id=run_name_or_id,
             route=RUNS,
             response_model=PipelineRunResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_runs(
@@ -1179,6 +1197,7 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             response_model=PipelineRunResponse,
             filter_model=runs_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_run(
@@ -1267,6 +1286,7 @@ class RestZenStore(BaseZenStore):
             resource_id=role_name_or_id,
             route=ROLES,
             response_model=RoleResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_roles(
@@ -1289,6 +1309,7 @@ class RestZenStore(BaseZenStore):
             route=ROLES,
             response_model=RoleResponse,
             filter_model=role_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_role(
@@ -1362,6 +1383,7 @@ class RestZenStore(BaseZenStore):
             resource_id=run_metadata_id,
             route=RUN_METADATA,
             response_model=RunMetadataResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_run_metadata(
@@ -1384,6 +1406,7 @@ class RestZenStore(BaseZenStore):
             route=RUN_METADATA,
             response_model=RunMetadataResponse,
             filter_model=run_metadata_filter_model,
+            params={"hydrate": hydrate},
         )
 
     # ----------------------------- Schedules -----------------------------
@@ -1420,6 +1443,7 @@ class RestZenStore(BaseZenStore):
             resource_id=schedule_id,
             route=SCHEDULES,
             response_model=ScheduleResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_schedules(
@@ -1442,6 +1466,7 @@ class RestZenStore(BaseZenStore):
             route=SCHEDULES,
             response_model=ScheduleResponse,
             filter_model=schedule_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_schedule(
@@ -1514,7 +1539,7 @@ class RestZenStore(BaseZenStore):
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
-            params={"expand_secrets": False},
+            params={"expand_secrets": False, "hydrate": hydrate},
         )
         self._populate_connector_type(connector_model)
         return connector_model
@@ -1539,7 +1564,7 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
             filter_model=filter_model,
-            params={"expand_secrets": False},
+            params={"expand_secrets": False,"hydrate": hydrate},
         )
         self._populate_connector_type(*connector_models.items)
         return connector_models
@@ -1940,6 +1965,7 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             route=STACKS,
             response_model=StackResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_stacks(
@@ -1960,6 +1986,7 @@ class RestZenStore(BaseZenStore):
             route=STACKS,
             response_model=StackResponse,
             filter_model=stack_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_stack(
@@ -2026,6 +2053,7 @@ class RestZenStore(BaseZenStore):
             resource_id=step_run_id,
             route=STEPS,
             response_model=StepRunResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_run_steps(
@@ -2048,6 +2076,7 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
             response_model=StepRunResponse,
             filter_model=step_run_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_run_step(
@@ -2105,6 +2134,7 @@ class RestZenStore(BaseZenStore):
             resource_id=team_name_or_id,
             route=TEAMS,
             response_model=TeamResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_teams(
@@ -2127,6 +2157,7 @@ class RestZenStore(BaseZenStore):
             route=TEAMS,
             response_model=TeamResponse,
             filter_model=team_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_team(
@@ -2195,6 +2226,7 @@ class RestZenStore(BaseZenStore):
             resource_id=team_role_assignment_id,
             route=TEAM_ROLE_ASSIGNMENTS,
             response_model=TeamRoleAssignmentResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_team_role_assignments(
@@ -2217,6 +2249,7 @@ class RestZenStore(BaseZenStore):
             route=TEAM_ROLE_ASSIGNMENTS,
             response_model=TeamRoleAssignmentResponse,
             filter_model=team_role_assignment_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_team_role_assignment(
@@ -2276,9 +2309,11 @@ class RestZenStore(BaseZenStore):
                 resource_id=user_name_or_id,
                 route=USERS,
                 response_model=UserResponse,
+            params={"hydrate": hydrate},
             )
         else:
-            body = self.get(CURRENT_USER)
+            body = self.get(CURRENT_USER,
+            params={"hydrate": hydrate})
             return UserResponse.parse_obj(body)
 
     def list_users(
@@ -2301,6 +2336,7 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             response_model=UserResponse,
             filter_model=user_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_user(
@@ -2368,6 +2404,7 @@ class RestZenStore(BaseZenStore):
             resource_id=user_role_assignment_id,
             route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_user_role_assignments(
@@ -2390,6 +2427,7 @@ class RestZenStore(BaseZenStore):
             route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponse,
             filter_model=user_role_assignment_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_user_role_assignment(
@@ -2441,6 +2479,7 @@ class RestZenStore(BaseZenStore):
             resource_id=workspace_name_or_id,
             route=WORKSPACES,
             response_model=WorkspaceResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_workspaces(
@@ -2463,6 +2502,7 @@ class RestZenStore(BaseZenStore):
             route=WORKSPACES,
             response_model=WorkspaceResponse,
             filter_model=workspace_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_workspace(
