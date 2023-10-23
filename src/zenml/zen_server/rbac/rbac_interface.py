@@ -14,7 +14,7 @@
 """RBAC interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
 from zenml.zen_server.rbac.models import Resource
 
@@ -26,18 +26,19 @@ class RBACInterface(ABC):
     """RBAC interface definition."""
 
     @abstractmethod
-    def has_permission(
-        self, user: "UserResponseModel", resource: Resource, action: str
-    ) -> bool:
+    def check_permissions(
+        self, user: "UserResponseModel", resources: Set[Resource], action: str
+    ) -> Dict[Resource, bool]:
         """Checks if a user has permission to perform an action on a resource.
 
         Args:
             user: User which wants to access a resource.
-            resource: The resource the user wants to access.
-            action: The action that the user wants to perform on the resource.
+            resources: The resources the user wants to access.
+            action: The action that the user wants to perform on the resources.
 
         Returns:
-            Whether the user has permission to perform an action on a resource.
+            A dictionary mapping resources to a boolean which indicates whether
+            the user has permissions to perform the action on that resource.
         """
 
     @abstractmethod

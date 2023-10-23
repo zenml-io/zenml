@@ -21,6 +21,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
@@ -47,13 +48,43 @@ def verify_read_permissions_and_dehydrate(
     return dehydrate_response_model(model=model)
 
 
+def dehydrate_page(page: Page[M]) -> Page[M]:
+    """Dehydrate all items of a page.
+
+    Args:
+        page: The page to dehydrate.
+
+    Returns:
+        The page with (potentially) dehydrated items.
+    """
+    auth_context = get_auth_context()
+    assert auth_context
+
+    resource_list = [get_subresources_for_model(item) for item in page.items]
+    resources = set.union(*resource_list) if resource_list else set()
+    permissions = rbac().check_permissions(
+        user=auth_context.user, resources=resources, action=Action.READ
+    )
+
+    new_items = [
+        dehydrate_response_model(item, permissions=permissions)
+        for item in page.items
+    ]
+
+    return page.copy(update={"items": new_items})
+
+
 def dehydrate_response_model(
-    model: M,
+    model: M, permissions: Optional[Dict[Resource, bool]] = None
 ) -> M:
     """Dehydrate a model if necessary.
 
     Args:
         model: The model to dehydrate.
+        permissions: Prefetched permissions that will be used to check whether
+            sub-models will be included in the model or not. If a sub-model
+            refers to a resource which is not included in this dictionary, the
+            permissions will be checked with the RBAC component.
 
     Returns:
         The (potentially) dehydrated model.
@@ -62,30 +93,48 @@ def dehydrate_response_model(
 
     for field_name in model.__fields__.keys():
         value = getattr(model, field_name)
-        dehydrated_fields[field_name] = _maybe_dehydrate_value(value)
+        dehydrated_fields[field_name] = _dehydrate_value(
+            value, permissions=permissions
+        )
 
     return type(model).parse_obj(dehydrated_fields)
 
 
-def _maybe_dehydrate_value(value: Any) -> Any:
+def _dehydrate_value(
+    value: Any, permissions: Optional[Dict[Resource, bool]] = None
+) -> Any:
     """Helper function to recursive dehydrate any object.
 
     Args:
         value: The value to dehydrate.
+        permissions: Prefetched permissions that will be used to check whether
+            sub-models will be included in the model or not. If a sub-model
+            refers to a resource which is not included in this dictionary, the
+            permissions will be checked with the RBAC component.
 
     Returns:
         The recursively dehydrated value.
     """
     if isinstance(value, BaseResponseModel):
-        if has_permissions_for_model(model=value, action=Action.READ):
-            return dehydrate_response_model(value)
+        resource = get_resource_for_model(value)
+        has_permissions = resource and (permissions or {}).get(resource, False)
+
+        if has_permissions or has_permissions_for_model(
+            model=value, action=Action.READ
+        ):
+            return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
     elif isinstance(value, Dict):
-        return {k: _maybe_dehydrate_value(v) for k, v in value.items()}
+        return {
+            k: _dehydrate_value(v, permissions=permissions)
+            for k, v in value.items()
+        }
     elif isinstance(value, (List, Set, tuple)):
         type_ = type(value)
-        return type_(_maybe_dehydrate_value(v) for v in value)
+        return type_(
+            _dehydrate_value(v, permissions=permissions) for v in value
+        )
     else:
         return value
 
@@ -166,15 +215,8 @@ def verify_permissions_for_model(
     if not server_config().rbac_enabled:
         return
 
-    auth_context = get_auth_context()
-    assert auth_context
-
-    if (
-        isinstance(model, UserScopedResponseModel)
-        and model.user
-        and model.user.id == auth_context.user.id
-    ):
-        # User is the owner of the model
+    if is_owned_by_authenticated_user(model):
+        # The model owner always has permissions
         return
 
     resource_type = get_resource_type_for_model(model)
@@ -203,6 +245,7 @@ def verify_permissions(
 
     Raises:
         HTTPException: If the user is not allowed to perform the action.
+        RuntimeError: If the permission verification failed unexpectedly.
     """
     if not server_config().rbac_enabled:
         return
@@ -211,10 +254,19 @@ def verify_permissions(
     assert auth_context
 
     resource = Resource(type=resource_type, id=resource_id)
+    permissions = rbac().check_permissions(
+        user=auth_context.user, resources={resource}, action=action
+    )
 
-    if not rbac().has_permission(
-        user=auth_context.user, resource=resource, action=action
-    ):
+    if resource not in permissions:
+        # This should never happen if the RBAC implementation is working
+        # correctly
+        raise RuntimeError(
+            f"Failed to verify permissions to {action.upper()} resource "
+            f"'{resource}'."
+        )
+
+    if not permissions[resource]:
         raise HTTPException(
             status_code=403,
             detail=f"Insufficient permissions to {action.upper()} resource "
@@ -236,11 +288,11 @@ def get_allowed_resource_ids(
         A list of resource IDs or `None` if the user has full access to the
         all instances of the resource.
     """
-    auth_context = get_auth_context()
-    assert auth_context
-
     if not server_config().rbac_enabled:
         return None
+
+    auth_context = get_auth_context()
+    assert auth_context
 
     (
         has_full_resource_access,
@@ -255,6 +307,24 @@ def get_allowed_resource_ids(
         return None
 
     return [UUID(id) for id in allowed_ids]
+
+
+def get_resource_for_model(model: "BaseResponseModel") -> Optional[Resource]:
+    """Get the resource associated with a model object.
+
+    Args:
+        model: The model for which to get the resource.
+
+    Returns:
+        The resource associated with the model, or `None` if the model
+        is not associated with any resource type.
+    """
+    resource_type = get_resource_type_for_model(model)
+    if not resource_type:
+        # This model is not tied to any RBAC resource type
+        return None
+
+    return Resource(type=resource_type, id=model.id)
 
 
 def get_resource_type_for_model(
@@ -294,3 +364,74 @@ def get_resource_type_for_model(
     }
 
     return mapping.get(type(model))
+
+
+def is_owned_by_authenticated_user(model: "BaseResponseModel") -> bool:
+    """Returns whether the currently authenticated user owns the model.
+
+    Args:
+        model: The model for which to check the ownership.
+
+    Returns:
+        Whether the currently authenticated user owns the model.
+    """
+    auth_context = get_auth_context()
+    assert auth_context
+
+    if (
+        isinstance(model, UserScopedResponseModel)
+        and model.user
+        and model.user.id == auth_context.user.id
+    ):
+        # User is the owner of the model
+        return True
+
+    return False
+
+
+def get_subresources_for_model(
+    model: "BaseResponseModel",
+) -> Set[Resource]:
+    """Get all subresources of a model which need permission verification.
+
+    Args:
+        model: The model for which to get all the resources.
+
+    Returns:
+        All resources of a model which need permission verification.
+    """
+    resources = set()
+
+    for field_name in model.__fields__.keys():
+        value = getattr(model, field_name)
+        resources.update(_get_subresources_for_value(value))
+
+    return resources
+
+
+def _get_subresources_for_value(value: Any) -> Set[Resource]:
+    """Helper function to recursive retrieve resources of any object.
+
+    Args:
+        value: The value for which to get all the resources.
+
+    Returns:
+        All resources of the value which need permission verification.
+    """
+    if isinstance(value, BaseResponseModel):
+        resources = set()
+        if not is_owned_by_authenticated_user(value):
+            if resource := get_resource_for_model(value):
+                resources.add(resource)
+
+        return resources.union(get_subresources_for_model(value))
+    elif isinstance(value, Dict):
+        resources_list = [
+            _get_subresources_for_value(v) for v in value.values()
+        ]
+        return set.union(*resources_list) if resources_list else set()
+    elif isinstance(value, (List, Set, tuple)):
+        resources_list = [_get_subresources_for_value(v) for v in value]
+        return set.union(*resources_list) if resources_list else set()
+    else:
+        return set()

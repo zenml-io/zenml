@@ -61,3 +61,8 @@ class Resource(BaseModel):
             representation += f"/{self.id}"
 
         return representation
+
+    class Config:
+        """Pydantic configuration class."""
+
+        frozen = True

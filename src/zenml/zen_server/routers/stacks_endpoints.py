@@ -27,6 +27,7 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permissions_for_model,
@@ -68,10 +69,7 @@ def list_stacks(
     allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.STACK)
     stack_filter_model.set_allowed_ids(allowed_ids)
     page = zen_store().list_stacks(stack_filter_model=stack_filter_model)
-
-    # TODO: make this better, this is sending a ton of requests here
-    page.items = [dehydrate_response_model(model) for model in page.items]
-    return page
+    return dehydrate_page(page)
 
 
 @router.get(
@@ -123,10 +121,11 @@ def update_stack(
     stack = zen_store().get_stack(stack_id)
     verify_permissions_for_model(stack, action=Action.UPDATE)
 
-    return zen_store().update_stack(
+    updated_stack = zen_store().update_stack(
         stack_id=stack_id,
         stack_update=stack_update,
     )
+    return dehydrate_response_model(updated_stack)
 
 
 @router.delete(
