@@ -25,7 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property
+from zenml.models.v2.base.utils import hydrated_property, update_model
 
 # ------------------ Request Model ------------------
 

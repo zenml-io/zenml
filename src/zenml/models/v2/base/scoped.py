@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -34,12 +35,15 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import AnySchema, BaseFilter
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ---------------------- Request Models ----------------------

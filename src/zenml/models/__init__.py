@@ -285,48 +285,169 @@ from zenml.models.v2.loaded_visualization import LoadedVisualization
 # ----------------------------- Forward References -----------------------------
 
 SecretResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelRequestModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionRequestModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionArtifactRequestModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionArtifactResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionPipelineRunRequestModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionPipelineRunResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
-    WorkspaceResponseModel=WorkspaceResponse,
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
 )
 OAuthDeviceResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
+    UserResponse=UserResponse,
 )
 OAuthDeviceInternalResponseModel.update_forward_refs(
-    UserResponseModel=UserResponse,
+    UserResponse=UserResponse,
 )
 
+# V2
+ArtifactRequest.update_forward_refs(
+    ArtifactVisualizationRequest=ArtifactVisualizationRequest,
+)
+ArtifactResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ArtifactResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    ArtifactVisualizationResponse=ArtifactVisualizationResponse,
+    RunMetadataResponse=RunMetadataResponse,
+)
+CodeReferenceResponseBody.update_forward_refs(
+    CodeRepositoryResponse=CodeRepositoryResponse,
+)
+CodeRepositoryResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+CodeRepositoryResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ComponentResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ComponentResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    ServiceConnectorResponse=ServiceConnectorResponse,
+)
+FlavorResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+PipelineResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+PipelineResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+PipelineBuildBase.update_forward_refs(
+BuildItem=BuildItem,
+)
+PipelineBuildResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+PipelineBuildResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    PipelineResponse=PipelineResponse,
+    StackResponse=StackResponse,
+BuildItem=BuildItem,
+)
+PipelineDeploymentResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+PipelineDeploymentResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    PipelineResponse=PipelineResponse,
+    StackResponse=StackResponse,
+    PipelineBuildResponse=PipelineBuildResponse,
+    ScheduleResponse=ScheduleResponse,
+    CodeReferenceResponse=CodeReferenceResponse,
+)
+PipelineRunResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    PipelineResponse=PipelineResponse,
+    StackResponse=StackResponse,
+    PipelineBuildResponse=PipelineBuildResponse,
+    ScheduleResponse=ScheduleResponse,
+)
+PipelineRunResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    RunMetadataResponse=RunMetadataResponse,
+    StepRunResponse=StepRunResponse,
+)
+RunMetadataResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+RunMetadataResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ScheduleResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ScheduleResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ServiceConnectorResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ServiceConnectorResponseMetadata.update_forward_refs(
+    ServiceConnectorTypeModel=ServiceConnectorTypeModel,
+    WorkspaceResponse=WorkspaceResponse,
+    ComponentResponse=ComponentResponse,
+)
+StackResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+StackResponseMetadata.update_forward_refs(
+    ComponentResponse=ComponentResponse,
+    WorkspaceResponse=WorkspaceResponse,
+)
+StepRunResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    ArtifactResponse=ArtifactResponse,
+)
+StepRunResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    LogsResponse=LogsResponse,
+    RunMetadataResponse=RunMetadataResponse,
+)
+TeamResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+TeamRoleAssignmentResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    TeamResponse=TeamResponse,
+    RoleResponse=RoleResponse,
+)
+UserRoleAssignmentResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+    RoleResponse=RoleResponse,
+)
 __all__ = [
     # V1
     "BaseRequestModel",

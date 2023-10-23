@@ -2667,7 +2667,9 @@ class Client(metaclass=ClientMetaClass):
 
     # ----------------------------- Builds -----------------------------
 
-    def get_build(self, id_or_prefix: str) -> PipelineBuildResponse:
+    def get_build(
+        self, id_or_prefix: Union[str, UUID]
+    ) -> PipelineBuildResponse:
         """Get a build by id or prefix.
 
         Args:
