@@ -164,9 +164,6 @@ def delete_service_connector(
 
     Args:
         connector_id: ID of the service connector.
-
-    Raises:
-        KeyError: If the service connector does not exist or is not accessible.
     """
     zen_store().delete_service_connector(connector_id)
 

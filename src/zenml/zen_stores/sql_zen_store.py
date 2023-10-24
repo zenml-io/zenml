@@ -1571,7 +1571,6 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type in the same "
                 f" workspace '{existing_domain_component.workspace.name}'."
             )
-        return None
 
     def _fail_if_component_name_reserved(self, component_name: str) -> None:
         """Raise an exception if the component name is reserved.
@@ -3445,7 +3444,6 @@ class SqlZenStore(BaseZenStore):
                 "Found an existing service connector with the same name in the "
                 f"same workspace '{existing_domain_connector.workspace.name}'."
             )
-        return None
 
     def _create_connector_secret(
         self,
