@@ -8,6 +8,8 @@ description: Installing ZenML and getting started.
 
 ```shell
 pip install zenml
+# for fresh installs to fix a dependency issue
+pip install 'sqlmodel==0.0.8'
 ```
 
 {% hint style="warning" %}
@@ -24,6 +26,8 @@ For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
 pip install "zenml[server]"
+# for fresh installs to fix a dependency issue
+pip install 'sqlmodel==0.0.8'
 ```
 
 {% hint style="info" %}
