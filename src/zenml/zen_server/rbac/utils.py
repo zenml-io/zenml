@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Type, TypeVar
+from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -43,7 +43,7 @@ def verify_read_permissions_and_dehydrate(
     if not server_config().rbac_enabled:
         return model
 
-    verify_permissions_for_model(model=model, action=Action.READ)
+    verify_permission_for_model(model=model, action=Action.READ)
 
     return dehydrate_response_model(model=model)
 
@@ -57,6 +57,9 @@ def dehydrate_page(page: Page[M]) -> Page[M]:
     Returns:
         The page with (potentially) dehydrated items.
     """
+    if not server_config().rbac_enabled:
+        return page
+
     auth_context = get_auth_context()
     assert auth_context
 
@@ -150,7 +153,7 @@ def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
         If the active user has permissions to perform the action on the model.
     """
     try:
-        verify_permissions_for_model(model=model, action=action)
+        verify_permission_for_model(model=model, action=action)
         return True
     except HTTPException:
         return False
@@ -206,46 +209,53 @@ def get_permission_denied_model(
     return type(model).parse_obj(values)
 
 
-def verify_permissions_for_model(
-    model: "BaseResponseModel",
+def batch_verify_permissions_for_models(
+    models: Sequence["BaseResponseModel"],
     action: str,
 ) -> None:
-    """Verifies if a user has permissions to perform an action on a model.
+    """Batch permission verification for models.
 
     Args:
-        model: The model the user wants to perform the action on.
+        models: The models the user wants to perform the action on.
         action: The action the user wants to perform.
     """
     if not server_config().rbac_enabled:
         return
 
-    if is_owned_by_authenticated_user(model):
-        # The model owner always has permissions
-        return
+    resources = set()
+    for model in models:
+        if is_owned_by_authenticated_user(model):
+            # The model owner always has permissions
+            continue
 
-    resource_type = get_resource_type_for_model(model)
-    if not resource_type:
-        # This model is not tied to any RBAC resource type and therefore doesn't
-        # require any special permissions
-        return
+        if resource := get_resource_for_model(model):
+            resources.add(resource)
 
-    verify_permissions(
-        resource_type=resource_type, resource_id=model.id, action=action
-    )
+    batch_verify_permissions(resources=resources, action=action)
 
 
-def verify_permissions(
-    resource_type: str,
+def verify_permission_for_model(
+    model: "BaseResponseModel",
     action: str,
-    resource_id: Optional[UUID] = None,
 ) -> None:
-    """Verifies if a user has permissions to perform an action on a resource.
+    """Verifies if a user has permission to perform an action on a model.
 
     Args:
-        resource_type: The type of resource that the user wants to perform the
-            action on.
+        model: The model the user wants to perform the action on.
         action: The action the user wants to perform.
-        resource_id: ID of the resource the user wants to perform the action on.
+    """
+    batch_verify_permissions_for_models(models=[model], action=action)
+
+
+def batch_verify_permissions(
+    resources: Set[Resource],
+    action: str,
+) -> None:
+    """Batch permission verification.
+
+    Args:
+        resources: The resources the user wants to perform the action on.
+        action: The action the user wants to perform.
 
     Raises:
         HTTPException: If the user is not allowed to perform the action.
@@ -257,25 +267,42 @@ def verify_permissions(
     auth_context = get_auth_context()
     assert auth_context
 
-    resource = Resource(type=resource_type, id=resource_id)
     permissions = rbac().check_permissions(
-        user=auth_context.user, resources={resource}, action=action
+        user=auth_context.user, resources=resources, action=action
     )
 
-    if resource not in permissions:
-        # This should never happen if the RBAC implementation is working
-        # correctly
-        raise RuntimeError(
-            f"Failed to verify permissions to {action.upper()} resource "
-            f"'{resource}'."
-        )
+    for resource in resources:
+        if resource not in permissions:
+            # This should never happen if the RBAC implementation is working
+            # correctly
+            raise RuntimeError(
+                f"Failed to verify permissions to {action.upper()} resource "
+                f"'{resource}'."
+            )
 
-    if not permissions[resource]:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Insufficient permissions to {action.upper()} resource "
-            f"'{resource}'.",
-        )
+        if not permissions[resource]:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Insufficient permissions to {action.upper()} resource "
+                f"'{resource}'.",
+            )
+
+
+def verify_permission(
+    resource_type: str,
+    action: str,
+    resource_id: Optional[UUID] = None,
+) -> None:
+    """Verifies if a user has permission to perform an action on a resource.
+
+    Args:
+        resource_type: The type of resource that the user wants to perform the
+            action on.
+        action: The action the user wants to perform.
+        resource_id: ID of the resource the user wants to perform the action on.
+    """
+    resource = Resource(type=resource_type, id=resource_id)
+    batch_verify_permissions(resources={resource}, action=action)
 
 
 def get_allowed_resource_ids(

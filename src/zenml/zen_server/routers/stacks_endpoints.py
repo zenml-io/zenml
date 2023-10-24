@@ -27,10 +27,11 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
     dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
-    verify_permissions_for_model,
+    verify_permission_for_model,
     verify_read_permissions_and_dehydrate,
 )
 from zenml.zen_server.utils import (
@@ -119,7 +120,18 @@ def update_stack(
         The updated stack.
     """
     stack = zen_store().get_stack(stack_id)
-    verify_permissions_for_model(stack, action=Action.UPDATE)
+    verify_permission_for_model(stack, action=Action.UPDATE)
+
+    if stack_update.components:
+        updated_components = [
+            zen_store().get_stack_component(id)
+            for ids in stack_update.components.values()
+            for id in ids
+        ]
+
+        batch_verify_permissions_for_models(
+            updated_components, action=Action.READ
+        )
 
     updated_stack = zen_store().update_stack(
         stack_id=stack_id,
@@ -143,6 +155,6 @@ def delete_stack(
         stack_id: Name of the stack.
     """
     stack = zen_store().get_stack(stack_id)
-    verify_permissions_for_model(stack, action=Action.DELETE)
+    verify_permission_for_model(stack, action=Action.DELETE)
 
     zen_store().delete_stack(stack_id)

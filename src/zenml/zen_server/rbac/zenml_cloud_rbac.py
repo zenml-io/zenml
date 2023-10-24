@@ -30,6 +30,8 @@ ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 
+SERVER_SCOPE_IDENTIFIER = "server"
+
 SERVER_ID = server_config().external_server_id
 
 
@@ -42,7 +44,7 @@ def _convert_to_cloud_resource(resource: Resource) -> str:
     Returns:
         The converted resource.
     """
-    resource_string = f"{SERVER_ID}@server:{resource.type}"
+    resource_string = f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}:{resource.type}"
 
     if resource.id:
         resource_string += f"/{resource.id}"
