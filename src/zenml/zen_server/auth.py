@@ -15,7 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime
-from typing import Callable, List, Optional, Set, Union
+from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -37,7 +37,7 @@ from zenml.constants import (
     LOGIN,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, OAuthDeviceStatus, PermissionType
+from zenml.enums import AuthScheme, OAuthDeviceStatus
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -91,24 +91,6 @@ class AuthContext(BaseModel):
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponseModel] = None
-
-    @property
-    def permissions(self) -> Set[PermissionType]:
-        """Returns the permissions of the user.
-
-        Returns:
-            The permissions of the user.
-        """
-        if self.user.roles:
-            # Merge permissions from all roles
-            permissions: List[PermissionType] = []
-            for role in self.user.roles:
-                permissions.extend(role.permissions)
-
-            # Remove duplicates
-            return set(permissions)
-
-        return set()
 
 
 def authenticate_credentials(

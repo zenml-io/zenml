@@ -971,7 +971,6 @@ def list_workspace_service_connectors(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     connector_filter_model.set_scope_workspace(workspace.id)
-    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_service_connectors(
         filter_model=connector_filter_model
     )

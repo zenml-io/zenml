@@ -140,7 +140,6 @@ from zenml.models import (
     ScheduleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
-    SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
     ServiceConnectorFilterModel,
@@ -3453,7 +3452,6 @@ class SqlZenStore(BaseZenStore):
         connector_name: str,
         user: UUID,
         workspace: UUID,
-        is_shared: bool,
         secrets: Optional[Dict[str, Optional[SecretStr]]],
     ) -> Optional[UUID]:
         """Creates a new secret to store the service connector secret credentials.
@@ -3464,7 +3462,6 @@ class SqlZenStore(BaseZenStore):
             user: The ID of the user who owns the service connector.
             workspace: The ID of the workspace in which the service connector
                 is registered.
-            is_shared: Whether the service connector is shared.
             secrets: The secret credentials to store.
 
         Returns:
@@ -3504,9 +3501,7 @@ class SqlZenStore(BaseZenStore):
                             name=secret_name,
                             user=user,
                             workspace=workspace,
-                            scope=SecretScope.WORKSPACE
-                            if is_shared
-                            else SecretScope.USER,
+                            scope=SecretScope.WORKSPACE,
                             values=secrets,
                         )
                     ).id
@@ -3580,7 +3575,6 @@ class SqlZenStore(BaseZenStore):
                 connector_name=service_connector.name,
                 user=service_connector.user,
                 workspace=service_connector.workspace,
-                is_shared=service_connector.is_shared,
                 secrets=service_connector.secrets,
             )
             try:
@@ -3766,25 +3760,7 @@ class SqlZenStore(BaseZenStore):
                 "A secrets store is not configured or supported."
             )
 
-        is_shared = (
-            existing_connector.is_shared
-            if updated_connector.is_shared is None
-            else updated_connector.is_shared
-        )
-        scope_changed = is_shared != existing_connector.is_shared
-
         if updated_connector.secrets is None:
-            if scope_changed and existing_connector.secret_id:
-                # Update the scope of the existing secret
-                self.secrets_store.update_secret(
-                    secret_id=existing_connector.secret_id,
-                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
-                        scope=SecretScope.WORKSPACE
-                        if is_shared
-                        else SecretScope.USER,
-                    ),
-                )
-
             # If the connector update does not contain a secrets update, keep
             # the existing secret (if any)
             return existing_connector.secret_id
@@ -3808,7 +3784,6 @@ class SqlZenStore(BaseZenStore):
             connector_name=updated_connector.name or existing_connector.name,
             user=existing_connector.user.id,
             workspace=existing_connector.workspace.id,
-            is_shared=is_shared,
             secrets=updated_connector.secrets,
         )
 
@@ -3864,29 +3839,12 @@ class SqlZenStore(BaseZenStore):
 
             # In case of a renaming update, make sure no service connector uses
             # that name already
-            if update.name:
-                if (
-                    existing_connector.name != update.name
-                    and existing_connector.user_id is not None
-                ):
-                    self._fail_if_service_connector_with_name_exists_for_user(
-                        name=update.name,
-                        workspace_id=existing_connector.workspace_id,
-                        user_id=existing_connector.user_id,
-                        session=session,
-                    )
-
-            # Check if service connector update makes the service connector a
-            # shared service connector
-            # In that case, check if a service connector with the same name is
-            # already shared within the workspace
-            if update.is_shared is not None:
-                if not existing_connector.is_shared and update.is_shared:
-                    self._fail_if_service_connector_with_name_already_shared(
-                        name=update.name or existing_connector.name,
-                        workspace_id=existing_connector.workspace_id,
-                        session=session,
-                    )
+            if update.name and existing_connector.name != update.name:
+                self._fail_if_service_connector_with_name_exists(
+                    name=update.name,
+                    workspace_id=existing_connector.workspace_id,
+                    session=session,
+                )
 
             existing_connector_model = existing_connector.to_model()
 
@@ -4119,7 +4077,6 @@ class SqlZenStore(BaseZenStore):
         connector = connector_client.to_response_model(
             user=connector.user,
             workspace=connector.workspace,
-            is_shared=connector.is_shared,
             description=connector.description,
             labels=connector.labels,
         )

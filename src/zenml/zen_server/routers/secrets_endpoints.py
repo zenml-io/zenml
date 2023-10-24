@@ -18,7 +18,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SECRETS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models.page_model import Page
 from zenml.models.secret_models import (
     SecretFilterModel,
@@ -50,27 +49,20 @@ def list_secrets(
     secret_filter_model: SecretFilterModel = Depends(
         make_dependable(SecretFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[SecretResponseModel]:
     """Gets a list of secrets.
 
     Args:
         secret_filter_model: Filter model used for pagination, sorting,
             filtering
-        auth_context: Authentication context.
 
     Returns:
         List of secret objects.
     """
-    secrets = zen_store().list_secrets(secret_filter_model=secret_filter_model)
-
-    # Remove secrets from the response if the user does not have write
-    # permissions.
-    if PermissionType.WRITE not in auth_context.permissions:
-        for secret in secrets.items:
-            secret.remove_secrets()
-
-    return secrets
+    # TODO: we should probably have separate permissions here for reading the
+    # secret and its content
+    return zen_store().list_secrets(secret_filter_model=secret_filter_model)
 
 
 @router.get(
@@ -81,25 +73,19 @@ def list_secrets(
 @handle_exceptions
 def get_secret(
     secret_id: UUID,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Gets a specific secret using its unique id.
 
     Args:
         secret_id: ID of the secret to get.
-        auth_context: Authentication context.
 
     Returns:
         A specific secret object.
     """
-    secret = zen_store().get_secret(secret_id=secret_id)
-
-    # Remove secrets from the response if the user does not have write
-    # permissions.
-    if PermissionType.WRITE not in auth_context.permissions:
-        secret.remove_secrets()
-
-    return secret
+    # TODO: we should probably have separate permissions here for reading the
+    # secret and its content
+    return zen_store().get_secret(secret_id=secret_id)
 
 
 @router.put(
