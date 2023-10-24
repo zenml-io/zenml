@@ -63,7 +63,7 @@ distro = "^1.6.0"
 rich = {extras = ["jupyter"], version = "^12.0.0"}
 httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
-sqlmodel = "~0.0.8"
+sqlmodel = "0.0.8"
 passlib = { extras = ["bcrypt"], version = "~1.7.4"}
 python-terraform = { version = "^0.10.1" }
 pymysql = { version = "~1.0.2"}
