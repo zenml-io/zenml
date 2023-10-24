@@ -61,7 +61,7 @@
 <br />
 <div align="center">
   <a href="https://zenml.io">
-    <img alt="ZenML Logo" src="https://user-images.githubusercontent.com/3348134/223112746-345126ff-a0e8-479f-8ac0-670d78f71712.png" alt="Logo" width="400">
+    <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML">
   </a>
 
 <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
@@ -267,8 +267,6 @@ Open up the ZenML dashboard using this command.
 ```bash
 zenml show
 ```
-
-![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png)
 
 # 🗺 Roadmap
 
