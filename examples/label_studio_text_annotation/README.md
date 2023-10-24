@@ -23,8 +23,6 @@ Studio.
 
 ```shell
 pip install "zenml[server]"
-# for fresh installs to fix a dependency issue
-pip install 'sqlmodel==0.0.8'
 
 # pull example
 zenml example pull label_studio_annotation

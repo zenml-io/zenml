@@ -91,7 +91,7 @@
     <br />
     <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
-    🎉 Version 0.45.4 is out. Check out the release notes
+    🎉 Version 0.45.5 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <a href="https://www.linkedin.com/company/zenml/">
@@ -165,8 +165,6 @@ infrastructures.
 
 ```bash
 pip install "zenml[server]"
-# for fresh installs to fix a dependency issue
-pip install 'sqlmodel==0.0.8'
 ```
 
 Take a tour with the guided quickstart by running:
