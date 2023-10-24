@@ -60,7 +60,6 @@ def _create_local_orchestrator(
         flavor="local",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration={},
-        is_shared=False,
     )
 
 
@@ -73,7 +72,6 @@ def _create_local_artifact_store(
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
         configuration={},
-        is_shared=False,
     )
 
 
@@ -379,7 +377,6 @@ def test_registering_a_stack_component_with_existing_name(clean_client):
             flavor="local",
             component_type=StackComponentType.ORCHESTRATOR,
             configuration={},
-            is_shared=False,
         )
 
 
@@ -1020,16 +1017,6 @@ crud_test_configs = [
         entity_name="user",
         create_args={"name": sample_name("user_name")},
         update_args={"updated_name": sample_name("updated_user_name")},
-    ),
-    ClientCrudTestConfig(
-        entity_name="team",
-        create_args={"name": sample_name("team_name")},
-        update_args={"new_name": sample_name("updated_team_name")},
-    ),
-    ClientCrudTestConfig(
-        entity_name="role",
-        create_args={"name": sample_name("role_name"), "permissions_list": []},
-        update_args={"new_name": sample_name("updated_role_name")},
     ),
     ClientCrudTestConfig(
         entity_name="workspace",

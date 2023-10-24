@@ -20,16 +20,13 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.utils import (
-    create_sample_user_and_login,
-)
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import StackComponentType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -419,176 +416,6 @@ def test_rename_stack_non_active_stack_succeeds(clean_workspace) -> None:
     result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
     assert clean_workspace.get_stack(new_stack.id).name == "axls_stack"
-
-
-def test_sharing_nonexistent_stack_fails(clean_workspace: Client) -> None:
-    """Test stack rename of nonexistent stack fails."""
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["not_a_stack"])
-    assert result.exit_code == 1
-
-
-def test_sharing_default_stack_fails(clean_workspace: Client) -> None:
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["default"])
-    assert result.exit_code == 1
-
-    default_stack = clean_workspace.get_stack("default")
-    assert default_stack.is_shared is False
-
-
-def test_share_stack_that_is_already_shared_fails(
-    clean_workspace: Client,
-) -> None:
-    new_artifact_store = _create_local_artifact_store(clean_workspace)
-
-    new_artifact_store_model = clean_workspace.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-        is_shared=True,
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_workspace)
-
-    new_orchestrator_model = clean_workspace.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-        is_shared=True,
-    )
-
-    new_stack = clean_workspace.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        },
-        is_shared=True,
-    )
-
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["arias_new_stack"])
-    assert result.exit_code == 1
-
-    arias_stack = clean_workspace.get_stack(new_stack.name)
-    assert arias_stack.is_shared is True
-
-
-def test_create_shared_stack_when_component_is_private_fails(
-    clean_workspace: Client,
-) -> None:
-    """When creating a shared stack all the components should also be shared, so if a component is not shared this should fail."""
-    runner = CliRunner()
-    register_command = cli.commands["stack"].commands["register"]
-    result = runner.invoke(
-        register_command,
-        ["default2", "-o", "default", "-a", "default", "--share"],
-    )
-    assert result.exit_code == 1
-
-
-def test_share_stack_when_component_is_already_shared_by_other_user_fails(
-    clean_workspace: Client,
-) -> None:
-    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
-    if clean_workspace.zen_store.type != StoreType.REST:
-        pytest.skip("Only supported on ZenML server")
-
-    # Shared component
-    shared_artifact_store = _create_local_artifact_store(clean_workspace)
-
-    with create_sample_user_and_login(
-        prefix="Arias_Evil_Twin", initial_role="admin"
-    ) as (
-        other_user,
-        other_client,
-    ):
-        other_client.create_stack_component(
-            name=shared_artifact_store.name,
-            is_shared=True,
-            component_type=StackComponentType.ARTIFACT_STORE,
-            flavor="local",
-            configuration={},
-        )
-
-    # Non-shared components
-    new_artifact_store = _create_local_artifact_store(clean_workspace)
-
-    new_artifact_store_model = clean_workspace.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_workspace)
-
-    new_orchestrator_model = clean_workspace.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-    )
-
-    # Register non-shared stack with non-shared components
-    new_stack = clean_workspace.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.id,
-        },
-    )
-
-    # Share stack where the shared versions of components already exists
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, [new_stack.name, "-r"])
-    assert result.exit_code == 1
-
-
-def test_share_stack_when_component_is_private_fails(
-    clean_workspace: Client,
-) -> None:
-    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
-    # Non-shared components
-    new_artifact_store = _create_local_artifact_store(clean_workspace)
-
-    new_artifact_store_model = clean_workspace.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_workspace)
-
-    new_orchestrator_model = clean_workspace.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-    )
-
-    # Register non-shared stack with non-shared components
-    new_stack = clean_workspace.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        },
-    )
-
-    # Share stack where the shared versions of components already exists
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, [new_stack.name])
-    assert result.exit_code == 1
 
 
 def test_remove_component_from_nonexistent_stack_fails(

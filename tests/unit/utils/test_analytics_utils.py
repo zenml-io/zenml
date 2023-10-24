@@ -74,7 +74,6 @@ def event_check(
 
         assert StackComponentType.ARTIFACT_STORE in properties
         assert StackComponentType.ORCHESTRATOR in properties
-        assert "is_shared" in properties
 
     if event == AnalyticsEvent.REGISTERED_STACK_COMPONENT:
         assert "type" in properties
@@ -82,7 +81,6 @@ def event_check(
 
         assert "flavor" in properties
         assert "entity_id" in properties
-        assert "is_shared" in properties
 
     if event == AnalyticsEvent.RUN_PIPELINE:
         assert "store_type" in properties

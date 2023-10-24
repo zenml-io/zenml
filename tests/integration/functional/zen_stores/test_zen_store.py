@@ -29,11 +29,9 @@ from tests.integration.functional.zen_stores.utils import (
     CrudTestConfig,
     ModelVersionContext,
     PipelineRunContext,
-    RoleContext,
     ServiceConnectorContext,
     ServiceConnectorTypeContext,
     StackContext,
-    TeamContext,
     UserContext,
     list_of_entities,
 )
@@ -64,18 +62,12 @@ from zenml.models import (
     ModelVersionUpdateModel,
     PipelineRunFilterModel,
     PipelineRunResponseModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackUpdateModel,
     StepRunFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamUpdateModel,
-    UserRoleAssignmentRequestModel,
     UserUpdateModel,
     WorkspaceFilterModel,
     WorkspaceUpdateModel,
@@ -90,9 +82,6 @@ from zenml.utils.artifact_utils import (
     _load_file_from_artifact_store,
 )
 from zenml.zen_stores.base_zen_store import (
-    DEFAULT_ADMIN_ROLE,
-    DEFAULT_GUEST_ROLE,
-    DEFAULT_STACK_NAME,
     DEFAULT_USERNAME,
     DEFAULT_WORKSPACE_NAME,
 )
@@ -288,81 +277,6 @@ def test_deleting_default_workspace_fails():
         client.zen_store.delete_workspace(DEFAULT_NAME)
 
 
-# .-------.
-# | TEAMS |
-# '-------'
-
-
-def test_adding_user_to_team():
-    """Tests adding a user to a team."""
-    zen_store = Client().zen_store
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id in team_update.user_ids
-            assert len(team_update.users) == 1
-
-            # Make sure the team name has not been inadvertently changed
-            assert (
-                zen_store.get_team(created_team.id).name == created_team.name
-            )
-
-
-def test_adding_nonexistent_user_to_real_team_raises_error():
-    """Tests adding a nonexistent user to a team raises an error."""
-    zen_store = Client().zen_store
-    with TeamContext() as created_team:
-        nonexistent_id = uuid.uuid4()
-
-        team_update = TeamUpdateModel(users=[nonexistent_id])
-        with pytest.raises(KeyError):
-            zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-
-def test_removing_user_from_team_succeeds():
-    """Tests removing a user from a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id in team_update.user_ids
-
-            team_update = TeamUpdateModel(users=[])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id not in team_update.user_ids
-
-
-def test_access_user_in_team_succeeds():
-    """Tests accessing a users in a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-            assert created_user in team_update.users
-
-
 #  .------.
 # | USERS |
 # '-------'
@@ -400,219 +314,9 @@ def test_deleting_default_user_fails():
         zen_store.delete_user("default")
 
 
-def test_getting_team_for_user_succeeds():
-    pass
-
-
-def test_team_for_user_succeeds():
-    """Tests accessing a users in a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            updated_user_response = zen_store.get_user(created_user.id)
-
-            assert team_update in updated_user_response.teams
-
-
-# .-------.
-# | ROLES |
-# '-------'
-
-
-def test_creating_role_with_empty_permissions_succeeds():
-    """Tests creating a role."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-        created_role = zen_store.create_role(new_role)
-        with does_not_raise():
-            zen_store.get_role(role_name_or_id=created_role.name)
-        list_of_roles = zen_store.list_roles(
-            RoleFilterModel(name=created_role.name)
-        )
-        assert list_of_roles.total > 0
-
-
-def test_deleting_builtin_role_fails():
-    """Tests deleting a built-in role fails."""
-    zen_store = Client().zen_store
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_role(DEFAULT_ADMIN_ROLE)
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_role(DEFAULT_GUEST_ROLE)
-
-
-def test_updating_builtin_role_fails():
-    """Tests updating a built-in role fails."""
-    zen_store = Client().zen_store
-
-    role = zen_store.get_role(DEFAULT_ADMIN_ROLE)
-    role_update = RoleUpdateModel(name="cat_feeder")
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.update_role(role_id=role.id, role_update=role_update)
-
-    role = zen_store.get_role(DEFAULT_GUEST_ROLE)
-    with pytest.raises(IllegalOperationError):
-        zen_store.update_role(role_id=role.id, role_update=role_update)
-
-
-def test_deleting_assigned_role_fails():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                (zen_store.create_user_role_assignment(role_assignment))
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_role(created_role.id)
-
-
-# .------------------.
-# | ROLE ASSIGNMENTS |
-# '------------------'
-
-
-def test_assigning_role_to_user_succeeds():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                assignment = zen_store.create_user_role_assignment(
-                    role_assignment
-                )
-
-    # With user and role deleted the assignment should be deleted as well
-    with pytest.raises(KeyError):
-        zen_store.delete_user_role_assignment(assignment.id)
-
-
-def test_assigning_role_to_team_succeeds():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequestModel(
-                role=created_role.id,
-                team=created_team.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                assignment = zen_store.create_team_role_assignment(
-                    role_assignment
-                )
-    # With user and role deleted the assignment should be deleted as well
-    with pytest.raises(KeyError):
-        zen_store.get_team_role_assignment(assignment.id)
-
-
-def test_assigning_role_if_assignment_already_exists_fails():
-    """Tests assigning a role to a user if the assignment already exists."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                (zen_store.create_user_role_assignment(role_assignment))
-            with pytest.raises(EntityExistsError):
-                (zen_store.create_user_role_assignment(role_assignment))
-
-
-def test_revoking_role_for_user_succeeds():
-    """Tests revoking a role for a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                role_assignment = zen_store.create_user_role_assignment(
-                    role_assignment
-                )
-                zen_store.delete_user_role_assignment(
-                    user_role_assignment_id=role_assignment.id
-                )
-            with pytest.raises(KeyError):
-                zen_store.get_user_role_assignment(
-                    user_role_assignment_id=role_assignment.id
-                )
-
-
-def test_revoking_role_for_team_succeeds():
-    """Tests revoking a role for a team."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequestModel(
-                role=created_role.id,
-                team=created_team.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                role_assignment = zen_store.create_team_role_assignment(
-                    role_assignment
-                )
-                zen_store.delete_team_role_assignment(
-                    team_role_assignment_id=role_assignment.id
-                )
-            with pytest.raises(KeyError):
-                zen_store.get_team_role_assignment(
-                    team_role_assignment_id=role_assignment.id
-                )
-
-
-def test_revoking_nonexistent_role_fails():
-    """Tests revoking a nonexistent role fails."""
-    zen_store = Client().zen_store
-    with pytest.raises(KeyError):
-        zen_store.delete_team_role_assignment(
-            team_role_assignment_id=uuid.uuid4()
-        )
-    with pytest.raises(KeyError):
-        zen_store.delete_user_role_assignment(
-            user_role_assignment_id=uuid.uuid4()
-        )
-
-
 # .------------------.
 # | Stack components |
 # '------------------'
-
-# TODO: tests regarding sharing of components missing
 
 
 def test_update_default_stack_component_fails():
@@ -716,7 +420,7 @@ def test_updating_default_stack_fails():
     """Tests that updating the default stack is prohibited."""
     client = Client()
 
-    default_stack = client.get_stack(DEFAULT_STACK_NAME)
+    default_stack = client.get_stack("default")
     assert default_stack.name == DEFAULT_WORKSPACE_NAME
     stack_update = StackUpdateModel(name="axls_stack")
     with pytest.raises(IllegalOperationError):
@@ -729,7 +433,7 @@ def test_deleting_default_stack_fails():
     """Tests that deleting the default stack is prohibited."""
     client = Client()
 
-    default_stack = client.get_stack(DEFAULT_STACK_NAME)
+    default_stack = client.get_stack("default")
     with pytest.raises(IllegalOperationError):
         client.zen_store.delete_stack(default_stack.id)
 
@@ -940,41 +644,6 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
                             store.get_stack(stack.id)
                         with pytest.raises(KeyError):
                             store.get_stack_component(secret.id)
-
-
-def test_private_stacks_are_inaccessible():
-    """Tests stack scoping via sharing on rest zen stores."""
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support stack scoping")
-
-    default_user_id = Client().active_user.id
-    with ComponentContext(
-        c_type=StackComponentType.ORCHESTRATOR,
-        flavor="local",
-        config={},
-        user_id=default_user_id,
-    ) as orchestrator:
-        with ComponentContext(
-            c_type=StackComponentType.ARTIFACT_STORE,
-            flavor="local",
-            config={},
-            user_id=default_user_id,
-        ) as artifact_store:
-            components = {
-                StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-            }
-            with StackContext(
-                components=components, user_id=default_user_id
-            ) as stack:
-                with UserContext(login=True):
-                    # Unshared stack should be invisible to the current user
-                    #  Client() needs to be instantiated here with the new
-                    #  logged-in user
-                    filtered_stacks = Client().zen_store.list_stacks(
-                        StackFilterModel(name=stack.name)
-                    )
-                    assert len(filtered_stacks) == 0
 
 
 def test_public_stacks_are_accessible():

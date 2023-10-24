@@ -55,9 +55,6 @@ from zenml.models import (
     PipelineRunRequestModel,
     PipelineUpdateModel,
     ResourceTypeModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
     ServiceConnectorFilterModel,
@@ -66,9 +63,6 @@ from zenml.models import (
     ServiceConnectorUpdateModel,
     StackRequestModel,
     StepRunFilterModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamUpdateModel,
     UserFilterModel,
     UserRequestModel,
     UserUpdateModel,
@@ -188,11 +182,6 @@ class UserContext:
             self.created_user = self.store.get_user(self.user_name)
 
         if self.login or self.existing_user:
-            if not self.existing_user:
-                self.client.create_user_role_assignment(
-                    role_name_or_id="admin",
-                    user_name_or_id=self.created_user.id,
-                )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
 
@@ -285,42 +274,6 @@ class ComponentContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_stack_component(self.created_component.id)
-        except KeyError:
-            pass
-
-
-class TeamContext:
-    def __init__(self, team_name: str = "arias_fanclub"):
-        self.team_name = sample_name(team_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_team = TeamRequestModel(name=self.team_name)
-        self.created_team = self.store.create_team(new_team)
-        return self.created_team
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_team(self.created_team.id),
-        except KeyError:
-            pass
-
-
-class RoleContext:
-    def __init__(self, role_name: str = "aria_tamer"):
-        self.role_name = sample_name(role_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_role = RoleRequestModel(name=self.role_name, permissions=set())
-        self.created_role = self.store.create_role(new_role)
-        return self.created_role
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_role(self.created_role.id)
         except KeyError:
             pass
 
@@ -458,7 +411,6 @@ class ServiceConnectorContext:
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
         delete: bool = True,
@@ -474,7 +426,6 @@ class ServiceConnectorContext:
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
-        self.is_shared = is_shared
         self.labels = labels
         self.client = client or Client()
         self.store = self.client.zen_store
@@ -491,7 +442,6 @@ class ServiceConnectorContext:
             secrets=self.secrets or {},
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
-            is_shared=self.is_shared,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
             workspace=self.workspace_id or self.client.active_workspace.id,
@@ -784,20 +734,6 @@ user_crud_test_config = CrudTestConfig(
     filter_model=UserFilterModel,
     entity_name="user",
 )
-role_crud_test_config = CrudTestConfig(
-    create_model=RoleRequestModel(
-        name=sample_name("sample_role"), permissions=set()
-    ),
-    update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
-    filter_model=RoleFilterModel,
-    entity_name="role",
-)
-team_crud_test_config = CrudTestConfig(
-    create_model=TeamRequestModel(name=sample_name("sample_team")),
-    update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
-    filter_model=TeamFilterModel,
-    entity_name="team",
-)
 flavor_crud_test_config = CrudTestConfig(
     create_model=FlavorRequestModel(
         name=sample_name("sample_flavor"),
@@ -977,8 +913,6 @@ model_crud_test_config = CrudTestConfig(
 list_of_entities = [
     workspace_crud_test_config,
     user_crud_test_config,
-    role_crud_test_config,
-    team_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,
     pipeline_crud_test_config,
