@@ -165,6 +165,8 @@ infrastructures.
 
 ```bash
 pip install "zenml[server]"
+# for fresh installs to fix a dependency issue
+pip install 'sqlmodel==0.0.8'
 ```
 
 Take a tour with the guided quickstart by running:
