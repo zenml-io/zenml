@@ -8,6 +8,8 @@ description: Installing ZenML and getting started.
 
 ```shell
 pip install zenml
+# for fresh installs to fix a dependency issue
+pip install 'sqlmodel==0.0.8'
 ```
 
 {% hint style="warning" %}
