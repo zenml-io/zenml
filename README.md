@@ -61,7 +61,7 @@
 <br />
 <div align="center">
   <a href="https://zenml.io">
-    <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="Logo" width="400">
+    <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML">
   </a>
 
 <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
