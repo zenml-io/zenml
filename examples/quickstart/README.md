@@ -31,6 +31,8 @@ To run locally, install ZenML and pull this quickstart:
 ```shell
 # Install ZenML
 pip install "zenml[server]"
+# for fresh installs to fix a dependency issue
+pip install 'sqlmodel==0.0.8'
 
 # clone the ZenML repository
 git clone https://github.com/zenml-io/zenml.git
