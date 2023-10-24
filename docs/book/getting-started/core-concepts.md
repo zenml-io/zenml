@@ -74,7 +74,7 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
-![Switching between stacks with ZenML.](<../.gitbook/assets/03\_multi\_stack (1).png>)
+![Switching between stacks with ZenML.](https://github.com/zenml-io/zenml/blob/release/0.45.4/docs/book/.gitbook/assets/03\_multi\_stack%20\(1\).png)
 
 ## 3. Management
 
@@ -88,7 +88,7 @@ First, in order to utilize _stack components_ that are running remotely on a clo
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/).
 
 #### Metadata Tracking
 
@@ -96,9 +96,9 @@ On top of the communication with the stack components, the **ZenML Server** also
 
 #### Secrets
 
-The **ZenML Server** also acts as a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
+The **ZenML Server** also acts as a [centralized secrets store](../user-guide/advanced-guide/secret-management/) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
 
-Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that you can use to store and access your secrets securely.
+Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](../user-guide/advanced-guide/secret-management/) that you can use to store and access your secrets securely.
 
 #### Collaboration
 
@@ -110,7 +110,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### ZenML Hub
 

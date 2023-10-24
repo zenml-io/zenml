@@ -27,7 +27,7 @@ $ zenml service-connector list-types --type aws
 ```
 
 {% hint style="info" %}
-This service connector will not be able to work if [Multi-Factor Authentication (MFA)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_cliapi.html) is enabled on the role used by the AWS CLI. When MFA is enabled, the AWS CLI generates temporary credentials that are valid for a limited time. These temporary credentials cannot be used by the ZenML AWS Service Connector, as it requires long-lived credentials to authenticate and access AWS resources.
+This service connector will not be able to work if [Multi-Factor Authentication (MFA)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_mfa\_enable\_cliapi.html) is enabled on the role used by the AWS CLI. When MFA is enabled, the AWS CLI generates temporary credentials that are valid for a limited time. These temporary credentials cannot be used by the ZenML AWS Service Connector, as it requires long-lived credentials to authenticate and access AWS resources.
 
 To use the AWS Service Connector with ZenML, you will need to use a different AWS CLI profile that does not have MFA enabled. You can do this by setting the `AWS_PROFILE` environment variable to the name of the profile you want to use before running the ZenML CLI commands.
 {% endhint %}
@@ -180,7 +180,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-implicit --type aws 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-implicit'...
 Successfully registered service connector `aws-implicit` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -207,7 +207,7 @@ zenml service-connector describe aws-implicit
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-implicit' of type 'aws' with id 'e3853748-34a0-4d78-8006-00422ad32884' is owned by user 'default' and is 'private'.
                          'aws-implicit' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -250,7 +250,6 @@ Service connector 'aws-implicit' of type 'aws' with id 'e3853748-34a0-4d78-8006-
 ```
 {% endcode %}
 
-
 Verifying access to resources (note the `AWS_PROFILE` environment points to the same AWS CLI profile used during registration, but may yield different results with a different profile, which is why this method is not suitable for reproducible results):
 
 ```sh
@@ -258,7 +257,7 @@ AWS_PROFILE=connectors zenml service-connector verify aws-implicit --resource-ty
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Verifying service connector 'aws-implicit'...
 Service connector 'aws-implicit' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -277,7 +276,7 @@ zenml service-connector verify aws-implicit --resource-type s3-bucket
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Verifying service connector 'aws-implicit'...
 Service connector 'aws-implicit' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -296,7 +295,7 @@ AWS_PROFILE=zenml zenml service-connector describe aws-implicit --resource-type 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 Service connector 'aws-implicit (s3-bucket | s3://zenfiles client)' of type 'aws' with id 'e3853748-34a0-4d78-8006-00422ad32884' is owned by user 'default' and is 'private'.
     'aws-implicit (s3-bucket | s3://zenfiles client)' aws Service     
@@ -352,7 +351,7 @@ zenml service-connector describe aws-implicit --resource-type s3-bucket --resour
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 Service connector 'aws-implicit (s3-bucket | s3://sagemaker-studio-d8a14tvjsmb client)' of type 'aws' with id 'e3853748-34a0-4d78-8006-00422ad32884' is owned by user 'default' and is 'private'.
     'aws-implicit (s3-bucket | s3://sagemaker-studio-d8a14tvjsmb client)' aws Service     
@@ -424,7 +423,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-secret-key --type aw
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-secret-key'...
 Successfully registered service connector `aws-secret-key` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -450,7 +449,7 @@ zenml service-connector describe aws-secret-key
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-secret-key' of type 'aws' with id 'a1b07c5a-13af-4571-8e63-57a809c85790' is owned by user 'default' and is 'private'.
                         'aws-secret-key' aws Service Connector Details                        
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -520,7 +519,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-sts-token --type aws
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-sts-token'...
 Successfully registered service connector `aws-sts-token` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -546,7 +545,7 @@ zenml service-connector describe aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5-0539c8f7c303' is owned by user 'default' and is 'private'.
                         'aws-sts-token' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -602,7 +601,7 @@ zenml service-connector list --name aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME          │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼───────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -645,7 +644,7 @@ AWS_PROFILE=zenml zenml service-connector register aws-iam-role --type aws --aut
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-iam-role'...
 Successfully registered service connector `aws-iam-role` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -661,7 +660,7 @@ Successfully registered service connector `aws-iam-role` with access to the foll
 ┠───────────────────────┼──────────────────────────────────────────────┨
 ┃  🐳 docker-registry   │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-``` 
+```
 {% endcode %}
 
 The Service Connector configuration shows an IAM role and long-lived credentials:
@@ -671,7 +670,7 @@ zenml service-connector describe aws-iam-role
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-iam-role' of type 'aws' with id '8e499202-57fd-478e-9d2f-323d76d8d211' is owned by user 'default' and is 'private'.
                          'aws-iam-role' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -727,7 +726,7 @@ zenml service-connector describe aws-iam-role --resource-type s3-bucket --resour
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-iam-role (s3-bucket | s3://zenfiles client)' of type 'aws' with id '8e499202-57fd-478e-9d2f-323d76d8d211' is owned by user 'default' and is 'private'.
     'aws-iam-role (s3-bucket | s3://zenfiles client)' aws Service     
                           Connector Details                           
@@ -808,7 +807,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-session-token --type
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-session-token'...
 Successfully registered service connector `aws-session-token` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -834,7 +833,7 @@ zenml service-connector describe aws-session-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-session-token' of type 'aws' with id '3ae3e595-5cbc-446e-be64-e54e854e0e3f' is owned by user 'default' and is 'private'.
                       'aws-session-token' aws Service Connector Details                       
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -888,7 +887,7 @@ zenml service-connector describe aws-session-token --resource-type s3-bucket --r
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-session-token (s3-bucket | s3://zenfiles client)' of type 'aws' with id '3ae3e595-5cbc-446e-be64-e54e854e0e3f' is owned by user 'default' and is 'private'.
     'aws-session-token (s3-bucket | s3://zenfiles client)' aws Service     
                              Connector Details                             
@@ -977,7 +976,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-federation-token --t
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-federation-token'...
 Successfully registered service connector `aws-federation-token` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1003,7 +1002,7 @@ zenml service-connector describe aws-federation-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-federation-token' of type 'aws' with id '868b17d4-b950-4d89-a6c4-12e520e66610' is owned by user 'default' and is 'private'.
                      'aws-federation-token' aws Service Connector Details                     
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1057,7 +1056,7 @@ zenml service-connector describe aws-federation-token --resource-type s3-bucket 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-federation-token (s3-bucket | s3://zenfiles client)' of type 'aws' with id '868b17d4-b950-4d89-a6c4-12e520e66610' is owned by user 'default' and is 'private'.
     'aws-federation-token (s3-bucket | s3://zenfiles client)' aws Service     
                               Connector Details                               
@@ -1124,7 +1123,7 @@ AWS_PROFILE=zenml zenml service-connector register aws-auto --type aws --auto-co
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠹ Registering service connector 'aws-auto'...
 Successfully registered service connector `aws-auto` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1151,7 +1150,7 @@ zenml service-connector describe aws-auto
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-auto' of type 'aws' with id '9f3139fd-4726-421a-bc07-312d83f0c89e' is owned by user 'default' and is 'private'.
                            'aws-auto' aws Service Connector Details                           
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1207,8 +1206,7 @@ Service connector 'aws-auto' of type 'aws' with id '9f3139fd-4726-421a-bc07-312d
 The local AWS CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](service-connectors-guide.md#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the Kubernetes and Docker credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
 
 {% hint style="info" %}
-Configuring the local AWS CLI with credentials issued by the AWS Service Connector results in a local AWS CLI configuration profile being created with the name inferred from the first digits of the Service Connector UUID
-in the form <zenml>-<uuid[:8]>. For example, a Service Connector with UUID `9f3139fd-4726-421a-bc07-312d83f0c89e` will result in a local AWS CLI configuration profile named `zenml-9f3139fd`.
+Configuring the local AWS CLI with credentials issued by the AWS Service Connector results in a local AWS CLI configuration profile being created with the name inferred from the first digits of the Service Connector UUID in the form -\<uuid\[:8]>. For example, a Service Connector with UUID `9f3139fd-4726-421a-bc07-312d83f0c89e` will result in a local AWS CLI configuration profile named `zenml-9f3139fd`.
 {% endhint %}
 
 <details>
@@ -1222,7 +1220,7 @@ zenml service-connector list --name aws-session-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME              │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼───────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -1241,7 +1239,7 @@ zenml service-connector verify aws-session-token --resource-type kubernetes-clus
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES   ┃
@@ -1258,7 +1256,7 @@ zenml service-connector login aws-session-token --resource-type kubernetes-clust
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠇ Attempting to configure local client using service connector 'aws-session-token'...
 Cluster "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" set.
 Context "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" modified.
@@ -1274,7 +1272,7 @@ kubectl cluster-info
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Kubernetes control plane is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com
 CoreDNS is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 ```
@@ -1287,7 +1285,7 @@ zenml service-connector verify aws-session-token --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃   RESOURCE TYPE    │ RESOURCE NAMES                               ┃
@@ -1302,7 +1300,7 @@ zenml service-connector login aws-session-token --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠏ Attempting to configure local client using service connector 'aws-session-token'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
 Configure a credential helper to remove this warning. See
@@ -1319,7 +1317,7 @@ docker pull 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Using default tag: latest
 latest: Pulling from zenml-server
 e9995326b091: Pull complete 
@@ -1341,13 +1339,12 @@ Status: Downloaded newer image for 715803424590.dkr.ecr.us-east-1.amazonaws.com/
 
 It is also possible to update the local AWS CLI configuration with credentials extracted from the AWS Service Connector:
 
-
 ```sh
 zenml service-connector login aws-session-token --resource-type aws-generic
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Configured local AWS SDK profile 'zenml-c0f8e857'.
 The 'aws-session-token' AWS Service Connector connector was used to successfully configure the local Generic AWS resource client/SDK.
 ```
@@ -1389,310 +1386,362 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ```sh
     zenml integration install -y aws s3
     ```
-    
+
     ```sh
     aws configure --profile connectors
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
-    AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    Default region name [None]: us-east-1
-    Default output format [None]: json
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
+AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+Default region name [None]: us-east-1
+Default output format [None]: json
+```
+````
+{% endcode %}
 
 2.  Make sure the AWS Service Connector Type is available
 
     ```sh
     zenml service-connector list-types --type aws
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-    ┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
-    ┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
-    ┃ AWS Service Connector │ 🔶 aws │ 🔶 aws-generic        │ implicit         │ ✅    │ ✅     ┃
-    ┃                       │        │ 📦 s3-bucket          │ secret-key       │       │        ┃
-    ┃                       │        │ 🌀 kubernetes-cluster │ sts-token        │       │        ┃
-    ┃                       │        │ 🐳 docker-registry    │ iam-role         │       │        ┃
-    ┃                       │        │                       │ session-token    │       │        ┃
-    ┃                       │        │                       │ federation-token │       │        ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃ AWS Service Connector │ 🔶 aws │ 🔶 aws-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                       │        │ 📦 s3-bucket          │ secret-key       │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ sts-token        │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ iam-role         │       │        ┃
+┃                       │        │                       │ session-token    │       │        ┃
+┃                       │        │                       │ federation-token │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+````
+{% endcode %}
 
 3.  Register a multi-type AWS Service Connector using auto-configuration
 
     ```sh
     AWS_PROFILE=connectors zenml service-connector register aws-demo-multi --type aws --auto-configure
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    ⠼ Registering service connector 'aws-demo-multi'...
-    Successfully registered service connector `aws-demo-multi` with access to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
-    ┠───────────────────────┼──────────────────────────────────────────────┨
-    ┃    🔶 aws-generic     │ us-east-1                                    ┃
-    ┠───────────────────────┼──────────────────────────────────────────────┨
-    ┃     📦 s3-bucket      │ s3://zenfiles                                ┃
-    ┃                       │ s3://zenml-demos                             ┃
-    ┃                       │ s3://zenml-generative-chat                   ┃
-    ┠───────────────────────┼──────────────────────────────────────────────┨
-    ┃ 🌀 kubernetes-cluster │ zenhacks-cluster                             ┃
-    ┠───────────────────────┼──────────────────────────────────────────────┨
-    ┃  🐳 docker-registry   │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
-    
-    **NOTE**: from this point forward, we don't need the local AWS CLI credentials or the local AWS CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the AWS platform or not.
 
-4.  find out which S3 buckets, ECR registries, and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator, and an ECR Container Registry.
+{% code title="Example Command Output" %}
+````
+```text
+⠼ Registering service connector 'aws-demo-multi'...
+Successfully registered service connector `aws-demo-multi` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃    🔶 aws-generic     │ us-east-1                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃     📦 s3-bucket      │ s3://zenfiles                                ┃
+┃                       │ s3://zenml-demos                             ┃
+┃                       │ s3://zenml-generative-chat                   ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenhacks-cluster                             ┃
+┠───────────────────────┼──────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
 
-    ```sh
-    zenml service-connector list-resources --resource-type s3-bucket
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    The following 's3-bucket' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                        ┃
-    ┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼───────────────────────────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi      │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles                         ┃
-    ┃                                      │                     │                │               │ s3://zenml-demos                      ┃
-    ┃                                      │                     │                │               │ s3://zenml-generative-chat            ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml service-connector list-resources --resource-type kubernetes-cluster
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
-    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi        │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml service-connector list-resources --resource-type docker-registry
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
-    ┠──────────────────────────────────────┼────────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi     │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com    ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
+```
+**NOTE**: from this point forward, we don't need the local AWS CLI credentials or the local AWS CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the AWS platform or not.
+```
+
+4\. find out which S3 buckets, ECR registries, and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator, and an ECR Container Registry.
+
+````
+```sh
+zenml service-connector list-resources --resource-type s3-bucket
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+The following 's3-bucket' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                        ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼───────────────────────────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi      │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles                         ┃
+┃                                      │                     │                │               │ s3://zenml-demos                      ┃
+┃                                      │                     │                │               │ s3://zenml-generative-chat            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml service-connector list-resources --resource-type kubernetes-cluster
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi        │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml service-connector list-resources --resource-type docker-registry
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────────┼────────────────┼────────────────────┼─────────────────────────────────────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi     │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
 
 5.  register and connect an S3 Artifact Store Stack Component to an S3 bucket:
 
     ```sh
     zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered artifact_store `s3-zenfiles`.
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml artifact-store connect s3-zenfiles --connector aws-demo-multi
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected artifact store `s3-zenfiles` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered artifact_store `s3-zenfiles`.
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml artifact-store connect s3-zenfiles --connector aws-demo-multi
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected artifact store `s3-zenfiles` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
 
 6.  register and connect a Kubernetes Orchestrator Stack Component to an EKS cluster:
 
     ```sh
     zenml orchestrator register eks-zenml-zenhacks --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered orchestrator `eks-zenml-zenhacks`.
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml orchestrator connect eks-zenml-zenhacks --connector aws-demo-multi
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected orchestrator `eks-zenml-zenhacks` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼──────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered orchestrator `eks-zenml-zenhacks`.
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml orchestrator connect eks-zenml-zenhacks --connector aws-demo-multi
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected orchestrator `eks-zenml-zenhacks` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼──────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
 
 7.  Register and connect an EC GCP Container Registry Stack Component to an ECR container registry:
 
     ```sh
     zenml container-registry register ecr-us-east-1 --flavor aws --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully registered container_registry `ecr-us-east-1`.
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml container-registry connect ecr-us-east-1 --connector aws-demo-multi
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (repository)
-    Running with active stack: 'default' (repository)
-    Successfully connected container registry `ecr-us-east-1` to the following resources:
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
-    ┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨
-    ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
-    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered container_registry `ecr-us-east-1`.
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml container-registry connect ecr-us-east-1 --connector aws-demo-multi
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected container registry `ecr-us-east-1` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨
+┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+````
+{% endcode %}
 
 8.  Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
     ```sh
     zenml image-builder register local --flavor local
     ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Running with active workspace: 'default' (global)
-    Running with active stack: 'default' (global)
-    Successfully registered image_builder `local`.
-    ```
-    {% endcode %}
-    
-    ```sh
-    zenml stack register aws-demo -a s3-zenfiles -o eks-zenml-zenhacks -c ecr-us-east-1 -i local --set
-    ```
-    
-    {% code title="Example Command Output" %}
-    ```text
-    Connected to the ZenML server: 'https://stefan.develaws.zenml.io'
-    Running with active workspace: 'default' (repository)
-    Stack 'aws-demo' successfully registered!
-    Active repository stack set to:'aws-demo'
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered image_builder `local`.
+```
+````
+{% endcode %}
+
+````
+```sh
+zenml stack register aws-demo -a s3-zenfiles -o eks-zenml-zenhacks -c ecr-us-east-1 -i local --set
+```
+
+````
+
+{% code title="Example Command Output" %}
+````
+```text
+Connected to the ZenML server: 'https://stefan.develaws.zenml.io'
+Running with active workspace: 'default' (repository)
+Stack 'aws-demo' successfully registered!
+Active repository stack set to:'aws-demo'
+```
+````
+{% endcode %}
 
 9.  Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
     ```python
     from zenml import pipeline, step
-    
-    
+
+
     @step
     def step_1() -> str:
         """Returns the `world` string."""
         return "world"
-    
-    
+
+
     @step(enable_cache=False)
     def step_2(input_one: str, input_two: str) -> None:
         """Combines the two strings at its input and prints them."""
         combined_str = f"{input_one} {input_two}"
         print(combined_str)
-    
-    
+
+
     @pipeline
     def my_pipeline():
         output_step_one = step_1()
         step_2(input_one="hello", input_two=output_step_one)
-    
-    
+
+
     if __name__ == "__main__":
         my_pipeline()
     ```
-    
+
     Saving that to a `run.py` file and running it gives us:
-    
-    {% code title="Example Command Output" %}
-    ```text
-    $ python run.py 
-    Reusing registered pipeline simple_pipeline (version: 1).
-    Building Docker image(s) for pipeline simple_pipeline.
-    Building Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
-    - Including user-defined requirements: boto3==1.26.76
-    - Including integration requirements: boto3, kubernetes==18.20.0, s3fs>2022.3.0,<=2023.4.0, sagemaker==2.117.0
-    No .dockerignore found, including all files inside build context.
-    Step 1/10 : FROM zenmldocker/zenml:0.39.1-py3.8
-    Step 2/10 : WORKDIR /app
-    Step 3/10 : COPY .zenml_user_requirements .
-    Step 4/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_user_requirements
-    Step 5/10 : COPY .zenml_integration_requirements .
-    Step 6/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
-    Step 7/10 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
-    Step 8/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
-    Step 9/10 : COPY . .
-    Step 10/10 : RUN chmod -R a+rw .
-    Amazon ECR requires you to create a repository before you can push an image to it. ZenML is trying to push the image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator but could only detect the following repositories: []. We will try to push anyway, but in case it fails you need to create a repository named zenml.
-    Pushing Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
-    Finished pushing Docker image.
-    Finished building Docker image(s).
-    Running pipeline simple_pipeline on stack aws-demo (caching disabled)
-    Waiting for Kubernetes orchestrator pod...
-    Kubernetes orchestrator pod started.
-    Waiting for pod of step step_1 to start...
-    Step step_1 has started.
-    Step step_1 has finished in 0.390s.
-    Pod of step step_1 completed.
-    Waiting for pod of step step_2 to start...
-    Step step_2 has started.
-    Hello World!
-    Step step_2 has finished in 2.364s.
-    Pod of step step_2 completed.
-    Orchestration pod completed.
-    Dashboard URL: https://stefan.develaws.zenml.io/workspaces/default/pipelines/be5adfe9-45af-4709-a8eb-9522c01640ce/runs
-    ```
-    {% endcode %}
+
+{% code title="Example Command Output" %}
+````
+```text
+$ python run.py 
+Reusing registered pipeline simple_pipeline (version: 1).
+Building Docker image(s) for pipeline simple_pipeline.
+Building Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
+- Including user-defined requirements: boto3==1.26.76
+- Including integration requirements: boto3, kubernetes==18.20.0, s3fs>2022.3.0,<=2023.4.0, sagemaker==2.117.0
+No .dockerignore found, including all files inside build context.
+Step 1/10 : FROM zenmldocker/zenml:0.39.1-py3.8
+Step 2/10 : WORKDIR /app
+Step 3/10 : COPY .zenml_user_requirements .
+Step 4/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_user_requirements
+Step 5/10 : COPY .zenml_integration_requirements .
+Step 6/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
+Step 7/10 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
+Step 8/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
+Step 9/10 : COPY . .
+Step 10/10 : RUN chmod -R a+rw .
+Amazon ECR requires you to create a repository before you can push an image to it. ZenML is trying to push the image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator but could only detect the following repositories: []. We will try to push anyway, but in case it fails you need to create a repository named zenml.
+Pushing Docker image 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:simple_pipeline-orchestrator.
+Finished pushing Docker image.
+Finished building Docker image(s).
+Running pipeline simple_pipeline on stack aws-demo (caching disabled)
+Waiting for Kubernetes orchestrator pod...
+Kubernetes orchestrator pod started.
+Waiting for pod of step step_1 to start...
+Step step_1 has started.
+Step step_1 has finished in 0.390s.
+Pod of step step_1 completed.
+Waiting for pod of step step_2 to start...
+Step step_2 has started.
+Hello World!
+Step step_2 has finished in 2.364s.
+Pod of step step_2 completed.
+Orchestration pod completed.
+Dashboard URL: https://stefan.develaws.zenml.io/workspaces/default/pipelines/be5adfe9-45af-4709-a8eb-9522c01640ce/runs
+```
+````
+{% endcode %}
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

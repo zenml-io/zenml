@@ -4,22 +4,18 @@ description: Storing container images in Azure.
 
 # Azure Container Registry
 
-The Azure container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML
-and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store
-container images.
+The Azure container registry is a [container registry](./) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
 
 ### When to use it
 
 You should use the Azure container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have access to Azure. If you're not using Azure, take a look at the
-  other [container registry flavors](container-registries.md#container-registry-flavors).
+* you have access to Azure. If you're not using Azure, take a look at the other [container registry flavors](./#container-registry-flavors).
 
 ### How to deploy it
 
-Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group,
-location, and registry name. Then click on `Review + Create` and to create your container registry.
+Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location, and registry name. Then click on `Review + Create` and to create your container registry.
 
 ### How to find the registry URI
 
@@ -35,8 +31,7 @@ myregistry.azurecr.io
 To figure out the URI for your registry:
 
 * Go to the [Azure portal](https://portal.azure.com/#home).
-* In the search bar, enter `container registries` and select the container registry you want to use. If you don't have
-  any container registries yet, check out the [deployment section](azure.md#how-to-deploy-it) on how to create one.
+* In the search bar, enter `container registries` and select the container registry you want to use. If you don't have any container registries yet, check out the [deployment section](azure.md#how-to-deploy-it) on how to create one.
 * Use the name of your registry to fill the template `<REGISTRY_NAME>.azurecr.io` and get your URI.
 
 ### How to use it
@@ -44,8 +39,7 @@ To figure out the URI for your registry:
 To use the Azure container registry, we need:
 
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](azure.md#how-to-find-the-registry-uri) on the URI format and how to
-  get the URI for your registry.
+* The registry URI. Check out the [previous section](azure.md#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
 
@@ -66,9 +60,7 @@ Integrating and using an Azure Container Registry in your pipelines is not possi
 
 {% tabs %}
 {% tab title="Local Authentication" %}
-This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Container Registry. You don't need to supply credentials explicitly when you register the Azure Container Registry, as it leverages the local credentials and configuration that the Azure
-CLI and Docker client store on your local machine. However, you will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure CLI documentation](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli), before
-you register the Azure Container Registry.
+This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Container Registry. You don't need to supply credentials explicitly when you register the Azure Container Registry, as it leverages the local credentials and configuration that the Azure CLI and Docker client store on your local machine. However, you will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure CLI documentation](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Container Registry.
 
 With the Azure CLI installed and set up with credentials, you need to login to the container registry so Docker can pull and push images:
 
@@ -99,7 +91,7 @@ zenml service-connector register <CONNECTOR_NAME> --type azure --auth-method ser
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector register azure-demo --type azure --auth-method service-principal --tenant_id=a79f3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234d491e --client_secret=AzureSuperSecret --resource-type docker-registry --resource-id demozenmlcontainerregistry.azurecr.io
 ⠸ Registering service connector 'azure-demo'...
 Successfully registered service connector `azure-demo` with access to the following resources:
@@ -113,8 +105,7 @@ Successfully registered service connector `azure-demo` with access to the follow
 
 Alternatively, you can configure an Azure Service Connector through the ZenML dashboard:
 
-![Azure Service Connector Type](../../../.gitbook/assets/azure-service-connector-type.png)
-![Azure ACR Service Connector Configuration](../../../.gitbook/assets/azure-acr-service-connector-configuration.png)
+![Azure Service Connector Type](../../../.gitbook/assets/azure-service-connector-type.png) ![Azure ACR Service Connector Configuration](../../../.gitbook/assets/azure-acr-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your Azure credentials permissions to read and write to your ACR registry as well as to list accessible ACR registries. For a full list of permissions required to use an Azure Service Connector to access a ACR registry, please refer to the [Azure Service Connector ACR registry resource type documentation](../../auth-management/azure-service-connector.md#acr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The Azure Service Connector supports [many different authentication methods](../../auth-management/azure-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -122,10 +113,10 @@ If you already have one or more Azure Service Connectors configured in your ZenM
 
 ```sh
 zenml service-connector list-resources --connector-type azure --resource-type docker-registry
-``` 
+```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following 'docker-registry' resources can be accessed by 'azure' service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                        ┃
@@ -153,7 +144,7 @@ zenml container-registry connect <CONTAINER_REGISTRY_NAME> --connector <CONNECTO
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml container-registry connect azure-demo --connector azure-demo
 Successfully connected container registry `azure-demo` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -183,7 +174,7 @@ zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry -
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector login azure-demo --resource-type docker-registry --resource-id demozenmlcontainerregistry.azurecr.io
 ⠹ Attempting to configure local client using service connector 'azure-demo'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
@@ -194,15 +185,9 @@ The 'azure-demo' Docker Service Connector connector was used to successfully con
 ```
 {% endcode %}
 {% endhint %}
-
 {% endtab %}
-
 {% endtabs %}
 
+For more information and a full list of configurable attributes of the Azure container registry, check out the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.azure\_container\_registry.AzureContainerRegistry) .
 
-For more information and a full list of configurable attributes of the Azure container registry, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.azure\_container\_registry.AzureContainerRegistry)
-.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

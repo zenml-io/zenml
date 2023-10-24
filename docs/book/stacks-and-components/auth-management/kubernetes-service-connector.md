@@ -1,5 +1,7 @@
 ---
-description: Configuring Kubernetes Service Connectors to connect ZenML to Kubernetes clusters.
+description: >-
+  Configuring Kubernetes Service Connectors to connect ZenML to Kubernetes
+  clusters.
 ---
 
 # Kubernetes Service Connector
@@ -38,7 +40,7 @@ Two authentication methods are supported:
 1. username and password. This is not recommended for production purposes.
 2. authentication token with or without client certificates.
 
-For Kubernetes clusters that use neither username and password nor authentication tokens, such as local K3D clusters, the authentication token method can be used with an empty token. 
+For Kubernetes clusters that use neither username and password nor authentication tokens, such as local K3D clusters, the authentication token method can be used with an empty token.
 
 {% hint style="warning" %}
 This Service Connector does not support generating short-lived credentials from the credentials configured in the Service Connector. In effect, this means that the configured credentials will be distributed directly to clients and used to authenticate to the target Kubernetes API. It is recommended therefore to use API tokens accompanied by client certificates if possible.
@@ -53,7 +55,7 @@ zenml service-connector register kube-auto --type kubernetes --auto-configure
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `kube-auto` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES ┃
@@ -68,7 +70,7 @@ zenml service-connector describe kube-auto
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'kube-auto' of type 'kubernetes' with id '4315e8eb-fcbd-4938-a4d7-a9218ab372a1' is owned by user 'default' and is 'private'.
      'kube-auto' kubernetes Service Connector Details      
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -132,7 +134,7 @@ zenml service-connector login kube-auto
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠦ Attempting to configure local client using service connector 'kube-auto'...
 Cluster "35.185.95.223" set.
 ⠇ Attempting to configure local client using service connector 'kube-auto'...
@@ -146,5 +148,4 @@ The 'kube-auto' Kubernetes Service Connector connector was used to successfully 
 
 The Kubernetes Service Connector can be used in Orchestrator and Model Deployer stack component flavors that rely on Kubernetes clusters to manage their workloads. This allows Kubernetes container workloads to be managed without the need to configure and maintain explicit Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

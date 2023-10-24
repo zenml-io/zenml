@@ -4,60 +4,43 @@ description: Logging and visualizing experiments with neptune.ai
 
 # Neptune
 
-The Neptune Experiment Tracker is an [Experiment Tracker](experiment-trackers.md) flavor provided with the Neptune-ZenML
-integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from
-your pipeline steps (e.g. models, parameters, metrics).
+The Neptune Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
-[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that you would normally use in the iterative
-ML experimentation phase to track and visualize experiment results or as a model registry for your production-ready
-models. Neptune can also track and visualize the results produced by your automated pipeline runs, as you make the
-transition towards a more production-oriented workflow.
+[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that you would normally use in the iterative ML experimentation phase to track and visualize experiment results or as a model registry for your production-ready models. Neptune can also track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production-oriented workflow.
 
 You should use the Neptune Experiment Tracker:
 
-* if you have already been using neptune.ai to track experiment results for your project and would like to continue
-  doing so as you are incorporating MLOps workflows and best practices in your project through ZenML.
-* if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline
-  runs (e.g. models, metrics, datasets)
-* if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your
-  team, organization, or external stakeholders
+* if you have already been using neptune.ai to track experiment results for your project and would like to continue doing so as you are incorporating MLOps workflows and best practices in your project through ZenML.
+* if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
+* if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](experiment-trackers.md#experiment-tracker-flavors) if
-you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more
-familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
-The Neptune Experiment Tracker flavor is provided by the Neptune-ZenML integration. You need to install it on your local
-machine to be able to register the Neptune Experiment Tracker and add it to your stack:
+The Neptune Experiment Tracker flavor is provided by the Neptune-ZenML integration. You need to install it on your local machine to be able to register the Neptune Experiment Tracker and add it to your stack:
 
 ```shell
 zenml integration install neptune -y
 ```
 
-The Neptune Experiment Tracker needs to be configured with the credentials required to connect to Neptune using an API
-token.
+The Neptune Experiment Tracker needs to be configured with the credentials required to connect to Neptune using an API token.
 
 #### Authentication Methods
 
 You need to configure the following credentials for authentication to Neptune:
 
-* `api_token`: [API key token](https://docs.neptune.ai/setup/setting\_api\_token) 
-  of your Neptune account. You can create a free Neptune account 
-  [here](https://app.neptune.ai/register). If left blank, Neptune will attempt 
-  to retrieve the token from your environment variables.
-* `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name". If the
-  project is not specified, Neptune will attempt to retrieve it from your environment variables.
+* `api_token`: [API key token](https://docs.neptune.ai/setup/setting\_api\_token) of your Neptune account. You can create a free Neptune account [here](https://app.neptune.ai/register). If left blank, Neptune will attempt to retrieve the token from your environment variables.
+* `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name". If the project is not specified, Neptune will attempt to retrieve it from your environment variables.
 
 {% tabs %}
 {% tab title="Basic Authentication" %}
 This option configures the credentials for neptune.ai directly as stack component attributes.
 
 {% hint style="warning" %}
-This is not recommended for production settings as the credentials won't be stored securely and will be clearly visible
-in the stack configuration.
+This is not recommended for production settings as the credentials won't be stored securely and will be clearly visible in the stack configuration.
 {% endhint %}
 
 ```shell
@@ -68,13 +51,10 @@ zenml experiment-tracker register neptune_experiment_tracker --flavor=neptune \
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e neptune_experiment_tracker ... --set
 ```
-
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you
-to [configure a ZenML secret](/docs/book/user-guide/advanced-guide/secret-management/secret-management.md) to
-store the Neptune tracking service credentials securely.
+This method requires you to [configure a ZenML secret](../../../user-guide/advanced-guide/secret-management/) to store the Neptune tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -96,22 +76,16 @@ zenml experiment-tracker register neptune_secret \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](/docs/book/user-guide/advanced-guide/secret-management/secret-management.md) in
-the ZenML documentation.
+Read more about [ZenML Secrets](../../../user-guide/advanced-guide/secret-management/) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a
-look
-at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker)
-.
+For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-neptune/#zenml.integrations.neptune.experiment\_trackers.neptune\_experiment\_tracker) .
 
 ### How do you use it?
 
-To log information from a ZenML pipeline step using the Neptune Experiment Tracker component in the active stack, you
-need to enable an experiment tracker using the `@step` decorator. Then fetch the Neptune run object and use logging
-capabilities as you would normally do. For example:
+To log information from a ZenML pipeline step using the Neptune Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then fetch the Neptune run object and use logging capabilities as you would normally do. For example:
 
 ```python
 import numpy as np
@@ -153,9 +127,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the 
-[Client](../../advanced-guide/environment-management/client.md) to dynamically
-use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://github.com/zenml-io/zenml/blob/release/0.45.4/docs/book/stacks-and-components/advanced-guide/environment-management/client.md) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -170,14 +142,11 @@ def tf_trainer(...):
 
 ### Neptune UI
 
-Neptune comes with a web-based UI that you can use to find further details about 
-your tracked experiments. Each pipeline run will be logged as a separate 
-experiment run in Neptune, which you can inspect in the Neptune UI:
+Neptune comes with a web-based UI that you can use to find further details about your tracked experiments. Each pipeline run will be logged as a separate experiment run in Neptune, which you can inspect in the Neptune UI:
 
 ![Neptune UI](../../../.gitbook/assets/NeptuneUI.png)
 
-You can find the URL of the Neptune experiment linked to a specific ZenML run 
-via the metadata of the step in which the experiment tracker was used:
+You can find the URL of the Neptune experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:
 
 ```python
 from zenml.client import Client
@@ -188,13 +157,11 @@ tracking_url = trainer_step.metadata.get("experiment_tracker_url")
 print(tracking_url.value)
 ```
 
-Alternatively, you can see an overview of all experiment runs at 
-https://app.neptune.ai/{ACCOUNT_USERNAME}/{PROJECT_NAME}.
+Alternatively, you can see an overview of all experiment runs at https://app.neptune.ai/{ACCOUNT\_USERNAME}/{PROJECT\_NAME}.
 
 #### Additional configuration
 
-You can pass a set of tags to the Neptune run by using the `NeptuneExperimentTrackerSettings` class, like in the example
-below:
+You can pass a set of tags to the Neptune run by using the `NeptuneExperimentTrackerSettings` class, like in the example below:
 
 ```python
 import numpy as np
@@ -226,5 +193,4 @@ def my_step(
     ...
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

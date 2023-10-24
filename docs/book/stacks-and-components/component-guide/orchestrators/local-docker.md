@@ -4,16 +4,14 @@ description: Orchestrating your pipelines to run in Docker.
 
 # Local Docker Orchestrator
 
-The local Docker orchestrator is an [orchestrator](orchestrators.md) flavor that comes built-in with ZenML and runs your
-pipelines locally using Docker.
+The local Docker orchestrator is an [orchestrator](./) flavor that comes built-in with ZenML and runs your pipelines locally using Docker.
 
 ### When to use it
 
 You should use the local Docker orchestrator if:
 
 * you want the steps of your pipeline to run locally in isolated environments.
-* you want to debug issues that happen when running your pipeline in Docker containers without waiting and paying for
-  remote infrastructure.
+* you want to debug issues that happen when running your pipeline in Docker containers without waiting and paying for remote infrastructure.
 
 ### How to deploy it
 
@@ -38,20 +36,11 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Additional configuration
 
-For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when
-defining or running your pipeline. Check out
-the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
-more information on how to specify settings. A full list of what can be passed
-in via the `run_args` can be found [in the Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html).
+For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings) for a full list of available attributes and [this docs page](../../../user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more information on how to specify settings. A full list of what can be passed in via the `run_args` can be found [in the Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html).
 
-For more information and a full list of configurable attributes of the local Docker orchestrator, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator)
-.
+For more information and a full list of configurable attributes of the local Docker orchestrator, check out the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator) .
 
-For example, if you wanted to specify the CPU count available for the Docker
-image (note: only configurable for Windows), you could write a simple pipeline
-like the following:
+For example, if you wanted to specify the CPU count available for the Docker image (note: only configurable for Windows), you could write a simple pipeline like the following:
 
 ```python
 from zenml import step, pipeline
@@ -79,11 +68,6 @@ def simple_pipeline():
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
-that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
-give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../../user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

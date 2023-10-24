@@ -29,10 +29,7 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 ## Steps with multiple outputs
 
-Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
-Additionally, you can use the `Annotated` annotation to assign
-[custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
-Here we load an open-source dataset and split it into a train and a test dataset.
+Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation. Additionally, you can use the `Annotated` annotation to assign [custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names). Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
 import logging
@@ -158,8 +155,7 @@ first_pipeline()
 
 ## Configure with a yaml file
 
-Instead of configuring your pipeline runs in code, you can also do so from a 
-yaml file. To do so, simply reference the file like this:
+Instead of configuring your pipeline runs in code, you can also do so from a yaml file. To do so, simply reference the file like this:
 
 ```python
 first_pipeline = first_pipeline.with_options(
@@ -168,14 +164,13 @@ first_pipeline = first_pipeline.with_options(
 first_pipeline()
 ```
 
-If you are unsure how to format this config file, you can generate a template
-config file from a pipeline.
+If you are unsure how to format this config file, you can generate a template config file from a pipeline.
+
 ```python
 first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml)
-for more details.
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml) for more details.
 
 ## Code Example
 
@@ -245,5 +240,4 @@ if __name__ == "__main__":
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -55,10 +55,10 @@ Checkout the [documentation on fetching runs](../../starter-guide/fetch-runs-aft
 * **Flavors**: The [stack component flavors](../../../getting-started/core-concepts.md#flavor) available to you, including:
   * Built-in flavors like the [local orchestrator](../../../stacks-and-components/component-guide/orchestrators/local.md),
   * Integration-enabled flavors like the [Kubeflow orchestrator](../../../stacks-and-components/component-guide/orchestrators/kubeflow.md),
-  * Custom flavors that you have [created yourself](../custom-stack-solutions/implement-a-custom-stack-component.md).
+  * Custom flavors that you have [created yourself](https://github.com/zenml-io/zenml/blob/release/0.45.4/docs/book/user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
-* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../secret-management/secret-management.md).
-* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../../../stacks-and-components/auth-management/auth-management.md).
+* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../secret-management/).
+* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../../../stacks-and-components/auth-management/).
 
 ### Client Methods
 

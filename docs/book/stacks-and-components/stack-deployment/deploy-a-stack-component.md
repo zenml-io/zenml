@@ -28,8 +28,7 @@ The command above takes in the following parameters:
 
 * **Name**: The name of the stack component. In this case, it is `my_store`.
 * **Flavor:** The flavor of the stack component to deploy. Here, we are deploying an artifact store with the `gcp` flavor.
-* **Provider:** The provider to deploy this stack component on. Currently, only
-  **GCP, AWS, and K3D** are supported as providers.
+* **Provider:** The provider to deploy this stack component on. Currently, only **GCP, AWS, and K3D** are supported as providers.
 * **Region**: The region to deploy the stack component in.
 * **Extra Config:** Some components can be customized by the user and these settings are passed as flags to the command. In the example above, we pass the GCP project ID to select what project to deploy the component to.
 
@@ -59,8 +58,7 @@ Destroying a stack component is as easy as deploying one. You can run the follow
 zenml artifact-store destroy -p gcp my_store
 ```
 
-This will destroy the deployed infrastructure and prompt you if you also want to
-remove and deregister the component from your ZenML server.
+This will destroy the deployed infrastructure and prompt you if you also want to remove and deregister the component from your ZenML server.
 
 ## 🍨 Available flavors for stack components
 
@@ -80,15 +78,15 @@ This variable is then passed as input to the underlying modular recipe. If you c
 
 </details>
 
-| Component Type | Flavor(s) |
-| -------------- | --------- |
-| Artifact Store | s3, gcp, minio |
-| Container Registry | aws, gcp |
-| Experiment Tracker | mlflow |
-| Orchestrator | kubernetes, kubeflow, tekton, vertex |
-| MLOps Platform | zenml |
-| Model Deployer | seldon |
-| Step Operator | sagemaker, vertex |
+| Component Type     | Flavor(s)                            |
+| ------------------ | ------------------------------------ |
+| Artifact Store     | s3, gcp, minio                       |
+| Container Registry | aws, gcp                             |
+| Experiment Tracker | mlflow                               |
+| Orchestrator       | kubernetes, kubeflow, tekton, vertex |
+| MLOps Platform     | zenml                                |
+| Model Deployer     | seldon                               |
+| Step Operator      | sagemaker, vertex                    |
 
 ### ✨ Customizing your stack components
 
@@ -100,17 +98,11 @@ With simplicity, we didn't want to compromise on the flexibility that this deplo
 
 The flags that you pass to the deploy CLI are passed on as-is to the backing modular recipes as input variables. This means that all the flags need to be defined as variables in the respective recipe.
 
-For example, if you take a look at the
-[`variables.tf`](https://github.com/zenml-io/mlstacks/blob/main/gcp-modular/variables.tf)
-file for a modular recipe, like the `gcp-modular` recipe, you can find variables
-like `mlflow_bucket` that you could potentially pass in.
+For example, if you take a look at the [`variables.tf`](https://github.com/zenml-io/mlstacks/blob/main/gcp-modular/variables.tf) file for a modular recipe, like the `gcp-modular` recipe, you can find variables like `mlflow_bucket` that you could potentially pass in.
 
-Validation for these flags does not exist yet at the CLI level, so you must be
-careful in naming them while calling `deploy`.
+Validation for these flags does not exist yet at the CLI level, so you must be careful in naming them while calling `deploy`.
 
-All these extra configuration options are passed in with the `-x` option. For
-example, we already saw this in action above when we passed in the GCP project
-ID to the artifact store deploy command.
+All these extra configuration options are passed in with the `-x` option. For example, we already saw this in action above when we passed in the GCP project ID to the artifact store deploy command.
 
 ```bash
 zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml my_store
@@ -122,8 +114,7 @@ Simply pass in as many `-x` flags as you want to customize your stack component.
 
 **Experiment Trackers**
 
-You can assign an existing bucket to the MLflow experiment tracker by passing the
-`-x mlflow_bucket=...` configuration:
+You can assign an existing bucket to the MLflow experiment tracker by passing the `-x mlflow_bucket=...` configuration:
 
 ```shell
 zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow -p YOUR_DESIRED_PROVIDER -r YOUR_REGION -x mlflow_bucket=gs://my_bucket
@@ -149,9 +140,6 @@ This is only useful for the AWS case since AWS requires a repository to be creat
 
 #### Other configuration
 
-* In the case of GCP components, it is _required_ that you pass a project ID to
-  the command as extra configuration when you're creating any GCP resource.
+* In the case of GCP components, it is _required_ that you pass a project ID to the command as extra configuration when you're creating any GCP resource.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

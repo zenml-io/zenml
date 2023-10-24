@@ -2,7 +2,7 @@
 description: Collaborating with the ZenML community.
 ---
 
-# Leverage community-contributed plugins
+# Use the Hub
 
 The ZenML Hub is a central platform that enables our users to search, share and discover community-contributed code, such as flavors, materializers, and steps, that can be used across organizations. The goal is to allow our users to extend their ZenML experience by leveraging the community's diverse range of implementations.
 
@@ -58,7 +58,7 @@ zenml hub clone <PLUGIN_NAME>
 {% tab title="Dashboard" %}
 You can see the available plugins on the `Plugins` page:
 
-![Dashboard List Plugin](../../../.gitbook/assets/plugins_dashboard.png)
+![Dashboard List Plugin](../../../.gitbook/assets/plugins\_dashboard.png)
 
 You can browse through the plugins to see more details.
 {% endtab %}
@@ -72,7 +72,7 @@ zenml hub list
 
 You should see a table similar to:
 
-![CLI List Plugin](../../../.gitbook/assets/plugins_cli.png)
+![CLI List Plugin](../../../.gitbook/assets/plugins\_cli.png)
 {% endtab %}
 {% endtabs %}
 
@@ -88,7 +88,7 @@ If you haven't used the ZenML Hub before, this process will create a ZenML Hub a
 {% tab title="Dashboard" %}
 In order to log in through the dashboard, you can use the connect button on the Plugins page.
 
-![Dashboard Login](../../../.gitbook/assets/login_dashboard.png)
+![Dashboard Login](../../../.gitbook/assets/login\_dashboard.png)
 
 Similar to the CLI, you can disconnect your account using the Disconnect button.
 {% endtab %}
@@ -116,7 +116,7 @@ After logging in, you can start submitting your own plugins. The submitted plugi
 {% tab title="Dashboard" %}
 If you are submitting your plugin through the dashboard, you need to provide the required metadata about your plugin.
 
-![Dashboard Create Plugin](../../../.gitbook/assets/create_plugin_dashboard.png)
+![Dashboard Create Plugin](../../../.gitbook/assets/create\_plugin\_dashboard.png)
 {% endtab %}
 
 {% tab title="CLI" %}
@@ -134,7 +134,6 @@ Once submitted, a wheel will be created and stored based on your plugin. This pr
 
 The status of the ZenML Hub service is being tracked live on [the ZenML status page](https://zenml.statuspage.io/). You can subscribe here to receive notifications about scheduled maintenance windows, unplanned downtime events, and more.
 
-<figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
+<figure><img src="https://github.com/zenml-io/zenml/blob/release/0.45.4/docs/book/user-guide/.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

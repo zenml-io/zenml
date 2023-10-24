@@ -46,9 +46,9 @@ zenml secret create <SECRET_NAME> \
 
 The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://sdkdocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
 
-#### Interactively register missing secrets for your stack
+**Interactively register missing secrets for your stack**
 
-If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../stacks-and-components/component-guide/secrets-managers/secrets-managers.md) and all the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../stacks-and-components/component-guide/secrets-managers/) and all the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]
@@ -100,7 +100,7 @@ For example:
 
 {% tabs %}
 {% tab title="Dashboard" %}
-In the dashboard values that are considered `Secret` can be set using registered secrets with the Syntax mentioned above:  `{{<SECRET_NAME>.<SECRET_KEY>}}`. Alternatively, the values you enter at creation time will be saved as a secret.&#x20;
+In the dashboard values that are considered `Secret` can be set using registered secrets with the Syntax mentioned above: `{{<SECRET_NAME>.<SECRET_KEY>}}`. Alternatively, the values you enter at creation time will be saved as a secret.
 
 <figure><img src="../../../.gitbook/assets/RegisterComponentWithSecret.png" alt=""><figcaption><p>Registering a stack component with secret values.</p></figcaption></figure>
 {% endtab %}
@@ -137,7 +137,7 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
 
 {% hint style="warning" %}
-If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](/docs/book/stacks-and-components/component-guide/secrets-managers/secrets-managers.md), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
+If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](../../../stacks-and-components/component-guide/secrets-managers/), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
 {% endhint %}
 
 ### Fetch secret values in a step
@@ -164,5 +164,4 @@ def secret_loader() -> None:
     ...
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

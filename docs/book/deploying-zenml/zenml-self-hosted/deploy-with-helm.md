@@ -85,7 +85,7 @@ To use the Helm chart with custom values that includes path to files like the da
 helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
 ```
 
-Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml-server/values.yaml`  (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
+Next, to customize the Helm chart for your deployment, you should create a copy of the `values.yaml` file that you can find at `./zenml-server/values.yaml` (let’s call this `custom-values.yaml`). You’ll use this as a template to customize your configuration. Any values that you don’t override you should simply remove from your `custom-values.yaml` file to keep it clean and compatible with future Helm chart releases.
 
 In most cases, you’ll need to change the following configuration values in `custom-values.yaml`:
 
@@ -310,7 +310,7 @@ This method requires you to configure a DNS service like AWS Route 53 or Google 
 
 {% tabs %}
 {% tab title="AWS" %}
-#### Using the AWS Secrets Manager as a secrets store backend
+**Using the AWS Secrets Manager as a secrets store backend**
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the AWS Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the AWS credentials needed to access the AWS Secrets Manager API:
 
@@ -346,7 +346,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 {% endtab %}
 
 {% tab title="GCP" %}
-#### Using the GCP Secrets Manager as a secrets store backend
+**Using the GCP Secrets Manager as a secrets store backend**
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the GCP Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the GCP credentials needed to access the GCP Secrets Manager API:
 
@@ -391,7 +391,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 {% endtab %}
 
 {% tab title="Azure" %}
-#### Using the Azure Key Vault as a secrets store backend
+**Using the Azure Key Vault as a secrets store backend**
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the Azure Key Vault service instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the Azure credentials needed to access the Azure Key Vault API:
 
@@ -427,7 +427,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 {% endtab %}
 
 {% tab title="Hashicorp" %}
-#### Using the HashiCorp Vault as a secrets store backend
+**Using the HashiCorp Vault as a secrets store backend**
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the HashiCorp Vault service instead, you need to configure it in the Helm values:
 
@@ -458,9 +458,9 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 {% endtab %}
 
 {% tab title="Custom" %}
-#### Using a custom secrets store backend implementation
+**Using a custom secrets store backend implementation**
 
-You have the option of using [a custom implementation of the secrets store API](../../user-guide/advanced-guide/secret-management/secret-management.md) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
+You have the option of using [a custom implementation of the secrets store API](../../user-guide/advanced-guide/secret-management/) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
 
 ```yaml
  zenml:
@@ -500,5 +500,4 @@ You have the option of using [a custom implementation of the secrets store API](
 {% endtab %}
 {% endtabs %}
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

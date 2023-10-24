@@ -65,7 +65,7 @@ zenml service-connector register gcp-implicit --type gcp --auth-method implicit 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `gcp-implicit` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
@@ -87,6 +87,7 @@ Successfully registered service connector `gcp-implicit` with access to the foll
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
+
 </details>
 
 ### Long-lived credentials (API keys, account keys)
@@ -143,7 +144,7 @@ zenml service-connector describe eks-zenhacks-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'eks-zenhacks-cluster' of type 'aws' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
    'eks-zenhacks-cluster' aws Service Connector Details    
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -190,14 +191,14 @@ Service connector 'eks-zenhacks-cluster' of type 'aws' with id 'be53166a-b39c-4e
 ```
 {% endcode %}
 
-Then, showing the temporary credentials that are issued to clients.  Note the expiration time on the Kubernetes API token:
+Then, showing the temporary credentials that are issued to clients. Note the expiration time on the Kubernetes API token:
 
 ```sh
 zenml service-connector describe eks-zenhacks-cluster --client
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
  'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' kubernetes Service 
                                     Connector Details                                     
@@ -264,7 +265,7 @@ zenml service-connector register aws-federation-multi --type aws --auth-method=f
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `aws-federation-multi` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
@@ -313,7 +314,7 @@ s3_client.head_bucket(Bucket="zenml-demos")
 ```
 
 {% code title="Example Output" %}
-```text
+```
 >>> from zenml.client import Client
 >>> 
 >>> client = Client()
@@ -403,7 +404,7 @@ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-a
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-empty-sa` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -434,7 +435,7 @@ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method imp
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
@@ -470,7 +471,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-sts-token --type aws
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-sts-token'...
 Successfully registered service connector `aws-sts-token` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -497,7 +498,7 @@ zenml service-connector describe aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5-0539c8f7c303' is owned by user 'default' and is 'private'.
                         'aws-sts-token' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -553,7 +554,7 @@ zenml service-connector list --name aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME          │ ID                              │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼───────────────┼─────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -567,5 +568,4 @@ zenml service-connector list --name aws-sts-token
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

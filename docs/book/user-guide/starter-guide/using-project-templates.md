@@ -8,50 +8,7 @@ What would you need to get a quick understanding of the ZenML framework and star
 
 ## List of available project templates
 
-<table data-full-width="true">
-    <thead>
-        <tr>
-            <th width="281.33333333333337">Project Template [Short name]</th>
-            <th width="200">Tags</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-                <a href="https://github.com/zenml-io/template-starter">Starter template</a> [<code>starter</code>]
-            </td>
-            <td>
-                <code>basic</code> <code>scikit-learn</code>
-            </td>
-            <td>
-                All the basic ML ingredients you need to get you started with ZenML: parameterized steps, a model training pipeline, a flexible configuration and a simple CLI. All created around a representative and versatile model training use-case implemented with the scikit-learn library.
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://github.com/zenml-io/template-e2e-batch">E2E Training with Batch Predictions</a> [<code>e2e_batch</code>]
-            </td>
-            <td>
-                <code>etl</code> <code>hp-tuning</code> <code>model-promotion</code> <code>drift-detection</code> <code>batch-prediction</code> <code>scikit-learn</code>
-            </td>
-            <td>
-                This project template is a good starting point for anyone starting with ZenML. It consists of two pipelines with the following high-level steps: load, split, and preprocess data; run HP tuning; train and evaluate model performance; promote model to production; detect data drift; run batch inference.
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://github.com/zenml-io/template-nlp">NLP Training Pipeline</a> [<code>nlp</code>]
-            </td>
-            <td>
-                <code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code> <code>gradio</code> <code>huggingface</code>
-            </td>
-            <td>
-                This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT or GPT-2 based model and testing locally it with gradio
-            </td>
-        </tr>
-    </tbody>
-</table>
+<table data-full-width="true"><thead><tr><th width="281.33333333333337">Project Template [Short name]</th><th width="200">Tags</th><th>Description</th></tr></thead><tbody><tr><td><a href="https://github.com/zenml-io/template-starter">Starter template</a> [<code>starter</code>]</td><td><code>basic</code> <code>scikit-learn</code></td><td>All the basic ML ingredients you need to get you started with ZenML: parameterized steps, a model training pipeline, a flexible configuration and a simple CLI. All created around a representative and versatile model training use-case implemented with the scikit-learn library.</td></tr><tr><td><a href="https://github.com/zenml-io/template-e2e-batch">E2E Training with Batch Predictions</a> [<code>e2e_batch</code>]</td><td><code>etl</code> <code>hp-tuning</code> <code>model-promotion</code> <code>drift-detection</code> <code>batch-prediction</code> <code>scikit-learn</code></td><td>This project template is a good starting point for anyone starting with ZenML. It consists of two pipelines with the following high-level steps: load, split, and preprocess data; run HP tuning; train and evaluate model performance; promote model to production; detect data drift; run batch inference.</td></tr><tr><td><a href="https://github.com/zenml-io/template-nlp">NLP Training Pipeline</a> [<code>nlp</code>]</td><td><code>nlp</code> <code>hp-tuning</code> <code>model-promotion</code> <code>training</code> <code>pytorch</code> <code>gradio</code> <code>huggingface</code></td><td>This project template is a simple NLP training pipeline that walks through tokenization, training, HP tuning, evaluation and deployment for a BERT or GPT-2 based model and testing locally it with gradio</td></tr></tbody></table>
 
 {% hint style="info" %}
 Do you have a personal project powered by ZenML that you would like to see here? At ZenML, we are looking for design partnerships and collaboration to help us better understand the real-world scenarios in which MLOps is being used and to build the best possible experience for our users. If you are interested in sharing all or parts of your project with us in the form of a ZenML project template, please [join our Slack](https://zenml.io/slack-invite/) and leave us a message!
@@ -86,11 +43,8 @@ Creating your own ZenML template is a great way to standardize and share your ML
 Here's a step-by-step guide on how to create your own ZenML template:
 
 1. **Create a new repository for your template.** This will be the place where you store all the code and configuration files for your template.
-
 2. **Define your ML workflows as ZenML steps and pipelines.** You can start by copying the code from one of the existing ZenML templates (like the [starter template](https://github.com/zenml-io/template-starter)) and modifying it to fit your needs.
-
 3. **Create a `copier.yml` file.** This file is used by Copier to define the template's parameters and their default values. You can learn more about this config file [in the copier docs](https://copier.readthedocs.io/en/stable/creating/).
-
 4. **Test your template.** You can use the `copier` command-line tool to generate a new project from your template and check if everything works as expected:
 
 ```bash
@@ -119,23 +73,7 @@ That's it! Now you have your own ZenML project template that you can use to quic
 
 ## Preparing for the Advanced Guide
 
-<!-- ### Starter Guide
-
-Our Starter Guide documentation is built around the `Starter` project template codes. 
-Most examples will be based on it, so we highly recommend you to install the `starter` template
-with `--template-with-defaults` flag before diving deeper into this documentation section, 
-so you can follow this guide along using your own local environment.
-
-```bash
-mkdir starter
-cd starter
-zenml init --template starter --template-with-defaults
-``` -->
-
-Our Advanced Guide documentation is built around the `E2E Batch` project template codes. 
-Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template
-with `--template-with-defaults` flag before diving deeper into this documentation section, 
-so you can follow this guide along using your own local environment.
+Our Advanced Guide documentation is built around the `E2E Batch` project template codes. Most examples will be based on it, so we highly recommend you to install the `e2e_batch` template with `--template-with-defaults` flag before diving deeper into this documentation section, so you can follow this guide along using your own local environment.
 
 ```bash
 mkdir e2e_batch

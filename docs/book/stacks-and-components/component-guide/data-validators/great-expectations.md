@@ -6,7 +6,7 @@ description: >-
 
 # Great Expectations
 
-The Great Expectations [Data Validator](data-validators.md) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data profiling and data quality tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
+The Great Expectations [Data Validator](./) flavor provided with the ZenML integration uses [Great Expectations](https://greatexpectations.io/) to run data profiling and data quality tests on the data circulated through your pipelines. The test results can be used to implement automated corrective actions in your pipelines. They are also automatically rendered into documentation for further visual interpretation and evaluation.
 
 ### When would you want to use it?
 
@@ -18,7 +18,7 @@ You should use the Great Expectations Data Validator when you need the following
 * [Data Quality](https://docs.greatexpectations.io/docs/guides/validation/checkpoints/how\_to\_pass\_an\_in\_memory\_dataframe\_to\_a\_checkpoint): runs a set of predefined or inferred validation rules (Expectations) against an in-memory dataset.
 * [Data Docs](https://docs.greatexpectations.io/docs/terms/data\_docs): generate and maintain human-readable documentation of all your data validation rules, data quality checks and their results.
 
-You should consider one of the other [Data Validator flavors](data-validators.md#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -50,7 +50,7 @@ Some Great Expectations CLI commands will not work well with the deployment meth
 
 {% tabs %}
 {% tab title="Let ZenML Manage The Configuration" %}
-The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](../artifact-stores/artifact-stores.md) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
+The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](../artifact-stores/) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
 
 ```shell
 # Register the Great Expectations data validator
@@ -156,7 +156,7 @@ def profiling_pipeline():
 profiling_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great_expectations_profiler_step) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great\_expectations\_profiler\_step) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
 
 ```python
 @step
@@ -170,7 +170,7 @@ def great_expectations_profiler_step(
     ...
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great_expectations_profiler_step) in the SDK docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_profiler.great\_expectations\_profiler\_step) in the SDK docs.
 
 #### The Great Expectations data validator step
 
@@ -215,7 +215,7 @@ def validation_pipeline():
 validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great_expectations_validator_step) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great\_expectations\_validator\_step) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
 
 ```python
 @step
@@ -228,7 +228,7 @@ def great_expectations_validator_step(
 ) -> CheckpointResult:
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great_expectations_validator_step) in the SDK docs.
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-great\_expectations/#zenml.integrations.great\_expectations.steps.ge\_validator.great\_expectations\_validator\_step) in the SDK docs.
 
 #### Call Great Expectations directly
 
@@ -278,10 +278,8 @@ The same approach must be used if you are using a Great Expectations configurati
 
 You can view visualizations of the suites and results generated by your pipeline steps directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
-Alternatively, if you are running inside a Jupyter notebook, you can load and 
-render the suites and results using the 
-[artifact.visualize() method](../../../user-guide/starter-guide/fetch-runs-after-execution.md#artifact-visualizations),
-e.g.:
+Alternatively, if you are running inside a Jupyter notebook, you can load and render the suites and results using the [artifact.visualize() method](../../../user-guide/starter-guide/fetch-runs-after-execution.md#artifact-visualizations), e.g.:
+
 ```python
 from zenml.client import Client
 
@@ -299,9 +297,8 @@ if __name__ == "__main__":
     visualize_results("validation_pipeline", "test_validator")
 ```
 
-![Expectations Suite Visualization](../../../.gitbook/assets/expectation_suite.png)
+![Expectations Suite Visualization](../../../.gitbook/assets/expectation\_suite.png)
 
-![Validation Results Visualization](../../../.gitbook/assets/validation_result.png)
+![Validation Results Visualization](../../../.gitbook/assets/validation\_result.png)
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

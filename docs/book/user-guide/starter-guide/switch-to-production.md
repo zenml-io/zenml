@@ -40,8 +40,8 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 
 Currently, there are two main options to access a deployed ZenML server:
 
-1. **ZenML Cloud:** With [ZenML Cloud](../../deploying-zenml/zenml-cloud/zenml-cloud.md), you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the flexibility to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](../../deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](../../stacks-and-components/component-guide/model-registries/model-registries.md), [Helm](../../deploying-zenml/zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](../../deploying-zenml/zenml-self-hosted/deploy-using-huggingface-spaces.md).
+1. **ZenML Cloud:** With [ZenML Cloud](../../deploying-zenml/zenml-cloud/), you can utilize a control plane to create ZenML servers, also known as tenants. These tenants are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking and server maintenance.
+2. **Self-hosted Deployment:** Alternatively, you have the flexibility to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [our CLI](../../deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md), [Docker](../../stacks-and-components/component-guide/model-registries/), [Helm](../../deploying-zenml/zenml-self-hosted/deploy-with-helm.md), or [HuggingFace Spaces](../../deploying-zenml/zenml-self-hosted/deploy-using-huggingface-spaces.md).
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
@@ -49,17 +49,13 @@ Both options offer distinct advantages, allowing you to choose the deployment ap
 
 ## Using the ZenML CLI to connect to a deployed ZenML Server
 
-[ZenML Cloud](https://cloud.zenml.io/) uses the Command Line Interface (CLI) to connect to a server. This
-can be executed with the command:
+[ZenML Cloud](https://cloud.zenml.io/) uses the Command Line Interface (CLI) to connect to a server. This can be executed with the command:
 
 ```bash
 zenml connect --url https://...
 ```
 
-This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to
-mark your respective device as trusted or not. If you choose not to
-click `Trust this device`, a 24-hour token will be issued for authentication
-services. Choosing to trust the device will issue a 30-day token instead.
+This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to mark your respective device as trusted or not. If you choose not to click `Trust this device`, a 24-hour token will be issued for authentication services. Choosing to trust the device will issue a 30-day token instead.
 
 To see all devices you've permitted, use the following command:
 
@@ -67,16 +63,13 @@ To see all devices you've permitted, use the following command:
 zenml authorized-device list
 ```
 
-Additionally, the following command allows you to more precisely inspect one of
-these devices:
+Additionally, the following command allows you to more precisely inspect one of these devices:
 
 ```bash
 zenml authorized-device describe <DEVICE_ID>  
 ```
 
-For increased security, you can invalidate a token using the `zenml device lock`
-command followed by the device ID. This helps provide an extra layer of security
-and control over your devices.
+For increased security, you can invalidate a token using the `zenml device lock` command followed by the device ID. This helps provide an extra layer of security and control over your devices.
 
 ```
 zenml authorized-device lock <DEVICE_ID>  
@@ -84,19 +77,13 @@ zenml authorized-device lock <DEVICE_ID>
 
 To keep things simple, we can summarize the steps:
 
-1. Use the `zenml connect --url` command to start a device flow and connect to a
-   zenml server.
+1. Use the `zenml connect --url` command to start a device flow and connect to a zenml server.
 2. Choose whether to trust the device when prompted.
 3. Check permitted devices with `zenml devices list`.
 4. Invalidate a token with `zenml device lock ...`.
 
 ### Important notice
 
-Using the ZenML CLI is a secure and comfortable way to interact with your ZenML
-tenants. It's important to always ensure that only trusted devices are used to
-maintain security and privacy.
+Using the ZenML CLI is a secure and comfortable way to interact with your ZenML tenants. It's important to always ensure that only trusted devices are used to maintain security and privacy.
 
-Don't forget to manage your device trust levels regularly for optimal security.
-Should you feel a device trust needs to be revoked, lock the device immediately.
-Every token issued is a potential gateway to access your data, secrets and
-infrastructure.
+Don't forget to manage your device trust levels regularly for optimal security. Should you feel a device trust needs to be revoked, lock the device immediately. Every token issued is a potential gateway to access your data, secrets and infrastructure.

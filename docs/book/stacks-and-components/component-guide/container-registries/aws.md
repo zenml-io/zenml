@@ -4,28 +4,23 @@ description: Storing container images in Amazon ECR.
 
 # Amazon Elastic Container Registry (ECR)
 
-The AWS container registry is a [container registry](container-registries.md) flavor provided with the ZenML `aws`
-integration and uses [Amazon ECR](https://aws.amazon.com/ecr/) to store container images.
+The AWS container registry is a [container registry](./) flavor provided with the ZenML `aws` integration and uses [Amazon ECR](https://aws.amazon.com/ecr/) to store container images.
 
 ### When to use it
 
 You should use the AWS container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have access to AWS ECR. If you're not using AWS, take a look at the
-  other [container registry flavors](container-registries.md#container-registry-flavors).
+* you have access to AWS ECR. If you're not using AWS, take a look at the other [container registry flavors](./#container-registry-flavors).
 
 ### How to deploy it
 
-The ECR registry is automatically activated once you create an AWS account. However, you'll need to create
-a `Repository` in order to push container images to it:
+The ECR registry is automatically activated once you create an AWS account. However, you'll need to create a `Repository` in order to push container images to it:
 
 * Go to the [ECR website](https://console.aws.amazon.com/ecr).
 * Make sure the correct region is selected on the top right.
 * Click on `Create repository`.
-* Create a private repository. The name of the repository depends on the \[orchestrator]
-  \(../orchestrators/orchestrators.md or [step operator](../step-operators/step-operators.md) you're using in your
-  stack.
+* Create a private repository. The name of the repository depends on the \[orchestrator] (../orchestrators/orchestrators.md or [step operator](../step-operators/) you're using in your stack.
 
 ### URI format
 
@@ -41,12 +36,9 @@ The AWS container registry URI should have the following format:
 
 To figure out the URI for your registry:
 
-* Go to the [AWS console](https://console.aws.amazon.com/) and click on your user account in the top right to see
-  the `Account ID`.
-* Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which
-  you would like to store your container images. Make sure to choose a nearby region for faster access.
-* Once you have both these values, fill in the values in this template `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to
-  get your container registry URI.
+* Go to the [AWS console](https://console.aws.amazon.com/) and click on your user account in the top right to see the `Account ID`.
+* Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which you would like to store your container images. Make sure to choose a nearby region for faster access.
+* Once you have both these values, fill in the values in this template `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry URI.
 
 #### Infrastructure Deployment
 
@@ -56,22 +48,19 @@ An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
 zenml container-registry deploy ecr_container_registry --flavor=aws --provider=aws ...
 ```
 
-You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name,
-a random one is generated for you. For more information about how to work use the CLI for this, please refer to the
-dedicated documentation section.
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
 
 ### How to use it
 
 To use the AWS container registry, we need:
 
-* The ZenML `aws` integration installed. If you haven't done so, run
+*   The ZenML `aws` integration installed. If you haven't done so, run
 
-  ```shell
-  zenml integration install aws
-  ```
+    ```shell
+    zenml integration install aws
+    ```
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](aws.md#how-to-deploy-it) on the URI format and how to get the URI
-  for your registry.
+* The registry URI. Check out the [previous section](aws.md#how-to-deploy-it) on the URI format and how to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
 
@@ -92,9 +81,7 @@ Integrating and using an AWS Container Registry in your pipelines is not possibl
 
 {% tabs %}
 {% tab title="Local Authentication" %}
-This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an AWS Container Registry. You don't need to supply credentials explicitly when you register the AWS Container Registry, as it leverages the local credentials and configuration that the AWS
-CLI and Docker client store on your local machine. However, you will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before
-you register the AWS Container Registry.
+This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an AWS Container Registry. You don't need to supply credentials explicitly when you register the AWS Container Registry, as it leverages the local credentials and configuration that the AWS CLI and Docker client store on your local machine. However, you will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the AWS Container Registry.
 
 With the AWS CLI installed and set up with credentials, we'll need to log in to the container registry so Docker can pull and push images:
 
@@ -125,7 +112,7 @@ zenml service-connector register <CONNECTOR_NAME> --type aws --resource-type doc
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector register aws-us-east-1 --type aws --resource-type docker-registry --auto-configure
 ⠸ Registering service connector 'aws-us-east-1'...
 Successfully registered service connector `aws-us-east-1` with access to the following resources:
@@ -139,8 +126,7 @@ Successfully registered service connector `aws-us-east-1` with access to the fol
 
 Alternatively, you can configure an AWS Service Connector through the ZenML dashboard, but you'll need to provide AWS credentials explicitly, such as [an AWS access key](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/) associated with your AWS root account or IAM user account:
 
-![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png)
-![AWS ECR Service Connector Configuration](../../../.gitbook/assets/aws-ecr-service-connector-configuration.png)
+![AWS Service Connector Type](../../../.gitbook/assets/aws-service-connector-type.png) ![AWS ECR Service Connector Configuration](../../../.gitbook/assets/aws-ecr-service-connector-configuration.png)
 
 > **Note**: Please remember to grant the entity associated with your AWS credentials permissions to read and write to one or more ECR repositories as well as to list accessible ECR repositories. For a full list of permissions required to use an AWS Service Connector to access an ECR registry, please refer to the [AWS Service Connector ECR registry resource type documentation](../../auth-management/aws-service-connector.md#ecr-container-registry) or read the documentation available in the interactive CLI commands and dashboard. The AWS Service Connector supports [many different authentication methods](../../auth-management/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -148,10 +134,10 @@ If you already have one or more AWS Service Connectors configured in your ZenML 
 
 ```sh
 zenml service-connector list-resources --connector-type aws --resource-type docker-registry
-``` 
+```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
@@ -181,7 +167,7 @@ zenml container-registry connect <CONTAINER_REGISTRY_NAME> --connector <CONNECTO
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml container-registry connect aws-us-east-1 --connector aws-us-east-1 
 Successfully connected container registry `aws-us-east-1` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -211,7 +197,7 @@ zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector login aws-us-east-1 --resource-type docker-registry
 ⠼ Attempting to configure local client using service connector 'aws-us-east-1'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
@@ -222,13 +208,9 @@ The 'aws-us-east-1' Docker Service Connector connector was used to successfully 
 ```
 {% endcode %}
 {% endhint %}
-
 {% endtab %}
-
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the AWS container registry, check out
-the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.aws\_container\_registry.AWSContainerRegistry).
+For more information and a full list of configurable attributes of the AWS container registry, check out the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.aws\_container\_registry.AWSContainerRegistry).
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

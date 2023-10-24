@@ -186,14 +186,11 @@ artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="mo
 
 <summary>See it in action with the E2E example</summary>
 
-*To setup the local environment used below, follow the recommendations from the
-[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../../starter-guide/using-project-templates.md#advanced-guide)_._
 
-In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
-share Artifacts produced by a training pipeline inside a batch inference pipeline.
+In [`pipelines/batch_inference.py`](https://github.com/zenml-io/zenml/blob/release/0.45.4/examples/e2e/pipelines/batch\_inference.py), you can find an example using the `ExternalArtifact` concept to share Artifacts produced by a training pipeline inside a batch inference pipeline.
 
-On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
-With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
+On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features. With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
 
 ```python
     ########## ETL stage  ##########
@@ -208,8 +205,7 @@ With this, we ensure that the exact same feature preprocessor used during traini
     )
 ```
 
-On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back.
-With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
+On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back. With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
 
 ```python
     ########## DataQuality stage  ##########
@@ -305,24 +301,23 @@ def my_step() -> None:
 
 You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml\_step\_logs.png)
 
 If you do not want to store the logs in your artifact store, you can:
 
-1. Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
-   
+1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
     ```python
     from zenml import pipeline, step
-    
+
     @step(enable_step_logs=False)  # disables logging for this step
     def my_step() -> None:
         ...
-    
+
     @pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
     def my_pipeline():
         ...
     ```
-
 2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
 
 ## Settings in ZenML

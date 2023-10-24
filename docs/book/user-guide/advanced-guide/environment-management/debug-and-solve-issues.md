@@ -2,54 +2,42 @@
 description: A guide to debug common issues and get help.
 ---
 
-If you stumbled upon this page, chances are you're facing issues with using 
-ZenML. This page documents suggestions and best practices to let you debug, 
-get help, and solve issues quickly.
+# Debug and solve issues
 
-## When to get help?
+If you stumbled upon this page, chances are you're facing issues with using ZenML. This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
-We suggest going through the following checklist before asking for help: 
+### When to get help?
 
-* Search on Slack using the built-in Slack search function at the top of the page.
+We suggest going through the following checklist before asking for help:
 
-    ![Searching on Slack.](/docs/book/.gitbook/assets/slack_search_bar.png)
+*   Search on Slack using the built-in Slack search function at the top of the page.
 
+    ![Searching on Slack.](../../../.gitbook/assets/slack\_search\_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
-* Search the [docs](https://docs.zenml.io) using the search bar in the top right 
-corner of the page.
+*   Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 
-    ![Searching on docs page.](/docs/book/.gitbook/assets/doc_search_bar.png)
+    ![Searching on docs page.](../../../.gitbook/assets/doc\_search\_bar.png)
+*   Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
 
-* Search on https://open.crowd.dev/zenml for issues older than 90 days on our 
-Slack channel.
+    ![Searching on crowd.dev.](../../../.gitbook/assets/opendev\_search\_bar.png)
+* Check out the [common errors](debug-and-solve-issues.md#most-common-errors) section below.
+* Understand the problem by studying the [additional logs](debug-and-solve-issues.md#41-additional-logs) and [client/server logs](debug-and-solve-issues.md#client-and-server-logs).
 
-    ![Searching on crowd.dev.](/docs/book/.gitbook/assets/opendev_search_bar.png)
+Chances are you'd find your answers there. If you can't find any clue, then it's time to post your question on [Slack](https://zenml.io/slack).
 
-* Check out the [common errors](#most-common-errors) section below.
-* Understand the problem by studying the [additional logs](#41-additional-logs) 
-and [client/server logs](#client-and-server-logs).
+### How to post on Slack?
 
-Chances are you'd find your answers there. If you can't find any clue, then 
-it's time to post your question on [Slack](https://zenml.io/slack).
+When posting on Slack it's useful to provide the following information (when applicable) so that we get a complete picture before jumping into solutions.
 
-## How to post on Slack?
+#### 1. System Information
 
-When posting on Slack it's useful to provide the following information 
-(when applicable) so that we get a complete picture before jumping into 
-solutions.
-
-### 1. System Information
-
-Let us know relevant information about your system. We recommend running the 
-following in your terminal and attaching the output to your question.
+Let us know relevant information about your system. We recommend running the following in your terminal and attaching the output to your question.
 
 ```shell
 zenml info
 ```
 
-You can optionally include information about specific packages where you're
-having problems by using the `-p` option. For example, if you're having 
-problems with the `tensorflow` package, you can run:
+You can optionally include information about specific packages where you're having problems by using the `-p` option. For example, if you're having problems with the `tensorflow` package, you can run:
 
 ```shell
 zenml info -p tensorflow
@@ -82,60 +70,42 @@ INTEGRATIONS: ['airflow', 'aws', 'azure', 'dash', 'evidently', 'facets', 'feast'
 'sklearn', 'slack', 'spark', 'tensorboard', 'tensorflow', 'vault', 'wandb', 'whylogs', 'xgboost']
 ```
 
-System information provides more context to your issue and also eliminates the 
-need for anyone to ask when they're trying to help. This increases the chances 
-of your question getting answered and saves everyone's time.
+System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help. This increases the chances of your question getting answered and saves everyone's time.
 
-### 2. What happened?
+#### 2. What happened?
 
 Tell us briefly:
 
-* What were you trying to achieve? 
+* What were you trying to achieve?
 * What did you expect to happen?
 * What actually happened?
 
-### 3. How to reproduce the error?
+#### 3. How to reproduce the error?
 
-Walk us through how to reproduce the same error you had step-by-step, 
-whenever possible. Use the format you prefer. Write it in text or record a 
-video, whichever lets you get the issue at hand across to us!
+Walk us through how to reproduce the same error you had step-by-step, whenever possible. Use the format you prefer. Write it in text or record a video, whichever lets you get the issue at hand across to us!
 
-### 4. Relevant log output
+#### 4. Relevant log output
 
-As a general rule of thumb, always attach relevant log outputs and the full 
-error traceback to help us understand what happened under the hood. If the full 
-error traceback does not fit into a text message, attach a file or use a 
-service like [Pastebin](https://pastebin.com/).
+As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood. If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/).
 
-Along with the error traceback, we recommend to always share the output of the 
-following commands: 
+Along with the error traceback, we recommend to always share the output of the following commands:
 
-* `zenml status` 
+* `zenml status`
 * `zenml stack describe`
 
-When applicable, also attach logs of the orchestrator. For example, if you're 
-using the Kubeflow orchestrator, include the logs of the pod that was running 
-the step that failed.
+When applicable, also attach logs of the orchestrator. For example, if you're using the Kubeflow orchestrator, include the logs of the pod that was running the step that failed.
 
-Usually, the default log you see in your terminal is sufficient, in the 
-event it's not, then it's useful to provide additional logs. Additional logs 
-are not shown by default, you'll have to toggle an environment variable for it.
-Read the next section to find out how.
+Usually, the default log you see in your terminal is sufficient, in the event it's not, then it's useful to provide additional logs. Additional logs are not shown by default, you'll have to toggle an environment variable for it. Read the next section to find out how.
 
-#### 4.1 Additional logs
+**4.1 Additional logs**
 
-When the default logs are not helpful, ambiguous, or do not point you to the 
-root of the issue, you can toggle the value of the `ZENML_LOGGING_VERBOSITY` 
-environment variable to change the type of logs shown. The default value of 
-`ZENML_LOGGING_VERBOSITY` environment variable is:
+When the default logs are not helpful, ambiguous, or do not point you to the root of the issue, you can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown. The default value of `ZENML_LOGGING_VERBOSITY` environment variable is:
 
 ```
 ZENML_LOGGING_VERBOSITY=INFO
 ```
 
-You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to 
-change what's shown in the logs. And export the environment variable in your 
-terminal. For example in Linux:
+You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown in the logs. And export the environment variable in your terminal. For example in Linux:
 
 ```shell
 export ZENML_LOGGING_VERBOSITY=DEBUG
@@ -147,10 +117,9 @@ Read more about how to set environment variables for:
 * For [macOS](https://youngstone89.medium.com/setting-up-environment-variables-in-mac-os-28e5941c771c).
 * For [Windows](https://www.computerhope.com/issues/ch000549.htm).
 
-## Client and server logs
+### Client and server logs
 
-When facing a ZenML Server-related issue, you can view the logs of the server to 
-introspect deeper. To achieve this, run:
+When facing a ZenML Server-related issue, you can view the logs of the server to introspect deeper. To achieve this, run:
 
 ```shell
 zenml logs
@@ -167,39 +136,32 @@ INFO:asyncio:Syncing pipeline runs...
 2022-10-19 09:09:18,606 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
 ```
 
-## Most common errors
+### Most common errors
 
-This section documents frequently encountered errors among users and solutions 
-to each.
+This section documents frequently encountered errors among users and solutions to each.
 
-### Error initializing rest store
+#### Error initializing rest store
 
-Typically, the error presents itself as: 
+Typically, the error presents itself as:
 
 ```bash
 RuntimeError: Error initializing rest store with URL 'http://127.0.0.1:8237': HTTPConnectionPool(host='127.0.0.1', port=8237): Max retries exceeded with url: /api/v1/login (Caused by 
 NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9abb198550>: Failed to establish a new connection: [Errno 61] Connection refused'))
 ```
 
-If you restarted your machine after deploying ZenML then you have to run 
-`zenml up` again after each restart. Local ZenML deployments don't survive 
-machine restarts.
+If you restarted your machine after deploying ZenML then you have to run `zenml up` again after each restart. Local ZenML deployments don't survive machine restarts.
 
-
-### Column 'step_configuration' cannot be null
+#### Column 'step\_configuration' cannot be null
 
 ```bash
 sqlalchemy.exc.IntegrityError: (pymysql.err.IntegrityError) (1048, "Column 'step_configuration' cannot be null")
 ```
 
-This happens when a step configuration is too long. 
-We changed the limit from 4K to 65K chars, but it could still happen if 
-you have excessively long strings in your config.
+This happens when a step configuration is too long. We changed the limit from 4K to 65K chars, but it could still happen if you have excessively long strings in your config.
 
+#### 'NoneType' object has no attribute 'name'
 
-### 'NoneType' object has no attribute 'name'
-This is also a common error you might encounter when you do not have the 
-necessary stack components registered on the stack. For example:
+This is also a common error you might encounter when you do not have the necessary stack components registered on the stack. For example:
 
 ```shell
 ╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
@@ -226,9 +188,7 @@ necessary stack components registered on the stack. For example:
 AttributeError: 'NoneType' object has no attribute 'name'
 ```
 
-In the above error snippet, the `step` on line 24 expects an experiment tracker
-but could not find it on the stack. To solve it, register an experiment 
-tracker of your choice on the stack. For instance:
+In the above error snippet, the `step` on line 24 expects an experiment tracker but could not find it on the stack. To solve it, register an experiment tracker of your choice on the stack. For instance:
 
 ```shell
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
@@ -240,4 +200,4 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](../../../stacks-and-components/component-guide/component-guide.md).
+This also applies to all other [stack components](../../../stacks-and-components/component-guide/).

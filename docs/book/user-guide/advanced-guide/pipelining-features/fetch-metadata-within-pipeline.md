@@ -6,9 +6,7 @@ description: Accessing meta information during pipeline composition.
 
 ### Pipeline configuration using the `PipelineContext`
 
-To find information about the pipeline configuration during pipeline composition, you
-can use the `zenml.get_pipeline_context()` function to access the `PipelineContext` of
-your pipeline:
+To find information about the pipeline configuration during pipeline composition, you can use the `zenml.get_pipeline_context()` function to access the `PipelineContext` of your pipeline:
 
 ```python
 from zenml import get_pipeline_context
@@ -45,8 +43,7 @@ def my_pipeline():
 ```
 
 {% hint style="info" %}
-See the [API Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.pipelines.pipeline_context.PipelineContext) for more information on which attributes and methods the `PipelineContext` provides.
+See the [API Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-new/#zenml.new.pipelines.pipeline\_context.PipelineContext) for more information on which attributes and methods the `PipelineContext` provides.
 {% endhint %}
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

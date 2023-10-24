@@ -24,16 +24,10 @@ Once merged, this should allow other people to use your new component while depl
 
 ## Enabling the stack component deploy CLI
 
-To enable the stack component deploy CLI to work with your new component, you
-need to add a new flag to the `deploy_stack_component_command` in the
-`src/zenml/cli/stack_components.py` file.
+To enable the stack component deploy CLI to work with your new component, you need to add a new flag to the `deploy_stack_component_command` in the `src/zenml/cli/stack_components.py` file.
 
-From the `mlstacks` side, this will also require an update to
-the validation logic inside the `mlstacks` repository, starting with updating
-enums and constants in the base of the `src/mlstacks` directory.
+From the `mlstacks` side, this will also require an update to the validation logic inside the `mlstacks` repository, starting with updating enums and constants in the base of the `src/mlstacks` directory.
 
-If you have any further questions or need help navigating changes that are
-required, [please do reach out to us on Slack](https://zenml.io/slack-invite)! Happy contributing! 🥰
+If you have any further questions or need help navigating changes that are required, [please do reach out to us on Slack](https://zenml.io/slack-invite)! Happy contributing! 🥰
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

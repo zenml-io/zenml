@@ -77,5 +77,4 @@ Each recipe might have its own values and here's how you can ascertain those val
 * For the cluster name, go into the `outputs.tf` file in the root directory and search for the output that exposes the cluster name.
 * For the region, check out the `variables.tf` or the `locals.tf` file for the default value assigned to it.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

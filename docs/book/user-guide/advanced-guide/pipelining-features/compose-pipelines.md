@@ -4,8 +4,7 @@ description: Composing your ZenML pipelines.
 
 # Compose pipelines
 
-Sometimes it can be useful to extract some common functionality into separate functions
-in order to avoid code duplication. To facilitate this, ZenML allows you to compose your pipelines:
+Sometimes it can be useful to extract some common functionality into separate functions in order to avoid code duplication. To facilitate this, ZenML allows you to compose your pipelines:
 
 ```python
 from zenml import pipeline
@@ -30,10 +29,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Calling a pipeline inside another pipeline does not actually trigger a separate run of the child pipeline
-but instead invokes the steps of the child pipeline to the parent pipeline.
+Calling a pipeline inside another pipeline does not actually trigger a separate run of the child pipeline but instead invokes the steps of the child pipeline to the parent pipeline.
 {% endhint %}
 
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

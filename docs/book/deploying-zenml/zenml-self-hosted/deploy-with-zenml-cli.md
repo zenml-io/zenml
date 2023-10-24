@@ -4,16 +4,16 @@ description: Deploying ZenML on cloud using the ZenML CLI.
 
 # Deploy with ZenML CLI
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](zenml-self-hosted.md) to learn about other options that you have.
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](./) to learn about other options that you have.
 
-Before we begin, it will help to understand the [architecture](zenml-self-hosted.md) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
+Before we begin, it will help to understand the [architecture](./) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
 
 ## Option 1: Starting from scratch
 
 If you don't have an existing Kubernetes cluster, you have the following two options to set it up:
 
 * Creating it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
-* Using a [stack recipe](../../stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlstacks#-list-of-recipes) to see if there's something that works for you.
+* Using a [stack recipe](https://github.com/zenml-io/zenml/blob/release/0.45.4/docs/book/stacks-and-components/stack-deployment/deploy-a-stack-using-stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlstacks#-list-of-recipes) to see if there's something that works for you.
 
 {% hint style="warning" %}
 Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it.
@@ -333,9 +333,8 @@ zenml disconnect
 
 Here's an architecture diagram that shows how the workflow looks like when you do `zenml deploy`.
 
-![Running zenml deploy](../../.gitbook/assets/zenml_deploy.png)
+![Running zenml deploy](../../.gitbook/assets/zenml\_deploy.png)
 
 The deploy CLI makes use of a "recipe" inside the `zenml-io/zenml` repository to deploy the server on the right cloud. Any configuration that you pass with the CLI, is sent to the recipe as input variables.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

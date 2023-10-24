@@ -110,7 +110,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 {% endtabs %}
 
 {% hint style="info" %}
-There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/component-guide.md)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/)
 {% endhint %}
 
 ## Registering a stack
@@ -219,5 +219,4 @@ To run a pipeline using the new stack:
 
 Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

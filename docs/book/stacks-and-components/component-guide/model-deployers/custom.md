@@ -5,38 +5,20 @@ description: Learning how to develop a custom model deployer.
 # Develop a Custom Model Deployer
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-stack-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
-To deploy and manage your trained machine-learning models, ZenML provides a stack component called `Model Deployer`.
-This component is responsible for interacting with the deployment tool, framework, or platform.
+To deploy and manage your trained machine-learning models, ZenML provides a stack component called `Model Deployer`. This component is responsible for interacting with the deployment tool, framework, or platform.
 
-When present in a stack, the model deployer can also act as a registry for models that are served with ZenML. You can
-use the model deployer to list all models that are currently deployed for online inference or filtered according to a
-particular pipeline run or step, or to suspend, resume or delete an external model server managed through ZenML.
+When present in a stack, the model deployer can also act as a registry for models that are served with ZenML. You can use the model deployer to list all models that are currently deployed for online inference or filtered according to a particular pipeline run or step, or to suspend, resume or delete an external model server managed through ZenML.
 
 ### Base Abstraction
 
 In ZenML, the base abstraction of the model deployer is built on top of three major criteria:
 
-1. It needs to contain all the stack-related configuration attributes required to interact with the remote model serving
-   tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration
-   parameters).
-2. It needs to implement the continuous deployment logic necessary to deploy models in a way that updates an existing
-   model server that is already serving a previous version of the same model instead of creating a new model server for
-   every new model version (see the `deploy_model` abstract method). This functionality can be consumed directly from
-   ZenML pipeline steps, but it can also be used outside the pipeline to deploy ad-hoc models. It is also usually
-   coupled with a standard model deployer step, implemented by each integration, that hides the details of the
-   deployment process from the user.
-3. It needs to act as a ZenML BaseService registry, where every BaseService instance is used as an internal
-   representation of a remote model server (see the `find_model_server` abstract method). To achieve this, it must be
-   able to re-create the configuration of a BaseService from information that is persisted externally, alongside, or
-   even as part of the remote model server configuration itself. For example, for model servers that are implemented as
-   Kubernetes resources, the BaseService instances can be serialized and saved as Kubernetes resource annotations. This
-   allows the model deployer to keep track of all externally running model servers and to re-create their corresponding
-   BaseService instance representations at any given time. The model deployer also defines methods that implement basic
-   life-cycle management on remote model servers outside the coverage of a pipeline (see `stop_model_server`
-   , `start_model_server` and `delete_model_server`).
+1. It needs to contain all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters).
+2. It needs to implement the continuous deployment logic necessary to deploy models in a way that updates an existing model server that is already serving a previous version of the same model instead of creating a new model server for every new model version (see the `deploy_model` abstract method). This functionality can be consumed directly from ZenML pipeline steps, but it can also be used outside the pipeline to deploy ad-hoc models. It is also usually coupled with a standard model deployer step, implemented by each integration, that hides the details of the deployment process from the user.
+3. It needs to act as a ZenML BaseService registry, where every BaseService instance is used as an internal representation of a remote model server (see the `find_model_server` abstract method). To achieve this, it must be able to re-create the configuration of a BaseService from information that is persisted externally, alongside, or even as part of the remote model server configuration itself. For example, for model servers that are implemented as Kubernetes resources, the BaseService instances can be serialized and saved as Kubernetes resource annotations. This allows the model deployer to keep track of all externally running model servers and to re-create their corresponding BaseService instance representations at any given time. The model deployer also defines methods that implement basic life-cycle management on remote model servers outside the coverage of a pipeline (see `stop_model_server` , `start_model_server` and `delete_model_server`).
 
 Putting all these considerations together, we end up with the following interface:
 
@@ -151,10 +133,7 @@ class BaseModelDeployerFlavor(Flavor):
 ```
 
 {% hint style="info" %}
-This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see
-the full implementation and get the complete docstrings, please check
-the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model\_deployers/#zenml.model\_deployers.base\_model\_deployer.BaseModelDeployer)
-.
+This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model\_deployers/#zenml.model\_deployers.base\_model\_deployer.BaseModelDeployer) .
 {% endhint %}
 
 ### Building your own model deployers
@@ -162,33 +141,25 @@ the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model\_depl
 If you want to create your own custom flavor for a model deployer, you can follow the following steps:
 
 1. Create a class that inherits from the `BaseModelDeployer` class and implements the abstract methods.
-2. If you need to provide any configuration, create a class that inherits from the `BaseModelDeployerConfig` class and
-   add your configuration parameters.
-3. Bring both the implementation and the configuration together by inheriting from the `BaseModelDeployerFlavor` class.
-   Make sure that you give a `name` to the flavor through its abstract property.
+2. If you need to provide any configuration, create a class that inherits from the `BaseModelDeployerConfig` class and add your configuration parameters.
+3. Bring both the implementation and the configuration together by inheriting from the `BaseModelDeployerFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor
-class via dot notation**:
+Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
 ```shell
 zenml model-deployer flavor register <path.to.MyModelDeployerFlavor>
 ```
 
-For example, if your flavor class `MyModelDeployerFlavor` is defined in `flavors/my_flavor.py`, you'd register it by
-doing:
+For example, if your flavor class `MyModelDeployerFlavor` is defined in `flavors/my_flavor.py`, you'd register it by doing:
 
 ```shell
 zenml model-deployer flavor register flavors.my_flavor.MyModelDeployerFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point
-of resolution. Therefore, please ensure you follow 
-[the best practice](/docs/book/user-guide/starter-guide/follow-best-practices.md) of initializing zenml at the
-root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../../user-guide/starter-guide/follow-best-practices.md) of initializing zenml at the root of your repository.
 
-If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working
-directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
+If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}
 
 Afterward, you should see the new flavor in the list of available flavors:
@@ -200,19 +171,11 @@ zenml model-deployer flavor list
 {% hint style="warning" %}
 It is important to draw attention to when and how these base abstractions are coming into play in a ZenML workflow.
 
-* The **CustomModelDeployerFlavor** class is imported and utilized upon the creation of the custom flavor through the
-  CLI.
-* The **CustomModelDeployerConfig** class is imported when someone tries to register/update a stack component with this
-  custom flavor. Especially, during the registration process of the stack component, the config will be used to validate
-  the values given by the user. As `Config` objects are inherently `pydantic` objects, you can also add your own custom
-  validators here.
+* The **CustomModelDeployerFlavor** class is imported and utilized upon the creation of the custom flavor through the CLI.
+* The **CustomModelDeployerConfig** class is imported when someone tries to register/update a stack component with this custom flavor. Especially, during the registration process of the stack component, the config will be used to validate the values given by the user. As `Config` objects are inherently `pydantic` objects, you can also add your own custom validators here.
 * The **CustomModelDeployer** only comes into play when the component is ultimately in use.
 
-The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we
-can register flavors and components even when the major dependencies behind their implementation are not installed in
-our local setting (assuming the `CustomModelDeployerFlavor` and the `CustomModelDeployerConfig` are implemented in a
-different module/path than the actual `CustomModelDeployer`).
+The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `CustomModelDeployerFlavor` and the `CustomModelDeployerConfig` are implemented in a different module/path than the actual `CustomModelDeployer`).
 {% endhint %}
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

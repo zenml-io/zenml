@@ -53,7 +53,7 @@ Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill
 ### Supported orchestrators
 
 | Orchestrator                                                                                            | Scheduling Support |
-|---------------------------------------------------------------------------------------------------------|--------------------|
+| ------------------------------------------------------------------------------------------------------- | ------------------ |
 | [LocalOrchestrator](../../../stacks-and-components/component-guide/orchestrators/local.md)              | ⛔️                 |
 | [LocalDockerOrchestrator](../../../stacks-and-components/component-guide/orchestrators/local-docker.md) | ⛔️                 |
 | [KubernetesOrchestrator](../../../stacks-and-components/component-guide/orchestrators/kubernetes.md)    | ✅                  |
@@ -101,5 +101,4 @@ def staging_data_loader() -> Tuple[
 
 Note how the cache is disabled and that this step loads dynamic data.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
