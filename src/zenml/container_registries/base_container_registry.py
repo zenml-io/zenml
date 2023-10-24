@@ -105,6 +105,18 @@ class BaseContainerRegistry(AuthenticationMixin):
         if secret:
             return secret.username, secret.password
 
+        connector = self.get_connector()
+        if connector:
+            from zenml.service_connectors.docker_service_connector import (
+                DockerServiceConnector,
+            )
+
+            if isinstance(connector, DockerServiceConnector):
+                return (
+                    connector.config.username.get_secret_value(),
+                    connector.config.password.get_secret_value(),
+                )
+
         return None
 
     @property

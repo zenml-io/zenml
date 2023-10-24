@@ -29,7 +29,6 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -52,19 +51,6 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
             A `sky.clouds.Cloud` instance.
         """
         return sky.clouds.AWS()
-
-    def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
-        """Run to set up the sky job.
-
-        Args:
-            stack: The stack to use.
-
-        Returns:
-            A `setup` string.
-        """
-        assert stack is not None and stack.container_registry is not None
-        assert hasattr(stack.container_registry, "_get_region")
-        return f"aws ecr get-login-password --region {stack.container_registry._get_region()} | docker login --username AWS --password-stdin {stack.container_registry.config.uri}"
 
     @property
     def config(self) -> SkypilotAWSOrchestratorConfig:
