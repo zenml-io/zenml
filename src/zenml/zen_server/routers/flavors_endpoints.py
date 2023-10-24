@@ -50,6 +50,7 @@ router = APIRouter(
 @handle_exceptions
 def list_flavors(
     flavor_filter_model: FlavorFilter = Depends(make_dependable(FlavorFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponse]:
     """Returns all flavors.
@@ -57,12 +58,15 @@ def list_flavors(
     Args:
         flavor_filter_model: Filter model used for pagination, sorting,
                              filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All flavors.
     """
-    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
+    return zen_store().list_flavors(
+        flavor_filter_model=flavor_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -73,17 +77,20 @@ def list_flavors(
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> FlavorResponse:
     """Returns the requested flavor.
 
     Args:
         flavor_id: ID of the flavor.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
-    flavor = zen_store().get_flavor(flavor_id)
+    flavor = zen_store().get_flavor(flavor_id, hydrate=hydrate)
     return flavor
 
 

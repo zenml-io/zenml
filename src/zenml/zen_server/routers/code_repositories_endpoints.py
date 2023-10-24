@@ -49,18 +49,23 @@ def list_code_repositories(
     filter_model: CodeRepositoryFilter = Depends(
         make_dependable(CodeRepositoryFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[CodeRepositoryResponse]:
     """Gets a page of code repositories.
 
     Args:
         filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         Page of code repository objects.
     """
-    return zen_store().list_code_repositories(filter_model=filter_model)
+    return zen_store().list_code_repositories(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -71,18 +76,21 @@ def list_code_repositories(
 @handle_exceptions
 def get_code_repository(
     code_repository_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> CodeRepositoryResponse:
     """Gets a specific code repository using its unique ID.
 
     Args:
         code_repository_id: The ID of the code repository to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific code repository object.
     """
     return zen_store().get_code_repository(
-        code_repository_id=code_repository_id
+        code_repository_id=code_repository_id, hydrate=hydrate
     )
 
 

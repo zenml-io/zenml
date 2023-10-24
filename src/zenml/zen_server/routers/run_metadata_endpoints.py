@@ -44,6 +44,7 @@ def list_run_metadata(
     run_metadata_filter_model: RunMetadataFilter = Depends(
         make_dependable(RunMetadataFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RunMetadataResponse]:
     """Get run metadata according to query filters.
@@ -51,8 +52,12 @@ def list_run_metadata(
     Args:
         run_metadata_filter_model: Filter model used for pagination, sorting,
             filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_run_metadata(run_metadata_filter_model)
+    return zen_store().list_run_metadata(
+        run_metadata_filter_model, hydrate=hydrate
+    )

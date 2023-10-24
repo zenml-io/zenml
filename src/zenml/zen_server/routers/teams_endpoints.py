@@ -51,12 +51,15 @@ router = APIRouter(
 @handle_exceptions
 def list_teams(
     team_filter_model: TeamFilter = Depends(make_dependable(TeamFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamResponse]:
     """Returns a list of all teams.
 
     Args:
         team_filter_model: All filter parameters including pagination params.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of all teams.
@@ -95,17 +98,22 @@ def create_team(
 @handle_exceptions
 def get_team(
     team_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> TeamResponse:
     """Returns a specific team.
 
     Args:
         team_name_or_id: Name or ID of the team.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific team.
     """
-    return zen_store().get_team(team_name_or_id=team_name_or_id)
+    return zen_store().get_team(
+        team_name_or_id=team_name_or_id, hydrate=hydrate
+    )
 
 
 @router.put(
@@ -160,6 +168,7 @@ def list_role_assignments_for_team(
     team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
         make_dependable(TeamRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
@@ -167,10 +176,12 @@ def list_role_assignments_for_team(
     Args:
         team_role_assignment_filter_model: All filter parameters including
             pagination params.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all roles that are assigned to a team.
     """
     return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model
+        team_role_assignment_filter_model, hydrate=hydrate
     )

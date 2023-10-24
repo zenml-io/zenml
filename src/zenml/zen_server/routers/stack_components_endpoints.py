@@ -56,6 +56,7 @@ def list_stack_components(
     component_filter_model: ComponentFilter = Depends(
         make_dependable(ComponentFilter)
     ),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -64,15 +65,17 @@ def list_stack_components(
 
     Args:
         component_filter_model: Filter model used for pagination, sorting,
-                                filtering
-        auth_context: Authentication Context
+                                filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+        auth_context: Authentication Context.
 
     Returns:
         List of stack components for a specific type.
     """
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
-        component_filter_model=component_filter_model
+        component_filter_model=component_filter_model, hydrate=hydrate
     )
 
 
@@ -84,17 +87,20 @@ def list_stack_components(
 @handle_exceptions
 def get_stack_component(
     component_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ComponentResponse:
     """Returns the requested stack component.
 
     Args:
         component_id: ID of the stack component.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack component.
     """
-    return zen_store().get_stack_component(component_id)
+    return zen_store().get_stack_component(component_id, hydrate=hydrate)
 
 
 @router.put(

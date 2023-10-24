@@ -875,7 +875,7 @@ class RestZenStore(BaseZenStore):
 
     # ------------------------ Logs ------------------------
 
-    def get_logs(self, logs_id: UUID, hydrate: bool =True) -> LogsResponse:
+    def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Gets logs with the given ID.
 
         Args:
@@ -1564,7 +1564,7 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
             filter_model=filter_model,
-            params={"expand_secrets": False,"hydrate": hydrate},
+            params={"expand_secrets": False, "hydrate": hydrate},
         )
         self._populate_connector_type(*connector_models.items)
         return connector_models
@@ -2309,11 +2309,10 @@ class RestZenStore(BaseZenStore):
                 resource_id=user_name_or_id,
                 route=USERS,
                 response_model=UserResponse,
-            params={"hydrate": hydrate},
+                params={"hydrate": hydrate},
             )
         else:
-            body = self.get(CURRENT_USER,
-            params={"hydrate": hydrate})
+            body = self.get(CURRENT_USER, params={"hydrate": hydrate})
             return UserResponse.parse_obj(body)
 
     def list_users(

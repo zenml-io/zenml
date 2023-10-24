@@ -52,19 +52,22 @@ def list_artifacts(
     artifact_filter_model: ArtifactFilter = Depends(
         make_dependable(ArtifactFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ArtifactResponse]:
     """Get artifacts according to query filters.
 
     Args:
         artifact_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The artifacts according to query filters.
     """
     return zen_store().list_artifacts(
-        artifact_filter_model=artifact_filter_model
+        artifact_filter_model=artifact_filter_model, hydrate=hydrate
     )
 
 
@@ -97,17 +100,20 @@ def create_artifact(
 @handle_exceptions
 def get_artifact(
     artifact_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ArtifactResponse:
     """Get an artifact by ID.
 
     Args:
         artifact_id: The ID of the artifact to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The artifact with the given ID.
     """
-    return zen_store().get_artifact(artifact_id)
+    return zen_store().get_artifact(artifact_id, hydrate=hydrate)
 
 
 @router.delete(

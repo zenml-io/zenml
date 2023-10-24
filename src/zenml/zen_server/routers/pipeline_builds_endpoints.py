@@ -44,18 +44,23 @@ def list_builds(
     build_filter_model: PipelineBuildFilter = Depends(
         make_dependable(PipelineBuildFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineBuildResponse]:
     """Gets a list of builds.
 
     Args:
         build_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of build objects.
     """
-    return zen_store().list_builds(build_filter_model=build_filter_model)
+    return zen_store().list_builds(
+        build_filter_model=build_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -66,17 +71,20 @@ def list_builds(
 @handle_exceptions
 def get_build(
     build_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> PipelineBuildResponse:
     """Gets a specific build using its unique id.
 
     Args:
         build_id: ID of the build to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific build object.
     """
-    return zen_store().get_build(build_id=build_id)
+    return zen_store().get_build(build_id=build_id, hydrate=hydrate)
 
 
 @router.delete(

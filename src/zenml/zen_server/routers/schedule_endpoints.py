@@ -49,6 +49,7 @@ def list_schedules(
     schedule_filter_model: ScheduleFilter = Depends(
         make_dependable(ScheduleFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ScheduleResponse]:
     """Gets a list of schedules.
@@ -61,7 +62,7 @@ def list_schedules(
         List of schedule objects.
     """
     return zen_store().list_schedules(
-        schedule_filter_model=schedule_filter_model
+        schedule_filter_model=schedule_filter_model, hydrate=hydrate
     )
 
 
@@ -73,6 +74,7 @@ def list_schedules(
 @handle_exceptions
 def get_schedule(
     schedule_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ScheduleResponse:
     """Gets a specific schedule using its unique id.
@@ -83,7 +85,7 @@ def get_schedule(
     Returns:
         A specific schedule object.
     """
-    return zen_store().get_schedule(schedule_id=schedule_id)
+    return zen_store().get_schedule(schedule_id=schedule_id, hydrate=hydrate)
 
 
 @router.put(

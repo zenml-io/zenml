@@ -49,18 +49,23 @@ def list_user_role_assignments(
     user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
         make_dependable(UserRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all role assignments.
 
     Args:
-        user_role_assignment_filter_model: filter models for user role assignments
+        user_role_assignment_filter_model: filter models for user role
+            assignments.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of all role assignments.
     """
     return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
+        user_role_assignment_filter_model=user_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -97,18 +102,21 @@ def create_role_assignment(
 @handle_exceptions
 def get_role_assignment(
     role_assignment_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> UserRoleAssignmentResponse:
     """Returns a specific role assignment.
 
     Args:
         role_assignment_id: Name or ID of the role assignment.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific role assignment.
     """
     return zen_store().get_user_role_assignment(
-        user_role_assignment_id=role_assignment_id
+        user_role_assignment_id=role_assignment_id, hydrate=hydrate
     )
 
 

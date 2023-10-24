@@ -1841,7 +1841,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             flavor_filter_model: All filter parameters including pagination
-                params
+                params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

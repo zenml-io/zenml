@@ -49,19 +49,23 @@ def list_team_role_assignments(
     team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
         make_dependable(TeamRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all role assignments.
 
     Args:
-        team_role_assignment_filter_model: filter models for team role assignments
-
+        team_role_assignment_filter_model: filter models for team role
+            assignments.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of all role assignments.
     """
     return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model
+        team_role_assignment_filter_model=team_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -98,18 +102,21 @@ def create_team_role_assignment(
 @handle_exceptions
 def get_team_role_assignment(
     role_assignment_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> TeamRoleAssignmentResponse:
     """Returns a specific role assignment.
 
     Args:
         role_assignment_id: Name or ID of the role assignment.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific role assignment.
     """
     return zen_store().get_team_role_assignment(
-        team_role_assignment_id=role_assignment_id
+        team_role_assignment_id=role_assignment_id, hydrate=hydrate
     )
 
 

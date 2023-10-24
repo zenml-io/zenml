@@ -63,19 +63,22 @@ def list_run_steps(
     step_run_filter_model: StepRunFilter = Depends(
         make_dependable(StepRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[StepRunResponse]:
     """Get run steps according to query filters.
 
     Args:
         step_run_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The run steps according to query filters.
     """
     return zen_store().list_run_steps(
-        step_run_filter_model=step_run_filter_model
+        step_run_filter_model=step_run_filter_model, hydrate=hydrate
     )
 
 
@@ -108,17 +111,20 @@ def create_run_step(
 @handle_exceptions
 def get_step(
     step_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> StepRunResponse:
     """Get one specific step.
 
     Args:
         step_id: ID of the step to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The step.
     """
-    return zen_store().get_run_step(step_id)
+    return zen_store().get_run_step(step_id, hydrate=hydrate)
 
 
 @router.put(

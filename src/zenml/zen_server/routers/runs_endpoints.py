@@ -61,17 +61,22 @@ def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:
-        runs_filter_model: Filter model used for pagination, sorting, filtering
+        runs_filter_model: Filter model used for pagination, sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(runs_filter_model=runs_filter_model)
+    return zen_store().list_runs(
+        runs_filter_model=runs_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -82,17 +87,20 @@ def list_runs(
 @handle_exceptions
 def get_run(
     run_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
 
     Args:
         run_id: ID of the pipeline run to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline run.
     """
-    return zen_store().get_run(run_name_or_id=run_id)
+    return zen_store().get_run(run_name_or_id=run_id, hydrate=hydrate)
 
 
 @router.put(

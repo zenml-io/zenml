@@ -52,19 +52,22 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponse]:
     """Gets a list of pipelines.
 
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of pipeline objects.
     """
     return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model
+        pipeline_filter_model=pipeline_filter_model, hydrate=hydrate
     )
 
 
@@ -76,17 +79,20 @@ def list_pipelines(
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> PipelineResponse:
     """Gets a specific pipeline using its unique id.
 
     Args:
         pipeline_id: ID of the pipeline to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific pipeline object.
     """
-    return zen_store().get_pipeline(pipeline_id=pipeline_id)
+    return zen_store().get_pipeline(pipeline_id=pipeline_id, hydrate=hydrate)
 
 
 @router.put(
@@ -141,6 +147,7 @@ def list_pipeline_runs(
     pipeline_run_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.

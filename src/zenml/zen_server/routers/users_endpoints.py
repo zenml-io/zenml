@@ -84,17 +84,23 @@ current_user_router = APIRouter(
 @handle_exceptions
 def list_users(
     user_filter_model: UserFilter = Depends(make_dependable(UserFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserResponse]:
     """Returns a list of all users.
 
     Args:
-        user_filter_model: Model that takes care of filtering, sorting and pagination
+        user_filter_model: Model that takes care of filtering, sorting and
+            pagination
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(user_filter_model=user_filter_model)
+    return zen_store().list_users(
+        user_filter_model=user_filter_model, hydrate=hydrate
+    )
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be created via the
@@ -153,17 +159,22 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 @handle_exceptions
 def get_user(
     user_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> UserResponse:
     """Returns a specific user.
 
     Args:
         user_name_or_id: Name or ID of the user.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific user.
     """
-    return zen_store().get_user(user_name_or_id=user_name_or_id)
+    return zen_store().get_user(
+        user_name_or_id=user_name_or_id, hydrate=hydrate
+    )
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
@@ -373,6 +384,7 @@ def list_role_assignments_for_user(
     user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
         make_dependable(UserRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a user.

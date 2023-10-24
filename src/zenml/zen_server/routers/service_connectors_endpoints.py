@@ -70,6 +70,7 @@ def list_service_connectors(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
+    hydrate: bool = False,
 ) -> Page[ServiceConnectorResponse]:
     """Get a list of all service connectors for a specific type.
 
@@ -77,14 +78,16 @@ def list_service_connectors(
         connector_filter_model: Filter model used for pagination, sorting,
             filtering
         expand_secrets: Whether to expand secrets or not.
-        auth_context: Authentication Context
+        auth_context: Authentication Context.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         Page with list of service connectors for a specific type.
     """
     connector_filter_model.set_scope_user(user_id=auth_context.user.id)
     connectors = zen_store().list_service_connectors(
-        filter_model=connector_filter_model
+        filter_model=connector_filter_model, hydrate=hydrate
     )
 
     if expand_secrets and PermissionType.WRITE in auth_context.permissions:
@@ -108,6 +111,7 @@ def list_service_connectors(
 def get_service_connector(
     connector_id: UUID,
     expand_secrets: bool = True,
+    hydrate: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -117,6 +121,8 @@ def get_service_connector(
     Args:
         connector_id: ID of the service connector.
         expand_secrets: Whether to expand secrets or not.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: Authentication context.
 
     Returns:
@@ -125,7 +131,9 @@ def get_service_connector(
     Raises:
         KeyError: If the service connector does not exist or is not accessible.
     """
-    connector = zen_store().get_service_connector(connector_id)
+    connector = zen_store().get_service_connector(
+        connector_id, hydrate=hydrate
+    )
 
     # Don't allow users to access service connectors that don't belong to them
     # unless they are shared.

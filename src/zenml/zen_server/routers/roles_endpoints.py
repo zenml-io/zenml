@@ -49,18 +49,22 @@ router = APIRouter(
 @handle_exceptions
 def list_roles(
     role_filter_model: RoleFilter = Depends(make_dependable(RoleFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleResponse]:
     """Returns a list of all roles.
 
     Args:
         role_filter_model: Filter model used for pagination, sorting, filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles(role_filter_model=role_filter_model)
+    return zen_store().list_roles(
+        role_filter_model=role_filter_model, hydrate=hydrate
+    )
 
 
 @router.post(
@@ -94,17 +98,22 @@ def create_role(
 @handle_exceptions
 def get_role(
     role_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> RoleResponse:
     """Returns a specific role.
 
     Args:
         role_name_or_id: Name or ID of the role.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific role.
     """
-    return zen_store().get_role(role_name_or_id=role_name_or_id)
+    return zen_store().get_role(
+        role_name_or_id=role_name_or_id, hydrate=hydrate
+    )
 
 
 @router.put(

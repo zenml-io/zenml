@@ -43,6 +43,7 @@ router = APIRouter(
 @handle_exceptions
 def list_stacks(
     stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -50,7 +51,10 @@ def list_stacks(
     """Returns all stacks.
 
     Args:
-        stack_filter_model: Filter model used for pagination, sorting, filtering
+        stack_filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: Authentication Context
 
     Returns:
@@ -58,7 +62,9 @@ def list_stacks(
     """
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
 
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+    return zen_store().list_stacks(
+        stack_filter_model=stack_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -69,17 +75,20 @@ def list_stacks(
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> StackResponse:
     """Returns the requested stack.
 
     Args:
         stack_id: ID of the stack.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
-    return zen_store().get_stack(stack_id)
+    return zen_store().get_stack(stack_id, hydrate=hydrate)
 
 
 @router.put(
