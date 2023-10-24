@@ -15,7 +15,12 @@ branch_labels = None
 depends_on = None
 
 
-def _migrate_default_entities(table: sa.Table) -> None:
+def _rename_default_entities(table: sa.Table) -> None:
+    """Include owner id in the name of default entities.
+
+    Args:
+        table: The table in which to rename the default entities.
+    """
     connection = op.get_bind()
 
     query = sa.select(
@@ -33,14 +38,15 @@ def _migrate_default_entities(table: sa.Table) -> None:
 
 
 def resolve_duplicate_names() -> None:
+    """Resolve duplicate names for shareable entities."""
     meta = sa.MetaData(bind=op.get_bind())
     meta.reflect(only=("stack", "stack_component", "service_connector"))
 
     stack_table = sa.Table("stack", meta)
     stack_component_table = sa.Table("stack_component", meta)
 
-    _migrate_default_entities(stack_table)
-    _migrate_default_entities(stack_component_table)
+    _rename_default_entities(stack_table)
+    _rename_default_entities(stack_component_table)
 
     service_connector_table = sa.Table("service_connector", meta)
     query = sa.select(
