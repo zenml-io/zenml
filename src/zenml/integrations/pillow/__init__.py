@@ -21,7 +21,7 @@ class PillowIntegration(Integration):
     """Definition of Pillow integration for ZenML."""
 
     NAME = PILLOW
-    REQUIREMENTS = ["Pillow>=9.2.0"]
+    REQUIREMENTS = ["Pillow>=9.2.0,<10.0.0"]
 
     @classmethod
     def activate(cls) -> None:
