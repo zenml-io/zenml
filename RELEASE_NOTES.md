@@ -1,5 +1,23 @@
 <!-- markdown-link-check-disable -->
 
+# 0.45.5
+
+This minor release contains bugfixes and documentation improvements. Notably,
+our `sqlmodel` dependency has been pinned to 0.0.8 which fixes installation
+errors following the release of 0.0.9.
+
+## What's Changed
+* Add a 'how do I...' section into docs by @strickvl in https://github.com/zenml-io/zenml/pull/1953
+* Bump `mypy`, `ruff` and `black` by @strickvl in https://github.com/zenml-io/zenml/pull/1963
+* Fix double slashes in weblogin by @schustmi in https://github.com/zenml-io/zenml/pull/1972
+* SQLModel docs backport fixes by @strickvl in https://github.com/zenml-io/zenml/pull/1975
+* Updated quickstart command in cloud quickstart by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1977
+* Make sure vertex job id is only lower case letter, number or dash by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1978
+* Fix DB initialization when using external authentication by @schustmi in https://github.com/zenml-io/zenml/pull/1965
+* Pin SQLModel dependency to `0.0.8` by @strickvl in https://github.com/zenml-io/zenml/pull/1973
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.4...0.45.5
+
 # 0.45.4
 
 This minor update fixes a database migration bug that you could potentially

@@ -88,6 +88,10 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         python_version=platform.python_version(),
         os=platform.system(),
     )
+
+    # Get rid of any trailing slashes to prevent issues when having double
+    # slashes in the URL
+    url = url.rstrip("/")
     try:
         auth_url = url + API + VERSION_1 + DEVICE_AUTHORIZATION
         response = requests.post(

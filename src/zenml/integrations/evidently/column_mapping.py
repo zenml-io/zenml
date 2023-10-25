@@ -15,7 +15,7 @@
 
 from typing import List, Optional, Sequence, Union
 
-from evidently import ColumnMapping  # type: ignore[import]
+from evidently import ColumnMapping  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
 
