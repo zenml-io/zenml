@@ -63,6 +63,25 @@ def consumer_pipeline(
     )
 
 
+@pipeline(name="bar", enable_cache=False)
+def consumer_pipeline_with_external_artifact_from_another_model(
+    model_artifact_version: int,
+    model_artifact_pipeline_name: str = None,
+    model_artifact_step_name: str = None,
+):
+    consumer(
+        ExternalArtifact(
+            model_name="foo",
+            model_version=1,
+            model_artifact_name="predictions",
+            model_artifact_version=model_artifact_version,
+            model_artifact_pipeline_name=model_artifact_pipeline_name,
+            model_artifact_step_name=model_artifact_step_name,
+        ),
+        model_artifact_version,
+    )
+
+
 @pipeline(
     name="bar",
     enable_cache=False,
@@ -73,7 +92,15 @@ def two_step_producer_pipeline():
     producer(1)
 
 
-def test_exchange_of_model_artifacts_between_pipelines():
+@pytest.mark.parametrize(
+    "consumer_pipeline",
+    [
+        consumer_pipeline,
+        consumer_pipeline_with_external_artifact_from_another_model,
+    ],
+    ids=["model context given", "no model context"],
+)
+def test_exchange_of_model_artifacts_between_pipelines(consumer_pipeline):
     """Test that ExternalArtifact helps to exchange data from Model between pipelines."""
     with model_killer():
         producer_pipeline.with_options(

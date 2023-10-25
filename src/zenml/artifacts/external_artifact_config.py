@@ -89,8 +89,6 @@ class ExternalArtifactConfiguration(BaseModel):
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
                 model configuration is missing in @step and @pipeline.
         """
-        from zenml.model.model_config import ModelConfig
-
         if self.model_name is None:
             if model_config is None:
                 raise RuntimeError(
@@ -100,13 +98,18 @@ class ExternalArtifactConfiguration(BaseModel):
                 )
             self.model_name = model_config.name
             self.model_version = model_config.version
+        if (
+            model_config is None
+            or self.model_name != model_config.name
+            or self.model_version != model_config.version
+        ):
+            from zenml.model.model_config import ModelConfig
 
-        _model_config = ModelConfig(
-            name=self.model_name,
-            version=self.model_version,
-            suppress_warnings=True,
-        )
-        model_version = _model_config._get_model_version()
+            model_config = ModelConfig(
+                name=self.model_name,
+                version=self.model_version,
+            )
+        model_version = model_config._get_model_version()
 
         for artifact_getter in [
             model_version.get_artifact_object,

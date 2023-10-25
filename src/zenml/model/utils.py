@@ -22,6 +22,7 @@ from uuid import UUID
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.model.model_config import ModelConfig
 from zenml.models.model_models import (
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
@@ -89,16 +90,18 @@ def link_step_artifacts_to_model(
                 f"`{model_config.name}` version `{model_config.version}`."
             )
 
-        if artifact_config and artifact_config._model_config:
+        if artifact_config and model_config:
             _link_artifact_config_to_model(
                 artifact_config=artifact_config,
                 artifact_name=artifact_name,
                 artifact_id=artifact_id,
+                model_config=model_config,
             )
 
 
 def _link_artifact_config_to_model(
     artifact_config: ArtifactConfig,
+    model_config: "ModelConfig",
     artifact_name: str,
     artifact_id: UUID,
 ) -> None:
@@ -106,14 +109,11 @@ def _link_artifact_config_to_model(
 
     Args:
         artifact_config: The artifact config to link.
+        model_config: The model config to link the artifact to.
         artifact_name: The name of the artifact to link.
         artifact_id: The ID of the artifact to link.
     """
     from zenml.client import Client
-
-    # Do nothing if the artifact config is not linked to any model
-    if not artifact_config._model or not artifact_config._model_version:
-        return
 
     client = Client()
     step_context = get_step_context()
@@ -125,8 +125,9 @@ def _link_artifact_config_to_model(
 
     pipeline_name = step_context.pipeline.name
     step_name = step_context.step_run.name
-    model_id = artifact_config._model.id
-    model_version_id = artifact_config._model_version.id
+    model_version = model_config._get_model_version()
+    model_id = model_version.model.id
+    model_version_id = model_version.id
     is_model_object = artifact_config.is_model_artifact
     is_deployment = artifact_config.is_deployment_artifact
 

@@ -23,7 +23,6 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
-    from zenml.models import ModelResponseModel, ModelVersionResponseModel
 
 
 logger = get_logger(__name__)
@@ -89,7 +88,7 @@ class ArtifactConfig(BaseModel):
         """
         try:
             model_config = get_step_context().model_config
-        except StepContextError:
+        except (StepContextError, RuntimeError):
             model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
         if (self.model_name is not None) and (
@@ -102,31 +101,7 @@ class ArtifactConfig(BaseModel):
                 name=self.model_name,
                 version=self.model_version,
                 create_new_model_version=False,
-                suppress_warnings=True,
             )
             return on_the_fly_config
 
         return model_config
-
-    @property
-    def _model(self) -> Optional["ModelResponseModel"]:
-        """Get the model linked to this artifact.
-
-        Returns:
-            The fetched or created model or None if no model is linked.
-        """
-        if (model_config := self._model_config) is not None:
-            return model_config.get_or_create_model()
-        return None
-
-    @property
-    def _model_version(self) -> Optional["ModelVersionResponseModel"]:
-        """Get the model version linked to this artifact.
-
-        Returns:
-            The fetched or created model version or None if no model version is
-            linked.
-        """
-        if (model_config := self._model_config) is not None:
-            return model_config.get_or_create_model_version()
-        return None

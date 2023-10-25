@@ -42,6 +42,13 @@ jobs:
           mask-password: 'true'
           registry-type: public
 
+      #TODO: revisit the pinned helm version + find a higher version
+      - name: install helm with version 3.9.2
+        uses: azure/setup-helm@v3
+        with:
+          version: "v3.9.2" # default is latest (stable)
+        id: install-helm
+
       - name: Package and push helm chart to Amazon ECR Public
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}

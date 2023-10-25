@@ -115,7 +115,7 @@ def is_secret_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field contains sensitive information, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)
+    return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)  # type: ignore[no-any-return]
 
 
 def is_clear_text_field(field: "ModelField") -> bool:
@@ -127,4 +127,4 @@ def is_clear_text_field(field: "ModelField") -> bool:
     Returns:
         `True` if the field prevents secret references, `False` otherwise.
     """
-    return field.field_info.extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)
+    return field.field_info.extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)  # type: ignore[no-any-return]

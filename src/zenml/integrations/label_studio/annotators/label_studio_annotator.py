@@ -19,7 +19,7 @@ import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from label_studio_sdk import Client, Project  # type: ignore[import]
+from label_studio_sdk import Client, Project  # type: ignore[import-not-found]
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore

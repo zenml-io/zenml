@@ -20,6 +20,7 @@ from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
+from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.model.model_config import ModelConfig
@@ -223,13 +224,13 @@ def multi_named_output_step_from_self() -> (
     return 1, 2, 3
 
 
-@pipeline(enable_cache=False)
-def multi_named_pipeline_from_self():
+@pipeline
+def multi_named_pipeline_from_self(enable_cache: bool):
     """Multi output linking from Annotated."""
-    multi_named_output_step_from_self()
+    multi_named_output_step_from_self.with_options(enable_cache=enable_cache)()
 
 
-def test_link_multiple_named_outputs_with_self_context():
+def test_link_multiple_named_outputs_with_self_context_and_caching():
     """Test multi output linking with context defined in Annotated."""
     with model_killer():
         client = Client()
@@ -261,32 +262,42 @@ def test_link_multiple_named_outputs_with_self_context():
             )
         )
 
-        multi_named_pipeline_from_self()
+        for run_count in range(1, 3):
+            multi_named_pipeline_from_self(run_count == 2)
 
-        al1 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=mv1.model.id,
-                model_version_id=mv1.id,
+            al1 = client.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=mv1.model.id,
+                    model_version_id=mv1.id,
+                )
             )
-        )
-        al2 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=mv2.model.id,
-                model_version_id=mv2.id,
+            al2 = client.list_model_version_artifact_links(
+                ModelVersionArtifactFilterModel(
+                    user_id=user,
+                    workspace_id=ws,
+                    model_id=mv2.model.id,
+                    model_version_id=mv2.id,
+                )
             )
-        )
-        assert al1.size == 2
-        assert al2.size == 1
+            assert al1.size == 2
+            assert al2.size == 1
 
-        assert {al.name for al in al1} == {
-            "1",
-            "2",
-        }
-        assert al2[0].name == "3"
+            assert {al.name for al in al1} == {
+                "1",
+                "2",
+            }
+            assert al2[0].name == "3"
+
+            # clean-up links to test caching linkage
+            for mv, al in zip([mv1, mv2], [al1, al2]):
+                for al_ in al:
+                    client.zen_store.delete_model_version_artifact_link(
+                        model_name_or_id=mv.model.id,
+                        model_version_name_or_id=mv.id,
+                        model_version_artifact_link_name_or_id=al_.id,
+                    )
 
 
 @step(model_config=ModelConfig(name="step", version="step"))
@@ -775,3 +786,135 @@ def test_link_with_manual_linkage_flexible_config(
         assert len(links) == 1
         assert links[0].link_version == 1
         assert links[0].name == "1"
+
+
+@step(enable_cache=True)
+def _cacheable_step_annotated() -> (
+    Annotated[str, "cacheable", ArtifactConfig()]
+):
+    return "cacheable"
+
+
+@step(enable_cache=True)
+def _cacheable_step_not_annotated():
+    return "cacheable"
+
+
+@step(enable_cache=True)
+def _cacheable_step_custom_model_annotated() -> (
+    Annotated[
+        str,
+        "cacheable",
+        ArtifactConfig(model_name="bar", model_version=RUNNING_MODEL_VERSION),
+    ]
+):
+    return "cacheable"
+
+
+@step(enable_cache=False)
+def _non_cacheable_step():
+    return "not cacheable"
+
+
+def test_artifacts_linked_from_cache_steps():
+    """Test that artifacts are linked from cache steps."""
+
+    @pipeline(
+        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        enable_cache=False,
+    )
+    def _inner_pipeline(force_disable_cache: bool = False):
+        _cacheable_step_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _cacheable_step_not_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _cacheable_step_custom_model_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _non_cacheable_step()
+
+    with model_killer():
+        client = Client()
+
+        for i in range(1, 3):
+            fake_version = ModelConfig(
+                name="bar", create_new_model_version=True
+            ).get_or_create_model_version()
+            _inner_pipeline(i != 1)
+
+            mv = client.get_model_version(
+                model_name_or_id="foo", model_version_name_or_number_or_id=i
+            )
+            assert len(mv.artifact_object_ids) == 2, f"Failed on {i} run"
+            assert len(mv.model_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_non_cacheable_step::output",
+                "_inner_pipeline::_cacheable_step_not_annotated::output",
+            }, f"Failed on {i} run"
+            assert set(mv.model_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_annotated::cacheable",
+            }, f"Failed on {i} run"
+
+            mv = client.get_model_version(
+                model_name_or_id="bar",
+                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
+            )
+            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+            }, f"Failed on {i} run"
+            assert (
+                len(
+                    mv.artifact_object_ids[
+                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
+                    ]
+                )
+                == 1
+            ), f"Failed on {i} run"
+
+            fake_version._update_default_running_version_name()
+
+
+def test_artifacts_linked_from_cache_steps_same_id():
+    """Test that artifacts are linked from cache steps with same id.
+    This case appears if cached step is executed inside same model version
+    and we need to silently pass linkage without failing on same id.
+    """
+
+    @pipeline(
+        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        enable_cache=False,
+    )
+    def _inner_pipeline(force_disable_cache: bool = False):
+        _cacheable_step_custom_model_annotated.with_options(
+            enable_cache=force_disable_cache
+        )()
+        _non_cacheable_step()
+
+    with model_killer():
+        client = Client()
+
+        for i in range(1, 3):
+            ModelConfig(
+                name="bar", create_new_model_version=True
+            ).get_or_create_model_version()
+            _inner_pipeline(i != 1)
+
+            mv = client.get_model_version(
+                model_name_or_id="bar",
+                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
+            )
+            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
+            assert set(mv.artifact_object_ids.keys()) == {
+                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+            }, f"Failed on {i} run"
+            assert (
+                len(
+                    mv.artifact_object_ids[
+                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
+                    ]
+                )
+                == 1
+            ), f"Failed on {i} run"

@@ -464,17 +464,14 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     )
     name: Optional[str] = Field(
         description="The name of the artifact inside model version.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
+        default_=None,
     )
     pipeline_name: Optional[str] = Field(
         description="The name of the pipeline creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
     step_name: Optional[str] = Field(
         description="The name of the step creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -632,5 +629,5 @@ class ModelUpdateModel(BaseModel):
     use_cases: Optional[str] = None
     limitations: Optional[str] = None
     trade_offs: Optional[str] = None
-    ethic: Optional[str] = None
+    ethics: Optional[str] = None
     tags: Optional[List[str]] = None
