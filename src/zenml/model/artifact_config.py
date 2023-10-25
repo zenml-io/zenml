@@ -21,14 +21,9 @@ from zenml import get_step_context
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
-from zenml.models.model_models import (
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-)
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
-    from zenml.models import ModelResponseModel, ModelVersionResponseModel
 
 
 logger = get_logger(__name__)
@@ -74,7 +69,7 @@ class ArtifactConfig(BaseModel):
         """
         try:
             model_config = get_step_context().model_config
-        except StepContextError:
+        except (StepContextError, RuntimeError):
             model_config = None
         # Check if a specific model name is provided and it doesn't match the context name
         if (self.model_name is not None) and (
@@ -87,7 +82,6 @@ class ArtifactConfig(BaseModel):
                 name=self.model_name,
                 version=self.model_version,
                 create_new_model_version=False,
-                suppress_warnings=True,
             )
             return on_the_fly_config
 
@@ -100,27 +94,10 @@ class ArtifactConfig(BaseModel):
         # Return the model from the context
         return model_config
 
-    @property
-    def _model(self) -> "ModelResponseModel":
-        """Get the `ModelResponseModel`.
-
-        Returns:
-            ModelResponseModel: The fetched or created model.
-        """
-        return self._model_config.get_or_create_model()
-
-    @property
-    def _model_version(self) -> "ModelVersionResponseModel":
-        """Get the `ModelVersionResponseModel`.
-
-        Returns:
-            ModelVersionResponseModel: The model version.
-        """
-        return self._model_config.get_or_create_model_version()
-
     def _link_to_model_version(
         self,
         artifact_uuid: UUID,
+        model_config: "ModelConfig",
         is_model_object: bool = False,
         is_deployment: bool = False,
     ) -> None:
@@ -130,13 +107,20 @@ class ArtifactConfig(BaseModel):
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
+            model_config: The model configuration from caller.
             is_model_object: Whether the artifact is a model object. Defaults to False.
             is_deployment: Whether the artifact is a deployment. Defaults to False.
         """
         from zenml.client import Client
+        from zenml.models.model_models import (
+            ModelVersionArtifactFilterModel,
+            ModelVersionArtifactRequestModel,
+        )
 
         # Create a ZenML client
         client = Client()
+
+        model_version = model_config._get_model_version()
 
         artifact_name = self.artifact_name
         if artifact_name is None:
@@ -149,8 +133,8 @@ class ArtifactConfig(BaseModel):
             workspace=client.active_workspace.id,
             name=artifact_name,
             artifact=artifact_uuid,
-            model=self._model.id,
-            model_version=self._model_version.id,
+            model=model_version.model.id,
+            model_version=model_version.id,
             is_model_object=is_model_object,
             is_deployment=is_deployment,
             overwrite=self.overwrite,
@@ -164,11 +148,13 @@ class ArtifactConfig(BaseModel):
                 user_id=client.active_user.id,
                 workspace_id=client.active_workspace.id,
                 name=artifact_name,
-                model_id=self._model.id,
-                model_version_id=self._model_version.id,
+                model_id=model_version.model.id,
+                model_version_id=model_version.id,
                 only_artifacts=not (is_model_object or is_deployment),
                 only_deployments=is_deployment,
                 only_model_objects=is_model_object,
+                pipeline_name=self._pipeline_name,
+                step_name=self._step_name,
             )
         )
         if len(existing_links):
@@ -178,8 +164,8 @@ class ArtifactConfig(BaseModel):
                     f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
                 )
                 client.zen_store.delete_model_version_artifact_link(
-                    model_name_or_id=self._model.id,
-                    model_version_name_or_id=self._model_version.id,
+                    model_name_or_id=model_version.model.id,
+                    model_version_name_or_id=model_version.id,
                     model_version_artifact_link_name_or_id=artifact_name,
                 )
             else:
@@ -189,16 +175,17 @@ class ArtifactConfig(BaseModel):
         client.zen_store.create_model_version_artifact_link(request)
 
     def link_to_model(
-        self,
-        artifact_uuid: UUID,
+        self, artifact_uuid: UUID, model_config: "ModelConfig"
     ) -> None:
         """Link artifact to the model version.
 
         Args:
-            artifact_uuid (UUID): The UUID of the artifact to link.
+            artifact_uuid: The UUID of the artifact to link.
+            model_config: The model configuration from caller.
         """
         self._link_to_model_version(
             artifact_uuid,
+            model_config=model_config,
             is_model_object=self.IS_MODEL_ARTIFACT,
             is_deployment=self.IS_DEPLOYMENT_ARTIFACT,
         )

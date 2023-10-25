@@ -70,8 +70,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
     run_name_template: str = Field(nullable=False)
-    client_version: str = Field(nullable=False)
-    server_version: str = Field(nullable=False)
+    client_version: str = Field(nullable=True)
+    server_version: str = Field(nullable=True)
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(

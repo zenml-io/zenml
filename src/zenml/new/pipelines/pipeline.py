@@ -16,6 +16,7 @@ import copy
 import hashlib
 import inspect
 from collections import defaultdict
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from types import FunctionType
@@ -25,6 +26,7 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -51,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -64,7 +66,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
-from zenml.models.model_base_model import ModelConfigModel
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
@@ -153,19 +154,23 @@ class Pipeline:
         self._configuration = PipelineConfiguration(
             name=name,
         )
-        self.configure(
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
-            enable_artifact_visualization=enable_artifact_visualization,
-            enable_step_logs=enable_step_logs,
-            settings=settings,
-            extra=extra,
-            on_failure=on_failure,
-            on_success=on_success,
-            model_config=model_config,
-        )
+        self._from_config_file: Dict[str, Any] = {}
+        with self.__suppress_configure_warnings__():
+            self.configure(
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
+                enable_step_logs=enable_step_logs,
+                settings=settings,
+                extra=extra,
+                on_failure=on_failure,
+                on_success=on_success,
+                model_config=model_config,
+            )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
+
+        self.__suppress_warnings_flag__ = False
 
     @property
     def name(self) -> str:
@@ -275,6 +280,19 @@ class Pipeline:
             f"been run and that at least one step has been executed."
         )
 
+    @contextmanager
+    def __suppress_configure_warnings__(self) -> Iterator[Any]:
+        """Context manager to suppress warnings in `Pipeline.configure(...)`.
+
+        Used to suppress warnings when called from inner code and not user-facing code.
+
+        Yields:
+            Nothing.
+        """
+        self.__suppress_warnings_flag__ = True
+        yield
+        self.__suppress_warnings_flag__ = False
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -335,8 +353,6 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
-        if model_config:
-            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -347,13 +363,37 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config_model": ModelConfigModel.parse_obj(
-                    model_config.dict()
-                )
-                if model_config is not None
-                else None,
+                "model_config": model_config,
             }
         )
+        if not self.__suppress_warnings_flag__:
+            to_be_reapplied = []
+            for param_, value_ in values.items():
+                if (
+                    param_ in PipelineRunConfiguration.__fields__
+                    and param_ in self._from_config_file
+                    and value_ != self._from_config_file[param_]
+                ):
+                    to_be_reapplied.append(
+                        (param_, self._from_config_file[param_], value_)
+                    )
+            if to_be_reapplied:
+                msg = ""
+                reapply_during_run_warning = (
+                    "The value of parameter '{name}' has changed from "
+                    "'{file_value}' to '{new_value}' set in your configuration file.\n"
+                )
+                for name, file_value, new_value in to_be_reapplied:
+                    msg += reapply_during_run_warning.format(
+                        name=name, file_value=file_value, new_value=new_value
+                    )
+                msg += (
+                    "Configuration file value will be used during pipeline run, "
+                    "so you change will not be efficient. Consider updating your "
+                    "configuration file instead."
+                )
+                logger.warning(msg)
+
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
@@ -776,45 +816,51 @@ class Pipeline:
         new_versions_requested: Dict[
             str, NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
+        other_model_configs: List["ModelConfig"] = []
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_config_model
+            step_model_config = step.config.model_config
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step.config.model_config_model is not None
+                and step.config.model_config is not None
             )
-            if (
-                step_model_config
-                and step_model_config.create_new_model_version
-            ):
-                new_versions_requested[step_model_config.name].update_request(
-                    step_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="step", name=step.config.name
-                    ),
-                )
+            if step_model_config:
+                if step_model_config.create_new_model_version:
+                    new_versions_requested[
+                        step_model_config.name
+                    ].update_request(
+                        step_model_config,
+                        NewModelVersionRequest.Requester(
+                            source="step", name=step.config.name
+                        ),
+                    )
+                else:
+                    other_model_configs.append(step_model_config)
         if not all_steps_have_own_config:
             pipeline_model_config = (
-                deployment.pipeline_configuration.model_config_model
+                deployment.pipeline_configuration.model_config
             )
-            if (
-                pipeline_model_config
-                and pipeline_model_config.create_new_model_version
-            ):
-                new_versions_requested[
-                    pipeline_model_config.name
-                ].update_request(
-                    pipeline_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="pipeline", name=self.name
-                    ),
-                )
-        elif deployment.pipeline_configuration.model_config_model is not None:
+            if pipeline_model_config:
+                if pipeline_model_config.create_new_model_version:
+                    new_versions_requested[
+                        pipeline_model_config.name
+                    ].update_request(
+                        pipeline_model_config,
+                        NewModelVersionRequest.Requester(
+                            source="pipeline", name=self.name
+                        ),
+                    )
+                else:
+                    other_model_configs.append(pipeline_model_config)
+        elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
 
         self._validate_new_version_requests(new_versions_requested)
+
+        for other_model_config in other_model_configs:
+            other_model_config._validate_config_in_runtime()
 
         return new_versions_requested
 
@@ -826,11 +872,6 @@ class Pipeline:
 
         Args:
             new_versions_requested: A dict of new model version request objects.
-
-        Raises:
-            RuntimeError: If there is unfinished pipeline run for requested model version.
-            RuntimeError: If recovery not requested, but model version already exists.
-
         """
         for model_name, data in new_versions_requested.items():
             if len(data.requesters) > 1:
@@ -839,25 +880,7 @@ class Pipeline:
                     f"{data.requesters}\n We recommend that `create_new_model_version` is configured "
                     "only in one place of the pipeline."
                 )
-            try:
-                model_version = data.model_config._get_model_version()
-
-                for run_name, run in model_version.pipeline_runs.items():
-                    if run.status == ExecutionStatus.RUNNING:
-                        raise RuntimeError(
-                            f"New model version was requested, but pipeline run `{run_name}` "
-                            f"is still running with version `{model_version.name}`."
-                        )
-                if (
-                    data.model_config.version
-                    and data.model_config.delete_new_version_on_failure
-                ):
-                    raise RuntimeError(
-                        f"Cannot create version `{data.model_config.version}` "
-                        f"for model `{data.model_config.name}` since it already exists"
-                    )
-            except KeyError:
-                pass
+            data.model_config._validate_config_in_runtime()
 
     def update_new_versions_requests(
         self,
@@ -879,7 +902,7 @@ class Pipeline:
         for step_name in deployment.step_configurations:
             step_model_config = deployment.step_configurations[
                 step_name
-            ].config.model_config_model
+            ].config.model_config
             if (
                 step_model_config is not None
                 and step_model_config.name in new_version_requests
@@ -888,9 +911,7 @@ class Pipeline:
                     step_model_config.name
                 ].model_config.version
                 step_model_config.create_new_model_version = True
-        pipeline_model_config = (
-            deployment.pipeline_configuration.model_config_model
-        )
+        pipeline_model_config = deployment.pipeline_configuration.model_config
         if (
             pipeline_model_config is not None
             and pipeline_model_config.name in new_version_requests
@@ -1107,10 +1128,12 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
-        if config_path:
-            run_config = PipelineRunConfiguration.from_yaml(config_path)
-        else:
-            run_config = PipelineRunConfiguration()
+        self._parse_config_file(
+            config_path=config_path,
+            matcher=list(PipelineRunConfiguration.__fields__.keys()),
+        )
+
+        run_config = PipelineRunConfiguration(**self._from_config_file)
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
         update = PipelineRunConfiguration.parse_obj(new_values)
@@ -1340,6 +1363,40 @@ class Pipeline:
         """
         Pipeline.ACTIVE_PIPELINE = None
 
+    def _parse_config_file(
+        self, config_path: Optional[str], matcher: List[str]
+    ) -> None:
+        """Parses the given configuration file and sets `self._from_config_file`.
+
+        Args:
+            config_path: Path to a yaml configuration file.
+            matcher: List of keys to match in the configuration file.
+        """
+        _from_config_file: Dict[str, Any] = {}
+        if config_path:
+            with open(config_path, "r") as f:
+                _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
+            _from_config_file = dict_utils.remove_none_values(
+                {
+                    k: v
+                    for k, v in _from_config_file.items()
+                    if k in matcher and v
+                }
+            )
+
+            if "model_config" in _from_config_file:
+                if "model_config" in self._from_config_file:
+                    _from_config_file["model_config"] = self._from_config_file[
+                        "model_config"
+                    ]
+                else:
+                    from zenml.model.model_config import ModelConfig
+
+                    _from_config_file["model_config"] = ModelConfig.parse_obj(
+                        _from_config_file["model_config"]
+                    )
+        self._from_config_file = _from_config_file
+
     def with_options(
         self,
         run_name: Optional[str] = None,
@@ -1376,7 +1433,17 @@ class Pipeline:
             The copied pipeline instance.
         """
         pipeline_copy = self.copy()
-        pipeline_copy.configure(**kwargs)
+
+        pipeline_copy._parse_config_file(
+            config_path=config_path,
+            matcher=inspect.getfullargspec(self.configure)[0],
+        )
+        pipeline_copy._from_config_file = dict_utils.recursive_update(
+            pipeline_copy._from_config_file, kwargs
+        )
+
+        with pipeline_copy.__suppress_configure_warnings__():
+            pipeline_copy.configure(**pipeline_copy._from_config_file)
 
         run_args = dict_utils.remove_none_values(
             {

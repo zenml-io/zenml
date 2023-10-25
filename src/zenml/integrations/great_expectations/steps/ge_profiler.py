@@ -16,7 +16,9 @@
 from typing import Any, Dict, Optional
 
 import pandas as pd
-from great_expectations.core import ExpectationSuite  # type: ignore[import]
+from great_expectations.core import (  # type: ignore[import-untyped]
+    ExpectationSuite,
+)
 
 from zenml import step
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (

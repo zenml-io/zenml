@@ -157,7 +157,7 @@ services:
         Raises:
             RuntimeError: If the deployment could not be started.
         """
-        from compose.cli.main import (  # type: ignore[import]
+        from compose.cli.main import (  # type: ignore[import-not-found]
             TopLevelCommand,
             project_from_options,
         )
