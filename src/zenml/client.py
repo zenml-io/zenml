@@ -64,7 +64,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -167,7 +166,7 @@ from zenml.utils.pagination_utils import depaginate
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackComponentConfig
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -1949,24 +1948,23 @@ class Client(metaclass=ClientMetaClass):
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
                     ) from e
-            # Get the flavor model
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor, component_type=component.type
-            )
 
-            # Create and validate the configuration
-            from zenml.stack import Flavor
+                # Create and validate the configuration
+                from zenml.stack.utils import validate_stack_component_config
 
-            flavor = Flavor.from_model(flavor_model)
-            configuration = flavor.config_class(**component.configuration)
-            if configuration.is_local:
-                local_components.append(
-                    f"{component.type.value}: {component.name}"
+                configuration = validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor_name=component.flavor,
+                    component_type=component.type,
                 )
-            elif configuration.is_remote:
-                remote_components.append(
-                    f"{component.type.value}: {component.name}"
-                )
+                if configuration.is_local:
+                    local_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
+                elif configuration.is_remote:
+                    remote_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
 
         if local_components and remote_components:
             logger.warning(
@@ -2142,22 +2140,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered component.
         """
-        # Get the flavor model
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=flavor,
+        from zenml.stack.utils import validate_stack_component_config
+
+        validate_stack_component_config(
+            configuration_dict=configuration,
+            flavor_name=flavor,
             component_type=component_type,
-        )
-
-        # Create and validate the configuration
-        from zenml.stack import Flavor
-
-        flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(
-            warn_about_plain_text_secrets=True, **configuration
-        )
-
-        self._validate_stack_component_configuration(
-            component_type, configuration=configuration_obj
         )
 
         create_component_model = ComponentRequestModel(
@@ -2254,26 +2242,20 @@ class Client(metaclass=ClientMetaClass):
         if configuration is not None:
             existing_configuration = component.configuration
             existing_configuration.update(configuration)
-
             existing_configuration = {
                 k: v
                 for k, v in existing_configuration.items()
                 if v is not None
             }
 
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor,
+            from zenml.stack.utils import validate_stack_component_config
+
+            validate_stack_component_config(
+                configuration_dict=existing_configuration,
+                flavor_name=component.flavor,
                 component_type=component.type,
             )
 
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-            configuration_obj = flavor.config_class(**existing_configuration)
-
-            self._validate_stack_component_configuration(
-                component.type, configuration=configuration_obj
-            )
             update_model.configuration = existing_configuration
 
         if labels is not None:
@@ -2319,45 +2301,6 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
-
-    def _validate_stack_component_configuration(
-        self,
-        component_type: "StackComponentType",
-        configuration: "StackComponentConfig",
-    ) -> None:
-        """Validates the configuration of a stack component.
-
-        Args:
-            component_type: The type of the component.
-            configuration: The component configuration to validate.
-
-        Raises:
-            StackComponentValidationError: in case the stack component configuration is invalid.
-        """
-        from zenml.enums import StoreType
-
-        if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type != StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local ZenML server. The component "
-                    "may not be able to reach the local ZenML server and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-        elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warning(
-                "You are configuring a stack component that is using "
-                "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by "
-                "other users. You should consider using a non-local stack "
-                "component alternative instead."
-            )
-        if not configuration.is_valid:
-            raise StackComponentValidationError(
-                f"Invalid stack component configuration. please verify "
-                f"the configurations set for {component_type}."
-            )
 
     # .---------.
     # | FLAVORS |

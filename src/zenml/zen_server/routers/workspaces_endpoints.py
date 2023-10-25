@@ -444,8 +444,14 @@ def create_stack_component(
             "is not supported."
         )
 
-    # TODO: [server] if possible it should validate here that the configuration
-    #  conforms to the flavor
+    from zenml.stack.utils import validate_stack_component_config
+
+    validate_stack_component_config(
+        configuration_dict=component.configuration,
+        flavor_name=component.flavor,
+        component_type=component.type,
+        zen_store=zen_store(),
+    )
 
     return zen_store().create_stack_component(component=component)
 
