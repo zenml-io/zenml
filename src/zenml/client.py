@@ -44,6 +44,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    ENV_ZENML_SERVER,
     PAGE_SIZE_DEFAULT,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
@@ -1365,6 +1366,13 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
+        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
+
+        # If running in a ZenML server environment, the active workspace is
+        # not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return self.get_workspace(DEFAULT_WORKSPACE_NAME)
+
         workspace = (
             self._config.active_workspace if self._config else None
         ) or GlobalConfiguration().get_active_workspace()
@@ -1374,8 +1382,6 @@ class Client(metaclass=ClientMetaClass):
                 "`zenml workspace set WORKSPACE_NAME` to set the active "
                 "workspace."
             )
-
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
         if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
