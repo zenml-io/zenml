@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -29,9 +29,7 @@ from zenml.models.v2.base.scoped import (
     ShareableResponse,
 )
 from zenml.models.v2.base.utils import hydrated_property, update_model
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.component import ComponentResponse
+from zenml.models.v2.core.component import ComponentResponse
 
 # ------------------ Request Model ------------------
 
@@ -90,7 +88,7 @@ class StackResponseBody(SharableResponseBody):
 class StackResponseMetadata(SharableResponseMetadata):
     """Response metadata for stacks."""
 
-    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
+    components: Dict[StackComponentType, List[ComponentResponse]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
