@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import psutil
 from rich import print
-from tensorboard import notebook  # type: ignore[import]
-from tensorboard.manager import (  # type: ignore[import]
+from tensorboard import notebook  # type:ignore[import-untyped]
+from tensorboard.manager import (  # type:ignore[import-untyped]
     TensorBoardInfo,
     get_all,
 )

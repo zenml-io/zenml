@@ -30,6 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -101,7 +102,14 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     Returns:
         Cleaned pipeline name.
     """
-    return pipeline_name.replace("_", "-").lower()
+    pipeline_name = pipeline_name.lower()
+
+    # This pattern matches anything that is not a lowercase letter,
+    #  a number, or a dash
+    pattern = r"[^a-z0-9-]"
+
+    # Replace any characters matching the pattern with a dash
+    return re.sub(pattern, "-", pipeline_name)
 
 
 class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
