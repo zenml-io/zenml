@@ -147,7 +147,7 @@ developers to write code once and effortlessly deploy it to various
 infrastructures.
 
 <div align="center">
-    <img src="docs/book/.gitbook/assets/stack.gif">
+    <img src="docs/book/.gitbook/assets/overview.gif">
 </div>
 
 # 🤸 Quickstart
