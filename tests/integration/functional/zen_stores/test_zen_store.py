@@ -40,7 +40,7 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
+from zenml.enums import ModelStages, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
@@ -652,8 +652,8 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
                             store.get_stack_component(secret.id)
 
 
-def test_public_stacks_are_accessible():
-    """Tests stack scoping via sharing on rest zen stores."""
+def test_stacks_are_accessible_by_other_users():
+    """Tests accessing stack on rest zen stores."""
     client = Client()
     store = client.zen_store
     if store.type == StoreType.SQL:
@@ -679,12 +679,6 @@ def test_public_stacks_are_accessible():
             with StackContext(
                 components=components, user_id=default_user_id
             ) as stack:
-                # Update
-                stack_update = StackUpdateModel(is_shared=True)
-                store.update_stack(
-                    stack_id=stack.id, stack_update=stack_update
-                )
-
                 with UserContext(login=True):
                     #  Client() needs to be instantiated here with the new
                     #  logged-in user
@@ -1172,70 +1166,13 @@ def test_connector_name_reuse_for_same_user_fails():
                 pass
 
 
-def test_connector_same_name_different_users():
-    """Tests that a connector's name can be used if another user has it."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
+def test_connector_name_reuse_for_different_user_fails():
+    """Tests that a connector's name cannot be re-used by another user."""
 
     with ServiceConnectorContext(
         connector_type="cat'o'matic",
         auth_method="paw-print",
         resource_types=["cat"],
-    ) as connector_one:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-
-            with ServiceConnectorContext(
-                name=connector_one.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                client=other_client,
-            ):
-                pass
-
-
-def test_connector_same_name_different_users_shared():
-    """Tests that a connector's name can be used even if another user has it shared."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector_one:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-
-            with ServiceConnectorContext(
-                name=connector_one.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                client=other_client,
-            ):
-                pass
-
-
-def test_connector_same_name_different_users_both_shared():
-    """Tests that a shared connector's name cannot be used if another user also has it shared."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
     ) as connector_one:
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
@@ -1249,7 +1186,6 @@ def test_connector_same_name_different_users_both_shared():
                     auth_method="paw-print",
                     resource_types=["cat"],
                     client=other_client,
-                    is_shared=True,
                 ):
                     pass
 
@@ -1456,61 +1392,6 @@ def test_connector_list():
                 assert aria_connector.id not in [c.id for c in connectors]
                 assert multi_connector.id in [c.id for c in connectors]
                 assert rodent_connector.id not in [c.id for c in connectors]
-
-
-def test_private_connector_not_visible_to_other_user():
-    """Tests that a private connector is not visible to another user."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=False,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            with pytest.raises(KeyError):
-                other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
-            ).items
-
-            assert connector.id not in [c.id for c in connectors]
-
-
-def test_shared_connector_is_visible_to_other_user():
-    """Tests that a shared connector is visible to another user."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
 
 
 def _update_connector_and_test(
@@ -1773,118 +1654,6 @@ def test_connector_name_update_fails_if_exists():
                         name=connector_two.name
                     ),
                 )
-
-
-def test_connector_sharing():
-    """Tests that a connector can be shared."""
-
-    client = Client()
-    store = client.zen_store
-
-    if client.zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    config = {
-        "language": "meow",
-        "foods": "tuna",
-    }
-    secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
-    }
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        configuration=config,
-        secrets=secrets,
-        is_shared=False,
-    ) as connector:
-        assert connector.secret_id is not None
-        secret = store.get_secret(connector.secret_id)
-        assert secret.scope == SecretScope.USER
-
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            with pytest.raises(KeyError):
-                other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
-            ).items
-
-            assert connector.id not in [c.id for c in connectors]
-
-        updated_connector = store.update_service_connector(
-            connector.id,
-            update=ServiceConnectorUpdateModel(is_shared=True),
-        )
-
-        assert updated_connector.secret_id is not None
-        assert updated_connector.secret_id == connector.secret_id
-        secret = store.get_secret(updated_connector.secret_id)
-        assert secret.scope == SecretScope.WORKSPACE
-
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
-
-
-def test_connector_sharing_fails_if_name_shared():
-    """Tests that a connector cannot be shared if the name is already shared."""
-
-    client = Client()
-
-    if client.zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
-
-            with ServiceConnectorContext(
-                name=connector.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                is_shared=False,
-            ) as other_connector:
-                with pytest.raises(EntityExistsError):
-                    other_store.update_service_connector(
-                        other_connector.id,
-                        update=ServiceConnectorUpdateModel(is_shared=True),
-                    )
 
 
 # .-------------------------.
