@@ -16,7 +16,7 @@
 from hashlib import md5
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import neptune  # type: ignore[import]
+import neptune  # type: ignore[import-untyped]
 
 import zenml
 from zenml.client import Client

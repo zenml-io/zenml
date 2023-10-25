@@ -947,7 +947,7 @@ model_crud_test_config = CrudTestConfig(
         use_cases="all",
         limitations="none",
         trade_offs="secret",
-        ethic="all good",
+        ethics="all good",
         tags=["cool", "stuff"],
     ),
     update_model=ModelUpdateModel(

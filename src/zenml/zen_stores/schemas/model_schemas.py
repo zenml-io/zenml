@@ -72,7 +72,7 @@ class ModelSchema(NamedSchema, table=True):
     use_cases: str = Field(sa_column=Column(TEXT, nullable=True))
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
-    ethic: str = Field(sa_column=Column(TEXT, nullable=True))
+    ethics: str = Field(sa_column=Column(TEXT, nullable=True))
     tags: str = Field(sa_column=Column(TEXT, nullable=True))
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="model",
@@ -107,7 +107,7 @@ class ModelSchema(NamedSchema, table=True):
             use_cases=model_request.use_cases,
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
-            ethic=model_request.ethic,
+            ethics=model_request.ethics,
             tags=json.dumps(model_request.tags)
             if model_request.tags
             else None,
@@ -132,7 +132,7 @@ class ModelSchema(NamedSchema, table=True):
             use_cases=self.use_cases,
             limitations=self.limitations,
             trade_offs=self.trade_offs,
-            ethic=self.ethic,
+            ethics=self.ethics,
             tags=json.loads(self.tags) if self.tags else None,
         )
 

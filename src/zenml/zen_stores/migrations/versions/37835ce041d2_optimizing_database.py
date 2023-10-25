@@ -82,18 +82,6 @@ def upgrade() -> None:
     )
     connection.execute(update_server_version_query)
 
-    with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.alter_column(
-            "client_version",
-            existing_type=sqlmodel.sql.sqltypes.AutoString(),
-            nullable=False,
-        )
-        batch_op.alter_column(
-            "server_version",
-            existing_type=sqlmodel.sql.sqltypes.AutoString(),
-            nullable=False,
-        )
-
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
@@ -108,7 +96,14 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("step_configuration")
+        batch_op.alter_column(
+            "step_configuration",
+            existing_type=sa.String(length=16777215).with_variant(
+                mysql.MEDIUMTEXT(), "mysql"
+            ),
+            nullable=True,
+        )
+
         batch_op.drop_column("parameters")
         batch_op.drop_column("enable_artifact_metadata")
         batch_op.drop_column("num_outputs")
@@ -135,23 +130,7 @@ def upgrade() -> None:
     )
     connection.execute(update_deployment_id)
 
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column(
-            "deployment_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
-            nullable=False,
-        )
-
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
-        batch_op.drop_constraint(
-            "fk_pipeline_run_stack_id_stack", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_run_build_id_pipeline_build", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_run_schedule_id_schedule", type_="foreignkey"
-        )
         batch_op.drop_constraint(
             "fk_pipeline_run_deployment_id_pipeline_deployment",
             type_="foreignkey",
@@ -165,15 +144,10 @@ def upgrade() -> None:
         )
         batch_op.drop_column("client_version")
         batch_op.drop_column("git_sha")
-        batch_op.drop_column("stack_id")
-        batch_op.drop_column("schedule_id")
         batch_op.drop_column("server_version")
         batch_op.drop_column("num_steps")
-        batch_op.drop_column("client_environment")
-        batch_op.drop_column("pipeline_configuration")
         batch_op.drop_column("enable_artifact_metadata")
         batch_op.drop_column("enable_cache")
-        batch_op.drop_column("build_id")
 
     # ### end Alembic commands ###
 
@@ -200,13 +174,6 @@ def downgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "parameters", sa.VARCHAR(length=16777215), nullable=False
-            )
-        )
-        batch_op.add_column(
-            sa.Column(
-                "step_configuration",
-                sa.VARCHAR(length=16777215),
-                nullable=False,
             )
         )
         batch_op.drop_constraint(
