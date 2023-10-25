@@ -323,11 +323,14 @@ def test_update_default_stack_component_fails():
     """Tests that updating default stack components fails."""
     client = Client()
     store = client.zen_store
+    default_component_name = store._get_default_stack_and_component_name(
+        client.active_user.id
+    )
     default_artifact_store = store.list_stack_components(
         ComponentFilterModel(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
-            name="default",
+            name=default_component_name,
         )
     )[0]
 
@@ -335,7 +338,7 @@ def test_update_default_stack_component_fails():
         ComponentFilterModel(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
-            name="default",
+            name=default_component_name,
         )
     )[0]
 
@@ -358,11 +361,15 @@ def test_delete_default_stack_component_fails():
     """Tests that deleting default stack components is prohibited."""
     client = Client()
     store = client.zen_store
+    default_component_name = store._get_default_stack_and_component_name(
+        client.active_user.id
+    )
+
     default_artifact_store = store.list_stack_components(
         ComponentFilterModel(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
-            name="default",
+            name=default_component_name,
         )
     )[0]
 
@@ -370,7 +377,7 @@ def test_delete_default_stack_component_fails():
         ComponentFilterModel(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
-            name="default",
+            name=default_component_name,
         )
     )[0]
 
@@ -421,7 +428,6 @@ def test_updating_default_stack_fails():
     client = Client()
 
     default_stack = client.get_stack("default")
-    assert default_stack.name == DEFAULT_WORKSPACE_NAME
     stack_update = StackUpdateModel(name="axls_stack")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_stack(

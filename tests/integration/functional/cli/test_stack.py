@@ -359,7 +359,7 @@ def test_rename_stack_default_stack_fails(clean_workspace) -> None:
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["default", "axls_new_stack"])
     assert result.exit_code == 1
-    assert len(clean_workspace.list_stacks(name="default")) == 1
+    assert clean_workspace.get_stack("default")
 
 
 def test_rename_stack_active_stack_succeeds(clean_workspace) -> None:
