@@ -53,6 +53,10 @@ class SagemakerEntrypointConfiguration(StepEntrypointConfiguration):
 
         Returns:
             The updated environment variables.
+
+        Raises:
+            RuntimeError: If an environment variable exceeds the maximum length
+                of 2560 characters.
         """
         updated_env = env.copy()
         for key, value in env.items():
