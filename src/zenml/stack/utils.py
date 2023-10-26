@@ -67,7 +67,11 @@ def validate_stack_component_config(
 def _warn_if_config_server_mismatch(
     configuration: StackComponentConfig,
 ) -> None:
-    """Warn if the configuration is mismatched with the ZenML server."""
+    """Warn if a component configuration is mismatched with the ZenML server.
+
+    Args:
+        configuration: The component configuration to check.
+    """
     zen_store = Client().zen_store
     if configuration.is_remote and zen_store.is_local_store():
         if zen_store.type != StoreType.REST:
