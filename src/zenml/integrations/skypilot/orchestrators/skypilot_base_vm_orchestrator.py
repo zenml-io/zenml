@@ -126,17 +126,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         assert connector is not None
         connector.configure_local_client()
 
-    def get_setup(self, stack: Optional["Stack"]) -> Optional[str]:
-        """Run to set up the sky job.
-
-        Args:
-            stack: The stack to use.
-
-        Returns:
-            A `setup` string.
-        """
-        return None
-
     @abstractmethod
     def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
@@ -200,12 +189,34 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         # Set up credentials
         self.setup_credentials()
 
+        # Guaranteed by stack validation
+        assert stack is not None and stack.container_registry is not None
+
+        docker_creds = stack.container_registry.credentials
+        if docker_creds:
+            docker_username, docker_password = docker_creds
+            setup = (
+                f"docker login --username $DOCKER_USERNAME --password "
+                f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
+            )
+            task_envs = {
+                "DOCKER_USERNAME": docker_username,
+                "DOCKER_PASSWORD": docker_password,
+            }
+        else:
+            setup = None
+            task_envs = None
+
         # Run the entire pipeline
+
+        # Set the service connector AWS profile ENV variable
+        self.prepare_environment_variable(set=True)
 
         try:
             task = sky.Task(
                 run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
-                setup=self.get_setup(stack),
+                setup=setup,
+                envs=task_envs,
             )
             task = task.set_resources(
                 sky.Resources(
@@ -237,8 +248,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                             f"Found existing cluster {cluster_name}. Reusing..."
                         )
 
-            # Set the service connector AWS profile ENV variable
-            self.prepare_environment_variable(set=True)
             # Launch the cluster
             sky.launch(
                 task,
