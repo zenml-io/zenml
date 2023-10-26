@@ -72,6 +72,23 @@ def convert_pred_filenames_to_task_ids(
             }
             for pred in preds
         ]
+        filename_id_mapping = {
+            "/".join(clean_url(task["storage_filename"]).split("/")): task[
+                "id"
+            ]
+            for task in tasks
+        }
+        return [
+            {
+                "task": int(
+                    filename_id_mapping[
+                        "/".join(pred["filename"].split("/")[1:])
+                    ]
+                ),
+                "result": pred["result"],
+            }
+            for pred in preds
+        ]
     elif storage_type == "s3":
         # S3 URLs are of the form s3://bucket-name/path/to/file so we need to
         # make sure we only encode the path so we can match the pred to the
