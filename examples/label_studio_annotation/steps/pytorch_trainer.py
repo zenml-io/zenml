@@ -154,11 +154,14 @@ def _find_last_successful_run(context: StepContext) -> int:
 
 def _load_last_model(context: StepContext) -> nn.Module:
     """Return the most recently trained model from this pipeline, or None."""
-    idx = _find_last_successful_run(context=context)
-    if idx is None:
+    # idx = _find_last_successful_run(context=context)
+    # if idx is None:
+    #     return None
+    try:
+        last_run = get_pipeline(PIPELINE_NAME).last_successful_run
+    except RuntimeError:
         return None
-    last_run = get_pipeline(PIPELINE_NAME).runs[idx]
-    return last_run.get_step(PIPELINE_STEP_NAME).output.read()
+    return last_run.steps(PIPELINE_STEP_NAME).output.read()
 
 
 def _is_new_data_available(
