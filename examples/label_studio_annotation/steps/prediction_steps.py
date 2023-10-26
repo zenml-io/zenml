@@ -34,7 +34,7 @@ def prediction_service_loader(
     params: PredictionServiceLoaderParameters, context: StepContext
 ) -> torch.nn.Module:
     train_run = get_pipeline(params.training_pipeline_name).runs[0]
-    return train_run.get_step(params.training_pipeline_step_name).output.read()
+    return train_run.steps[params.training_pipeline_step_name].output.read()
 
 
 @step(enable_cache=False)
