@@ -30,11 +30,13 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
+)
+from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
+    SagemakerEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
@@ -206,12 +208,25 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
+        # Sagemaker does not allow environment variables longer
+        # than 256 characters. If an environment variable is
+        # longer than 256 characters, we split it into multiple
+        # environment variables (chunks) and re-construct it on the other side
+        # using the entrypoint configuration.
+        environment = (
+            SagemakerEntrypointConfiguration.split_environment_variables(
+                environment
+            )
+        )
+
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
             image = self.get_image(deployment=deployment, step_name=step_name)
-            command = StepEntrypointConfiguration.get_entrypoint_command()
-            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, deployment_id=deployment.id
+            command = SagemakerEntrypointConfiguration.get_entrypoint_command()
+            arguments = (
+                SagemakerEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name, deployment_id=deployment.id
+                )
             )
             entrypoint = command + arguments
 
