@@ -30,6 +30,13 @@ from zenml.models.visualization_models import (
 from zenml.utils.artifact_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -64,8 +71,10 @@ def list_artifacts(
     Returns:
         The artifacts according to query filters.
     """
-    return zen_store().list_artifacts(
-        artifact_filter_model=artifact_filter_model
+    return verify_permissions_and_list_entities(
+        filter_model=artifact_filter_model,
+        resource_type=ResourceType.ARTIFACT,
+        list_method=zen_store().list_artifacts,
     )
 
 
@@ -87,7 +96,11 @@ def create_artifact(
     Returns:
         The created artifact.
     """
-    return zen_store().create_artifact(artifact)
+    return verify_permissions_and_create_entity(
+        request_model=artifact,
+        resource_type=ResourceType.ARTIFACT,
+        create_method=zen_store().create_artifact,
+    )
 
 
 @router.get(
@@ -108,7 +121,9 @@ def get_artifact(
     Returns:
         The artifact with the given ID.
     """
-    return zen_store().get_artifact(artifact_id)
+    return verify_permissions_and_get_entity(
+        id=artifact_id, get_method=zen_store().get_artifact
+    )
 
 
 @router.delete(
@@ -125,7 +140,11 @@ def delete_artifact(
     Args:
         artifact_id: The ID of the artifact to delete.
     """
-    zen_store().delete_artifact(artifact_id)
+    verify_permissions_and_delete_entity(
+        id=artifact_id,
+        get_method=zen_store().get_artifact,
+        delete_method=zen_store().delete_artifact,
+    )
 
 
 @router.get(
@@ -149,7 +168,9 @@ def get_artifact_visualization(
         The visualization of the artifact.
     """
     store = zen_store()
-    artifact = store.get_artifact(artifact_id)
+    artifact = verify_permissions_and_get_entity(
+        id=artifact_id, get_method=store.get_artifact
+    )
     return load_artifact_visualization(
         artifact=artifact, index=index, zen_store=store, encode_image=True
     )

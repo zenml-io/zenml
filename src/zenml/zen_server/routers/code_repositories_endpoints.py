@@ -25,6 +25,13 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -59,7 +66,11 @@ def list_code_repositories(
     Returns:
         Page of code repository objects.
     """
-    return zen_store().list_code_repositories(filter_model=filter_model)
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        list_method=zen_store().list_code_repositories,
+    )
 
 
 @router.get(
@@ -80,8 +91,8 @@ def get_code_repository(
     Returns:
         A specific code repository object.
     """
-    return zen_store().get_code_repository(
-        code_repository_id=code_repository_id
+    return verify_permissions_and_get_entity(
+        id=code_repository_id, get_method=zen_store().get_code_repository
     )
 
 
@@ -105,8 +116,11 @@ def update_code_repository(
     Returns:
         The updated code repository object.
     """
-    return zen_store().update_code_repository(
-        code_repository_id=code_repository_id, update=update
+    return verify_permissions_and_update_entity(
+        id=code_repository_id,
+        update_model=update,
+        get_method=zen_store().get_code_repository,
+        update_method=zen_store().update_code_repository,
     )
 
 
@@ -124,4 +138,8 @@ def delete_code_repository(
     Args:
         code_repository_id: The ID of the code repository to delete.
     """
-    zen_store().delete_code_repository(code_repository_id=code_repository_id)
+    verify_permissions_and_delete_entity(
+        id=code_repository_id,
+        get_method=zen_store().get_code_repository,
+        delete_method=zen_store().delete_code_repository,
+    )

@@ -37,7 +37,7 @@ class ResourceType(StrEnum):
     FLAVOR = "flavor"
     STACK_COMPONENT = "stack_component"
     PIPELINE = "pipeline"
-    CODE_REPOSITORY = "code-repository"
+    CODE_REPOSITORY = "code_repository"
     MODEL = "model"
     SERVICE_CONNECTOR = "service_connector"
     ARTIFACT = "artifact"

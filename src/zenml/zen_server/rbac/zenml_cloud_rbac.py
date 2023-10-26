@@ -52,6 +52,30 @@ def _convert_to_cloud_resource(resource: Resource) -> str:
     return resource_string
 
 
+def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
+    """Convert a cloud resource to a ZenML server resource.
+
+    Args:
+        cloud_resource: The cloud resource to convert.
+
+    Raises:
+        ValueError: If the cloud resource is invalid for this server.
+
+    Returns:
+        The converted resource.
+    """
+    scope, resource_type_and_id = cloud_resource.rsplit(":", maxsplit=1)
+
+    if scope != f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}":
+        raise ValueError("Invalid scope for server resource.")
+
+    if "/" in resource_type_and_id:
+        resource_type, resource_id = resource_type_and_id.split("/")
+        return Resource(type=resource_type, id=resource_id)
+    else:
+        return Resource(type=resource_type_and_id)
+
+
 class ZenMLCloudRBACConfiguration(BaseModel):
     """ZenML Cloud RBAC configuration."""
 
@@ -137,7 +161,7 @@ class ZenMLCloudRBAC(RBACInterface):
         value = response.json()
 
         assert isinstance(value, dict)
-        return value
+        return {_convert_from_cloud_resource(k): v for k, v in value.items()}
 
     def list_allowed_resource_ids(
         self, user: "UserResponseModel", resource: Resource, action: str

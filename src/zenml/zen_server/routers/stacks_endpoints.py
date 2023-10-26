@@ -25,15 +25,14 @@ from zenml.zen_server.auth import (
     authorize,
 )
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions_for_models,
-    dehydrate_page,
-    dehydrate_response_model,
-    get_allowed_resource_ids,
-    verify_permission_for_model,
-    verify_read_permissions_and_dehydrate,
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
 )
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -67,10 +66,11 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.STACK)
-    stack_filter_model.set_allowed_ids(allowed_ids)
-    page = zen_store().list_stacks(stack_filter_model=stack_filter_model)
-    return dehydrate_page(page)
+    return verify_permissions_and_list_entities(
+        filter_model=stack_filter_model,
+        resource_type=ResourceType.STACK,
+        list_method=zen_store().list_stacks,
+    )
 
 
 @router.get(
@@ -95,8 +95,9 @@ def get_stack(
     Returns:
         The requested stack.
     """
-    stack = zen_store().get_stack(stack_id)
-    return verify_read_permissions_and_dehydrate(stack)
+    return verify_permissions_and_get_entity(
+        id=stack_id, get_method=zen_store().get_stack
+    )
 
 
 @router.put(
@@ -119,9 +120,6 @@ def update_stack(
     Returns:
         The updated stack.
     """
-    stack = zen_store().get_stack(stack_id)
-    verify_permission_for_model(stack, action=Action.UPDATE)
-
     if stack_update.components:
         updated_components = [
             zen_store().get_stack_component(id)
@@ -133,11 +131,12 @@ def update_stack(
             updated_components, action=Action.READ
         )
 
-    updated_stack = zen_store().update_stack(
-        stack_id=stack_id,
-        stack_update=stack_update,
+    return verify_permissions_and_update_entity(
+        id=stack_id,
+        update_model=stack_update,
+        get_method=zen_store().get_stack,
+        update_method=zen_store().update_stack,
     )
-    return dehydrate_response_model(updated_stack)
 
 
 @router.delete(
@@ -154,7 +153,8 @@ def delete_stack(
     Args:
         stack_id: Name of the stack.
     """
-    stack = zen_store().get_stack(stack_id)
-    verify_permission_for_model(stack, action=Action.DELETE)
-
-    zen_store().delete_stack(stack_id)
+    verify_permissions_and_delete_entity(
+        id=stack_id,
+        get_method=zen_store().get_stack,
+        delete_method=zen_store().delete_stack,
+    )

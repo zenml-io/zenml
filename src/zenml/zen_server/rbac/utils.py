@@ -29,25 +29,6 @@ from zenml.zen_server.utils import rbac, server_config
 M = TypeVar("M", bound=BaseResponseModel)
 
 
-def verify_read_permissions_and_dehydrate(
-    model: M,
-) -> M:
-    """Verify read permissions of the model and dehydrate it if necessary.
-
-    Args:
-        model: The model for which to verify permissions.
-
-    Returns:
-        The (potentially) dehydrated model.
-    """
-    if not server_config().rbac_enabled:
-        return model
-
-    verify_permission_for_model(model=model, action=Action.READ)
-
-    return dehydrate_response_model(model=model)
-
-
 def dehydrate_page(page: Page[M]) -> Page[M]:
     """Dehydrate all items of a page.
 

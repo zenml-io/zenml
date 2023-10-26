@@ -28,6 +28,13 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -66,8 +73,10 @@ def list_pipelines(
     Returns:
         List of pipeline objects.
     """
-    return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model
+    return verify_permissions_and_list_entities(
+        filter_model=pipeline_filter_model,
+        resource_type=ResourceType.PIPELINE,
+        list_method=zen_store().list_pipelines,
     )
 
 
@@ -93,7 +102,9 @@ def get_pipeline(
     Returns:
         A specific pipeline object.
     """
-    return zen_store().get_pipeline(pipeline_id=pipeline_id)
+    return verify_permissions_and_get_entity(
+        id=pipeline_id, get_method=zen_store().get_pipeline
+    )
 
 
 @router.put(
@@ -116,8 +127,11 @@ def update_pipeline(
     Returns:
         The updated pipeline object.
     """
-    return zen_store().update_pipeline(
-        pipeline_id=pipeline_id, pipeline_update=pipeline_update
+    return verify_permissions_and_update_entity(
+        id=pipeline_id,
+        update_model=pipeline_update,
+        get_method=zen_store().get_pipeline,
+        update_method=zen_store().update_pipeline,
     )
 
 
@@ -135,7 +149,11 @@ def delete_pipeline(
     Args:
         pipeline_id: ID of the pipeline to delete.
     """
-    zen_store().delete_pipeline(pipeline_id=pipeline_id)
+    verify_permissions_and_delete_entity(
+        id=pipeline_id,
+        get_method=zen_store().get_pipeline,
+        delete_method=zen_store().delete_pipeline,
+    )
 
 
 @router.get(
@@ -180,4 +198,7 @@ def get_pipeline_spec(
     Returns:
         The spec of the pipeline.
     """
-    return zen_store().get_pipeline(pipeline_id).spec
+    pipeline = verify_permissions_and_get_entity(
+        id=pipeline_id, get_method=zen_store().get_pipeline
+    )
+    return pipeline.spec

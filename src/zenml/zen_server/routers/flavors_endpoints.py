@@ -18,7 +18,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
@@ -28,6 +27,15 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -63,7 +71,11 @@ def list_flavors(
     Returns:
         All flavors.
     """
-    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
+    return verify_permissions_and_list_entities(
+        filter_model=flavor_filter_model,
+        resource_type=ResourceType.FLAVOR,
+        list_method=zen_store().list_flavors,
+    )
 
 
 @router.get(
@@ -84,8 +96,9 @@ def get_flavor(
     Returns:
         The requested stack.
     """
-    flavor = zen_store().get_flavor(flavor_id)
-    return flavor
+    return verify_permissions_and_get_entity(
+        id=flavor_id, get_method=zen_store().get_flavor
+    )
 
 
 @router.post(
@@ -96,32 +109,21 @@ def get_flavor(
 @handle_exceptions
 def create_flavor(
     flavor: FlavorRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> FlavorResponseModel:
     """Creates a stack component flavor.
 
     Args:
         flavor: Stack component flavor to register.
-        auth_context: Authentication context.
 
     Returns:
         The created stack component flavor.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the stack
-            component flavor does not match the current workspace or authenticated
-            user.
     """
-    if flavor.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating flavors for a user other than yourself "
-            "is not supported."
-        )
-
-    created_flavor = zen_store().create_flavor(
-        flavor=flavor,
+    return verify_permissions_and_create_entity(
+        request_model=flavor,
+        resource_type=ResourceType.FLAVOR,
+        create_method=zen_store().create_flavor,
     )
-    return created_flavor
 
 
 @router.put(
@@ -146,8 +148,11 @@ def update_flavor(
     Returns:
         The updated flavor.
     """
-    return zen_store().update_flavor(
-        flavor_id=flavor_id, flavor_update=flavor_update
+    return verify_permissions_and_update_entity(
+        id=flavor_id,
+        update_model=flavor_update,
+        get_method=zen_store().get_flavor,
+        update_method=zen_store().update_flavor,
     )
 
 
@@ -165,7 +170,11 @@ def delete_flavor(
     Args:
         flavor_id: ID of the flavor.
     """
-    zen_store().delete_flavor(flavor_id)
+    verify_permissions_and_delete_entity(
+        id=flavor_id,
+        get_method=zen_store().get_flavor,
+        delete_method=zen_store().delete_flavor,
+    )
 
 
 @router.patch(
@@ -181,4 +190,5 @@ def sync_flavors(
     Returns:
         None if successful. Raises an exception otherwise.
     """
+    verify_permission(resource_type=ResourceType.FLAVOR, action=Action.UPDATE)
     return zen_store()._sync_flavors()
