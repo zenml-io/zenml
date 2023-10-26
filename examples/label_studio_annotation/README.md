@@ -24,9 +24,9 @@ Studio.
 ```shell
 pip install "zenml[server]"
 
-# pull example
-zenml example pull label_studio_annotation
-cd zenml_examples/label_studio_annotation
+# clone the ZenML repository
+git clone https://github.com/zenml-io/zenml.git
+cd examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
