@@ -27,6 +27,11 @@ zenml integration install sklearn
 
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
+{% hint style="info" %}
+The `zenml integration install sklearn` command is simply doing a `pip install sklearn<1.3` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly.
+{% endhint %}
+
+
 ## Steps with multiple outputs
 
 Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
@@ -92,7 +97,7 @@ svc_trainer(X_train=..., y_train=...)
 ```
 {% endhint %}
 
-Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a pipeline input.
+Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a pipeline input as well.
 
 ```python
 @pipeline
@@ -168,8 +173,21 @@ first_pipeline = first_pipeline.with_options(
 first_pipeline()
 ```
 
+A simple version of such a YAML file could be:
+
+```yaml
+steps:
+  svc_trainer:
+    enable_cache: False
+    parameters:
+      gamma: 0.01
+```
+
+Please note that this would take precendence over 
+
 If you are unsure how to format this config file, you can generate a template
 config file from a pipeline.
+
 ```python
 first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
@@ -186,6 +204,7 @@ The following example shows caching in action with the code example from the pre
 <summary>Code Example of this Section</summary>
 
 ```python
+from typing_extensions import Tuple, Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split

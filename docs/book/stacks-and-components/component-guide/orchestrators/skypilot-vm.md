@@ -263,7 +263,7 @@ The following code snippets show how to configure the orchestrator settings for 
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 
 skypilot_settings = SkypilotAWSOrchestratorSettings(
