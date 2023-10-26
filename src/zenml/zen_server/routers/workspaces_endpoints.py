@@ -85,13 +85,20 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     WorkspaceFilterModel,
-    WorkspaceRequestModel,
     WorkspaceResponseModel,
-    WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -131,27 +138,27 @@ def list_workspaces(
     )
 
 
-@router.post(
-    WORKSPACES,
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_workspace(
-    workspace: WorkspaceRequestModel,
-    _: AuthContext = Security(authorize),
-) -> WorkspaceResponseModel:
-    """Creates a workspace based on the requestBody.
+# @router.post(
+#     WORKSPACES,
+#     response_model=WorkspaceResponseModel,
+#     responses={401: error_response, 409: error_response, 422: error_response},
+# )
+# @handle_exceptions
+# def create_workspace(
+#     workspace: WorkspaceRequestModel,
+#     _: AuthContext = Security(authorize),
+# ) -> WorkspaceResponseModel:
+#     """Creates a workspace based on the requestBody.
 
-    # noqa: DAR401
+#     # noqa: DAR401
 
-    Args:
-        workspace: Workspace to create.
+#     Args:
+#         workspace: Workspace to create.
 
-    Returns:
-        The created workspace.
-    """
-    return zen_store().create_workspace(workspace=workspace)
+#     Returns:
+#         The created workspace.
+#     """
+#     return zen_store().create_workspace(workspace=workspace)
 
 
 @router.get(
@@ -177,49 +184,49 @@ def get_workspace(
     return zen_store().get_workspace(workspace_name_or_id=workspace_name_or_id)
 
 
-@router.put(
-    WORKSPACES + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def update_workspace(
-    workspace_name_or_id: UUID,
-    workspace_update: WorkspaceUpdateModel,
-    _: AuthContext = Security(authorize),
-) -> WorkspaceResponseModel:
-    """Get a workspace for given name.
+# @router.put(
+#     WORKSPACES + "/{workspace_name_or_id}",
+#     response_model=WorkspaceResponseModel,
+#     responses={401: error_response, 404: error_response, 422: error_response},
+# )
+# @handle_exceptions
+# def update_workspace(
+#     workspace_name_or_id: UUID,
+#     workspace_update: WorkspaceUpdateModel,
+#     _: AuthContext = Security(authorize),
+# ) -> WorkspaceResponseModel:
+#     """Get a workspace for given name.
 
-    # noqa: DAR401
+#     # noqa: DAR401
 
-    Args:
-        workspace_name_or_id: Name or ID of the workspace to update.
-        workspace_update: the workspace to use to update
+#     Args:
+#         workspace_name_or_id: Name or ID of the workspace to update.
+#         workspace_update: the workspace to use to update
 
-    Returns:
-        The updated workspace.
-    """
-    return zen_store().update_workspace(
-        workspace_id=workspace_name_or_id,
-        workspace_update=workspace_update,
-    )
+#     Returns:
+#         The updated workspace.
+#     """
+#     return zen_store().update_workspace(
+#         workspace_id=workspace_name_or_id,
+#         workspace_update=workspace_update,
+#     )
 
 
-@router.delete(
-    WORKSPACES + "/{workspace_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Deletes a workspace.
+# @router.delete(
+#     WORKSPACES + "/{workspace_name_or_id}",
+#     responses={401: error_response, 404: error_response, 422: error_response},
+# )
+# @handle_exceptions
+# def delete_workspace(
+#     workspace_name_or_id: Union[str, UUID],
+#     _: AuthContext = Security(authorize),
+# ) -> None:
+#     """Deletes a workspace.
 
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-    """
-    zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
+#     Args:
+#         workspace_name_or_id: Name or ID of the workspace.
+#     """
+#     zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
 
 
 @router.get(
@@ -233,7 +240,7 @@ def list_workspace_stacks(
     stack_filter_model: StackFilterModel = Depends(
         make_dependable(StackFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[StackResponseModel]:
     """Get stacks that are part of a specific workspace for the user.
 
@@ -242,14 +249,18 @@ def list_workspace_stacks(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         stack_filter_model: Filter model used for pagination, sorting, filtering
-        auth_context: Authentication Context
 
     Returns:
         All stacks part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     stack_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+
+    return verify_permissions_and_list_entities(
+        filter_model=stack_filter_model,
+        resource_type=ResourceType.STACK,
+        list_method=zen_store().list_stacks,
+    )
 
 
 @router.post(
@@ -261,14 +272,13 @@ def list_workspace_stacks(
 def create_stack(
     workspace_name_or_id: Union[str, UUID],
     stack: StackRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> StackResponseModel:
     """Creates a stack for a particular workspace.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         stack: Stack to register.
-        auth_context: The authentication context.
 
     Returns:
         The created stack.
@@ -285,13 +295,21 @@ def create_stack(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if stack.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating stacks for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_stack(stack=stack)
+    if stack.components:
+        components = [
+            zen_store().get_stack_component(id)
+            for ids in stack.components.values()
+            for id in ids
+        ]
+
+        batch_verify_permissions_for_models(components, action=Action.READ)
+
+    return verify_permissions_and_create_entity(
+        request_model=stack,
+        resource_type=ResourceType.STACK,
+        create_method=zen_store().create_stack,
+    )
 
 
 @router.get(
@@ -305,7 +323,7 @@ def list_workspace_stack_components(
     component_filter_model: ComponentFilterModel = Depends(
         make_dependable(ComponentFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponseModel]:
     """List stack components that are part of a specific workspace.
 
@@ -315,15 +333,17 @@ def list_workspace_stack_components(
         workspace_name_or_id: Name or ID of the workspace.
         component_filter_model: Filter model used for pagination, sorting,
             filtering
-        auth_context: Authentication Context
 
     Returns:
         All stack components part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     component_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_stack_components(
-        component_filter_model=component_filter_model
+
+    return verify_permissions_and_list_entities(
+        filter_model=component_filter_model,
+        resource_type=ResourceType.STACK_COMPONENT,
+        list_method=zen_store().list_stack_components,
     )
 
 
@@ -336,14 +356,13 @@ def list_workspace_stack_components(
 def create_stack_component(
     workspace_name_or_id: Union[str, UUID],
     component: ComponentRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponseModel:
     """Creates a stack component.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         component: Stack component to register.
-        auth_context: Authentication context.
 
     Returns:
         The created stack component.
@@ -361,16 +380,18 @@ def create_stack_component(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if component.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating components for a user other than yourself "
-            "is not supported."
+
+    if component.connector:
+        service_connector = zen_store().get_service_connector(
+            component.connector
         )
+        verify_permission_for_model(service_connector, action=Action.READ)
 
-    # TODO: [server] if possible it should validate here that the configuration
-    #  conforms to the flavor
-
-    return zen_store().create_stack_component(component=component)
+    return verify_permissions_and_create_entity(
+        request_model=component,
+        resource_type=ResourceType.STACK_COMPONENT,
+        create_method=zen_store().create_stack_component,
+    )
 
 
 @router.get(
@@ -400,8 +421,11 @@ def list_workspace_pipelines(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     pipeline_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model
+
+    return verify_permissions_and_list_entities(
+        filter_model=pipeline_filter_model,
+        resource_type=ResourceType.PIPELINE,
+        list_method=zen_store().list_pipelines,
     )
 
 
@@ -438,13 +462,12 @@ def create_pipeline(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if pipeline.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating pipelines for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_pipeline(pipeline=pipeline)
+    return verify_permissions_and_create_entity(
+        request_model=pipeline,
+        resource_type=ResourceType.PIPELINE,
+        create_method=zen_store().create_pipeline,
+    )
 
 
 @router.get(
@@ -865,7 +888,12 @@ def list_workspace_code_repositories(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_code_repositories(filter_model=filter_model)
+
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        list_method=zen_store().list_code_repositories,
+    )
 
 
 @router.post(
@@ -877,14 +905,13 @@ def list_workspace_code_repositories(
 def create_code_repository(
     workspace_name_or_id: Union[str, UUID],
     code_repository: CodeRepositoryRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponseModel:
     """Creates a code repository.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         code_repository: Code repository to create.
-        auth_context: Authentication context.
 
     Returns:
         The created code repository.
@@ -902,13 +929,12 @@ def create_code_repository(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if code_repository.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating code repositories for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_code_repository(code_repository=code_repository)
+    return verify_permissions_and_create_entity(
+        request_model=code_repository,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        create_method=zen_store().create_code_repository,
+    )
 
 
 @router.get(
