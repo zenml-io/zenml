@@ -15,11 +15,11 @@
 
 from typing import (
     Dict,
-    Optional,
 )
 from uuid import UUID
 
 from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.client import Client
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.model.model_config import ModelConfig
@@ -30,25 +30,6 @@ from zenml.models.model_models import (
 from zenml.new.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
-
-
-def link_output_to_model(
-    artifact_config: "ArtifactConfig",
-    output_name: Optional[str] = None,
-) -> None:
-    """Log artifact metadata.
-
-    Args:
-        output_name: The output name of the artifact to log metadata for. Can
-            be omitted if there is only one output artifact.
-        artifact_config: The ArtifactConfig of how to link this output.
-    """
-    from zenml.new.steps.step_context import get_step_context
-
-    step_context = get_step_context()
-    step_context._set_artifact_config(
-        output_name=output_name, artifact_config=artifact_config
-    )
 
 
 def link_step_artifacts_to_model(
@@ -113,8 +94,6 @@ def _link_artifact_config_to_model(
         artifact_name: The name of the artifact to link.
         artifact_id: The ID of the artifact to link.
     """
-    from zenml.client import Client
-
     client = Client()
     step_context = get_step_context()
 

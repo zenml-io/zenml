@@ -53,8 +53,8 @@ class ArtifactConfig(BaseModel):
         tags: The tags of the artifact.
         model_name: The name of the model to link artifact to.
         model_version: The identifier of the model version to link artifact to.
-            It can be exact version ("23"), exact version number (42), stage
-            (ModelStages.PRODUCTION) or None for the latest version.
+            It can be an exact version ("23"), exact version number (42), stage
+            (ModelStages.PRODUCTION) or None for the latest version (default).
         model_stage: The stage of the model version to link artifact to.
         overwrite_model_link: Whether to overwrite an existing model link or
             create a new one.

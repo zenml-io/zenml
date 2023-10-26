@@ -27,7 +27,6 @@ from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus
 from zenml.model.model_config import ModelConfig
-from zenml.model.utils import link_output_to_model
 from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
@@ -548,12 +547,11 @@ def _this_step_has_model_config_on_artifact_level() -> (
         Annotated[
             int, "declarative_link", ArtifactConfig(model_name="declarative")
         ],
-        Annotated[int, "functional_link"],
+        Annotated[
+            int, "functional_link", ArtifactConfig(model_name="functional")
+        ],
     ]
 ):
-    link_output_to_model(
-        ArtifactConfig(model_name="functional"), output_name="functional_link"
-    )
     return 1, 2
 
 

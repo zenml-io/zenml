@@ -464,7 +464,7 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     )
     name: Optional[str] = Field(
         description="The name of the artifact inside model version.",
-        default_=None,
+        default=None,
     )
     pipeline_name: Optional[str] = Field(
         description="The name of the pipeline creating this artifact.",
