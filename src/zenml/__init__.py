@@ -32,6 +32,9 @@ from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
 
+# Need to import zenml.models before zenml.config to avoid circular imports
+from zenml.models import *  # noqa: F401
+
 # Define public Python API
 from zenml.api import show
 from zenml.new.pipelines.pipeline_context import get_pipeline_context

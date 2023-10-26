@@ -319,7 +319,7 @@ def multi_named_output_step_mixed_linkage() -> (
 @step
 def pipeline_configuration_is_used_here() -> (
     Tuple[
-        Annotated[int, "1", ArtifactConfig(name="custom_name")],
+        Annotated[int, ArtifactConfig(name="custom_name")],
         Annotated[str, "4"],
     ]
 ):

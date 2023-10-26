@@ -20,7 +20,7 @@ import yaml
 
 from zenml import get_step_context, pipeline, step
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ModelConfig
+from zenml.model.model_config import ModelConfig
 
 
 @step
