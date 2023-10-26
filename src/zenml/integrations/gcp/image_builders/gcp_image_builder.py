@@ -130,6 +130,9 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             build_context=build_context,
             parent_path_directory_name="cloud-build-contexts",
         )
+        docker_build_options = {
+            "--" + key: value for key, value in docker_build_options.items()
+        }
         build = self._configure_cloud_build(
             image_name=image_name,
             cloud_build_context=cloud_build_context,
