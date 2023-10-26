@@ -119,6 +119,8 @@ gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="service
 gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="serviceAccount:<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com" --role="roles/iam.serviceAccountTokenCreator"
 
 gcloud iam service-accounts keys create ls-annotation-credentials.json --iam-account=<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com
+
+gsutil cors set cloud_config/gcp/cors-config.json gs://<YOUR_BUCKET_NAME>
 ```
 
 Now you have a credentials `json` file that you can use to authenticate with
