@@ -22,7 +22,7 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-pip install "zenml[server]"
+pip install "zenml[server]" torchvision
 
 # clone the ZenML repository
 git clone https://github.com/zenml-io/zenml.git
@@ -157,7 +157,8 @@ label-studio start -p 8093
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch s3 pillow
+# assuming label_studio was installed earlier
+zenml integration install pytorch s3 pillow
 ```
 
 Create your basic S3 bucket via CLI command:
@@ -184,22 +185,25 @@ Now you can get to the fun part of setting up Label Studio and working with
 ZenML:
 
 ```shell
-zenml stack copy default <YOUR_AWS_ZENML_STACK_NAME>
+YOUR_AWS_ZENML_STACK_NAME=<YOUR_AWS_ZENML_STACK_NAME>
+YOUR_ARTIFACT_STORE_NAME=<YOUR_ARTIFACT_STORE_NAME>
 
-zenml stack set <YOUR_AWS_ZENML_STACK_NAME>
+zenml stack copy default $YOUR_AWS_ZENML_STACK_NAME
+
+zenml stack set $YOUR_AWS_ZENML_STACK_NAME
 
 # use your standard access key id and secret access key from ~/.aws/credentials here
 zenml secret create <YOUR_AWS_SECRET_NAME> --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
-zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
+zenml artifact-store register $YOUR_ARTIFACT_STORE_NAME --flavor=s3 --path=s3://$S3_BUCKET_NAME --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
-zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
+zenml stack update $YOUR_AWS_ZENML_STACK_NAME -a $YOUR_ARTIFACT_STORE_NAME
 
 zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
-zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+zenml stack update $YOUR_AWS_ZENML_STACK_NAME -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 ```
 
 ### ▶️ Run the Code
