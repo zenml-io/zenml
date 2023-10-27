@@ -130,9 +130,6 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             build_context=build_context,
             parent_path_directory_name="cloud-build-contexts",
         )
-        docker_build_options = {
-            "--" + key: value for key, value in docker_build_options.items()
-        }
         build = self._configure_cloud_build(
             image_name=image_name,
             cloud_build_context=cloud_build_context,
@@ -180,9 +177,12 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         # Convert the docker_build_options dictionary to a list of strings
         docker_build_args = []
         for key, value in build_options.items():
+            option = f"--{key}"
             if isinstance(value, list):
                 for val in value:
-                    docker_build_args.extend([key, val])
+                    docker_build_args.extend([option, val])
+            elif value is None or isinstance(value, bool):
+                docker_build_args.append(option)
             else:
                 docker_build_args.extend([key, value])
 
@@ -201,7 +201,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                         "-t",
                         image_name,
                         ".",
-                        *build_options,
+                        *docker_build_args,
                     ],
                 },
                 {
