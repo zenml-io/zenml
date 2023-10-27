@@ -296,10 +296,6 @@ group, then the newly created assets should be easy to find. With Amazon,
 deleting the IAM rules, the secrets manager vault and the S3 bucket are what you
 need to delete.
 
-```shell
-rm -rf zenml_examples
-```
-
 # 📜 Learn more
 
 If you want to learn more about annotation in general or about how to use your
