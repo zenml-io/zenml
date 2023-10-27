@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import abstractmethod
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import Field, SecretStr
 
 from zenml.exceptions import HydrationError
 from zenml.models.v2.base.utils import hydrated_property
@@ -77,14 +76,14 @@ class BaseRequest(BaseZenModel):
 # -------------------- Response Model --------------------
 
 
-class BaseResponseBody(BaseModel):
+class BaseResponseBody(BaseZenModel):
     """Base body model.
 
     Used as a base class for all body models associated with responses.
     """
 
 
-class BaseResponseMetadata(BaseModel):
+class BaseResponseMetadata(BaseZenModel):
     """Base metadata model.
 
     Used as a base class for all metadata models associated with responses.
@@ -112,7 +111,6 @@ class BaseResponse(BaseZenModel):
         title="The metadata related to this resource."
     )
 
-    @abstractmethod
     def get_hydrated_version(self) -> "BaseResponse":
         """Abstract method to fetch the hydrated version of the model."""
 
@@ -152,6 +150,7 @@ class BaseResponse(BaseZenModel):
                 for the main fields.
         """
         # Check the values of each field except the metadata field
+        # TODO: Now that the method is not abstract add more validation
         fields = set(self.__fields__.keys())
         fields.remove("metadata")
 
