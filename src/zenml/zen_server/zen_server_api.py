@@ -228,7 +228,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
-app.include_router(models_endpoints.router)
+app.include_router(models_endpoints.models_router)
+app.include_router(models_endpoints.model_versions_router)
 
 
 def get_root_static_files() -> List[str]:

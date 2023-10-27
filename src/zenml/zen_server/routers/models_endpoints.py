@@ -53,14 +53,20 @@ from zenml.zen_server.utils import (
 # Models
 #########
 
-router = APIRouter(
+models_router = APIRouter(
     prefix=API + VERSION_1 + MODELS,
     tags=["models"],
     responses={401: error_response},
 )
 
+model_versions_router = APIRouter(
+    prefix=API + VERSION_1 + MODEL_VERSIONS,
+    tags=["model_versions"],
+    responses={401: error_response},
+)
 
-@router.get(
+
+@models_router.get(
     "",
     response_model=Page[ModelResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -87,7 +93,7 @@ def list_models(
     )
 
 
-@router.get(
+@models_router.get(
     "/{model_name_or_id}",
     response_model=ModelResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -108,7 +114,7 @@ def get_model(
     return zen_store().get_model(model_name_or_id)
 
 
-@router.put(
+@models_router.put(
     "/{model_id}",
     response_model=ModelResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -134,7 +140,7 @@ def update_model(
     )
 
 
-@router.delete(
+@models_router.delete(
     "/{model_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -156,8 +162,8 @@ def delete_model(
 #################
 
 
-@router.get(
-    "/{model_name_or_id}" + MODEL_VERSIONS,
+@model_versions_router.get(
+    "",
     response_model=Page[ModelVersionResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -182,16 +188,13 @@ def list_model_versions(
     )
 
 
-@router.get(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_number_or_id}",
+@model_versions_router.get(
+    "/{model_version_name_or_number_or_id}",
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_model_version(
-    model_name_or_id: Union[str, UUID],
     model_version_name_or_number_or_id: Union[
         str, int, UUID, ModelStages
     ] = LATEST_MODEL_VERSION_PLACEHOLDER,
@@ -201,7 +204,6 @@ def get_model_version(
     """Get a model version by name or ID.
 
     Args:
-        model_name_or_id: The name or ID of the model containing version.
         model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
         is_number: If the model_version_name_or_number_or_id is a version number
@@ -210,57 +212,51 @@ def get_model_version(
         The model version with the given name or ID.
     """
     return zen_store().get_model_version(
-        model_name_or_id,
         model_version_name_or_number_or_id
         if not is_number
         else int(model_version_name_or_number_or_id),
     )
 
 
-@router.put(
-    "/{model_id}" + MODEL_VERSIONS + "/{model_version_id}",
+@model_versions_router.put(
+    "/{model_version_id}",
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_model_version(
-    model_version_id: UUID,
     model_version_update_model: ModelVersionUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ModelVersionResponseModel:
     """Get all model versions by filter.
 
     Args:
-        model_version_id: The ID of model version to be updated.
         model_version_update_model: The model version to be updated.
 
     Returns:
         An updated model version.
     """
     return zen_store().update_model_version(
-        model_version_id=model_version_id,
         model_version_update_model=model_version_update_model,
     )
 
 
-@router.delete(
-    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
+@model_versions_router.delete(
+    "/{model_version_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def delete_model_version(
-    model_name_or_id: Union[str, UUID],
     model_version_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Delete a model by name or ID.
 
     Args:
-        model_name_or_id: The name or ID of the model containing version.
         model_version_name_or_id: The name or ID of the model version to delete.
     """
     zen_store().delete_model_version(
-        model_name_or_id, model_version_name_or_id
+        model_version_name_or_id
     )
 
 
@@ -269,10 +265,8 @@ def delete_model_version(
 ##########################
 
 
-@router.get(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+@model_versions_router.get(
+    "/{model_version_name_or_id}"
     + ARTIFACTS,
     response_model=Page[ModelVersionArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -298,10 +292,8 @@ def list_model_version_artifact_links(
     )
 
 
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+@model_versions_router.delete(
+    "/{model_version_name_or_id}"
     + ARTIFACTS
     + "/{model_version_artifact_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -332,10 +324,8 @@ def delete_model_version_artifact_link(
 ##############################
 
 
-@router.get(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+@model_versions_router.get(
+    "/{model_version_name_or_id}"
     + RUNS,
     response_model=Page[ModelVersionPipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -361,10 +351,8 @@ def list_model_version_pipeline_run_links(
     )
 
 
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+@model_versions_router.delete(
+    "{model_version_name_or_id}"
     + RUNS
     + "/{model_version_pipeline_run_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},

@@ -341,7 +341,7 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     """Filter Model for Model Version."""
 
-    model_id: Union[str, UUID] = Field(
+    model_id: Optional[Union[str, UUID]] = Field(
         description="The ID of the Model",
     )
     name: Optional[Union[str, UUID]] = Field(
