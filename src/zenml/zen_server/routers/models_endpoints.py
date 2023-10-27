@@ -225,18 +225,21 @@ def get_model_version(
 )
 @handle_exceptions
 def update_model_version(
+    model_version_id: UUID,
     model_version_update_model: ModelVersionUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ModelVersionResponseModel:
     """Get all model versions by filter.
 
     Args:
+        model_version_id: The ID of model version to be updated.
         model_version_update_model: The model version to be updated.
 
     Returns:
         An updated model version.
     """
     return zen_store().update_model_version(
+        model_version_id=model_version_id,
         model_version_update_model=model_version_update_model,
     )
 
@@ -255,9 +258,7 @@ def delete_model_version(
     Args:
         model_version_name_or_id: The name or ID of the model version to delete.
     """
-    zen_store().delete_model_version(
-        model_version_name_or_id
-    )
+    zen_store().delete_model_version(model_version_name_or_id)
 
 
 ##########################
@@ -266,8 +267,7 @@ def delete_model_version(
 
 
 @model_versions_router.get(
-    "/{model_version_name_or_id}"
-    + ARTIFACTS,
+    "/{model_version_name_or_id}" + ARTIFACTS,
     response_model=Page[ModelVersionArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -325,8 +325,7 @@ def delete_model_version_artifact_link(
 
 
 @model_versions_router.get(
-    "/{model_version_name_or_id}"
-    + RUNS,
+    "/{model_version_name_or_id}" + RUNS,
     response_model=Page[ModelVersionPipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

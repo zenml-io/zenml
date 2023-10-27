@@ -1793,13 +1793,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be deleted.
 
         Raises:

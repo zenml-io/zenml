@@ -2413,18 +2413,16 @@ class RestZenStore(BaseZenStore):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
+            route=MODEL_VERSIONS,
         )
 
     def get_model_version(

@@ -5735,7 +5735,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_model_version(
         self,
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages]
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
@@ -5814,23 +5814,18 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_id: name or id of the model version to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
-            query = select(ModelVersionSchema).where(
-                ModelVersionSchema.model_id == model.id
-            )
+            query = select(ModelVersionSchema)
             try:
                 UUID(str(model_version_name_or_id))
                 query = query.where(
