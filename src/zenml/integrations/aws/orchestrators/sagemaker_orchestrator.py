@@ -36,6 +36,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
+    SAGEMAKER_ENV_VAR_SIZE_LIMIT,
     SagemakerEntrypointConfiguration,
 )
 from zenml.logger import get_logger
@@ -43,6 +44,7 @@ from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
+from zenml.utils.env_utils import split_environment_variables
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_deployment_models import (
@@ -208,15 +210,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
-        # Sagemaker does not allow environment variables longer
-        # than 256 characters. If an environment variable is
-        # longer than 256 characters, we split it into multiple
-        # environment variables (chunks) and re-construct it on the other side
-        # using the entrypoint configuration.
-        environment = (
-            SagemakerEntrypointConfiguration.split_environment_variables(
-                environment
-            )
+        # Sagemaker does not allow environment variables longer than 256
+        # characters to be passed to Processor steps. If an environment variable
+        # is longer than 256 characters, we split it into multiple environment
+        # variables (chunks) and re-construct it on the other side using the
+        # custom entrypoint configuration.
+        environment = split_environment_variables(
+            environment, size_limit=SAGEMAKER_ENV_VAR_SIZE_LIMIT
         )
 
         sagemaker_steps = []
