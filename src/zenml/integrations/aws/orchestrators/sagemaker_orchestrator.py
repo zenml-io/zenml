@@ -215,8 +215,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # is longer than 256 characters, we split it into multiple environment
         # variables (chunks) and re-construct it on the other side using the
         # custom entrypoint configuration.
-        environment = split_environment_variables(
-            environment, size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT
+        split_environment_variables(
+            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+            env=environment,
         )
 
         sagemaker_steps = []

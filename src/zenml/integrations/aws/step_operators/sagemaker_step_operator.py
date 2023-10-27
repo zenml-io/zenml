@@ -183,8 +183,9 @@ class SagemakerStepOperator(BaseStepOperator):
         # is longer than 512 characters, we split it into multiple environment
         # variables (chunks) and re-construct it on the other side using the
         # custom entrypoint configuration.
-        environment = split_environment_variables(
-            environment, size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT
+        split_environment_variables(
+            env=environment,
+            size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
         )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
