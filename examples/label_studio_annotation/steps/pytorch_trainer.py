@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import tempfile
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import numpy as np
@@ -31,6 +31,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
     is_s3_url,
 )
 from zenml.io import fileio
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.post_execution import get_pipeline
 from zenml.steps import BaseParameters, StepContext, step
 from zenml.utils import io_utils
@@ -114,12 +115,16 @@ class CustomDataset:
                 file_url = f"{artifact_store_path}{urlparse(image_url).path}"
             elif is_azure_url(image_url):
                 file_url = "az://" + "/".join(parts[3:])
-            elif is_gcs_url(image_url):
+            # elif is_gcs_url(image_url):
+            else:
                 url_scheme = "gs"
                 url_path = urlparse(image_url).path
-                file_url = f"{url_scheme}://{url_path}"
+                file_url = f"{artifact_store_path}/{url_path}"
             file_extension = get_file_extension(urlparse(image_url).path)
             path = os.path.join(temp_dir.name, f"{i}{file_extension}")
+
+            # breakpoint()
+
             io_utils.copy(file_url, path)
             with fileio.open(path, "rb") as f:
                 image = np.asarray(Image.open(f))
@@ -139,24 +144,22 @@ class CustomDataset:
         return len(self.images)
 
 
-def _find_last_successful_run(context: StepContext) -> int:
+def _find_last_successful_run(
+    context: StepContext,
+) -> Optional[PipelineRunResponseModel]:
     """Get the index of the last successful run of this pipeline and step."""
     pipeline = get_pipeline(PIPELINE_NAME)
     if pipeline is not None:
-        for idx, run in reversed(list(enumerate(pipeline.runs))):
-            try:
-                run.get_step(PIPELINE_STEP_NAME).output.read()
-                return idx
-            except (KeyError, ValueError):  # step didn't run or had no output
-                pass
+        try:
+            last_successful_run = pipeline.last_successful_run()
+            return last_successful_run
+        except RuntimeError:
+            return None
     return None
 
 
 def _load_last_model(context: StepContext) -> nn.Module:
     """Return the most recently trained model from this pipeline, or None."""
-    # idx = _find_last_successful_run(context=context)
-    # if idx is None:
-    #     return None
     try:
         last_run = get_pipeline(PIPELINE_NAME).last_successful_run
     except RuntimeError:
@@ -176,13 +179,12 @@ def _is_new_data_available(
         return False
 
     # Otherwise, if there was no previous run, the data is for sure new.
-    idx = _find_last_successful_run(context=context)
-    if idx is None:
+    last_successful_run = _find_last_successful_run(context=context)
+    if last_successful_run is None:
         return True
 
     # Else, we check whether we had the same number of samples before.
-    last_run = get_pipeline(PIPELINE_NAME).runs[idx]
-    last_inputs = last_run.get_step(PIPELINE_STEP_NAME).inputs
+    last_inputs = last_successful_run.steps[PIPELINE_STEP_NAME].inputs
     last_image_urls = last_inputs["image_urls"].read()
     return len(last_image_urls) != len(image_urls)
 
@@ -216,7 +218,7 @@ class PytorchModelTrainerParameters(BaseParameters):
 @step(enable_cache=False)
 def pytorch_model_trainer(
     image_urls: List[str],
-    labels: List[Dict[str, str]],
+    labels: List[str],
     params: PytorchModelTrainerParameters,
     context: StepContext,
 ) -> nn.Module:
