@@ -1950,13 +1950,17 @@ class Client(metaclass=ClientMetaClass):
                     ) from e
 
                 # Create and validate the configuration
-                from zenml.stack.utils import validate_stack_component_config
+                from zenml.stack.utils import (
+                    validate_stack_component_config,
+                    warn_if_config_server_mismatch,
+                )
 
                 configuration = validate_stack_component_config(
                     configuration_dict=component.configuration,
                     flavor_name=component.flavor,
                     component_type=component.type,
                 )
+                warn_if_config_server_mismatch(configuration)
                 if configuration.is_local:
                     local_components.append(
                         f"{component.type.value}: {component.name}"
@@ -2140,13 +2144,17 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered component.
         """
-        from zenml.stack.utils import validate_stack_component_config
+        from zenml.stack.utils import (
+            validate_stack_component_config,
+            warn_if_config_server_mismatch,
+        )
 
-        validate_stack_component_config(
+        validated_config = validate_stack_component_config(
             configuration_dict=configuration,
             flavor_name=flavor,
             component_type=component_type,
         )
+        warn_if_config_server_mismatch(validated_config)
 
         create_component_model = ComponentRequestModel(
             name=name,
@@ -2248,13 +2256,17 @@ class Client(metaclass=ClientMetaClass):
                 if v is not None
             }
 
-            from zenml.stack.utils import validate_stack_component_config
+            from zenml.stack.utils import (
+                validate_stack_component_config,
+                warn_if_config_server_mismatch,
+            )
 
-            validate_stack_component_config(
+            validated_config = validate_stack_component_config(
                 configuration_dict=existing_configuration,
                 flavor_name=component.flavor,
                 component_type=component.type,
             )
+            warn_if_config_server_mismatch(validated_config)
 
             update_model.configuration = existing_configuration
 

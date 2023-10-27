@@ -59,12 +59,10 @@ def validate_stack_component_config(
             f"Invalid stack component configuration. Please verify "
             f"the configurations set for {component_type}."
         )
-    if not zen_store:  # Doesn't make sense to warn inside a server.
-        _warn_if_config_server_mismatch(configuration)
     return configuration
 
 
-def _warn_if_config_server_mismatch(
+def warn_if_config_server_mismatch(
     configuration: StackComponentConfig,
 ) -> None:
     """Warn if a component configuration is mismatched with the ZenML server.
