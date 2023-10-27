@@ -22,6 +22,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -299,7 +300,7 @@ class BaseFilterModel(BaseModel):
         default=None, description="Updated"
     )
 
-    _allowed_ids: Optional[List[UUID]] = None
+    _allowed_ids: Optional[Set[UUID]] = None
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
@@ -392,12 +393,12 @@ class BaseFilterModel(BaseModel):
 
         return column, operator
 
-    def set_allowed_ids(self, allowed_ids: Optional[List[UUID]]) -> None:
+    def set_allowed_ids(self, allowed_ids: Optional[Set[UUID]]) -> None:
         """Set allowed IDs for the query.
 
         Args:
-            allowed_ids: List of IDs to limit the query to. If given, the
-                remaining filters will be applied to entities within this list
+            allowed_ids: Set of IDs to limit the query to. If given, the
+                remaining filters will be applied to entities within this set
                 only. If `None`, the remaining filters will applied to all
                 entries in the table.
         """

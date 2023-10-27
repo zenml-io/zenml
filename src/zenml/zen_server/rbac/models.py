@@ -29,6 +29,10 @@ class Action(StrEnum):
     UPDATE = "update"
     DELETE = "delete"
 
+    # Service connectors
+    CLIENT = "client"  # TODO: rename
+    READ_SECRET_VALUE = "read_secret_value"
+
 
 class ResourceType(StrEnum):
     """Resource types of the server API."""

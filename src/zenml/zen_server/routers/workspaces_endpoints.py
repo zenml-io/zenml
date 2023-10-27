@@ -980,7 +980,7 @@ def list_workspace_service_connectors(
     connector_filter_model: ServiceConnectorFilterModel = Depends(
         make_dependable(ServiceConnectorFilterModel)
     ),
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[ServiceConnectorResponseModel]:
     """List service connectors that are part of a specific workspace.
 
@@ -990,15 +990,17 @@ def list_workspace_service_connectors(
         workspace_name_or_id: Name or ID of the workspace.
         connector_filter_model: Filter model used for pagination, sorting,
             filtering
-        auth_context: Authentication Context
 
     Returns:
         All service connectors part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     connector_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_service_connectors(
-        filter_model=connector_filter_model
+
+    return verify_permissions_and_list_entities(
+        filter_model=connector_filter_model,
+        resource_type=ResourceType.SERVICE_CONNECTOR,
+        list_method=zen_store().list_service_connectors,
     )
 
 
@@ -1036,13 +1038,12 @@ def create_service_connector(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if connector.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating connectors for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_service_connector(service_connector=connector)
+    return verify_permissions_and_create_entity(
+        request_model=connector,
+        resource_type=ResourceType.SERVICE_CONNECTOR,
+        create_method=zen_store().create_service_connector,
+    )
 
 
 @router.get(
@@ -1092,14 +1093,13 @@ def list_service_connector_resources(
 def create_model(
     workspace_name_or_id: Union[str, UUID],
     model: ModelRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Create a new model.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         model: The model to create.
-        auth_context: Authentication context.
 
     Returns:
         The created model.
@@ -1117,12 +1117,12 @@ def create_model(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if model.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-    return zen_store().create_model(model)
+
+    return verify_permissions_and_create_entity(
+        request_model=model,
+        resource_type=ResourceType.MODEL,
+        create_method=zen_store().create_model,
+    )
 
 
 @router.get(
@@ -1151,8 +1151,11 @@ def list_workspace_models(
     """
     workspace_id = zen_store().get_workspace(workspace_name_or_id).id
     model_filter_model.set_scope_workspace(workspace_id)
-    return zen_store().list_models(
-        model_filter_model=model_filter_model,
+
+    return verify_permissions_and_list_entities(
+        filter_model=model_filter_model,
+        resource_type=ResourceType.MODEL,
+        list_method=zen_store().list_models,
     )
 
 

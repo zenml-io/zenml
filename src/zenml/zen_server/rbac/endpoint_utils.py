@@ -1,5 +1,5 @@
 """High-level helper functions to write endpoints with RBAC."""
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 AnyFilterModel = TypeVar("AnyFilterModel", bound=BaseFilterModel)
 AnyUpdateModel = TypeVar("AnyUpdateModel", bound=BaseModel)
+UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
 def verify_permissions_and_create_entity(
@@ -62,7 +63,7 @@ def verify_permissions_and_create_entity(
 
 
 def verify_permissions_and_get_entity(
-    id: UUID, get_method: Callable[[UUID], AnyResponseModel]
+    id: UUIDOrStr, get_method: Callable[[UUIDOrStr], AnyResponseModel]
 ) -> AnyResponseModel:
     """Verify permissions and fetch an entity.
 
@@ -100,10 +101,10 @@ def verify_permissions_and_list_entities(
 
 
 def verify_permissions_and_update_entity(
-    id: UUID,
+    id: UUIDOrStr,
     update_model: AnyUpdateModel,
-    get_method: Callable[[UUID], AnyResponseModel],
-    update_method: Callable[[UUID, AnyUpdateModel], AnyResponseModel],
+    get_method: Callable[[UUIDOrStr], AnyResponseModel],
+    update_method: Callable[[UUIDOrStr, AnyUpdateModel], AnyResponseModel],
 ) -> AnyResponseModel:
     """Verify permissions and update an entity.
 
@@ -118,14 +119,14 @@ def verify_permissions_and_update_entity(
     """
     model = get_method(id)
     verify_permission_for_model(model, action=Action.UPDATE)
-    updated_model = update_method(id, update_model)
+    updated_model = update_method(model.id, update_model)
     return dehydrate_response_model(updated_model)
 
 
 def verify_permissions_and_delete_entity(
-    id: UUID,
-    get_method: Callable[[UUID], AnyResponseModel],
-    delete_method: Callable[[UUID], None],
+    id: UUIDOrStr,
+    get_method: Callable[[UUIDOrStr], AnyResponseModel],
+    delete_method: Callable[[UUIDOrStr], None],
 ) -> None:
     """Verify permissions and delete an entity.
 
@@ -136,4 +137,4 @@ def verify_permissions_and_delete_entity(
     """
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
-    delete_method(id)
+    delete_method(model.id)

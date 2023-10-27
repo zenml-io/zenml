@@ -36,6 +36,18 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    get_allowed_resource_ids,
+    has_permissions_for_model,
+    verify_permission,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -78,14 +90,30 @@ def list_service_connectors(
     Returns:
         Page with list of service connectors for a specific type.
     """
-    connectors = zen_store().list_service_connectors(
-        filter_model=connector_filter_model
+    connectors = verify_permissions_and_list_entities(
+        filter_model=connector_filter_model,
+        resource_type=ResourceType.SERVICE_CONNECTOR,
+        list_method=zen_store().list_service_connectors,
     )
 
     if expand_secrets:
+        # This will be `None` if the user is allowed to read secret values
+        # for all service connectors
+        allowed_ids = get_allowed_resource_ids(
+            resource_type=ResourceType.SERVICE_CONNECTOR,
+            action=Action.READ_SECRET_VALUE,
+        )
+
         for connector in connectors.items:
             if not connector.secret_id:
                 continue
+
+            if allowed_ids and connector.id not in allowed_ids:
+                # The user is not allowed to read secret values for this
+                # connector. We don't raise an exception here but don't include
+                # the secret values
+                continue
+
             secret = zen_store().get_secret(secret_id=connector.secret_id)
 
             # Update the connector configuration with the secret.
@@ -115,8 +143,15 @@ def get_service_connector(
         The requested service connector.
     """
     connector = zen_store().get_service_connector(connector_id)
+    verify_permission_for_model(connector, action=Action.READ)
 
-    if expand_secrets and connector.secret_id:
+    if (
+        expand_secrets
+        and connector.secret_id
+        and has_permissions_for_model(
+            connector, action=Action.READ_SECRET_VALUE
+        )
+    ):
         secret = zen_store().get_secret(secret_id=connector.secret_id)
 
         # Update the connector configuration with the secret.
@@ -145,9 +180,11 @@ def update_service_connector(
     Returns:
         Updated service connector.
     """
-    return zen_store().update_service_connector(
-        service_connector_id=connector_id,
-        update=connector_update,
+    return verify_permissions_and_update_entity(
+        id=connector_id,
+        update_model=connector_update,
+        get_method=zen_store().get_service_connector,
+        update_method=zen_store().update_service_connector,
     )
 
 
@@ -165,7 +202,11 @@ def delete_service_connector(
     Args:
         connector_id: ID of the service connector.
     """
-    zen_store().delete_service_connector(connector_id)
+    verify_permissions_and_delete_entity(
+        id=connector_id,
+        get_method=zen_store().get_service_connector,
+        delete_method=zen_store().delete_service_connector,
+    )
 
 
 @router.post(
@@ -194,6 +235,10 @@ def validate_and_verify_service_connector_config(
         The list of resources that the service connector configuration has
         access to.
     """
+    verify_permission(
+        resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+    )
+
     return zen_store().verify_service_connector_config(
         service_connector=connector,
         list_resources=list_resources,
@@ -231,6 +276,9 @@ def validate_and_verify_service_connector(
         The list of resources that the service connector has access to, scoped
         to the supplied resource type and ID, if provided.
     """
+    connector = zen_store().get_service_connector(connector_id)
+    verify_permission_for_model(model=connector, action=Action.READ)
+
     return zen_store().verify_service_connector(
         service_connector_id=connector_id,
         resource_type=resource_type,
@@ -266,6 +314,10 @@ def get_service_connector_client(
         A service connector client that can be used to access the given
         resource.
     """
+    connector = zen_store().get_service_connector(connector_id)
+    verify_permission_for_model(model=connector, action=Action.READ)
+    verify_permission_for_model(model=connector, action=Action.CLIENT)
+
     return zen_store().get_service_connector_client(
         service_connector_id=connector_id,
         resource_type=resource_type,

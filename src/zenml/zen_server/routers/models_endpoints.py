@@ -43,6 +43,13 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -82,8 +89,10 @@ def list_models(
     Returns:
         The models according to query filters.
     """
-    return zen_store().list_models(
-        model_filter_model=model_filter_model,
+    return verify_permissions_and_list_entities(
+        filter_model=model_filter_model,
+        resource_type=ResourceType.MODEL,
+        list_method=zen_store().list_models,
     )
 
 
@@ -105,7 +114,9 @@ def get_model(
     Returns:
         The model with the given name or ID.
     """
-    return zen_store().get_model(model_name_or_id)
+    return verify_permissions_and_get_entity(
+        id=model_name_or_id, get_method=zen_store().get_model
+    )
 
 
 @router.put(
@@ -128,9 +139,11 @@ def update_model(
     Returns:
         The updated model.
     """
-    return zen_store().update_model(
-        model_id=model_id,
-        model_update=model_update,
+    return verify_permissions_and_update_entity(
+        id=model_id,
+        update_model=model_update,
+        get_method=zen_store().get_model,
+        update_method=zen_store().update_model,
     )
 
 
@@ -148,7 +161,11 @@ def delete_model(
     Args:
         model_name_or_id: The name or ID of the model to delete.
     """
-    zen_store().delete_model(model_name_or_id)
+    verify_permissions_and_delete_entity(
+        id=model_name_or_id,
+        get_method=zen_store().get_model,
+        delete_method=zen_store().delete_model,
+    )
 
 
 #################

@@ -289,7 +289,7 @@ def verify_permission(
 def get_allowed_resource_ids(
     resource_type: str,
     action: str = Action.READ,
-) -> Optional[List[UUID]]:
+) -> Optional[Set[UUID]]:
     """Get all resource IDs of a resource type that a user can access.
 
     Args:
@@ -318,7 +318,7 @@ def get_allowed_resource_ids(
     if has_full_resource_access:
         return None
 
-    return [UUID(id) for id in allowed_ids]
+    return {UUID(id) for id in allowed_ids}
 
 
 def get_resource_for_model(model: "BaseResponseModel") -> Optional[Resource]:
