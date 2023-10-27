@@ -31,7 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
-from zenml.model.utils import _link_artifact_config_to_model
+from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -433,11 +433,13 @@ class StepLauncher:
                     )
                 if model_config:
                     model_config.get_or_create_model_version()
-                    _link_artifact_config_to_model(
+                    link_artifact_config_to_model(
                         artifact_config=artifact_config_,
                         model_config=model_config,
                         artifact_name=output_name_,
                         artifact_id=output_id,
+                        pipeline_name=self._deployment.pipeline_configuration.name,
+                        step_name=self._step_name,
                     )
 
     def _run_step(

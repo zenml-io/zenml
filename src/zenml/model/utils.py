@@ -55,6 +55,9 @@ def link_step_artifacts_to_model(
         model_config = None
         logger.debug("No model context found, unable to auto-link artifacts.")
 
+    pipeline_name = step_context.pipeline.name
+    step_name = step_context.step_run.name
+
     for artifact_name in artifact_ids:
         artifact_id = artifact_ids[artifact_name]
         artifact_config = step_context._get_output(
@@ -72,19 +75,23 @@ def link_step_artifacts_to_model(
             )
 
         if artifact_config and model_config:
-            _link_artifact_config_to_model(
+            link_artifact_config_to_model(
                 artifact_config=artifact_config,
                 artifact_name=artifact_name,
                 artifact_id=artifact_id,
                 model_config=model_config,
+                pipeline_name=pipeline_name,
+                step_name=step_name,
             )
 
 
-def _link_artifact_config_to_model(
+def link_artifact_config_to_model(
     artifact_config: ArtifactConfig,
     model_config: "ModelConfig",
     artifact_name: str,
     artifact_id: UUID,
+    pipeline_name: str,
+    step_name: str,
 ) -> None:
     """Link an artifact config to a model version.
 
@@ -93,17 +100,16 @@ def _link_artifact_config_to_model(
         model_config: The model config to link the artifact to.
         artifact_name: The name of the artifact to link.
         artifact_id: The ID of the artifact to link.
+        pipeline_name: The name of the pipeline.
+        step_name: The name of the step.
     """
     client = Client()
-    step_context = get_step_context()
 
     artifact_name = artifact_config.name or artifact_name
     if artifact_name is None:
         artifact = client.zen_store.get_artifact(artifact_id=artifact_id)
         artifact_name = artifact.name
 
-    pipeline_name = step_context.pipeline.name
-    step_name = step_context.step_run.name
     model_version = model_config._get_model_version()
     model_id = model_version.model.id
     model_version_id = model_version.id
