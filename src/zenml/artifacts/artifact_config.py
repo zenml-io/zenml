@@ -16,10 +16,10 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from pydantic import BaseModel
 
-from zenml import get_step_context
 from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.new.steps.step_context import get_step_context
 
 if TYPE_CHECKING:
     from zenml.model.model_config import ModelConfig
