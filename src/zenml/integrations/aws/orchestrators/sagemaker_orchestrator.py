@@ -36,7 +36,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
-    SAGEMAKER_ENV_VAR_SIZE_LIMIT,
+    SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
     SagemakerEntrypointConfiguration,
 )
 from zenml.logger import get_logger
@@ -216,7 +216,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # variables (chunks) and re-construct it on the other side using the
         # custom entrypoint configuration.
         environment = split_environment_variables(
-            environment, size_limit=SAGEMAKER_ENV_VAR_SIZE_LIMIT
+            environment, size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT
         )
 
         sagemaker_steps = []
