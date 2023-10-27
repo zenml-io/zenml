@@ -401,21 +401,6 @@ class ModelVersionUpdateModel(BaseModel):
 class ModelVersionArtifactBaseModel(BaseModel):
     """Model version links with artifact base model."""
 
-    name: Optional[str] = Field(
-        description="The name of the artifact inside model version.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    pipeline_name: Optional[str] = Field(
-        description="The name of the pipeline creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
-    step_name: Optional[str] = Field(
-        description="The name of the step creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
     artifact: UUID
     model: UUID
     model_version: UUID
@@ -445,33 +430,22 @@ class ModelVersionArtifactRequestModel(
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version link with artifact response model.
-
-    link_version: The version of the link (always 1 for not versioned links).
-    """
-
-    link_version: int
+    """Model version link with artifact response model."""
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     """Model version pipeline run links filter model."""
 
-    model_id: Union[str, UUID] = Field(
+    artifact_id: Optional[Union[str, UUID]] = Field(
+        description="The name or ID of the Artifact",
+        default=None,
+    )
+    model_id: Optional[Union[str, UUID]] = Field(
         description="The name or ID of the Model",
+        default=None,
     )
-    model_version_id: Union[str, UUID] = Field(
+    model_version_id: Optional[Union[str, UUID]] = Field(
         description="The name or ID of the Model Version",
-    )
-    name: Optional[str] = Field(
-        description="The name of the artifact inside model version.",
-        default=None,
-    )
-    pipeline_name: Optional[str] = Field(
-        description="The name of the pipeline creating this artifact.",
-        default=None,
-    )
-    step_name: Optional[str] = Field(
-        description="The name of the step creating this artifact.",
         default=None,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -486,8 +460,6 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
 
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "model_id",
-        "model_version_id",
         "only_artifacts",
         "only_model_objects",
         "only_deployments",
@@ -502,11 +474,6 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
 class ModelVersionPipelineRunBaseModel(BaseModel):
     """Model version links with pipeline run base model."""
 
-    name: Optional[str] = Field(
-        description="The name of the pipeline run inside model version.",
-        max_length=STR_FIELD_MAX_LENGTH,
-        default=None,
-    )
     pipeline_run: UUID
     model: UUID
     model_version: UUID
@@ -527,11 +494,17 @@ class ModelVersionPipelineRunResponseModel(
 class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
     """Model version pipeline run links filter model."""
 
-    model_id: Union[str, UUID] = Field(
-        description="The name or ID of the Model",
+    pipeline_run_id: Optional[Union[str, UUID]] = Field(
+        description="The name or ID of the Pipeline Run",
+        default=None,
     )
-    model_version_id: Union[str, UUID] = Field(
+    model_id: Optional[Union[str, UUID]] = Field(
+        description="The name or ID of the Model",
+        default=None,
+    )
+    model_version_id: Optional[Union[str, UUID]] = Field(
         description="The name or ID of the Model Version",
+        default=None,
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -552,8 +525,6 @@ class ModelRequestModel(
     ModelBaseModel,
 ):
     """Model request model."""
-
-    pass
 
 
 class ModelResponseModel(

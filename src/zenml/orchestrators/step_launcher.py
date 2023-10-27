@@ -438,8 +438,6 @@ class StepLauncher:
                         model_config=model_config,
                         artifact_name=output_name_,
                         artifact_id=output_id,
-                        pipeline_name=self._deployment.pipeline_configuration.name,
-                        step_name=self._step_name,
                     )
 
     def _run_step(

@@ -727,7 +727,6 @@ class StepRunner:
                 ModelVersionPipelineRunRequestModel(
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
-                    name=pipeline_run.name,
                     pipeline_run=pipeline_run.id,
                     model=model[0],
                     model_version=model[1],
@@ -765,7 +764,6 @@ class StepRunner:
                 ModelVersionPipelineRunRequestModel(
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
-                    name=pipeline_run.name,
                     pipeline_run=pipeline_run.id,
                     model=model[0],
                     model_version=model[1],
