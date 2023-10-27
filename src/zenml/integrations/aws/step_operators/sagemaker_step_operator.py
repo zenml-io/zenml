@@ -24,9 +24,17 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
     SagemakerStepOperatorSettings,
 )
+from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
+    SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
+    SagemakerEntrypointConfiguration,
+)
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
+from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
@@ -66,6 +74,17 @@ class SagemakerStepOperator(BaseStepOperator):
             The settings class.
         """
         return SagemakerStepOperatorSettings
+
+    @property
+    def entrypoint_config_class(
+        self,
+    ) -> Type[StepOperatorEntrypointConfiguration]:
+        """Returns the entrypoint configuration class for this step operator.
+
+        Returns:
+            The entrypoint configuration class for this step operator.
+        """
+        return SagemakerEntrypointConfiguration
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -158,6 +177,15 @@ class SagemakerStepOperator(BaseStepOperator):
                 "--instance_type=<INSTANCE_TYPE>`",
                 self.name,
             )
+
+        # Sagemaker does not allow environment variables longer than 512
+        # characters to be passed to Estimator steps. If an environment variable
+        # is longer than 512 characters, we split it into multiple environment
+        # variables (chunks) and re-construct it on the other side using the
+        # custom entrypoint configuration.
+        environment = split_environment_variables(
+            environment, size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT
+        )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
         environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
