@@ -181,10 +181,10 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             if isinstance(value, list):
                 for val in value:
                     docker_build_args.extend([option, val])
-            elif value is None or isinstance(value, bool):
-                docker_build_args.append(option)
-            else:
-                docker_build_args.extend([key, value])
+            elif value is not None and not isinstance(value, bool):
+                docker_build_args.extend([option, value])
+            elif value is not False:
+                docker_build_args.extend([option])
 
         return cloudbuild_v1.Build(
             source=cloudbuild_v1.Source(
