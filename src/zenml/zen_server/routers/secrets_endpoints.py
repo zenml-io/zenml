@@ -26,6 +26,17 @@ from zenml.models.secret_models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    get_allowed_resource_ids,
+    has_permissions_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -60,9 +71,25 @@ def list_secrets(
     Returns:
         List of secret objects.
     """
-    # TODO: we should probably have separate permissions here for reading the
-    # secret and its content
-    return zen_store().list_secrets(secret_filter_model=secret_filter_model)
+    secrets = verify_permissions_and_list_entities(
+        filter_model=secret_filter_model,
+        resource_type=ResourceType.SECRET,
+        list_method=zen_store().list_secrets,
+    )
+
+    # This will be `None` if the user is allowed to read secret values
+    # for all secrets
+    allowed_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SECRET,
+        action=Action.READ_SECRET_VALUE,
+    )
+
+    if allowed_ids is not None:
+        for secret in secrets.items:
+            if secret.id not in allowed_ids:
+                secret.remove_secrets()
+
+    return secrets
 
 
 @router.get(
@@ -83,9 +110,13 @@ def get_secret(
     Returns:
         A specific secret object.
     """
-    # TODO: we should probably have separate permissions here for reading the
-    # secret and its content
-    return zen_store().get_secret(secret_id=secret_id)
+    secret = verify_permissions_and_get_entity(
+        id=secret_id, get_method=zen_store().get_secret
+    )
+    if not has_permissions_for_model(secret, action=Action.READ_SECRET_VALUE):
+        secret.remove_secrets()
+
+    return secret
 
 
 @router.put(
@@ -120,8 +151,11 @@ def update_secret(
             if key not in secret_update.values:
                 secret_update.values[key] = None
 
-    return zen_store().update_secret(
-        secret_id=secret_id, secret_update=secret_update
+    return verify_permissions_and_update_entity(
+        id=secret_id,
+        update_model=secret_update,
+        get_method=zen_store().get_secret,
+        update_method=zen_store().update_secret,
     )
 
 
@@ -139,4 +173,8 @@ def delete_secret(
     Args:
         secret_id: ID of the secret to delete.
     """
-    zen_store().delete_secret(secret_id=secret_id)
+    verify_permissions_and_delete_entity(
+        id=secret_id,
+        get_method=zen_store().get_secret,
+        delete_method=zen_store().delete_secret,
+    )
