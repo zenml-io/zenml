@@ -27,9 +27,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.utils import hydrated_property
+from zenml.models.v2.build_item import BuildItem
 
 if TYPE_CHECKING:
-    from zenml.models.v2.build_item import BuildItem
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.stack import StackResponse
 
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class PipelineBuildBase(BaseZenModel):
     """Base model for pipeline builds."""
 
-    images: Dict[str, "BuildItem"] = Field(
+    images: Dict[str, BuildItem] = Field(
         default={}, title="The images of this build."
     )
     is_local: bool = Field(

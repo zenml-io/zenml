@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing teams."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -27,9 +27,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.utils import hydrated_property, update_model
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.user import UserResponse
+from zenml.models.v2.core.user import UserResponse
 
 # ------------------ Request Model ------------------
 
@@ -64,7 +62,7 @@ class TeamResponseBody(BaseResponseBody):
 class TeamResponseMetadata(BaseResponseMetadata):
     """Response metadata for teams."""
 
-    users: List["UserResponse"] = Field(
+    users: List[UserResponse] = Field(
         title="The list of users within this team."
     )
 

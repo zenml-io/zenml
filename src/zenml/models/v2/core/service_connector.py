@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, SecretStr, root_validator
@@ -30,11 +30,7 @@ from zenml.models.v2.base.scoped import (
     ShareableResponse,
 )
 from zenml.models.v2.base.utils import hydrated_property, update_model
-
-if TYPE_CHECKING:
-    from zenml.models import (
-        ServiceConnectorTypeModel,
-    )
+from zenml.models.v2.service_connector_type import ServiceConnectorTypeModel
 
 logger = get_logger(__name__)
 
@@ -49,7 +45,7 @@ class ServiceConnectorRequest(ShareableRequest):
         title="The service connector name.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
+    connector_type: Union[str, ServiceConnectorTypeModel] = Field(
         title="The type of service connector.",
         # max_length=STR_FIELD_MAX_LENGTH,  # TODO: There is some issue here
     )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -30,18 +30,16 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.utils import hydrated_property
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.code_reference import (
-        CodeReferenceRequest,
-        CodeReferenceResponse,
-    )
-    from zenml.models.v2.core.pipeline import PipelineResponse
-    from zenml.models.v2.core.pipeline_build import (
-        PipelineBuildResponse,
-    )
-    from zenml.models.v2.core.schedule import ScheduleResponse
-    from zenml.models.v2.core.stack import StackResponse
+from zenml.models.v2.core.code_reference import (
+    CodeReferenceRequest,
+    CodeReferenceResponse,
+)
+from zenml.models.v2.core.pipeline import PipelineResponse
+from zenml.models.v2.core.pipeline_build import (
+    PipelineBuildResponse,
+)
+from zenml.models.v2.core.schedule import ScheduleResponse
+from zenml.models.v2.core.stack import StackResponse
 
 # ------------------ Request Model ------------------
 
@@ -145,19 +143,19 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     server_version: str = Field(
         title="The version of the ZenML installation on the server side."
     )
-    pipeline: Optional["PipelineResponse"] = Field(
+    pipeline: Optional[PipelineResponse] = Field(
         title="The pipeline associated with the deployment."
     )
-    stack: Optional["StackResponse"] = Field(
+    stack: Optional[StackResponse] = Field(
         title="The stack associated with the deployment."
     )
-    build: Optional["PipelineBuildResponse"] = Field(
+    build: Optional[PipelineBuildResponse] = Field(
         title="The pipeline build associated with the deployment."
     )
-    schedule: Optional["ScheduleResponse"] = Field(
+    schedule: Optional[ScheduleResponse] = Field(
         title="The schedule associated with the deployment."
     )
-    code_reference: Optional["CodeReferenceResponse"] = Field(
+    code_reference: Optional[CodeReferenceResponse] = Field(
         title="The code reference associated with the deployment."
     )
 
@@ -166,7 +164,8 @@ class PipelineDeploymentResponse(WorkspaceScopedResponse):
     """Response model for pipeline deployments."""
 
     # Body and metadata pair
-    metadata: Optional["PipelineDeploymentResponseMetadata"]
+    body: PipelineDeploymentResponseBody
+    metadata: Optional[PipelineDeploymentResponseMetadata]
 
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
         """Return the hydrated version of this pipeline deployment."""
