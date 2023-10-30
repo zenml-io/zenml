@@ -19,7 +19,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    ARTIFACTS,
     CODE_REPOSITORIES,
     GET_OR_CREATE,
     MODEL_VERSIONS,
@@ -53,13 +52,7 @@ from zenml.models import (
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     PipelineBuildFilterModel,
@@ -1235,9 +1228,7 @@ def list_workspace_models(
 
 
 @router.post(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS,
+    WORKSPACES + "/{workspace_name_or_id}" + MODEL_VERSIONS,
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )

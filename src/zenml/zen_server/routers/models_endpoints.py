@@ -34,13 +34,14 @@ from zenml.models import (
     ModelResponseModel,
     ModelUpdateModel,
     ModelVersionArtifactFilterModel,
+    ModelVersionArtifactRequestModel,
     ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunRequestModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionResponseModel,
-    ModelVersionUpdateModel, ModelVersionPipelineRunRequestModel,
-    ModelVersionArtifactRequestModel,
+    ModelVersionUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -295,9 +296,7 @@ def list_model_version_artifact_links(
 
 
 @model_versions_router.post(
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS,
+    +MODEL_VERSIONS + "/{model_version_name_or_id}" + ARTIFACTS,
     response_model=ModelVersionArtifactResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -394,9 +393,7 @@ def list_model_version_pipeline_run_links(
 
 
 @model_versions_router.post(
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS,
+    +MODEL_VERSIONS + "/{model_version_name_or_id}" + RUNS,
     response_model=ModelVersionPipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
