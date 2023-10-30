@@ -1322,8 +1322,17 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
             if "$ref" not in prop_schema.keys():
+                if "type" in prop_schema.keys():
+                    prop_type = prop_schema["type"]
+                elif "anyOf" in prop_schema.keys():
+                    prop_type = ", ".join(
+                        [p["type"] for p in prop_schema["anyOf"]]
+                    )
+                    prop_type = f"one of: {prop_type}"
+                else:
+                    prop_type = "object"
                 warning(
-                    f"{prop}, {prop_schema['type']}"
+                    f"{prop}, {prop_type}"
                     f"{', REQUIRED' if prop in required else ''}"
                 )
 
