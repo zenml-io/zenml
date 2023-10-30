@@ -1015,7 +1015,6 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_name_reserved(stack_name=stack.name)
             self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
             # Get the Schemas of all components mentioned
@@ -1150,9 +1149,6 @@ class SqlZenStore(BaseZenStore):
             # with that name
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
-                    self._fail_if_stack_name_reserved(
-                        stack_name=stack_update.name
-                    )
                     self._fail_if_stack_with_name_exists(
                         stack=stack_update, session=session
                     )
@@ -1236,20 +1232,6 @@ class SqlZenStore(BaseZenStore):
                 f"name in the active workspace '{workspace.name}'."
             )
 
-    def _fail_if_stack_name_reserved(self, stack_name: str) -> None:
-        """Raise an exception if the stack name is reserved.
-
-        Args:
-            stack_name: The stack name.
-
-        Raises:
-            IllegalOperationError: If the stack name is reserved.
-        """
-        if stack_name == DEFAULT_STACK_AND_COMPONENT_NAME:
-            raise IllegalOperationError(
-                f"Unable to register stack with reserved name '{stack_name}'."
-            )
-
     # ----------------
     # Stack components
     # ----------------
@@ -1272,9 +1254,6 @@ class SqlZenStore(BaseZenStore):
                 connector.
         """
         with Session(self.engine) as session:
-            self._fail_if_component_name_reserved(
-                component_name=component.name
-            )
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
                 component_type=component.type,
@@ -1433,9 +1412,6 @@ class SqlZenStore(BaseZenStore):
             # type already exists with that name
             if component_update.name:
                 if existing_component.name != component_update.name:
-                    self._fail_if_component_name_reserved(
-                        component_name=component_update.name
-                    )
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
                         component_type=existing_component.type,
@@ -1550,21 +1526,6 @@ class SqlZenStore(BaseZenStore):
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
                 f" workspace '{existing_domain_component.workspace.name}'."
-            )
-
-    def _fail_if_component_name_reserved(self, component_name: str) -> None:
-        """Raise an exception if the component name is reserved.
-
-        Args:
-            component_name: The component name.
-
-        Raises:
-            IllegalOperationError: If the component name is reserved.
-        """
-        if component_name == DEFAULT_STACK_AND_COMPONENT_NAME:
-            raise IllegalOperationError(
-                f"Unable to register component with reserved name "
-                f"'{component_name}'."
             )
 
     # -----------------------

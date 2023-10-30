@@ -5,6 +5,8 @@ Revises: 0.45.4
 Create Date: 2023-10-16 15:15:34.865337
 
 """
+import base64
+from datetime import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -56,37 +58,48 @@ def resolve_duplicate_names() -> None:
     _rename_old_default_entities(stack_component_table)
 
     workspace_query = sa.select(workspace_table.c.id)
+    utcnow = datetime.utcnow()
 
     stack_components = []
     stacks = []
-    for workspace_id in connection.execute(workspace_query).fetchall():
+    for row in connection.execute(workspace_query).fetchall():
+        workspace_id = row[0]
         artifact_store_id = str(uuid4()).replace("-", "")
         default_artifact_store = {
             "id": artifact_store_id,
-            "workspace": workspace_id,
+            "workspace_id": workspace_id,
             "name": "default",
             "type": "artifact_store",
             "flavor": "local",
-            "configuration": {},
+            "configuration": base64.b64encode("{}".encode("utf-8")),
+            "is_shared": True,
+            "created": utcnow,
+            "updated": utcnow,
         }
         orchestrator_id = str(uuid4()).replace("-", "")
         default_orchestrator = {
             "id": orchestrator_id,
-            "workspace": workspace_id,
+            "workspace_id": workspace_id,
             "name": "default",
             "type": "orchestrator",
             "flavor": "local",
-            "configuration": {},
+            "configuration": base64.b64encode("{}".encode("utf-8")),
+            "is_shared": True,
+            "created": utcnow,
+            "updated": utcnow,
         }
 
         default_stack = {
             "id": str(uuid4()).replace("-", ""),
-            "workspace": workspace_id,
+            "workspace_id": workspace_id,
             "name": "default",
             "components": {
                 "artifact_store": [artifact_store_id],
                 "orchestrator": [orchestrator_id],
             },
+            "is_shared": True,
+            "created": utcnow,
+            "updated": utcnow,
         }
         stack_components.append(default_artifact_store)
         stack_components.append(default_orchestrator)
