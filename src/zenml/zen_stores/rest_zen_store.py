@@ -2523,7 +2523,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending PUT request to {path} and ...")
+        logger.debug(f"Sending PUT request to {path ...")
         data = body.json(exclude_unset=True) if body else None
         return self._request(
             "PUT",

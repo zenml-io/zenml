@@ -1722,10 +1722,10 @@ def generate_stack_component_disconnect_command(
         required=True,
     )
     def disconnect_stack_component_command(name_id_or_prefix: str) -> None:
-        """Rename a stack component.
+        """Disconnect a stack component from a service connector.
 
         Args:
-            name_id_or_prefix: The name of the stack component to rename.
+            name_id_or_prefix: The name of the stack component to disconnect.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -1888,7 +1888,7 @@ def register_single_stack_component_cli_commands(
     )
     command_group.command(
         "disconnect",
-        help=f"Disconnect {singular_display_name} to a service connector.",
+        help=f"Disconnect {singular_display_name} from a service connector.",
     )(disconnect_command)
 
     # zenml stack-component explain

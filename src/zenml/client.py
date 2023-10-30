@@ -2267,7 +2267,6 @@ class Client(metaclass=ClientMetaClass):
             update_model.labels = existing_labels
 
         if disconnect:
-            logger.info(update_model)
             update_model.connector = None
             update_model.connector_resource_id = None
         else:
