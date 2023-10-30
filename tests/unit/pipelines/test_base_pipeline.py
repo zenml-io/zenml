@@ -28,8 +28,7 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.models.page_model import Page
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.models import PipelineBuildBase, PipelineDeploymentBase
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.pipelines import BasePipeline, Schedule, pipeline
 from zenml.steps import BaseParameters, step
@@ -435,13 +434,13 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 ):
     """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(deployment: PipelineDeploymentBaseModel):
+    def assert_cache_enabled(deployment: PipelineDeploymentBase):
         assert deployment.pipeline_configuration.enable_cache is True
         for step_ in deployment.step_configurations.values():
             assert step_.config.enable_cache is True
 
     def assert_cache_disabled(
-        deployment: PipelineDeploymentBaseModel,
+        deployment: PipelineDeploymentBase,
     ):
         assert deployment.pipeline_configuration.enable_cache is False
         for step_ in deployment.step_configurations.values():
@@ -880,7 +879,7 @@ def test_compiling_a_pipeline_merges_build(
     config_path_with_build_id.write_text(run_config_with_build_id.yaml())
 
     run_config_with_build = PipelineRunConfiguration(
-        build=PipelineBuildBaseModel(is_local=True, contains_code=True)
+        build=PipelineBuildBase(is_local=True, contains_code=True)
     )
     config_path_with_build.write_text(run_config_with_build.yaml())
 
@@ -901,7 +900,7 @@ def test_compiling_a_pipeline_merges_build(
     )
     assert build == in_code_build_id
 
-    in_code_build = PipelineBuildBaseModel(
+    in_code_build = PipelineBuildBase(
         images={"key": {"image": "image_name"}},
         is_local=False,
         contains_code=True,

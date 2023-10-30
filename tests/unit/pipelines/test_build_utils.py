@@ -27,11 +27,11 @@ from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.source import Source
 from zenml.models import (
-    CodeRepositoryResponseModel,
+    CodeRepositoryResponse,
     Page,
-    PipelineBuildResponseModel,
+    PipelineBuildResponse,
+    PipelineDeploymentBase,
 )
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
@@ -102,7 +102,7 @@ def test_build_is_skipped_when_not_required(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -136,7 +136,7 @@ def test_stack_with_container_registry_creates_non_local_build(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -168,7 +168,7 @@ def test_build_uses_correct_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -219,7 +219,7 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -255,7 +255,7 @@ def test_building_with_identical_keys_and_different_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -286,7 +286,7 @@ def test_building_with_different_keys_and_identical_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -315,7 +315,7 @@ def test_custom_build_verification(
         ],
     )
 
-    missing_image_build = PipelineBuildResponseModel(
+    missing_image_build = PipelineBuildResponse(
         id=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
@@ -333,7 +333,7 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    correct_build = PipelineBuildResponseModel.parse_obj(
+    correct_build = PipelineBuildResponse.parse_obj(
         {
             **missing_image_build.dict(),
             "images": {"key": {"image": "docker_image_name"}},
@@ -347,7 +347,7 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    build_that_requires_download = PipelineBuildResponseModel.parse_obj(
+    build_that_requires_download = PipelineBuildResponse.parse_obj(
         {
             **missing_image_build.dict(),
             "images": {
@@ -360,7 +360,7 @@ def test_custom_build_verification(
     )
 
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=True,
@@ -418,7 +418,7 @@ def test_build_checksum_computation(clean_client, mocker):
 def test_local_repo_verification(mocker, sample_deployment_response_model):
     """Test the local repo verification."""
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=False,
@@ -438,7 +438,7 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
     )
 
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=True,
@@ -463,7 +463,7 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
             local_repo_context=context_with_local_changes,
         )
 
-    repo_response = CodeRepositoryResponseModel(
+    repo_response = CodeRepositoryResponse(
         id=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
