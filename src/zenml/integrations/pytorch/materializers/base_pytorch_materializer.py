@@ -51,3 +51,6 @@ class BasePyTorchMaterializer(BaseMaterializer):
         """
         with fileio.open(os.path.join(self.uri, self.FILENAME), "wb") as f:
             torch.save(obj, f, pickle_module=cloudpickle)
+
+
+BasePyTorchMaterliazer = BasePyTorchMaterializer
