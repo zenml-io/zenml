@@ -1512,7 +1512,6 @@ class SqlZenStore(BaseZenStore):
 
             existing_component.update(component_update=component_update)
 
-            service_connector: Optional[ServiceConnectorSchema] = None
             if component_update.connector:
                 service_connector = session.exec(
                     select(ServiceConnectorSchema).where(
@@ -1525,16 +1524,13 @@ class SqlZenStore(BaseZenStore):
                         "Service connector with ID "
                         f"{component_update.connector} not found."
                     )
+                existing_component.connector = service_connector
+                existing_component.connector_resource_id = (
+                    component_update.connector_resource_id
+                )
             else:
                 existing_component.connector = None
                 existing_component.connector_resource_id = None
-
-            if service_connector:
-                logger.debug(
-                    "Updating component %s with connector %s",
-                    existing_component,
-                )
-                existing_component.connector = service_connector
 
             session.add(existing_component)
             session.commit()
