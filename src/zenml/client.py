@@ -5075,7 +5075,6 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version from Model Control Plane.
@@ -5085,13 +5084,11 @@ class Client(metaclass=ClientMetaClass):
             model_version_name_or_id: name or id of the model version to be deleted.
         """
         self.zen_store.delete_model_version(
-            model_name_or_id=model_name_or_id,
             model_version_name_or_id=model_version_name_or_id,
         )
 
     def get_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_number_or_id: Optional[
             Union[str, int, UUID, ModelStages]
         ] = None,
@@ -5099,7 +5096,6 @@ class Client(metaclass=ClientMetaClass):
         """Get an existing model version from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
                 If skipped latest version will be retrieved.
 
@@ -5107,7 +5103,6 @@ class Client(metaclass=ClientMetaClass):
             The model version of interest.
         """
         return self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
             model_version_name_or_number_or_id=model_version_name_or_number_or_id,
         )
 
@@ -5130,20 +5125,17 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model_version(
         self,
-        model_version_id: UUID,
         model_version_update_model: ModelVersionUpdateModel,
     ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
 
         Args:
-            model_version_id: The ID of model version to be updated.
             model_version_update_model: The model version to be updated.
 
         Returns:
             An updated model version.
         """
         return self.zen_store.update_model_version(
-            model_version_id=model_version_id,
             model_version_update_model=model_version_update_model,
         )
 

@@ -5735,7 +5735,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_model_version(
         self,
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages]
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
