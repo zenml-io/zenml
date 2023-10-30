@@ -1959,7 +1959,12 @@ class Client(metaclass=ClientMetaClass):
                     configuration_dict=component.configuration,
                     flavor_name=component.flavor,
                     component_type=component.type,
+                    # Always enforce validation of custom flavors
+                    validate_custom_flavors=True,
                 )
+                # Guaranteed to not be None by setting
+                # `validate_custom_flavors=True` above
+                assert configuration is not None
                 warn_if_config_server_mismatch(configuration)
                 if configuration.is_local:
                     local_components.append(
@@ -2153,7 +2158,12 @@ class Client(metaclass=ClientMetaClass):
             configuration_dict=configuration,
             flavor_name=flavor,
             component_type=component_type,
+            # Always enforce validation of custom flavors
+            validate_custom_flavors=True,
         )
+        # Guaranteed to not be None by setting
+        # `validate_custom_flavors=True` above
+        assert validated_config is not None
         warn_if_config_server_mismatch(validated_config)
 
         create_component_model = ComponentRequestModel(
@@ -2265,7 +2275,12 @@ class Client(metaclass=ClientMetaClass):
                 configuration_dict=existing_configuration,
                 flavor_name=component.flavor,
                 component_type=component.type,
+                # Always enforce validation of custom flavors
+                validate_custom_flavors=True,
             )
+            # Guaranteed to not be None by setting
+            # `validate_custom_flavors=True` above
+            assert validated_config is not None
             warn_if_config_server_mismatch(validated_config)
 
             update_model.configuration = existing_configuration

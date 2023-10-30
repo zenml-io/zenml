@@ -31,7 +31,8 @@ def validate_stack_component_config(
     flavor_name: str,
     component_type: StackComponentType,
     zen_store: Optional[BaseZenStore] = None,
-) -> StackComponentConfig:
+    validate_custom_flavors: bool = True,
+) -> Optional[StackComponentConfig]:
     """Validate the configuration of a stack component.
 
     Args:
@@ -41,18 +42,37 @@ def validate_stack_component_config(
         zen_store: An optional ZenStore in which to look for the flavor. If not
             provided, the flavor will be fetched via the regular ZenML Client.
             This is mainly useful for checks running inside the ZenML server.
+        validate_custom_flavors: When loading custom flavors from the local
+            environment, this flag decides whether the import failures are
+            raised or an empty value is returned.
 
     Returns:
-        The validated stack component configuration.
+        The validated stack component configuration or None, if the
+        flavor is a custom flavor that could not be imported from the local
+        environment and the `validate_custom_flavors` flag is set to False.
 
     Raises:
         ValueError: If the configuration is invalid.
     """
-    flavor_class = get_stack_component_flavor_class(
-        flavor_name=flavor_name,
-        component_type=component_type,
-        zen_store=zen_store,
-    )
+    if zen_store:
+        flavor_model = get_flavor_by_name_and_type_from_zen_store(
+            zen_store=zen_store,
+            flavor_name=flavor_name,
+            component_type=component_type,
+        )
+    else:
+        flavor_model = Client().get_flavor_by_name_and_type(
+            name=flavor_name,
+            component_type=component_type,
+        )
+    try:
+        flavor_class = Flavor.from_model(flavor_model)
+    except (ImportError, ModuleNotFoundError):
+        # The flavor class couldn't be loaded.
+        if flavor_model.is_custom and not validate_custom_flavors:
+            return None
+        raise
+
     configuration = flavor_class.config_class(**configuration_dict)
     if not configuration.is_valid:
         raise ValueError(
@@ -88,38 +108,6 @@ def warn_if_config_server_mismatch(
             "other users. You should consider using a non-local stack "
             "component alternative instead."
         )
-
-
-def get_stack_component_flavor_class(
-    flavor_name: str,
-    component_type: StackComponentType,
-    zen_store: Optional[BaseZenStore] = None,
-) -> Flavor:
-    """Get the flavor class of a stack component.
-
-    Args:
-        flavor_name: The name of a stack component flavor.
-        component_type: The type of the stack component.
-        zen_store: An optional ZenStore in which to look for the flavor. If not
-            provided, the flavor will be fetched via the regular ZenML Client.
-            This is mainly useful for checks running inside the ZenML server.
-
-    Returns:
-        The flavor class of the stack component.
-    """
-    if zen_store:
-        flavor_model = get_flavor_by_name_and_type_from_zen_store(
-            zen_store=zen_store,
-            flavor_name=flavor_name,
-            component_type=component_type,
-        )
-    else:
-        flavor_model = Client().get_flavor_by_name_and_type(
-            name=flavor_name,
-            component_type=component_type,
-        )
-    flavor_class = Flavor.from_model(flavor_model)
-    return flavor_class
 
 
 def get_flavor_by_name_and_type_from_zen_store(
