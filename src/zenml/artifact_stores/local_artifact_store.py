@@ -133,6 +133,18 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
         """
         return self.path
 
+    @property
+    def custom_cache_key(self) -> Optional[bytes]:
+        """Custom cache key.
+
+        The client ID is returned here to invalidate caching when using the same
+        local artifact store on multiple client machines.
+
+        Returns:
+            Custom cache key.
+        """
+        return GlobalConfiguration().user_id.bytes
+
 
 class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Class for the `LocalArtifactStoreFlavor`."""

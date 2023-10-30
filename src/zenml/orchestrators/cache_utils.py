@@ -69,6 +69,9 @@ def generate_cache_key(
     hash_.update(artifact_store.id.bytes)
     hash_.update(artifact_store.path.encode())
 
+    if artifact_store.custom_cache_key:
+        hash_.update(artifact_store.custom_cache_key)
+
     # Step source. This currently only uses the string representation of the
     # source (e.g. my_module.step_class) instead of the full source to keep
     # the caching behavior of previous versions and to not invalidate caching
