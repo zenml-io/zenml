@@ -7,36 +7,47 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![PyPi][pypi-shield]][pypi-url]
-[![PyPi][pypiversion-shield]][pypi-url]
-[![PyPi][downloads-shield]][downloads-url]
-[![Contributors][contributors-shield]][contributors-url]
-[![License][license-shield]][license-url]
-<!-- [![Build][build-shield]][build-url] -->
-<!-- [![CodeCov][codecov-shield]][codecov-url] -->
+<div align="center">
+
+  <!-- PROJECT LOGO -->
+  <br />
+    <a href="https://zenml.io">
+      <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML Logo">
+    </a>
+  <br />
+
+  [![PyPi][pypi-shield]][pypi-url]
+  [![PyPi][pypiversion-shield]][pypi-url]
+  [![PyPi][downloads-shield]][downloads-url]
+  [![Contributors][contributors-shield]][contributors-url]
+  [![License][license-shield]][license-url]
+  <!-- [![Build][build-shield]][build-url] -->
+  <!-- [![CodeCov][codecov-shield]][codecov-url] -->
+
+</div>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?style=for-the-badge
+[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=281158
 
 [pypi-url]: https://pypi.org/project/zenml/
 
-[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?style=for-the-badge
+[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=361776
 
-[downloads-shield]: https://img.shields.io/pypi/dm/zenml?style=for-the-badge
+[downloads-shield]: https://img.shields.io/pypi/dm/zenml?color=431D93
 
 [downloads-url]: https://pypi.org/project/zenml/
 
-[codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?style=for-the-badge
+[codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?color=7A3EF4
 
 [codecov-url]: https://codecov.io/gh/zenml-io/zenml
 
-[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 
 [contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
 
-[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 
@@ -56,24 +67,12 @@
 
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
 
-
-<!-- PROJECT LOGO -->
-<br />
 <div align="center">
-  <a href="https://zenml.io">
-    <img alt="ZenML Logo" src="https://user-images.githubusercontent.com/3348134/223112746-345126ff-a0e8-479f-8ac0-670d78f71712.png" alt="Logo" width="400">
-  </a>
-
-<h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
-
+  <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
   <p align="center">
-    A simple yet powerful open-source framework that integrates all your ML tools.
-    <br />
-    <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
-    <br />
     <div align="center">
       Join our <a href="https://zenml.io/slack-invite" target="_blank">
-      <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+      <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
     <b>Slack Community</b> </a> and be part of the ZenML family.
     </div>
     <br />
@@ -87,24 +86,17 @@
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
     ·
-    <a href="#-meet-the-team">Meet the Team</a>
+    <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
-    <b>ZenML Cloud</b> is now available in beta. <a href="https://cloud.zenml.io">Sign up</a> to see it in action.  
     <br />
-    🎉 Version 0.44.3 is out. Check out the release notes
+    🎉 Version 0.45.5 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
-    <a href="https://www.linkedin.com/company/zenml/">
-    <img src="https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555" alt="Logo">
-    </a>
-    <a href="https://twitter.com/zenml_io">
-    <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
-    </a>
-    <a href="https://www.youtube.com/c/ZenML">
-    <img src="https://img.shields.io/badge/-YouTube-black.svg?style=for-the-badge&logo=youtube&colorB=555" alt="Logo">
-    </a>
+    <br />
   </p>
 </div>
+
+---
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -155,7 +147,7 @@ developers to write code once and effortlessly deploy it to various
 infrastructures.
 
 <div align="center">
-    <img src="docs/book/.gitbook/assets/stack.gif">
+    <img src="docs/book/.gitbook/assets/overview.gif">
 </div>
 
 # 🤸 Quickstart
@@ -265,8 +257,6 @@ Open up the ZenML dashboard using this command.
 ```bash
 zenml show
 ```
-
-![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png)
 
 # 🗺 Roadmap
 

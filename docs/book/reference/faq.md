@@ -14,7 +14,12 @@ Not really! An orchestrator in MLOps is the system component that is responsible
 
 #### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
-Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed examples for each integration that ZenML supports out-of-the-box.
+Take a look at our [documentation](https://docs.zenml.io/) (in particular the
+[component guide](../stacks-and-components/component-guide/component-guide.md)), which contains
+instructions and sample code to support each integration that ZenML
+supports out-of-the-box. You can also check out [our integration test
+code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to
+see active examples of many of our integrations in action.
 
 The ZenML team and community are constantly working to include more tools and integrations to the above list (check out the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add your ideas to the roadmap.
 

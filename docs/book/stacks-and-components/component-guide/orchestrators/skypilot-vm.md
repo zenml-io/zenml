@@ -95,7 +95,10 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
   ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../../stacks-and-components/auth-management/aws-service-connector.md).
-To configure the AWS Service Connector, you need to register a new service connector, but first let's check the available service connector types using the following command:
+To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
+
+
+First, check that the AWS service connector type is available using the following command:
 
 ```
 zenml service-connector list-types --type aws
@@ -111,10 +114,10 @@ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-For this example we will configure a service connector using the `iam-role` auth method. But before we can do that, we recommend you to create a new AWS profile that will be used by the service connector. Once we have created the profile, we can register a new service connector using the following command:
+Next, configure a service connector using the CLI or the dashboard with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
 
 ```shell
-AWS_PROFILE=connectors zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
+zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
 ```
 
 This will automatically configure the service connector with the appropriate credentials and permissions to
@@ -162,7 +165,7 @@ For this example we will configure a service connector using the `user-account` 
 login to GCP using the following command:
 
 ```shell
- gcloud auth application-default login 
+gcloud auth application-default login 
 ```
 
 This will open a browser window and ask you to login to your GCP account. Once you have logged in, you can register a new service connector using the
@@ -235,7 +238,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 #### Additional Configuration
 
-For additional configuration of the Skypilot orchestrator, you can pass `SkypilotBaseOrchestratorSettings` which allows you to configure (among others) the following attributes:
+For additional configuration of the Skypilot orchestrator, you can pass `Settings` depending on which cloud you are using which allows you to configure (among others) the following attributes:
 
 * `instance_type`: The instance type to use.
 * `cpus`: The number of CPUs required for the task. If a string, must be a string of the form `'2'` or `'2+'`, where the `+` indicates that the task requires at least 2 CPUs.
@@ -255,12 +258,18 @@ For additional configuration of the Skypilot orchestrator, you can pass `Skypilo
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 
+The following code snippets show how to configure the orchestrator settings for each cloud provider:
+
+{% tabs %}
+{% tab title="AWS" %}
+
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotBaseOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
 
-skypilot_settings = SkypilotBaseOrchestratorSettings(
+
+skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
     memory="16",
     accelerators="V100:2",
@@ -282,10 +291,87 @@ skypilot_settings = SkypilotBaseOrchestratorSettings(
 
 @pipeline(
     settings={
-        "orchestrator.skypilot": skypilot_settings
+        "orchestrator.vm_aws": skypilot_settings
     }
 )
 ```
+
+{% endtab %}
+
+{% tab title="GCP" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+
+
+skypilot_settings = SkypilotGCPOrchestratorSettings(
+    cpus="2",
+    memory="16",
+    accelerators="V100:2",
+    accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
+    use_spot=True,
+    spot_recovery="recovery_strategy",
+    region="us-west1",
+    zone="us-west1-a",
+    image_id="ami-1234567890abcdef0",
+    disk_size=100,
+    disk_tier="high",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_gcp": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+
+{% tab title="Azure" %}
+
+**Code Example:**
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+
+
+skypilot_settings = SkypilotAzureOrchestratorSettings(
+    cpus="2",
+    memory="16",
+    accelerators="V100:2",
+    accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
+    use_spot=True,
+    spot_recovery="recovery_strategy",
+    region="us-west1",
+    zone="us-west1-a",
+    image_id="ami-1234567890abcdef0",
+    disk_size=100,
+    disk_tier="high",
+    cluster_name="my_cluster",
+    retry_until_up=True,
+    idle_minutes_to_autostop=60,
+    down=True,
+    stream_logs=True
+)
+
+
+@pipeline(
+    settings={
+        "orchestrator.vm_azure": skypilot_settings
+    }
+)
+```
+
+{% endtab %}
+{% endtabs %}
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)

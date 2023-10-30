@@ -23,6 +23,7 @@
     * [Compose pipelines](user-guide/advanced-guide/pipelining-features/compose-pipelines.md)
     * [Schedule pipeline runs](user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
     * [Fetch metadata within steps](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md)
+    * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Artifact management](user-guide/advanced-guide/artifact-management/artifact-management.md)
@@ -36,6 +37,7 @@
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
     * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
+    * [Handling dependencies](user-guide/advanced-guide/environment-management/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
@@ -44,8 +46,8 @@
 ## Deploying ZenML
 
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
+  * [User Management](deploying-zenml/zenml-cloud/user-management.md)
   * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
-  * [Get started](deploying-zenml/zenml-cloud/get-started.md)
 * [🔧 ZenML Self-Hosted](deploying-zenml/zenml-self-hosted/zenml-self-hosted.md)
   * [Deploy with ZenML CLI](deploying-zenml/zenml-self-hosted/deploy-with-zenml-cli.md)
   * [Deploy with Docker](deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
@@ -163,6 +165,7 @@
 
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
+* [📚 How do I...?](reference/how-do-i.md)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
   * [Migration guide 0.13.2 → 0.20.0](reference/migration-guide/migration-zero-twenty.md)
   * [Migration guide 0.23.0 → 0.30.0](reference/migration-guide/migration-zero-thirty.md)

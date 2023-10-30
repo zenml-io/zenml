@@ -51,6 +51,7 @@ class AnalyticsContext:
         self.analytics_opt_in: bool = False
 
         self.user_id: Optional[UUID] = None
+        self.external_user_id: Optional[UUID] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
 
@@ -81,10 +82,12 @@ class AnalyticsContext:
                 auth_context = get_auth_context()
                 if auth_context is not None:
                     self.user_id = auth_context.user.id
+                    self.external_user_id = auth_context.user.external_user_id
             else:
                 # If the code is running on the client, use the default user.
-                default_user = gc.zen_store.get_user()
-                self.user_id = default_user.id
+                active_user = gc.zen_store.get_user()
+                self.user_id = active_user.id
+                self.external_user_id = active_user.external_user_id
 
             # Fetch the `client_id`
             if self.in_server:
@@ -150,6 +153,25 @@ class AnalyticsContext:
             success, _ = default_client.identify(
                 user_id=self.user_id,
                 traits=traits,
+            )
+
+        return success
+
+    def alias(self, user_id: UUID, previous_id: UUID) -> bool:
+        """Alias user IDs.
+
+        Args:
+            user_id: The user ID.
+            previous_id: Previous ID for the alias.
+
+        Returns:
+            True if alias information was sent, False otherwise.
+        """
+        success = False
+        if self.analytics_opt_in:
+            success, _ = default_client.alias(
+                user_id=user_id,
+                previous_id=previous_id,
             )
 
         return success
@@ -227,6 +249,9 @@ class AnalyticsContext:
                 "database_type": str(self.database_type),
             }
         )
+
+        if self.external_user_id:
+            properties["external_user_id"] = self.external_user_id
 
         for k, v in properties.items():
             if isinstance(v, UUID):

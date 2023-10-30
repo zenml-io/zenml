@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.model import ModelConfig
 
     MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
     HookSpecification = Union[str, "Source", FunctionType]
@@ -62,6 +63,7 @@ PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
+PARAM_MODEL_CONFIG = "model_config"
 
 logger = get_logger(__name__)
 
@@ -106,6 +108,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -125,6 +128,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    model_config: Optional["ModelConfig"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -157,6 +161,7 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
+        model_config: Model(Version) configuration for this step as `ModelConfig` instance.
 
     Returns:
         The inner decorator which creates the step class based on the
@@ -175,7 +180,7 @@ def step(
         """
         step_name = name or func.__name__
         logger.warning(
-            f"The `@step` decorator that you used to define your {step_name}"
+            f"The `@step` decorator that you used to define your {step_name} "
             "step is deprecated. Check out the 0.40.0 migration guide for more "
             "information on how to migrate your steps to the new syntax: "
             "https://docs.zenml.io/reference/migration-guide/migration-zero-forty"
@@ -199,6 +204,7 @@ def step(
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,
                     PARAM_ON_SUCCESS: on_success,
+                    PARAM_MODEL_CONFIG: model_config,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field, SecretStr
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
@@ -40,6 +41,10 @@ from zenml.models import (
     ComponentUpdateModel,
     FlavorFilterModel,
     FlavorRequestModel,
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelUpdateModel,
+    ModelVersionRequestModel,
     PipelineBuildFilterModel,
     PipelineBuildRequestModel,
     PipelineDeploymentFilterModel,
@@ -47,6 +52,7 @@ from zenml.models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
+    PipelineRunRequestModel,
     PipelineUpdateModel,
     ResourceTypeModel,
     RoleFilterModel,
@@ -502,6 +508,121 @@ class ServiceConnectorContext:
                 pass
 
 
+class ModelVersionContext:
+    def __init__(
+        self,
+        create_version: bool = False,
+        create_artifacts: int = 0,
+        create_prs: int = 0,
+    ):
+        client = Client()
+        self.workspace = client.active_workspace.id
+        self.user = client.active_user.id
+        self.model = "su_model"
+        self.model_version = "2.0.0"
+
+        self.create_version = create_version
+        self.create_artifacts = create_artifacts
+        self.artifacts = []
+        self.create_prs = create_prs
+        self.prs = []
+        self.deployments = []
+
+    def __enter__(self):
+        client = Client()
+        ws = client.get_workspace(self.workspace)
+        user = client.get_user(self.user)
+        stack = client.active_stack
+        try:
+            model = client.get_model(self.model)
+        except KeyError:
+            model = client.create_model(
+                ModelRequestModel(
+                    name=self.model, user=user.id, workspace=ws.id
+                )
+            )
+        if self.create_version:
+            try:
+                mv = client.get_model_version(self.model, self.model_version)
+            except KeyError:
+                mv = client.create_model_version(
+                    ModelVersionRequestModel(
+                        user=user.id,
+                        workspace=ws.id,
+                        model=model.id,
+                        name=self.model_version,
+                    )
+                )
+
+        for _ in range(self.create_artifacts):
+            self.artifacts.append(
+                client.zen_store.create_artifact(
+                    ArtifactRequestModel(
+                        name=sample_name("sample_artifact"),
+                        data_type="module.class",
+                        materializer="module.class",
+                        type=ArtifactType.DATA,
+                        uri="",
+                        user=user.id,
+                        workspace=ws.id,
+                    )
+                )
+            )
+        for _ in range(self.create_prs):
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequestModel(
+                    user=user.id,
+                    workspace=ws.id,
+                    stack=stack.id,
+                    run_name_template="",
+                    pipeline_configuration={"name": "pipeline_name"},
+                    client_version="0.12.3",
+                    server_version="0.12.3",
+                ),
+            )
+            self.deployments.append(deployment)
+            self.prs.append(
+                client.zen_store.create_run(
+                    PipelineRunRequestModel(
+                        id=uuid.uuid4(),
+                        name=sample_name("sample_pipeline_run"),
+                        status="running",
+                        config=PipelineConfiguration(name="aria_pipeline"),
+                        user=user.id,
+                        workspace=ws.id,
+                        deployment=deployment.id,
+                    )
+                )
+            )
+        if self.create_version:
+            if self.create_artifacts:
+                return mv, self.artifacts
+            if self.create_prs:
+                return mv, self.prs
+            else:
+                return mv
+        else:
+            if self.create_artifacts:
+                return model, self.artifacts
+            if self.create_prs:
+                return model, self.prs
+            else:
+                return model
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        client = Client()
+        try:
+            client.delete_model(self.model)
+        except KeyError:
+            pass
+        for artifact in self.artifacts:
+            client.delete_artifact(artifact.id)
+        for run in self.prs:
+            client.zen_store.delete_run(run.id)
+        for deployment in self.deployments:
+            client.delete_deployment(str(deployment.id))
+
+
 class CatClawMarks(AuthenticationConfig):
     """Cat claw marks authentication credentials."""
 
@@ -813,6 +934,27 @@ service_connector_crud_test_config = CrudTestConfig(
     filter_model=ServiceConnectorFilterModel,
     entity_name="service_connector",
 )
+model_crud_test_config = CrudTestConfig(
+    create_model=ModelRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name="super_model",
+        license="who cares",
+        description="cool stuff",
+        audience="world",
+        use_cases="all",
+        limitations="none",
+        trade_offs="secret",
+        ethics="all good",
+        tags=["cool", "stuff"],
+    ),
+    update_model=ModelUpdateModel(
+        name=sample_name("updated_sample_service_connector"),
+        description="new_description",
+    ),
+    filter_model=ModelFilterModel,
+    entity_name="model",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -848,4 +990,5 @@ list_of_entities = [
     deployment_crud_test_config,
     code_repository_crud_test_config,
     service_connector_crud_test_config,
+    model_crud_test_config,
 ]

@@ -20,6 +20,7 @@ from uuid import UUID
 
 from sqlmodel import TEXT, Column, Field, Relationship
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     PipelineRunRequestModel,
@@ -27,16 +28,22 @@ from zenml.models import (
     PipelineRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+    from zenml.zen_stores.schemas.model_schemas import (
+        ModelVersionPipelineRunSchema,
+    )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
@@ -90,7 +97,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
 
     # Relationships
-    deployment: "PipelineDeploymentSchema" = Relationship(
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline_runs"
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
@@ -103,9 +110,53 @@ class PipelineRunSchema(NamedSchema, table=True):
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
+    model_versions_pipeline_runs_links: List[
+        "ModelVersionPipelineRunSchema"
+    ] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    # Temporary fields and foreign keys to be deprecated
+    pipeline_configuration: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    client_environment: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+
+    stack_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackSchema.__tablename__,
+        source_column="stack_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineBuildSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+    stack: Optional["StackSchema"] = Relationship()
+    build: Optional["PipelineBuildSchema"] = Relationship()
+    schedule: Optional[ScheduleSchema] = Relationship()
+    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
 
     @classmethod
     def from_request(
@@ -139,6 +190,9 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         Returns:
             The created `PipelineRunResponseModel`.
+
+        Raises:
+            RuntimeError: if the model creation fails.
         """
         orchestrator_environment = (
             json.loads(self.orchestrator_environment)
@@ -151,33 +205,63 @@ class PipelineRunSchema(NamedSchema, table=True):
             for metadata_schema in self.run_metadata
         }
 
-        steps = {s.name: s.to_model() for s in self.deployment.step_runs}
+        if self.deployment is not None:
+            steps = {s.name: s.to_model() for s in self.deployment.step_runs}
 
-        deployment = self.deployment.to_model()
+            deployment = self.deployment.to_model()
+
+            config = deployment.pipeline_configuration
+            client_environment = deployment.client_environment
+
+            stack = deployment.stack
+            pipeline = deployment.pipeline
+            build = deployment.build
+            schedule = deployment.schedule
+        elif self.pipeline_configuration is not None:
+            steps = {step.name: step.to_model() for step in self.step_runs}
+
+            config = PipelineConfiguration.parse_raw(
+                self.pipeline_configuration
+            )
+            client_environment = (
+                json.loads(self.client_environment)
+                if self.client_environment
+                else {}
+            )
+
+            stack = self.stack.to_model() if self.stack else None
+            pipeline = self.pipeline.to_model() if self.pipeline else None
+            build = self.build.to_model() if self.build else None
+            schedule = self.schedule.to_model() if self.schedule else None
+
+        else:
+            raise RuntimeError(
+                "Pipeline run model creation has failed. Each pipeline run "
+                "entry should either have a deployment_id or "
+                "pipeline_configuration."
+            )
 
         return PipelineRunResponseModel(
             id=self.id,
-            user=deployment.user,
-            workspace=deployment.workspace,
+            user=self.user.to_model() if self.user else None,
+            workspace=self.workspace.to_model(),
             # Attributes of the PipelineRunBaseModel
             name=self.name,
             start_time=self.start_time,
             end_time=self.end_time,
             status=self.status,
-            config=deployment.pipeline_configuration,
+            config=config,
             orchestrator_run_id=self.orchestrator_run_id,
-            client_version=deployment.client_version,
-            server_version=deployment.server_version,
-            client_environment=deployment.client_environment,
+            client_environment=client_environment,
             orchestrator_environment=orchestrator_environment,
             # Attributes of the WorkspaceScopedResponseModel
             created=self.created,
             updated=self.updated,
             # Attributes of the PipelineRunResponseModel
-            stack=deployment.stack,
-            pipeline=deployment.pipeline,
-            build=deployment.build,
-            schedule=deployment.schedule,
+            stack=stack,
+            pipeline=pipeline,
+            build=build,
+            schedule=schedule,
             metadata=metadata,
             steps=steps,
         )

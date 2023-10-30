@@ -18,6 +18,7 @@ from typing import Optional, cast
 from mlflow.tracking import MlflowClient, artifact_utils
 
 from zenml import get_step_context, step
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.client import Client
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
@@ -37,7 +38,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.materializers import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
     ModelVersionStage,

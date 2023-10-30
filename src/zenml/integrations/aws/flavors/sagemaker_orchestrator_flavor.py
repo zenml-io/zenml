@@ -96,8 +96,10 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
         loaded from the default AWS config.
 
     Attributes:
-        synchronous: Whether to run the processing job synchronously or
-            asynchronously. Defaults to False.
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`.
         execution_role: The IAM role ARN to use for the pipeline.
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
@@ -117,7 +119,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
             "sagemaker-{region}-{aws-account-id}".
     """
 
-    synchronous: bool = False
+    synchronous: bool = True
     execution_role: str
     aws_access_key_id: Optional[str] = SecretField()
     aws_secret_access_key: Optional[str] = SecretField()

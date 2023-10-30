@@ -76,21 +76,23 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   
-  update-e2e-template:
+  update-templates-to-examples:
     needs: ubuntu-setup-and-test-python
-    uses: ./.github/workflows/update-e2e-template.yml
+    uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: "3.8"
       os: ubuntu-latest
     secrets: inherit
 
   ubuntu-integration-test:
-    needs: 
+    needs:
       - ubuntu-setup-and-test-python
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        # Disabled temporarily while CI is overhauled
+        python-version: ["3.8", "3.9", "3.10"]
+        # python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           [
             "default",
