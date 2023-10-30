@@ -1026,13 +1026,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The stack.
         """
-        if name_id_or_prefix == "default":
-            name_id_or_prefix = (
-                self.zen_store._get_default_stack_and_component_name(
-                    user_id=self.active_user.id
-                )
-            )
-
         if name_id_or_prefix is not None:
             return self._get_entity_by_id_or_name_or_prefix(
                 get_method=self.zen_store.get_stack,
@@ -1401,11 +1394,6 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no name_id_or_prefix is provided and no such component
                 is part of the active stack.
         """
-        if name_id_or_prefix == "default":
-            self.zen_store._get_default_stack_and_component_name(
-                user_id=self.active_user.id
-            )
-
         # If no `name_id_or_prefix` provided, try to get the active component.
         if not name_id_or_prefix:
             components = self.active_stack_model.components.get(

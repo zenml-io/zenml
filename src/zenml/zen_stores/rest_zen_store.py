@@ -405,6 +405,17 @@ class RestZenStore(BaseZenStore):
         """Initialize the database."""
         # don't do anything for a REST store
 
+    def _get_or_create_default_stack(
+        self,
+        workspace: "WorkspaceResponseModel",
+    ) -> "StackResponseModel":
+        # Overwrite this function so we don't try to create a default stack
+        # client-side. The default stack can't be deleted/modified so the
+        # fetching should always work.
+        return self._get_default_stack(
+            workspace_id=workspace.id,
+        )
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================

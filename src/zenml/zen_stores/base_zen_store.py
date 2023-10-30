@@ -80,7 +80,7 @@ logger = get_logger(__name__)
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_WORKSPACE_NAME = "default"
-DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX = "default"
+DEFAULT_STACK_AND_COMPONENT_NAME = "default"
 
 
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
@@ -299,17 +299,16 @@ class BaseZenStore(
             default_workspace = self._create_default_workspace()
 
         config = ServerConfiguration.get_server_config()
-        # If the auth scheme is external, don't create the default user and
-        # stack
+        # If the auth scheme is external, don't create the default user
         if config.auth_scheme != AuthScheme.EXTERNAL:
             try:
-                default_user = self._default_user
+                _ = self._default_user
             except KeyError:
-                default_user = self._create_default_user()
-            self._get_or_create_default_stack(
-                workspace=default_workspace,
-                user_id=default_user.id,
-            )
+                self._create_default_user()
+
+        self._get_or_create_default_stack(
+            workspace=default_workspace,
+        )
 
     @property
     def url(self) -> str:
@@ -454,17 +453,14 @@ class BaseZenStore(
     def _get_or_create_default_stack(
         self,
         workspace: "WorkspaceResponseModel",
-        user_id: Optional[UUID] = None,
     ) -> "StackResponseModel":
         try:
             return self._get_default_stack(
                 workspace_id=workspace.id,
-                user_id=user_id or self.get_user().id,
             )
         except KeyError:
             return self._create_default_stack(
                 workspace_id=workspace.id,
-                user_id=user_id or self.get_user().id,
             )
 
     def _get_or_create_default_workspace(self) -> "WorkspaceResponseModel":
@@ -516,7 +512,6 @@ class BaseZenStore(
     def _create_default_stack(
         self,
         workspace_id: UUID,
-        user_id: UUID,
     ) -> StackResponseModel:
         """Create the default stack components and stack.
 
@@ -526,28 +521,28 @@ class BaseZenStore(
         Args:
             workspace_id: ID of the workspace to which the stack
                 belongs.
-            user_id: ID of the user that owns the stack.
 
         Returns:
             The model of the created default stack.
         """
         with analytics_disabler():
             workspace = self.get_workspace(workspace_name_or_id=workspace_id)
-            user = self.get_user(user_name_or_id=user_id)
 
             logger.info(
-                f"Creating default stack for user '{user.name}' in workspace "
-                f"{workspace.name}..."
+                f"Creating default stack in workspace {workspace.name}..."
             )
+            from zenml.models.base_models import internal_model
 
-            name = self._get_default_stack_and_component_name(user_id=user_id)
+            @internal_model
+            class InternalComponentRequestModel(ComponentRequestModel):
+                pass
 
             # Register the default orchestrator
             orchestrator = self.create_stack_component(
-                component=ComponentRequestModel(
-                    user=user.id,
+                component=InternalComponentRequestModel(
+                    user=None,
                     workspace=workspace.id,
-                    name=name,
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ORCHESTRATOR,
                     flavor="local",
                     configuration={},
@@ -556,10 +551,10 @@ class BaseZenStore(
 
             # Register the default artifact store
             artifact_store = self.create_stack_component(
-                component=ComponentRequestModel(
-                    user=user.id,
+                component=InternalComponentRequestModel(
+                    user=None,
                     workspace=workspace.id,
-                    name=name,
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ARTIFACT_STORE,
                     flavor="local",
                     configuration={},
@@ -569,57 +564,44 @@ class BaseZenStore(
             components = {
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
+
+            @internal_model
+            class InternalStackRequestModel(StackRequestModel):
+                pass
+
             # Register the default stack
-            stack = StackRequestModel(
-                name=name,
+            stack = InternalStackRequestModel(
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
                 workspace=workspace.id,
-                user=user.id,
+                user=None,
             )
             return self.create_stack(stack=stack)
-
-    def _get_default_stack_and_component_name(self, user_id: UUID) -> str:
-        """Get the name for the default stack and its components.
-
-        Args:
-            user_id: ID of the user to which the default stack belongs.
-
-        Returns:
-            The default stack/component name.
-        """
-        return f"{DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX}-{user_id}"
 
     def _get_default_stack(
         self,
         workspace_id: UUID,
-        user_id: UUID,
     ) -> StackResponseModel:
         """Get the default stack for a user in a workspace.
 
         Args:
             workspace_id: ID of the workspace.
-            user_id: ID of the user.
 
         Returns:
-            The default stack in the workspace owned by the supplied user.
+            The default stack in the workspace.
 
         Raises:
             KeyError: if the workspace or default stack doesn't exist.
         """
-        stack_name = self._get_default_stack_and_component_name(
-            user_id=user_id
-        )
         default_stacks = self.list_stacks(
             StackFilterModel(
                 workspace_id=workspace_id,
-                user_id=user_id,
-                name=stack_name,
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
             )
         )
         if default_stacks.total == 0:
             raise KeyError(
-                f"No default stack found for user {str(user_id)} in "
-                f"workspace {str(workspace_id)}"
+                f"No default stack found in workspace {workspace_id}."
             )
         return default_stacks.items[0]
 

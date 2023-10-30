@@ -178,7 +178,7 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
-    DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX,
+    DEFAULT_STACK_AND_COMPONENT_NAME,
     BaseZenStore,
 )
 from zenml.zen_stores.enums import StoreEvent
@@ -1142,13 +1142,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update stack with id '{stack_id}': Found no"
                     f"existing stack with this id."
                 )
-            if (
-                existing_stack.user_id
-                and existing_stack.name
-                == self._get_default_stack_and_component_name(
-                    existing_stack.user_id
-                )
-            ):
+            if existing_stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
                 raise IllegalOperationError(
                     "The default stack cannot be modified."
                 )
@@ -1203,13 +1197,7 @@ class SqlZenStore(BaseZenStore):
 
                 if stack is None:
                     raise KeyError(f"Stack with ID {stack_id} not found.")
-                if (
-                    stack.user_id
-                    and stack.name
-                    == self._get_default_stack_and_component_name(
-                        user_id=stack.user_id
-                    )
-                ):
+                if stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
                     raise IllegalOperationError(
                         "The default stack cannot be deleted."
                     )
@@ -1257,7 +1245,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the stack name is reserved.
         """
-        if stack_name == DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX:
+        if stack_name == DEFAULT_STACK_AND_COMPONENT_NAME:
             raise IllegalOperationError(
                 f"Unable to register stack with reserved name '{stack_name}'."
             )
@@ -1430,11 +1418,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if (
-                existing_component.user_id
-                and existing_component.name
-                == self._get_default_stack_and_component_name(
-                    user_id=existing_component.user_id
-                )
+                existing_component.name == DEFAULT_STACK_AND_COMPONENT_NAME
                 and existing_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
@@ -1505,11 +1489,7 @@ class SqlZenStore(BaseZenStore):
                 if stack_component is None:
                     raise KeyError(f"Stack with ID {component_id} not found.")
                 if (
-                    stack_component.user_id
-                    and stack_component.name
-                    == self._get_default_stack_and_component_name(
-                        user_id=stack_component.user_id
-                    )
+                    stack_component.name == DEFAULT_STACK_AND_COMPONENT_NAME
                     and stack_component.type
                     in [
                         StackComponentType.ORCHESTRATOR,
@@ -1581,7 +1561,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the component name is reserved.
         """
-        if component_name == DEFAULT_STACK_AND_COMPONENT_NAME_PREFIX:
+        if component_name == DEFAULT_STACK_AND_COMPONENT_NAME:
             raise IllegalOperationError(
                 f"Unable to register component with reserved name "
                 f"'{component_name}'."

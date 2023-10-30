@@ -5,6 +5,8 @@ Revises: 0.45.4
 Create Date: 2023-10-16 15:15:34.865337
 
 """
+from uuid import uuid4
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -15,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def _rename_default_entities(table: sa.Table) -> None:
+def _rename_old_default_entities(table: sa.Table) -> None:
     """Include owner id in the name of default entities.
 
     Args:
@@ -39,14 +41,59 @@ def _rename_default_entities(table: sa.Table) -> None:
 
 def resolve_duplicate_names() -> None:
     """Resolve duplicate names for shareable entities."""
+    connection = op.get_bind()
+
     meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("stack", "stack_component", "service_connector"))
+    meta.reflect(
+        only=("stack", "stack_component", "service_connector", "workspace")
+    )
 
     stack_table = sa.Table("stack", meta)
     stack_component_table = sa.Table("stack_component", meta)
+    workspace_table = sa.Table("workspace", meta)
 
-    _rename_default_entities(stack_table)
-    _rename_default_entities(stack_component_table)
+    _rename_old_default_entities(stack_table)
+    _rename_old_default_entities(stack_component_table)
+
+    workspace_query = sa.select(workspace_table.c.id)
+
+    stack_components = []
+    stacks = []
+    for workspace_id in connection.execute(workspace_query).fetchall():
+        artifact_store_id = str(uuid4()).replace("-", "")
+        default_artifact_store = {
+            "id": artifact_store_id,
+            "workspace": workspace_id,
+            "name": "default",
+            "type": "artifact_store",
+            "flavor": "local",
+            "configuration": {},
+        }
+        orchestrator_id = str(uuid4()).replace("-", "")
+        default_orchestrator = {
+            "id": orchestrator_id,
+            "workspace": workspace_id,
+            "name": "default",
+            "type": "orchestrator",
+            "flavor": "local",
+            "configuration": {},
+        }
+
+        default_stack = {
+            "id": str(uuid4()).replace("-", ""),
+            "workspace": workspace_id,
+            "name": "default",
+            "components": {
+                "artifact_store": [artifact_store_id],
+                "orchestrator": [orchestrator_id],
+            },
+        }
+        stack_components.append(default_artifact_store)
+        stack_components.append(default_orchestrator)
+        stacks.append(default_stack)
+
+    op.bulk_insert(stack_component_table, rows=stack_components)
+    op.bulk_insert(stack_table, rows=stacks)
 
     service_connector_table = sa.Table("service_connector", meta)
     query = sa.select(
@@ -55,7 +102,6 @@ def resolve_duplicate_names() -> None:
         service_connector_table.c.user_id,
     )
 
-    connection = op.get_bind()
     names = set()
     for id, name, user_id in connection.execute(query).fetchall():
         if name in names:

@@ -318,6 +318,7 @@ def get_allowed_resource_ids(
     if has_full_resource_access:
         return None
 
+    # TODO: this does not account for ownership right now
     return {UUID(id) for id in allowed_ids}
 
 
@@ -390,13 +391,13 @@ def is_owned_by_authenticated_user(model: "BaseResponseModel") -> bool:
     auth_context = get_auth_context()
     assert auth_context
 
-    if (
-        isinstance(model, UserScopedResponseModel)
-        and model.user
-        and model.user.id == auth_context.user.id
-    ):
-        # User is the owner of the model
-        return True
+    if isinstance(model, UserScopedResponseModel):
+        if model.user:
+            return model.user.id == auth_context.user.id
+        else:
+            # The model is server-owned and for RBAC purposes we consider
+            # every user to be the owner of it
+            return True
 
     return False
 
