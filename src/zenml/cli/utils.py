@@ -285,7 +285,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             if isinstance(model, BaseResponse):
-                model.hydrate() # TODO: We can do this better
+                model.hydrate()  # TODO: We can do this better
                 include_columns = [
                     k
                     for k in model.body.dict().keys()

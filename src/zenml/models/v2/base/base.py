@@ -18,9 +18,7 @@ from uuid import UUID
 from pydantic import Field, SecretStr
 
 from zenml.exceptions import HydrationError
-from zenml.models.v2.base.utils import hydrated_property
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
-
 
 # -------------------- Base Model --------------------
 
@@ -83,6 +81,7 @@ class BaseResponseBody(BaseZenModel):
     Used as a base class for all body models associated with responses.
     Features a creation and update timestamp.
     """
+
     created: Optional[datetime] = Field(
         title="The timestamp when this resource was created.",
         default=None,
@@ -118,8 +117,8 @@ class BaseResponse(BaseZenModel):
             NotImplementedError, in case the method is not overriden.
         """
         raise NotImplementedError(
-            'Please implement a `get_hydrated_version` method before '
-            'using/hydrating the model.'
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
         )
 
     # Helper functions
@@ -146,7 +145,7 @@ class BaseResponse(BaseZenModel):
             return False
 
     def _validate_hydrated_version(
-            self, hydrated_model: "BaseResponse"
+        self, hydrated_model: "BaseResponse"
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 
