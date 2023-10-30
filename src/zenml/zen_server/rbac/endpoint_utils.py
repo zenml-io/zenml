@@ -94,8 +94,13 @@ def verify_permissions_and_list_entities(
     Returns:
         A page of entity models.
     """
+    auth_context = get_auth_context()
+    assert auth_context
+
     allowed_ids = get_allowed_resource_ids(resource_type=resource_type)
-    filter_model.set_allowed_ids(allowed_ids)
+    filter_model.set_rbac_allowed_ids_and_user(
+        allowed_ids=allowed_ids, user_id=auth_context.user.id
+    )
     page = list_method(filter_model)
     return dehydrate_page(page)
 

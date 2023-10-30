@@ -300,7 +300,8 @@ class BaseFilterModel(BaseModel):
         default=None, description="Updated"
     )
 
-    _allowed_ids: Optional[Set[UUID]] = None
+    _rbac_allowed_ids: Optional[Set[UUID]] = None
+    _rbac_user_id: Optional[UUID] = None
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
@@ -393,16 +394,21 @@ class BaseFilterModel(BaseModel):
 
         return column, operator
 
-    def set_allowed_ids(self, allowed_ids: Optional[Set[UUID]]) -> None:
-        """Set allowed IDs for the query.
+    def set_rbac_allowed_ids_and_user(
+        self, allowed_ids: Optional[Set[UUID]], user_id: Optional[UUID]
+    ) -> None:
+        """Set allowed IDs and user ID for the query.
 
         Args:
             allowed_ids: Set of IDs to limit the query to. If given, the
                 remaining filters will be applied to entities within this set
                 only. If `None`, the remaining filters will applied to all
                 entries in the table.
+            user_id: ID of the authenticated user. If given, all entities owned
+                by this user will be included in addition to the `allowed_ids`.
         """
-        self._allowed_ids = allowed_ids
+        self._rbac_allowed_ids = allowed_ids
+        self._rbac_user_id = user_id
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
@@ -768,8 +774,18 @@ class BaseFilterModel(BaseModel):
         Returns:
             The query with filter applied.
         """
-        if self._allowed_ids is not None:
-            query = query.where(table.id.in_(self._allowed_ids))  # type: ignore[attr-defined]
+        from sqlmodel import or_
+
+        if self._rbac_allowed_ids is not None:
+            if self._rbac_user_id and hasattr(table, "user"):
+                query = query.where(
+                    or_(
+                        table.id.in_(self._rbac_allowed_ids),  # type: ignore[attr-defined]
+                        getattr(table, "user") == self._rbac_user_id,
+                    )
+                )
+            else:
+                query = query.where(table.id.in_(self._rbac_allowed_ids))  # type: ignore[attr-defined]
 
         filters = self.generate_filter(table=table)
 

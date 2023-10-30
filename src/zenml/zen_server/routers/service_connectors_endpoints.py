@@ -108,6 +108,8 @@ def list_service_connectors(
             if not connector.secret_id:
                 continue
 
+            # TODO: check for ownership. Can I always read the secret of a service connector I own?
+            # What if someone updates the secret?
             if allowed_ids and connector.id not in allowed_ids:
                 # The user is not allowed to read secret values for this
                 # connector. We don't raise an exception here but don't include

@@ -318,7 +318,6 @@ def get_allowed_resource_ids(
     if has_full_resource_access:
         return None
 
-    # TODO: this does not account for ownership right now
     return {UUID(id) for id in allowed_ids}
 
 
