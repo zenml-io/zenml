@@ -6125,9 +6125,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self.get_model(model_name_or_id)
-            model_version = self.get_model_version(
-                model_version_name_or_id
-            )
+            model_version = self.get_model_version(model_version_name_or_id)
             query = select(ModelVersionArtifactSchema).where(
                 ModelVersionArtifactSchema.model_version_id == model_version.id
             )
@@ -6248,9 +6246,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self.get_model(model_name_or_id)
-            model_version = self.get_model_version(
-                model_version_name_or_id
-            )
+            model_version = self.get_model_version(model_version_name_or_id)
             query = select(ModelVersionPipelineRunSchema).where(
                 ModelVersionPipelineRunSchema.model_version_id
                 == model_version.id
