@@ -2198,6 +2198,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
@@ -2212,6 +2213,8 @@ class Client(metaclass=ClientMetaClass):
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            disconnect: Whether to disconnect the stack component from its
+                service connector.
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
@@ -2300,10 +2303,22 @@ class Client(metaclass=ClientMetaClass):
             }
             update_model.labels = existing_labels
 
-        if connector_id is not None:
+        if disconnect:
+            update_model.connector = None
+            update_model.connector_resource_id = None
+        else:
+            existing_component = self.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
             update_model.connector = connector_id
-        if connector_resource_id is not None:
             update_model.connector_resource_id = connector_resource_id
+            if connector_id is None and existing_component.connector:
+                update_model.connector = existing_component.connector.id
+                update_model.connector_resource_id = (
+                    existing_component.connector_resource_id
+                )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
