@@ -53,6 +53,8 @@ def validate_stack_component_config(
 
     Raises:
         ValueError: If the configuration is invalid.
+        ImportError: If the flavor class could not be imported.
+        ModuleNotFoundError: If the flavor class could not be imported.
     """
     if zen_store:
         flavor_model = get_flavor_by_name_and_type_from_zen_store(
