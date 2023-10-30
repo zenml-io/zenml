@@ -1237,8 +1237,6 @@ def list_workspace_models(
 @router.post(
     WORKSPACES
     + "/{workspace_name_or_id}"
-    + MODELS
-    + "/{model_name_or_id}"
     + MODEL_VERSIONS,
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -1246,7 +1244,6 @@ def list_workspace_models(
 @handle_exceptions
 def create_model_version(
     workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
     model_version: ModelVersionRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -1255,7 +1252,6 @@ def create_model_version(
     """Create a new model version.
 
     Args:
-        model_name_or_id: Name or ID of the model.
         workspace_name_or_id: Name or ID of the workspace.
         model_version: The model version to create.
         auth_context: Authentication context.
@@ -1312,197 +1308,4 @@ def list_workspace_model_versions(
     model_version_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
-    )
-
-
-@router.post(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODELS
-    + "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS,
-    response_model=ModelVersionArtifactResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_model_version_artifact_link(
-    workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_artifact_link: ModelVersionArtifactRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
-) -> ModelVersionArtifactResponseModel:
-    """Create a new model version to artifact link.
-
-    Args:
-        model_name_or_id: Name or ID of the model.
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_name_or_id: Name or ID of the model version.
-        model_version_artifact_link: The model version to artifact link to create.
-        auth_context: Authentication context.
-
-    Returns:
-        The created model version to artifact link.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            model version does not match the current workspace or authenticated
-            user.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if model_version_artifact_link.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating model version to artifact links outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-    if model_version_artifact_link.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating model to artifact links for a user other than yourself "
-            "is not supported."
-        )
-    mv = zen_store().create_model_version_artifact_link(
-        model_version_artifact_link
-    )
-    return mv
-
-
-@router.get(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS,
-    response_model=Page[ModelVersionArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_model_version_artifact_links(
-    workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-        make_dependable(ModelVersionArtifactFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionArtifactResponseModel]:
-    """Get model version to artifact links according to query filters.
-
-    Args:
-        model_name_or_id: Name or ID of the model.
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_name_or_id: Name or ID of the model version.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model version to artifact links according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_version_artifact_link_filter_model.set_scope_workspace(workspace_id)
-    return zen_store().list_model_version_artifact_links(
-        model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
-    )
-
-
-@router.post(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODELS
-    + "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS,
-    response_model=ModelVersionPipelineRunResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_model_version_pipeline_run_link(
-    workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
-) -> ModelVersionPipelineRunResponseModel:
-    """Create a new model version to pipeline run link.
-
-    Args:
-        model_name_or_id: Name or ID of the model.
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_name_or_id: Name or ID of the model version.
-        model_version_pipeline_run_link: The model version to pipeline run link to create.
-        auth_context: Authentication context.
-
-    Returns:
-        - If Model Version to Pipeline Run Link already exists - returns the existing link.
-        - Otherwise, returns the newly created model version to pipeline run link.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            model version does not match the current workspace or authenticated
-            user.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if model_version_pipeline_run_link.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating model versions outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-    if model_version_pipeline_run_link.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-    mv = zen_store().create_model_version_pipeline_run_link(
-        model_version_pipeline_run_link
-    )
-    return mv
-
-
-@router.get(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS,
-    response_model=Page[ModelVersionPipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_model_version_pipeline_run_links(
-    workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionPipelineRunResponseModel]:
-    """Get model version to pipeline links according to query filters.
-
-    Args:
-        model_name_or_id: Name or ID of the model.
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_name_or_id: Name or ID of the model version.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model version to pipeline run links according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_version_pipeline_run_link_filter_model.set_scope_workspace(
-        workspace_id
-    )
-    return zen_store().list_model_version_pipeline_run_links(
-        model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
     )

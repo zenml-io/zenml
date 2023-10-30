@@ -28,6 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ModelStages, PermissionType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
@@ -38,7 +39,8 @@ from zenml.models import (
     ModelVersionPipelineRunFilterModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelVersionUpdateModel, ModelVersionPipelineRunRequestModel,
+    ModelVersionArtifactRequestModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -292,6 +294,47 @@ def list_model_version_artifact_links(
     )
 
 
+@model_versions_router.post(
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + ARTIFACTS,
+    response_model=ModelVersionArtifactResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_artifact_link(
+    model_version_name_or_id: Union[str, UUID],
+    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionArtifactResponseModel:
+    """Create a new model version to artifact link.
+
+    Args:
+        model_version_name_or_id: Name or ID of the model version.
+        model_version_artifact_link: The model version to artifact link to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model version to artifact link.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    if model_version_artifact_link.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating model to artifact links for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version_artifact_link(
+        model_version_artifact_link
+    )
+    return mv
+
+
 @model_versions_router.delete(
     "/{model_version_name_or_id}"
     + ARTIFACTS
@@ -348,6 +391,49 @@ def list_model_version_pipeline_run_links(
     return zen_store().list_model_version_pipeline_run_links(
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
     )
+
+
+@model_versions_router.post(
+    + MODEL_VERSIONS
+    + "/{model_version_name_or_id}"
+    + RUNS,
+    response_model=ModelVersionPipelineRunResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_pipeline_run_link(
+    model_version_name_or_id: Union[str, UUID],
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionPipelineRunResponseModel:
+    """Create a new model version to pipeline run link.
+
+    Args:
+        model_version_name_or_id: Name or ID of the model version.
+        model_version_pipeline_run_link: The model version to pipeline run link to create.
+        auth_context: Authentication context.
+
+    Returns:
+        - If Model Version to Pipeline Run Link already exists - returns the existing link.
+        - Otherwise, returns the newly created model version to pipeline run link.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+
+    if model_version_pipeline_run_link.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version_pipeline_run_link(
+        model_version_pipeline_run_link
+    )
+    return mv
 
 
 @model_versions_router.delete(
