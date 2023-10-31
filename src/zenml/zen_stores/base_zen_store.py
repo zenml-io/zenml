@@ -50,9 +50,9 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    ComponentRequestModel,
+    InternalComponentRequestModel,
+    InternalStackRequestModel,
     StackFilterModel,
-    StackRequestModel,
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
@@ -531,11 +531,6 @@ class BaseZenStore(
             logger.info(
                 f"Creating default stack in workspace {workspace.name}..."
             )
-            from zenml.models.base_models import internal_model
-
-            @internal_model
-            class InternalComponentRequestModel(ComponentRequestModel):
-                pass
 
             # Register the default orchestrator
             orchestrator = self.create_stack_component(
@@ -564,10 +559,6 @@ class BaseZenStore(
             components = {
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
-
-            @internal_model
-            class InternalStackRequestModel(StackRequestModel):
-                pass
 
             # Register the default stack
             stack = InternalStackRequestModel(

@@ -32,6 +32,7 @@ from zenml.logger import get_logger
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
+    server_owned_request_model,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
@@ -216,6 +217,11 @@ class ComponentRequestModel(ComponentBaseModel, WorkspaceScopedRequestModel):
                 "secret reference is not allowed."
             )
         return name
+
+
+@server_owned_request_model
+class InternalComponentRequestModel(ComponentRequestModel):
+    pass
 
 
 # ------ #

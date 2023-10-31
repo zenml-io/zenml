@@ -23,6 +23,7 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
+    server_owned_request_model,
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
@@ -173,6 +174,11 @@ class StackRequestModel(StackBaseModel, WorkspaceScopedRequestModel):
             StackComponentType.ARTIFACT_STORE in self.components
             and StackComponentType.ORCHESTRATOR in self.components
         )
+
+
+@server_owned_request_model
+class InternalStackRequestModel(StackRequestModel):
+    pass
 
 
 # ------ #

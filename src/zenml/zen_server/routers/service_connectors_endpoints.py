@@ -155,11 +155,8 @@ def get_service_connector(
     if (
         expand_secrets
         and connector.secret_id
-        and (
-            is_owned_by_authenticated_user(connector)
-            or has_permissions_for_model(
-                connector, action=Action.READ_SECRET_VALUE
-            )
+        and has_permissions_for_model(
+            connector, action=Action.READ_SECRET_VALUE
         )
     ):
         secret = zen_store().get_secret(secret_id=connector.secret_id)

@@ -133,6 +133,9 @@ def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
     Returns:
         If the active user has permissions to perform the action on the model.
     """
+    if is_owned_by_authenticated_user(model):
+        return True
+
     try:
         verify_permission_for_model(model=model, action=action)
         return True

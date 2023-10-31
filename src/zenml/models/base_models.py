@@ -271,8 +271,8 @@ def update_model(_cls: Type[T]) -> Type[T]:
     return _cls
 
 
-def internal_model(_cls: Type[T]) -> Type[T]:
-    """Convert a request model to an internal model.
+def server_owned_request_model(_cls: Type[T]) -> Type[T]:
+    """Convert a request model to a model which does not require a user ID.
 
     Args:
         _cls: The class to decorate

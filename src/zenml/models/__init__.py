@@ -39,6 +39,7 @@ from zenml.models.code_repository_models import (
 from zenml.models.component_models import (
     ComponentFilterModel,
     ComponentRequestModel,
+    InternalComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
 )
@@ -121,6 +122,7 @@ from zenml.models.stack_models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    InternalStackRequestModel,
 )
 from zenml.models.step_run_models import (
     StepRunFilterModel,
@@ -315,6 +317,7 @@ __all__ = [
     "CodeRepositoryUpdateModel",
     "ComponentFilterModel",
     "ComponentRequestModel",
+    "InternalComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
     "ExternalUserModel",
@@ -396,6 +399,7 @@ __all__ = [
     "ServiceConnectorUpdateModel",
     "StackFilterModel",
     "StackRequestModel",
+    "InternalStackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
     "StepRunFilterModel",
