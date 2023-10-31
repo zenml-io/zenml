@@ -2,6 +2,11 @@
 description: Deploying an entire stack with mlstacks.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy a stack using mlstacks
 
 MLStacks is a Python package that allows you to quickly spin up MLOps infrastructure using Terraform. It is designed to be used with [ZenML](https://zenml.io), but can be used with any MLOps tool or platform. You can deploy a modular MLOps stack for AWS, GCP or K3D using mlstacks. Each deployment type is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.

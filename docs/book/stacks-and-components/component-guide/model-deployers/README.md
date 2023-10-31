@@ -2,6 +2,11 @@
 description: Deploying your models and serve real-time predictions.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Model Deployers
 
 Model Deployment is the process of making a machine learning model available to make predictions and decisions on real-world data. Getting predictions from trained models can be done in different ways depending on the use case, a batch prediction is used to generate predictions for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.

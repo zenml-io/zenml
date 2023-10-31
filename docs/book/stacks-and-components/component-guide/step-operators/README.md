@@ -2,6 +2,11 @@
 description: Executing individual steps in specialized environments.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Step Operators
 
 The step operator enables the execution of individual pipeline steps in specialized runtime environments that are optimized for certain workloads. These specialized environments can give your steps access to resources like GPUs or distributed processing frameworks like [Spark](https://spark.apache.org/).

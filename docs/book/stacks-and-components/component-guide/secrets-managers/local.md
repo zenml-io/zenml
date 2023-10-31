@@ -2,6 +2,11 @@
 description: Storing secrets locally.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Local Secrets Manager
 
 The local secrets manager is a [secrets manager](./) flavor that comes built-in with ZenML and uses the local filesystem to store secrets.

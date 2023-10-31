@@ -2,6 +2,11 @@
 description: How to migrate from ZenML 0.20.0-0.23.0 to 0.30.0-0.39.1.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Migration guide 0.23.0 → 0.30.0
 
 {% hint style="warning" %}
