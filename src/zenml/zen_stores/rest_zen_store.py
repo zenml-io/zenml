@@ -151,9 +151,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
     WorkspaceFilterModel,
-    WorkspaceRequestModel,
     WorkspaceResponseModel,
-    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -405,15 +403,21 @@ class RestZenStore(BaseZenStore):
         """Initialize the database."""
         # don't do anything for a REST store
 
-    def _get_or_create_default_stack(
+    def _create_default_stack(
         self,
-        workspace: "WorkspaceResponseModel",
-    ) -> "StackResponseModel":
-        # Overwrite this function so we don't try to create a default stack
-        # client-side. The default stack can't be deleted/modified so the
-        # fetching should always work.
-        return self._get_default_stack(
-            workspace_id=workspace.id,
+        workspace_id: UUID,
+    ) -> StackResponseModel:
+        workspace = self.get_workspace(workspace_id)
+
+        raise RuntimeError(
+            f"Unable to create default stack in workspace "
+            f"{workspace.name}."
+        )
+
+    def _create_default_workspace(self) -> WorkspaceResponseModel:
+        raise RuntimeError(
+            f"Unable to create default workspace "
+            f"{self._default_workspace_name}."
         )
 
     # ====================================
@@ -812,22 +816,22 @@ class RestZenStore(BaseZenStore):
     # Workspaces
     # --------
 
-    def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
-        """Creates a new workspace.
+    # def create_workspace(
+    #     self, workspace: WorkspaceRequestModel
+    # ) -> WorkspaceResponseModel:
+    #     """Creates a new workspace.
 
-        Args:
-            workspace: The workspace to create.
+    #     Args:
+    #         workspace: The workspace to create.
 
-        Returns:
-            The newly created workspace.
-        """
-        return self._create_resource(
-            resource=workspace,
-            route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
-        )
+    #     Returns:
+    #         The newly created workspace.
+    #     """
+    #     return self._create_resource(
+    #         resource=workspace,
+    #         route=WORKSPACES,
+    #         response_model=WorkspaceResponseModel,
+    #     )
 
     def get_workspace(
         self, workspace_name_or_id: Union[UUID, str]
@@ -864,35 +868,35 @@ class RestZenStore(BaseZenStore):
             filter_model=workspace_filter_model,
         )
 
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
-        """Update an existing workspace.
+    # def update_workspace(
+    #     self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    # ) -> WorkspaceResponseModel:
+    #     """Update an existing workspace.
 
-        Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
+    #     Args:
+    #         workspace_id: The ID of the workspace to be updated.
+    #         workspace_update: The update to be applied to the workspace.
 
-        Returns:
-            The updated workspace.
-        """
-        return self._update_resource(
-            resource_id=workspace_id,
-            resource_update=workspace_update,
-            route=WORKSPACES,
-            response_model=WorkspaceResponseModel,
-        )
+    #     Returns:
+    #         The updated workspace.
+    #     """
+    #     return self._update_resource(
+    #         resource_id=workspace_id,
+    #         resource_update=workspace_update,
+    #         route=WORKSPACES,
+    #         response_model=WorkspaceResponseModel,
+    #     )
 
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
+    # def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+    #     """Deletes a workspace.
 
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
-        """
-        self._delete_resource(
-            resource_id=workspace_name_or_id,
-            route=WORKSPACES,
-        )
+    #     Args:
+    #         workspace_name_or_id: Name or ID of the workspace to delete.
+    #     """
+    #     self._delete_resource(
+    #         resource_id=workspace_name_or_id,
+    #         route=WORKSPACES,
+    #     )
 
     # ---------
     # Pipelines

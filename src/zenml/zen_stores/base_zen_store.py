@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import (
     Any,
     Callable,
@@ -56,7 +56,6 @@ from zenml.models import (
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
-    WorkspaceRequestModel,
     WorkspaceResponseModel,
 )
 from zenml.models.server_models import (
@@ -293,10 +292,7 @@ class BaseZenStore(
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        try:
-            default_workspace = self._default_workspace
-        except KeyError:
-            default_workspace = self._create_default_workspace()
+        default_workspace = self._get_or_create_default_workspace()
 
         config = ServerConfiguration.get_server_config()
         # If the auth scheme is external, don't create the default user
@@ -696,17 +692,13 @@ class BaseZenStore(
                 f"The default workspace '{workspace_name}' is not configured"
             )
 
+    @abstractmethod
     def _create_default_workspace(self) -> WorkspaceResponseModel:
         """Creates a default workspace.
 
         Returns:
             The default workspace.
         """
-        workspace_name = self._default_workspace_name
-        logger.info(f"Creating default workspace '{workspace_name}' ...")
-        return self.create_workspace(
-            WorkspaceRequestModel(name=workspace_name)
-        )
 
     class Config:
         """Pydantic configuration class."""

@@ -667,6 +667,13 @@ class SqlZenStore(BaseZenStore):
     _engine: Optional[Engine] = None
     _alembic: Optional[Alembic] = None
 
+    def _create_default_workspace(self) -> WorkspaceResponseModel:
+        workspace_name = self._default_workspace_name
+        logger.info(f"Creating default workspace '{workspace_name}' ...")
+        return self.create_workspace(
+            WorkspaceRequestModel(name=workspace_name)
+        )
+
     @property
     def engine(self) -> Engine:
         """The SQLAlchemy engine.
