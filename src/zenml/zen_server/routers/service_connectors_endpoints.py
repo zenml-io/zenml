@@ -45,6 +45,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
     has_permissions_for_model,
+    is_owned_by_authenticated_user,
     verify_permission,
     verify_permission_for_model,
 )
@@ -108,9 +109,13 @@ def list_service_connectors(
             if not connector.secret_id:
                 continue
 
-            # TODO: check for ownership. Can I always read the secret of a service connector I own?
-            # What if someone updates the secret?
-            if allowed_ids and connector.id not in allowed_ids:
+            if allowed_ids is None or is_owned_by_authenticated_user(
+                connector
+            ):
+                # The user either owns the connector or has permissions to
+                # read secret values for all service connectors
+                pass
+            elif connector.id not in allowed_ids:
                 # The user is not allowed to read secret values for this
                 # connector. We don't raise an exception here but don't include
                 # the secret values
@@ -150,8 +155,11 @@ def get_service_connector(
     if (
         expand_secrets
         and connector.secret_id
-        and has_permissions_for_model(
-            connector, action=Action.READ_SECRET_VALUE
+        and (
+            is_owned_by_authenticated_user(connector)
+            or has_permissions_for_model(
+                connector, action=Action.READ_SECRET_VALUE
+            )
         )
     ):
         secret = zen_store().get_secret(secret_id=connector.secret_id)
