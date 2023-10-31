@@ -2485,11 +2485,10 @@ class TestModelVersion:
 
     def test_get_not_found(self):
         """Test that get fails if not found."""
-        with ModelVersionContext() as model:
+        with ModelVersionContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id="1.0.0",
                 )
 
@@ -2506,7 +2505,6 @@ class TestModelVersion:
                 )
             )
             mv2 = zs.get_model_version(
-                model_name_or_id=model.id,
                 model_version_name_or_number_or_id="great one",
             )
             assert mv1.id == mv2.id
@@ -2549,11 +2547,10 @@ class TestModelVersion:
 
     def test_delete_not_found(self):
         """Test that delete fails if not found."""
-        with ModelVersionContext() as model:
+        with ModelVersionContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_id="1.0.0",
                 )
 
@@ -2570,12 +2567,10 @@ class TestModelVersion:
                 )
             )
             zs.delete_model_version(
-                model_name_or_id=model.id,
                 model_version_name_or_id="great one",
             )
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id="great one",
                 )
 
@@ -2622,12 +2617,10 @@ class TestModelVersion:
                 ),
             )
             mv2 = zs.get_model_version(
-                model_name_or_id=model.id,
                 model_version_name_or_number_or_id="staging",
             )
             assert mv1.id == mv2.id
             mv3 = zs.get_model_version(
-                model_name_or_id=model.id,
                 model_version_name_or_number_or_id=ModelStages.STAGING,
             )
             assert mv1.id == mv3.id
@@ -2647,7 +2640,6 @@ class TestModelVersion:
 
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=ModelStages.STAGING,
                 )
 
@@ -2716,7 +2708,6 @@ class TestModelVersion:
             )
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "staging"
@@ -2733,21 +2724,18 @@ class TestModelVersion:
 
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "archived"
             )
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv2.id,
                 ).stage
                 == "staging"
             )
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv2.id,
                 ).name
                 == "I changed that..."
@@ -2767,7 +2755,6 @@ class TestModelVersion:
             )
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 is None
@@ -2775,7 +2762,6 @@ class TestModelVersion:
             mv1.set_stage("staging")
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv1.name,
                 ).stage
                 == "staging"
@@ -2784,7 +2770,6 @@ class TestModelVersion:
             mv1._update_default_running_version_name()
             assert (
                 zs.get_model_version(
-                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id=mv1.id,
                 ).name
                 == "1"
@@ -2852,7 +2837,6 @@ class TestModelVersion:
         with ModelVersionContext(create_version=True) as model_version:
             zs = Client().zen_store
             found = zs.get_model_version(
-                model_name_or_id=model_version.model.id,
                 model_version_name_or_number_or_id=1,
             )
             assert found.id == model_version.id
@@ -2861,18 +2845,16 @@ class TestModelVersion:
 
     def test_get_not_found_by_number(self):
         """Test that get fails by integer version number, if not found and by string version number, cause treated as name."""
-        with ModelVersionContext(create_version=True) as model_version:
+        with ModelVersionContext(create_version=True):
             zs = Client().zen_store
             # no version numbered as 2
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model_version.model.id,
                     model_version_name_or_number_or_id=2,
                 )
             # cannot fetch by string number - treated as name
             with pytest.raises(KeyError):
                 zs.get_model_version(
-                    model_name_or_id=model_version.model.id,
                     model_version_name_or_number_or_id="1",
                 )
 
@@ -3111,7 +3093,6 @@ class TestModelVersionArtifactLinks:
                 )
             )
             zs.delete_model_version_artifact_link(
-                model_name_or_id=model_version.model.id,
                 model_version_name_or_id=model_version.id,
                 model_version_artifact_link_name_or_id="link",
             )
@@ -3217,7 +3198,6 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 1 and mvls[0].name == "link3"
 
             mv = zs.get_model_version(
-                model_name_or_id=model_version.model.id,
                 model_version_name_or_number_or_id=model_version.id,
             )
 
@@ -3406,7 +3386,6 @@ class TestModelVersionPipelineRunLinks:
             assert len(mvls) == 2
 
             mv = zs.get_model_version(
-                model_name_or_id=model_version.model.id,
                 model_version_name_or_number_or_id=model_version.id,
             )
 

@@ -6230,14 +6230,12 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version_pipeline_run_link(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
             model_version_name_or_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
 
@@ -6245,7 +6243,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID not found.
         """
         with Session(self.engine) as session:
-            self.get_model(model_name_or_id)
             model_version = self.get_model_version(model_version_name_or_id)
             query = select(ModelVersionPipelineRunSchema).where(
                 ModelVersionPipelineRunSchema.model_version_id
