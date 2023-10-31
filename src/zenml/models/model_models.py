@@ -76,13 +76,15 @@ class ModelScopedFilterModel(WorkspaceScopedFilterModel):
 
     _model_id: Union[str, UUID] = PrivateAttr(None)
 
-    def set_scope_model(self, model_id: Union[str, UUID]) -> None:
+    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
         """Set the model to scope this response.
 
         Args:
-            model_id: The model to scope this response to.
+            model_name_or_id: The model to scope this response to.
         """
-        self._model_id = model_id
+        from zenml.client import Client
+
+        self._model_id = Client().get_model(model_name_or_id).id
 
     def apply_filter(
         self,
@@ -112,14 +114,23 @@ class ModelVersionScopedFilterModel(ModelScopedFilterModel):
     _model_version_id: Union[str, UUID] = PrivateAttr(None)
 
     def set_scope_model_version(
-        self, model_version_id: Union[str, UUID]
+        self, model_version_name_or_id: Union[str, UUID]
     ) -> None:
         """Set the model version to scope this response.
 
         Args:
             model_version_id: The model version to scope this response to.
         """
-        self._model_version_id = model_version_id
+        from zenml.client import Client
+
+        self._model_version_id = (
+            Client()
+            .get_model_version(
+                model_name_or_id=self._model_id,
+                model_version_name_or_number_or_id=model_version_name_or_id,
+            )
+            .id
+        )
 
     def apply_filter(
         self,
