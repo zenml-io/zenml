@@ -2,6 +2,11 @@
 description: Inspecting a finished pipeline run and its outputs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Fetch runs after execution
 
 Once a pipeline run has been completed, we can access the corresponding information in code, which enables several use cases:

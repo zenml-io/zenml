@@ -2,6 +2,11 @@
 description: Sending automated alerts to a Slack channel.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Slack Alerter
 
 The `SlackAlerter` enables you to send messages to a dedicated Slack channel directly from within your ZenML pipelines.

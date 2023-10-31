@@ -2,6 +2,11 @@
 description: Learning how to configure pipelines and their steps.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Create an ML pipeline
 
 In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:

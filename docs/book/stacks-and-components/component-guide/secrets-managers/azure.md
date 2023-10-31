@@ -2,6 +2,11 @@
 description: Storing secrets in Azure.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Azure Secrets Manager
 
 The Azure secrets manager is a [secrets manager](./) flavor provided with the ZenML `azure` integration that uses [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview) to store secrets.

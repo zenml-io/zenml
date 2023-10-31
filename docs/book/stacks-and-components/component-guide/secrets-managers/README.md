@@ -2,6 +2,11 @@
 description: Setting up a storage for secrets.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Secrets Managers
 
 Secrets managers provide a secure way of storing confidential information that is needed to run your ML pipelines. Most production pipelines will run on cloud infrastructure and therefore need credentials to authenticate with those services. Instead of storing these credentials in code or files, ZenML secrets managers can be used to store and retrieve these values in a secure manner.

@@ -2,6 +2,11 @@
 description: Learn how to troubleshoot Stack Components deployed with ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Troubleshoot stack components
 
 There are two ways in which you can understand if something has gone wrong while deploying your stack or stack components.
