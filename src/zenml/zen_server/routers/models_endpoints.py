@@ -421,7 +421,6 @@ def create_model_version_pipeline_run_link(
             model version does not match the current workspace or authenticated
             user.
     """
-
     if model_version_pipeline_run_link.user != auth_context.user.id:
         raise IllegalOperationError(
             "Creating models for a user other than yourself "
@@ -431,30 +430,3 @@ def create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )
     return mv
-
-
-@model_versions_router.delete(
-    "{model_version_name_or_id}"
-    + RUNS
-    + "/{model_version_pipeline_run_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_pipeline_run_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_pipeline_run_link_name_or_id: name or ID of the model version link to be deleted.
-    """
-    zen_store().delete_model_version_pipeline_run_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_pipeline_run_link_name_or_id,
-    )
