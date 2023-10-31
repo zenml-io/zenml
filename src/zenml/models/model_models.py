@@ -82,9 +82,14 @@ class ModelScopedFilterModel(WorkspaceScopedFilterModel):
         Args:
             model_name_or_id: The model to scope this response to.
         """
-        from zenml.client import Client
+        try:
+            model_name_or_id = UUID(str(model_name_or_id))
+        except ValueError:
+            from zenml.client import Client
 
-        self._model_id = Client().get_model(model_name_or_id).id
+            model_name_or_id = Client().get_model(model_name_or_id).id
+
+        self._model_version_id = model_name_or_id
 
     def apply_filter(
         self,
@@ -121,16 +126,20 @@ class ModelVersionScopedFilterModel(ModelScopedFilterModel):
         Args:
             model_version_id: The model version to scope this response to.
         """
-        from zenml.client import Client
+        try:
+            model_version_name_or_id = UUID(str(model_version_name_or_id))
+        except ValueError:
+            from zenml.client import Client
 
-        self._model_version_id = (
-            Client()
-            .get_model_version(
-                model_name_or_id=self._model_id,
-                model_version_name_or_number_or_id=model_version_name_or_id,
+            model_version_name_or_id = (
+                Client()
+                .get_model_version(
+                    model_name_or_id=self._model_id,
+                    model_version_name_or_number_or_id=model_version_name_or_id,
+                )
+                .id
             )
-            .id
-        )
+        self._model_version_id = model_version_name_or_id
 
     def apply_filter(
         self,
