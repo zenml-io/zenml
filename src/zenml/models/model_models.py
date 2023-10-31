@@ -74,7 +74,7 @@ class ModelVersionBaseModel(BaseModel):
 class ModelScopedFilterModel(WorkspaceScopedFilterModel):
     """Base filter model inside Model Scope."""
 
-    _model_id: Union[str, UUID] = PrivateAttr(None)
+    _model_id: UUID = PrivateAttr(None)
 
     def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
         """Set the model to scope this response.
@@ -83,13 +83,13 @@ class ModelScopedFilterModel(WorkspaceScopedFilterModel):
             model_name_or_id: The model to scope this response to.
         """
         try:
-            model_name_or_id = UUID(str(model_name_or_id))
+            model_id = UUID(str(model_name_or_id))
         except ValueError:
             from zenml.client import Client
 
-            model_name_or_id = Client().get_model(model_name_or_id).id
+            model_id = Client().get_model(model_name_or_id).id
 
-        self._model_version_id = model_name_or_id
+        self._model_id = model_id
 
     def apply_filter(
         self,
@@ -116,7 +116,7 @@ class ModelScopedFilterModel(WorkspaceScopedFilterModel):
 class ModelVersionScopedFilterModel(ModelScopedFilterModel):
     """Base filter model inside Model Version Scope."""
 
-    _model_version_id: Union[str, UUID] = PrivateAttr(None)
+    _model_version_id: UUID = PrivateAttr(None)
 
     def set_scope_model_version(
         self, model_version_name_or_id: Union[str, UUID]
@@ -124,14 +124,14 @@ class ModelVersionScopedFilterModel(ModelScopedFilterModel):
         """Set the model version to scope this response.
 
         Args:
-            model_version_id: The model version to scope this response to.
+            model_version_name_or_id: The model version to scope this response to.
         """
         try:
-            model_version_name_or_id = UUID(str(model_version_name_or_id))
+            model_version_id = UUID(str(model_version_name_or_id))
         except ValueError:
             from zenml.client import Client
 
-            model_version_name_or_id = (
+            model_version_id = (
                 Client()
                 .get_model_version(
                     model_name_or_id=self._model_id,
@@ -139,7 +139,7 @@ class ModelVersionScopedFilterModel(ModelScopedFilterModel):
                 )
                 .id
             )
-        self._model_version_id = model_version_name_or_id
+        self._model_version_id = model_version_id
 
     def apply_filter(
         self,
