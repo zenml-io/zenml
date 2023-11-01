@@ -20,6 +20,7 @@ from zenml.model_registries.base_model_registry import (
     BaseModelRegistryConfig,
     BaseModelRegistryFlavor,
 )
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.huggingface.model_registries import (
@@ -29,6 +30,9 @@ if TYPE_CHECKING:
 
 class HuggingfaceModelRegistryConfig(BaseModelRegistryConfig):
     """Configuration for the Huggingface model registry."""
+
+    user: str = SecretField()
+    token: str = SecretField()
 
 
 class HuggingfaceModelRegistryFlavor(BaseModelRegistryFlavor):

@@ -14,7 +14,14 @@
 """Implementation of the MLflow model registry for ZenML."""
 
 
-from typing import cast
+import os
+from contextlib import contextmanager
+from datetime import datetime
+from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, cast
+from uuid import uuid4
+
+from huggingface_hub import HfApi, ModelCard, ModelCardData
 
 from zenml.integrations.huggingface.flavors.huggingface_model_registry_flavor import (
     HuggingfaceModelRegistryConfig,
@@ -22,13 +29,26 @@ from zenml.integrations.huggingface.flavors.huggingface_model_registry_flavor im
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistry,
+    ModelRegistryModelMetadata,
+    ModelVersion,
+    ModelVersionStage,
+    RegisteredModel,
 )
 
 logger = get_logger(__name__)
 
 
+class HuggingfaceRegisteredModel(RegisteredModel):
+    """Huggingface registered model class."""
+
+    repo_id: str
+
+
 class HuggingfaceModelRegistry(BaseModelRegistry):
     """Register models using Huggingface."""
+
+    MODELCARD_TEMPLATE_PATH: ClassVar[str] = "zenml_template.md"
+    REPO_TYPE: ClassVar[str] = "model"
 
     @property
     def config(self) -> HuggingfaceModelRegistryConfig:
@@ -39,707 +59,530 @@ class HuggingfaceModelRegistry(BaseModelRegistry):
         """
         return cast(HuggingfaceModelRegistryConfig, self._config)
 
-    # def configure_mlflow(self) -> None:
-    #     """Configures the MLflow Client with the experiment tracker config."""
-    #     experiment_tracker = Client().active_stack.experiment_tracker
-    #     assert isinstance(experiment_tracker, MLFlowExperimentTracker)
-    #     experiment_tracker.configure_mlflow()
+    @property
+    def api(self) -> HfApi:
+        return HfApi(token=self.config.token)
 
-    # @property
-    # def mlflow_client(self) -> MlflowClient:
-    #     """Get the MLflow client.
+    def _model_exists(self, name: str):
+        if not self.api.repo_exists(
+            repo_id=self._repo_id(name), repo_type=self.REPO_TYPE
+        ):
+            raise KeyError(
+                f"Model with name `{self._repo_id(name)}` doesn't exist."
+            )
 
-    #     Returns:
-    #         The MLFlowClient.
-    #     """
-    #     if not self._client:
-    #         self.configure_mlflow()
-    #         self._client = mlflow.tracking.MlflowClient()
-    #     return self._client
+    @contextmanager
+    def model_card_template(self):
+        template_text = """
+---
+{{ card_data }}
+---
+# {{ model_name }}
 
-    # @property
-    # def validator(self) -> Optional[StackValidator]:
-    #     """Validates that the stack contains an mlflow experiment tracker.
+## Description
+{{ model_description }}
 
-    #     Returns:
-    #         A StackValidator instance.
-    #     """
+## Metadata
+{% for key,value in metadata.items() %}
+{{ key }}:  {{ value }}
+{% endfor %}
 
-    #     def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
-    #         """Validates that all the requirements are met for the stack.
+_This model was created from **ZenML**_
+""".strip()
+        Path(self.MODELCARD_TEMPLATE_PATH).write_text(template_text)
+        yield
+        os.remove(self.MODELCARD_TEMPLATE_PATH)
 
-    #         Args:
-    #             stack: The stack to validate.
+    def _repo_id(self, name: str) -> str:
+        return f"{self.config.user}/{name}"
 
-    #         Returns:
-    #             A tuple of (is_valid, error_message).
-    #         """
-    #         # Validate that the experiment tracker is an mlflow experiment tracker.
-    #         experiment_tracker = stack.experiment_tracker
-    #         assert experiment_tracker is not None
-    #         if experiment_tracker.flavor != "mlflow":
-    #             return False, (
-    #                 "The MLflow model registry requires a MLflow experiment "
-    #                 "tracker. You should register a MLflow experiment "
-    #                 "tracker to the stack using the following command: "
-    #                 "`zenml stack update model_registry -e mlflow_tracker"
-    #             )
-    #         mlflow_version = mlflow.version.VERSION
-    #         if (
-    #             not mlflow_version >= "2.1.1"
-    #             and experiment_tracker.config.is_local
-    #         ):
-    #             return False, (
-    #                 "The MLflow model registry requires MLflow version "
-    #                 f"2.1.1 or higher to use a local MLflow registry. "
-    #                 f"Your current MLflow version is {mlflow_version}."
-    #                 "You can upgrade MLflow using the following command: "
-    #                 "`pip install --upgrade mlflow`"
-    #             )
-    #         return True, ""
+    def _push_model_card(
+        self,
+        name: str,
+        description: str,
+        metadata: Dict[str, str],
+    ):
+        with self.model_card_template():
+            card = ModelCard.from_template(
+                card_data=ModelCardData(
+                    **metadata,
+                    description=description,
+                ),
+                model_name=name,
+                model_description=description,
+                template_path=self.MODELCARD_TEMPLATE_PATH,
+                metadata=metadata,
+            )
+            card.push_to_hub(
+                token=self.config.token,
+                repo_id=self._repo_id(name),
+                repo_type=self.REPO_TYPE,
+            )
 
-    #     return StackValidator(
-    #         required_components={
-    #             StackComponentType.EXPERIMENT_TRACKER,
-    #         },
-    #         custom_validation_function=_validate_stack_requirements,
-    #     )
+    # ---------
+    # Model Registration Methods
+    # ---------
 
-    # # ---------
-    # # Model Registration Methods
-    # # ---------
+    def register_model(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> RegisteredModel:
+        """Registers a model in the model registry.
 
-    # def register_model(
-    #     self,
-    #     name: str,
-    #     description: Optional[str] = None,
-    #     metadata: Optional[Dict[str, str]] = None,
-    # ) -> RegisteredModel:
-    #     """Register a model to the MLflow model registry.
+        Args:
+            name: The name of the registered model.
+            description: The description of the registered model.
+            metadata: The metadata associated with the registered model.
 
-    #     Args:
-    #         name: The name of the model.
-    #         description: The description of the model.
-    #         metadata: The metadata of the model.
+        Returns:
+            The registered model.
+        """
+        self.api.create_repo(
+            repo_id=self._repo_id(name),
+            repo_type=self.REPO_TYPE,
+            exist_ok=False,
+        )
 
-    #     Raises:
-    #         RuntimeError: If the model already exists.
+        self._push_model_card(
+            name=name,
+            description=description,
+            metadata=metadata,
+        )
 
-    #     Returns:
-    #         The registered model.
-    #     """
-    #     # Check if model already exists.
-    #     try:
-    #         self.get_model(name)
-    #         raise KeyError(
-    #             f"Model with name {name} already exists in the MLflow model "
-    #             f"registry. Please use a different name.",
-    #         )
-    #     except KeyError:
-    #         pass
-    #     # Register model.
-    #     try:
-    #         registered_model = self.mlflow_client.create_registered_model(
-    #             name=name,
-    #             description=description,
-    #             tags=metadata,
-    #         )
-    #     except MlflowException as e:
-    #         raise RuntimeError(
-    #             f"Failed to register model with name {name} to the MLflow "
-    #             f"model registry: {str(e)}",
-    #         )
+        return RegisteredModel(
+            name=name,
+            description=description,
+            metadata=metadata,
+        )
 
-    #     # Return the registered model.
-    #     return RegisteredModel(
-    #         name=registered_model.name,
-    #         description=registered_model.description,
-    #         metadata=registered_model.tags,
-    #     )
+    def delete_model(
+        self,
+        name: str,
+    ) -> None:
+        """Deletes a registered model from the model registry.
 
-    # def delete_model(
-    #     self,
-    #     name: str,
-    # ) -> None:
-    #     """Delete a model from the MLflow model registry.
+        Args:
+            name: The name of the registered model.
+        """
+        self._model_exists()
+        self.api.delete_repo(repo_id=name)
 
-    #     Args:
-    #         name: The name of the model.
+    def update_model(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+        remove_metadata: Optional[List[str]] = None,
+        revision: Optional[str] = None,
+    ) -> RegisteredModel:
+        """Updates a registered model in the model registry.
 
-    #     Raises:
-    #         RuntimeError: If the model does not exist.
-    #     """
-    #     # Check if model exists.
-    #     self.get_model(name=name)
-    #     # Delete the registered model.
-    #     try:
-    #         self.mlflow_client.delete_registered_model(
-    #             name=name,
-    #         )
-    #     except MlflowException as e:
-    #         raise RuntimeError(
-    #             f"Failed to delete model with name {name} from MLflow model "
-    #             f"registry: {str(e)}",
-    #         )
+        Args:
+            name: The name of the registered model.
+            description: The description of the registered model.
+            metadata: The metadata associated with the registered model.
+            remove_metadata: The metadata to remove from the registered model.
+            revision: The revision to update model card in.
+        """
+        self._model_exists()
 
-    # def update_model(
-    #     self,
-    #     name: str,
-    #     description: Optional[str] = None,
-    #     metadata: Optional[Dict[str, str]] = None,
-    #     remove_metadata: Optional[List[str]] = None,
-    # ) -> RegisteredModel:
-    #     """Update a model in the MLflow model registry.
+        card = ModelCard.load(
+            token=self.config.token,
+            repo_id_or_path=self._repo_id(name),
+            repo_type=self.REPO_TYPE,
+        )
 
-    #     Args:
-    #         name: The name of the model.
-    #         description: The description of the model.
-    #         metadata: The metadata of the model.
-    #         remove_metadata: The metadata to remove from the model.
+        remove_metadata = remove_metadata or []
+        for k, v in card.data.to_dict().items():
+            if k not in remove_metadata:
+                if k == "description":
+                    description = description or v
+                else:
+                    metadata[k] = v
 
-    #     Raises:
-    #         RuntimeError: If mlflow fails to update the model.
+        self._push_model_card(
+            name=name,
+            description=description,
+            metadata=metadata,
+            revision=revision,
+        )
 
-    #     Returns:
-    #         The updated model.
-    #     """
-    #     # Check if model exists.
-    #     self.get_model(name=name)
-    #     # Update the registered model description.
-    #     if description:
-    #         try:
-    #             self.mlflow_client.update_registered_model(
-    #                 name=name,
-    #                 description=description,
-    #             )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to update description for the model {name} in MLflow "
-    #                 f"model registry: {str(e)}",
-    #             )
-    #     # Update the registered model tags.
-    #     if metadata:
-    #         try:
-    #             for tag, value in metadata.items():
-    #                 self.mlflow_client.set_registered_model_tag(
-    #                     name=name,
-    #                     key=tag,
-    #                     value=value,
-    #                 )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to update tags for the model {name} in MLflow model "
-    #                 f"registry: {str(e)}",
-    #             )
-    #     # Remove tags from the registered model.
-    #     if remove_metadata:
-    #         try:
-    #             for tag in remove_metadata:
-    #                 self.mlflow_client.delete_registered_model_tag(
-    #                     name=name,
-    #                     key=tag,
-    #                 )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to remove tags for the model {name} in MLflow model "
-    #                 f"registry: {str(e)}",
-    #             )
-    #     # Return the updated registered model.
-    #     return self.get_model(name)
+        return RegisteredModel(
+            name=name,
+            description=description,
+            metadata=metadata,
+        )
 
-    # def get_model(self, name: str) -> RegisteredModel:
-    #     """Get a model from the MLflow model registry.
+    def get_model(self, name: str) -> RegisteredModel:
+        """Gets a registered model from the model registry.
 
-    #     Args:
-    #         name: The name of the model.
+        Args:
+            name: The name of the registered model.
 
-    #     Returns:
-    #         The model.
+        Returns:
+            The registered model.
 
-    #     Raises:
-    #         KeyError: If mlflow fails to get the model.
-    #     """
-    #     # Get the registered model.
-    #     try:
-    #         registered_model = self.mlflow_client.get_registered_model(
-    #             name=name,
-    #         )
-    #     except MlflowException as e:
-    #         raise KeyError(
-    #             f"Failed to get model with name {name} from the MLflow model "
-    #             f"registry: {str(e)}",
-    #         )
-    #     # Return the registered model.
-    #     return RegisteredModel(
-    #         name=registered_model.name,
-    #         description=registered_model.description,
-    #         metadata=registered_model.tags,
-    #     )
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model does not exist.
+            RuntimeError: If retrieval fails.
+        """
+        self._model_exists(name)
 
-    # def list_models(
-    #     self,
-    #     name: Optional[str] = None,
-    #     metadata: Optional[Dict[str, str]] = None,
-    # ) -> List[RegisteredModel]:
-    #     """List models in the MLflow model registry.
+        card = ModelCard.load(
+            token=self.config.token,
+            repo_id_or_path=self._repo_id(name),
+            repo_type=self.REPO_TYPE,
+        )
 
-    #     Args:
-    #         name: A name to filter the models by.
-    #         metadata: The metadata to filter the models by.
+        metadata = card.data.to_dict()
+        description = metadata.get("description", None)
+        if "description" in metadata:
+            metadata.pop("description")
 
-    #     Returns:
-    #         A list of models (RegisteredModel)
-    #     """
-    #     # Set the filter string.
-    #     filter_string = ""
-    #     if name:
-    #         filter_string += f"name='{name}'"
-    #     if metadata:
-    #         for tag, value in metadata.items():
-    #             if filter_string:
-    #                 filter_string += " AND "
-    #             filter_string += f"tags.{tag}='{value}'"
+        return RegisteredModel(
+            name=name,
+            description=description,
+            metadata=metadata,
+        )
 
-    #     # Get the registered models.
-    #     registered_models = self.mlflow_client.search_registered_models(
-    #         filter_string=filter_string,
-    #         max_results=100,
-    #     )
-    #     # Return the registered models.
-    #     return [
-    #         RegisteredModel(
-    #             name=registered_model.name,
-    #             description=registered_model.description,
-    #             metadata=registered_model.tags,
-    #         )
-    #         for registered_model in registered_models
-    #     ]
+    def list_models(
+        self,
+        name: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> List[RegisteredModel]:
+        """Lists all registered models in the model registry.
 
-    # # ---------
-    # # Model Version Methods
-    # # ---------
+        Args:
+            name: The name of the registered model.
+            metadata: The metadata associated with the registered model.
 
-    # def register_model_version(
-    #     self,
-    #     name: str,
-    #     version: Optional[str] = None,
-    #     model_source_uri: Optional[str] = None,
-    #     description: Optional[str] = None,
-    #     metadata: Optional[ModelRegistryModelMetadata] = None,
-    #     **kwargs: Any,
-    # ) -> ModelVersion:
-    #     """Register a model version to the MLflow model registry.
+        Returns:
+            A list of registered models.
+        """
+        fetched_models = []
+        for model in self.api.list_models(author=self.config.user):
+            found_name = model.modelId.split("/")[1]
 
-    #     Args:
-    #         name: The name of the model.
-    #         model_source_uri: The source URI of the model.
-    #         version: The version of the model.
-    #         description: The description of the model version.
-    #         metadata: The registry metadata of the model version.
-    #         **kwargs: Additional keyword arguments.
+            card = ModelCard.load(
+                token=self.config.token,
+                repo_id_or_path=model.modelId,
+                repo_type=self.REPO_TYPE,
+            )
 
-    #     Raises:
-    #         RuntimeError: If the registered model does not exist.
+            found_metadata = card.data.to_dict()
+            description = found_metadata.get("description", None)
+            if "description" in found_metadata:
+                found_metadata.pop("description")
 
-    #     Returns:
-    #         The registered model version.
-    #     """
-    #     # Check if the model exists, if not create it.
-    #     try:
-    #         self.get_model(name=name)
-    #     except KeyError:
-    #         logger.info(
-    #             f"No registered model with name {name} found. Creating a new"
-    #             "registered model."
-    #         )
-    #         self.register_model(
-    #             name=name,
-    #         )
-    #     try:
-    #         # Inform the user that the version is ignored.
-    #         if version:
-    #             logger.info(
-    #                 f"MLflow model registry does not take a version as an argument. "
-    #                 f"Registering a new version for the model `'{name}'` "
-    #                 f"a version will be assigned automatically."
-    #             )
-    #         metadata_dict = metadata.dict() if metadata else {}
-    #         # Set the run ID and link.
-    #         run_id = metadata_dict.get("mlflow_run_id", None)
-    #         run_link = metadata_dict.get("mlflow_run_link", None)
-    #         # Register the model version.
-    #         registered_model_version = self.mlflow_client.create_model_version(
-    #             name=name,
-    #             source=model_source_uri,
-    #             run_id=run_id,
-    #             run_link=run_link,
-    #             description=description,
-    #             tags=metadata_dict,
-    #         )
-    #     except MlflowException as e:
-    #         raise RuntimeError(
-    #             f"Failed to register model version with name '{name}' and "
-    #             f"version '{version}' to the MLflow model registry."
-    #             f"Error: {e}"
-    #         )
-    #     # Return the registered model version.
-    #     return self._cast_mlflow_version_to_model_version(
-    #         registered_model_version
-    #     )
+            name_filter = name is None or found_name == name
 
-    # def delete_model_version(
-    #     self,
-    #     name: str,
-    #     version: str,
-    # ) -> None:
-    #     """Delete a model version from the MLflow model registry.
+            metadata_filter = True
+            if metadata is not None and name_filter:
+                for k, v in metadata.items():
+                    metadata_filter &= (
+                        k in found_metadata and found_metadata[k] == v
+                    )
+                    if not metadata_filter:
+                        break
 
-    #     Args:
-    #         name: The name of the model.
-    #         version: The version of the model.
+            if name_filter and metadata_filter:
+                fetched_models.append(
+                    RegisteredModel(
+                        name=found_name,
+                        description=description,
+                        metadata=found_metadata,
+                    )
+                )
+        return fetched_models
 
-    #     Raises:
-    #         RuntimeError: If mlflow fails to delete the model version.
-    #     """
-    #     self.get_model_version(name=name, version=version)
-    #     try:
-    #         self.mlflow_client.delete_model_version(
-    #             name=name,
-    #             version=version,
-    #         )
-    #     except MlflowException as e:
-    #         raise RuntimeError(
-    #             f"Failed to delete model version '{version}' of model '{name}'."
-    #             f"From the MLflow model registry: {str(e)}",
-    #         )
+    # ---------
+    # Model Version Methods
+    # ---------
 
-    # def update_model_version(
-    #     self,
-    #     name: str,
-    #     version: str,
-    #     description: Optional[str] = None,
-    #     metadata: Optional[ModelRegistryModelMetadata] = None,
-    #     remove_metadata: Optional[List[str]] = None,
-    #     stage: Optional[ModelVersionStage] = None,
-    # ) -> ModelVersion:
-    #     """Update a model version in the MLflow model registry.
+    def register_model_version(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        model_source_uri: Optional[str] = None,
+        description: Optional[str] = None,
+        metadata: Optional[ModelRegistryModelMetadata] = None,
+        **kwargs: Any,
+    ) -> ModelVersion:
+        """Registers a model version in the model registry.
 
-    #     Args:
-    #         name: The name of the model.
-    #         version: The version of the model.
-    #         description: The description of the model version.
-    #         metadata: The metadata of the model version.
-    #         remove_metadata: The metadata to remove from the model version.
-    #         stage: The stage of the model version.
+        Args:
+            name: The name of the registered model.
+            model_source_uri: The source URI of the model.
+            version: The version of the model version.
+            description: The description of the model version.
+            metadata: The metadata associated with the model
+                version.
+            **kwargs: Ignored.
 
-    #     Raises:
-    #         RuntimeError: If mlflow fails to update the model version.
+        Returns:
+            The registered model version.
 
-    #     Returns:
-    #         The updated model version.
-    #     """
-    #     self.get_model_version(name=name, version=version)
-    #     # Update the model description.
-    #     if description:
-    #         try:
-    #             self.mlflow_client.update_model_version(
-    #                 name=name,
-    #                 version=version,
-    #                 description=description,
-    #             )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to update the description of model version "
-    #                 f"'{name}:{version}' in the MLflow model registry: {str(e)}"
-    #             )
-    #     # Update the model tags.
-    #     if metadata:
-    #         try:
-    #             for key, value in metadata.dict().items():
-    #                 self.mlflow_client.set_model_version_tag(
-    #                     name=name,
-    #                     version=version,
-    #                     key=key,
-    #                     value=value,
-    #                 )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to update the tags of model version "
-    #                 f"'{name}:{version}' in the MLflow model registry: {str(e)}"
-    #             )
-    #     # Remove the model tags.
-    #     if remove_metadata:
-    #         try:
-    #             for key in remove_metadata:
-    #                 self.mlflow_client.delete_model_version_tag(
-    #                     name=name,
-    #                     version=version,
-    #                     key=key,
-    #                 )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to remove the tags of model version "
-    #                 f"'{name}:{version}' in the MLflow model registry: {str(e)}"
-    #             )
-    #     # Update the model stage.
-    #     if stage:
-    #         try:
-    #             self.mlflow_client.transition_model_version_stage(
-    #                 name=name,
-    #                 version=version,
-    #                 stage=stage.value,
-    #             )
-    #         except MlflowException as e:
-    #             raise RuntimeError(
-    #                 f"Failed to update the current stage of model version "
-    #                 f"'{name}:{version}' in the MLflow model registry: {str(e)}"
-    #             )
-    #     return self.get_model_version(name, version)
+        Raises:
+            RuntimeError: If registration fails.
+        """
 
-    # def get_model_version(
-    #     self,
-    #     name: str,
-    #     version: str,
-    # ) -> ModelVersion:
-    #     """Get a model version from the MLflow model registry.
+        self._model_exists(name)
 
-    #     Args:
-    #         name: The name of the model.
-    #         version: The version of the model.
+        for ref in self.api.list_repo_refs(
+            repo_id=self._repo_id(name),
+            repo_type=self.REPO_TYPE,
+        ).tags:
+            if ref.name == version:
+                raise RuntimeError(
+                    f"Model version `{version}` already registered."
+                )
 
-    #     Raises:
-    #         KeyError: If the model version does not exist.
+        if version is None:
+            version = str(uuid4())
 
-    #     Returns:
-    #         The model version.
-    #     """
-    #     # Get the model version from the MLflow model registry.
-    #     try:
-    #         mlflow_model_version = self.mlflow_client.get_model_version(
-    #             name=name,
-    #             version=version,
-    #         )
-    #     except MlflowException as e:
-    #         raise KeyError(
-    #             f"Failed to get model version '{name}:{version}' from the "
-    #             f"MLflow model registry: {str(e)}"
-    #         )
-    #     # Return the model version.
-    #     return self._cast_mlflow_version_to_model_version(
-    #         mlflow_model_version=mlflow_model_version,
-    #     )
+        upload_folder_path = os.path.abspath(model_source_uri)
+        if os.path.isfile(upload_folder_path):
+            upload_folder_path = os.path.dirname(upload_folder_path)
+        self.api.upload_folder(
+            folder_path=upload_folder_path,
+            repo_id=self._repo_id(name),
+            repo_type="model",
+        )
+        self._push_model_card(
+            name=name,
+            description=description,
+            metadata=metadata.dict() if metadata is not None else {},
+        )
+        self.api.create_tag(
+            repo_id=self._repo_id(name),
+            tag=version,
+            tag_message=description,
+            repo_type=self.REPO_TYPE,
+        )
+        return ModelVersion(
+            version=version,
+            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            model_format="hugginface",
+            registered_model=self.get_model(name),
+            description=description,
+            metadata=metadata,
+        )
 
-    # def list_model_versions(
-    #     self,
-    #     name: Optional[str] = None,
-    #     model_source_uri: Optional[str] = None,
-    #     metadata: Optional[ModelRegistryModelMetadata] = None,
-    #     stage: Optional[ModelVersionStage] = None,
-    #     count: Optional[int] = None,
-    #     created_after: Optional[datetime] = None,
-    #     created_before: Optional[datetime] = None,
-    #     order_by_date: Optional[str] = None,
-    #     **kwargs: Any,
-    # ) -> List[ModelVersion]:
-    #     """List model versions from the MLflow model registry.
+    def delete_model_version(
+        self,
+        name: str,
+        version: str,
+    ) -> None:
+        """Deletes a model version from the model registry.
 
-    #     Args:
-    #         name: The name of the model.
-    #         model_source_uri: The model source URI.
-    #         metadata: The metadata of the model version.
-    #         stage: The stage of the model version.
-    #         count: The maximum number of model versions to return.
-    #         created_after: The minimum creation time of the model versions.
-    #         created_before: The maximum creation time of the model versions.
-    #         order_by_date: The order of the model versions by creation time,
-    #             either ascending or descending.
-    #         kwargs: Additional keyword arguments.
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to delete.
+        """
+        self._model_exists(name)
 
-    #     Returns:
-    #         The model versions.
-    #     """
-    #     # Set the filter string.
-    #     filter_string = ""
-    #     if name:
-    #         filter_string += f"name='{name}'"
-    #     if model_source_uri:
-    #         if filter_string:
-    #             filter_string += " AND "
-    #         filter_string += f"source='{model_source_uri}'"
-    #     if "mlflow_run_id" in kwargs and kwargs["mlflow_run_id"]:
-    #         if filter_string:
-    #             filter_string += " AND "
-    #         filter_string += f"run_id='{kwargs['mlflow_run_id']}'"
-    #     if metadata:
-    #         for tag, value in metadata.dict().items():
-    #             if value:
-    #                 if filter_string:
-    #                     filter_string += " AND "
-    #                 filter_string += f"tags.{tag}='{value}'"
-    #     # Get the model versions.
-    #     mlflow_model_versions = self.mlflow_client.search_model_versions(
-    #         filter_string=filter_string,
-    #     )
-    #     # Cast the MLflow model versions to the ZenML model version class.
-    #     model_versions = []
-    #     for mlflow_model_version in mlflow_model_versions:
-    #         try:
-    #             model_versions.append(
-    #                 self._cast_mlflow_version_to_model_version(
-    #                     mlflow_model_version=mlflow_model_version,
-    #                 )
-    #             )
-    #         except (AttributeError, OSError) as e:
-    #             # Sometimes, the Model Registry in MLflow can become unusable
-    #             # due to failed version registration or misuse. In such rare
-    #             # cases, it's best to suppress those versions that are not usable.
-    #             logger.warning(
-    #                 f"Error encountered while loading MLflow model version: {e}"
-    #             )
+        self.api.delete_tag(
+            repo_id=self._repo_id(name),
+            tag=version,
+            repo_type=self.REPO_TYPE,
+        )
 
-    #     # Filter the model versions by stage.
-    #     if stage:
-    #         model_versions = [
-    #             model_version
-    #             for model_version in model_versions
-    #             if model_version.stage == stage
-    #         ]
-    #     # Filter the model versions by creation time.
-    #     if created_after:
-    #         model_versions = [
-    #             model_version
-    #             for model_version in model_versions
-    #             if model_version.created_at
-    #             and model_version.created_at >= created_after
-    #         ]
-    #     if created_before:
-    #         model_versions = [
-    #             model_version
-    #             for model_version in model_versions
-    #             if model_version.created_at
-    #             and model_version.created_at <= created_before
-    #         ]
-    #     # Sort the model versions by creation time.
-    #     if order_by_date == "asc":
-    #         model_versions = sorted(
-    #             model_versions,
-    #             key=lambda model_version: model_version.created_at
-    #             if model_version.created_at is not None
-    #             else float("-inf"),
-    #         )
-    #     elif order_by_date == "desc":
-    #         model_versions = sorted(
-    #             model_versions,
-    #             key=lambda model_version: model_version.created_at
-    #             if model_version.created_at is not None
-    #             else float("inf"),
-    #             reverse=True,
-    #         )
-    #     # Return the model versions.
-    #     if count:
-    #         return model_versions[:count]
-    #     return model_versions
+    def update_model_version(
+        self,
+        name: str,
+        version: str,
+        description: Optional[str] = None,
+        metadata: Optional[ModelRegistryModelMetadata] = None,
+        remove_metadata: Optional[List[str]] = None,
+        stage: Optional[ModelVersionStage] = None,
+    ) -> ModelVersion:
+        """Updates a model version in the model registry.
 
-    # def load_model_version(
-    #     self,
-    #     name: str,
-    #     version: str,
-    #     **kwargs: Any,
-    # ) -> Any:
-    #     """Load a model version from the MLflow model registry.
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to update.
+            description: The description of the model version.
+            metadata: Metadata associated with this model version.
+            remove_metadata: The metadata to remove from the model version.
+            stage: Not supported in Huggingface.
 
-    #     This method loads the model version from the MLflow model registry
-    #     and returns the model. The model is loaded using the `mlflow.pyfunc`
-    #     module which takes care of loading the model from the model source
-    #     URI for the right framework.
+        Returns:
+            The updated model version.
 
-    #     Args:
-    #         name: The name of the model.
-    #         version: The version of the model.
-    #         kwargs: Additional keyword arguments.
+        Raises:
+            KeyError: If the model version does not exist.
+            RuntimeError: If update fails.
+        """
+        self.api.delete_tag(
+            repo_id=self._repo_id(name),
+            tag=version,
+            repo_type=self.REPO_TYPE,
+        )
+        registered_model = self.update_model(
+            name=name,
+            description=description,
+            metadata=metadata.dict(),
+            remove_metadata=remove_metadata,
+        )
+        self.api.create_tag(
+            repo_id=self._repo_id(name),
+            tag=version,
+            tag_message=description,
+            repo_type=self.REPO_TYPE,
+        )
 
-    #     Returns:
-    #         The model version.
+        return ModelVersion(
+            version=version,
+            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            model_format="hugginface",
+            registered_model=registered_model,
+            description=description,
+            metadata=metadata,
+        )
 
-    #     Raises:
-    #         KeyError: If the model version does not exist.
-    #     """
-    #     try:
-    #         self.get_model_version(name=name, version=version)
-    #     except KeyError:
-    #         raise KeyError(
-    #             f"Failed to load model version '{name}:{version}' from the "
-    #             f"MLflow model registry: Model version does not exist."
-    #         )
-    #     # Load the model version.
-    #     mlflow_model_version = self.mlflow_client.get_model_version(
-    #         name=name,
-    #         version=version,
-    #     )
-    #     return load_model(
-    #         model_uri=mlflow_model_version.source,
-    #         **kwargs,
-    #     )
+    def list_model_versions(
+        self,
+        name: Optional[str] = None,
+        model_source_uri: Optional[str] = None,
+        metadata: Optional[ModelRegistryModelMetadata] = None,
+        stage: Optional[ModelVersionStage] = None,
+        count: Optional[int] = None,
+        created_after: Optional[datetime] = None,
+        created_before: Optional[datetime] = None,
+        order_by_date: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Optional[List[ModelVersion]]:
+        """Lists all model versions for a registered model.
 
-    # def get_model_uri_artifact_store(
-    #     self,
-    #     model_version: ModelVersion,
-    # ) -> str:
-    #     """Get the model URI artifact store.
+        Args:
+            name: The name of the registered model.
+            model_source_uri: The model source URI of the registered model.
+            metadata: Metadata associated with this model version.
+            stage: The stage of the model version.
+            count: The number of model versions to return.
+            created_after: The timestamp after which to list model versions.
+            created_before: The timestamp before which to list model versions.
+            order_by_date: Whether to sort by creation time, this can
+                be "asc" or "desc".
+            kwargs: Additional keyword arguments.
 
-    #     Args:
-    #         model_version: The model version.
+        Returns:
+            A list of model versions.
+        """
+        models = self.list_models(
+            name=name, metadata=metadata.dict() if metadata is not None else {}
+        )
 
-    #     Returns:
-    #         The model URI artifact store.
-    #     """
-    #     artifact_store_path = (
-    #         f"{Client().active_stack.artifact_store.path}/mlflow"
-    #     )
-    #     model_source_uri = model_version.model_source_uri.rsplit(":")[-1]
-    #     return artifact_store_path + model_source_uri
+        fetched_versions = []
+        for model in models:
+            for ref in self.api.list_repo_refs(
+                repo_id=self._repo_id(model.name),
+                repo_type=self.REPO_TYPE,
+            ).tags:
+                if name is not None and ref.name != name:
+                    continue
 
-    # def _cast_mlflow_version_to_model_version(
-    #     self,
-    #     mlflow_model_version: MLflowModelVersion,
-    # ) -> ModelVersion:
-    #     """Cast an MLflow model version to a model version.
+                fetched_versions.append(
+                    ModelVersion(
+                        version=ref.name,
+                        model_source_uri=f"https://huggingface.co/{self._repo_id(model.name)}/tree/{ref.name}",
+                        model_format="hugginface",
+                        registered_model=model,
+                        description=None,
+                        metadata=metadata,
+                    )
+                )
 
-    #     Args:
-    #         mlflow_model_version: The MLflow model version.
+    def get_model_version(self, name: str, version: str) -> ModelVersion:
+        """Gets a model version for a registered model.
 
-    #     Returns:
-    #         The model version.
-    #     """
-    #     metadata = mlflow_model_version.tags or {}
-    #     if mlflow_model_version.run_id:
-    #         metadata["mlflow_run_id"] = mlflow_model_version.run_id
-    #     if mlflow_model_version.run_link:
-    #         metadata["mlflow_run_link"] = mlflow_model_version.run_link
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to get.
 
-    #     try:
-    #         from mlflow.models import get_model_info
+        Returns:
+            The model version.
+        """
 
-    #         model_library = (
-    #             get_model_info(model_uri=mlflow_model_version.source)
-    #             .flavors.get("python_function", {})
-    #             .get("loader_module")
-    #         )
-    #     except ImportError:
-    #         model_library = None
-    #     return ModelVersion(
-    #         registered_model=RegisteredModel(name=mlflow_model_version.name),
-    #         model_format=MLFLOW_MODEL_FORMAT,
-    #         model_library=model_library,
-    #         version=mlflow_model_version.version,
-    #         created_at=datetime.fromtimestamp(
-    #             int(mlflow_model_version.creation_timestamp) / 1e3
-    #         ),
-    #         stage=ModelVersionStage(mlflow_model_version.current_stage),
-    #         description=mlflow_model_version.description,
-    #         last_updated_at=datetime.fromtimestamp(
-    #             int(mlflow_model_version.last_updated_timestamp) / 1e3
-    #         ),
-    #         metadata=ModelRegistryModelMetadata(**metadata),
-    #         model_source_uri=mlflow_model_version.source,
-    #     )
+        return ModelVersion(
+            version=version,
+            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            model_format="hugginface",
+            registered_model=self.get_model(name),
+            description=None,
+            metadata=None,
+        )
+
+    def load_model_version(
+        self,
+        name: str,
+        version: str,
+        path: str,
+        **kwargs: Any,
+    ) -> None:
+        """Loads a model version from the model registry.
+
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to load.
+            path: The path to load model into.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            None.
+        """
+        from zenml.client import Client
+
+        files = self.api.list_repo_files(
+            repo_id=self._repo_id(name),
+            revision=version,
+            repo_type=self.REPO_TYPE,
+        )
+
+        zenml_repo_root = Client().root
+        if not zenml_repo_root:
+            raise RuntimeError(
+                "You're running the `load_model_version` outside of a ZenML repo."
+                "Since the deployment step to huggingface is all about pushing the repo to huggingface, "
+                f"this step will not work outside of a ZenML repo where the `{path}` folder is present."
+            )
+        download_folder_path = os.path.abspath(path)
+        if not os.path.exists(download_folder_path):
+            os.makedirs(download_folder_path)
+
+        for file in files:
+            self.api.hf_hub_download(
+                repo_id=self._repo_id(name),
+                filename=file,
+                local_dir=download_folder_path,
+            )
+
+    def get_model_uri_artifact_store(
+        self,
+        model_version: ModelVersion,
+    ) -> str:
+        """Gets the URI artifact store for a model version.
+
+        This method retrieves the URI of the artifact store for a specific model
+        version. Its purpose is to ensure that the URI is in the correct format
+        for the specific artifact store being used. This is essential for the
+        model serving component, which relies on the URI to serve the model
+        version. In some cases, the URI may be stored in a different format by
+        certain model registry integrations. This method allows us to obtain the
+        URI in the correct format, regardless of the integration being used.
+
+        Note: In some cases the URI artifact store may not be available to the
+        user, the method should save the target model in one of the other
+        artifact stores supported by ZenML and return the URI of that artifact
+        store.
+
+        Args:
+            model_version: The model version for which to get the URI artifact
+                store.
+
+        Returns:
+            The URI artifact store for the model version.
+        """
+        raise NotImplementedError
