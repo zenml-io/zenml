@@ -150,7 +150,7 @@ def _find_last_successful_run(
     pipeline = get_pipeline(PIPELINE_NAME)
     if pipeline is not None:
         try:
-            last_successful_run = pipeline.last_successful_run()
+            last_successful_run = pipeline.last_successful_run
             return last_successful_run
         except RuntimeError:
             return None
@@ -163,7 +163,7 @@ def _load_last_model(context: StepContext) -> nn.Module:
         last_run = get_pipeline(PIPELINE_NAME).last_successful_run
     except RuntimeError:
         return None
-    return last_run.steps(PIPELINE_STEP_NAME).output.read()
+    return last_run.steps[PIPELINE_STEP_NAME].output.read()
 
 
 def _is_new_data_available(
