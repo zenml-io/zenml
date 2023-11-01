@@ -27,7 +27,6 @@ from torchvision import models, transforms
 from zenml.integrations.label_studio.label_studio_utils import (
     get_file_extension,
     is_azure_url,
-    is_gcs_url,
     is_s3_url,
 )
 from zenml.io import fileio
