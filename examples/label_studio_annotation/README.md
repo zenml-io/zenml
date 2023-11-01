@@ -65,26 +65,52 @@ example.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure pillow
-```
-
-For this example we also need to upgrade the `torchvision` dependency, so please
-run:
-
-```shell
-pip install "torchvision==0.13.1"
+zenml integration install pytorch azure pillow
 ```
 
 Some setup for your stack is required.
+
+A resource group will allow you to clean up any associated resources easily, so
+either create one with the following command, or reference an existing one in
+what follows. The same applies to the storage account and container that we'll
+create and use:
+
+```bash
+az group create --name <YOUR_RESOURCE_GROUP_NAME> --location northeurope
+
+az storage account create --name <YOUR_STORAGE_ACCOUNT_NAME> --resource-group <YOUR_RESOURCE_GROUP_NAME> --location northeurope --sku Standard_ZRS --encryption-services blob
+
+az storage container create \
+    --account-name <YOUR_STORAGE_ACCOUNT_NAME> \
+    --name <YOUR_CONTAINER_NAME> \
+    --auth-mode login
+```
+
+At this point you'll want to get a storage account key with the following
+command:
+
+```bash
+az storage account keys list --account-name <YOUR_STORAGE_ACCOUNT_NAME>
+```
+
+You can pick either of the 'value' properties to use for the `--account-key`
+value for the following command that adds CORS permissions to your storage
+account:
+
+```bash
+az storage cors add --origins '*' --methods GET --allowed-headers '*' --exposed-headers 'Access-Control-Allow-Origin' --max-age 3600 --services blob --account-key <YOUR_STORAGE_ACCOUNT_KEY> --account-name <YOUR_STORAGE_ACCOUNT_NAME>
+```
+
+Now we can set up all the necessary ZenML components:
 
 ```shell
 zenml stack copy default <ANNOTATION_STACK_NAME>
 
 zenml stack set <ANNOTATION_STACK_NAME>
 
-zenml secret create <YOUR_AZURE_AUTH_SECRET_NAME> --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
+zenml secret create <YOUR_AZURE_AUTH_SECRET_NAME> --account_name="<YOUR_STORAGE_ACCOUNT_NAME>" --account_key="<YOUR_STORAGE_ACCOUNT_KEY>"
 
-zenml artifact-store register azure_artifact_store -f azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
+zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> -f azure --path="az://<YOUR_CONTAINER_NAME>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
@@ -93,6 +119,15 @@ zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+```
+
+At this point you should stop (`CTRL-C`) Label Studio, set the following two
+environment variables (or do it wherever is appropriate if you have a deployed
+Label Studio instance) before restarting Label Studio:
+
+```bash
+export AZURE_BLOB_ACCOUNT_NAME="<YOUR_STORAGE_ACCOUNT_NAME>"
+export AZURE_BLOB_ACCOUNT_KEY="<YOUR_STORAGE_ACCOUNT_KEY>"
 ```
 
 ### 🥞 Set up your stack for GCP
