@@ -18,12 +18,12 @@
 
 from typing import Tuple
 
-from config import MetaConfig
 from typing_extensions import Annotated
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import ModelVersionStage
 
 logger = get_logger(__name__)
 
@@ -46,16 +46,17 @@ def promote_get_versions() -> (
     """
 
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
+    pipeline_extra = get_step_context().pipeline_run.config.extra
     none_versions = model_registry.list_model_versions(
-        name=MetaConfig.mlflow_model_name,
+        name=pipeline_extra["mlflow_model_name"],
         stage=None,
     )
     latest_versions = none_versions[0].version
     logger.info(f"Latest model version is {latest_versions}")
 
     target_versions = model_registry.list_model_versions(
-        name=MetaConfig.mlflow_model_name,
-        stage=MetaConfig.target_env,
+        name=pipeline_extra["mlflow_model_name"],
+        stage=ModelVersionStage(pipeline_extra["target_env"]),
     )
     current_version = latest_versions
     if target_versions:
