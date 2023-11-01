@@ -18,7 +18,6 @@
 
 import mlflow
 import pandas as pd
-from artifacts.model_metadata import ModelMetadata
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
@@ -28,6 +27,7 @@ from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
 from zenml.logger import get_logger
+from zenml.model import ModelArtifactConfig
 
 logger = get_logger(__name__)
 
@@ -45,10 +45,9 @@ if not experiment_tracker or not isinstance(
 @step(experiment_tracker=experiment_tracker.name)
 def model_trainer(
     dataset_trn: pd.DataFrame,
-    model_config: ModelMetadata,
+    model: ClassifierMixin,
     target: str,
-    random_seed: int = 42,
-) -> Annotated[ClassifierMixin, "model"]:
+) -> Annotated[ClassifierMixin, "model", ModelArtifactConfig()]:
     """Configure and train a model on the training dataset.
 
     This is an example of a model training step that takes in a dataset artifact
@@ -72,9 +71,8 @@ def model_trainer(
 
     Args:
         dataset_trn: The preprocessed train dataset.
-        model_config: `ModelMetadata` to train on
+        model: The model instance to train.
         target: Name of target columns in dataset.
-        random_seed: Fixed seed of random generator.
 
     Returns:
         The trained model artifact.
@@ -83,13 +81,6 @@ def model_trainer(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Initialize the model with the hyperparameters indicated in the step
     # parameters and train it on the training set.
-    hyperparameters = model_config.params
-    model_class = model_config.model_class
-    if "random_seed" in model_class.__init__.__code__.co_varnames:
-        model = model_class(random_seed=random_seed, **hyperparameters)
-    else:
-        model = model_class(**hyperparameters)
-
     logger.info(f"Training model {model}...")
     mlflow.sklearn.autolog()
     model.fit(

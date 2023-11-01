@@ -16,8 +16,7 @@
 #
 
 
-from artifacts.materializer import ModelMetadataMaterializer
-from artifacts.model_metadata import ModelMetadata
+from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
 from zenml import get_step_context, step
@@ -27,10 +26,10 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(output_materializers=ModelMetadataMaterializer)
+@step
 def hp_tuning_select_best_model(
     search_steps_prefix: str,
-) -> Annotated[ModelMetadata, "best_model"]:
+) -> Annotated[ClassifierMixin, "best_model"]:
     """Find best model across all HP tuning attempts.
 
     This is an example of a model hyperparameter tuning step that takes
@@ -48,12 +47,13 @@ def hp_tuning_select_best_model(
     run = Client().get_pipeline_run(run_name)
 
     best_model = None
+    best_metric = -1
     for run_step_name, run_step in run.steps.items():
         if run_step_name.startswith(search_steps_prefix):
-            for output_name, output in run_step.outputs.items():
-                if output_name == "best_model":
-                    model: ModelMetadata = output.load()
-                    if best_model is None or best_model.metric < model.metric:
-                        best_model = model
+            if "best_model" in run_step.outputs:
+                model: ClassifierMixin = run_step.outputs["best_model"].load()
+                metric: float = run_step.outputs["metric"].load()
+                if best_model is None or best_metric < metric:
+                    best_model = model
     ### YOUR CODE ENDS HERE ###
-    return best_model or ModelMetadata(None)  # for types compatibility
+    return best_model
