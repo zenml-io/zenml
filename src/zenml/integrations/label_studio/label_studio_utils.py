@@ -62,7 +62,7 @@ def convert_pred_filenames_to_task_ids(
 
     # GCS and S3 URL encodes filenames containing spaces, requiring this
     # separate encoding step
-    if storage_type == "gcs":
+    if storage_type in ["gcs", "azure"]:
         # we remove the scheme from the URL to match the pred to the Label
         # Studio task
         preds = [
