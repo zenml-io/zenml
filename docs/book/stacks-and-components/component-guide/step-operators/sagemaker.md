@@ -54,10 +54,6 @@ To use the SageMaker step operator, we need:
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack. This is needed so that both
   your orchestration environment and SageMaker can read and write step artifacts. Check out the documentation page of
   the artifact store you want to use for more information on how to set that up and configure authentication for it.
-* If using a [local orchestrator](../orchestrators/local.md): The `aws` cli set up and authenticated. Make sure you have
-  the permissions to create and manage SageMaker runs.
-* If using a remote orchestrator: The environment in which the orchestrator runs its containers needs to be able to
-  assume the IAM role specified when registering the SageMaker step operator.
 * An instance type that we want to execute our steps on.
   See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html) for a list of
   available instance types.
@@ -65,7 +61,50 @@ To use the SageMaker step operator, we need:
   Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an
   experiment.
 
-We can then register the step operator and use it in our active stack:
+
+There are two ways you can authenticate your orchestrator to AWS to be able to
+run steps on SageMaker:
+
+{% tabs %}
+{% tab title="Authentication via Service Connector" %}
+
+The recommended way to authenticate your SageMaker step operator is by
+registering or using an existing
+[AWS Service Connector](../../auth-management/aws-service-connector.md) and
+connecting it to your SageMaker step operator. The credentials configured for
+the connector must have permissions to create and manage SageMaker
+runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses
+these `aws-generic` resource type, so make sure to configure the connector
+accordingly:
+
+```shell
+zenml service-connector register <CONNECTOR_NAME> --type aws -i
+zenml step-operator register <STEP_OPERATOR_NAME> \
+    --flavor=sagemaker \
+    --role=<SAGEMAKER_ROLE> \
+    --instance_type=<INSTANCE_TYPE> \
+#   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign this run to
+
+zenml step-operator connect <STEP_OPERATOR_NAME> --connector <CONNECTOR_NAME>
+zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
+```
+
+{% endtab %}
+{% tab title="Implicit Authentication" %}
+
+If you don't connect your step operator to a service connector:
+
+* If using a [local orchestrator](../orchestrators/local.md): ZenML will try
+to implicitly authenticate to AWS via the `default` profile in your local
+[AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+Make sure this profile has permissions to create and manage SageMaker runs
+(e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions).
+* If using a remote orchestrator: the remote environment in which the
+orchestrator runs needs to be able to implicitly authenticate to AWS and assume
+the IAM role specified when registering the SageMaker step operator. This is
+only possible if the orchestrator is also running in AWS and uses a form of
+implicit workload authentication like the IAM role of an EC2 instance. If this
+is not the case, you will need to use a service connector.
 
 ```shell
 zenml step-operator register <NAME> \
@@ -74,9 +113,12 @@ zenml step-operator register <NAME> \
     --instance_type=<INSTANCE_TYPE> \
 #   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign this run to
 
-# Add the step operator to the active stack
-zenml stack update -s <NAME>
+zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
+python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
+
+{% endtab %}
+{% endtabs %}
 
 Once you added the step operator to your active stack, you can use it to execute individual steps of your pipeline by
 specifying it in the `@step` decorator as follows:

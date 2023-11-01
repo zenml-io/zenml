@@ -1,5 +1,32 @@
 <!-- markdown-link-check-disable -->
 
+# 0.45.6
+
+This release brings an array of enhancements and refinements. Notable improvements include 
+allowing for `disconnecting` service connectors from stack components, adding connector support to the
+sagemaker step operator, turning synchronous mode on by default for all orchestrators, and enabling
+server-side component config validation. 
+
+## What's Changed
+* Updating `README.md` and update images by @znegrin in https://github.com/zenml-io/zenml/pull/1986
+* Always set the active workspace to be the default workspace server side by @stefannica in https://github.com/zenml-io/zenml/pull/1989
+* Update outdated CLI docs by @strickvl in https://github.com/zenml-io/zenml/pull/1990
+* Turn synchronous mode on by default for all orchestrators by @stefannica in https://github.com/zenml-io/zenml/pull/1991
+* Use docker credentials in the skypilot orchestrator by @stefannica in https://github.com/zenml-io/zenml/pull/1983
+* Add missing space to `@step` warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1994
+* Fix sagemaker orchestrator and step operator env vars and other minor bugs  by @stefannica in https://github.com/zenml-io/zenml/pull/1993
+* fix: `BasePyTorchMaterliazer` -> `Materializer` by @cameronraysmith in https://github.com/zenml-io/zenml/pull/1969
+* allow calling old base pytorch materilizzer by @safoinme in https://github.com/zenml-io/zenml/pull/1997
+* Add connector support to sagemaker step operator. by @stefannica in https://github.com/zenml-io/zenml/pull/1996
+* Server-Side Component Config Validation by @fa9r in https://github.com/zenml-io/zenml/pull/1988
+* Allow disconnecting service-connector from stack component by @safoinme in https://github.com/zenml-io/zenml/pull/1864
+
+## New Contributors
+* @znegrin made their first contribution in https://github.com/zenml-io/zenml/pull/1986
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.5...test
+
+
 # 0.45.5
 
 This minor release contains bugfixes and documentation improvements. Notably,
