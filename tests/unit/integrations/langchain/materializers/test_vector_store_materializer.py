@@ -18,12 +18,12 @@ from tests.unit.test_general import _test_materializer
 
 def test_langchain_vectorstore_materializer(clean_client):
     """Tests the Langchain Vector Store materializer."""
+    from langchain.embeddings.openai import OpenAIEmbeddings
+    from langchain.vectorstores import SKLearnVectorStore
+
     from zenml.integrations.langchain.materializers.vector_store_materializer import (
         LangchainVectorStoreMaterializer,
     )
-
-    from langchain.vectorstores import SKLearnVectorStore
-    from langchain.embeddings.openai import OpenAIEmbeddings
 
     embeddings = OpenAIEmbeddings()
     langchain_vector_store = _test_materializer(
