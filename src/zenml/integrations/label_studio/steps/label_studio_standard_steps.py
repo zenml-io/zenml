@@ -18,9 +18,6 @@ from urllib.parse import urlparse
 
 from zenml.client import Client
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.label_studio.label_config_generators import (
-    TASK_TO_FILENAME_REFERENCE_MAPPING,
-)
 from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
 )
@@ -230,15 +227,9 @@ def sync_new_data_to_label_studio(
             dataset=dataset,
         )
         if predictions:
-            filename_reference = TASK_TO_FILENAME_REFERENCE_MAPPING[
-                params.label_config_type
-            ]
-
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
                 predictions,
                 dataset.tasks,
-                filename_reference,
-                params.storage_type,
             )
             # TODO: filter out any predictions that exist + have already been
             # made (maybe?). Only pass in preds for tasks without pre-annotations.
