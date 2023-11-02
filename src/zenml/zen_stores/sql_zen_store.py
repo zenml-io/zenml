@@ -148,6 +148,7 @@ from zenml.models import (
     ServerDatabaseType,
     ServerModel,
     ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
     ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
@@ -1915,40 +1916,6 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def create_service_account(
-        self, account: ServiceAccountRequestModel
-    ) -> UserResponseModel:
-        """Creates a new service account.
-
-        Args:
-            account: Service account to be created.
-
-        Returns:
-            The newly created service account
-
-        Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if user with the given name already exists
-            existing_user = session.exec(
-                select(UserSchema).where(UserSchema.name == account.name)
-            ).first()
-            if existing_user is not None:
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{account.name}': Found existing user or service account "
-                    "with this name."
-                )
-
-            # Create the service account
-            new_account = UserSchema.from_service_account_request(account)
-            session.add(new_account)
-            session.commit()
-
-            return new_account.to_model()
-
     def get_user(
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -1986,6 +1953,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
+            if user.is_service_account:
+                # We prevent service accounts from being used for user
+                # authentication
+                raise KeyError(
+                    f"Unable to get user account with name or ID "
+                    f"'{user_name_or_id}': No user with this ID found."
+                )
             return UserAuthModel(
                 id=user.id,
                 name=user.name,
@@ -1996,7 +1970,7 @@ class SqlZenStore(BaseZenStore):
                 updated=user.updated,
                 password=user.password,
                 activation_token=user.activation_token,
-                service_account=user.service_account,
+                is_service_account=user.is_service_account,
             )
 
     def list_users(
@@ -2039,6 +2013,18 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_user = self._get_user_schema(user_id, session=session)
+            if existing_user.is_service_account:
+                # Given that service accounts are a subset of users and
+                # represented in the DB using the same UserSchema, we need to
+                # explicitly prevent service accounts from being managed as
+                # regular user accounts here.
+                raise IllegalOperationError(
+                    f"The '{existing_user.name}' account is a service account. "
+                    "Service accounts cannot be updated as regular user "
+                    "accounts. Please use the service account interface "
+                    "instead."
+                )
+
             if (
                 existing_user.name == self._default_user_name
                 and "name" in user_update.__fields_set__
@@ -2048,6 +2034,7 @@ class SqlZenStore(BaseZenStore):
                     "The username of the default user account cannot be "
                     "changed."
                 )
+
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
@@ -2067,14 +2054,190 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
+            if user.is_service_account:
+                # Given that service accounts are a subset of users and
+                # represented in the DB using the same UserSchema, we need to
+                # explicitly prevent service accounts from being managed as
+                # regular user accounts here.
+                raise IllegalOperationError(
+                    f"The '{user.name}' account is a service account. "
+                    "Service accounts cannot be deleted as regular user "
+                    "accounts. Please use the service account interface "
+                    "instead."
+                )
             if user.name == self._default_user_name:
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
                 )
-
             self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
 
             session.delete(user)
+            session.commit()
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    def _get_service_account(
+        self, service_account_name_or_id: Union[str, UUID], session: Session
+    ) -> UserSchema:
+        """Helper method to fetch a service account by name or ID.
+
+        This is used on top of `_get_user_schema` to additionally filter
+        only user schemas that are service accounts. This is required because
+        in the DB, user accounts and service accounts are stored using the same
+        UserSchema for legacy reasons.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account
+                to fetch.
+            session: The database session to use for the query.
+
+        Returns:
+            The requested service account.
+
+        Raises:
+            KeyError: if the name or ID identifies a regular user account
+                instead of a service account.
+        """
+        account = self._get_user_schema(
+            service_account_name_or_id, session=session
+        )
+        if not account.is_service_account:
+            raise KeyError(
+                f"Unable to get service account with name or ID "
+                f"'{service_account_name_or_id}': No service account with "
+                "this ID found."
+            )
+
+        return account
+
+    def create_service_account(
+        self, account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if a user or service account with the given name already
+            # exists
+            existing_user = session.exec(
+                select(UserSchema).where(UserSchema.name == account.name)
+            ).first()
+            if existing_user is not None:
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{account.name}': Found existing user or service account "
+                    "with this name."
+                )
+
+            # Create the service account
+            new_account = UserSchema.from_service_account_request(account)
+            session.add(new_account)
+            session.commit()
+
+            return new_account.to_service_account_model()
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Raises a KeyError in case a service account with that id does not exist.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        with Session(self.engine) as session:
+            account = self._get_service_account(
+                service_account_name_or_id, session=session
+            )
+
+            return account.to_service_account_model()
+
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        with Session(self.engine) as session:
+            query = select(UserSchema)
+            paged_service_accounts: Page[
+                ServiceAccountResponseModel
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(),
+            )
+            return paged_service_accounts
+
+    def update_service_account(
+        self,
+        service_account_id: UUID,
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_id: The id of the service account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+        """
+        with Session(self.engine) as session:
+            existing_service_account = self._get_service_account(
+                service_account_id, session=session
+            )
+            existing_service_account.update_service_account(
+                service_account_update=service_account_update
+            )
+            session.add(existing_service_account)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_service_account)
+            return existing_service_account.to_model()
+
+    def delete_service_account(
+        self, service_account_name_or_id: Union[str, UUID]
+    ) -> None:
+        """Deletes a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+        """
+        with Session(self.engine) as session:
+            service_account = self._get_service_account(
+                service_account_name_or_id, session=session
+            )
+
+            session.delete(service_account)
             session.commit()
 
     # -----

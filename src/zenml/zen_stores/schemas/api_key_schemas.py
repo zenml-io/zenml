@@ -32,7 +32,6 @@ from zenml.models import (
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class APIKeySchema(NamedSchema, table=True):
@@ -48,25 +47,15 @@ class APIKeySchema(NamedSchema, table=True):
     last_used: datetime = Field(default_factory=datetime.utcnow)
     last_rotated: datetime = Field(default_factory=datetime.utcnow)
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="api_keys")
-
-    user_id: UUID = build_foreign_key_field(
+    service_account_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
-        source_column="user_id",
+        source_column="service_account_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    user: "UserSchema" = Relationship(back_populates="api_keys")
+    service_account: "UserSchema" = Relationship(back_populates="api_keys")
 
     @classmethod
     def _generate_jwt_secret_key(cls) -> str:
@@ -111,8 +100,7 @@ class APIKeySchema(NamedSchema, table=True):
                 name=request.name,
                 description=request.description,
                 key=hashed_key,
-                workspace_id=request.workspace,
-                user_id=request.user,
+                service_account_id=request.service_account,
                 created=now,
                 updated=now,
                 last_used=now,
@@ -133,8 +121,9 @@ class APIKeySchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             description=self.description,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
+            service_account=self.service_account.to_service_account_model(
+                True
+            ),
             created=self.created,
             updated=self.updated,
             last_used=self.last_used,
@@ -159,8 +148,9 @@ class APIKeySchema(NamedSchema, table=True):
             description=self.description,
             key=self.key,
             previous_key=self.previous_key,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
+            service_account=self.service_account.to_service_account_model(
+                True
+            ),
             created=self.created,
             updated=self.updated,
             last_used=self.last_used,

@@ -50,7 +50,7 @@ logger = get_logger(__name__)
 
 
 class UserBaseModel(BaseModel):
-    """Base model for users."""
+    """Base model for user and service accounts."""
 
     name: str = Field(
         title="The unique username for the account.",
@@ -58,24 +58,27 @@ class UserBaseModel(BaseModel):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner.",
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
     email_opted_in: Optional[bool] = Field(
         default=None,
-        title="Whether the user agreed to share their email.",
+        title="Whether the user agreed to share their email. Only relevant for "
+        "user accounts",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
 
     hub_token: Optional[str] = Field(
         default=None,
-        title="JWT Token for the connected Hub account.",
+        title="JWT Token for the connected Hub account. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    active: bool = Field(default=False, title="Active account.")
+    active: bool = Field(default=False, title="Whether the account is active.")
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -109,7 +112,7 @@ class ExternalUserModel(BaseModel):
 
 
 class UserResponseModel(UserBaseModel, BaseResponseModel):
-    """Response model for users.
+    """Response model for user and service accounts.
 
     This returns the activation_token (which is required for the
     user-invitation-flow of the frontend. This also optionally includes the
@@ -122,11 +125,17 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         "full_name",
         "active",
         "email_opted_in",
-        "service_account",
+        "is_service_account",
     ]
 
+    is_service_account: bool = Field(
+        title="Indicates whether this is a service account or a user account."
+    )
     activation_token: Optional[str] = Field(
-        default=None, max_length=STR_FIELD_MAX_LENGTH
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+        title="The activation token for the user. Only relevant for user "
+        "accounts.",
     )
     teams: Optional[List["TeamResponseModel"]] = Field(
         default=None, title="The list of teams for this user."
@@ -136,16 +145,14 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     )
     email: Optional[str] = Field(
         default="",
-        title="The email address associated with the account.",
+        title="The email address associated with the account. Only relevant "
+        "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     external_user_id: Optional[UUID] = Field(
         default=None,
-        title="The external user ID associated with the account.",
-    )
-    service_account: bool = Field(
-        title="Indicates whether this is a service account or a regular user "
-        "account."
+        title="The external user ID associated with the account. Only relevant "
+        "for user accounts.",
     )
 
 
@@ -157,7 +164,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
     """
 
     active: bool = Field(default=False, title="Active account.")
-    service_account: bool = Field(
+    is_service_account: bool = Field(
         title="Indicates whether this is a service account or a regular user "
         "account."
     )
@@ -245,7 +252,14 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
         password_hash: Optional[str] = None
-        if user is not None and user.password is not None:  # and user.active:
+        if (
+            user is not None
+            # Disable password verification for service accounts as an extra
+            # security measure. Service accounts should only be used with API
+            # keys.
+            and not user.is_service_account
+            and user.password is not None
+        ):  # and user.active:
             password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
         return pwd_context.verify(plain_password, password_hash)
@@ -269,6 +283,10 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         token_hash: str = ""
         if (
             user is not None
+            # Disable activation tokens for service accounts as an extra
+            # security measure. Service accounts should only be used with API
+            # keys.
+            and not user.is_service_account
             and user.activation_token is not None
             and not user.active
         ):
@@ -285,6 +303,10 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 class UserFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
+    is_service_account: Optional[Union[bool, str]] = Field(
+        default=None,
+        title="Whether the account is a service account or a user account.",
+    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the user",
@@ -301,10 +323,6 @@ class UserFilterModel(BaseFilterModel):
         default=None,
         description="Whether the user is active",
     )
-    service_account: Optional[Union[bool, str]] = Field(
-        default=None,
-        title="Whether the account is a service account or a regular user.",
-    )
     email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user has opted in to emails",
@@ -318,25 +336,6 @@ class UserFilterModel(BaseFilterModel):
 # ------- #
 # REQUEST #
 # ------- #
-
-
-class ServiceAccountRequestModel(UserBaseModel, BaseRequestModel):
-    """Request model for service accounts.
-
-    This model is used to create a service account.
-    """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "name",
-        "active",
-    ]
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them
-        validate_assignment = True
-        extra = "ignore"
 
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
@@ -428,13 +427,6 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
 # ------ #
 # UPDATE #
 # ------ #
-
-
-@update_model
-class ServiceAccountUpdateModel(ServiceAccountRequestModel):
-    """Update model for service accounts."""
-
-    pass
 
 
 @update_model

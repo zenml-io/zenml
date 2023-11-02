@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -22,13 +22,17 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import ZENML_API_KEY_PREFIX
 from zenml.models.base_models import (
-    WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
+    BaseRequestModel,
+    BaseResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.filter_models import BaseFilterModel
 from zenml.utils.string_utils import b64_decode, b64_encode
+
+if TYPE_CHECKING:
+    from zenml.models.service_account_models import ServiceAccountResponseModel
+
 
 # ---- #
 # BASE #
@@ -92,8 +96,12 @@ class APIKeyBaseModel(BaseModel):
 # -------- #
 
 
-class APIKeyResponseModel(APIKeyBaseModel, WorkspaceScopedResponseModel):
+class APIKeyResponseModel(APIKeyBaseModel, BaseResponseModel):
     """Response model for API keys."""
+
+    service_account: "ServiceAccountResponseModel" = Field(
+        title="The service account associated with this API key."
+    )
 
     key: Optional[str] = Field(
         default=None,
@@ -178,7 +186,7 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
 # ------ #
 
 
-class APIKeyFilterModel(WorkspaceScopedFilterModel):
+class APIKeyFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of API keys."""
 
     name: Optional[str] = Field(
@@ -195,11 +203,8 @@ class APIKeyFilterModel(WorkspaceScopedFilterModel):
     last_rotated: Optional[Union[datetime, str]] = Field(
         default=None, title="Time when the API key was last rotated."
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Workspace that the API key belongs to"
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User that created the API key"
+    service_account_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Service account associated with the API key"
     )
 
 
@@ -208,8 +213,12 @@ class APIKeyFilterModel(WorkspaceScopedFilterModel):
 # ------- #
 
 
-class APIKeyRequestModel(APIKeyBaseModel, WorkspaceScopedRequestModel):
+class APIKeyRequestModel(APIKeyBaseModel, BaseRequestModel):
     """Request model for API keys."""
+
+    service_account: UUID = Field(
+        title="The id of the service account associated with this API key."
+    )
 
 
 class APIKeyRotateRequestModel(BaseModel):

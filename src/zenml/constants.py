@@ -225,6 +225,9 @@ DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
 API_TOKEN = "/api_token"
+SERVICE_ACCOUNTS = "/service_accounts"
+API_KEYS = "/api_keys"
+API_KEY_ROTATE = "/rotate"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

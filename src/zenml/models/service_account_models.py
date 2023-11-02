@@ -1,0 +1,137 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Models representing users."""
+
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    List,
+    Optional,
+    Union,
+)
+
+from pydantic import BaseModel, Field
+
+from zenml.logger import get_logger
+from zenml.models import BaseFilterModel, RoleResponseModel
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
+
+if TYPE_CHECKING:
+    from zenml.models.team_models import TeamResponseModel
+
+logger = get_logger(__name__)
+
+# ---- #
+# BASE #
+# ---- #
+
+
+class ServiceAccountBaseModel(BaseModel):
+    """Base model for service accounts."""
+
+    name: str = Field(
+        title="The unique username for the account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    active: bool = Field(default=False, title="Whether the account is active.")
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class ServiceAccountResponseModel(ServiceAccountBaseModel, BaseResponseModel):
+    """Response model for service accounts."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "active",
+    ]
+
+    teams: Optional[List["TeamResponseModel"]] = Field(
+        default=None, title="The list of teams for this service account."
+    )
+    roles: Optional[List["RoleResponseModel"]] = Field(
+        default=None, title="The list of roles for this service account."
+    )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class ServiceAccountFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of service accounts."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the user",
+    )
+    active: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="Whether the user is active",
+    )
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class ServiceAccountRequestModel(BaseRequestModel):
+    """Request model for service accounts.
+
+    This model is used to create a service account.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "active",
+    ]
+
+    name: str = Field(
+        title="The unique name for the service account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    active: bool = Field(
+        default=False, title="Whether the service account is active or not."
+    )
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        extra = "ignore"
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update_model
+class ServiceAccountUpdateModel(ServiceAccountRequestModel):
+    """Update model for service accounts."""
+
+    pass

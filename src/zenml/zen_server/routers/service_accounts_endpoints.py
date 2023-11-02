@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, API_KEY_ROTATE, API_KEYS, VERSION_1
+from zenml.constants import API, API_KEY_ROTATE, API_KEYS, SERVICE_ACCOUNTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
@@ -26,6 +26,8 @@ from zenml.models import (
     APIKeyResponseModel,
     APIKeyRotateRequestModel,
     APIKeyUpdateModel,
+    Serv
+    UserResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -36,11 +38,36 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
+
 router = APIRouter(
-    prefix=API + VERSION_1 + API_KEYS,
-    tags=["api_keys"],
+    prefix=API + VERSION_1 + SERVICE_ACCOUNTS,
+    tags=["service_accounts", "api_keys"],
     responses={401: error_response},
 )
+
+
+@router.get(
+    "",
+    response_model=Page[UserResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_users(
+    user_filter_model: UserFilterModel = Depends(
+        make_dependable(UserFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[UserResponseModel]:
+    """Returns a list of all users.
+
+    Args:
+        user_filter_model: Model that takes care of filtering, sorting and pagination
+
+    Returns:
+        A list of all users.
+    """
+    return zen_store().list_users(user_filter_model=user_filter_model)
+
 
 
 @router.get(

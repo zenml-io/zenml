@@ -152,6 +152,11 @@ def authenticate_credentials(
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
         try:
+            # NOTE: this method will not return a user if the user name or ID
+            # identifies a service account instead of a regular user. This
+            # is intentional because service accounts are not allowed to
+            # be used to authenticate to the API using a username and password,
+            # or an activation token.
             user = zen_store().get_auth_user(user_name_or_id)
             user_model = zen_store().get_user(
                 user_name_or_id=user_name_or_id, include_private=True

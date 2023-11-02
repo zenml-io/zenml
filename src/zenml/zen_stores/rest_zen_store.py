@@ -41,6 +41,8 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     API_TOKEN,
+    API_KEY_ROTATE,
+    API_KEYS,
     ARTIFACTS,
     CODE_REPOSITORIES,
     CURRENT_USER,
@@ -62,6 +64,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
@@ -89,6 +92,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -145,6 +153,10 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -273,19 +285,23 @@ class RestZenStoreConfiguration(StoreConfiguration):
             values: A dictionary containing the values to be validated.
 
         Raises:
-            ValueError: If neither api_token nor username is set.
+            ValueError: If neither api_token nor username nor api_key is set.
 
         Returns:
             The values dictionary.
         """
-        # Check if the values dictionary contains either an api_token or a
-        # username as non-empty strings.
-        if values.get("api_token") or values.get("username"):
+        # Check if the values dictionary contains either an API token, an API
+        # key or a username as non-empty strings.
+        if (
+            values.get("api_token")
+            or values.get("username")
+            or values.get("api_key")
+        ):
             return values
-        else:
-            raise ValueError(
-                "Neither api_token nor username is set in the store config."
-            )
+        raise ValueError(
+            "Neither api_token nor username nor api_key is set in the "
+            "store config."
+        )
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -403,7 +419,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
             path.
         """
         assert isinstance(config, RestZenStoreConfiguration)
-        assert config.api_token is not None
+        assert config.api_token is not None or config.api_key is not None
         config = config.copy(exclude={"username", "password"}, deep=True)
         # Load the certificate values back into the configuration
         config.expand_certificates()
@@ -824,6 +840,213 @@ class RestZenStore(BaseZenStore):
             resource_id=user_name_or_id,
             route=USERS,
         )
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    def create_service_account(
+        self, account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+        """
+        return self._create_resource(
+            resource=account,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        return self._get_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        return self._list_paginated_resources(
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_service_account(
+        self,
+        service_account_id: UUID,
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_id: The id of the service account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+        """
+        return self._update_resource(
+            resource_id=service_account_id,
+            resource_update=service_account_update,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def delete_service_account(
+        self, service_account_name_or_id: Union[str, UUID]
+    ) -> None:
+        """Deletes a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            KeyError: If no service account with the given ID exists.
+        """
+        self._delete_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+        )
+
+
+    # --------
+    # API Keys
+    # --------
+
+    def create_api_key(
+        self, api_key: APIKeyRequestModel
+    ) -> APIKeyResponseModel:
+        """Create a new API key.
+
+        Args:
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=api_key,
+            response_model=APIKeyResponseModel,
+            route=API_KEYS,
+        )
+
+    def get_api_key(self, api_key_id: UUID) -> APIKeyResponseModel:
+        """Get an API key by its unique ID.
+
+        Args:
+            api_key_id: The ID of the API key to get.
+
+        Returns:
+            The API key with the given ID.
+        """
+        return self._get_resource(
+            resource_id=api_key_id,
+            route=API_KEYS,
+            response_model=APIKeyResponseModel,
+        )
+
+    def set_api_key(self, api_key: str) -> None:
+        """Set the API key to use for authentication.
+
+        Args:
+            api_key: The API key to use for authentication.
+        """
+        self.config.api_key = api_key
+        self.clear_session()
+        GlobalConfiguration()._write_config()
+
+    def list_api_keys(
+        self, filter_model: APIKeyFilterModel
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=API_KEYS,
+            response_model=APIKeyResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_api_key(
+        self, api_key_id: UUID, api_key_update: APIKeyUpdateModel
+    ) -> APIKeyResponseModel:
+        """Update an API key.
+
+        Args:
+            api_key_id: The ID of the API key.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        return self._update_resource(
+            resource_id=api_key_id,
+            resource_update=api_key_update,
+            response_model=APIKeyResponseModel,
+            route=API_KEYS,
+        )
+
+    def rotate_api_key(
+        self, api_key_id: UUID, rotate_request: APIKeyRotateRequestModel
+    ) -> APIKeyResponseModel:
+        """Rotate an API key.
+
+        Args:
+            api_key_id: The ID of the API key.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        response_body = self.put(
+            f"{API_KEYS}/{str(api_key_id)}{API_KEY_ROTATE}",
+            body=rotate_request,
+        )
+        return APIKeyResponseModel.parse_obj(response_body)
+
+    def delete_api_key(self, api_key_id: UUID) -> None:
+        """Delete an API key.
+
+        Args:
+            api_key_id: The ID of the API key to delete.
+        """
+        self._delete_resource(resource_id=api_key_id, route=API_KEYS)
 
     # -----
     # Teams
@@ -2802,8 +3025,8 @@ class RestZenStore(BaseZenStore):
             else:
                 raise ValueError(
                     "No API token, API key or username/password provided. "
-                    "Please provide either a token or a username and password "
-                    "in the ZenML config."
+                    "Please provide either an API token, an API key or a "
+                    "username and password in the ZenML config."
                 )
         return self._api_token
 

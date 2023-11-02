@@ -72,6 +72,10 @@ from zenml.models import (
     RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -516,6 +520,93 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given ID exists.
+        """
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    @abstractmethod
+    def create_service_account(
+        self, account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+
+    @abstractmethod
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+
+        Raises:
+            KeyError: If no service account with the given name or ID exists.
+        """
+
+    @abstractmethod
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+
+    @abstractmethod
+    def update_service_account(
+        self,
+        service_account_id: UUID,
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_id: The id of the service account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+
+        Raises:
+            KeyError: If no service account with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_service_account(
+        self, service_account_name_or_id: Union[str, UUID]
+    ) -> None:
+        """Deletes a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            KeyError: If no service account with the given ID exists.
         """
 
     # -----
