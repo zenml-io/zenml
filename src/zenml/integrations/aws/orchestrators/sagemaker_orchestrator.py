@@ -20,6 +20,7 @@ from uuid import UUID
 
 import boto3
 import sagemaker
+from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
@@ -29,17 +30,21 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
+)
+from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
+    SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+    SagemakerEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
+from zenml.utils.env_utils import split_environment_variables
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_deployment_models import (
@@ -149,6 +154,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a connector is used that does not return a
                 `boto3.Session` object.
+            TypeError: If the network_config passed is not compatible with the
+                AWS SageMaker NetworkConfig class.
         """
         if deployment.schedule:
             logger.warning(
@@ -167,7 +174,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Get authenticated session
-        boto_session: Optional[boto3.Session] = None
+        # Option 1: Service connector
+        boto_session: boto3.Session
         if connector := self.get_connector():
             boto_session = connector.connect()
             if not isinstance(boto_session, boto3.Session):
@@ -175,16 +183,51 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     f"Expected to receive a `boto3.Session` object from the "
                     f"linked connector, but got type `{type(boto_session)}`."
                 )
+        # Option 2: Explicit configuration
+        # Args that are not provided will be taken from the default AWS config.
+        else:
+            boto_session = boto3.Session(
+                aws_access_key_id=self.config.aws_access_key_id,
+                aws_secret_access_key=self.config.aws_secret_access_key,
+                region_name=self.config.region,
+                profile_name=self.config.aws_profile,
+            )
+            # If a role ARN is provided for authentication, assume the role
+            if self.config.aws_auth_role_arn:
+                sts = boto_session.client("sts")
+                response = sts.assume_role(
+                    RoleArn=self.config.aws_auth_role_arn,
+                    RoleSessionName="zenml-sagemaker-orchestrator",
+                )
+                credentials = response["Credentials"]
+                boto_session = boto3.Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=self.config.region,
+                )
         session = sagemaker.Session(
             boto_session=boto_session, default_bucket=self.config.bucket
+        )
+
+        # Sagemaker does not allow environment variables longer than 256
+        # characters to be passed to Processor steps. If an environment variable
+        # is longer than 256 characters, we split it into multiple environment
+        # variables (chunks) and re-construct it on the other side using the
+        # custom entrypoint configuration.
+        split_environment_variables(
+            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+            env=environment,
         )
 
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
             image = self.get_image(deployment=deployment, step_name=step_name)
-            command = StepEntrypointConfiguration.get_entrypoint_command()
-            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, deployment_id=deployment.id
+            command = SagemakerEntrypointConfiguration.get_entrypoint_command()
+            arguments = (
+                SagemakerEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name, deployment_id=deployment.id
+                )
             )
             entrypoint = command + arguments
 
@@ -231,6 +274,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             processor_args_for_step["entrypoint"] = entrypoint
             processor_args_for_step["base_job_name"] = orchestrator_run_name
             processor_args_for_step["env"] = environment
+
+            # Convert network_config to sagemaker.network.NetworkConfig if present
+            network_config = processor_args_for_step.get("network_config")
+            if network_config and isinstance(network_config, dict):
+                try:
+                    processor_args_for_step["network_config"] = NetworkConfig(
+                        **network_config
+                    )
+                except TypeError:
+                    # If the network_config passed is not compatible with the NetworkConfig class,
+                    # raise a more informative error.
+                    raise TypeError(
+                        "Expected a sagemaker.network.NetworkConfig compatible object for the network_config argument, "
+                        "but the network_config processor argument is invalid."
+                        "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
+                        "for more information about the NetworkConfig class."
+                    )
 
             # Construct S3 inputs to container for step
             inputs = None

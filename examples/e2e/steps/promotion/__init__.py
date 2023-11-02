@@ -15,5 +15,10 @@
 # limitations under the License.
 #
 from .promote_get_metric import promote_get_metric
-from .promote_metric_compare_promoter import promote_metric_compare_promoter
+from .promote_metric_compare_promoter_in_model_registry import (
+    promote_metric_compare_promoter_in_model_registry,
+)
 from .promote_get_versions import promote_get_versions
+from .promote_model_version_in_model_control_plane import (
+    promote_model_version_in_model_control_plane,
+)

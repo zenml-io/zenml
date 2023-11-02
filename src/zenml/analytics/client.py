@@ -59,6 +59,24 @@ class Client(object):
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
+    def alias(self, user_id: UUID, previous_id: UUID) -> Tuple[bool, str]:
+        """Method to alias user IDs.
+
+        Args:
+            user_id: The user ID.
+            previous_id: Previous ID for the alias.
+
+        Returns:
+            Tuple (success flag, the original message).
+        """
+        msg = {
+            "user_id": user_id,
+            "previous_id": previous_id,
+            "type": "alias",
+            "debug": IS_DEBUG_ENV,
+        }
+        return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
+
     def track(
         self,
         user_id: UUID,

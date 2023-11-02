@@ -14,7 +14,7 @@
 """SQL Model Implementations for Pipeline Schedules."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship
@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
         PipelineDeploymentSchema,
     )
-    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 
 
 class ScheduleSchema(NamedSchema, table=True):
@@ -94,10 +93,6 @@ class ScheduleSchema(NamedSchema, table=True):
     end_time: Optional[datetime] = Field(nullable=True)
     interval_second: Optional[float] = Field(nullable=True)
     catchup: bool
-
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="schedule",
-    )
 
     @classmethod
     def from_create_model(

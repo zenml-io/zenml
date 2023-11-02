@@ -23,15 +23,18 @@ from typing import (
     Tuple,
     Union,
 )
-from uuid import UUID
 
 from pydantic import root_validator, validator
 
+from zenml.artifacts.external_artifact_config import (
+    ExternalArtifactConfiguration,
+)
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
+from zenml.model.model_config import ModelConfig
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
@@ -131,6 +134,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
+    model_config: Optional[ModelConfig] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -147,7 +151,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    external_input_artifacts: Mapping[str, UUID] = {}
+    external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the

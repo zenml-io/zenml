@@ -4,6 +4,10 @@ description: Learning how to develop a custom orchestrator.
 
 # Develop a Custom Orchestrator
 
+{% hint style="info" %}
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+{% endhint %}
+
 ### Base Implementation
 
 ZenML aims to enable orchestration with any orchestration tool. This is where the `BaseOrchestrator` comes into play. It
@@ -154,6 +158,12 @@ and running it. To do so, you should:
 
 3. **Implement the `get_orchestrator_run_id()` method:** This must return a ID that is different for each pipeline run, but identical if called from within Docker containers running different steps of the same pipeline run. If your orchestrator is based on an external tool like Kubeflow or Airflow, it is usually best to use an unique ID provided by this tool.
 
+
+{% hint style="info" %}
+To see a full end-to-end worked example of a custom orchestrator, [see here](https://github.com/zenml-io/zenml-plugins/tree/main/how_to_custom_orchestrator).
+{% endhint %}
+
+
 ### Optional features
 
 There are some additional optional features that your orchestrator can implement:
@@ -210,6 +220,17 @@ class MyOrchestrator(ContainerizedOrchestrator):
             # each step only runs after all its upstream steps finished
             upstream_steps = step.spec.upstream_steps
 
+            # You can get the settings your orchestrator like so.
+            # The settings are the "dynamic" part of your orchestrators config,
+            # optionally defined when you register your orchestrator but can be
+            # overridden at runtime.
+            # In contrast, the "static" part of your orchestrators config is
+            # always defined when you register the orchestrator and can be
+            # accessed via `self.config`.
+            step_settings = cast(
+                MyOrchestratorSettings, self.get_settings(step)
+            )
+
             # If your orchestrator supports setting resources like CPUs, GPUs or
             # memory for the pipeline or specific steps, you can find out whether
             # specific resources were specified for this step:
@@ -217,6 +238,10 @@ class MyOrchestrator(ContainerizedOrchestrator):
                 resources = step.config.resource_settings
 ```
 
+
+{% hint style="info" %}
+To see a full end-to-end worked example of a custom orchestrator, [see here](https://github.com/zenml-io/zenml-plugins/tree/main/how_to_custom_orchestrator).
+{% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
 

@@ -33,6 +33,10 @@ class LogsSchema(BaseSchema, table=True):
 
     __tablename__ = "logs"
 
+    # Fields
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+
+    # Foreign Keys
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
@@ -41,10 +45,6 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
-        back_populates="logs"
-    )
-
     step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
@@ -53,8 +53,6 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
-
     artifact_store_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -63,11 +61,15 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+
+    # Relationships
     artifact_store: Optional["StackComponentSchema"] = Relationship(
         back_populates="run_or_step_logs"
     )
-
-    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
+        back_populates="logs"
+    )
+    step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
     def to_model(self) -> "LogsResponseModel":
         """Convert a `LogsSchema` to a `LogsResponseModel`.

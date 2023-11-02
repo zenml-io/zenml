@@ -102,7 +102,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/
@@ -195,3 +195,5 @@ zenml_tutorial/
 
 # script for testing
 mlstacks_reset.sh
+
+.local/

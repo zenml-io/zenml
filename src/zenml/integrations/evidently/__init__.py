@@ -34,7 +34,7 @@ from zenml.stack import Flavor
 
 # Fix numba errors in Docker and suppress logs and deprecation warning spam
 try:
-    from numba.core.errors import (  # type: ignore[import]
+    from numba.core.errors import (  # type: ignore[import-untyped]
         NumbaDeprecationWarning,
         NumbaPendingDeprecationWarning,
     )
@@ -54,7 +54,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6"]  # supports pyyaml 6
+    REQUIREMENTS = ["evidently>0.2.6,<0.4.5"]  # supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
