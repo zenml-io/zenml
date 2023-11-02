@@ -218,6 +218,12 @@ aws s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://c
 cd ../..
 ```
 
+You will also need to assign a policy to your IAM user that allows it to access
+the S3 bucket in the way that Label Studio needs. You can do this using [the
+instructions described in the Label Studio
+documentation](https://labelstud.io/guide/storage.html#Configure-access-to-your-S3-bucket)
+(step two, specifically).
+
 Now you can get to the fun part of setting up Label Studio and working with
 ZenML:
 
