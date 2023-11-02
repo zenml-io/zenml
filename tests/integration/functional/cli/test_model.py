@@ -21,6 +21,8 @@ from click.testing import CliRunner
 
 from tests.integration.functional.cli.conftest import NAME, PREFIX
 from zenml.cli.cli import cli
+from zenml.client import Client
+from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
 
 def test_model_list(clean_workspace_with_models):
@@ -180,6 +182,64 @@ def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
         args=["foo"],
     )
     assert result.exit_code != 0
+
+
+def test_model_version_delete_found(clean_workspace_with_models):
+    """Test that zenml model version delete does not fail."""
+    runner = CliRunner()
+    model_name = PREFIX + str(uuid4())
+    model_version_name = PREFIX + str(uuid4())
+    try:
+        model = Client().create_model(
+            ModelRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                name=model_name,
+            )
+        )
+        Client().create_model_version(
+            ModelVersionRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                name=model_version_name,
+                model=model.id,
+            )
+        )
+        delete_command = (
+            cli.commands["model"].commands["version"].commands["delete"]
+        )
+        result = runner.invoke(
+            delete_command,
+            args=[model_name, model_version_name, "-y"],
+        )
+        assert result.exit_code == 0
+    finally:
+        Client().delete_model(model_name)
+
+
+def test_model_version_delete_not_found(clean_workspace_with_models):
+    """Test that zenml model version delete fail."""
+    runner = CliRunner()
+    model_name = PREFIX + str(uuid4())
+    model_version_name = PREFIX + str(uuid4())
+    try:
+        Client().create_model(
+            ModelRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                name=model_name,
+            )
+        )
+        delete_command = (
+            cli.commands["model"].commands["version"].commands["delete"]
+        )
+        result = runner.invoke(
+            delete_command,
+            args=[model_name, model_version_name, "-y"],
+        )
+        assert result.exit_code != 0
+    finally:
+        Client().delete_model(model_name)
 
 
 @pytest.mark.parametrize(
