@@ -135,9 +135,7 @@ def load_artifact(
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
-            artifact_store_from_artifact = StackComponent.from_model(
-                artifact_store_model
-            )
+            _ = StackComponent.from_model(artifact_store_model)
             artifact_store_loaded = True
         except KeyError:
             pass
