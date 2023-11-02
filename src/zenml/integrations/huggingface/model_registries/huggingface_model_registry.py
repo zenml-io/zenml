@@ -18,7 +18,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast
 from uuid import uuid4
 
 from huggingface_hub import HfApi, ModelCard, ModelCardData
@@ -47,7 +47,7 @@ class HuggingfaceRegisteredModel(RegisteredModel):
 class HuggingfaceModelRegistry(BaseModelRegistry):
     """Register models using Huggingface."""
 
-    MODELCARD_TEMPLATE_PATH: ClassVar[str] = "zenml_template.md"
+    MODELCARD_TEMPLATE_PATH: ClassVar[str] = f"{uuid4()}.md"
     REPO_TYPE: ClassVar[str] = "model"
 
     @property
@@ -101,6 +101,8 @@ _This model was created from **ZenML**_
         name: str,
         description: str,
         metadata: Dict[str, str],
+        old_card: ModelCard = None,
+        revision: str = None,
     ):
         with self.model_card_template():
             card = ModelCard.from_template(
@@ -113,11 +115,44 @@ _This model was created from **ZenML**_
                 template_path=self.MODELCARD_TEMPLATE_PATH,
                 metadata=metadata,
             )
-            card.push_to_hub(
-                token=self.config.token,
-                repo_id=self._repo_id(name),
-                repo_type=self.REPO_TYPE,
-            )
+            if old_card is None or old_card.content != card.content:
+                card.push_to_hub(
+                    token=self.config.token,
+                    repo_id=self._repo_id(name),
+                    repo_type=self.REPO_TYPE,
+                    revision=revision,
+                )
+
+    def _get_model_card_content(
+        self,
+        name: str,
+        revision: Optional[str] = None,
+        drop_metadata: bool = False,
+    ) -> Tuple[str, Dict[str, Any], ModelCard]:
+        tmpdir = str(uuid4())
+        os.mkdir(tmpdir)
+        self.api.hf_hub_download(
+            repo_id=self._repo_id(name),
+            filename="README.md",
+            local_dir=tmpdir,
+            revision=revision,
+        )
+
+        card = ModelCard.load(
+            repo_id_or_path=os.path.join(tmpdir, "README.md"),
+        )
+        metadata = {}
+        description = None
+        for k, v in card.data.to_dict().items():
+            if k == "description":
+                description = description or v
+            elif not drop_metadata:
+                metadata[k] = v
+
+        os.remove(os.path.join(tmpdir, "README.md"))
+        os.rmdir(tmpdir)
+
+        return description, metadata, card
 
     # ---------
     # Model Registration Methods
@@ -139,6 +174,9 @@ _This model was created from **ZenML**_
         Returns:
             The registered model.
         """
+        if self.api.repo_exists(self._repo_id(name)):
+            raise RuntimeError(f"Model `{name}` already exists.")
+
         self.api.create_repo(
             repo_id=self._repo_id(name),
             repo_type=self.REPO_TYPE,
@@ -148,7 +186,7 @@ _This model was created from **ZenML**_
         self._push_model_card(
             name=name,
             description=description,
-            metadata=metadata,
+            metadata=metadata if metadata else {},
         )
 
         return RegisteredModel(
@@ -166,7 +204,7 @@ _This model was created from **ZenML**_
         Args:
             name: The name of the registered model.
         """
-        self._model_exists()
+        self._model_exists(name)
         self.api.delete_repo(repo_id=name)
 
     def update_model(
@@ -183,30 +221,30 @@ _This model was created from **ZenML**_
             name: The name of the registered model.
             description: The description of the registered model.
             metadata: The metadata associated with the registered model.
-            remove_metadata: The metadata to remove from the registered model.
+            remove_metadata: The metadata to remove from the registered model. (["*"] removes all)
             revision: The revision to update model card in.
         """
-        self._model_exists()
+        self._model_exists(name)
 
-        card = ModelCard.load(
-            token=self.config.token,
-            repo_id_or_path=self._repo_id(name),
-            repo_type=self.REPO_TYPE,
+        found_description, found_metadata, card = self._get_model_card_content(
+            name, revision, remove_metadata == ["*"]
         )
 
         remove_metadata = remove_metadata or []
-        for k, v in card.data.to_dict().items():
-            if k not in remove_metadata:
-                if k == "description":
-                    description = description or v
-                else:
-                    metadata[k] = v
+        metadata.update(
+            {
+                k: v
+                for k, v in found_metadata.items()
+                if k not in remove_metadata
+            }
+        )
 
         self._push_model_card(
             name=name,
-            description=description,
-            metadata=metadata,
+            description=description or found_description,
+            metadata=metadata if metadata else {},
             revision=revision,
+            old_card=card,
         )
 
         return RegisteredModel(
@@ -330,17 +368,18 @@ _This model was created from **ZenML**_
 
         self._model_exists(name)
 
-        for ref in self.api.list_repo_refs(
+        pr_title = f"New model version from ZenML"
+        pr = self.api.create_pull_request(
             repo_id=self._repo_id(name),
+            title=pr_title,
             repo_type=self.REPO_TYPE,
-        ).tags:
-            if ref.name == version:
-                raise RuntimeError(
-                    f"Model version `{version}` already registered."
-                )
-
-        if version is None:
-            version = str(uuid4())
+        )
+        pr_ref = f"refs/pr/{pr.num}"
+        if version is not None:
+            logger.warning(
+                "There is no way to control versioning on Huggingface. "
+                f"You can refer to new version as {pr_ref} in future."
+            )
 
         upload_folder_path = os.path.abspath(model_source_uri)
         if os.path.isfile(upload_folder_path):
@@ -349,21 +388,26 @@ _This model was created from **ZenML**_
             folder_path=upload_folder_path,
             repo_id=self._repo_id(name),
             repo_type="model",
+            revision=pr_ref,
         )
-        self._push_model_card(
+        self.update_model(
             name=name,
             description=description,
             metadata=metadata.dict() if metadata is not None else {},
+            revision=pr_ref,
+            remove_metadata=["*"],
         )
-        self.api.create_tag(
+
+        self.api.change_discussion_status(
             repo_id=self._repo_id(name),
-            tag=version,
-            tag_message=description,
             repo_type=self.REPO_TYPE,
+            discussion_num=pr.num,
+            new_status="open",
         )
+
         return ModelVersion(
-            version=version,
-            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            version=pr_ref,
+            model_source_uri=pr.url,
             model_format="hugginface",
             registered_model=self.get_model(name),
             description=description,
@@ -383,11 +427,19 @@ _This model was created from **ZenML**_
         """
         self._model_exists(name)
 
-        self.api.delete_tag(
-            repo_id=self._repo_id(name),
-            tag=version,
-            repo_type=self.REPO_TYPE,
-        )
+        for discussion in self.api.get_repo_discussions(
+            repo_id=self._repo_id(name), repo_type=self.REPO_TYPE
+        ):
+            if discussion.is_pull_request and discussion.url.endswith(
+                f"discussions/{version.split('/')[-1]}"
+            ):
+                self.api.change_discussion_status(
+                    repo_id=self._repo_id(name),
+                    repo_type=self.REPO_TYPE,
+                    discussion_num=discussion.num,
+                    new_status="closed",
+                )
+                break
 
     def update_model_version(
         self,
@@ -415,27 +467,43 @@ _This model was created from **ZenML**_
             KeyError: If the model version does not exist.
             RuntimeError: If update fails.
         """
-        self.api.delete_tag(
-            repo_id=self._repo_id(name),
-            tag=version,
-            repo_type=self.REPO_TYPE,
-        )
         registered_model = self.update_model(
             name=name,
             description=description,
-            metadata=metadata.dict(),
+            metadata=metadata.dict() if metadata else {},
             remove_metadata=remove_metadata,
+            revision=version,
         )
-        self.api.create_tag(
-            repo_id=self._repo_id(name),
-            tag=version,
-            tag_message=description,
-            repo_type=self.REPO_TYPE,
-        )
+        pr_num = version.split("/")[-1]
+        if stage:
+            if (
+                stage != ModelVersionStage.PRODUCTION
+                and stage != ModelVersionStage.PRODUCTION.value
+            ):
+                raise RuntimeError(
+                    "Only `ModelVersionStage.PRODUCTION` stage is supported with Huggingface at the moment."
+                )
+            for discussion in self.api.get_repo_discussions(
+                repo_id=self._repo_id(name), repo_type=self.REPO_TYPE
+            ):
+                if discussion.is_pull_request and discussion.url.endswith(
+                    f"discussions/{pr_num}"
+                ):
+                    if discussion.status != "open":
+                        raise RuntimeError(
+                            f"Cannot merge non `open` Pull Requests. Check the status {discussion.url}"
+                        )
+                    self.api.merge_pull_request(
+                        repo_id=self._repo_id(name),
+                        discussion_num=discussion.num,
+                        comment="Promoted from ZenML",
+                        repo_type=self.REPO_TYPE,
+                    )
+                    break
 
         return ModelVersion(
             version=version,
-            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            model_source_uri=f"https://huggingface.co/avishniakov/{name}/discussions/{pr_num}",
             model_format="hugginface",
             registered_model=registered_model,
             description=description,
@@ -471,29 +539,45 @@ _This model was created from **ZenML**_
         Returns:
             A list of model versions.
         """
-        models = self.list_models(
-            name=name, metadata=metadata.dict() if metadata is not None else {}
-        )
+        models = self.list_models(name=name, metadata={})
 
         fetched_versions = []
         for model in models:
-            for ref in self.api.list_repo_refs(
-                repo_id=self._repo_id(model.name),
-                repo_type=self.REPO_TYPE,
-            ).tags:
-                if name is not None and ref.name != name:
-                    continue
-
-                fetched_versions.append(
-                    ModelVersion(
-                        version=ref.name,
-                        model_source_uri=f"https://huggingface.co/{self._repo_id(model.name)}/tree/{ref.name}",
-                        model_format="hugginface",
-                        registered_model=model,
-                        description=None,
-                        metadata=metadata,
-                    )
-                )
+            for discussion in self.api.get_repo_discussions(
+                repo_id=self._repo_id(model.name), repo_type=self.REPO_TYPE
+            ):
+                if (
+                    discussion.is_pull_request
+                    and discussion.title == "New model version from ZenML"
+                ):
+                    if discussion.status == "open":
+                        pr_ref = f"refs/pr/{discussion.num}"
+                        (
+                            description,
+                            found_metadata,
+                            _,
+                        ) = self._get_model_card_content(model.name, pr_ref)
+                        metadata_filter = True
+                        if metadata is not None:
+                            for k, v in metadata.dict().items():
+                                metadata_filter &= (
+                                    k in found_metadata
+                                    and found_metadata[k] == v
+                                )
+                                if not metadata_filter:
+                                    break
+                        if metadata_filter:
+                            fetched_versions.append(
+                                ModelVersion(
+                                    version=pr_ref,
+                                    model_source_uri=discussion.url,
+                                    model_format="hugginface",
+                                    registered_model=model,
+                                    description=description,
+                                    metadata=found_metadata,
+                                )
+                            )
+        return fetched_versions
 
     def get_model_version(self, name: str, version: str) -> ModelVersion:
         """Gets a model version for a registered model.
@@ -505,14 +589,17 @@ _This model was created from **ZenML**_
         Returns:
             The model version.
         """
-
+        pr_num = version.split("/")[-1]
+        description, metadata, _ = self._get_model_card_content(
+            name=name, revision=version
+        )
         return ModelVersion(
             version=version,
-            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/tree/{version}",
+            model_source_uri=f"https://huggingface.co/{self._repo_id(name)}/discussions/{pr_num}",
             model_format="hugginface",
             registered_model=self.get_model(name),
-            description=None,
-            metadata=None,
+            description=description,
+            metadata=metadata,
         )
 
     def load_model_version(
@@ -533,7 +620,6 @@ _This model was created from **ZenML**_
         Returns:
             None.
         """
-        from zenml.client import Client
 
         files = self.api.list_repo_files(
             repo_id=self._repo_id(name),
@@ -541,13 +627,6 @@ _This model was created from **ZenML**_
             repo_type=self.REPO_TYPE,
         )
 
-        zenml_repo_root = Client().root
-        if not zenml_repo_root:
-            raise RuntimeError(
-                "You're running the `load_model_version` outside of a ZenML repo."
-                "Since the deployment step to huggingface is all about pushing the repo to huggingface, "
-                f"this step will not work outside of a ZenML repo where the `{path}` folder is present."
-            )
         download_folder_path = os.path.abspath(path)
         if not os.path.exists(download_folder_path):
             os.makedirs(download_folder_path)
@@ -557,6 +636,7 @@ _This model was created from **ZenML**_
                 repo_id=self._repo_id(name),
                 filename=file,
                 local_dir=download_folder_path,
+                revision=version,
             )
 
     def get_model_uri_artifact_store(
