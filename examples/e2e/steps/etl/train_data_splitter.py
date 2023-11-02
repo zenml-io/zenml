@@ -1,22 +1,26 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
-from typing import Annotated, Tuple
+from typing import Tuple
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from typing_extensions import Annotated
 
 from zenml import step
 
@@ -25,8 +29,8 @@ from zenml import step
 def train_data_splitter(
     dataset: pd.DataFrame, test_size: float = 0.2
 ) -> Tuple[
-    Annotated[pd.DataFrame, "dataset_trn"],
-    Annotated[pd.DataFrame, "dataset_tst"],
+    Annotated[pd.DataFrame, "raw_dataset_trn"],
+    Annotated[pd.DataFrame, "raw_dataset_tst"],
 ]:
     """Dataset splitter step.
 

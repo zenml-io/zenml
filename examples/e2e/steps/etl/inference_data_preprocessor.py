@@ -1,24 +1,27 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
-
-from typing import Annotated
 
 import pandas as pd
 from sklearn.pipeline import Pipeline
+from typing_extensions import Annotated
 
 from zenml import step
+from zenml.model import ArtifactConfig
 
 
 @step
@@ -26,7 +29,11 @@ def inference_data_preprocessor(
     dataset_inf: pd.DataFrame,
     preprocess_pipeline: Pipeline,
     target: str,
-) -> Annotated[pd.DataFrame, "dataset_inf"]:
+) -> Annotated[
+    pd.DataFrame,
+    "dataset_inf",
+    ArtifactConfig(overwrite=False, artifact_name="inference_dataset"),
+]:
     """Data preprocessor step.
 
     This is an example of a data processor step that prepares the data so that

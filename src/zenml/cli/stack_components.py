@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Functionality to generate stack component CLI commands."""
 
+import os
+import random
+import string
 import time
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
@@ -21,11 +24,13 @@ from uuid import UUID
 import click
 from rich.markdown import Markdown
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
-from zenml.cli.model import register_model_registry_subcommands
+from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
@@ -39,13 +44,21 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
+from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
 from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
 from zenml.utils import source_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.dashboard_utils import get_component_url
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
+from zenml.utils.mlstacks_utils import (
+    convert_click_params_to_mlstacks_primitives,
+    convert_mlstacks_primitives_to_dicts,
+    import_new_mlstacks_component,
+    verify_spec_and_tf_files_exist,
+)
+from zenml.utils.yaml_utils import write_yaml
 
 
 def generate_stack_component_get_command(
@@ -224,6 +237,30 @@ def generate_stack_component_register_command(
         help="Use this flag to share this stack component with other users.",
         type=click.BOOL,
     )
+    @click.option(
+        "--connector",
+        "-c",
+        "connector",
+        help="Use this flag to connect this stack component to a service connector.",
+        type=str,
+    )
+    @click.option(
+        "--connector",
+        "-c",
+        "connector",
+        help="Use this flag to connect this stack component to a service connector.",
+        type=str,
+    )
+    @click.option(
+        "--resource-id",
+        "-r",
+        "resource_id",
+        help="The resource ID to use with the connector. Only required for "
+        "multi-instance connectors that are not already configured with a "
+        "particular resource ID.",
+        required=False,
+        type=str,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
         name: str,
@@ -231,6 +268,8 @@ def generate_stack_component_register_command(
         share: bool,
         args: List[str],
         labels: Optional[List[str]] = None,
+        connector: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> None:
         """Registers a stack component.
 
@@ -240,6 +279,8 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
             labels: Labels to be associated with the component.
+            connector: Name of the service connector to connect the component to.
+            resource_id: The resource ID to use with the connector.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             fail_secrets_manager_creation()
@@ -259,6 +300,14 @@ def generate_stack_component_register_command(
         if share is None:
             share = False
 
+        if connector:
+            try:
+                client.get_service_connector(connector)
+            except KeyError as err:
+                cli_utils.error(
+                    f"Could not find a connector '{connector}': " f"{str(err)}"
+                )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             # Create a new stack component model
             component = client.create_stack_component(
@@ -274,6 +323,16 @@ def generate_stack_component_register_command(
                 f"Successfully registered {component.type} `{component.name}`."
             )
             print_model_url(get_component_url(component))
+
+        if connector:
+            connect_stack_component_with_service_connector(
+                component_type=component_type,
+                name_id_or_prefix=name,
+                connector=connector,
+                interactive=False,
+                no_verify=False,
+                resource_id=resource_id,
+            )
 
     return register_stack_component_command
 
@@ -583,7 +642,6 @@ def generate_stack_component_copy_command(
         "source_component_name_id_or_prefix", type=str, required=True
     )
     @click.argument("target_component", type=str, required=True)
-    @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
         target_component: str,
@@ -619,6 +677,7 @@ def generate_stack_component_copy_command(
                 configuration=component_to_copy.configuration,
                 labels=component_to_copy.labels,
                 is_shared=component_to_copy.is_shared,
+                component_spec_path=component_to_copy.component_spec_path,
             )
             print_model_url(get_component_url(copied_component))
 
@@ -1107,7 +1166,9 @@ def generate_stack_component_flavor_delete_command(
 
 def generate_stack_component_deploy_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, str, List[str]], None]:
+) -> Callable[
+    [str, str, str, str, bool, Optional[List[str]], List[str]], None
+]:
     """Generates a `deploy` command for the stack component type.
 
     Args:
@@ -1131,18 +1192,53 @@ def generate_stack_component_deploy_command(
         type=str,
     )
     @click.option(
-        "--cloud",
-        "-c",
-        "cloud",
-        type=click.Choice(["aws", "gcp", "k3d"]),
-        help="The cloud provider to use to deploy the stack component.",
+        "--provider",
+        "-p",
+        "provider",
+        required=True,
+        type=click.Choice(STACK_RECIPE_MODULAR_RECIPES),
+        help="The cloud (or local provider) to use to deploy the stack component.",
     )
-    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    @click.option(
+        "--region",
+        "-r",
+        "region",
+        required=True,
+        type=str,
+        help="The region to deploy the stack component to.",
+    )
+    @click.option(
+        "--debug-mode",
+        "-d",
+        "debug_mode",
+        is_flag=True,
+        default=False,
+        help="Whether to deploy the stack component in debug mode.",
+    )
+    @click.option(
+        "--extra-config",
+        "-x",
+        "extra_config",
+        multiple=True,
+        help="Extra configurations as key=value pairs. This option can be used multiple times.",
+    )
+    @click.option(
+        "--tags",
+        "-t",
+        "tags",
+        required=False,
+        type=click.STRING,
+        help="Pass one or more tags.",
+        multiple=True,
+    )
     def deploy_stack_component_command(
         name: str,
         flavor: str,
-        cloud: str,
-        args: List[str],
+        provider: str,
+        region: str,
+        debug_mode: bool = False,
+        tags: Optional[List[str]] = None,
+        extra_config: List[str] = [],
     ) -> None:
         """Deploy a stack component.
 
@@ -1151,107 +1247,159 @@ def generate_stack_component_deploy_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            cloud: Cloud provider to use to deploy the stack component.
-            args: Additional arguments to pass to the component.
-
-        Raises:
-            error: If the component type is not supported.
+            provider: Cloud provider (or local) to use to deploy the stack
+                component.
+            region: Region to deploy the stack component to.
+            debug_mode: Whether to deploy the stack component in debug mode.
+            tags: Tags to be added to the component.
+            extra_config: Extra configuration values to be added to the
         """
-        # generate a python dict with the above structure
-        # and then use it to check if the flavor is valid
-        # for the given component type
-        allowed_flavors = {
-            "experiment_tracker": ["mlflow"],
-            "model_deployer": ["seldon", "kserve"],
-            "artifact_store": ["s3", "gcp", "minio"],
-            "container_registry": ["gcp", "aws"],
-            "orchestrator": [
-                "kubernetes",
-                "kubeflow",
-                "tekton",
-                "sagemaker",
-                "vertex",
-            ],
-            "step_operator": ["sagemaker", "vertex"],
-        }
+        with track_handler(
+            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
+        ) as analytics_handler:
+            client = Client()
+            try:
+                # raise error if user already has a component with the same name
+                client.get_stack_component(
+                    component_type=component_type,
+                    name_id_or_prefix=name,
+                    allow_name_prefix_match=False,
+                )
+                cli_utils.error(
+                    f"A stack component of type '{component_type.value}' with "
+                    f"the name '{name}' already exists. Please try again with "
+                    f"a different component name."
+                )
+            except KeyError:
+                pass
+            from mlstacks.constants import ALLOWED_FLAVORS
 
-        # if the flavor is not allowed for the given component type
-        # raise an error
-        if flavor not in allowed_flavors[component_type.value]:
-            cli_utils.error(
-                f"Flavor '{flavor}' is not supported for "
-                f"{_component_display_name(component_type, True)}. "
-                "Allowed flavors are: "
-                f"{', '.join(allowed_flavors[component_type.value])}."
-            )
-
-        # for cases like artifact store, secrets manager and container registry
-        # the flavor is the same as the cloud
-        if flavor in ["s3", "sagemaker", "aws"]:
-            cloud = "aws"
-        elif flavor in ["vertex", "gcp"]:
-            cloud = "gcp"
-        elif cloud is None:
-            raise cli_utils.error(
-                f"Cloud must be specified while deploying {flavor} "
-                f"{_component_display_name(component_type, True)}."
-                " Allowed clouds are: aws, gcp, k3d."
-            )
-
-        client = Client()
-
-        # Parse the given args
-        # name is guaranteed to be set by parse_name_and_extra_arguments
-        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
-            list(args) + [name], expand_args=True
-        )
-
-        # if the cloud is gcp, project_id is required for the first time
-        if cloud == "gcp":
-            if "project_id" not in parsed_args:
-                cli_utils.warning(
-                    "You should pass your GCP project ID to the deploy command, "
-                    "using the `--project_id` flag, if this is the first time that "
-                    "you are deploying a component to GCP. Ignore if you "
-                    "have already done so."
+            if flavor not in ALLOWED_FLAVORS[component_type.value]:
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)}. "
+                    "Allowed flavors are: "
+                    f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
                 )
 
-        from zenml.recipes import GitStackRecipesHandler
+            # for cases like artifact store, secrets manager and container registry
+            # the flavor is the same as the cloud
+            if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)} on "
+                    f"{provider}."
+                )
+            elif flavor in {"vertex", "gcp"} and provider != "gcp":
+                cli_utils.error(
+                    f"Flavor '{flavor}' is not supported for "
+                    f"{_component_display_name(component_type, True)} on "
+                    f"{provider}."
+                )
 
-        try:
-            stack_recipe = GitStackRecipesHandler().get_stack_recipes(
-                f"{cloud}-modular"
-            )[0]
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            # warn that prerequisites should be met
-            metadata = stack_recipe.metadata
-            if not cli_utils.confirmation(
-                "\nPrerequisites for running this recipe are as follows.\n"
-                f"{metadata['Prerequisites']}"
-                "\n\n Are all of these conditions met?"
+            # if the cloud is gcp, project_id is required
+            extra_config_obj = (
+                dict(config.split("=") for config in extra_config)
+                if extra_config
+                else {}
+            )
+            if provider == "gcp" and "project_id" not in extra_config_obj:
+                cli_utils.error(
+                    "Missing Project ID. You must pass your GCP project ID to "
+                    "the deploy command as part of the `--extra_config` option."
+                )
+            cli_utils.declare("Checking prerequisites are installed...")
+            cli_utils.verify_mlstacks_prerequisites_installation()
+            from mlstacks.utils import zenml_utils
+
+            cli_utils.warning(ALPHA_MESSAGE)
+            cli_params = {
+                "provider": provider,
+                "region": region,
+                "stack_name": "".join(
+                    random.choice(string.ascii_letters + string.digits)
+                    for _ in range(5)
+                ),
+                "tags": tags,
+                "extra_config": list(extra_config),
+                "file": None,
+                "debug_mode": debug_mode,
+                component_type.value: flavor,
+            }
+            if component_type == StackComponentType.ARTIFACT_STORE:
+                cli_params["extra_config"].append(f"bucket_name={name}")  # type: ignore[union-attr]
+            stack, components = convert_click_params_to_mlstacks_primitives(
+                cli_params, zenml_component_deploy=True
+            )
+
+            analytics_handler.metadata = {
+                "flavor": flavor,
+                "provider": provider,
+                "debug_mode": debug_mode,
+                "component_type": component_type.value,
+            }
+
+            cli_utils.declare("Checking flavor compatibility...")
+            if not zenml_utils.has_valid_flavor_combinations(
+                stack, components
             ):
                 cli_utils.error(
-                    "Prerequisites are not installed. Please make sure "
-                    "they are met and run deploy again."
+                    "The specified stack and component flavors are not compatible "
+                    "with the provider or with one another. Please try again."
                 )
 
-            client.deploy_stack_component(
-                name=name,
-                flavor=flavor,
-                cloud=cloud,
-                configuration=parsed_args,
-                component_type=component_type,
-                labels={"cloud": cloud, "created_by": "recipe"},
+            stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
+                stack, components
             )
+            # write the stack and component yaml files
+            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+            spec_dir = os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "stack_specs",
+                stack.name,
+            )
+            cli_utils.declare(f"Writing spec files to {spec_dir}...")
+            create_dir_recursive_if_not_exists(spec_dir)
+
+            stack_file_path = os.path.join(
+                spec_dir, f"stack-{stack.name}.yaml"
+            )
+            write_yaml(file_path=stack_file_path, contents=stack_dict)
+            for component in component_dicts:
+                write_yaml(
+                    file_path=os.path.join(
+                        spec_dir, f"{component['name']}.yaml"
+                    ),
+                    contents=component,
+                )
+
+            from mlstacks.utils import terraform_utils
+
+            cli_utils.declare("Deploying stack using Terraform...")
+            terraform_utils.deploy_stack(
+                stack_file_path, debug_mode=debug_mode
+            )
+            cli_utils.declare("Stack successfully deployed.")
+
+            stack_name: str = cli_params["stack_name"]  # type: ignore[assignment]
+            cli_utils.declare(
+                f"Importing {component_type.value} component '{name}' into ZenML..."
+            )
+            import_new_mlstacks_component(
+                stack_name=stack_name,
+                component_name=name,
+                provider=stack.provider,
+                stack_spec_dir=spec_dir,
+            )
+            cli_utils.declare("Component successfully imported into ZenML.")
 
     return deploy_stack_component_command
 
 
 def generate_stack_component_destroy_command(
     component_type: StackComponentType,
-) -> Callable[[str], None]:
+) -> Callable[[str, str, bool], None]:
     """Generates a `destroy` command for the stack component type.
 
     Args:
@@ -1267,57 +1415,125 @@ def generate_stack_component_destroy_command(
         type=str,
         required=True,
     )
+    @click.option(
+        "--provider",
+        "-p",
+        "provider",
+        type=click.Choice(["aws", "k3d", "gcp"]),
+        required=True,
+    )
+    @click.option(
+        "--debug-mode",
+        "-d",
+        "debug_mode",
+        is_flag=True,
+        default=False,
+        help="Whether to destroy the stack component in debug mode.",
+    )
     def destroy_stack_component_command(
         name_id_or_prefix: str,
+        provider: str,
+        debug_mode: bool = False,
     ) -> None:
         """Destroy a stack component.
 
         Args:
             name_id_or_prefix: Name, ID or prefix of the component to destroy.
+            provider: Cloud provider (or local) where the stack was deployed.
+            debug_mode: Whether to destroy the stack component in debug mode.
         """
-        client = Client()
-        from zenml.recipes import GitStackRecipesHandler
+        with track_handler(
+            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
+        ) as analytics_handler:
+            analytics_handler.metadata = {
+                "provider": provider,
+                "component_type": component_type.value,
+                "debug_mode": debug_mode,
+            }
+            client = Client()
 
-        try:
-            component = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                allow_name_prefix_match=False,
+            try:
+                component = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    allow_name_prefix_match=False,
+                )
+            except KeyError:
+                cli_utils.error(
+                    "Could not find a stack component with name or id "
+                    f"'{name_id_or_prefix}'.",
+                )
+
+            # Check if the component was created by a recipe
+            if not component.component_spec_path:
+                cli_utils.error(
+                    f"Cannot destroy stack component {component.name}. It "
+                    "was not created by a recipe.",
+                )
+
+            cli_utils.verify_mlstacks_prerequisites_installation()
+            from mlstacks.constants import MLSTACKS_PACKAGE_NAME
+
+            # spec_files_dir: str = component.component_spec_path
+            component_spec_path: str = component.component_spec_path
+            stack_name: str = os.path.basename(
+                os.path.dirname(component_spec_path)
             )
-        except KeyError:
-            cli_utils.error(
-                "Could not find a stack component with name or id "
-                f"'{name_id_or_prefix}'.",
+            stack_spec_path: str = os.path.join(
+                os.path.dirname(component_spec_path),
+                f"stack-{stack_name}.yaml",
+            )
+            tf_definitions_path: str = os.path.join(
+                click.get_app_dir(MLSTACKS_PACKAGE_NAME),
+                "terraform",
+                f"{provider}-modular",
             )
 
-        # if the component's labels don't have a key created_by
-        # equal to 'recipe', then destroy cannot be called on it
-        if (
-            not component.labels
-            or "created_by" not in component.labels
-            or component.labels["created_by"] != "recipe"
-        ):
-            cli_utils.error(
-                f"Cannot destroy stack component {component.name}. It "
-                "was not created by a recipe.",
+            cli_utils.declare(
+                "Checking Terraform definitions and spec files are present..."
+            )
+            verify_spec_and_tf_files_exist(
+                stack_spec_path, tf_definitions_path
             )
 
-        try:
-            GitStackRecipesHandler().get_stack_recipes(
-                f"{component.labels['cloud']}-modular"
-            )[0]
-        except KeyError:
-            cli_utils.error(
-                "The backing recipe for this component is missing. "
-                "Please run `zenml stack recipe pull` to fix this."
+            from mlstacks.utils import terraform_utils
+
+            cli_utils.declare(
+                f"Destroying component '{component.name}' using Terraform..."
+            )
+            terraform_utils.destroy_stack(
+                stack_path=stack_spec_path, debug_mode=debug_mode
+            )
+            cli_utils.declare(
+                f"Component '{component.name}' successfully destroyed."
             )
 
-        try:
-            client.destroy_stack_component(
-                component=component,
+            if cli_utils.confirmation(
+                f"Would you like to delete the associated ZenML "
+                f"component '{component.name}'?\nThis will delete the stack "
+                "component registered with ZenML."
+            ):
+                client.delete_stack_component(
+                    name_id_or_prefix=component.id,
+                    component_type=component.type,
+                )
+                cli_utils.declare(
+                    f"Component '{component.name}' successfully deleted from ZenML."
+                )
+
+            spec_dir = os.path.dirname(stack_spec_path)
+            if cli_utils.confirmation(
+                f"Would you like to delete the `mlstacks` spec directory for "
+                f"this component, located at {spec_dir}?"
+            ):
+                fileio.rmtree(spec_dir)
+                cli_utils.declare(
+                    f"Spec directory for component '{component.name}' successfully "
+                    "deleted."
+                )
+            cli_utils.declare(
+                f"Component '{component.name}' successfully destroyed."
             )
-        except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
 
     return destroy_stack_component_command
 
@@ -1352,7 +1568,7 @@ def prompt_select_resource_id(
         # User needs to select a resource ID from the list
         if not interactive:
             cli_utils.error(
-                f"{msg}Please use the `--resource-id` command line "
+                f"{msg}Please use the `--resource-id` command line "  # nosec
                 f"argument to select a {resource_name} resource from the "
                 "list."
             )
@@ -1461,7 +1677,7 @@ def generate_stack_component_connect_command(
     Returns:
         A function that can be used as a `click` command.
     """
-    display_name = _component_display_name(component_type)
+    _component_display_name(component_type)
 
     @click.argument(
         "name_id_or_prefix",
@@ -1503,7 +1719,6 @@ def generate_stack_component_connect_command(
         help="Skip verification of the connector resource.",
         type=click.BOOL,
     )
-    @track(AnalyticsEvent.CONNECTED_STACK_COMPONENT)
     def connect_stack_component_command(
         name_id_or_prefix: Optional[str],
         connector: Optional[str] = None,
@@ -1522,218 +1737,65 @@ def generate_stack_component_connect_command(
             interactive: Configure a service connector resource interactively.
             no_verify: Do not verify whether the resource is accessible.
         """
+        connect_stack_component_with_service_connector(
+            component_type=component_type,
+            name_id_or_prefix=name_id_or_prefix,
+            connector=connector,
+            resource_id=resource_id,
+            interactive=interactive,
+            no_verify=no_verify,
+        )
+
+    return connect_stack_component_command
+
+
+def generate_stack_component_disconnect_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `disconnect` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+    )
+    def disconnect_stack_component_command(name_id_or_prefix: str) -> None:
+        """Disconnect a stack component from a service connector.
+
+        Args:
+            name_id_or_prefix: The name of the stack component to disconnect.
+        """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
 
-        if not connector and not interactive:
-            cli_utils.error(
-                "Please provide either a connector ID or set the interactive "
-                "flag."
-            )
-
-        if connector and interactive:
-            cli_utils.error(
-                "Please provide either a connector ID or set the interactive "
-                "flag, not both."
-            )
-
         client = Client()
 
-        try:
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
-        except KeyError as err:
-            cli_utils.error(str(err))
-
-        try:
-            flavor_model = client.get_flavor_by_name_and_type(
-                name=component_model.flavor, component_type=component_type
-            )
-        except KeyError as err:
-            cli_utils.error(
-                f"Could not find flavor '{component_model.flavor}' for "
-                f"{display_name} '{name_id_or_prefix}': {str(err)}"
-            )
-
-        requirements = flavor_model.connector_requirements
-
-        if not requirements:
-            cli_utils.error(
-                f"The '{component_model.name}' {display_name} implementation "
-                "does not support using a service connector to connect to "
-                "resources."
-            )
-
-        resource_type = requirements.resource_type
-        if requirements.resource_id_attr is not None:
-            # Check if an attribute is set in the component configuration
-            resource_id = component_model.configuration.get(
-                requirements.resource_id_attr
-            )
-
-        if interactive:
-            # Fetch the list of connectors that have resources compatible with
-            # the stack component's flavor's resource requirements
-            with console.status(
-                "Finding all resources matching the stack component "
-                "requirements (this could take a while)...\n"
-            ):
-                resource_list = client.list_service_connector_resources(
-                    connector_type=requirements.connector_type,
-                    resource_type=resource_type,
-                    resource_id=resource_id,
-                )
-
-            resource_list = [
-                resource
-                for resource in resource_list
-                if resource.resources[0].resource_ids
-            ]
-
-            error_resource_list = [
-                resource
-                for resource in resource_list
-                if not resource.resources[0].resource_ids
-            ]
-
-            if not resource_list:
-                # No compatible resources were found
-                additional_info = ""
-                if error_resource_list:
-                    additional_info = (
-                        f"{len(error_resource_list)} connectors can be used "
-                        f"to gain access to {resource_type} resources required "
-                        "for the stack component, but they are in an error "
-                        "state or they didn't list any matching resources. "
-                    )
-                command_args = ""
-                if requirements.connector_type:
-                    command_args += (
-                        f" --connector-type {requirements.connector_type}"
-                    )
-                command_args += (
-                    f" --resource-type {requirements.resource_type}"
-                )
-                if resource_id:
-                    command_args += f" --resource-id {resource_id}"
-
-                cli_utils.error(
-                    f"No compatible valid resources were found for the "
-                    f"'{component_model.name}' {display_name} in your "
-                    f"workspace. {additional_info}You can create a new "
-                    "connector using the 'zenml service-connector register' "
-                    "command or list the compatible resources using the "
-                    f"'zenml service-connector list-resources{command_args}' "
-                    "command."
-                )
-
-            # Prompt the user to select a connector and a resource ID, if
-            # applicable
-            connector_id, resource_id = prompt_select_resource(resource_list)
-            no_verify = False
-        else:
-            # Non-interactive mode: we need to fetch the connector model first
-
-            assert connector is not None
-            try:
-                connector_model = client.get_service_connector(connector)
-            except KeyError as err:
-                cli_utils.error(
-                    f"Could not find a connector '{connector}': " f"{str(err)}"
-                )
-
-            connector_id = connector_model.id
-
-            satisfied, msg = requirements.is_satisfied_by(
-                connector_model, component_model
-            )
-            if not satisfied:
-                cli_utils.error(
-                    f"The connector with ID {connector_id} does not match the "
-                    f"component's connector requirements: {msg}. Please pick "
-                    "a connector that is compatible with the component "
-                    "flavor and try again, or use the interactive mode to "
-                    "select a compatible connector."
-                )
-
-            if not resource_id:
-                if connector_model.resource_id:
-                    resource_id = connector_model.resource_id
-                elif connector_model.supports_instances:
-                    cli_utils.error(
-                        f"Multiple {resource_type} resources are available for "
-                        "the selected connector. Please use the "
-                        "`--resource-id` command line argument to configure a "
-                        f"{resource_type} resource or use the interactive mode "
-                        "to select a resource interactively."
-                    )
-
-        connector_resources: Optional[ServiceConnectorResourcesModel] = None
-        if not no_verify:
-            with console.status(
-                "Validating service connector resource configuration...\n"
-            ):
-                try:
-                    connector_resources = client.verify_service_connector(
-                        connector_id,
-                        resource_type=requirements.resource_type,
-                        resource_id=resource_id,
-                    )
-                except (
-                    KeyError,
-                    ValueError,
-                    IllegalOperationError,
-                    NotImplementedError,
-                    AuthorizationException,
-                ) as e:
-                    cli_utils.error(
-                        f"Access to the resource could not be verified: {e}"
-                    )
-            resources = connector_resources.resources[0]
-            if resources.resource_ids:
-                if len(resources.resource_ids) > 1:
-                    cli_utils.error(
-                        f"Multiple {resource_type} resources are available for "
-                        "the selected connector. Please use the "
-                        "`--resource-id` command line argument to configure a "
-                        f"{resource_type} resource or use the interactive mode "
-                        "to select a resource interactively."
-                    )
-                else:
-                    resource_id = resources.resource_ids[0]
-
         with console.status(
-            f"Updating {display_name} '{name_id_or_prefix}'...\n"
+            f"Disconnecting service-connector from {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.update_stack_component(
+                updated_component = client.update_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
-                    connector_id=connector_id,
-                    connector_resource_id=resource_id,
+                    disconnect=True,
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
-        if connector_resources is not None:
             cli_utils.declare(
-                f"Successfully connected {display_name} "
-                f"`{component_model.name}` to the following resources:"
+                f"Successfully disconnected the service-connector from {display_name} `{name_id_or_prefix}`."
             )
+            print_model_url(get_component_url(updated_component))
 
-            cli_utils.print_service_connector_resource_table(
-                [connector_resources]
-            )
-
-        else:
-            cli_utils.declare(
-                f"Successfully connected {display_name} "
-                f"`{component_model.name}` to resource."
-            )
-
-    return connect_stack_component_command
+    return disconnect_stack_component_command
 
 
 def register_single_stack_component_cli_commands(
@@ -1866,6 +1928,15 @@ def register_single_stack_component_cli_commands(
         help=f"Connect {singular_display_name} to a service connector.",
     )(connect_command)
 
+    # zenml stack-component connect
+    disconnect_command = generate_stack_component_disconnect_command(
+        component_type
+    )
+    command_group.command(
+        "disconnect",
+        help=f"Disconnect {singular_display_name} from a service connector.",
+    )(disconnect_command)
+
     # zenml stack-component explain
     explain_command = generate_stack_component_explain_command(component_type)
     command_group.command(
@@ -1937,6 +2008,234 @@ def register_all_stack_component_cli_commands() -> None:
     for component_type in StackComponentType:
         register_single_stack_component_cli_commands(
             component_type, parent_group=cli
+        )
+
+
+def connect_stack_component_with_service_connector(
+    component_type: StackComponentType,
+    name_id_or_prefix: Optional[str] = None,
+    connector: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    interactive: bool = False,
+    no_verify: bool = False,
+) -> None:
+    """Connect the stack component to a resource through a service connector.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+        name_id_or_prefix: The name of the stack component to connect.
+        connector: The name, ID or prefix of the connector to use.
+        resource_id: The resource ID to use connect to. Only
+            required for multi-instance connectors that are not already
+            configured with a particular resource ID.
+        interactive: Configure a service connector resource interactively.
+        no_verify: Do not verify whether the resource is accessible.
+    """
+    display_name = _component_display_name(component_type)
+
+    if component_type == StackComponentType.SECRETS_MANAGER:
+        warn_deprecated_secrets_manager()
+
+    if not connector and not interactive:
+        cli_utils.error(
+            "Please provide either a connector ID or set the interactive "
+            "flag."
+        )
+
+    if connector and interactive:
+        cli_utils.error(
+            "Please provide either a connector ID or set the interactive "
+            "flag, not both."
+        )
+
+    client = Client()
+
+    try:
+        component_model = client.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
+            component_type=component_type,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    try:
+        flavor_model = client.get_flavor_by_name_and_type(
+            name=component_model.flavor, component_type=component_type
+        )
+    except KeyError as err:
+        cli_utils.error(
+            f"Could not find flavor '{component_model.flavor}' for "
+            f"{display_name} '{name_id_or_prefix}': {str(err)}"
+        )
+
+    requirements = flavor_model.connector_requirements
+
+    if not requirements:
+        cli_utils.error(
+            f"The '{component_model.name}' {display_name} implementation "
+            "does not support using a service connector to connect to "
+            "resources."
+        )
+
+    resource_type = requirements.resource_type
+    if requirements.resource_id_attr is not None:
+        # Check if an attribute is set in the component configuration
+        resource_id = component_model.configuration.get(
+            requirements.resource_id_attr
+        )
+
+    if interactive:
+        # Fetch the list of connectors that have resources compatible with
+        # the stack component's flavor's resource requirements
+        with console.status(
+            "Finding all resources matching the stack component "
+            "requirements (this could take a while)...\n"
+        ):
+            resource_list = client.list_service_connector_resources(
+                connector_type=requirements.connector_type,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+
+        resource_list = [
+            resource
+            for resource in resource_list
+            if resource.resources[0].resource_ids
+        ]
+
+        error_resource_list = [
+            resource
+            for resource in resource_list
+            if not resource.resources[0].resource_ids
+        ]
+
+        if not resource_list:
+            # No compatible resources were found
+            additional_info = ""
+            if error_resource_list:
+                additional_info = (
+                    f"{len(error_resource_list)} connectors can be used "
+                    f"to gain access to {resource_type} resources required "
+                    "for the stack component, but they are in an error "
+                    "state or they didn't list any matching resources. "
+                )
+            command_args = ""
+            if requirements.connector_type:
+                command_args += (
+                    f" --connector-type {requirements.connector_type}"
+                )
+            command_args += f" --resource-type {requirements.resource_type}"
+            if resource_id:
+                command_args += f" --resource-id {resource_id}"
+
+            cli_utils.error(
+                f"No compatible valid resources were found for the "
+                f"'{component_model.name}' {display_name} in your "
+                f"workspace. {additional_info}You can create a new "
+                "connector using the 'zenml service-connector register' "
+                "command or list the compatible resources using the "
+                f"'zenml service-connector list-resources{command_args}' "
+                "command."
+            )
+
+        # Prompt the user to select a connector and a resource ID, if
+        # applicable
+        connector_id, resource_id = prompt_select_resource(resource_list)
+        no_verify = False
+    else:
+        # Non-interactive mode: we need to fetch the connector model first
+
+        assert connector is not None
+        try:
+            connector_model = client.get_service_connector(connector)
+        except KeyError as err:
+            cli_utils.error(
+                f"Could not find a connector '{connector}': " f"{str(err)}"
+            )
+
+        connector_id = connector_model.id
+
+        satisfied, msg = requirements.is_satisfied_by(
+            connector_model, component_model
+        )
+        if not satisfied:
+            cli_utils.error(
+                f"The connector with ID {connector_id} does not match the "
+                f"component's `{name_id_or_prefix}` of type `{component_type}`"
+                f" connector requirements: {msg}. Please pick a connector that is"
+                "compatible with the component flavor and try again, or use "
+                "the interactive mode to select a compatible connector."
+            )
+
+        if not resource_id:
+            if connector_model.resource_id:
+                resource_id = connector_model.resource_id
+            elif connector_model.supports_instances:
+                cli_utils.error(
+                    f"Multiple {resource_type} resources are available for "
+                    "the selected connector. Please use the "
+                    "`--resource-id` command line argument to configure a "
+                    f"{resource_type} resource or use the interactive mode "
+                    "to select a resource interactively."
+                )
+
+    connector_resources: Optional[ServiceConnectorResourcesModel] = None
+    if not no_verify:
+        with console.status(
+            "Validating service connector resource configuration...\n"
+        ):
+            try:
+                connector_resources = client.verify_service_connector(
+                    connector_id,
+                    resource_type=requirements.resource_type,
+                    resource_id=resource_id,
+                )
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.error(
+                    f"Access to the resource could not be verified: {e}"
+                )
+        resources = connector_resources.resources[0]
+        if resources.resource_ids:
+            if len(resources.resource_ids) > 1:
+                cli_utils.error(
+                    f"Multiple {resource_type} resources are available for "
+                    "the selected connector. Please use the "
+                    "`--resource-id` command line argument to configure a "
+                    f"{resource_type} resource or use the interactive mode "
+                    "to select a resource interactively."
+                )
+            else:
+                resource_id = resources.resource_ids[0]
+
+    with console.status(f"Updating {display_name} '{name_id_or_prefix}'...\n"):
+        try:
+            client.update_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                connector_id=connector_id,
+                connector_resource_id=resource_id,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
+
+    if connector_resources is not None:
+        cli_utils.declare(
+            f"Successfully connected {display_name} "
+            f"`{component_model.name}` to the following resources:"
+        )
+
+        cli_utils.print_service_connector_resource_table([connector_resources])
+
+    else:
+        cli_utils.declare(
+            f"Successfully connected {display_name} "
+            f"`{component_model.name}` to resource."
         )
 
 

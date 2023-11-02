@@ -31,7 +31,7 @@ class FeastIntegration(Integration):
     """Definition of Feast integration for ZenML."""
 
     NAME = FEAST
-    REQUIREMENTS = ["feast[redis]~=0.26.0", "redis-server>=6.0.9"]
+    REQUIREMENTS = ["feast[redis]>=0.26.0", "redis-server>=6.0.9"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

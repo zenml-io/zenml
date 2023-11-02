@@ -44,6 +44,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    ENV_ZENML_SERVER,
     PAGE_SIZE_DEFAULT,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
@@ -52,6 +53,8 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    ModelStages,
+    OAuthDeviceStatus,
     PermissionType,
     SecretScope,
     StackComponentType,
@@ -62,7 +65,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -80,6 +82,9 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    OAuthDeviceFilterModel,
+    OAuthDeviceResponseModel,
+    OAuthDeviceUpdateModel,
     PipelineBuildFilterModel,
     PipelineBuildResponseModel,
     PipelineDeploymentFilterModel,
@@ -135,6 +140,20 @@ from zenml.models.artifact_models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models.model_models import (
+    ModelFilterModel,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelUpdateModel,
+    ModelVersionArtifactFilterModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionFilterModel,
+    ModelVersionPipelineRunFilterModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
+)
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
@@ -142,14 +161,13 @@ from zenml.models.schedule_model import (
     ScheduleResponseModel,
 )
 from zenml.utils import io_utils, source_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.metadata.metadata_types import MetadataType
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackComponentConfig
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -433,18 +451,17 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
-            root = root or Path.cwd()
-            logger.debug("Initializing new repository at path %s.", root)
-            if Client.is_repository_directory(root):
-                raise InitializationException(
-                    f"Found existing ZenML repository at path '{root}'."
-                )
+        root = root or Path.cwd()
+        logger.debug("Initializing new repository at path %s.", root)
+        if Client.is_repository_directory(root):
+            raise InitializationException(
+                f"Found existing ZenML repository at path '{root}'."
+            )
 
-            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-            io_utils.create_dir_recursive_if_not_exists(config_directory)
-            # Initialize the repository configuration at the custom path
-            Client(root=root)
+        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+        io_utils.create_dir_recursive_if_not_exists(config_directory)
+        # Initialize the repository configuration at the custom path
+        Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -556,11 +573,9 @@ class Client(metaclass=ClientMetaClass):
             True if the file is inside the active ZenML repository, False
             otherwise.
         """
-        repo_path = Client.find_repository()
-        if not repo_path:
-            return False
-
-        return repo_path in Path(file_path).resolve().parents
+        if repo_path := Client.find_repository():
+            return repo_path in Path(file_path).resolve().parents
+        return False
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -589,9 +604,7 @@ class Client(metaclass=ClientMetaClass):
             The configuration directory of this client, or None, if the
             client doesn't have an active root.
         """
-        if not self.root:
-            return None
-        return self.root / REPOSITORY_DIRECTORY_NAME
+        return self.root / REPOSITORY_DIRECTORY_NAME if self.root else None
 
     def activate_root(self, root: Optional[Path] = None) -> None:
         """Set the active repository root directory.
@@ -605,7 +618,6 @@ class Client(metaclass=ClientMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_WORKSPACE)
     def set_active_workspace(
         self, workspace_name_or_id: Union[str, UUID]
     ) -> "WorkspaceResponseModel":
@@ -664,11 +676,9 @@ class Client(metaclass=ClientMetaClass):
             The model of the created user.
         """
         user = UserRequestModel(name=name, password=password or None)
-        if self.zen_store.type != StoreType.REST:
-            user.active = password != ""
-        else:
-            user.active = True
-
+        user.active = (
+            password != "" if self.zen_store.type != StoreType.REST else True
+        )
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
@@ -708,6 +718,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
+        external_user_id: Optional[str] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -724,6 +735,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
             id: Use the id of stacks to filter by.
+            external_user_id: Use the external user id for filtering.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the username for filtering
@@ -742,6 +754,7 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 id=id,
+                external_user_id=external_user_id,
                 created=created,
                 updated=updated,
                 name=name,
@@ -879,12 +892,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created team.
         """
-        user_list = []
+        user_list: List[UUID] = []
         if users:
-            for user_name_or_id in users:
-                user_list.append(
-                    self.get_user(name_id_or_prefix=user_name_or_id).id
-                )
+            user_list.extend(
+                self.get_user(name_id_or_prefix=user_name_or_id).id
+                for user_name_or_id in users
+            )
 
         team = TeamRequestModel(name=name, users=user_list)
 
@@ -925,8 +938,7 @@ class Client(metaclass=ClientMetaClass):
 
         team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
-            union_add_rm = set(remove_users) & set(add_users)
-            if union_add_rm:
+            if union_add_rm := set(remove_users) & set(add_users):
                 raise RuntimeError(
                     f"The `remove_user` and `add_user` "
                     f"options both contain the same value(s): "
@@ -937,10 +949,9 @@ class Client(metaclass=ClientMetaClass):
 
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
-        team_users = []
-
-        if remove_users or add_users:
-            team_users = [u.id for u in team.users]
+        team_users = (
+            [u.id for u in team.users] if remove_users or add_users else []
+        )
         if remove_users:
             for rm_p in remove_users:
                 user = self.get_user(rm_p)
@@ -952,9 +963,7 @@ class Client(metaclass=ClientMetaClass):
                         f"part of the '{team.name}' Team."
                     )
         if add_users:
-            for add_u in add_users:
-                team_users.append(self.get_user(add_u).id)
-
+            team_users.extend(self.get_user(add_u).id for add_u in add_users)
         if team_users:
             team_update.users = team_users
 
@@ -1038,11 +1047,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly created role.
         """
-        permissions: Set[PermissionType] = set()
-        for permission in permissions_list:
-            if permission in PermissionType.values():
-                permissions.add(PermissionType(permission))
-
+        permissions: Set[PermissionType] = {
+            PermissionType(permission)
+            for permission in permissions_list
+            if permission in PermissionType.values()
+        }
         new_role = RoleRequestModel(name=name, permissions=permissions)
         return self.zen_store.create_role(new_role)
 
@@ -1075,8 +1084,7 @@ class Client(metaclass=ClientMetaClass):
         role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
-            union_add_rm = set(remove_permission) & set(add_permission)
-            if union_add_rm:
+            if union_add_rm := set(remove_permission) & set(add_permission):
                 raise RuntimeError(
                     f"The `remove_permission` and `add_permission` "
                     f"options both contain the same value(s): "
@@ -1357,21 +1365,22 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        workspace: Optional["WorkspaceResponseModel"] = None
-        if self._config:
-            workspace = self._config.active_workspace
+        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
-        if not workspace:
-            workspace = GlobalConfiguration().get_active_workspace()
+        # If running in a ZenML server environment, the active workspace is
+        # not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return self.get_workspace(DEFAULT_WORKSPACE_NAME)
 
+        workspace = (
+            self._config.active_workspace if self._config else None
+        ) or GlobalConfiguration().get_active_workspace()
         if not workspace:
             raise RuntimeError(
                 "No active workspace is configured. Run "
                 "`zenml workspace set WORKSPACE_NAME` to set the active "
                 "workspace."
             )
-
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
         if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
@@ -1590,6 +1599,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
+        stack_spec_file: Optional[str] = None,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
 
@@ -1597,6 +1607,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
             is_shared: boolean to decide whether the stack is shared
+            stack_spec_file: path to the stack spec file
 
         Returns:
             The model of the registered stack.
@@ -1605,7 +1616,7 @@ class Client(metaclass=ClientMetaClass):
             ValueError: If the stack contains private components and is
                 attempted to be registered as shared.
         """
-        stack_components = dict()
+        stack_components = {}
 
         for c_type, c_identifier in components.items():
             # Skip non-existent components.
@@ -1635,6 +1646,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             is_shared=is_shared,
+            stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1648,6 +1660,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
@@ -1659,6 +1672,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
             is_shared: the new shared status of the stack.
+            stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
@@ -1680,15 +1694,13 @@ class Client(metaclass=ClientMetaClass):
         update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            stack_spec_path=stack_spec_file,
         )
 
-        if name:
-            shared_status = is_shared or stack.is_shared
+        shared_status = is_shared or stack.is_shared
 
-            existing_stacks = self.list_stacks(
-                name=name, is_shared=shared_status
-            )
-            if existing_stacks:
+        if name:
+            if self.list_stacks(name=name, is_shared=shared_status):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
@@ -1698,10 +1710,7 @@ class Client(metaclass=ClientMetaClass):
 
         if is_shared:
             current_name = update_model.name or stack.name
-            existing_stacks = self.list_stacks(
-                name=current_name, is_shared=True
-            )
-            if existing_stacks:
+            if self.list_stacks(name=current_name, is_shared=True):
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{current_name}'."
@@ -1715,7 +1724,7 @@ class Client(metaclass=ClientMetaClass):
                             f"components are also shared. Component "
                             f"'{component_type}:{c.name}' is not shared. Set "
                             f"the {component_type} to shared like this and "
-                            f"then try re-sharing your stack:\n "
+                            f"then try re-sharing your stack:\n"
                             f"`zenml {component_type.replace('_', '-')} "
                             f"share {c.id}`\nAlternatively, you can rerun "
                             f"your command with `-r` to recursively "
@@ -1729,23 +1738,38 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components_dict = {}
-            for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [
-                    c.id for c in component_list
-                ]
+            components_dict = stack.components.copy()
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
                     components_dict[component_type] = [
                         self.get_stack_component(
-                            name_id_or_prefix=c,
+                            name_id_or_prefix=component_id,
                             component_type=component_type,
-                        ).id
-                        for c in component_id_list
+                        )
+                        for component_id in component_id_list
                     ]
 
-            update_model.components = components_dict
+            # If the stack is shared, ensure all new components are also shared
+            if shared_status:
+                for component_list in components_dict.values():
+                    for component in component_list:
+                        if not component.is_shared:
+                            raise ValueError(
+                                "Private components cannot be added to a "
+                                "shared stack. Component "
+                                f"'{component.type}:{component.name}' is not "
+                                "shared. Set the component to shared like "
+                                "this and then try adding it to your stack "
+                                "again:\n"
+                                f"`zenml {component.type.replace('_', '-')} "
+                                f"share {component.id}`."
+                            )
+
+            update_model.components = {
+                c_type: [c.id for c in c_list]
+                for c_type, c_list in components_dict.items()
+            }
 
         return self.zen_store.update_stack(
             stack_id=stack.id,
@@ -1799,11 +1823,10 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 # Check if the stack component is part of another stack
-                if len(stacks) == 1:
-                    if stack.id == stacks[0].id:
-                        stack_components_free_for_deletion.append(
-                            (component_type, component_model)
-                        )
+                if len(stacks) == 1 and stack.id == stacks[0].id:
+                    stack_components_free_for_deletion.append(
+                        (component_type, component_model)
+                    )
 
             self.delete_stack(stack.id)
 
@@ -1875,7 +1898,6 @@ class Client(metaclass=ClientMetaClass):
         stack_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_stacks(stack_filter_model)
 
-    @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
     ) -> None:
@@ -1890,11 +1912,11 @@ class Client(metaclass=ClientMetaClass):
         # Make sure the stack is registered
         try:
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
-        except KeyError:
+        except KeyError as e:
             raise KeyError(
                 f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
                 f"it is not registered yet. Please register it first."
-            )
+            ) from e
 
         if self._config:
             self._config.set_active_stack(stack=stack)
@@ -1926,30 +1948,38 @@ class Client(metaclass=ClientMetaClass):
                         name_id_or_prefix=component_id,
                         component_type=component_type,
                     )
-                except KeyError:
+                except KeyError as e:
                     raise KeyError(
                         f"Cannot register stack '{stack.name}' since it has an "
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
+                    ) from e
+
+                # Create and validate the configuration
+                from zenml.stack.utils import (
+                    validate_stack_component_config,
+                    warn_if_config_server_mismatch,
+                )
+
+                configuration = validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor_name=component.flavor,
+                    component_type=component.type,
+                    # Always enforce validation of custom flavors
+                    validate_custom_flavors=True,
+                )
+                # Guaranteed to not be None by setting
+                # `validate_custom_flavors=True` above
+                assert configuration is not None
+                warn_if_config_server_mismatch(configuration)
+                if configuration.is_local:
+                    local_components.append(
+                        f"{component.type.value}: {component.name}"
                     )
-            # Get the flavor model
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor, component_type=component.type
-            )
-
-            # Create and validate the configuration
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-            configuration = flavor.config_class(**component.configuration)
-            if configuration.is_local:
-                local_components.append(
-                    f"{component.type.value}: {component.name}"
-                )
-            elif configuration.is_remote:
-                remote_components.append(
-                    f"{component.type.value}: {component.name}"
-                )
+                elif configuration.is_remote:
+                    remote_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
 
         if local_components and remote_components:
             logger.warning(
@@ -2107,6 +2137,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
+        component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":
@@ -2115,6 +2146,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack component.
             flavor: The flavor of the stack component.
+            component_spec_path: The path to the stack spec file.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
@@ -2123,28 +2155,28 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered component.
         """
-        # Get the flavor model
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=flavor,
+        from zenml.stack.utils import (
+            validate_stack_component_config,
+            warn_if_config_server_mismatch,
+        )
+
+        validated_config = validate_stack_component_config(
+            configuration_dict=configuration,
+            flavor_name=flavor,
             component_type=component_type,
+            # Always enforce validation of custom flavors
+            validate_custom_flavors=True,
         )
-
-        # Create and validate the configuration
-        from zenml.stack import Flavor
-
-        flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(
-            warn_about_plain_text_secrets=True, **configuration
-        )
-
-        self._validate_stack_component_configuration(
-            component_type, configuration=configuration_obj
-        )
+        # Guaranteed to not be None by setting
+        # `validate_custom_flavors=True` above
+        assert validated_config is not None
+        warn_if_config_server_mismatch(validated_config)
 
         create_component_model = ComponentRequestModel(
             name=name,
             type=component_type,
             flavor=flavor,
+            component_spec_path=component_spec_path,
             configuration=configuration,
             is_shared=is_shared,
             user=self.active_user.id,
@@ -2162,9 +2194,11 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
+        component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
@@ -2175,9 +2209,12 @@ class Client(metaclass=ClientMetaClass):
                 update.
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
+            component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            disconnect: Whether to disconnect the stack component from its
+                service connector.
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
@@ -2198,6 +2235,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
+            component_spec_path=component_spec_path,
         )
 
         if name is not None:
@@ -2221,7 +2259,7 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=is_shared, type=component_type
             )
-            if any([e.id != component.id for e in existing_components.items]):
+            if any(e.id != component.id for e in existing_components.items):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
@@ -2231,26 +2269,29 @@ class Client(metaclass=ClientMetaClass):
         if configuration is not None:
             existing_configuration = component.configuration
             existing_configuration.update(configuration)
-
             existing_configuration = {
                 k: v
                 for k, v in existing_configuration.items()
                 if v is not None
             }
 
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor,
+            from zenml.stack.utils import (
+                validate_stack_component_config,
+                warn_if_config_server_mismatch,
+            )
+
+            validated_config = validate_stack_component_config(
+                configuration_dict=existing_configuration,
+                flavor_name=component.flavor,
                 component_type=component.type,
+                # Always enforce validation of custom flavors
+                validate_custom_flavors=True,
             )
+            # Guaranteed to not be None by setting
+            # `validate_custom_flavors=True` above
+            assert validated_config is not None
+            warn_if_config_server_mismatch(validated_config)
 
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-            configuration_obj = flavor.config_class(**existing_configuration)
-
-            self._validate_stack_component_configuration(
-                component.type, configuration=configuration_obj
-            )
             update_model.configuration = existing_configuration
 
         if labels is not None:
@@ -2262,10 +2303,22 @@ class Client(metaclass=ClientMetaClass):
             }
             update_model.labels = existing_labels
 
-        if connector_id is not None:
+        if disconnect:
+            update_model.connector = None
+            update_model.connector_resource_id = None
+        else:
+            existing_component = self.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
             update_model.connector = connector_id
-        if connector_resource_id is not None:
             update_model.connector_resource_id = connector_resource_id
+            if connector_id is None and existing_component.connector:
+                update_model.connector = existing_component.connector.id
+                update_model.connector_resource_id = (
+                    existing_component.connector_resource_id
+                )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
@@ -2296,283 +2349,6 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
-
-    def deploy_stack_component(
-        self,
-        name: str,
-        flavor: str,
-        cloud: str,
-        component_type: StackComponentType,
-        configuration: Optional[Dict[str, Any]] = {},
-        labels: Optional[Dict[str, Any]] = None,
-    ) -> Optional["ComponentResponseModel"]:
-        """Deploys a stack component.
-
-        Args:
-            name: The name of the deployed stack component.
-            flavor: The flavor of the deployed stack component.
-            cloud: The cloud of the deployed stack component.
-            component_type: The type of the stack component to deploy.
-            configuration: The configuration of the deployed stack component.
-            labels: The labels of the deployed stack component.
-
-        Returns:
-            The deployed stack component.
-        """
-        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
-
-        if component_type.value not in [
-            "artifact_store",
-            "container_registry",
-            "secrets_manager",
-        ]:
-            enabled_services = [f"{component_type.value}_{flavor}"]
-        else:
-            enabled_services = [f"{component_type.value}"]
-
-        # path should be fixed at a constant in the
-        # global config directory
-        path = Path(
-            os.path.join(
-                io_utils.get_global_config_directory(),
-                STACK_COMPONENT_RECIPE_DIR,
-                f"{cloud}-modular",
-            )
-        )
-
-        with event_handler(
-            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
-            v2=True,
-        ) as handler:
-            handler.metadata.update({component_type.value: flavor})
-
-            import python_terraform
-
-            from zenml.recipes import (
-                StackRecipeService,
-                StackRecipeServiceConfig,
-            )
-
-            # create the stack recipe service.
-            stack_recipe_service_config = StackRecipeServiceConfig(
-                directory_path=str(path),
-                enabled_services=enabled_services,
-                input_variables=configuration,
-            )
-
-            stack_recipe_service = StackRecipeService.get_service(str(path))
-
-            if stack_recipe_service:
-                logger.info(
-                    "An existing deployment of the recipe found. "
-                    f"with path {path}. "
-                    "Proceeding to update or create resources. "
-                )
-            else:
-                stack_recipe_service = StackRecipeService(
-                    config=stack_recipe_service_config,
-                    stack_recipe_name=f"{cloud}-modular",
-                )
-
-            try:
-                # start the service (the init and apply operation)
-                stack_recipe_service.start()
-
-            except python_terraform.TerraformCommandError:
-                logger.error(
-                    "Deployment of the stack component failed or was "
-                    "interrupted. "
-                )
-                return None
-
-            # get the outputs from the deployed recipe
-            outputs = stack_recipe_service.get_outputs()
-            outputs = {k: v for k, v in outputs.items() if v != ""}
-
-            # get all outputs that start with the component type into a map
-            comp_outputs = {
-                k: v
-                for k, v in outputs.items()
-                if k.startswith(component_type.value)
-            }
-
-            logger.info(
-                "Registering a new stack component of type %s with name '%s'.",
-                component_type,
-                name or comp_outputs[f"{component_type.value}_name"],
-            )
-
-            # call the register stack component function using the values of the outputs
-            # truncate the component type from the output
-            stack_comp = self.create_stack_component(
-                name=name or comp_outputs[f"{component_type.value}_name"],
-                flavor=comp_outputs[f"{component_type.value}_flavor"],
-                component_type=component_type,
-                configuration=eval(
-                    comp_outputs[f"{component_type.value}_configuration"]
-                ),
-                labels=labels,
-            )
-
-            # if the component is an experiment tracker of flavor mlflow, then
-            # output the name of the mlflow bucket if it exists
-            if (
-                component_type == StackComponentType.EXPERIMENT_TRACKER
-                and flavor == "mlflow"
-            ):
-                mlflow_bucket = outputs.get("mlflow-bucket")
-                if mlflow_bucket:
-                    logger.info(
-                        "The bucket used for MLflow is: %s "
-                        "You can use this bucket as an artifact store to "
-                        "avoid having to create a new one.",
-                        mlflow_bucket,
-                    )
-
-            # if the cloud is k3d, then check the container registry
-            # outputs. If they are set, then create one.
-            if cloud == "k3d":
-                container_registry_outputs = {
-                    k: v
-                    for k, v in outputs.items()
-                    if k.startswith("container_registry")
-                }
-                if container_registry_outputs:
-                    self.create_stack_component(
-                        name=container_registry_outputs[
-                            "container_registry_name"
-                        ],
-                        flavor=container_registry_outputs[
-                            "container_registry_flavor"
-                        ],
-                        component_type=StackComponentType.CONTAINER_REGISTRY,
-                        configuration=eval(
-                            container_registry_outputs[
-                                "container_registry_configuration"
-                            ]
-                        ),
-                    )
-
-        return stack_comp
-
-    def destroy_stack_component(
-        self,
-        component: ComponentResponseModel,
-    ) -> None:
-        """Destroys a stack component.
-
-        Args:
-            component: The stack component to destroy.
-
-        Returns:
-            None
-        """
-        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
-
-        if component.type.value not in [
-            "artifact_store",
-            "container_registry",
-            "secrets_manager",
-        ]:
-            disabled_services = [f"{component.type.value}_{component.flavor}"]
-        else:
-            disabled_services = [f"{component.type.value}"]
-
-        # assert that labels is not None
-        assert component.labels is not None
-        # path should be fixed at a constant in the
-        # global config directory
-        path = Path(
-            os.path.join(
-                io_utils.get_global_config_directory(),
-                STACK_COMPONENT_RECIPE_DIR,
-                f"{component.labels['cloud']}-modular",
-            )
-        )
-
-        with event_handler(
-            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
-            v2=True,
-        ) as handler:
-            handler.metadata.update({component.type.value: component.flavor})
-
-            import python_terraform
-
-            from zenml.recipes import (
-                StackRecipeService,
-            )
-
-            stack_recipe_service = StackRecipeService.get_service(str(path))
-
-            if not stack_recipe_service:
-                logger.error(
-                    f"No deployed {component.type.value} found with "
-                    f"flavor {component.flavor} and name {component.name}."
-                )
-                return None
-
-            stack_recipe_service.config.disabled_services = disabled_services
-
-            try:
-                # start the service (the init and apply operation)
-                stack_recipe_service.stop()
-
-            except python_terraform.TerraformCommandError:
-                logger.error(
-                    "Destruction of the stack component failed or was "
-                    "interrupted. "
-                )
-                return None
-
-        logger.info(
-            "Deregistering stack component %s...",
-            component.name,
-        )
-
-        # call the delete stack component function
-        self.delete_stack_component(
-            name_id_or_prefix=component.name,
-            component_type=component.type,
-        )
-
-    def _validate_stack_component_configuration(
-        self,
-        component_type: "StackComponentType",
-        configuration: "StackComponentConfig",
-    ) -> None:
-        """Validates the configuration of a stack component.
-
-        Args:
-            component_type: The type of the component.
-            configuration: The component configuration to validate.
-
-        Raises:
-            StackComponentValidationError: in case the stack component configuration is invalid.
-        """
-        from zenml.enums import StoreType
-
-        if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type != StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local ZenML server. The component "
-                    "may not be able to reach the local ZenML server and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-        elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warning(
-                "You are configuring a stack component that is using "
-                "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by "
-                "other users. You should consider using a non-local stack "
-                "component alternative instead."
-            )
-        if not configuration.is_valid:
-            raise StackComponentValidationError(
-                f"Invalid stack component configuration. please verify "
-                f"the configurations set for {component_type}."
-            )
 
     # .---------.
     # | FLAVORS |
@@ -2743,24 +2519,23 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        flavors = self.list_flavors(
-            type=component_type,
-            name=name,
-        ).items
-
-        if flavors:
-            if len(flavors) > 1:
-                raise KeyError(
-                    f"More than one flavor with name {name} and type "
-                    f"{component_type} exists."
-                )
-
-            return flavors[0]
-        else:
+        if not (
+            flavors := self.list_flavors(
+                type=component_type,
+                name=name,
+            ).items
+        ):
             raise KeyError(
                 f"No flavor with name '{name}' and type '{component_type}' "
                 "exists."
             )
+        if len(flavors) > 1:
+            raise KeyError(
+                f"More than one flavor with name {name} and type "
+                f"{component_type} exists."
+            )
+
+        return flavors[0]
 
     # -------------
     # - PIPELINES -
@@ -3660,7 +3435,7 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> Dict[str, RunMetadataResponseModel]:
+    ) -> List[RunMetadataResponseModel]:
         """Create run metadata.
 
         Args:
@@ -3703,7 +3478,8 @@ class Client(metaclass=ClientMetaClass):
                 "`step_run_id` or only an `artifact_id`."
             )
 
-        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        values: Dict[str, "MetadataType"] = {}
+        types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -3712,7 +3488,6 @@ class Client(metaclass=ClientMetaClass):
                     "stored in the database. Skipping."
                 )
                 continue
-
             # Skip metadata that is not of a supported type.
             try:
                 metadata_type = get_metadata_type(value)
@@ -3722,21 +3497,20 @@ class Client(metaclass=ClientMetaClass):
                     f"type. Skipping. Full error: {e}"
                 )
                 continue
+            values[key] = value
+            types[key] = metadata_type
 
-            run_metadata = RunMetadataRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-                artifact_id=artifact_id,
-                stack_component_id=stack_component_id,
-                key=key,
-                value=value,
-                type=metadata_type,
-            )
-            metadata_model = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata[key] = metadata_model
-        return created_metadata
+        run_metadata = RunMetadataRequestModel(
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            values=values,
+            types=types,
+        )
+        return self.zen_store.create_run_metadata(run_metadata)
 
     def list_run_metadata(
         self,
@@ -4565,9 +4339,8 @@ class Client(metaclass=ClientMetaClass):
                 "Python packages and ZenML integrations and try again."
             )
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_type = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_type = connector.resource_types[0].resource_type
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
@@ -4808,9 +4581,8 @@ class Client(metaclass=ClientMetaClass):
         else:
             resource_types = resource_type
 
-        if not resource_type:
-            if len(connector.resource_types) == 1:
-                resource_types = connector.resource_types[0].resource_type
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_types = connector.resource_types[0].resource_type
 
         if resource_id == "":
             resource_id = None
@@ -5198,6 +4970,377 @@ class Client(metaclass=ClientMetaClass):
             connector_type=connector_type,
         )
 
+    #########
+    # Model
+    #########
+
+    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+        """Creates a new model in Model Control Plane.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+        """
+        return self.zen_store.create_model(model=model)
+
+    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be deleted.
+        """
+        self.zen_store.delete_model(model_name_or_id=model_name_or_id)
+
+    def update_model(
+        self,
+        model_id: UUID,
+        model_update: ModelUpdateModel,
+    ) -> ModelResponseModel:
+        """Updates an existing model in Model Control Plane.
+
+        Args:
+            model_id: UUID of the model to be updated.
+            model_update: the Model to be updated.
+
+        Returns:
+            The updated model.
+        """
+        return self.zen_store.update_model(
+            model_id=model_id, model_update=model_update
+        )
+
+    def get_model(
+        self, model_name_or_id: Union[str, UUID]
+    ) -> ModelResponseModel:
+        """Get an existing model from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The model of interest.
+        """
+        return self.zen_store.get_model(model_name_or_id=model_name_or_id)
+
+    def list_models(
+        self,
+        model_filter_model: ModelFilterModel,
+    ) -> Page[ModelResponseModel]:
+        """Get models by filter from Model Control Plane.
+
+        Args:
+            model_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all models.
+        """
+        return self.zen_store.list_models(
+            model_filter_model=model_filter_model
+        )
+
+    #################
+    # Model Versions
+    #################
+
+    def create_model_version(
+        self, model_version: ModelVersionRequestModel
+    ) -> ModelVersionResponseModel:
+        """Creates a new model version in Model Control Plane.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+        """
+        return self.zen_store.create_model_version(model_version=model_version)
+
+    def delete_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_id: name or id of the model version to be deleted.
+        """
+        self.zen_store.delete_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_id=model_version_name_or_id,
+        )
+
+    def get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
+    ) -> ModelVersionResponseModel:
+        """Get an existing model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
+
+        Returns:
+            The model version of interest.
+        """
+        return self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+
+    def list_model_versions(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_filter_model: ModelVersionFilterModel,
+    ) -> Page[ModelVersionResponseModel]:
+        """Get model versions by filter from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model versions.
+        """
+        return self.zen_store.list_model_versions(
+            model_name_or_id=model_name_or_id,
+            model_version_filter_model=model_version_filter_model,
+        )
+
+    def update_model_version(
+        self,
+        model_version_id: UUID,
+        model_version_update_model: ModelVersionUpdateModel,
+    ) -> ModelVersionResponseModel:
+        """Get all model versions by filter.
+
+        Args:
+            model_version_id: The ID of model version to be updated.
+            model_version_update_model: The model version to be updated.
+
+        Returns:
+            An updated model version.
+        """
+        return self.zen_store.update_model_version(
+            model_version_id=model_version_id,
+            model_version_update_model=model_version_update_model,
+        )
+
+    #################################################
+    # Model Versions Artifacts
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_artifact_links(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
+    ) -> Page[ModelVersionArtifactResponseModel]:
+        """Get model version to artifact links by filter in Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
+            model_version_artifact_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to artifact links.
+        """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+        return self.zen_store.list_model_version_artifact_links(
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+        )
+
+    #################################################
+    # Model Versions Pipeline Runs
+    #
+    # Only view capabilities are exposed via client.
+    #################################################
+
+    def list_model_version_pipeline_run_links(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
+    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
+            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+        return self.zen_store.list_model_version_pipeline_run_links(
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+        )
+
+    # .--------------------.
+    # | AUTHORIZED_DEVICES |
+    # '--------------------'
+
+    def list_authorized_devices(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        expires: Optional[Union[datetime, str]] = None,
+        client_id: Union[UUID, str, None] = None,
+        status: Union[OAuthDeviceStatus, str, None] = None,
+        trusted_device: Union[bool, str, None] = None,
+        failed_auth_attempts: Union[int, str, None] = None,
+        last_login: Optional[Union[datetime, str, None]] = None,
+    ) -> Page[OAuthDeviceResponseModel]:
+        """List all authorized devices.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the code repository to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            expires: Use the expiration date for filtering.
+            client_id: Use the client id for filtering.
+            status: Use the status for filtering.
+            trusted_device: Use the trusted device flag for filtering.
+            failed_auth_attempts: Use the failed auth attempts for filtering.
+            last_login: Use the last login date for filtering.
+
+        Returns:
+            A page of authorized devices matching the filter.
+        """
+        filter_model = OAuthDeviceFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            expires=expires,
+            client_id=client_id,
+            status=status,
+            trusted_device=trusted_device,
+            failed_auth_attempts=failed_auth_attempts,
+            last_login=last_login,
+        )
+        return self.zen_store.list_authorized_devices(
+            filter_model=filter_model
+        )
+
+    def get_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        allow_id_prefix_match: bool = True,
+    ) -> OAuthDeviceResponseModel:
+        """Get an authorized device by id or prefix.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            allow_id_prefix_match: If True, allow matching by ID prefix.
+
+        Returns:
+            The requested authorized device.
+
+        Raises:
+            KeyError: If no authorized device is found with the given ID or
+                prefix.
+        """
+        if isinstance(id_or_prefix, str):
+            try:
+                id_or_prefix = UUID(id_or_prefix)
+            except ValueError:
+                if not allow_id_prefix_match:
+                    raise KeyError(
+                        f"No authorized device found with id or prefix "
+                        f"'{id_or_prefix}'."
+                    )
+        if isinstance(id_or_prefix, UUID):
+            return self.zen_store.get_authorized_device(id_or_prefix)
+        return self._get_entity_by_prefix(
+            get_method=self.zen_store.get_authorized_device,
+            list_method=self.list_authorized_devices,
+            partial_id_or_name=id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+    def update_authorized_device(
+        self,
+        id_or_prefix: Union[UUID, str],
+        locked: Optional[bool] = None,
+    ) -> OAuthDeviceResponseModel:
+        """Update an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+            locked: Whether to lock or unlock the authorized device.
+
+        Returns:
+            The updated authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix, allow_id_prefix_match=False
+        )
+        return self.zen_store.update_authorized_device(
+            device_id=device.id,
+            update=OAuthDeviceUpdateModel(
+                locked=locked,
+            ),
+        )
+
+    def delete_authorized_device(
+        self,
+        id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an authorized device.
+
+        Args:
+            id_or_prefix: The ID or ID prefix of the authorized device.
+        """
+        device = self.get_authorized_device(
+            id_or_prefix=id_or_prefix,
+            allow_id_prefix_match=False,
+        )
+        self.zen_store.delete_authorized_device(device.id)
+
     # ---- utility prefix matching get functions -----
 
     @staticmethod
@@ -5293,7 +5436,11 @@ class Client(metaclass=ClientMetaClass):
         if entity.total == 1:
             return entity.items[0]
 
-        entity_label = get_method.__name__.replace("get_", "") + "s"
+        irregular_plurals = {"code_repository": "code_repositories"}
+        entity_label = irregular_plurals.get(
+            get_method.__name__.replace("get_", ""),
+            get_method.__name__.replace("get_", "") + "s",
+        )
 
         prefix_description = (
             "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"

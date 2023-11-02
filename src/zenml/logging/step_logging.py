@@ -12,30 +12,40 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML logging handler."""
-
-import io
-import logging
 import os
+import re
+import sys
 import time
-from io import StringIO
-from logging import LogRecord
-from logging.handlers import TimedRotatingFileHandler
-from typing import Optional
+from contextvars import ContextVar
+from types import TracebackType
+from typing import Any, Callable, List, Optional, Type
 from uuid import uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.logging import (
-    LOGS_HANDLER_INTERVAL_SECONDS,
-    LOGS_HANDLER_MAX_MESSAGES,
-    STEP_STDERR_LOGGER_NAME,
-    STEP_STDOUT_LOGGER_NAME,
+    STEP_LOGS_STORAGE_INTERVAL_SECONDS,
+    STEP_LOGS_STORAGE_MAX_MESSAGES,
 )
-from zenml.utils.io_utils import is_remote
 
 # Get the logger
 logger = get_logger(__name__)
+
+redirected: ContextVar[bool] = ContextVar("redirected", default=False)
+
+
+def remove_ansi_escape_codes(text: str) -> str:
+    """Auxiliary function to remove ANSI escape codes from a given string.
+
+    Args:
+        text: the input string
+
+    Returns:
+        the version of the input string where the escape codes are removed.
+    """
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 def prepare_logs_uri(
@@ -76,138 +86,65 @@ def prepare_logs_uri(
     return logs_uri
 
 
-class StepStdOut(StringIO):
-    """A replacement for the sys.stdout to turn outputs into logging entries.
+class StepLogsStorage:
+    """Helper class which buffers and stores logs to a given URI."""
 
-    When used in combination with the ZenHandler, this class allows us to
-    capture any print statements or third party outputs as logs and store them
-    in the artifact store.
-
-    Right now, this is only used during the execution of a ZenML step.
-    """
-
-    stdout_logger = logging.getLogger(STEP_STDOUT_LOGGER_NAME)
-
-    def write(self, message: str) -> int:
-        """Write the incoming string as an info log entry.
+    def __init__(
+        self,
+        logs_uri: str,
+        max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
+        time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
+    ) -> None:
+        """Initialization.
 
         Args:
-            message: the incoming message string
-
-        Returns:
-            the length of the message string
+            logs_uri: the target URI to store the logs.
+            max_messages: the maximum number of messages to save in the buffer.
+            time_interval: the amount of seconds before the buffer gets saved
+                automatically.
         """
-        if message != "\n":
-            self.stdout_logger.info(message)
-        return len(message)
-
-
-class StepStdErr(StringIO):
-    """A replacement for the sys.stderr to turn outputs into logging entries.
-
-    When used in combination with the ZenHandler, this class allows us to
-    capture any stderr outputs as logs and store them in the artifact store.
-
-    Right now, this is only used during the execution of a ZenML step.
-    """
-
-    stderr_logger = logging.getLogger(STEP_STDERR_LOGGER_NAME)
-
-    def write(self, message: str) -> int:
-        """Write the incoming string as an info log entry.
-
-        Args:
-            message: the incoming message string
-
-        Returns:
-            the length of the message string
-        """
-        if message != "\n":
-            self.stderr_logger.info(message)
-        return len(message)
-
-
-class StepLoggingFormatter(logging.Formatter):
-    """Specialized formatter changing the level name if step handler is used."""
-
-    def format(self, record: logging.LogRecord) -> str:
-        """Specialized format method to distinguish between logs and stdout.
-
-        Args:
-            record: the incoming log record
-
-        Returns:
-            the formatted string
-        """
-        if record.name == STEP_STDOUT_LOGGER_NAME:
-            record.levelname = "STDOUT"
-
-        if record.name == STEP_STDERR_LOGGER_NAME:
-            record.levelname = "STDERR"
-
-        return super().format(record)
-
-
-class StepLoggingHandler(TimedRotatingFileHandler):
-    """Specialized handler that stores ZenML step logs in artifact stores."""
-
-    def __init__(self, logs_uri: str):
-        """Initializes the handler.
-
-        Args:
-            logs_uri: URI of the logs file.
-        """
+        # Parameters
         self.logs_uri = logs_uri
-        self.max_messages = LOGS_HANDLER_MAX_MESSAGES
-        self.buffer = io.StringIO()
-        self.message_count = 0
-        self.last_upload_time = time.time()
-        self.local_temp_file: Optional[str] = None
+        self.max_messages = max_messages
+        self.time_interval = time_interval
+
+        # State
+        self.buffer: List[str] = []
+        self.disabled_buffer: List[str] = []
+        self.last_save_time = time.time()
         self.disabled = False
 
-        # set local_logging_file to self.logs_uri if self.logs_uri is a
-        # local path otherwise, set local_logging_file to a temporary file
-        if is_remote(self.logs_uri):
-            # We log to a temporary file first, because
-            # TimedRotatingFileHandler does not support writing
-            # to a remote file, but still needs a file to get going
-            local_logging_file = f".zenml_tmp_logs_{int(time.time())}"
-            self.local_temp_file = local_logging_file
-        else:
-            local_logging_file = self.logs_uri
-
-        super().__init__(
-            local_logging_file,
-            when="s",
-            interval=LOGS_HANDLER_INTERVAL_SECONDS,
-        )
-
-    def emit(self, record: LogRecord) -> None:
-        """Emits the log record.
+    def write(self, text: str) -> None:
+        """Main write method.
 
         Args:
-            record: Log record to emit.
+            text: the incoming string.
         """
-        msg = self.format(record)
-        self.buffer.write(msg + "\n")
-        self.message_count += 1
+        if text == "\n":
+            return
 
-        current_time = time.time()
-        time_elapsed = current_time - self.last_upload_time
+        if not self.disabled:
+            self.buffer.append(text)
 
-        if (
-            self.message_count >= self.max_messages
-            or time_elapsed >= self.interval
-        ):
-            self.flush()
+            if (
+                len(self.buffer) >= self.max_messages
+                or time.time() - self.last_save_time >= self.time_interval
+            ):
+                self.save_to_file()
 
-    def flush(self) -> None:
-        """Flushes the buffer to the artifact store."""
+    def save_to_file(self) -> None:
+        """Method to save the buffer to the given URI."""
         if not self.disabled:
             try:
                 self.disabled = True
-                with fileio.open(self.logs_uri, mode="wb") as log_file:
-                    log_file.write(self.buffer.getvalue().encode("utf-8"))
+
+                if self.buffer:
+                    with fileio.open(self.logs_uri, "a") as file:
+                        for message in self.buffer:
+                            file.write(
+                                remove_ansi_escape_codes(message) + "\n"
+                            )
+
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
                 # underlying system calls, such as reaching the maximum number
@@ -215,49 +152,103 @@ class StepLoggingHandler(TimedRotatingFileHandler):
                 # I/O errors.
                 logger.error(f"Error while trying to write logs: {e}")
             finally:
-                self.disabled = False
+                self.buffer = []
+                self.last_save_time = time.time()
 
-        self.message_count = 0
-        self.last_upload_time = time.time()
-
-    def doRollover(self) -> None:
-        """Flushes the buffer and performs a rollover."""
-        self.flush()
-        super().doRollover()
-
-    def close(self) -> None:
-        """Tidy up any resources used by the handler."""
-        self.flush()
-        super().close()
-
-        if not self.disabled:
-            try:
-                self.disabled = True
-                if self.local_temp_file and fileio.exists(
-                    self.local_temp_file
-                ):
-                    fileio.remove(self.local_temp_file)
-            except (OSError, IOError) as e:
-                # This exception can be raised if there are issues with the
-                # underlying system calls, such as reaching the maximum number
-                # of open files, permission issues, file corruption, or other
-                # I/O errors.
-                logger.error(f"Error while close the logger: {e}")
-            finally:
                 self.disabled = False
 
 
-def get_step_logging_handler(logs_uri: str) -> StepLoggingHandler:
-    """Sets up a logging handler for the artifact store.
+class StepLogsStorageContext:
+    """Context manager which patches stdout and stderr during step execution."""
 
-    Args:
-        logs_uri: The URI of the output artifact.
+    def __init__(self, logs_uri: str) -> None:
+        """Initializes and prepares a storage object.
 
-    Returns:
-        The logging handler.
-    """
-    log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
-    handler = StepLoggingHandler(logs_uri)
-    handler.setFormatter(StepLoggingFormatter(log_format, datefmt=date_format))
-    return handler
+        Args:
+            logs_uri: the URI of the logs file.
+        """
+        self.storage = StepLogsStorage(logs_uri=logs_uri)
+
+    def __enter__(self) -> "StepLogsStorageContext":
+        """Enter condition of the context manager.
+
+        Wraps the `write` method of both stderr and stdout, so each incoming
+        message gets stored in the step logs storage.
+
+        Returns:
+            self
+        """
+        self.stdout_write = getattr(sys.stdout, "write")
+        self.stdout_flush = getattr(sys.stdout, "flush")
+
+        self.stderr_write = getattr(sys.stderr, "write")
+        self.stderr_flush = getattr(sys.stderr, "flush")
+
+        setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
+        setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
+
+        setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
+        setattr(sys.stderr, "flush", self._wrap_flush(self.stdout_flush))
+
+        redirected.set(True)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Exit condition of the context manager.
+
+        Args:
+            exc_type: The class of the exception
+            exc_val: The instance of the exception
+            exc_tb: The traceback of the exception
+
+        Restores the `write` method of both stderr and stdout.
+        """
+        self.storage.save_to_file()
+
+        setattr(sys.stdout, "write", self.stdout_write)
+        setattr(sys.stdout, "flush", self.stdout_flush)
+
+        setattr(sys.stderr, "write", self.stderr_write)
+        setattr(sys.stderr, "flush", self.stderr_flush)
+
+        redirected.set(False)
+
+    def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrapper function that utilizes the storage object to store logs.
+
+        Args:
+            method: the original write method
+
+        Returns:
+            the wrapped write method.
+        """
+
+        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
+            output = method(*args, **kwargs)
+            if args:
+                self.storage.write(args[0])
+            return output
+
+        return wrapped_write
+
+    def _wrap_flush(self, method: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrapper function that flushes the buffer of the storage object.
+
+        Args:
+            method: the original flush method
+
+        Returns:
+            the wrapped flush method.
+        """
+
+        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
+            output = method(*args, **kwargs)
+            self.storage.save_to_file()
+            return output
+
+        return wrapped_flush

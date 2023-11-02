@@ -37,6 +37,7 @@ from zenml.models import (
     ArtifactResponseModel,
     CodeRepositoryResponseModel,
     PipelineBuildResponseModel,
+    PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
@@ -145,8 +146,8 @@ def local_artifact_store():
 
 
 @pytest.fixture
-def remote_artifact_store():
-    """Fixture that creates a local artifact store for testing."""
+def gcp_artifact_store():
+    """Fixture that creates a GCP artifact store for testing."""
     from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
         GCPArtifactStore,
     )
@@ -159,6 +160,29 @@ def remote_artifact_store():
         id=uuid4(),
         config=GCPArtifactStoreConfig(path="gs://bucket"),
         flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def s3_artifact_store():
+    """Fixture that creates an S3 artifact store for testing."""
+    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
+        S3ArtifactStore,
+    )
+    from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+        S3ArtifactStoreConfig,
+    )
+
+    return S3ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=S3ArtifactStoreConfig(path="s3://tmp"),
+        flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         workspace=uuid4(),
@@ -252,17 +276,6 @@ def generate_empty_steps():
 
 
 @pytest.fixture
-def empty_pipeline():
-    """Pytest fixture that returns an empty pipeline."""
-
-    @pipeline
-    def _pipeline():
-        pass
-
-    return _pipeline
-
-
-@pytest.fixture
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
@@ -339,6 +352,7 @@ def step_context_with_no_output(
         cache_enabled=True,
         output_materializers={},
         output_artifact_uris={},
+        output_artifact_configs={},
     )
 
 
@@ -350,7 +364,7 @@ def step_context_with_single_output(
 ) -> StepContext:
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
-
+    artifact_configs = {"output_1": None}
     StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
@@ -359,6 +373,7 @@ def step_context_with_single_output(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
     )
 
 
@@ -376,6 +391,7 @@ def step_context_with_two_outputs(
         "output_1": "",
         "output_2": "",
     }
+    artifact_configs = {"output_1": None, "output_2": None}
 
     StepContext._clear()
     return StepContext(
@@ -385,6 +401,7 @@ def step_context_with_two_outputs(
         cache_enabled=True,
         output_materializers=materializers,
         output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
     )
 
 
@@ -432,6 +449,7 @@ def sample_step_request_model() -> StepRunRequestModel:
         config=config,
         workspace=uuid4(),
         user=uuid4(),
+        deployment=uuid4(),
     )
 
 
@@ -461,6 +479,22 @@ def sample_pipeline_run(
 
 
 @pytest.fixture
+def sample_pipeline_deployment_request_model() -> (
+    PipelineDeploymentRequestModel
+):
+    """Return sample pipeline deployment request for testing purposes."""
+    return PipelineDeploymentRequestModel(
+        user=uuid4(),
+        workspace=uuid4(),
+        run_name_template="aria-blupus",
+        pipeline_configuration=PipelineConfiguration(name="axls-pipeline"),
+        client_version="0.12.3",
+        server_version="0.12.3",
+        stack=uuid4(),
+    )
+
+
+@pytest.fixture
 def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequestModel(
@@ -471,6 +505,8 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         workspace=uuid4(),
+        deployment=uuid4(),
+        pipeline=uuid4(),
     )
 
 
@@ -541,6 +577,7 @@ def create_step_run(
             id=uuid4(),
             name=step_run_name,
             pipeline_run_id=uuid4(),
+            deployment_id=uuid4(),
             spec=spec,
             config=config,
             status=ExecutionStatus.COMPLETED,
@@ -596,6 +633,8 @@ def sample_deployment_response_model(
         workspace=sample_workspace_model,
         run_name_template="",
         pipeline_configuration={"name": ""},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
 

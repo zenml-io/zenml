@@ -169,6 +169,7 @@ def resolve(
                 subdirectory=subdir.as_posix(),
                 module=module_name,
                 attribute=attribute_name,
+                type=SourceType.CODE_REPOSITORY,
             )
 
         module_name = _resolve_module(module)

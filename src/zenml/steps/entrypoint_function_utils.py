@@ -31,8 +31,8 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import (
+    OutputSignature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -133,7 +133,7 @@ class EntrypointFunctionDefinition(NamedTuple):
     """
 
     inputs: Dict[str, inspect.Parameter]
-    outputs: Dict[str, Any]
+    outputs: Dict[str, OutputSignature]
     context: Optional[inspect.Parameter]
     legacy_params: Optional[inspect.Parameter]
 
@@ -153,7 +153,10 @@ class EntrypointFunctionDefinition(NamedTuple):
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
-        from zenml.materializers import UnmaterializedArtifact
+        from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.artifacts.unmaterialized_artifact import (
+            UnmaterializedArtifact,
+        )
 
         if key not in self.inputs:
             raise KeyError(
@@ -175,6 +178,15 @@ class EntrypointFunctionDefinition(NamedTuple):
                 "is not allowed."
             )
 
+        if not yaml_utils.is_json_serializable(value):
+            raise StepInterfaceError(
+                f"Argument type (`{type(value)}`) for argument "
+                f"'{key}' is not JSON serializable and can not be passed as "
+                "a parameter. This input can either be provided by the "
+                "output of another step or as an external artifact: "
+                "https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines#pass-any-kind-of-data-to-your-steps"
+            )
+
         try:
             self._validate_input_value(parameter=parameter, value=value)
         except ValidationError as e:
@@ -183,13 +195,6 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"Expected type `{parameter.annotation}` but received type "
                 f"`{type(value)}`."
             ) from e
-
-        if not yaml_utils.is_json_serializable(value):
-            raise StepInterfaceError(
-                f"Argument type (`{type(value)}`) for argument "
-                f"'{key}' is not JSON "
-                "serializable."
-            )
 
     def _validate_input_value(
         self, parameter: inspect.Parameter, value: Any

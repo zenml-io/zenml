@@ -1,25 +1,29 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
-from typing import Annotated, Any, Dict
+from typing import Any, Dict, Tuple
 
 import pandas as pd
-from config import MetaConfig
+from sklearn.base import ClassifierMixin
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RandomizedSearchCV
-from utils.sklearn_materializer import ModelInfoMaterializer
+from typing_extensions import Annotated
+from utils.get_model_from_config import get_model_from_config
 
 from zenml import step
 from zenml.logger import get_logger
@@ -27,13 +31,17 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(output_materializers=ModelInfoMaterializer)
+@step
 def hp_tuning_single_search(
+    model_package: str,
+    model_class: str,
+    search_grid: Dict[str, Any],
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
-    config_key: str,
     target: str,
-) -> Annotated[Dict[str, Any], "best_model"]:
+) -> Tuple[
+    Annotated[ClassifierMixin, "best_model"], Annotated[float, "metric"]
+]:
     """Evaluate a trained model.
 
     This is an example of a model hyperparameter tuning step that takes
@@ -48,25 +56,33 @@ def hp_tuning_single_search(
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
+        model_package: The package containing the model to use for hyperparameter tuning.
+        model_class: The class of the model to use for hyperparameter tuning.
+        search_grid: The hyperparameter search space.
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
-        config_key: Key of tuning config in MetaConfig class.
         target: Name of target columns in dataset.
 
     Returns:
         The best possible model parameters for given config.
     """
+    model_class = get_model_from_config(model_package, model_class)
+
+    for search_key in search_grid:
+        if "range" in search_grid[search_key]:
+            search_grid[search_key] = range(
+                search_grid[search_key]["range"]["start"],
+                search_grid[search_key]["range"]["end"],
+                search_grid[search_key]["range"].get("step", 1),
+            )
+
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    model_config = MetaConfig.supported_models[config_key]
-    model_class = model_config["class"]
-    search_grid = model_config["search_grid"]
 
     X_trn = dataset_trn.drop(columns=[target])
     y_trn = dataset_trn[target]
     X_tst = dataset_tst.drop(columns=[target])
     y_tst = dataset_tst[target]
     logger.info("Running Hyperparameter tuning...")
-    best_model = {"class": None, "params": None, "metric": -1}
     cv = RandomizedSearchCV(
         estimator=model_class(),
         param_distributions=search_grid,
@@ -75,12 +91,10 @@ def hp_tuning_single_search(
         n_iter=10,
         random_state=42,
         scoring="accuracy",
+        refit=True,
     )
     cv.fit(X=X_trn, y=y_trn)
     y_pred = cv.predict(X_tst)
     score = accuracy_score(y_tst, y_pred)
-    best_model["class"] = model_class
-    best_model["params"] = cv.best_params_
-    best_model["metric"] = score
     ### YOUR CODE ENDS HERE ###
-    return best_model
+    return cv.best_estimator_, score

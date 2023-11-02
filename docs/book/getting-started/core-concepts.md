@@ -14,10 +14,9 @@ First, let's look at the main concepts which play a role during the development 
 
 #### Pipelines & Steps
 
-At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps** , organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
+At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
 
-![Representation of a pipeline dag.](../.gitbook/assets/01_pipeline.png)
-
+![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
@@ -43,12 +42,11 @@ Once you have implemented your workflow by using the concepts described above, y
 
 #### Stacks & Components
 
-When you want to execute a pipeline run with ZenML, **Stacks** come into play. A **Stack** is a collection of \*\* stack\*\* **components**, where each component represents the respective configuration regarding a particular function in your MLOps pipeline such as orchestration systems, artifact repositories, and model deployment platforms.
+When you want to execute a pipeline run with ZenML, **Stacks** come into play. A **Stack** is a collection of **stack components**, where each component represents the respective configuration regarding a particular function in your MLOps pipeline such as orchestration systems, artifact repositories, and model deployment platforms.
 
-For instance, if you take a close look at the default local stack of ZenML, you will see two components that are \*\* required\*\* in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
+For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
 
-![ZenML running code on the Local Stack.](../.gitbook/assets/02_pipeline_local_stack.png)
-
+![ZenML running code on the Local Stack.](../.gitbook/assets/02\_pipeline\_local\_stack.png)
 
 {% hint style="info" %}
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
@@ -76,7 +74,7 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
-![Switching between stacks with ZenML.](../.gitbook/assets/03_multi_stack.png)
+![Switching between stacks with ZenML.](<../.gitbook/assets/03\_multi\_stack (1).png>)
 
 ## 3. Management
 
@@ -84,9 +82,13 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a **ZenML Server**, so that it can communicate with these stack components and run your pipelines.
+First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/starter-guide/switch-to-production.md), so that it can communicate with these stack components and run your pipelines.
 
-![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04_architecture.png)
+![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
+
+#### Server Deployment
+
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Cloud**](../deploying-zenml/zenml-cloud/zenml-cloud.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
 
 #### Metadata Tracking
 
@@ -94,9 +96,9 @@ On top of the communication with the stack components, the **ZenML Server** also
 
 #### Secrets
 
-The **ZenML Server** also acts as a [centralized secrets store](../platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
+The **ZenML Server** also acts as a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
 
-Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](../platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md) that you can use to store and access your secrets securely.
+Secrets are sensitive data that you don't want to store in your code or configure alongside your stacks and pipelines. ZenML includes a [centralized secrets store](../user-guide/advanced-guide/secret-management/secret-management.md) that you can use to store and access your secrets securely.
 
 #### Collaboration
 
@@ -108,7 +110,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### ZenML Hub
 
@@ -116,5 +118,4 @@ The **ZenML Hub** is a central platform that enables our users to search, share 
 
 The ZenML Hub revolves around the concept of **plugins**, which can be made up of one or multiple ZenML entities, including flavors, materializers, and steps. Aside from the implementation of these entities, every plugin in the hub is also equipped with
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

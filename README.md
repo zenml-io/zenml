@@ -7,36 +7,47 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![PyPi][pypi-shield]][pypi-url]
-[![PyPi][pypiversion-shield]][pypi-url]
-[![PyPi][downloads-shield]][downloads-url]
-[![Contributors][contributors-shield]][contributors-url]
-[![License][license-shield]][license-url]
-<!-- [![Build][build-shield]][build-url] -->
-<!-- [![CodeCov][codecov-shield]][codecov-url] -->
+<div align="center">
+
+  <!-- PROJECT LOGO -->
+  <br />
+    <a href="https://zenml.io">
+      <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML Logo">
+    </a>
+  <br />
+
+  [![PyPi][pypi-shield]][pypi-url]
+  [![PyPi][pypiversion-shield]][pypi-url]
+  [![PyPi][downloads-shield]][downloads-url]
+  [![Contributors][contributors-shield]][contributors-url]
+  [![License][license-shield]][license-url]
+  <!-- [![Build][build-shield]][build-url] -->
+  <!-- [![CodeCov][codecov-shield]][codecov-url] -->
+
+</div>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?style=for-the-badge
+[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=281158
 
 [pypi-url]: https://pypi.org/project/zenml/
 
-[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?style=for-the-badge
+[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=361776
 
-[downloads-shield]: https://img.shields.io/pypi/dm/zenml?style=for-the-badge
+[downloads-shield]: https://img.shields.io/pypi/dm/zenml?color=431D93
 
 [downloads-url]: https://pypi.org/project/zenml/
 
-[codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?style=for-the-badge
+[codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?color=7A3EF4
 
 [codecov-url]: https://codecov.io/gh/zenml-io/zenml
 
-[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 
 [contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
 
-[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 
@@ -56,24 +67,12 @@
 
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
 
-
-<!-- PROJECT LOGO -->
-<br />
 <div align="center">
-  <a href="https://zenml.io">
-    <img alt="ZenML Logo" src="https://user-images.githubusercontent.com/3348134/223112746-345126ff-a0e8-479f-8ac0-670d78f71712.png" alt="Logo" width="400">
-  </a>
-
-<h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
-
+  <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
   <p align="center">
-    A simple yet powerful open-source framework that integrates all your ML tools.
-    <br />
-    <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
-    <br />
     <div align="center">
       Join our <a href="https://zenml.io/slack-invite" target="_blank">
-      <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+      <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
     <b>Slack Community</b> </a> and be part of the ZenML family.
     </div>
     <br />
@@ -87,23 +86,17 @@
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
     ·
-    <a href="#-meet-the-team">Meet the Team</a>
+    <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
-    🎉 Version 0.42.1 is out. Check out the release notes
+    <br />
+    🎉 Version 0.45.6 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
-    <a href="https://www.linkedin.com/company/zenml/">
-    <img src="https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555" alt="Logo">
-    </a>
-    <a href="https://twitter.com/zenml_io">
-    <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
-    </a>
-    <a href="https://www.youtube.com/c/ZenML">
-    <img src="https://img.shields.io/badge/-YouTube-black.svg?style=for-the-badge&logo=youtube&colorB=555" alt="Logo">
-    </a>
   </p>
 </div>
+
+---
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -154,13 +147,13 @@ developers to write code once and effortlessly deploy it to various
 infrastructures.
 
 <div align="center">
-    <img src="docs/book/.gitbook/assets/stack.gif">
+    <img src="docs/book/.gitbook/assets/overview.gif">
 </div>
 
 # 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
-[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.10 is required:
+[PyPI](https://pypi.org/project/zenml/). Python 3.8 - 3.11 is required:
 
 ```bash
 pip install "zenml[server]"
@@ -185,17 +178,17 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
 
-In case your machine is authenticated with one of the big three cloud 
-providers, this command will do the full deployment for you.
+Currently, there are two main options to deploy ZenML:
 
-```bash
-zenml deploy --provider aws  # aws, gcp and azure are supported providers
-```
+- **ZenML Cloud**: With [ZenML Cloud](https://docs.zenml.io/deploying-zenml/zenml-cloud), 
+you can utilize a control plane to create ZenML servers, also known as tenants. 
+These tenants are managed and maintained by ZenML's dedicated team, alleviating 
+the burden of server management from your end. 
 
-You can also choose to deploy with docker or helm with full control over
-the configuration and deployment. Check out the
-[docs](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml)
-to find out how.
+- **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy 
+ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted). 
+This can be achieved through various methods, including using our CLI, Docker, 
+Helm, or HuggingFace Spaces.
 
 ## 👨‍🍳 2. Deploy Stack Components
 
@@ -219,7 +212,7 @@ zenml stack register production_stack --orchestrator kubernetes_orchestrator --a
 When you run a pipeline with this stack set, it will be running on your deployed
 Kubernetes cluster.
 
-You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack).
+You can also [deploy your own tooling manually](https://docs.zenml.io/stacks-and-components/stack-deployment).
 
 ## 🏇 3. Create a Pipeline
 
@@ -265,8 +258,6 @@ Open up the ZenML dashboard using this command.
 zenml show
 ```
 
-![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png)
-
 # 🗺 Roadmap
 
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a
@@ -282,7 +273,7 @@ and you can directly influence the roadmap as follows:
   board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our
-  Github repo.
+  GitHub repo.
 
 # 🙌 Contributing and Community
 

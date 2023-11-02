@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineBuildSchema,
         PipelineDeploymentSchema,
-        PipelineRunSchema,
         StackComponentSchema,
     )
 
@@ -67,6 +66,7 @@ class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
+    stack_spec_path: Optional[str]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -92,7 +92,6 @@ class StackSchema(ShareableSchema, table=True):
         back_populates="stacks",
         link_model=StackCompositionSchema,
     )
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="stack",
@@ -137,6 +136,7 @@ class StackSchema(ShareableSchema, table=True):
         return StackResponseModel(
             id=self.id,
             name=self.name,
+            stack_spec_path=self.stack_spec_path,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             is_shared=self.is_shared,

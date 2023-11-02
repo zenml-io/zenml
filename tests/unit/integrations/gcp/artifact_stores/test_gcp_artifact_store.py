@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+import sys
 from datetime import datetime
 from uuid import uuid4
 
@@ -20,15 +21,16 @@ import pytest
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
-from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
-    GCPArtifactStore,
-)
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-)
 
 
 def _get_gcp_artifact_store(**kwargs):
+    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+        GCPArtifactStore,
+    )
+    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+        GCPArtifactStoreConfig,
+    )
+
     return GCPArtifactStore(
         name="",
         id=uuid4(),
@@ -42,6 +44,10 @@ def _get_gcp_artifact_store(**kwargs):
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="GCP integration not installed in Python 3.11",
+)
 def test_must_be_gcs_path():
     """Checks that a gcp artifact store can only be initialized with a gcspath."""
     with pytest.raises(ArtifactStoreInterfaceError):

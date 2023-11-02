@@ -6,19 +6,22 @@ description: >-
 
 # Connect your git repository
 
-A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
+A code repository in ZenML refers to a remote storage location for your code. 
+Some commonly known code repository platforms include 
+[GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
+Code repositories enable ZenML to keep track of the code version that you use 
+for your pipeline runs. Additionally, running a pipeline that is tracked in a 
+registered code repository can 
+[speed up the Docker image building for containerized stack components](containerize-your-pipeline.md#automate-build-reuse-by-connecting-a-code-repository)
+by eliminating the need to rebuild Docker images each time you change one of 
+your source code files.
 
-<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
-
-{% hint style="info" %}
-Check out our [code repository example](https://github.com/zenml-io/zenml/tree/main/examples/code\_repository) for a practical tutorial on how to use a ZenML code repository.
-{% endhint %}
+<figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
 #### Speeding up Docker builds for containerized components
 
-As [discussed before](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](manage-environments.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+As [discussed before](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using containerized components in your stack, ZenML needs to [build Docker images to remotely execute your code](../environment-management/environment-management.md#execution-environments). If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 It is also important to take some additional points into consideration:
 
@@ -84,7 +87,7 @@ zenml code-repository register <NAME> --type=github \
 --token=<GITHUB_TOKEN>
 ```
 
-where is the name of the code repository you are registering, is the owner of the repository, is the name of the repository, \<GITHUB\_TOKEN> is your GitHub Personal Access Token and \<GITHUB\_URL> is the URL of the GitHub instance which defaults to `https://github.com.` You will need to set a URL if you are using GitHub Enterprise.
+where \<REPOSITORY> is the name of the code repository you are registering, \<OWNER> is the owner of the repository, \<NAME> is the name of the repository, \<GITHUB\_TOKEN> is your GitHub Personal Access Token and \<GITHUB\_URL> is the URL of the GitHub instance which defaults to `https://github.com.` You will need to set a URL if you are using GitHub Enterprise.
 
 After registering the GitHub code repository, ZenML will automatically detect if your source files are being tracked by GitHub and store the commit hash for each pipeline run.
 
@@ -126,7 +129,7 @@ zenml code-repository register <NAME> --type=gitlab \
 --token=<GITLAB_TOKEN>
 ```
 
-where is the name of the code repository you are registering, is the group of the project, is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token, and \<GITLAB\_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
+where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token, and \<GITLAB\_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
 
 After registering the GitLab code repository, ZenML will automatically detect if your source files are being tracked by GitLab and store the commit hash for each pipeline run.
 

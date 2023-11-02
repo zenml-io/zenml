@@ -11,24 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
 import pytest
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.flavors import GCPImageBuilderConfig
-from zenml.integrations.gcp.image_builders import GCPImageBuilder
 from zenml.stack import Stack
+
+if TYPE_CHECKING:
+    from zenml.integrations.gcp.flavors import GCPImageBuilderConfig
+    from zenml.integrations.gcp.image_builders import GCPImageBuilder
 
 
 def _get_gcp_image_builder(
-    config: Optional[GCPImageBuilderConfig] = None,
-) -> GCPImageBuilder:
+    config: Optional["GCPImageBuilderConfig"] = None,
+) -> "GCPImageBuilder":
     """Helper function to get a GCP image builder."""
+    from zenml.integrations.gcp.flavors import GCPImageBuilderConfig
+    from zenml.integrations.gcp.image_builders import GCPImageBuilder
+
     return GCPImageBuilder(
         name="",
         id=uuid4(),
@@ -42,11 +48,15 @@ def _get_gcp_image_builder(
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info > (3, 10),
+    reason="GCP integration not installed in Python 3.11",
+)
 def test_stack_validation(
     local_orchestrator,
     local_artifact_store,
     local_container_registry,
-    remote_artifact_store,
+    gcp_artifact_store,
     remote_container_registry,
 ) -> None:
     """Tests that the GCP image builder validates that it's stack has a remote
@@ -60,7 +70,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
         ).validate()
 
@@ -70,7 +80,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
             container_registry=local_container_registry,
         ).validate()
@@ -92,7 +102,7 @@ def test_stack_validation(
             id=uuid4(),
             name="",
             orchestrator=local_orchestrator,
-            artifact_store=remote_artifact_store,
+            artifact_store=gcp_artifact_store,
             image_builder=image_builder,
             container_registry=remote_container_registry,
         ).validate()

@@ -1,25 +1,29 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+# Apache Software License 2.0
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
+# Copyright (c) ZenML GmbH 2023. All rights reserved.
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 
-from typing import Annotated, Tuple
+from typing import Tuple
 
-from config import MetaConfig
+from typing_extensions import Annotated
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import ModelVersionStage
 
 logger = get_logger(__name__)
 
@@ -42,19 +46,17 @@ def promote_get_versions() -> (
     """
 
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-
+    pipeline_extra = get_step_context().pipeline_run.config.extra
     none_versions = model_registry.list_model_versions(
-        name=MetaConfig.mlflow_model_name,
-        metadata={},
+        name=pipeline_extra["mlflow_model_name"],
         stage=None,
     )
     latest_versions = none_versions[0].version
     logger.info(f"Latest model version is {latest_versions}")
 
     target_versions = model_registry.list_model_versions(
-        name=MetaConfig.mlflow_model_name,
-        metadata={},
-        stage=MetaConfig.target_env,
+        name=pipeline_extra["mlflow_model_name"],
+        stage=ModelVersionStage(pipeline_extra["target_env"]),
     )
     current_version = latest_versions
     if target_versions:
@@ -62,5 +64,6 @@ def promote_get_versions() -> (
         logger.info(f"Currently promoted model version is {current_version}")
     else:
         logger.info("No currently promoted model version found.")
+    ### YOUR CODE ENDS HERE ###
 
     return latest_versions, current_version

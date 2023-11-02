@@ -20,17 +20,18 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from zenml import __version__, analytics
+from zenml import __version__
+from zenml.analytics.client import default_client
 from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml.analytics.enums import AnalyticsEvent
     from zenml.models.server_models import (
         ServerDatabaseType,
         ServerDeploymentType,
     )
-    from zenml.utils.analytics_utils import AnalyticsEvent
 
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
@@ -50,20 +51,12 @@ class AnalyticsContext:
         self.analytics_opt_in: bool = False
 
         self.user_id: Optional[UUID] = None
+        self.external_user_id: Optional[UUID] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
-
-    @property
-    def in_server(self) -> bool:
-        """Flag to check whether the code is running in a ZenML server.
-
-        Returns:
-            True if running in a server, False otherwise.
-        """
-        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter analytics context manager.
@@ -89,10 +82,12 @@ class AnalyticsContext:
                 auth_context = get_auth_context()
                 if auth_context is not None:
                     self.user_id = auth_context.user.id
+                    self.external_user_id = auth_context.user.external_user_id
             else:
                 # If the code is running on the client, use the default user.
-                default_user = gc.zen_store.get_user()
-                self.user_id = default_user.id
+                active_user = gc.zen_store.get_user()
+                self.user_id = active_user.id
+                self.external_user_id = active_user.external_user_id
 
             # Fetch the `client_id`
             if self.in_server:
@@ -131,9 +126,18 @@ class AnalyticsContext:
             True.
         """
         if exc_val is not None:
-            logger.debug(f"Sending telemetry 2.0 data failed: {exc_val}")
+            logger.debug(f"Sending telemetry data failed: {exc_val}")
 
         return True
+
+    @property
+    def in_server(self) -> bool:
+        """Flag to check whether the code is running in a ZenML server.
+
+        Returns:
+            True if running in a server, False otherwise.
+        """
+        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
@@ -146,9 +150,28 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            success, _ = analytics.identify(
+            success, _ = default_client.identify(
                 user_id=self.user_id,
                 traits=traits,
+            )
+
+        return success
+
+    def alias(self, user_id: UUID, previous_id: UUID) -> bool:
+        """Alias user IDs.
+
+        Args:
+            user_id: The user ID.
+            previous_id: Previous ID for the alias.
+
+        Returns:
+            True if alias information was sent, False otherwise.
+        """
+        success = False
+        if self.analytics_opt_in:
+            success, _ = default_client.alias(
+                user_id=user_id,
+                previous_id=previous_id,
             )
 
         return success
@@ -174,7 +197,7 @@ class AnalyticsContext:
 
             traits.update({"group_id": group_id})
 
-            success, _ = analytics.group(
+            success, _ = default_client.group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -196,7 +219,7 @@ class AnalyticsContext:
         Returns:
             True if tracking information was sent, False otherwise.
         """
-        from zenml.utils.analytics_utils import AnalyticsEvent
+        from zenml.analytics.enums import AnalyticsEvent
 
         if properties is None:
             properties = {}
@@ -227,11 +250,14 @@ class AnalyticsContext:
             }
         )
 
+        if self.external_user_id:
+            properties["external_user_id"] = self.external_user_id
+
         for k, v in properties.items():
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = analytics.track(
+        success, _ = default_client.track(
             user_id=self.user_id,
             event=event,
             properties=properties,

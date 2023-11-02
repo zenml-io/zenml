@@ -1,10 +1,10 @@
-name: Build, Lint, Unit & Integration Test
+name: Build, Lint, Unit, Integration and Templates Tests
 
 on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
     paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
     types: [opened, synchronize, ready_for_review]
@@ -16,12 +16,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ubuntu-setup-python-environment:
+  mlstacks-compatibility-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install current package as editable
+        run: pip install -e .
+
+      - name: Install mlstacks package
+        run: pip install mlstacks
+
+      - name: Check for broken dependencies
+        run: pip check
+
+  ubuntu-setup-and-test-python:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -29,12 +50,12 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  windows-setup-python-environment:
+  windows-setup-and-test-python:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -42,64 +63,36 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  macos-setup-python-environment:
+  macos-setup-and-test-python:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-
-  ubuntu-lint-unit-test:
-    needs: ubuntu-setup-python-environment
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
+  
+  update-templates-to-examples:
+    needs: ubuntu-setup-and-test-python
+    uses: ./.github/workflows/update-templates-to-examples.yml
     with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
-
-  windows-lint-unit-test:
-    needs: windows-setup-python-environment
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-    secrets: inherit
-
-  macos-lint-unit-test:
-    needs: macos-setup-python-environment
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10"]
-      fail-fast: false
-    uses: ./.github/workflows/lint-unit-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
+      python-version: "3.8"
+      os: ubuntu-latest
     secrets: inherit
 
   ubuntu-integration-test:
-    needs: ubuntu-lint-unit-test
+    needs:
+      - ubuntu-setup-and-test-python
     strategy:
       matrix:
         os: [ubuntu-latest]
+        # Disabled temporarily while CI is overhauled
         python-version: ["3.8", "3.9", "3.10"]
+        # python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           [
             "default",
@@ -111,6 +104,8 @@ jobs:
             python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.10"
+          - test_environment: docker-server-docker-orchestrator
+            python-version: "3.11"
 
       fail-fast: false
 
@@ -122,11 +117,12 @@ jobs:
     secrets: inherit
 
   windows-integration-test:
-    needs: windows-lint-unit-test
+    needs: 
+      - windows-setup-and-test-python
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment: ["default"]
 
       fail-fast: false
@@ -139,12 +135,12 @@ jobs:
     secrets: inherit
 
   macos-integration-test:
-    needs: macos-lint-unit-test
-    # Exit if its a commit from Gitbook
+    needs: 
+      - macos-setup-and-test-python
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment: ["default"]
 
       fail-fast: false

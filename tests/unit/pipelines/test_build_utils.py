@@ -21,6 +21,7 @@ from uuid import UUID, uuid4
 import pytest
 
 import zenml
+from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.code_repositories import BaseCodeRepository, LocalRepositoryContext
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -105,6 +106,8 @@ def test_build_is_skipped_when_not_required(mocker):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     assert build_utils.create_pipeline_build(deployment=deployment) is None
@@ -137,13 +140,17 @@ def test_stack_with_container_registry_creates_non_local_build(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)
     assert build.is_local is False
 
 
-def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
+def test_build_uses_correct_settings(
+    clean_client, mocker, empty_pipeline  # noqa: F811
+):
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
@@ -165,9 +172,11 @@ def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
-    pipeline_instance = empty_pipeline()
+    pipeline_instance = empty_pipeline
     pipeline_id = pipeline_instance.register().id
     build = build_utils.create_pipeline_build(
         deployment=deployment, pipeline_id=pipeline_id
@@ -214,6 +223,8 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)
@@ -248,6 +259,8 @@ def test_building_with_identical_keys_and_different_settings(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     with pytest.raises(RuntimeError):
@@ -277,6 +290,8 @@ def test_building_with_different_keys_and_identical_settings(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     build = build_utils.create_pipeline_build(deployment=deployment)

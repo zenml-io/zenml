@@ -32,8 +32,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
     """Settings for the Kubernetes orchestrator.
 
     Attributes:
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Kubernetes.
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
         service_account_name: Name of the service account to use for the
@@ -42,7 +44,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply.
     """
 
-    synchronous: bool = False
+    synchronous: bool = True
     timeout: int = 0
     service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None

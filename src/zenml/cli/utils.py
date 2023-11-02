@@ -21,6 +21,7 @@ import subprocess
 import sys
 from typing import (
     TYPE_CHECKING,
+    AbstractSet,
     Any,
     Callable,
     Dict,
@@ -38,7 +39,7 @@ from typing import (
 
 import click
 import yaml
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from rich import box, table
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -46,8 +47,14 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 
+from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    NOT_INSTALLED_MESSAGE,
+    TERRAFORM_NOT_INSTALLED_MESSAGE,
+)
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -77,7 +84,6 @@ if TYPE_CHECKING:
 
     from rich.text import Text
 
-    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -171,6 +177,27 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
+def print_markdown(text: str) -> None:
+    """Prints a string as markdown.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    console.print(markdown_text)
+
+
+def print_markdown_with_pager(text: str) -> None:
+    """Prints a string as markdown with a pager.
+
+    Args:
+        text: Markdown string to be printed.
+    """
+    markdown_text = Markdown(text)
+    with console.pager():
+        console.print(markdown_text)
+
+
 def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
@@ -258,7 +285,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+                k for k in model.dict().keys() if k not in exclude_columns
             ]
         else:
             include_columns = columns
@@ -291,6 +318,9 @@ def print_pydantic_models(
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
+        if not active_models and not show_active:
+            return items
+
         marker = "active"
         if marker in items:
             marker = "current"
@@ -335,6 +365,40 @@ def print_pydantic_models(
         print_table([__dictify(model) for model in table_items])
 
 
+def print_pydantic_model(
+    title: str,
+    model: BaseModel,
+    exclude_columns: Optional[AbstractSet[str]] = None,
+    columns: Optional[AbstractSet[str]] = None,
+) -> None:
+    """Prints a single Pydantic model in a table.
+
+    Args:
+        title: Title of the table.
+        model: Pydantic model that will be represented as a row in the table.
+        exclude_columns: Optionally specify columns to exclude.
+        columns: Optionally specify subset and order of columns to display.
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    model_info = model.dict(include=columns, exclude=exclude_columns)
+    for item in model_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
+
+
 def format_integration_list(
     integrations: List[Tuple[str, Type["Integration"]]]
 ) -> List[Dict[str, str]]:
@@ -363,6 +427,43 @@ def format_integration_list(
             }
         )
     return list_of_dicts
+
+
+def print_stack_outputs(stack: "StackResponseModel") -> None:
+    """Prints outputs for stacks deployed with mlstacks.
+
+    Args:
+        stack: Instance of a stack model.
+    """
+    verify_mlstacks_prerequisites_installation()
+
+    if not stack.stack_spec_path:
+        declare("No stack spec path is set for this stack.")
+        return
+    stack_caption = f"'{stack.name}' stack"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="MLStacks Outputs",
+        caption=stack_caption,
+        show_lines=True,
+    )
+    rich_table.add_column("OUTPUT_KEY", overflow="fold")
+    rich_table.add_column("OUTPUT_VALUE", overflow="fold")
+
+    from mlstacks.utils.terraform_utils import get_stack_outputs
+
+    stack_spec_file = stack.stack_spec_path
+    stack_outputs = get_stack_outputs(stack_path=stack_spec_file)
+
+    for output_key, output_value in stack_outputs.items():
+        rich_table.add_row(output_key, output_value)
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_stack_configuration(
@@ -399,6 +500,9 @@ def print_stack_configuration(
         f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
+
+    if stack.stack_spec_path:
+        declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
 def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
@@ -519,6 +623,11 @@ def print_stack_component_configuration(
             rich_table.add_row(label, value)
 
         console.print(rich_table)
+
+    if component.component_spec_path:
+        declare(
+            f"Component spec path for `mlstacks`: {component.component_spec_path}"
+        )
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -826,6 +935,13 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
     """
+    if "neptune" in packages:
+        declare(
+            "Uninstalling legacy `neptune-client` package to avoid version "
+            "conflicts with new `neptune` package..."
+        )
+        uninstall_package("neptune-client")
+
     if upgrade:
         command = [
             sys.executable,
@@ -844,6 +960,16 @@ def install_packages(
         ]
 
     subprocess.check_call(command)
+
+    if "label-studio" in packages:
+        warning(
+            "There is a known issue with Label Studio installations "
+            "via zenml. You might find that the Label Studio "
+            "installation breaks the ZenML CLI. In this case, please "
+            "run `pip install 'pydantic<1.11,>=1.9.0'` to fix the "
+            "issue or message us on Slack if you need help with this. "
+            "We are working on a more definitive fix."
+        )
 
 
 def uninstall_package(package: str) -> None:
@@ -1198,8 +1324,17 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
             if "$ref" not in prop_schema.keys():
+                if "type" in prop_schema.keys():
+                    prop_type = prop_schema["type"]
+                elif "anyOf" in prop_schema.keys():
+                    prop_type = ", ".join(
+                        [p["type"] for p in prop_schema["anyOf"]]
+                    )
+                    prop_type = f"one of: {prop_type}"
+                else:
+                    prop_type = "object"
                 warning(
-                    f"{prop}, {prop_schema['type']}"
+                    f"{prop}, {prop_type}"
                     f"{', REQUIRED' if prop in required else ''}"
                 )
 
@@ -2343,7 +2478,7 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information."
     )
 
@@ -2357,7 +2492,7 @@ def fail_secrets_manager_creation() -> None:
         "existing secrets to the centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command."
         " See the `zenml secret` CLI command or the "
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "documentation page for more information. "
     )
 
@@ -2370,7 +2505,7 @@ def fail_secret_creation_on_secrets_manager() -> None:
         "Existing secrets managers will be removed in an "
         "upcoming release in favor of the centralized secrets management. "
         "Learn more about this in our documentation:"
-        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
         "Please also consider migrating all your existing secrets to the "
         "centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command. "
@@ -2459,3 +2594,18 @@ def warn_deprecated_example_subcommand() -> None:
         "The `example` CLI subcommand has been deprecated and will be removed "
         "in a future release."
     )
+
+
+def verify_mlstacks_prerequisites_installation() -> None:
+    """Checks if the `mlstacks` package is installed."""
+    try:
+        import mlstacks  # noqa: F401
+        import python_terraform  # noqa: F401
+
+        subprocess.check_output(
+            ["terraform", "--version"], universal_newlines=True
+        )
+    except ImportError:
+        error(NOT_INSTALLED_MESSAGE)
+    except subprocess.CalledProcessError:
+        error(TERRAFORM_NOT_INSTALLED_MESSAGE)

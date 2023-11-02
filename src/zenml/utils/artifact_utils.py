@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -30,6 +30,7 @@ from zenml.models.visualization_models import (
     LoadedVisualizationModel,
     VisualizationModel,
 )
+from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -303,7 +305,7 @@ def _load_artifact_store(
             StackComponent.from_model(artifact_store_model),
         )
     except ImportError:
-        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"Artifact store '{artifact_store_model.name}' could not be "
             f"instantiated. This is likely because the artifact store's "
@@ -342,7 +344,7 @@ def _load_file_from_artifact_store(
         )
     except Exception as e:
         logger.exception(e)
-        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"File '{uri}' could not be loaded because the underlying artifact "
             f"store '{artifact_store.name}' could not open the file. This is "
@@ -393,10 +395,13 @@ def upload_artifact(
                 f"{e}"
             )
 
-    artifact_metadata = {}
+    artifact_metadata: Dict[str, "MetadataType"] = {}
     if extract_metadata:
         try:
             artifact_metadata = materializer.extract_full_metadata(data)
+            step_context = get_step_context()
+            user_provided_metadata = step_context.get_output_metadata(name)
+            artifact_metadata.update(user_provided_metadata)
         except Exception as e:
             logger.warning(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
