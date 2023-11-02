@@ -10,13 +10,14 @@ for building human-in-the-loop ML.
 
 ## Alerter Flavors
 
-Currently, the [SlackAlerter](slack.md) is the only available alerter integration. However, it is straightforward to
+Currently, the [SlackAlerter](slack.md) and [DiscordAlerter](discord.md) are the available alerter integrations. However, it is straightforward to
 extend ZenML and [build an alerter for other chat services](custom.md).
 
-| Alerter                            | Flavor   | Integration | Notes                                                              |
-|------------------------------------|----------|-------------|--------------------------------------------------------------------|
-| [Slack](slack.md)                  | `slack`  | `slack`     | Interacts with a Slack channel                                     |
-| [Custom Implementation](custom.md) | _custom_ |             | Extend the alerter abstraction and provide your own implementation |
+| Alerter                            | Flavor    | Integration | Notes                                                              |
+|------------------------------------|-----------|-------------|--------------------------------------------------------------------|
+| [Slack](slack.md)                  | `slack`   | `slack`     | Interacts with a Slack channel                                     |
+| [Discord](discord.md)              | `discord` | `discord`   | Interacts with a Discord channel                                   |
+| [Custom Implementation](custom.md) | _custom_  |             | Extend the alerter abstraction and provide your own implementation |
 
 {% hint style="info" %}
 If you would like to see the available flavors of alerters in your terminal, you can use the following command:

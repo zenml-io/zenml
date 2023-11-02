@@ -24,6 +24,7 @@ from typing import (
     Tuple,
 )
 
+from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -48,6 +49,20 @@ if TYPE_CHECKING:
 from zenml.logger import get_logger
 
 logger = get_logger(__file__)
+
+
+def get_zenml_versions() -> Tuple[str, str]:
+    """Returns the version of ZenML on the client and server side.
+
+    Returns:
+        the ZenML versions on the client and server side respectively.
+    """
+    from zenml.client import Client
+
+    client = Client()
+    server_version = client.zen_store.get_store_info().version
+
+    return __version__, server_version
 
 
 class Compiler:
@@ -85,7 +100,8 @@ class Compiler:
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
-        pipeline.configure(settings=pipeline_settings, merge=False)
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
         settings_to_passdown = {
             key: settings
@@ -114,11 +130,15 @@ class Compiler:
             pipeline_name=pipeline.name
         )
 
+        client_version, server_version = get_zenml_versions()
+
         deployment = PipelineDeploymentBaseModel(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
             client_environment=get_run_environment_dict(),
+            client_version=client_version,
+            server_version=server_version,
         )
 
         step_specs = [step.spec for step in steps.values()]
@@ -176,14 +196,16 @@ class Compiler:
             KeyError: If the run configuration contains options for a
                 non-existent step.
         """
-        pipeline.configure(
-            enable_cache=config.enable_cache,
-            enable_artifact_metadata=config.enable_artifact_metadata,
-            enable_artifact_visualization=config.enable_artifact_visualization,
-            enable_step_logs=config.enable_step_logs,
-            settings=config.settings,
-            extra=config.extra,
-        )
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(
+                enable_cache=config.enable_cache,
+                enable_artifact_metadata=config.enable_artifact_metadata,
+                enable_artifact_visualization=config.enable_artifact_visualization,
+                enable_step_logs=config.enable_step_logs,
+                settings=config.settings,
+                extra=config.extra,
+                model_config=config.model_config,
+            )
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
@@ -243,7 +265,8 @@ class Compiler:
             else:
                 pipeline_settings[settings_key] = default_settings
 
-        pipeline.configure(settings=pipeline_settings, merge=False)
+        with pipeline.__suppress_configure_warnings__():
+            pipeline.configure(settings=pipeline_settings, merge=False)
 
     def _get_default_settings(
         self,

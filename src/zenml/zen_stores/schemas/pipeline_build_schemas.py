@@ -33,10 +33,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        PipelineDeploymentSchema,
-        PipelineRunSchema,
-    )
+    from zenml.zen_stores.schemas import PipelineDeploymentSchema
 
 
 class PipelineBuildSchema(BaseSchema, table=True):
@@ -86,7 +83,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="builds"
     )
 
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="build")
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="build",
     )

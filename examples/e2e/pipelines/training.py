@@ -18,7 +18,6 @@
 
 from typing import List, Optional
 
-from config import DEFAULT_PIPELINE_EXTRAS, PIPELINE_SETTINGS, MetaConfig
 from steps import (
     data_loader,
     hp_tuning_select_best_model,
@@ -29,12 +28,13 @@ from steps import (
     notify_on_success,
     promote_get_metric,
     promote_get_versions,
-    promote_metric_compare_promoter,
+    promote_metric_compare_promoter_in_model_registry,
+    promote_model_version_in_model_control_plane,
     train_data_preprocessor,
     train_data_splitter,
 )
 
-from zenml import pipeline
+from zenml import get_pipeline_context, pipeline
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
@@ -42,22 +42,16 @@ from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
 from zenml.logger import get_logger
-from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 
 
-@pipeline(
-    settings=PIPELINE_SETTINGS,
-    on_failure=notify_on_failure,
-    extra=DEFAULT_PIPELINE_EXTRAS,
-)
+@pipeline(on_failure=notify_on_failure)
 def e2e_use_case_training(
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
     drop_columns: Optional[List[str]] = None,
-    random_seed: int = 42,
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
@@ -74,7 +68,6 @@ def e2e_use_case_training(
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
         drop_columns: List of columns to drop from dataset
-        random_seed: Seed of random generator,
         min_train_accuracy: Threshold to stop execution if train set accuracy is lower
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
         fail_on_accuracy_quality_gates: If `True` and `min_train_accuracy` or `min_test_accuracy`
@@ -84,6 +77,7 @@ def e2e_use_case_training(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
+    pipeline_extra = get_pipeline_context().extra
     ########## ETL stage ##########
     raw_data, target = data_loader()
     dataset_trn, dataset_tst = train_data_splitter(
@@ -100,29 +94,28 @@ def e2e_use_case_training(
     ########## Hyperparameter tuning stage ##########
     after = []
     search_steps_prefix = "hp_tuning_search_"
-    for i, model_search_configuration in enumerate(
-        MetaConfig.model_search_space
-    ):
-        step_name = f"{search_steps_prefix}{i}"
+    for config_name, model_search_configuration in pipeline_extra[
+        "model_search_space"
+    ].items():
+        step_name = f"{search_steps_prefix}{config_name}"
         hp_tuning_single_search(
-            model_metadata=ExternalArtifact(
-                value=model_search_configuration,
-            ),
             id=step_name,
+            model_package=model_search_configuration["model_package"],
+            model_class=model_search_configuration["model_class"],
+            search_grid=model_search_configuration["search_grid"],
             dataset_trn=dataset_trn,
             dataset_tst=dataset_tst,
             target=target,
         )
         after.append(step_name)
-    best_model_config = hp_tuning_select_best_model(
+    best_model = hp_tuning_select_best_model(
         search_steps_prefix=search_steps_prefix, after=after
     )
 
     ########## Training stage ##########
     model = model_trainer(
         dataset_trn=dataset_trn,
-        model_config=best_model_config,
-        random_seed=random_seed,
+        model=best_model,
         target=target,
     )
     model_evaluator(
@@ -136,7 +129,7 @@ def e2e_use_case_training(
     )
     mlflow_register_model_step(
         model,
-        name=MetaConfig.mlflow_model_name,
+        name=pipeline_extra["mlflow_model_name"],
     )
 
     ########## Promotion stage ##########
@@ -145,9 +138,9 @@ def e2e_use_case_training(
     )
     latest_deployment = mlflow_model_registry_deployer_step(
         id="deploy_latest_model_version",
-        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_name=pipeline_extra["mlflow_model_name"],
         registry_model_version=latest_version,
-        replace_existing=False,
+        replace_existing=True,
     )
     latest_metric = promote_get_metric(
         id="get_metrics_latest_model_version",
@@ -157,9 +150,9 @@ def e2e_use_case_training(
 
     current_deployment = mlflow_model_registry_deployer_step(
         id="deploy_current_model_version",
-        registry_model_name=MetaConfig.mlflow_model_name,
+        registry_model_name=pipeline_extra["mlflow_model_name"],
         registry_model_version=current_version,
-        replace_existing=False,
+        replace_existing=True,
         after=["get_metrics_latest_model_version"],
     )
     current_metric = promote_get_metric(
@@ -168,13 +161,16 @@ def e2e_use_case_training(
         deployment_service=current_deployment,
     )
 
-    promote_metric_compare_promoter(
+    (
+        was_promoted,
+        promoted_version,
+    ) = promote_metric_compare_promoter_in_model_registry(
         latest_metric=latest_metric,
         current_metric=current_metric,
         latest_version=latest_version,
         current_version=current_version,
     )
-    last_step_name = "promote_metric_compare_promoter"
+    promote_model_version_in_model_control_plane(was_promoted)
 
-    notify_on_success(after=[last_step_name])
+    notify_on_success(after=["promote_model_version_in_model_control_plane"])
     ### YOUR CODE ENDS HERE ###

@@ -17,6 +17,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.integrations.aws.service_connectors.aws_service_connector import (
+    AWS_RESOURCE_TYPE,
+)
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
@@ -103,6 +107,21 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
             The name of the flavor.
         """
         return AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(resource_type=AWS_RESOURCE_TYPE)
 
     @property
     def docs_url(self) -> Optional[str]:

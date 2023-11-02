@@ -101,7 +101,8 @@ class KubernetesTokenCredentials(AuthenticationConfig):
         default=None,
         title="Kubernetes Client Key (base64 encoded)",
     )
-    token: SecretStr = Field(
+    token: Optional[SecretStr] = Field(
+        default=None,
         title="Kubernetes Token",
     )
 
@@ -269,8 +270,11 @@ class KubernetesServiceConnector(ServiceConnector):
         else:
             assert isinstance(cfg, KubernetesTokenConfig)
 
-            k8s_conf.api_key["authorization"] = cfg.token.get_secret_value()
-            k8s_conf.api_key_prefix["authorization"] = "Bearer"
+            if cfg.token:
+                k8s_conf.api_key[
+                    "authorization"
+                ] = cfg.token.get_secret_value()
+                k8s_conf.api_key_prefix["authorization"] = "Bearer"
 
             if cfg.client_certificate is not None:
                 client_cert = cfg.client_certificate.get_secret_value()
@@ -338,16 +342,19 @@ class KubernetesServiceConnector(ServiceConnector):
         else:
             assert isinstance(cfg, KubernetesTokenConfig)
 
-            token = cfg.token.get_secret_value()
-
             add_user_cmd = [
                 "kubectl",
                 "config",
                 "set-credentials",
                 cluster_name,
-                "--token",
-                token,
             ]
+
+            if cfg.token:
+                token = cfg.token.get_secret_value()
+                add_user_cmd += [
+                    "--token",
+                    token,
+                ]
 
             if cfg.client_certificate and cfg.client_key:
                 add_user_cmd += [
@@ -497,10 +504,14 @@ class KubernetesServiceConnector(ServiceConnector):
                 cluster_name=kube_config.host.strip("https://").split(":")[0],
                 insecure=kube_config.verify_ssl is False,
             )
-        elif kube_config.api_key:
+        else:
+            token: Optional[str] = None
+            if kube_config.api_key:
+                token = kube_config.api_key["authorization"].strip("Bearer ")
+
             auth_method = KubernetesAuthenticationMethods.TOKEN
             auth_config = KubernetesTokenConfig(
-                token=kube_config.api_key["authorization"].strip("Bearer "),
+                token=token,
                 server=kube_config.host,
                 certificate_authority=base64.urlsafe_b64encode(
                     open(kube_config.ssl_ca_cert, "rb").read()
@@ -517,12 +528,6 @@ class KubernetesServiceConnector(ServiceConnector):
                 else None,
                 cluster_name=kube_config.host.strip("https://").split(":")[0],
                 insecure=kube_config.verify_ssl is False,
-            )
-
-        else:
-            raise AuthorizationException(
-                "Failed to auto-configure the Kubernetes connector. "
-                "The Kubernetes configuration is not supported."
             )
 
         return cls(

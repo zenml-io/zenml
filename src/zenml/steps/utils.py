@@ -20,15 +20,24 @@ import textwrap
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import pydantic.typing as pydantic_typing
+from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
+from zenml.model.artifact_config import ArtifactConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
 logger = get_logger(__name__)
 
 SINGLE_RETURN_OUT_NAME = "output"
+
+
+class OutputSignature(BaseModel):
+    """The signature of an output artifact."""
+
+    resolved_annotation: Any
+    artifact_config: Optional[ArtifactConfig]
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
@@ -51,7 +60,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 
 def parse_return_type_annotations(
     func: Callable[..., Any], enforce_type_annotations: bool = False
-) -> Dict[str, Any]:
+) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
     Args:
@@ -95,9 +104,13 @@ def parse_return_type_annotations(
             "outputs."
         )
         return {
-            output_name: resolve_type_annotation(output_type)
+            output_name: OutputSignature(
+                resolved_annotation=resolve_type_annotation(output_type),
+                artifact_config=None,
+            )
             for output_name, output_type in return_annotation.items()
         }
+
     elif pydantic_typing.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
 
@@ -112,24 +125,33 @@ def parse_return_type_annotations(
 
             for i, annotation in enumerate(args):
                 resolved_annotation = resolve_type_annotation(annotation)
-                output_name = (
-                    get_output_name_from_annotation_metadata(annotation)
-                    or f"output_{i}"
-                )
+                (
+                    output_name,
+                    artifact_config,
+                ) = get_output_name_from_annotation_metadata(annotation)
+                output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
                     raise RuntimeError(f"Duplicate output name {output_name}.")
 
-                output_signature[output_name] = resolved_annotation
+                output_signature[output_name] = OutputSignature(
+                    resolved_annotation=resolved_annotation,
+                    artifact_config=artifact_config,
+                )
 
             return output_signature
 
     resolved_annotation = resolve_type_annotation(return_annotation)
-    output_name = (
-        get_output_name_from_annotation_metadata(return_annotation)
-        or SINGLE_RETURN_OUT_NAME
+    output_name, artifact_config = get_output_name_from_annotation_metadata(
+        return_annotation
     )
+    output_name = output_name or SINGLE_RETURN_OUT_NAME
 
-    output_signature = {output_name: resolved_annotation}
+    output_signature = {
+        output_name: OutputSignature(
+            resolved_annotation=resolved_annotation,
+            artifact_config=artifact_config,
+        )
+    }
 
     return output_signature
 
@@ -157,45 +179,56 @@ def resolve_type_annotation(obj: Any) -> Any:
     return origin
 
 
-def get_output_name_from_annotation_metadata(annotation: Any) -> Optional[str]:
+def get_output_name_from_annotation_metadata(
+    annotation: Any,
+) -> Tuple[Optional[str], Optional[ArtifactConfig]]:
     """Get the output name from a type annotation.
 
     Example:
     ```python
-    get_output_name_from_annotation_metadata(int)  # None
-    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name
+    get_output_name_from_annotation_metadata(int)  # None, None
+    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name, None
+    get_output_name_from_annotation_metadata(Annotated[int, "name", ArtifactConfig(model_name="foo")]  # name, ArtifactConfig(model_name="foo")
     ```
 
     Args:
         annotation: The type annotation.
 
     Raises:
-        ValueError: If the annotation contains multiple metadata fields or a
-            single non-string metadata field.
+        ValueError: If the annotation not following (str,ArtifactConfig) pattern
 
     Returns:
-        The annotation metadata.
+        Tuple of output_name and artifact_config.
     """
     if (pydantic_typing.get_origin(annotation) or annotation) is not Annotated:
-        return None
+        return None, None
 
     annotation, *metadata = pydantic_typing.get_args(annotation)
 
-    if len(metadata) != 1:
-        raise ValueError(
-            "Annotation metadata can only contain a single element which must "
-            "be the output name."
-        )
+    msg = ""
+    if len(metadata) > 2:
+        msg += "Annotation metadata can contain not more than 2 elements: the output name and the instance of `ArtifactConfig`.\n"
 
-    output_name = metadata[0]
+    output_name = None
+    artifact_config = None
+    for metadata_instance in metadata:
+        if isinstance(metadata_instance, str):
+            if output_name is None:
+                output_name = metadata_instance
+            else:
+                msg += "Annotation metadata can not contain multiple output names.\n"
+        elif isinstance(metadata_instance, ArtifactConfig):
+            if artifact_config is None:
+                artifact_config = metadata_instance
+            else:
+                msg += "Annotation metadata can not contain multiple `ArtifactConfig` instances.\n"
+        else:
+            msg += "Annotation metadata can only contain `str` and `ArtifactConfig` instances.\n"
 
-    if not isinstance(output_name, str):
-        raise ValueError(
-            "Annotation metadata must be a string which will be used as the "
-            "output name."
-        )
+    if msg:
+        raise ValueError(msg)
 
-    return output_name
+    return output_name, artifact_config
 
 
 class ReturnVisitor(ast.NodeVisitor):

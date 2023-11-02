@@ -410,7 +410,7 @@ While materializers should in most cases be used to control how artifacts are re
 An unmaterialized artifact is a `zenml.materializers.UnmaterializedArtifact`. Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
 
 ```python
-from zenml.materializers import UnmaterializedArtifact
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml import step
 
 
@@ -434,7 +434,7 @@ s2 -> s4
 from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
 from typing import Dict, List, Tuple
 
-from zenml.materializers import UnmaterializedArtifact
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml import pipeline, step
 
 

@@ -16,12 +16,14 @@
 #
 
 
+from typing import Any, Dict, Tuple
+
 import pandas as pd
-from artifacts.materializer import ModelMetadataMaterializer
-from artifacts.model_metadata import ModelMetadata
+from sklearn.base import ClassifierMixin
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RandomizedSearchCV
 from typing_extensions import Annotated
+from utils.get_model_from_config import get_model_from_config
 
 from zenml import step
 from zenml.logger import get_logger
@@ -29,13 +31,17 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@step(output_materializers=ModelMetadataMaterializer)
+@step
 def hp_tuning_single_search(
-    model_metadata: ModelMetadata,
+    model_package: str,
+    model_class: str,
+    search_grid: Dict[str, Any],
     dataset_trn: pd.DataFrame,
     dataset_tst: pd.DataFrame,
     target: str,
-) -> Annotated[ModelMetadata, "best_model"]:
+) -> Tuple[
+    Annotated[ClassifierMixin, "best_model"], Annotated[float, "metric"]
+]:
     """Evaluate a trained model.
 
     This is an example of a model hyperparameter tuning step that takes
@@ -50,7 +56,9 @@ def hp_tuning_single_search(
         https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines
 
     Args:
-        model_metadata: `ModelMetadata` to search
+        model_package: The package containing the model to use for hyperparameter tuning.
+        model_class: The class of the model to use for hyperparameter tuning.
+        search_grid: The hyperparameter search space.
         dataset_trn: The train dataset.
         dataset_tst: The test dataset.
         target: Name of target columns in dataset.
@@ -58,6 +66,16 @@ def hp_tuning_single_search(
     Returns:
         The best possible model parameters for given config.
     """
+    model_class = get_model_from_config(model_package, model_class)
+
+    for search_key in search_grid:
+        if "range" in search_grid[search_key]:
+            search_grid[search_key] = range(
+                search_grid[search_key]["range"]["start"],
+                search_grid[search_key]["range"]["end"],
+                search_grid[search_key]["range"].get("step", 1),
+            )
+
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
 
     X_trn = dataset_trn.drop(columns=[target])
@@ -65,23 +83,18 @@ def hp_tuning_single_search(
     X_tst = dataset_tst.drop(columns=[target])
     y_tst = dataset_tst[target]
     logger.info("Running Hyperparameter tuning...")
-    best_model = {"class": None, "params": None, "metric": -1}
     cv = RandomizedSearchCV(
-        estimator=model_metadata.model_class(),
-        param_distributions=model_metadata.search_grid,
+        estimator=model_class(),
+        param_distributions=search_grid,
         cv=3,
         n_jobs=-1,
         n_iter=10,
         random_state=42,
         scoring="accuracy",
+        refit=True,
     )
     cv.fit(X=X_trn, y=y_trn)
     y_pred = cv.predict(X_tst)
     score = accuracy_score(y_tst, y_pred)
-    best_model = ModelMetadata(
-        model_metadata.model_class,
-        params=cv.best_params_,
-        metric=score,
-    )
     ### YOUR CODE ENDS HERE ###
-    return best_model
+    return cv.best_estimator_, score

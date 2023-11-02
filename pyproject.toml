@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.44.2"
+version = "0.45.6"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -51,32 +51,35 @@ httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
 pandas = ">=1.1.5"
 passlib = { extras = ["bcrypt"], version = "~1.7.4" }
+psutil = ">=5.0.0"
 pydantic = "<1.11, >=1.9.0"
 pymysql = { version = "~1.0.2" }
 pyparsing = "<3,>=2.4.0"
 python = ">=3.8,<3.12"
 python-dateutil = "^2.8.1"
-python-terraform = { version = "^0.10.1" }
 pyyaml = ">=6.0.1"
-rich = { extras = ["jupyter"], version = "^12.0.0" }
+rich = {extras = ["jupyter"], version = ">=12.0.0"}
 sqlalchemy_utils = "0.38.3"
-sqlmodel = "~0.0.8"
+sqlmodel = "0.0.8"
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.75,<0.100", optional = true }
-uvicorn = { extras = ["standard"], version = "~0.17.5", optional = true }
-python-multipart = { version = "~0.0.5", optional = true }
-python-jose = { extras = ["cryptography"], version = "~3.3.0", optional = true }
-fastapi-utils = { version = "~0.2.1", optional = true }
-orjson = { version = "~3.8.3", optional = true }
-
-# optional dependencies for stack recipes
+uvicorn = { extras = ["standard"], version = ">=0.17.5",  optional = true}
+python-multipart = { version = "~0.0.5", optional = true}
+pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
+fastapi-utils = { version = "~0.2.1", optional = true}
+orjson = { version = "~3.8.3", optional = true}
+Jinja2 = { version = "*", optional = true}
+ipinfo = { version = ">=4.4.3", optional = true}
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-black = { version = "^23.3.0", optional = true }
-ruff = { version = "^0.0.285", optional = true }
+black = { version = "^23.10.0", optional = true }
+ruff = { version = "^0.1.0", optional = true }
+
+# Optional terraform dependency for stack recipes and ZenServer deployments
+python-terraform = { version = "^0.10.1", optional = true }
 
 # Optional dependencies for the AWS secrets store
 boto3 = { version = ">=1.16.0,<=1.24.59", optional = true }
@@ -90,6 +93,9 @@ azure-keyvault-secrets = { version = ">=4.0.0", optional = true }
 
 # Optional dependencies for the HashiCorp Vault secrets store
 hvac = { version = ">=0.11.2", optional = true }
+
+# Optional dependencies for the AWS connector
+aws-profile-manager = { version = ">=0.5.0", optional = true }
 
 # Optional dependencies for the Kubernetes connector
 kubernetes = { version = ">=18.20.0", optional = true }
@@ -117,7 +123,7 @@ adlfs = { version = ">=2021.10.0", optional = true }
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
-mypy = { version = "1.5.1", optional = true }
+mypy = { version = "1.6.1", optional = true }
 pre-commit = { version = "^2.14.0", optional = true }
 pyment = { version = "^0.3.3", optional = true }
 tox = { version = "^3.24.3", optional = true }
@@ -153,6 +159,7 @@ types-setuptools = { version = "^57.4.2", optional = true }
 types-six = { version = "^1.16.2", optional = true }
 types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
+types-passlib = { version = "^1.7.7", optional = true }
 
 # mlstacks dependencies
 mlstacks = { version = "0.7.3", optional = true }
@@ -162,11 +169,14 @@ server = [
     "fastapi",
     "uvicorn",
     "python-multipart",
-    "python-jose",
+    "pyjwt",
     "fastapi-utils",
     "orjson",
+    "Jinja2",
+    "ipinfo"
 ]
 templates = ["copier", "jinja2-time", "black", "ruff"]
+terraform = ["python-terraform"]
 secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
@@ -175,7 +185,7 @@ s3fs = ["s3fs"]
 gcsfs = ["gcsfs"]
 adlfs = ["adlfs"]
 connectors-kubernetes = ["kubernetes"]
-connectors-aws = ["boto3", "kubernetes"]
+connectors-aws = ["boto3", "kubernetes", "aws-profile-manager"]
 connectors-gcp = [
     "google-cloud-container",
     "google-cloud-storage",
@@ -226,6 +236,7 @@ dev = [
     "types-six",
     "types-termcolor",
     "types-psutil",
+    "types-passlib",
 ]
 mlstacks = ["mlstacks"]
 
@@ -394,6 +405,8 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
+    "azure-mgmt-resource.*",
+    "azure.mgmt.resource.*",
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
@@ -403,11 +416,14 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
+    "sky.*",
     "copier.*",
     "datasets.*",
     "pyngrok.*",
     "cloudpickle.*",
     "mlstacks.*",
+    "matplotlib.*",
+    "IPython.*",
 ]
 ignore_missing_imports = true
 

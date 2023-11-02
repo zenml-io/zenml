@@ -14,7 +14,12 @@ Not really! An orchestrator in MLOps is the system component that is responsible
 
 #### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
-Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed examples for each integration that ZenML supports out-of-the-box.
+Take a look at our [documentation](https://docs.zenml.io/) (in particular the
+[component guide](../stacks-and-components/component-guide/component-guide.md)), which contains
+instructions and sample code to support each integration that ZenML
+supports out-of-the-box. You can also check out [our integration test
+code](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples) to
+see active examples of many of our integrations in action.
 
 The ZenML team and community are constantly working to include more tools and integrations to the above list (check out the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add your ideas to the roadmap.
 
@@ -22,7 +27,7 @@ Most importantly, ZenML is extensible, and we encourage you to use it with whate
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
-This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../user-guide/advanced-guide/custom-stack-solutions/implement-a-custom-stack-component.md)!
+This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)!
 
 #### How can I contribute?
 
