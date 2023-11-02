@@ -1390,13 +1390,54 @@ class Pipeline:
                         "model_config"
                     ]
                 else:
-                    from zenml.model.model_config import ModelVersionConfigBase
-
-                    _from_config_file[
-                        "model_config"
-                    ] = ModelVersionConfigBase.parse_obj(
-                        _from_config_file["model_config"]
+                    from zenml.model.model_config import (
+                        ModelVersionConsumerConfig,
+                        ModelVersionProducerConfig,
                     )
+
+                    producer_init_args = (
+                        ModelVersionProducerConfig.__init__.__code__.co_varnames
+                    )
+                    consumer_init_args = (
+                        ModelVersionConsumerConfig.__init__.__code__.co_varnames
+                    )
+                    producer_exclusive_init_args = set(
+                        producer_init_args
+                    ) - set(consumer_init_args)
+                    if any(
+                        [
+                            k in producer_exclusive_init_args
+                            for k in _from_config_file["model_config"].keys()
+                        ]
+                    ):
+                        _from_config_file[
+                            "model_config"
+                        ] = ModelVersionProducerConfig(
+                            **{
+                                k: v
+                                for k, v in _from_config_file[
+                                    "model_config"
+                                ].items()
+                                if k in producer_init_args
+                            }
+                        )
+                    else:
+                        logger.info(
+                            "`model_config` identified as consumer configuration, "
+                            "if this is not correct consider setting one of following "
+                            f"arguments in you configuration file: {producer_exclusive_init_args}."
+                        )
+                        _from_config_file[
+                            "model_config"
+                        ] = ModelVersionConsumerConfig(
+                            **{
+                                k: v
+                                for k, v in _from_config_file[
+                                    "model_config"
+                                ].items()
+                                if k in consumer_init_args
+                            }
+                        )
         self._from_config_file = _from_config_file
 
     def with_options(
