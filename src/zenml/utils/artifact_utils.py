@@ -124,6 +124,9 @@ def load_artifact(
 
     Returns:
         The artifact loaded into memory.
+
+    Raises:
+        ImportError: If the artifact store could not be loaded.
     """
     artifact_store_loaded = False
     if artifact.artifact_store_id:
