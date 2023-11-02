@@ -1410,6 +1410,11 @@ class Pipeline:
                             for k in _from_config_file["model_config"].keys()
                         ]
                     ):
+                        logger.info(
+                            "`model_config` identified as producer configuration, "
+                            "if this is not correct consider using only following "
+                            f"arguments in you configuration file: {consumer_init_args}."
+                        )
                         _from_config_file[
                             "model_config"
                         ] = ModelVersionProducerConfig(
