@@ -114,11 +114,17 @@ def load_model_from_metadata(model_uri: str) -> Any:
     return model
 
 
-def load_artifact(artifact: "ArtifactResponseModel") -> Any:
+def load_artifact(
+    artifact: "ArtifactResponseModel",
+    use_current_stack_only: bool = False,
+) -> Any:
     """Load the given artifact into memory.
 
     Args:
         artifact: The artifact to load.
+        use_current_stack_only: If True, only the current stack will be used to
+            load the artifact. If False, the artifact store will be loaded from
+            whatever artifact store was originally used to store the artifact.
 
     Returns:
         The artifact loaded into memory.
@@ -130,10 +136,31 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
-            _ = StackComponent.from_model(artifact_store_model)
+            artifact_store_from_artifact = StackComponent.from_model(
+                artifact_store_model
+            )
             artifact_store_loaded = True
         except KeyError:
             pass
+        except ImportError as e:
+            raise e(
+                "Unable to load the artifact store flavor. Please "
+                "ensure that the required dependencies are installed."
+            )
+    if use_current_stack_only:
+        artifact_store_from_current_stack = (
+            Client().active_stack.artifact_store
+        )
+        if (
+            artifact_store_from_current_stack.id
+            != artifact_store_from_artifact.id
+        ):
+            raise RuntimeError(
+                "The artifact store in the current stack is different from "
+                "the one used to save the artifact you are trying to load. "
+                "Please change the artifact store in the current stack or "
+                "disable the `use_current_stack_only` flag."
+            )
 
     if not artifact_store_loaded:
         logger.warning(
