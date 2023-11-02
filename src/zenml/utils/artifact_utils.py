@@ -121,9 +121,6 @@ def load_artifact(
 
     Args:
         artifact: The artifact to load.
-        use_current_stack_only: If True, only the current stack will be used to
-            load the artifact. If False, the artifact will be loaded from
-            whatever artifact store was originally used to store the artifact.
 
     Returns:
         The artifact loaded into memory.
