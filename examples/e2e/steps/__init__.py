@@ -25,10 +25,11 @@ from .etl import (
     train_data_splitter,
 )
 from .hp_tuning import hp_tuning_select_best_model, hp_tuning_single_search
-from .inference import inference_get_current_version, inference_predict
+from .inference import inference_predict
 from .promotion import (
     promote_get_metric,
-    promote_metric_compare_promoter,
+    promote_metric_compare_promoter_in_model_registry,
     promote_get_versions,
+    promote_model_version_in_model_control_plane,
 )
 from .training import model_evaluator, model_trainer
