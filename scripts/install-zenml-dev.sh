@@ -23,7 +23,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
-    pip install -e .[server,templates,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
+    pip install -e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
 }
 
 install_integrations() {
@@ -31,7 +31,7 @@ install_integrations() {
     # figure out the python version
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
-    ignore_integrations="feast label_studio bentoml seldon kserve langchain llama_index pycaret"
+    ignore_integrations="feast label_studio bentoml seldon kserve langchain llama_index pycaret skypilot_aws skypilot_gcp skypilot_azure"
     # if python version is 3.11, exclude all integrations depending on kfp
     # because they are not yet compatible with python 3.11
     if [ "$python_version" = "3.11" ]; then

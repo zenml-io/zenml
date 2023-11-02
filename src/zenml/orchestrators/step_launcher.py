@@ -23,6 +23,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    STEP_SOURCE_PARAMETER_NAME,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -52,6 +53,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.model import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -151,7 +153,6 @@ class StepLauncher:
         # Enable or disable step logs storage
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
-
         else:
             step_logging_enabled = is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
@@ -194,11 +195,15 @@ class StepLauncher:
                     docstring,
                     source_code,
                 ) = self._get_step_docstring_and_source_code()
+
+                code_hash = self._deployment.step_configurations[
+                    self._step_name
+                ].config.caching_parameters.get(STEP_SOURCE_PARAMETER_NAME)
                 step_run = StepRunRequestModel(
                     name=self._step_name,
                     pipeline_run_id=pipeline_run.id,
-                    config=self._step.config,
-                    spec=self._step.spec,
+                    deployment=self._deployment.id,
+                    code_hash=code_hash,
                     status=ExecutionStatus.RUNNING,
                     docstring=docstring,
                     source_code=source_code,
@@ -241,7 +246,8 @@ class StepLauncher:
                         raise
 
                 publish_utils.update_pipeline_run_status(
-                    pipeline_run=pipeline_run
+                    pipeline_run=pipeline_run,
+                    num_steps=len(self._deployment.step_configurations),
                 )
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
@@ -299,31 +305,19 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            stack=self._deployment.stack.id
-            if self._deployment.stack
-            else None,
+            deployment=self._deployment.id,
             pipeline=self._deployment.pipeline.id
             if self._deployment.pipeline
             else None,
-            build=self._deployment.build.id
-            if self._deployment.build
-            else None,
-            deployment=self._deployment.id,
-            schedule_id=self._deployment.schedule.id
-            if self._deployment.schedule
-            else None,
             status=ExecutionStatus.RUNNING,
-            config=self._deployment.pipeline_configuration,
-            num_steps=len(self._deployment.step_configurations),
-            client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
-            server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
-        self, step_run: StepRunRequestModel
+        self,
+        step_run: StepRunRequestModel,
     ) -> Tuple[bool, StepRunRequestModel]:
         """Prepares running the step.
 
@@ -334,8 +328,16 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
+        model_config = (
+            self._deployment.step_configurations[
+                step_run.name
+            ].config.model_config
+            or self._deployment.pipeline_configuration.model_config
+        )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
-            step=self._step, run_id=step_run.pipeline_run_id
+            step=self._step,
+            run_id=step_run.pipeline_run_id,
+            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -379,10 +381,68 @@ class StepLauncher:
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
+                self._link_cached_artifacts_to_model_version(
+                    model_config_from_context=model_config,
+                    step_run=step_run,
+                )
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
         return execution_needed, step_run
+
+    def _link_cached_artifacts_to_model_version(
+        self,
+        model_config_from_context: Optional["ModelConfig"],
+        step_run: StepRunRequestModel,
+    ) -> None:
+        """Links the output artifacts of the cached step to the model version in Control Plane.
+
+        Args:
+            model_config_from_context: The model config of the current step.
+            step_run: The step to run.
+        """
+        from zenml.model.artifact_config import ArtifactConfig
+        from zenml.steps.base_step import BaseStep
+        from zenml.steps.utils import parse_return_type_annotations
+
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
+        output_annotations = parse_return_type_annotations(
+            step_instance.entrypoint
+        )
+        for output_name_, output_ in step_run.outputs.items():
+            if output_name_ in output_annotations:
+                annotation = output_annotations.get(output_name_, None)
+                if annotation and annotation.artifact_config is not None:
+                    artifact_config_ = annotation.artifact_config.copy()
+                else:
+                    artifact_config_ = ArtifactConfig(
+                        artifact_name=output_name_
+                    )
+                    logger.info(
+                        f"Linking artifact `{artifact_config_.artifact_name}` to "
+                        f"model `{artifact_config_.model_name}` version "
+                        f"`{artifact_config_.model_version}` implicitly."
+                    )
+                if artifact_config_.model_name is None:
+                    model_config = model_config_from_context
+                else:
+                    from zenml.model.model_config import ModelConfig
+
+                    model_config = ModelConfig(
+                        name=artifact_config_.model_name,
+                        version=artifact_config_.model_version,
+                    )
+                if model_config:
+                    model_config.get_or_create_model_version()
+
+                    artifact_config_._pipeline_name = (
+                        self._deployment.pipeline_configuration.name
+                    )
+                    artifact_config_._step_name = self._step_name
+                    artifact_config_.link_to_model(
+                        artifact_uuid=output_,
+                        model_config=model_config,
+                    )
 
     def _run_step(
         self,
@@ -448,23 +508,22 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
         """
-        from zenml.step_operators.step_operator_entrypoint_configuration import (
-            StepOperatorEntrypointConfiguration,
-        )
-
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
+        entrypoint_cfg_class = step_operator.entrypoint_config_class
         entrypoint_command = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_command()
-            + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+            entrypoint_cfg_class.get_entrypoint_command()
+            + entrypoint_cfg_class.get_entrypoint_arguments(
                 step_name=self._step_name,
                 deployment_id=self._deployment.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars()
+        environment = orchestrator_utils.get_config_environment_vars(
+            deployment=self._deployment
+        )
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

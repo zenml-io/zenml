@@ -27,13 +27,14 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.cli.web_login import web_login
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import terraform_utils, yaml_utils
 from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
@@ -336,6 +337,11 @@ def deploy(
     with track_handler(
         event=AnalyticsEvent.ZENML_SERVER_DEPLOYED
     ) as analytics_handler:
+        try:
+            terraform_utils.verify_terraform_installation()
+        except RuntimeError as e:
+            cli_utils.error(str(e))
+
         config_dict: Dict[str, Any] = {}
 
         if config:
@@ -530,6 +536,10 @@ def status() -> None:
 
     Examples:
 
+      * to connect to a ZenML deployment using web login:
+
+        zenml connect --url=http://zenml.example.com:8080
+
       * to connect to a ZenML deployment using command line arguments:
 
         zenml connect --url=http://zenml.example.com:8080 --username=admin
@@ -587,7 +597,8 @@ def status() -> None:
 )
 @click.option(
     "--username",
-    help="The username that is used to authenticate with a ZenML server.",
+    help="The username that is used to authenticate with a ZenML server. If "
+    "omitted, the web login will be used.",
     required=False,
     type=str,
 )
@@ -660,8 +671,14 @@ def connect(
     from zenml.config.store_config import StoreConfiguration
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    # Raise an error if a local server is running when trying to connect.
-    if get_active_deployment(local=True):
+    # Raise an error if a local server is running when trying to connect to
+    # another server
+    active_deployment = get_active_deployment(local=True)
+    if (
+        active_deployment
+        and active_deployment.status
+        and active_deployment.status.url != url
+    ):
         cli_utils.error(
             "You're trying to connect to a remote ZenML server but already "
             "have a local server running. This can lead to unexpected "
@@ -670,7 +687,9 @@ def connect(
         )
 
     store_dict: Dict[str, Any] = {}
-    verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+    verify_ssl: Union[str, bool] = (
+        ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+    )
 
     if config:
         if os.path.isfile(config):
@@ -718,20 +737,26 @@ def connect(
     assert url is not None
 
     store_dict["url"] = url
-    if not username:
-        username = click.prompt("Username", type=str)
-    store_dict["username"] = username
-    if password is None:
-        password = click.prompt(
-            f"Password for user {username} (press ENTER for empty password)",
-            default="",
-            hide_input=True,
-        )
-    store_dict["password"] = password
-
     store_type = BaseZenStore.get_store_type(url)
     if store_type == StoreType.REST:
         store_dict["verify_ssl"] = verify_ssl
+
+    if not username:
+        if store_type == StoreType.REST:
+            store_dict["api_token"] = web_login(url=url, verify_ssl=verify_ssl)
+        else:
+            username = click.prompt("Username", type=str)
+
+    if username:
+        store_dict["username"] = username
+
+        if password is None:
+            password = click.prompt(
+                f"Password for user {username} (press ENTER for empty password)",
+                default="",
+                hide_input=True,
+            )
+        store_dict["password"] = password
 
     store_config_class = BaseZenStore.get_store_config_class(store_type)
     assert store_config_class is not None

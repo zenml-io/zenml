@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
 

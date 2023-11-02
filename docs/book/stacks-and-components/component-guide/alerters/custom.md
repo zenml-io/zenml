@@ -4,6 +4,10 @@ description: Learning how to develop a custom alerter.
 
 # Develop a Custom Alerter
 
+{% hint style="info" %}
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../custom-solutions/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+{% endhint %}
+
 ### Base Abstraction
 
 The base abstraction for alerters is very basic, as it only defines two abstract methods that subclasses should

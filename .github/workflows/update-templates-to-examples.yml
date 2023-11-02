@@ -1,0 +1,114 @@
+name: Auto-update all templates
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS'
+        type: choice
+        options: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        required: false
+        default: 'ubuntu-latest'
+      python-version:
+        description: 'Python version'
+        type: choice
+        options:
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+        required: false
+        default: '3.8'
+
+jobs:
+  update-templates-to-examples:
+    name: update-templates-to-examples
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: "utf-8"
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Run template tests for zenml-io/template-e2e-batch
+        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
+        with:
+          python-version: ${{ inputs.python-version }}
+          stack-name: local
+          ref-zenml: ${{ github.ref }}
+          ref-template: '2023.10.10' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from zenml/cli/base.py
+      
+      - name: Clean-up
+        run: |
+          rm -rf ./local_checkout
+
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=zenml-io/template-e2e-batch project template testing failed with new version of ZenML core!::\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
+            please make the code in zenml-io/template-e2e-batch compatible with new version of\
+            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
+
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Check-out fresh E2E template
+        run: |
+          mkdir -p examples/e2e
+          printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          bash scripts/format.sh
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+            echo "No active Git changes found."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Active Git changes found."
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Commit and push template
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -am "Auto-update of E2E template"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Create PR comment
+        if: steps.check_changes.outputs.changes == 'true'
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'E2E template updates in `examples/e2e` have been pushed.'
+            })

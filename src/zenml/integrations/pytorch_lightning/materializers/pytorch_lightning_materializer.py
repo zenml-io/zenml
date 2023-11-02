@@ -19,13 +19,13 @@ from torch.nn import Module
 
 from zenml.enums import ArtifactType
 from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
-    BasePyTorchMaterliazer,
+    BasePyTorchMaterializer,
 )
 
 CHECKPOINT_NAME = "final_checkpoint.ckpt"
 
 
-class PyTorchLightningMaterializer(BasePyTorchMaterliazer):
+class PyTorchLightningMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write PyTorch models."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)

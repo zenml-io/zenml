@@ -52,6 +52,8 @@ def test_loading_the_deployment(clean_client):
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         stack=clean_client.active_stack.id,
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     deployment = clean_client.zen_store.create_deployment(request)

@@ -17,7 +17,7 @@ import re
 from typing import List, Optional, cast
 
 import boto3
-from botocore.exceptions import ClientError, NoCredentialsError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -80,7 +80,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             response = boto3.client(
                 "ecr", region_name=self._get_region()
             ).describe_repositories()
-        except NoCredentialsError:
+        except (BotoCoreError, ClientError):
             logger.warning(
                 "Amazon ECR requires you to create a repository before you can "
                 f"push an image to it. ZenML is trying to push the image "
