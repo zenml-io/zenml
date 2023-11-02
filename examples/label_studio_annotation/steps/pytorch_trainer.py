@@ -114,15 +114,11 @@ class CustomDataset:
                 file_url = f"{artifact_store_path}{urlparse(image_url).path}"
             elif is_azure_url(image_url):
                 file_url = "az://" + "/".join(parts[3:])
-            # elif is_gcs_url(image_url):
             else:
-                url_scheme = "gs"
                 url_path = urlparse(image_url).path
                 file_url = f"{artifact_store_path}/{url_path}"
             file_extension = get_file_extension(urlparse(image_url).path)
             path = os.path.join(temp_dir.name, f"{i}{file_extension}")
-
-            # breakpoint()
 
             io_utils.copy(file_url, path)
             with fileio.open(path, "rb") as f:
