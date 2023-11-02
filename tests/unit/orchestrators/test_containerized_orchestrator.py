@@ -77,6 +77,8 @@ def test_builds_with_no_docker_settings():
             "step_1": _get_step(name="step_1"),
             "step_2": _get_step(name="step_2"),
         },
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     builds = orchestrator.get_docker_builds(deployment=deployment)
@@ -105,6 +107,8 @@ def test_builds_with_custom_docker_settings_for_some_steps():
             ),
             "step_2": _get_step(name="step_2"),
         },
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     builds = orchestrator.get_docker_builds(deployment=deployment)
@@ -141,6 +145,8 @@ def test_builds_with_custom_docker_settings_for_all_steps():
                 name="step_2", docker_settings=custom_step_2_settings
             ),
         },
+        client_version="0.12.3",
+        server_version="0.12.3",
     )
 
     builds = orchestrator.get_docker_builds(deployment=deployment)

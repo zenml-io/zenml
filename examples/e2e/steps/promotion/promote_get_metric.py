@@ -58,7 +58,7 @@ def promote_get_metric(
 
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     X = dataset_tst.drop(columns=["target"])
-    y = dataset_tst["target"]
+    y = dataset_tst["target"].to_numpy()
     logger.info("Evaluating model metrics...")
 
     predictions = deployment_service.predict(request=X)

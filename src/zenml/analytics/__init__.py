@@ -46,6 +46,22 @@ def identify(  # type: ignore[return]
         return analytics.identify(traits=metadata)
 
 
+def alias(user_id: UUID, previous_id: UUID) -> bool:  # type: ignore[return]
+    """Alias user IDs.
+
+    Args:
+        user_id: The user ID.
+        previous_id: Previous ID for the alias.
+
+    Returns:
+        True if event is sent successfully, False is not.
+    """
+    from zenml.analytics.context import AnalyticsContext
+
+    with AnalyticsContext() as analytics:
+        return analytics.alias(user_id=user_id, previous_id=previous_id)
+
+
 def group(  # type: ignore[return]
     group_id: UUID,
     group_metadata: Optional[Dict[str, Any]] = None,

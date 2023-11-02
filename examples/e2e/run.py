@@ -15,16 +15,15 @@
 # limitations under the License.
 #
 
-
+import os
 from datetime import datetime as dt
 from typing import Optional
 
 import click
-from config import MetaConfig
 from pipelines import e2e_use_case_batch_inference, e2e_use_case_training
 
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.logger import get_logger
-from zenml.steps.external_artifact import ExternalArtifact
 
 logger = get_logger(__name__)
 
@@ -165,7 +164,6 @@ def main(
         run_args_train = {
             "drop_na": not no_drop_na,
             "normalize": not no_normalize,
-            "random_seed": 42,
             "test_size": test_size,
             "min_train_accuracy": min_train_accuracy,
             "min_test_accuracy": min_test_accuracy,
@@ -174,29 +172,39 @@ def main(
         if drop_columns:
             run_args_train["drop_columns"] = drop_columns.split(",")
 
+        pipeline_args["config_path"] = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "train_config.yaml",
+        )
         pipeline_args[
             "run_name"
-        ] = f"{MetaConfig.pipeline_name_training}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        ] = f"e2e_use_case_training_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
     # Execute Batch Inference Pipeline
     run_args_inference = {}
+    pipeline_args["config_path"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "inference_config.yaml",
+    )
     pipeline_args[
         "run_name"
-    ] = f"{MetaConfig.pipeline_name_batch_inference}_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    ] = f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_use_case_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
     )
 
     artifact = ExternalArtifact(
-        pipeline_name=MetaConfig.pipeline_name_batch_inference,
-        artifact_name="predictions",
+        model_artifact_name="predictions",
+        model_name="e2e_use_case",
+        model_version="staging",
+        model_artifact_version=None,  # can be skipped - using latest artifact link
     )
     logger.info(
         "Batch inference pipeline finished successfully! "
         "You can find predictions in Artifact Store using ID: "
-        f"`{str(artifact.upload_if_necessary())}`."
+        f"`{str(artifact.get_artifact_id())}`."
     )
 
 

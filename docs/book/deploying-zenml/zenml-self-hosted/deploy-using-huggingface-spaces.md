@@ -64,7 +64,7 @@ You can now use this URL to connect to your ZenML server from your local machine
 installing ZenML, and using your custom URL instead of the placeholder):
 
 ```shell
-zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>' --username='default' --password=''
+zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>'
 ```
 
 You can also use the Direct URL in your browser to use the ZenML dashboard as a fullscreen application (i.e. without the

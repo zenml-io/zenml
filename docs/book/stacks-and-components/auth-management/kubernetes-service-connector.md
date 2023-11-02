@@ -38,6 +38,8 @@ Two authentication methods are supported:
 1. username and password. This is not recommended for production purposes.
 2. authentication token with or without client certificates.
 
+For Kubernetes clusters that use neither username and password nor authentication tokens, such as local K3D clusters, the authentication token method can be used with an empty token. 
+
 {% hint style="warning" %}
 This Service Connector does not support generating short-lived credentials from the credentials configured in the Service Connector. In effect, this means that the configured credentials will be distributed directly to clients and used to authenticate to the target Kubernetes API. It is recommended therefore to use API tokens accompanied by client certificates if possible.
 {% endhint %}

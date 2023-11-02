@@ -144,6 +144,7 @@ class CliCategories(StrEnum):
     HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
+    MODEL_CONTROL_PLANE = "Model Control Plane"
     IDENTITY_AND_SECURITY = "Identity and Security"
     OTHER_COMMANDS = "Other Commands"
 
@@ -192,6 +193,32 @@ class PermissionType(StrEnum):
     ME = (
         "me"  # allows the user to self administrate (change name, password...)
     )
+
+
+class AuthScheme(StrEnum):
+    """The authentication scheme."""
+
+    NO_AUTH = "NO_AUTH"
+    HTTP_BASIC = "HTTP_BASIC"
+    OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
+    EXTERNAL = "EXTERNAL"
+
+
+class OAuthGrantTypes(StrEnum):
+    """The OAuth grant types."""
+
+    OAUTH_PASSWORD = "password"
+    OAUTH_DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"
+    ZENML_EXTERNAL = "zenml-external"
+
+
+class OAuthDeviceStatus(StrEnum):
+    """The OAuth device status."""
+
+    PENDING = "pending"
+    VERIFIED = "verified"
+    ACTIVE = "active"
+    LOCKED = "locked"
 
 
 class GenericFilterOps(StrEnum):
@@ -255,3 +282,12 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+
+
+class ModelStages(StrEnum):
+    """All possible stages of a Model Version."""
+
+    NONE = "none"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    ARCHIVED = "archived"

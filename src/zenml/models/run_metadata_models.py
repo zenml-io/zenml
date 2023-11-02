@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -40,6 +40,21 @@ class RunMetadataBaseModel(BaseModel):
     step_run_id: Optional[UUID]
     artifact_id: Optional[UUID]
     stack_component_id: Optional[UUID]
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class RunMetadataResponseModel(
+    RunMetadataBaseModel, WorkspaceScopedResponseModel
+):
+    """Response model for run metadata.
+
+    Only contains a single metadata entry.
+    """
+
     key: str = Field(
         title="The key of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -52,17 +67,6 @@ class RunMetadataBaseModel(BaseModel):
         title="The type of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-
-# -------- #
-# RESPONSE #
-# -------- #
-
-
-class RunMetadataResponseModel(
-    RunMetadataBaseModel, WorkspaceScopedResponseModel
-):
-    """Response model for run metadata."""
 
 
 # ------ #
@@ -89,4 +93,14 @@ class RunMetadataFilterModel(WorkspaceScopedFilterModel):
 class RunMetadataRequestModel(
     RunMetadataBaseModel, WorkspaceScopedRequestModel
 ):
-    """Request model for run metadata."""
+    """Request model for run metadata.
+
+    Can contain multiple metadata entries so they can be created in bulk.
+    """
+
+    values: Dict[str, "MetadataType"] = Field(
+        title="The metadata to be created.",
+    )
+    types: Dict[str, "MetadataTypeEnum"] = Field(
+        title="The types of the metadata to be created.",
+    )

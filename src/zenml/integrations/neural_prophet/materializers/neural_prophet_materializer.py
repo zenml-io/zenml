@@ -19,7 +19,7 @@ from neuralprophet import NeuralProphet
 
 from zenml.enums import ArtifactType
 from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
-    BasePyTorchMaterliazer,
+    BasePyTorchMaterializer,
 )
 
 # TODO [ENG-794]: The integration consists of a simple materializer that uses the
@@ -30,7 +30,7 @@ from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
 DEFAULT_FILENAME = "entire_model.pt"
 
 
-class NeuralProphetMaterializer(BasePyTorchMaterliazer):
+class NeuralProphetMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (NeuralProphet,)

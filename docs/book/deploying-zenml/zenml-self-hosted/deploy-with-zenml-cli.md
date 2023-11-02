@@ -276,7 +276,7 @@ If no arguments are supplied, ZenML will attempt to connect to the last ZenML se
 In order to connect to a specific ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
 
 ```bash
-zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+zenml connect --url=https://zenml.example.com:8080 --no-verify-ssl
 ```
 
 or
