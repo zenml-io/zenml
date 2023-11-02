@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from zenml.enums import ModelStages
-from zenml.model import ModelConfig
+from zenml.model import ModelVersionConsumerConfig, ModelVersionProducerConfig
 
 
 @pytest.mark.parametrize(
@@ -28,22 +28,27 @@ def test_init_warns(
     logger,
 ):
     with patch(f"zenml.model.model_config.logger.{logger}") as logger:
-        ModelConfig(
-            name="foo",
-            version=version_name,
-            create_new_model_version=create_new_model_version,
-            delete_new_version_on_failure=delete_new_version_on_failure,
-        )
+        if create_new_model_version:
+            ModelVersionProducerConfig(
+                name="foo",
+                version=version_name,
+                delete_new_version_on_failure=delete_new_version_on_failure,
+            )
+        else:
+            ModelVersionConsumerConfig(
+                name="foo",
+                version=version_name,
+            )
         logger.assert_called_once()
 
 
 @pytest.mark.parametrize(
-    "version_name,create_new_model_version",
+    "version_name",
     [
-        [1, True],
-        ["1", True],
-        [ModelStages.PRODUCTION, True],
-        ["production", True],
+        [1],
+        ["1"],
+        [ModelStages.PRODUCTION],
+        ["production"],
     ],
     ids=[
         "Version number as integer and new version request",
@@ -54,11 +59,9 @@ def test_init_warns(
 )
 def test_init_raises(
     version_name,
-    create_new_model_version,
 ):
     with pytest.raises(ValueError):
-        ModelConfig(
+        ModelVersionProducerConfig(
             name="foo",
             version=version_name,
-            create_new_model_version=create_new_model_version,
         )

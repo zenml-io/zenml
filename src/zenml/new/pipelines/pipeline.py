@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -125,7 +125,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelVersionConfigBase"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -303,7 +303,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelVersionConfigBase"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the pipeline.
@@ -816,7 +816,7 @@ class Pipeline:
         new_versions_requested: Dict[
             str, NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
-        other_model_configs: List["ModelConfig"] = []
+        other_model_configs: List["ModelVersionConfigBase"] = []
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
             step_model_config = step.config.model_config
@@ -1390,9 +1390,11 @@ class Pipeline:
                         "model_config"
                     ]
                 else:
-                    from zenml.model.model_config import ModelConfig
+                    from zenml.model.model_config import ModelVersionConfigBase
 
-                    _from_config_file["model_config"] = ModelConfig.parse_obj(
+                    _from_config_file[
+                        "model_config"
+                    ] = ModelVersionConfigBase.parse_obj(
                         _from_config_file["model_config"]
                     )
         self._from_config_file = _from_config_file

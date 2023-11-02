@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.artifact_config import ArtifactConfig
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
@@ -205,7 +205,7 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
     @property
-    def model_config(self) -> "ModelConfig":
+    def model_config(self) -> "ModelVersionConfigBase":
         """Returns configured ModelConfig.
 
         Order of resolution to search for ModelConfig is:

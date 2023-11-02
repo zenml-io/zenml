@@ -20,7 +20,7 @@ import yaml
 
 from zenml import get_step_context, pipeline, step
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ModelConfig
+from zenml.model import ModelVersionProducerConfig
 
 
 @step
@@ -52,9 +52,8 @@ def assert_extra_step():
 
 def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
     """Test that the pipeline can be configured with a model config from a yaml file."""
-    model_config = ModelConfig(
+    model_config = ModelVersionProducerConfig(
         name="foo",
-        create_new_model_version=True,
         delete_new_version_on_failure=False,
         description="description",
         license="MIT",
@@ -115,9 +114,8 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
     """Test that the pipeline can be configured with a model config
     from a yaml file, but the values from yaml are not overridden.
     """
-    initial_model_config = ModelConfig(
+    initial_model_config = ModelVersionProducerConfig(
         name="bar",
-        create_new_model_version=True,
     )
 
     config_path = tmp_path / "config.yaml"
@@ -136,9 +134,8 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
 
     with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
         p.configure(
-            model_config=ModelConfig(
+            model_config=ModelVersionProducerConfig(
                 name="foo",
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
                 description="description",
                 license="MIT",

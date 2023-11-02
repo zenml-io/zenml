@@ -26,7 +26,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]
@@ -62,7 +62,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 

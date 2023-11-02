@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModelConfig(BaseModel):
-    """ModelConfig class to pass into pipeline or step to set it into a model context.
+class ModelVersionConfigBase(BaseModel):
+    """ModelConfig base class.
 
     name: The name of the model.
     license: The license under which the model is created.
@@ -291,7 +291,7 @@ class ModelConfig(BaseModel):
             mv = self._get_model_version()
         return mv
 
-    def _merge(self, model_config: "ModelConfig") -> None:
+    def _merge(self, model_config: "ModelVersionConfigBase") -> None:
         self.license = self.license or model_config.license
         self.description = self.description or model_config.description
         self.audience = self.audience or model_config.audience
@@ -306,4 +306,162 @@ class ModelConfig(BaseModel):
 
         self.delete_new_version_on_failure &= (
             model_config.delete_new_version_on_failure
+        )
+
+
+class ModelVersionConsumerConfig(ModelVersionConfigBase):
+    """ModelVersionConsumerConfig class to pass into pipeline or step to set it into a model context."""
+
+    def __init__(
+        self,
+        name: str,
+        version: Optional[Union[ModelStages, int, str]] = None,
+        save_models_to_registry: bool = True,
+    ):
+        """ModelVersionConsumerConfig class to pass into pipeline or step to set it into a model context.
+
+        This configuration class is used when you would like to use existing Model Version
+        created beforehand by other means.
+
+        Args:
+            name: The name of the model.
+            version: The model version name, number or stage is optional and points model context
+            save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
+                if available in active stack.
+
+        Examples:
+            ```
+            from zenml import pipeline
+            from zenml.enums import ModelStages
+            from zenml.model import ModelVersionConsumerConfig
+
+
+            @pipeline(
+                model_config=ModelVersionConsumerConfig(
+                    name="my_model", version=1, save_models_to_registry=True
+                )
+            )
+            def consume_version_by_number():
+                ...
+
+
+            @pipeline(model_config=ModelVersionConsumerConfig(name="my_model"))
+            def consume_latest_version():
+                ...
+
+
+            @pipeline(
+                model_config=ModelVersionConsumerConfig(
+                    name="my_model", version="my_version"
+                )
+            )
+            def consume_version_by_name():
+                ...
+
+
+            @pipeline(
+                model_config=ModelVersionConsumerConfig(
+                    name="my_model", version=ModelStages.PRODUCTION
+                )
+            )
+            def consume_version_by_stage():
+                ...
+            ```
+        """
+        super().__init__(
+            name=name,
+            version=version,
+            create_new_model_version=False,
+            save_models_to_registry=save_models_to_registry,
+            delete_new_version_on_failure=True,
+        )
+
+
+class ModelVersionProducerConfig(ModelVersionConfigBase):
+    """ModelVersionProducerConfig class to pass into pipeline or step to set it into a model context."""
+
+    def __init__(
+        self,
+        name: str,
+        license: Optional[str] = None,
+        description: Optional[str] = None,
+        audience: Optional[str] = None,
+        use_cases: Optional[str] = None,
+        limitations: Optional[str] = None,
+        trade_offs: Optional[str] = None,
+        ethics: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        version: Optional[Union[ModelStages, int, str]] = None,
+        version_description: Optional[str] = None,
+        save_models_to_registry: bool = True,
+        delete_new_version_on_failure: bool = True,
+    ):
+        """ModelVersionProducerConfig class to pass into pipeline or step to set it into a model context.
+
+        This configuration class is used when you would like to create a new Model Version inside
+        Model Control Plane.
+
+        Args:
+            name: The name of the model.
+            license: The license under which the model is created.
+            description: The description of the model.
+            audience: The target audience of the model.
+            use_cases: The use cases of the model.
+            limitations: The known limitations of the model.
+            trade_offs: The tradeoffs of the model.
+            ethics: The ethical implications of the model.
+            tags: Tags associated with the model.
+            version: The model version name, number or stage is optional and points model context
+                to a specific version/stage. If skipped and `create_new_model_version` is False -
+                latest model version will be used.
+            version_description: The description of the model version.
+            save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
+                if available in active stack.
+            delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
+
+        Examples:
+            ```
+            from zenml import pipeline
+            from zenml.enums import ModelStages
+            from zenml.model import ModelVersionProducerConfig
+
+
+            @pipeline(
+                model_config=ModelVersionProducerConfig(
+                    name="my_model",..., version="my_version"
+                )
+            )
+            def produce_version_with_given_name():
+                ...
+
+
+            @pipeline(model_config=ModelVersionProducerConfig(name="my_model"))
+            def produce_version_without_explicit_name():
+                ...
+
+
+            @pipeline(
+                model_config=ModelVersionProducerConfig(
+                    name="my_model", delete_new_version_on_failure=False
+                )
+            )
+            def produce_version_with_recovery_option_on_failure():
+                ...
+            ```
+        """
+        super().__init__(
+            name=name,
+            license=license,
+            description=description,
+            audience=audience,
+            use_cases=use_cases,
+            limitations=limitations,
+            trade_offs=trade_offs,
+            ethics=ethics,
+            tags=tags,
+            version=version,
+            version_description=version_description,
+            create_new_model_version=True,
+            save_models_to_registry=save_models_to_registry,
+            delete_new_version_on_failure=delete_new_version_on_failure,
         )

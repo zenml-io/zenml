@@ -22,14 +22,14 @@ from zenml.exceptions import InputResolutionError
 from zenml.models import StepRunFilterModel
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.models.artifact_models import ArtifactResponseModel
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Tuple[Dict[str, "ArtifactResponseModel"], List[UUID]]:
     """Resolves inputs for the current step.
 

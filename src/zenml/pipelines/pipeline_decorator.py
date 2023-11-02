@@ -26,7 +26,7 @@ from typing import (
 )
 
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_config import ModelVersionConfigBase
 from zenml.pipelines.base_pipeline import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
@@ -68,7 +68,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -85,7 +85,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 

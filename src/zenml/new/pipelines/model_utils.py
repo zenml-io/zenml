@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_config import ModelVersionConfigBase
 
 
 class NewModelVersionRequest(BaseModel):
@@ -38,10 +38,10 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_config: Optional[ModelConfig] = PrivateAttr(default=None)
+    _model_config: Optional[ModelVersionConfigBase] = PrivateAttr(default=None)
 
     @property
-    def model_config(self) -> ModelConfig:
+    def model_config(self) -> ModelVersionConfigBase:
         """Model config getter.
 
         Returns:
@@ -56,7 +56,7 @@ class NewModelVersionRequest(BaseModel):
 
     def update_request(
         self,
-        model_config: ModelConfig,
+        model_config: ModelVersionConfigBase,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
         """Update from Model Config Model object in place.

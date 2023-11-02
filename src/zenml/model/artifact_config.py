@@ -23,7 +23,7 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
 
 
 logger = get_logger(__name__)
@@ -57,7 +57,7 @@ class ArtifactConfig(BaseModel):
         smart_union = True
 
     @property
-    def _model_config(self) -> "ModelConfig":
+    def _model_config(self) -> "ModelVersionConfigBase":
         """Property that returns the model configuration.
 
         Returns:
@@ -76,9 +76,9 @@ class ArtifactConfig(BaseModel):
             model_config is None or model_config.name != self.model_name
         ):
             # Create a new ModelConfig instance with the provided model name and version
-            from zenml.model.model_config import ModelConfig
+            from zenml.model.model_config import ModelVersionConfigBase
 
-            on_the_fly_config = ModelConfig(
+            on_the_fly_config = ModelVersionConfigBase(
                 name=self.model_name,
                 version=self.model_version,
                 create_new_model_version=False,
@@ -97,7 +97,7 @@ class ArtifactConfig(BaseModel):
     def _link_to_model_version(
         self,
         artifact_uuid: UUID,
-        model_config: "ModelConfig",
+        model_config: "ModelVersionConfigBase",
         is_model_object: bool = False,
         is_deployment: bool = False,
     ) -> None:
@@ -175,7 +175,7 @@ class ArtifactConfig(BaseModel):
         client.zen_store.create_model_version_artifact_link(request)
 
     def link_to_model(
-        self, artifact_uuid: UUID, model_config: "ModelConfig"
+        self, artifact_uuid: UUID, model_config: "ModelVersionConfigBase"
     ) -> None:
         """Link artifact to the model version.
 

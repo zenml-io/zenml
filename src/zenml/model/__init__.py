@@ -16,7 +16,10 @@
 ZenML model support Model Control Plane feature.
 """
 
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_config import (
+    ModelVersionConsumerConfig,
+    ModelVersionProducerConfig,
+)
 from zenml.model.artifact_config import (
     ArtifactConfig,
     ModelArtifactConfig,
@@ -29,6 +32,7 @@ __all__ = [
     "ArtifactConfig",
     "DeploymentArtifactConfig",
     "ModelArtifactConfig",
-    "ModelConfig",
+    "ModelVersionConsumerConfig",
+    "ModelVersionProducerConfig",
     "link_output_to_model",
 ]

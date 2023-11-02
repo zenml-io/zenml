@@ -655,9 +655,9 @@ class StepRunner:
                         return
 
                 if artifact_config_.model_name is not None:
-                    from zenml.model.model_config import ModelConfig
+                    from zenml.model.model_config import ModelVersionConfigBase
 
-                    model_config = ModelConfig(
+                    model_config = ModelVersionConfigBase(
                         name=artifact_config_.model_name,
                         version=artifact_config_.model_version,
                     )

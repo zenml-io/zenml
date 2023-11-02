@@ -25,7 +25,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.models.artifact_models import ArtifactResponseModel
 
 
@@ -78,7 +78,7 @@ class ExternalArtifactConfiguration(BaseModel):
         return response
 
     def _get_artifact_from_model(
-        self, model_config: Optional["ModelConfig"] = None
+        self, model_config: Optional["ModelVersionConfigBase"] = None
     ) -> "ArtifactResponseModel":
         """Get artifact from Model Control Plane.
 
@@ -107,9 +107,9 @@ class ExternalArtifactConfiguration(BaseModel):
             or self.model_name != model_config.name
             or self.model_version != model_config.version
         ):
-            from zenml.model.model_config import ModelConfig
+            from zenml.model.model_config import ModelVersionConfigBase
 
-            model_config = ModelConfig(
+            model_config = ModelVersionConfigBase(
                 name=self.model_name,
                 version=self.model_version,
             )
@@ -139,7 +139,7 @@ class ExternalArtifactConfiguration(BaseModel):
         return response
 
     def get_artifact_id(
-        self, model_config: Optional["ModelConfig"] = None
+        self, model_config: Optional["ModelVersionConfigBase"] = None
     ) -> UUID:
         """Get the artifact.
 

@@ -53,7 +53,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -392,7 +392,7 @@ class StepLauncher:
 
     def _link_cached_artifacts_to_model_version(
         self,
-        model_config_from_context: Optional["ModelConfig"],
+        model_config_from_context: Optional["ModelVersionConfigBase"],
         step_run: StepRunRequestModel,
     ) -> None:
         """Links the output artifacts of the cached step to the model version in Control Plane.
@@ -426,9 +426,9 @@ class StepLauncher:
                 if artifact_config_.model_name is None:
                     model_config = model_config_from_context
                 else:
-                    from zenml.model.model_config import ModelConfig
+                    from zenml.model.model_config import ModelVersionConfigBase
 
-                    model_config = ModelConfig(
+                    model_config = ModelVersionConfigBase(
                         name=artifact_config_.model_name,
                         version=artifact_config_.model_version,
                     )

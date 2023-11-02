@@ -70,7 +70,7 @@ if TYPE_CHECKING:
         StepConfiguration,
         StepConfigurationUpdate,
     )
-    from zenml.model import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -136,7 +136,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelVersionConfigBase"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -649,7 +649,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelVersionConfigBase"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -784,7 +784,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_config: Optional["ModelVersionConfigBase"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.

@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.model import ModelConfig
+    from zenml.model.model_config import ModelVersionConfigBase
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -67,7 +67,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Callable[["F"], "BaseStep"]:
     ...
 
@@ -87,7 +87,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_config: Optional["ModelVersionConfigBase"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
