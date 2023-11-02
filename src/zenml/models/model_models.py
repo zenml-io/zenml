@@ -549,7 +549,12 @@ class ModelResponseModel(
     WorkspaceScopedResponseModel,
     ModelBaseModel,
 ):
-    """Model response model."""
+    """Model response model.
+
+    latest_version: name of latest version, if any
+    """
+
+    latest_version: Optional[str]
 
     @property
     def versions(self) -> List[ModelVersionResponseModel]:
