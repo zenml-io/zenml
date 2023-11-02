@@ -25,7 +25,7 @@ class LlamaIndexIntegration(Integration):
     """Definition of Llama Index integration for ZenML."""
 
     NAME = LLAMA_INDEX
-    REQUIREMENTS = ["llama_index>=0.4.28,<0.6.0"]
+    REQUIREMENTS = ["llama_index>=0.8.0"]
 
     @classmethod
     def activate(cls) -> None:
