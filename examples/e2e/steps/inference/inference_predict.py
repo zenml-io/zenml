@@ -23,13 +23,14 @@ from zenml import step
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowDeploymentService,
 )
+from zenml.model import ArtifactConfig
 
 
 @step
 def inference_predict(
     deployment_service: MLFlowDeploymentService,
     dataset_inf: pd.DataFrame,
-) -> Annotated[pd.Series, "predictions"]:
+) -> Annotated[pd.Series, "predictions", ArtifactConfig(overwrite=False)]:
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns

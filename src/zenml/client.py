@@ -65,7 +65,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
@@ -168,7 +167,7 @@ from zenml.utils.pagination_utils import depaginate
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackComponentConfig
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -1955,24 +1954,32 @@ class Client(metaclass=ClientMetaClass):
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
                     ) from e
-            # Get the flavor model
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor, component_type=component.type
-            )
 
-            # Create and validate the configuration
-            from zenml.stack import Flavor
+                # Create and validate the configuration
+                from zenml.stack.utils import (
+                    validate_stack_component_config,
+                    warn_if_config_server_mismatch,
+                )
 
-            flavor = Flavor.from_model(flavor_model)
-            configuration = flavor.config_class(**component.configuration)
-            if configuration.is_local:
-                local_components.append(
-                    f"{component.type.value}: {component.name}"
+                configuration = validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor_name=component.flavor,
+                    component_type=component.type,
+                    # Always enforce validation of custom flavors
+                    validate_custom_flavors=True,
                 )
-            elif configuration.is_remote:
-                remote_components.append(
-                    f"{component.type.value}: {component.name}"
-                )
+                # Guaranteed to not be None by setting
+                # `validate_custom_flavors=True` above
+                assert configuration is not None
+                warn_if_config_server_mismatch(configuration)
+                if configuration.is_local:
+                    local_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
+                elif configuration.is_remote:
+                    remote_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
 
         if local_components and remote_components:
             logger.warning(
@@ -2148,23 +2155,22 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered component.
         """
-        # Get the flavor model
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=flavor,
+        from zenml.stack.utils import (
+            validate_stack_component_config,
+            warn_if_config_server_mismatch,
+        )
+
+        validated_config = validate_stack_component_config(
+            configuration_dict=configuration,
+            flavor_name=flavor,
             component_type=component_type,
+            # Always enforce validation of custom flavors
+            validate_custom_flavors=True,
         )
-
-        # Create and validate the configuration
-        from zenml.stack import Flavor
-
-        flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(
-            warn_about_plain_text_secrets=True, **configuration
-        )
-
-        self._validate_stack_component_configuration(
-            component_type, configuration=configuration_obj
-        )
+        # Guaranteed to not be None by setting
+        # `validate_custom_flavors=True` above
+        assert validated_config is not None
+        warn_if_config_server_mismatch(validated_config)
 
         create_component_model = ComponentRequestModel(
             name=name,
@@ -2192,6 +2198,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
@@ -2206,6 +2213,8 @@ class Client(metaclass=ClientMetaClass):
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            disconnect: Whether to disconnect the stack component from its
+                service connector.
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
@@ -2260,26 +2269,29 @@ class Client(metaclass=ClientMetaClass):
         if configuration is not None:
             existing_configuration = component.configuration
             existing_configuration.update(configuration)
-
             existing_configuration = {
                 k: v
                 for k, v in existing_configuration.items()
                 if v is not None
             }
 
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor,
+            from zenml.stack.utils import (
+                validate_stack_component_config,
+                warn_if_config_server_mismatch,
+            )
+
+            validated_config = validate_stack_component_config(
+                configuration_dict=existing_configuration,
+                flavor_name=component.flavor,
                 component_type=component.type,
+                # Always enforce validation of custom flavors
+                validate_custom_flavors=True,
             )
+            # Guaranteed to not be None by setting
+            # `validate_custom_flavors=True` above
+            assert validated_config is not None
+            warn_if_config_server_mismatch(validated_config)
 
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-            configuration_obj = flavor.config_class(**existing_configuration)
-
-            self._validate_stack_component_configuration(
-                component.type, configuration=configuration_obj
-            )
             update_model.configuration = existing_configuration
 
         if labels is not None:
@@ -2291,10 +2303,22 @@ class Client(metaclass=ClientMetaClass):
             }
             update_model.labels = existing_labels
 
-        if connector_id is not None:
+        if disconnect:
+            update_model.connector = None
+            update_model.connector_resource_id = None
+        else:
+            existing_component = self.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
             update_model.connector = connector_id
-        if connector_resource_id is not None:
             update_model.connector_resource_id = connector_resource_id
+            if connector_id is None and existing_component.connector:
+                update_model.connector = existing_component.connector.id
+                update_model.connector_resource_id = (
+                    existing_component.connector_resource_id
+                )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
@@ -2325,45 +2349,6 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
-
-    def _validate_stack_component_configuration(
-        self,
-        component_type: "StackComponentType",
-        configuration: "StackComponentConfig",
-    ) -> None:
-        """Validates the configuration of a stack component.
-
-        Args:
-            component_type: The type of the component.
-            configuration: The component configuration to validate.
-
-        Raises:
-            StackComponentValidationError: in case the stack component configuration is invalid.
-        """
-        from zenml.enums import StoreType
-
-        if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type != StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local ZenML server. The component "
-                    "may not be able to reach the local ZenML server and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-        elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warning(
-                "You are configuring a stack component that is using "
-                "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by "
-                "other users. You should consider using a non-local stack "
-                "component alternative instead."
-            )
-        if not configuration.is_valid:
-            raise StackComponentValidationError(
-                f"Invalid stack component configuration. please verify "
-                f"the configurations set for {component_type}."
-            )
 
     # .---------.
     # | FLAVORS |
@@ -5113,11 +5098,13 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
             model_version_filter_model: All filter parameters including pagination
                 params.
 
@@ -5125,7 +5112,8 @@ class Client(metaclass=ClientMetaClass):
             A page of all model versions.
         """
         return self.zen_store.list_model_versions(
-            model_version_filter_model=model_version_filter_model
+            model_name_or_id=model_name_or_id,
+            model_version_filter_model=model_version_filter_model,
         )
 
     def update_model_version(
@@ -5155,19 +5143,32 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to artifact links.
         """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
         return self.zen_store.list_model_version_artifact_links(
-            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
         )
 
     #################################################
@@ -5178,19 +5179,32 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped latest version will be retrieved.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to pipeline run links.
         """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
         )
 
     # .--------------------.

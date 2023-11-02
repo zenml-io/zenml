@@ -40,7 +40,7 @@ source .venv/bin/activate
 # Install requirements & integrations
 make setup
 # Optionally, provision default local stack
-make install-stack
+make install-stack-local
 # Start the ZenML UI locally (recommended, but optional);
 # the default username is "admin" with an empty password
 zenml up
@@ -81,22 +81,24 @@ This template uses
 to demonstrate how to perform major critical steps for Continuous Training (CT)
 and Continuous Delivery (CD).
 
-It consists of two pipelines with the following high-level steps:
+It consists of two pipelines with the following high-level setup:
 <p align="center">
   <img height=300 src=".assets/00_pipelines_composition.png">
 </p>
 
+Both pipelines are inside a shared Model Control Plane model context - training pipeline creates and promotes new Model Control Plane version and inference pipeline is reading from inference Model Control Plane version. This makes those pipelines closely connected, while ensuring that only quality-assured Model Control Plane versions are used to produce predictions delivered to stakeholders.
 * [CT] Training
-  * Load, split and preprocess the training dataset
-  * Search an optimal model architecture and tune its' hyperparameters
-  * Train the model and evaluate its performance on the holdout set
-  * Compare recently trained model with one used for inference and trained earlier
-  * If recently trained model - label it as a new inference model
+  * Load, split, and preprocess the training dataset
+  * Search for an optimal model object architecture and tune its hyperparameters
+  * Train the model object and evaluate its performance on the holdout set
+  * Compare a recently trained model object with one promoted earlier
+  * If a recently trained model object performs better - stage it as a new inference model object in model registry
+  * On success of the current model object - stage newly created Model Control Plane version as the one used for inference
 * [CD] Batch Inference
-  * Load the inference dataset and preprocess it in the same fashion as during the training
-  * Perform data drift analysis
-  * Run predictions using a model labeled as an inference model
-  * Store predictions as an artifact for future use
+  * Load the inference dataset and preprocess it reusing object fitted during training
+  * Perform data drift analysis reusing training dataset of the inference Model Control Plane version as a reference
+  * Run predictions using a model object from the inference Model Control Plane version
+  * Store predictions as an versioned artifact and link it to the inference Model Control Plane version
 
 In [the repository documentation](https://github.com/zenml-io/template-e2e-batch#-how-this-template-is-implemented),
 you can find more details about every step of this template.
@@ -117,7 +119,6 @@ The project loosely follows [the recommended ZenML project structure](https://do
 
 ```
 .
-├── artifacts               # handler for Custom Materializers
 ├── pipelines               # `zenml.pipeline` implementations
 │   ├── batch_inference.py  # [CD] Batch Inference pipeline
 │   └── training.py         # [CT] Training Pipeline
@@ -131,9 +132,10 @@ The project loosely follows [the recommended ZenML project structure](https://do
 │   └── training            # train and evaluate model
 ├── utils                   # helper functions
 ├── .dockerignore
-├── config.py               # default configuration of Pipelines
+├── inference_config.yaml   # the configuration of the batch inference pipeline
 ├── Makefile                # helper scripts for quick start with integrations
 ├── README.md               # this file
 ├── requirements.txt        # extra Python dependencies 
-└── run.py                  # CLI tool to run pipelines on ZenML Stack
+├── run.py                  # CLI tool to run pipelines on ZenML Stack
+└── train_config.yaml       # the configuration of the training pipeline
 ```

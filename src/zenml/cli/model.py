@@ -334,7 +334,8 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     model_versions = Client().list_model_versions(
-        ModelVersionFilterModel(model_id=model_id, **kwargs)
+        model_name_or_id=model_id,
+        model_version_filter_model=ModelVersionFilterModel(**kwargs),
     )
 
     if not model_versions:
@@ -410,10 +411,10 @@ def update_model_version(
         if not force:
             cli_utils.print_pydantic_models(
                 Client().list_model_versions(
-                    ModelVersionFilterModel(
-                        stage=stage,
-                        model_id=model_version.model.id,
-                    )
+                    model_name_or_id=model_version.model.id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        stage=stage
+                    ),
                 ),
                 columns=[
                     "id",
@@ -493,14 +494,14 @@ def _print_artifacts_links_generic(
     )
 
     links = Client().list_model_version_artifact_links(
-        ModelVersionArtifactFilterModel(
-            model_id=model_version.model.id,
-            model_version_id=model_version.id,
+        model_name_or_id=model_version.model.id,
+        model_version_name_or_number_or_id=model_version.id,
+        model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
             only_artifacts=only_artifact_objects,
             only_deployments=only_deployments,
             only_model_objects=only_model_objects,
             **kwargs,
-        )
+        ),
     )
 
     cli_utils.print_pydantic_models(
@@ -635,11 +636,11 @@ def list_model_version_pipeline_runs(
     )
 
     links = Client().list_model_version_pipeline_run_links(
-        ModelVersionPipelineRunFilterModel(
-            model_id=model_version.model.id,
-            model_version_id=model_version.id,
+        model_name_or_id=model_version.model.id,
+        model_version_name_or_number_or_id=model_version.id,
+        model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
             **kwargs,
-        )
+        ),
     )
 
     cli_utils.print_pydantic_models(
