@@ -180,6 +180,7 @@ def delete_model(
 )
 @handle_exceptions
 def list_model_versions(
+    model_name_or_id: Union[str, UUID],
     model_version_filter_model: ModelVersionFilterModel = Depends(
         make_dependable(ModelVersionFilterModel)
     ),
@@ -188,6 +189,7 @@ def list_model_versions(
     """Get model versions according to query filters.
 
     Args:
+        model_name_or_id: The name or ID of the model to list in.
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
 
@@ -195,6 +197,7 @@ def list_model_versions(
         The model versions according to query filters.
     """
     return zen_store().list_model_versions(
+        model_name_or_id=model_name_or_id,
         model_version_filter_model=model_version_filter_model,
     )
 
@@ -296,6 +299,8 @@ def delete_model_version(
 )
 @handle_exceptions
 def list_model_version_artifact_links(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
@@ -304,6 +309,8 @@ def list_model_version_artifact_links(
     """Get model version to artifact links according to query filters.
 
     Args:
+        model_name_or_id: The name or ID of the model containing version.
+        model_version_name_or_id: The name or ID of the model version containing links.
         model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
             filtering
 
@@ -311,6 +318,8 @@ def list_model_version_artifact_links(
         The model version to artifact links according to query filters.
     """
     return zen_store().list_model_version_artifact_links(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_id=model_version_name_or_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
     )
 
@@ -359,6 +368,8 @@ def delete_model_version_artifact_link(
 )
 @handle_exceptions
 def list_model_version_pipeline_run_links(
+    model_name_or_id: Union[str, UUID],
+    model_version_name_or_id: Union[str, UUID],
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
         make_dependable(ModelVersionPipelineRunFilterModel)
     ),
@@ -367,6 +378,8 @@ def list_model_version_pipeline_run_links(
     """Get model version to pipeline run links according to query filters.
 
     Args:
+        model_name_or_id: name or ID of the model containing the model version.
+        model_version_name_or_id: name or ID of the model version containing the link.
         model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
             and filtering
 
@@ -374,6 +387,8 @@ def list_model_version_pipeline_run_links(
         The model version to pipeline run links according to query filters.
     """
     return zen_store().list_model_version_pipeline_run_links(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_id=model_version_name_or_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
     )
 

@@ -125,6 +125,19 @@ def update_stack_component(
     Returns:
         Updated stack component.
     """
+    if component_update.configuration:
+        from zenml.stack.utils import validate_stack_component_config
+
+        existing_component = zen_store().get_stack_component(component_id)
+        validate_stack_component_config(
+            configuration_dict=component_update.configuration,
+            flavor_name=existing_component.flavor,
+            component_type=existing_component.type,
+            zen_store=zen_store(),
+            # We allow custom flavors to fail import on the server side.
+            validate_custom_flavors=False,
+        )
+
     if component_update.connector:
         service_connector = zen_store().get_service_connector(
             component_update.connector

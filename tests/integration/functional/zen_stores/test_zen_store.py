@@ -76,6 +76,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
 from zenml.models.flavor_models import FlavorBaseModel
+from zenml.models.model_models import ModelFilterModel
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.artifact_utils import (
     _load_artifact_store,
@@ -1877,6 +1878,26 @@ def test_connector_validation():
 #################
 
 
+class TestModel:
+    def test_latest_version_properly_fetched(self):
+        """Test that latest version can be properly fetched."""
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            models = zs.list_models(ModelFilterModel())
+            assert models[0].latest_version is None
+            for name in ["great one", "yet another one"]:
+                mv = zs.create_model_version(
+                    ModelVersionRequestModel(
+                        user=model.user.id,
+                        workspace=model.workspace.id,
+                        model=model.id,
+                        name=name,
+                    )
+                )
+                models = zs.list_models(ModelFilterModel())
+                assert models[0].latest_version == mv.name
+
+
 class TestModelVersion:
     def test_create_pass(self):
         """Test that vanilla creation pass."""
@@ -1960,7 +1981,8 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mvs = zs.list_model_versions(
-                ModelVersionFilterModel(model_id=model.id)
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilterModel(),
             )
             assert len(mvs) == 0
 
@@ -1985,7 +2007,8 @@ class TestModelVersion:
                 )
             )
             mvs = zs.list_model_versions(
-                ModelVersionFilterModel(model_id=model.id)
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilterModel(),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -2283,7 +2306,8 @@ class TestModelVersion:
             )
 
             model_versions = zs.list_model_versions(
-                ModelVersionFilterModel(model_id=model.id)
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilterModel(),
             )
             assert len(model_versions) == 2
             assert model_versions[0].name == "great one"
@@ -2526,12 +2550,12 @@ class TestModelVersionArtifactLinks:
             )
 
             links = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     pipeline_name="pipeline",
                     name="output",
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                ),
             )
             assert links[0].link_version == links[1].link_version == 1
             assert len(links) == 2
@@ -2560,10 +2584,9 @@ class TestModelVersionArtifactLinks:
                 model_version_artifact_link_name_or_id="link",
             )
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(),
             )
             assert len(mvls) == 0
 
@@ -2581,10 +2604,9 @@ class TestModelVersionArtifactLinks:
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(),
             )
             assert len(mvls) == 0
 
@@ -2595,10 +2617,9 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(),
             )
             assert len(mvls) == 0
             for n, mo, dep, artifact in [
@@ -2622,19 +2643,18 @@ class TestModelVersionArtifactLinks:
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(),
             )
             assert len(mvls) == len(artifacts)
 
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                    only_artifacts=True,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                    only_artifacts=True
+                ),
             )
             assert (
                 len(mvls) == 2
@@ -2643,20 +2663,20 @@ class TestModelVersionArtifactLinks:
             )
 
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                    only_model_objects=True,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                    only_model_objects=True
+                ),
             )
             assert len(mvls) == 1 and mvls[0].name == "link2"
 
             mvls = zs.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                    only_deployments=True,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                    only_deployments=True
+                ),
             )
             assert len(mvls) == 1 and mvls[0].name == "link3"
 
@@ -2791,10 +2811,9 @@ class TestModelVersionPipelineRunLinks:
                 model_version.model.id, model_version.id, "link"
             )
             mvls = zs.list_model_version_pipeline_run_links(
-                ModelVersionPipelineRunFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(),
             )
             assert len(mvls) == 0
 
@@ -2810,10 +2829,9 @@ class TestModelVersionPipelineRunLinks:
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
-                ModelVersionPipelineRunFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(),
             )
             assert len(mvls) == 0
 
@@ -2824,10 +2842,9 @@ class TestModelVersionPipelineRunLinks:
         ):
             zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
-                ModelVersionPipelineRunFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(),
             )
             assert len(mvls) == 0
             for n, pr in zip(["link4", None], prs):
@@ -2842,10 +2859,9 @@ class TestModelVersionPipelineRunLinks:
                     )
                 )
             mvls = zs.list_model_version_pipeline_run_links(
-                ModelVersionPipelineRunFilterModel(
-                    model_id=model_version.model.id,
-                    model_version_id=model_version.id,
-                )
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(),
             )
             assert len(mvls) == 2
 

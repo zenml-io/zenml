@@ -29,8 +29,8 @@ from zenml import step
 def train_data_splitter(
     dataset: pd.DataFrame, test_size: float = 0.2
 ) -> Tuple[
-    Annotated[pd.DataFrame, "dataset_trn"],
-    Annotated[pd.DataFrame, "dataset_tst"],
+    Annotated[pd.DataFrame, "raw_dataset_trn"],
+    Annotated[pd.DataFrame, "raw_dataset_tst"],
 ]:
     """Dataset splitter step.
 
