@@ -31,6 +31,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.user_models import UserResponseModel
 
 if TYPE_CHECKING:
     from zenml.models.team_models import TeamResponseModel
@@ -73,6 +74,23 @@ class ServiceAccountResponseModel(ServiceAccountBaseModel, BaseResponseModel):
         default=None, title="The list of roles for this service account."
     )
 
+    def to_user_model(self) -> UserResponseModel:
+        """Converts the service account to a user model.
+
+        For now, a lot of code still relies on the active user and resource
+        owners being a UserResponse object, which is a superset of the
+        ServiceAccountResponse object. We need this method to convert the
+        service account to a user.
+
+        Returns:
+            The user model.
+        """
+        return UserResponseModel(
+            **self.dict(exclude_none=True),
+            is_service_account=True,
+            email_opted_in=False,
+        )
+
 
 # ------ #
 # FILTER #
@@ -113,9 +131,7 @@ class ServiceAccountRequestModel(BaseRequestModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    active: bool = Field(
-        default=False, title="Whether the service account is active or not."
-    )
+    active: bool = Field(title="Whether the service account is active or not.")
 
     class Config:
         """Pydantic configuration class."""

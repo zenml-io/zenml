@@ -78,6 +78,13 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -147,6 +154,7 @@ from zenml.models import (
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
+    ServiceAccountFilterModel,
     ServiceAccountRequestModel,
     ServiceAccountResponseModel,
     ServiceAccountUpdateModel,
@@ -208,6 +216,7 @@ from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
 from zenml.zen_stores.schemas import (
+    APIKeySchema,
     ArtifactSchema,
     BaseSchema,
     CodeReferenceSchema,
@@ -2113,12 +2122,12 @@ class SqlZenStore(BaseZenStore):
         return account
 
     def create_service_account(
-        self, account: ServiceAccountRequestModel
+        self, service_account: ServiceAccountRequestModel
     ) -> ServiceAccountResponseModel:
         """Creates a new service account.
 
         Args:
-            account: Service account to be created.
+            service_account: Service account to be created.
 
         Returns:
             The newly created service account.
@@ -2131,17 +2140,21 @@ class SqlZenStore(BaseZenStore):
             # Check if a user or service account with the given name already
             # exists
             existing_user = session.exec(
-                select(UserSchema).where(UserSchema.name == account.name)
+                select(UserSchema).where(
+                    UserSchema.name == service_account.name
+                )
             ).first()
             if existing_user is not None:
                 raise EntityExistsError(
                     f"Unable to create service account with name "
-                    f"'{account.name}': Found existing user or service account "
-                    "with this name."
+                    f"'{service_account.name}': Found existing user or service "
+                    "account with this name."
                 )
 
             # Create the service account
-            new_account = UserSchema.from_service_account_request(account)
+            new_account = UserSchema.from_service_account_request(
+                service_account
+            )
             session.add(new_account)
             session.commit()
 
@@ -2196,13 +2209,14 @@ class SqlZenStore(BaseZenStore):
 
     def update_service_account(
         self,
-        service_account_id: UUID,
+        service_account_name_or_id: Union[str, UUID],
         service_account_update: ServiceAccountUpdateModel,
     ) -> ServiceAccountResponseModel:
         """Updates an existing service account.
 
         Args:
-            service_account_id: The id of the service account to update.
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
             service_account_update: The update to be applied to the service
                 account.
 
@@ -2211,7 +2225,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_service_account = self._get_service_account(
-                service_account_id, session=session
+                service_account_name_or_id, session=session
             )
             existing_service_account.update_service_account(
                 service_account_update=service_account_update
@@ -2221,23 +2235,321 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_service_account)
-            return existing_service_account.to_model()
+            return existing_service_account.to_service_account_model()
 
-    def delete_service_account(
-        self, service_account_name_or_id: Union[str, UUID]
-    ) -> None:
-        """Deletes a service account.
+    # --------
+    # API Keys
+    # --------
+
+    def _get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> APIKeySchema:
+        """Helper method to fetch an API key by name or ID.
 
         Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to delete.
+            service_account_id: The ID of the service account for which to
+                fetch the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            session: The database session to use for the query.
+
+        Returns:
+            The requested API key.
+
+        Raises:
+            KeyError: if the name or ID does not identify an API key that is
+                configured for the given service account.
+        """
+        # Fetch the service account, to make sure it exists
+        service_account = self._get_service_account(
+            service_account_id, session=session
+        )
+
+        if uuid_utils.is_valid_uuid(api_key_name_or_id):
+            filter_params = APIKeySchema.id == api_key_name_or_id
+        else:
+            filter_params = APIKeySchema.name == api_key_name_or_id
+
+        api_key = session.exec(
+            select(APIKeySchema)
+            .where(filter_params)
+            .where(APIKeySchema.service_account_id == service_account.id)
+        ).first()
+
+        if api_key is None:
+            raise KeyError(
+                f"An API key with ID or name '{api_key_name_or_id}' is not "
+                f"configured for service account with ID "
+                f"'{service_account_id}'."
+            )
+        return api_key
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequestModel
+    ) -> APIKeyResponseModel:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+
+        Raises:
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
         """
         with Session(self.engine) as session:
+            # Fetch the service account
             service_account = self._get_service_account(
-                service_account_name_or_id, session=session
+                service_account_id, session=session
             )
 
-            session.delete(service_account)
+            # Check if a key with the same name already exists for the same
+            # service account
+            try:
+                self._get_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.name,
+                    session=session,
+                )
+                raise EntityExistsError(
+                    f"Unable to register API key with name '{api_key.name}': "
+                    "Found an existing API key with the same name configured "
+                    f"for the same '{service_account.name}' service account."
+                )
+            except KeyError:
+                pass
+
+            new_api_key, key_value = APIKeySchema.from_request(
+                service_account_id=service_account.id,
+                request=api_key,
+            )
+            session.add(new_api_key)
+            session.commit()
+
+            api_key_model = new_api_key.to_model()
+            api_key_model.set_key(key_value)
+            return api_key_model
+
+    def get_api_key(
+        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+    ) -> APIKeyResponseModel:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+
+        Returns:
+            The API key with the given ID.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+            return api_key.to_model()
+
+    def get_internal_api_key(
+        self, api_key_id: UUID
+    ) -> APIKeyInternalResponseModel:
+        """Get internal details for an API key by its unique ID.
+
+        Args:
+            api_key_id: The ID of the API key to get.
+
+        Returns:
+            The internal details for the API key with the given ID.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+            if api_key is None:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+            return api_key.to_internal_model()
+
+    def list_api_keys(
+        self, service_account_id: UUID, filter_model: APIKeyFilterModel
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_service_account(
+                service_account_id, session=session
+            )
+
+            filter_model.set_service_account(service_account.id)
+            query = select(APIKeySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=APIKeySchema,
+                filter_model=filter_model,
+            )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdateModel,
+    ) -> APIKeyResponseModel:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            if api_key_update.name and api_key.name != api_key_update.name:
+                # Check if a key with the new name already exists for the same
+                # service account
+                try:
+                    self._get_api_key(
+                        service_account_id=service_account_id,
+                        api_key_name_or_id=api_key_update.name,
+                        session=session,
+                    )
+
+                    raise EntityExistsError(
+                        f"Unable to update API key with name "
+                        f"'{api_key_update.name}': Found an existing API key "
+                        "with the same name configured for the same "
+                        f"'{api_key.service_account.name}' service account."
+                    )
+                except KeyError:
+                    pass
+
+            api_key.update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def update_internal_api_key(
+        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdateModel
+    ) -> APIKeyResponseModel:
+        """Update an API key with internal details.
+
+        Args:
+            api_key_id: The ID of the API key.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+
+            if not api_key:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+
+            api_key.internal_update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequestModel,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            _, new_key = api_key.rotate(rotate_request)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            api_key_model = api_key.to_model()
+            api_key_model.set_key(new_key)
+
+            return api_key_model
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            session.delete(api_key)
             session.commit()
 
     # -----

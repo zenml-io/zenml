@@ -47,6 +47,9 @@ from zenml.enums import AuthScheme, OAuthDeviceStatus, PermissionType
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKey,
+    APIKeyInternalUpdateModel,
+    APIKeyInternalResponseModel,
     ExternalUserModel,
     OAuthDeviceInternalResponseModel,
     OAuthDeviceInternalUpdateModel,
@@ -98,6 +101,7 @@ class AuthContext(BaseModel):
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponseModel] = None
+    api_key: Optional[APIKeyInternalResponseModel] = None
 
     @property
     def permissions(self) -> Set[PermissionType]:
@@ -193,7 +197,7 @@ def authenticate_credentials(
             )
         except KeyError:
             error = (
-                f"Authentication error: error retrieving token user "
+                f"Authentication error: error retrieving token account "
                 f"{decoded_token.user_id}"
             )
             logger.error(error)
@@ -201,11 +205,45 @@ def authenticate_credentials(
 
         if not user_model.active:
             error = (
-                f"Authentication error: user {decoded_token.user_id} is not "
+                f"Authentication error: account {decoded_token.user_id} is not "
                 f"active"
             )
             logger.error(error)
             raise AuthorizationException(error)
+
+        if decoded_token.api_key_id:
+            # The API token was generated from an API key. We still have to
+            # verify if the API key hasn't been deactivated or deleted in the
+            # meantime.
+            try:
+                api_key_model = zen_store().get_internal_api_key(
+                    decoded_token.api_key_id
+                )
+            except KeyError:
+                error = (
+                    f"Authentication error: error retrieving token API key "
+                    f"{decoded_token.api_key_id}"
+                )
+                logger.error(error)
+                raise AuthorizationException(error)
+
+            if not api_key_model.active:
+                error = (
+                    f"Authentication error: API key "
+                    f"{api_key_model.name} "
+                    f"associated with service account "
+                    f"{api_key_model.service_account.name} is not active"
+                )
+                logger.error(error)
+                raise AuthorizationException(error)
+
+            # Update the "last used" timestamp of the API key
+            zen_store().update_internal_api_key(
+                api_key_model.id,
+                APIKeyInternalUpdateModel(  # type: ignore[call-arg]
+                    update_last_login=True
+                ),
+            )
 
         device_model: Optional[OAuthDeviceInternalResponseModel] = None
         if decoded_token.device_id:
@@ -557,6 +595,73 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         )
 
     return AuthContext(user=user)
+
+
+def authenticate_api_key(
+    api_key: str,
+) -> AuthContext:
+    """Implement service account API key authentication.
+
+    Args:
+        api_key: The service account API key.
+
+
+    Returns:
+        The authentication context reflecting the authenticated service account.
+
+    Raises:
+        AuthorizationException: If the service account could not be authorized.
+    """
+    store = zen_store()
+
+    try:
+        decoded_api_key = APIKey.decode_api_key(api_key)
+    except ValueError:
+        error = "Authentication error: error decoding API key"
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    try:
+        internal_api_key = store.get_internal_api_key(decoded_api_key.id)
+    except KeyError:
+        error = (
+            f"Authentication error: error retrieving API key "
+            f"{decoded_api_key.id}"
+        )
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    if not internal_api_key.service_account.active:
+        error = (
+            f"Authentication error: service account "
+            f"{internal_api_key.service_account.name} "
+            f"associated with API key {internal_api_key.name} is not active"
+        )
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    if not internal_api_key.verify_key(decoded_api_key.key):
+        error = (
+            f"Authentication error: could not verify key value for API key "
+            f"{internal_api_key.name}"
+        )
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    # Update the "last used" timestamp of the API key
+    store.update_internal_api_key(
+        internal_api_key.id,
+        APIKeyInternalUpdateModel(  # type: ignore[call-arg]
+            update_last_login=True
+        ),
+    )
+
+    # For now, a lot of code still relies on the active user in the auth
+    # context being a UserResponse object, which is a superset of the
+    # ServiceAccountResponse object. So we need to convert the service
+    # account to a user here.
+    user_model = internal_api_key.service_account.to_user_model()
+    return AuthContext(user=user_model, api_key=internal_api_key)
 
 
 def http_authentication(

@@ -846,18 +846,18 @@ class RestZenStore(BaseZenStore):
     # ----------------
 
     def create_service_account(
-        self, account: ServiceAccountRequestModel
+        self, service_account: ServiceAccountRequestModel
     ) -> ServiceAccountResponseModel:
         """Creates a new service account.
 
         Args:
-            account: Service account to be created.
+            service_account: Service account to be created.
 
         Returns:
             The newly created service account.
         """
         return self._create_resource(
-            resource=account,
+            resource=service_account,
             route=SERVICE_ACCOUNTS,
             response_model=ServiceAccountResponseModel,
         )
@@ -901,13 +901,14 @@ class RestZenStore(BaseZenStore):
 
     def update_service_account(
         self,
-        service_account_id: UUID,
+        service_account_name_or_id: Union[str, UUID],
         service_account_update: ServiceAccountUpdateModel,
     ) -> ServiceAccountResponseModel:
         """Updates an existing service account.
 
         Args:
-            service_account_id: The id of the service account to update.
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
             service_account_update: The update to be applied to the service
                 account.
 
@@ -915,63 +916,51 @@ class RestZenStore(BaseZenStore):
             The updated service account.
         """
         return self._update_resource(
-            resource_id=service_account_id,
+            resource_id=service_account_name_or_id,
             resource_update=service_account_update,
             route=SERVICE_ACCOUNTS,
             response_model=ServiceAccountResponseModel,
         )
-
-    def delete_service_account(
-        self, service_account_name_or_id: Union[str, UUID]
-    ) -> None:
-        """Deletes a service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to delete.
-
-        Raises:
-            KeyError: If no service account with the given ID exists.
-        """
-        self._delete_resource(
-            resource_id=service_account_name_or_id,
-            route=SERVICE_ACCOUNTS,
-        )
-
 
     # --------
     # API Keys
     # --------
 
     def create_api_key(
-        self, api_key: APIKeyRequestModel
+        self, service_account_id: UUID, api_key: APIKeyRequestModel
     ) -> APIKeyResponseModel:
-        """Create a new API key.
+        """Create a new API key for a service account.
 
         Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
             api_key: The API key to create.
 
         Returns:
             The created API key.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=api_key,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
             response_model=APIKeyResponseModel,
-            route=API_KEYS,
         )
 
-    def get_api_key(self, api_key_id: UUID) -> APIKeyResponseModel:
-        """Get an API key by its unique ID.
+    def get_api_key(
+        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+    ) -> APIKeyResponseModel:
+        """Get an API key for a service account.
 
         Args:
-            api_key_id: The ID of the API key to get.
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
 
         Returns:
             The API key with the given ID.
         """
         return self._get_resource(
-            resource_id=api_key_id,
-            route=API_KEYS,
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
             response_model=APIKeyResponseModel,
         )
 
@@ -986,11 +975,13 @@ class RestZenStore(BaseZenStore):
         GlobalConfiguration()._write_config()
 
     def list_api_keys(
-        self, filter_model: APIKeyFilterModel
+        self, service_account_id: UUID, filter_model: APIKeyFilterModel
     ) -> Page[APIKeyResponseModel]:
-        """List all API keys matching the given filter criteria.
+        """List all API keys for a service account matching the given filter criteria.
 
         Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
             filter_model: All filter parameters including pagination
                 params
 
@@ -998,55 +989,74 @@ class RestZenStore(BaseZenStore):
             A list of all API keys matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=API_KEYS,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
             response_model=APIKeyResponseModel,
             filter_model=filter_model,
         )
 
     def update_api_key(
-        self, api_key_id: UUID, api_key_update: APIKeyUpdateModel
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdateModel,
     ) -> APIKeyResponseModel:
-        """Update an API key.
+        """Update an API key for a service account.
 
         Args:
-            api_key_id: The ID of the API key.
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
             api_key_update: The update request on the API key.
 
         Returns:
             The updated API key.
         """
         return self._update_resource(
-            resource_id=api_key_id,
+            resource_id=api_key_name_or_id,
             resource_update=api_key_update,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
             response_model=APIKeyResponseModel,
-            route=API_KEYS,
         )
 
     def rotate_api_key(
-        self, api_key_id: UUID, rotate_request: APIKeyRotateRequestModel
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequestModel,
     ) -> APIKeyResponseModel:
-        """Rotate an API key.
+        """Rotate an API key for a service account.
 
         Args:
-            api_key_id: The ID of the API key.
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
             rotate_request: The rotate request on the API key.
 
         Returns:
             The updated API key.
         """
         response_body = self.put(
-            f"{API_KEYS}/{str(api_key_id)}{API_KEY_ROTATE}",
+            f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
             body=rotate_request,
         )
         return APIKeyResponseModel.parse_obj(response_body)
 
-    def delete_api_key(self, api_key_id: UUID) -> None:
-        """Delete an API key.
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
 
         Args:
-            api_key_id: The ID of the API key to delete.
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
         """
-        self._delete_resource(resource_id=api_key_id, route=API_KEYS)
+        self._delete_resource(
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+        )
 
     # -----
     # Teams
@@ -3476,7 +3486,7 @@ class RestZenStore(BaseZenStore):
 
     def _update_resource(
         self,
-        resource_id: UUID,
+        resource_id: Union[str, int, UUID],
         resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,

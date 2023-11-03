@@ -44,8 +44,8 @@ class APIKeySchema(NamedSchema, table=True):
     previous_key: Optional[str] = Field(default=None, nullable=True)
     retain_period: int = Field(default=0)
     active: bool = Field(default=True)
-    last_used: datetime = Field(default_factory=datetime.utcnow)
-    last_rotated: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
+    last_rotated: Optional[datetime] = None
 
     service_account_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -82,11 +82,14 @@ class APIKeySchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
+        service_account_id: UUID,
         request: APIKeyRequestModel,
     ) -> Tuple["APIKeySchema", str]:
         """Convert a `APIKeyRequestModel` to a `APIKeySchema`.
 
         Args:
+            service_account_id: The service account id to associate the key
+                with.
             request: The request model to convert.
 
         Returns:
@@ -100,10 +103,10 @@ class APIKeySchema(NamedSchema, table=True):
                 name=request.name,
                 description=request.description,
                 key=hashed_key,
-                service_account_id=request.service_account,
+                service_account_id=service_account_id,
                 created=now,
                 updated=now,
-                last_used=now,
+                last_login=now,
                 last_rotated=now,
             ),
             key,
@@ -126,7 +129,7 @@ class APIKeySchema(NamedSchema, table=True):
             ),
             created=self.created,
             updated=self.updated,
-            last_used=self.last_used,
+            last_login=self.last_login,
             last_rotated=self.last_rotated,
             retain_period_minutes=self.retain_period,
             active=self.active,
@@ -153,7 +156,7 @@ class APIKeySchema(NamedSchema, table=True):
             ),
             created=self.created,
             updated=self.updated,
-            last_used=self.last_used,
+            last_login=self.last_login,
             last_rotated=self.last_rotated,
             retain_period_minutes=self.retain_period,
             active=self.active,
@@ -195,8 +198,8 @@ class APIKeySchema(NamedSchema, table=True):
         """
         self.update(update)
 
-        if update.update_last_used:
-            self.last_used = self.updated
+        if update.update_last_login:
+            self.last_login = self.updated
 
         return self
 

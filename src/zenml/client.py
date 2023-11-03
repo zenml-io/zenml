@@ -71,6 +71,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     CodeRepositoryFilterModel,
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
@@ -103,6 +108,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -726,6 +735,7 @@ class Client(metaclass=ClientMetaClass):
         email: Optional[str] = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
+        is_service_account: Optional[bool] = None,
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -743,6 +753,7 @@ class Client(metaclass=ClientMetaClass):
             email: Use the user email for filtering
             active: User the user active status for filtering
             email_opted_in: Use the user opt in status for filtering
+            is_service_account: Filter by whether the user is a service account
 
         Returns:
             The User
@@ -762,6 +773,7 @@ class Client(metaclass=ClientMetaClass):
                 email=email,
                 active=active,
                 email_opted_in=email_opted_in,
+                is_service_account=is_service_account,
             )
         )
 
@@ -814,6 +826,384 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update
+        )
+
+    # --------------- #
+    # SERVICE ACCOUNT #
+    # --------------- #
+
+    def create_service_account(
+        self,
+        name: str,
+        initial_role: Optional[str] = None,
+    ) -> ServiceAccountResponseModel:
+        """Create a new service account.
+
+        Args:
+            name: The name of the service account.
+            initial_role: Optionally, an initial role to assign to the service
+                account.
+
+        Returns:
+            The created service account.
+        """
+        service_account = ServiceAccountRequestModel(name=name, active=True)
+        created_service_account = self.zen_store.create_service_account(
+            service_account=service_account
+        )
+
+        if initial_role:
+            self.create_user_role_assignment(
+                role_name_or_id=initial_role,
+                user_name_or_id=created_service_account.id,
+                workspace_name_or_id=None,
+            )
+
+        return created_service_account
+
+    def get_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> ServiceAccountResponseModel:
+        """Gets a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The ServiceAccount
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_account,
+            list_method=self.list_service_accounts,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def list_service_accounts(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the service account name for filtering
+            active: Use the service account active status for filtering
+
+        Returns:
+            The list of service accounts matching the filter description.
+        """
+        return self.zen_store.list_service_accounts(
+            ServiceAccountFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+            )
+        )
+
+    def update_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        updated_name: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> ServiceAccountResponseModel:
+        """Update a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to update.
+            updated_name: The new name of the service account.
+            active: The new active status of the service account.
+
+        Returns:
+            The updated service account.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        service_account_update = ServiceAccountUpdateModel(  # type: ignore[call-arg]
+            name=updated_name,
+            active=active,
+        )
+
+        return self.zen_store.update_service_account(
+            service_account_name_or_id=service_account.id,
+            service_account_update=service_account_update,
+        )
+
+    # .----------.
+    # | API KEYS |
+    # '----------'
+
+    def create_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name: str,
+        description: str = "",
+        set_key: bool = False,
+    ) -> APIKeyResponseModel:
+        """Create a new API key and optionally set it as the active API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to create the API key for.
+            name: Name of the API key.
+            description: The description of the API key.
+            set_key: Whether to set the created API key as the active API key.
+
+        Returns:
+            The created API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        request = APIKeyRequestModel(
+            name=name,
+            description=description,
+        )
+        api_key = self.zen_store.create_api_key(
+            service_account_id=service_account.id, api_key=request
+        )
+        assert api_key.key is not None
+
+        if set_key:
+            self.set_api_key(key=api_key.key)
+
+        return api_key
+
+    def set_api_key(self, key: str) -> None:
+        """Configure the client with an API key.
+
+        Args:
+            key: The API key to use.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        zen_store = self.zen_store
+        if not zen_store.TYPE == StoreType.REST:
+            raise NotImplementedError(
+                "API key configuration is only supported if connected to a "
+                "ZenML server."
+            )
+        assert isinstance(zen_store, RestZenStore)
+        zen_store.set_api_key(api_key=key)
+
+    def list_api_keys(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        active: Optional[bool] = None,
+        last_login: Optional[Union[datetime, str]] = None,
+        last_rotated: Optional[Union[datetime, str]] = None,
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to list the API keys for.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the API key to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the API key to filter by.
+            active: Whether the API key is active or not.
+            last_login: The last time the API key was used.
+            last_rotated: The last time the API key was rotated.
+
+        Returns:
+            A page of API keys matching the filter description.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        filter_model = APIKeyFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            active=active,
+            last_login=last_login,
+            last_rotated=last_rotated,
+        )
+        return self.zen_store.list_api_keys(
+            service_account_id=service_account.id, filter_model=filter_model
+        )
+
+    def get_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> APIKeyResponseModel:
+        """Get an API key by name, id or prefix.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to get the API key for.
+            name_id_or_prefix: The name, ID or ID prefix of the API key.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponseModel:
+            return self.zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_name_or_id,
+            )
+
+        def list_api_keys_method(
+            **filter_args: Any
+        ) -> Page[APIKeyResponseModel]:
+            return self.list_api_keys(
+                service_account_name_id_or_prefix=service_account.id,
+                **filter_args,
+            )
+
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=get_api_key_method,
+            list_method=list_api_keys_method,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def update_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> APIKeyResponseModel:
+        """Update an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to update the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            name: New name of the API key.
+            description: New description of the API key.
+            active: Whether the API key is active or not.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        update = APIKeyUpdateModel(  # type: ignore[call-arg]
+            name=name, description=description, active=active
+        )
+        return self.zen_store.update_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=update,
+        )
+
+    def rotate_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        retain_period_minutes: int = 0,
+        set_key: bool = False,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to rotate the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            retain_period_minutes: The number of minutes to retain the old API
+                key for. If set to 0, the old API key will be invalidated.
+            set_key: Whether to set the rotated API key as the active API key.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        rotate_request = APIKeyRotateRequestModel(
+            retain_period_minutes=retain_period_minutes
+        )
+        new_key = self.zen_store.rotate_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=rotate_request,
+        )
+        assert new_key.key is not None
+        if set_key:
+            self.set_api_key(key=new_key.key)
+
+        return new_key
+
+    def delete_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to delete the API key for.
+            name_id_or_prefix: The name, ID or prefix of the API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        self.zen_store.delete_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
         )
 
     # ---- #

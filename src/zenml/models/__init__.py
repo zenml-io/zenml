@@ -14,6 +14,7 @@
 """Pydantic models for the various concepts in ZenML."""
 
 from zenml.models.api_key_models import (
+    APIKey,
     APIKeyFilterModel,
     APIKeyInternalResponseModel,
     APIKeyInternalUpdateModel,
@@ -363,6 +364,7 @@ OAuthDeviceInternalResponseModel.update_forward_refs(
 )
 
 __all__ = [
+    "APIKey",
     "APIKeyFilterModel",
     "APIKeyInternalResponseModel",
     "APIKeyInternalUpdateModel",

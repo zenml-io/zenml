@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -31,8 +31,10 @@ from zenml.models.filter_models import BaseFilterModel
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models.service_account_models import ServiceAccountResponseModel
+    from sqlmodel.sql.expression import Select, SelectOfScalar
 
+    from zenml.models.filter_models import AnySchema
+    from zenml.models.service_account_models import ServiceAccountResponseModel
 
 # ---- #
 # BASE #
@@ -118,11 +120,13 @@ class APIKeyResponseModel(APIKeyBaseModel, BaseResponseModel):
         "after it has been rotated.",
     )
 
-    last_used: datetime = Field(
+    last_login: Optional[datetime] = Field(
+        default=None,
         title="Time when the API key was last used to log in."
     )
 
-    last_rotated: datetime = Field(
+    last_rotated: Optional[datetime] = Field(
+        default=None,
         title="Time when the API key was last rotated."
     )
 
@@ -189,6 +193,19 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
 class APIKeyFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of API keys."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
+        "service_account",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *BaseFilterModel.CLI_EXCLUDE_FIELDS,
+        "service_account",
+    ]
+
+    service_account: Optional[UUID] = Field(
+        default=None,
+        description="The service account to scope this query to.",
+    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the API key",
@@ -197,15 +214,46 @@ class APIKeyFilterModel(BaseFilterModel):
         default=None,
         title="Whether the API key is active.",
     )
-    last_used: Optional[Union[datetime, str]] = Field(
+    last_login: Optional[Union[datetime, str]] = Field(
         default=None, title="Time when the API key was last used to log in."
     )
     last_rotated: Optional[Union[datetime, str]] = Field(
         default=None, title="Time when the API key was last rotated."
     )
-    service_account_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Service account associated with the API key"
-    )
+
+    def set_service_account(self, service_account_id: UUID) -> None:
+        """Set the service account by which to scope this query.
+
+        Args:
+            service_account_id: The service account ID.
+        """
+        self.service_account = service_account_id
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Override to apply the service account scope as an additional filter.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from sqlmodel import or_
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.service_account:
+            scope_filter = (
+                getattr(table, "service_account_id") == self.service_account,
+            )
+            query = query.where(scope_filter)
+
+        return query
 
 
 # ------- #
@@ -215,10 +263,6 @@ class APIKeyFilterModel(BaseFilterModel):
 
 class APIKeyRequestModel(APIKeyBaseModel, BaseRequestModel):
     """Request model for API keys."""
-
-    service_account: UUID = Field(
-        title="The id of the service account associated with this API key."
-    )
 
 
 class APIKeyRotateRequestModel(BaseModel):
@@ -249,7 +293,7 @@ class APIKeyUpdateModel(APIKeyRequestModel):
 class APIKeyInternalUpdateModel(APIKeyUpdateModel):
     """Update model for API keys used internally."""
 
-    update_last_used: bool = Field(
+    update_last_login: bool = Field(
         default=False,
-        title="Whether to update the last used timestamp.",
+        title="Whether to update the last login timestamp.",
     )
