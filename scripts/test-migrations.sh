@@ -22,8 +22,7 @@ function run_tests_for_version() {
 }
 
 # List of versions to test
-# VERSIONS=("0.39.1" "0.44.3" "0.45.3" "0.45.6")
-VERSIONS=("0.45.5" "0.45.6")
+VERSIONS=("0.39.1" "0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6")
 
 for VERSION in "${VERSIONS[@]}"
 do
