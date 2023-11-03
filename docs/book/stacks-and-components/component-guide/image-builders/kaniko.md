@@ -155,7 +155,7 @@ information.
 
 #### Passing additional parameters to the Kaniko build
 
-you can pass additional parameters to the Kaniko build by setting the `executor_args` attribute of the image builder.
+You can pass additional parameters to the Kaniko build by setting the `executor_args` attribute of the image builder.
 
 ```shell
 zenml image-builder register <NAME> \
