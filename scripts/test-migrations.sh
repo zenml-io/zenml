@@ -18,7 +18,7 @@ function run_tests_for_version() {
     zenml pipeline runs list >> dump.txt && echo "Success listing pipeline runs on $VERSION"
 
     cd ..
-    rm -rf test_starter template_starter
+    rm -rf test_starter template-starter
 }
 
 # List of versions to test
