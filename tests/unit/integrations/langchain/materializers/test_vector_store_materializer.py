@@ -25,7 +25,13 @@ def test_langchain_vectorstore_materializer(clean_client):
         LangchainVectorStoreMaterializer,
     )
 
-    embeddings = OpenAIEmbeddings()
+    fake_key = "aria_and_blupus"
+    fake_chunk_size = 1234
+
+    embeddings = OpenAIEmbeddings(
+        chunk_size=fake_chunk_size,
+        openai_api_key=fake_key,
+    )
     langchain_vector_store = _test_materializer(
         step_output=SKLearnVectorStore(embedding=embeddings),
         materializer_class=LangchainVectorStoreMaterializer,
