@@ -29,7 +29,9 @@ jobs:
           python-version: "3.8"
 
       - name: Install current package as editable
-        run: pip install -e .
+        run: |
+          pip install -U pip
+          pip install -e .
 
       - name: Install mlstacks package
         run: pip install mlstacks
