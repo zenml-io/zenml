@@ -26,7 +26,7 @@ def test_langchain_vectorstore_materializer(clean_client):
     )
 
     embeddings = FakeEmbeddings(size=1352)
-    
+
     langchain_vector_store = _test_materializer(
         step_output=SKLearnVectorStore(embedding=embeddings),
         materializer_class=LangchainVectorStoreMaterializer,
