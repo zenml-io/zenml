@@ -26,6 +26,7 @@ VERSIONS=("0.39.1" "0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2
 
 for VERSION in "${VERSIONS[@]}"
 do
+    set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
     python3 -m venv ".venv-$VERSION"
     source ".venv-$VERSION/bin/activate"
