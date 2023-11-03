@@ -15,7 +15,10 @@ function run_tests_for_version() {
     zenml version
 
     # Confirm DB works and is accessible
-    zenml pipeline runs list >> dump.txt && echo "expected success of list pipeline runs on $VERSION"
+    zenml pipeline runs list >> dump.txt && echo "Success listing pipeline runs on $VERSION"
+
+    cd ..
+    rm -rf test_starter template_starter
 }
 
 # List of versions to test
@@ -27,16 +30,13 @@ do
     # Create a new virtual environment
     python3 -m venv ".venv-$VERSION"
     source ".venv-$VERSION/bin/activate"
-    
+
     # Install the specific version
     pip3 install -U pip
     pip3 install "zenml[templates]==$VERSION"
-    
+
     # Run the tests for this version
     run_tests_for_version $VERSION
 
-    cd ..
-    rm -rf test_starter template_starter
-    
     deactivate
 done
