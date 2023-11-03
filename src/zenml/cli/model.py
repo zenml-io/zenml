@@ -465,7 +465,7 @@ def delete_model_version(
     """Delete an existing model version in the Model Control Plane.
 
     Args:
-        model_name_or_id: The ID or name of the model containing version.
+        model_name_or_id: The ID or name of the model that contains the version.
         model_version_name_or_number_or_id: The ID, number or name of the model version.
         yes: If set, don't ask for confirmation.
     """
