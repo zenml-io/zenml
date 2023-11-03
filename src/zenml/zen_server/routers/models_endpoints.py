@@ -49,7 +49,13 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    dehydrate_response_model,
+    get_allowed_resource_ids,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -184,7 +190,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilterModel = Depends(
         make_dependable(ModelVersionFilterModel)
     ),
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponseModel]:
     """Get model versions according to query filters.
 
@@ -196,10 +202,18 @@ def list_model_versions(
     Returns:
         The model versions according to query filters.
     """
-    return zen_store().list_model_versions(
+    allowed_model_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.MODEL
+    )
+    model_version_filter_model.set_rbac_allowed_model_ids_and_user(
+        allowed_model_ids=allowed_model_ids, user_id=auth_context.user.id
+    )
+
+    model_versions = zen_store().list_model_versions(
         model_name_or_id=model_name_or_id,
         model_version_filter_model=model_version_filter_model,
     )
+    return dehydrate_page(model_versions)
 
 
 @router.get(
@@ -229,12 +243,17 @@ def get_model_version(
     Returns:
         The model version with the given name or ID.
     """
-    return zen_store().get_model_version(
+    model = zen_store().get_model(model_name_or_id)
+    verify_permission_for_model(model, action=Action.READ)
+
+    model_version = zen_store().get_model_version(
         model_name_or_id,
         model_version_name_or_number_or_id
         if not is_number
         else int(model_version_name_or_number_or_id),
     )
+
+    return dehydrate_response_model(model_version)
 
 
 @router.put(
@@ -244,6 +263,7 @@ def get_model_version(
 )
 @handle_exceptions
 def update_model_version(
+    model_id: UUID,
     model_version_id: UUID,
     model_version_update_model: ModelVersionUpdateModel,
     _: AuthContext = Security(authorize),
@@ -251,16 +271,25 @@ def update_model_version(
     """Get all model versions by filter.
 
     Args:
+        model_id: The ID of the model that the version belongs to.
         model_version_id: The ID of model version to be updated.
         model_version_update_model: The model version to be updated.
 
     Returns:
         An updated model version.
     """
-    return zen_store().update_model_version(
-        model_version_id=model_version_id,
-        model_version_update_model=model_version_update_model,
+    if model_version_update_model.stage:
+        # Make sure the user has permissions to promote the model
+        model = zen_store().get_model(model_id)
+        verify_permission_for_model(model, action=Action.PROMOTE)
+
+    model_version = zen_store().get_model_version(model_id, model_version_id)
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+    updated_model_version = zen_store().update_model_version(
+        model_version_id=model_version_id
     )
+
+    return dehydrate_response_model(updated_model_version)
 
 
 @router.delete(
@@ -279,6 +308,10 @@ def delete_model_version(
         model_name_or_id: The name or ID of the model containing version.
         model_version_name_or_id: The name or ID of the model version to delete.
     """
+    model_version = zen_store().get_model_version(
+        model_name_or_id, model_version_name_or_id
+    )
+    verify_permission_for_model(model_version, action=Action.DELETE)
     zen_store().delete_model_version(
         model_name_or_id, model_version_name_or_id
     )
@@ -346,6 +379,11 @@ def delete_model_version_artifact_link(
         model_version_name_or_id: name or ID of the model version containing the link.
         model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
     """
+    model_version = zen_store().get_model_version(
+        model_name_or_id, model_version_name_or_id
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
     zen_store().delete_model_version_artifact_link(
         model_name_or_id,
         model_version_name_or_id,
@@ -390,33 +428,4 @@ def list_model_version_pipeline_run_links(
         model_name_or_id=model_name_or_id,
         model_version_name_or_id=model_version_name_or_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS
-    + "/{model_version_pipeline_run_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_pipeline_run_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_pipeline_run_link_name_or_id: name or ID of the model version link to be deleted.
-    """
-    zen_store().delete_model_version_pipeline_run_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_pipeline_run_link_name_or_id,
     )

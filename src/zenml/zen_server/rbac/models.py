@@ -28,10 +28,13 @@ class Action(StrEnum):
     READ = "read"
     UPDATE = "update"
     DELETE = "delete"
+    READ_SECRET_VALUE = "read_secret_value"
 
     # Service connectors
     CLIENT = "client"  # TODO: rename
-    READ_SECRET_VALUE = "read_secret_value"
+
+    # Models
+    PROMOTE = "promote"
 
 
 class ResourceType(StrEnum):
@@ -43,6 +46,7 @@ class ResourceType(StrEnum):
     PIPELINE = "pipeline"
     CODE_REPOSITORY = "code_repository"
     MODEL = "model"
+    MODEL_VERSION = "model_version"
     SERVICE_CONNECTOR = "service_connector"
     ARTIFACT = "artifact"
     SECRET = "secret"

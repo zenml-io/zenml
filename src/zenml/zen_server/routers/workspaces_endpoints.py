@@ -1197,9 +1197,8 @@ def create_model_version(
         The created model version.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            model version does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            model version does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -1209,13 +1208,12 @@ def create_model_version(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if model_version.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-    mv = zen_store().create_model_version(model_version)
-    return mv
+
+    return verify_permissions_and_create_entity(
+        request_model=model_version,
+        resource_type=ResourceType.MODEL_VERSION,
+        create_method=zen_store().create_model_version,
+    )
 
 
 @router.post(
@@ -1267,6 +1265,12 @@ def create_model_version_artifact_link(
             "Creating model to artifact links for a user other than yourself "
             "is not supported."
         )
+
+    model_version = zen_store().get_model_version(
+        model_name_or_id, model_version_name_or_id
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
     mv = zen_store().create_model_version_artifact_link(
         model_version_artifact_link
     )
@@ -1363,6 +1367,12 @@ def create_model_version_pipeline_run_link(
             "Creating models for a user other than yourself "
             "is not supported."
         )
+
+    model_version = zen_store().get_model_version(
+        model_name_or_id, model_version_name_or_id
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
     mv = zen_store().create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )

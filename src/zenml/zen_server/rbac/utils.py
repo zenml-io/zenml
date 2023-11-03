@@ -100,6 +100,9 @@ def _dehydrate_value(
         The recursively dehydrated value.
     """
     if isinstance(value, BaseResponseModel):
+        value = get_surrogate_permission_model_for_model(
+            value, action=Action.READ
+        )
         resource = get_resource_for_model(value)
         has_permissions = resource and (permissions or {}).get(resource, False)
 
@@ -211,6 +214,8 @@ def batch_verify_permissions_for_models(
         if is_owned_by_authenticated_user(model):
             # The model owner always has permissions
             continue
+
+        model = get_surrogate_permission_model_for_model(model, action=action)
 
         if resource := get_resource_for_model(model):
             resources.add(resource)
@@ -342,6 +347,31 @@ def get_resource_for_model(model: "BaseResponseModel") -> Optional[Resource]:
     return Resource(type=resource_type, id=model.id)
 
 
+def get_surrogate_permission_model_for_model(
+    model: "BaseResponseModel", action: str
+) -> "BaseResponseModel":
+    """Get a surrogate permission model for a model.
+
+    In some cases a different model instead of the original model is used to
+    verify permissions. For example, a parent container model might be used
+    to verify permissions for all its children.
+
+    Args:
+        model: The original model.
+        action: The action that the user wants to perform on the model.
+
+    Returns:
+        A surrogate model or the original.
+    """
+    from zenml.models import ModelVersionResponseModel
+
+    if action == Action.READ == isinstance(model, ModelVersionResponseModel):
+        # Permissions to read a model version is the same as reading the model
+        return model.model
+
+    return model
+
+
 def get_resource_type_for_model(
     model: "BaseResponseModel",
 ) -> Optional[ResourceType]:
@@ -436,6 +466,9 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
     if isinstance(value, BaseResponseModel):
         resources = set()
         if not is_owned_by_authenticated_user(value):
+            value = get_surrogate_permission_model_for_model(
+                value, action=Action.READ
+            )
             if resource := get_resource_for_model(value):
                 resources.add(resource)
 
