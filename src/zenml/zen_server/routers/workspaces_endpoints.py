@@ -56,7 +56,6 @@ from zenml.models import (
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
     ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
     ModelVersionPipelineRunRequestModel,
     ModelVersionPipelineRunResponseModel,
@@ -1293,36 +1292,6 @@ def create_model_version(
     return mv
 
 
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + MODEL_VERSIONS,
-    response_model=Page[ModelVersionResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_model_versions(
-    workspace_name_or_id: Union[str, UUID],
-    model_version_filter_model: ModelVersionFilterModel = Depends(
-        make_dependable(ModelVersionFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionResponseModel]:
-    """Get model versions according to query filters.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model versions according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_version_filter_model.set_scope_workspace(workspace_id)
-    return zen_store().list_model_versions(
-        model_version_filter_model=model_version_filter_model,
-    )
-
-
 @router.post(
     WORKSPACES
     + "/{workspace_name_or_id}"
@@ -1414,6 +1383,8 @@ def list_workspace_model_version_artifact_links(
     workspace_id = zen_store().get_workspace(workspace_name_or_id).id
     model_version_artifact_link_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_model_version_artifact_links(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_id=model_version_name_or_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
     )
 
@@ -1512,5 +1483,7 @@ def list_workspace_model_version_pipeline_run_links(
         workspace_id
     )
     return zen_store().list_model_version_pipeline_run_links(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_id=model_version_name_or_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
     )
