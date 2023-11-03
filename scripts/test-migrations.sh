@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function run_tests_for_version() {
+    set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
 
     # Initialize zenml with the appropriate template
@@ -8,6 +9,7 @@ function run_tests_for_version() {
     copier copy template-starter/ test_starter --trust --defaults
     cd test_starter
 
+    zenml integration install sklearn -y
     python3 run.py
     # Add additional CLI tests here
     zenml version
