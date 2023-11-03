@@ -59,7 +59,7 @@ jobs:
         os: ubuntu-latest
 
     - name: Test migrations across versions
-      run: bash scripts/test_migrations.sh
+      run: bash scripts/test-migrations.sh
 
   ubuntu-setup-and-test-python:
     if: github.event.pull_request.draft == false
