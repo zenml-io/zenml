@@ -48,8 +48,8 @@ from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
-    APIKeyInternalUpdateModel,
     APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
     ExternalUserModel,
     OAuthDeviceInternalResponseModel,
     OAuthDeviceInternalUpdateModel,

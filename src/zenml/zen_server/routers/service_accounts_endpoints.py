@@ -19,7 +19,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
-    ACTIVATE,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -27,7 +26,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyFilterModel,
     APIKeyRequestModel,
@@ -47,7 +45,6 @@ from zenml.zen_server.utils import (
     make_dependable,
     zen_store,
 )
-
 
 router = APIRouter(
     prefix=API + VERSION_1 + SERVICE_ACCOUNTS,
@@ -161,6 +158,7 @@ def update_service_account(
         service_account_name_or_id=service_account_name_or_id,
         service_account_update=service_account_update,
     )
+
 
 # --------
 # API Keys

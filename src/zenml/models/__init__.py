@@ -225,7 +225,9 @@ FlavorResponseModel.update_forward_refs(
 
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 
-ServiceAccountResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
+ServiceAccountResponseModel.update_forward_refs(
+    TeamResponseModel=TeamResponseModel
+)
 
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 

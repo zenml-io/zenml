@@ -303,7 +303,15 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         except KeyError as e:
             cli_utils.error(str(e))
 
-    cli_utils.pretty_print_api_key(api_key)
+        cli_utils.print_pydantic_models(
+            [api_key],
+            exclude_columns=[
+                "service_account",
+                "key",
+                "created",
+                "updated",
+            ],
+        )
 
 
 @api_key.command("list", help="List all API keys.")

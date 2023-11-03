@@ -6598,13 +6598,16 @@ class SqlZenStore(BaseZenStore):
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_deployments:
@@ -6612,10 +6615,12 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_deployment)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_model_objects:
@@ -6623,10 +6628,12 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_model_object)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             else:

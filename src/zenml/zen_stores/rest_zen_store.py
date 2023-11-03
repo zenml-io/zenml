@@ -40,9 +40,9 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
-    API_TOKEN,
     API_KEY_ROTATE,
     API_KEYS,
+    API_TOKEN,
     ARTIFACTS,
     CODE_REPOSITORIES,
     CURRENT_USER,

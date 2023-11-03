@@ -270,7 +270,9 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
+    show_active_column = True
     if active_models is None:
+        show_active_column = False
         active_models = list()
 
     def __dictify(model: T) -> Dict[str, str]:
@@ -324,16 +326,15 @@ def print_pydantic_models(
         marker = "active"
         if marker in items:
             marker = "current"
-        return (
-            {
+        if active_models is not None and show_active_column:
+            return {
                 marker: ":point_right:"
                 if any(model.id == a.id for a in active_models)
                 else "",
                 **items,
             }
-            if active_models is not None
-            else items
-        )
+
+        return items
 
     active_ids = [a.id for a in active_models]
     if isinstance(models, Page):

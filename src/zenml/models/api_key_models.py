@@ -121,13 +121,11 @@ class APIKeyResponseModel(APIKeyBaseModel, BaseResponseModel):
     )
 
     last_login: Optional[datetime] = Field(
-        default=None,
-        title="Time when the API key was last used to log in."
+        default=None, title="Time when the API key was last used to log in."
     )
 
     last_rotated: Optional[datetime] = Field(
-        default=None,
-        title="Time when the API key was last rotated."
+        default=None, title="Time when the API key was last rotated."
     )
 
     def set_key(self, key: str) -> None:
@@ -166,12 +164,13 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
         context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         if self.key is not None and self.active:
             key_hash = self.key
-        result = context.verify(key, key_hash)  # type: ignore[arg-type]
+        result = context.verify(key, key_hash)
 
         # same for the previous key, if set and if it's still valid
         key_hash = None
         if (
             self.previous_key is not None
+            and self.last_rotated is not None
             and self.active
             and self.retain_period_minutes > 0
         ):
@@ -180,7 +179,7 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
                 minutes=self.retain_period_minutes
             ):
                 key_hash = self.previous_key
-        previous_result = context.verify(key, key_hash)  # type: ignore[arg-type]
+        previous_result = context.verify(key, key_hash)
 
         return result or previous_result
 
@@ -243,8 +242,6 @@ class APIKeyFilterModel(BaseFilterModel):
         Returns:
             The query with filter applied.
         """
-        from sqlmodel import or_
-
         query = super().apply_filter(query=query, table=table)
 
         if self.service_account:

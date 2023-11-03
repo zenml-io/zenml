@@ -943,7 +943,7 @@ class Client(metaclass=ClientMetaClass):
         service_account = self.get_service_account(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        service_account_update = ServiceAccountUpdateModel(  # type: ignore[call-arg]
+        service_account_update = ServiceAccountUpdateModel(
             name=updated_name,
             active=active,
         )
@@ -1096,7 +1096,7 @@ class Client(metaclass=ClientMetaClass):
             )
 
         def list_api_keys_method(
-            **filter_args: Any
+            **filter_args: Any,
         ) -> Page[APIKeyResponseModel]:
             return self.list_api_keys(
                 service_account_name_id_or_prefix=service_account.id,
@@ -1136,7 +1136,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        update = APIKeyUpdateModel(  # type: ignore[call-arg]
+        update = APIKeyUpdateModel(
             name=name, description=description, active=active
         )
         return self.zen_store.update_api_key(
