@@ -128,7 +128,9 @@ class ServiceAccountFilterModel(BaseFilterModel):
             The query with filter applied.
         """
         query = super().apply_filter(query=query, table=table)
-        query = query.where(getattr(table, "is_service_account") == True)
+        query = query.where(
+            getattr(table, "is_service_account") == True  # noqa: E712
+        )
 
         return query
 
