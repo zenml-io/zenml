@@ -47,12 +47,10 @@ jobs:
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.9
+        python-version: 3.10
 
     - name: Test migrations across versions
-      run: |
-        chmod +x scripts/test_migrations.sh
-        scripts/test_migrations.sh
+      run: scripts/test_migrations.sh
 
   ubuntu-setup-and-test-python:
     if: github.event.pull_request.draft == false
