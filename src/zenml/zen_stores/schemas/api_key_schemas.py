@@ -106,8 +106,6 @@ class APIKeySchema(NamedSchema, table=True):
                 service_account_id=service_account_id,
                 created=now,
                 updated=now,
-                last_login=now,
-                last_rotated=now,
             ),
             key,
         )

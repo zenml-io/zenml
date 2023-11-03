@@ -390,13 +390,17 @@ def print_pydantic_model(
 
     model_info = model.dict(include=columns, exclude=exclude_columns)
     for item in model_info.items():
-        rich_table.add_row(*[str(elem) for elem in item])
+        if isinstance(item[1], dict) and "id" in item[1]:
+            value = str(item[1]["id"])
+        elif item[1] is not None:
+            value = str(item[1])
+        else:
+            value = ""
+        rich_table.add_row(
+            str(item[0]).upper(),
+            value,
+        )
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 

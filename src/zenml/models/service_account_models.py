@@ -18,6 +18,7 @@ from typing import (
     ClassVar,
     List,
     Optional,
+    Type,
     Union,
 )
 
@@ -34,6 +35,9 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.user_models import UserResponseModel
 
 if TYPE_CHECKING:
+    from sqlmodel.sql.expression import Select, SelectOfScalar
+
+    from zenml.models.filter_models import AnySchema
     from zenml.models.team_models import TeamResponseModel
 
 logger = get_logger(__name__)
@@ -108,6 +112,25 @@ class ServiceAccountFilterModel(BaseFilterModel):
         default=None,
         description="Whether the user is active",
     )
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Override to filter out user accounts from the query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+        query = query.where(getattr(table, "is_service_account") == True)
+
+        return query
 
 
 # ------- #

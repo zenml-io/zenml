@@ -32,6 +32,57 @@ from zenml.models import (
 logger = get_logger(__name__)
 
 
+def _create_api_key(
+    service_account_name_or_id: str,
+    name: str,
+    description: Optional[str],
+    set_key: bool = False,
+) -> None:
+    """Create an API key.
+
+    Args:
+        service_account_name_or_id: The name or ID of the service account to
+            which the API key should be added.
+        name: Name of the API key
+        description: The API key description.
+        set_key: Configure the local client with the generated key.
+    """
+    client = Client()
+    zen_store = client.zen_store
+    if not zen_store.TYPE == StoreType.REST:
+        raise NotImplementedError(
+            "API key configuration is only supported if connected to a "
+            "ZenML server."
+        )
+
+    with console.status(f"Creating API key '{name}'...\n"):
+        try:
+            api_key = client.create_api_key(
+                service_account_name_id_or_prefix=service_account_name_or_id,
+                name=name,
+                description=description or "",
+                set_key=set_key,
+            )
+        except (KeyError, EntityExistsError) as e:
+            cli_utils.error(str(e))
+
+        cli_utils.declare(f"Successfully created API key `{name}`.")
+
+    if set_key and api_key.key:
+        client.set_api_key(api_key.key)
+        cli_utils.declare(
+            "The local client has been configured with the new API key."
+        )
+    else:
+        cli_utils.declare(
+            f"The API key value is: '{api_key.key}'\nPlease store it safely as "
+            "it will not be shown again.\nTo configure a ZenML client to use "
+            "this API key, run:\n\n"
+            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+            f"    '{api_key.key}'\n"
+        )
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def service_account() -> None:
     """Commands for service account management."""
@@ -86,7 +137,7 @@ def create_service_account(
         cli_utils.error(str(err))
 
     if not skip_api_key:
-        create_api_key(
+        _create_api_key(
             service_account_name_or_id=service_account.name,
             name="default",
             description="Default API key.",
@@ -110,12 +161,9 @@ def describe_service_account(service_account_name_or_id: str) -> None:
     except KeyError as err:
         cli_utils.error(str(err))
     else:
-        cli_utils.print_pydantic_models(
-            [service_account],
-            exclude_columns=[
-                "created",
-                "updated",
-            ],
+        cli_utils.print_pydantic_model(
+            title=f"Service account '{service_account.name}'",
+            model=service_account,
         )
 
 
@@ -241,46 +289,12 @@ def create_api_key(
         description: The API key description.
         set_key: Configure the local client with the generated key.
     """
-    client = Client()
-    zen_store = client.zen_store
-    if not zen_store.TYPE == StoreType.REST:
-        raise NotImplementedError(
-            "API key configuration is only supported if connected to a "
-            "ZenML server."
-        )
-
-    with console.status(f"Creating API key '{name}'...\n"):
-        try:
-            api_key = client.create_api_key(
-                service_account_name_id_or_prefix=service_account_name_or_id,
-                name=name,
-                description=description or "",
-                set_key=set_key,
-            )
-        except (KeyError, EntityExistsError) as e:
-            cli_utils.error(str(e))
-
-        cli_utils.declare(f"Successfully created API key `{name}`.")
-
-    if not set_key:
-        set_key = cli_utils.confirmation(
-            "Would you like to configure the local client with the generated "
-            "API key?"
-        )
-
-    if set_key and api_key.key:
-        client.set_api_key(api_key.key)
-        cli_utils.declare(
-            "The local client has been configured with the new API key."
-        )
-    else:
-        cli_utils.declare(
-            f"The API key value is: '{api_key.key}'\nPlease store it safely as "
-            "it will not be shown again.\nTo configure a ZenML client to use "
-            "this API key, run:\n\n"
-            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-            f"    '{api_key.key}'\n"
-        )
+    _create_api_key(
+        service_account_name_or_id=service_account_name_or_id,
+        name=name,
+        description=description,
+        set_key=set_key,
+    )
 
 
 @api_key.command("describe", help="Describe an API key.")
@@ -303,14 +317,12 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         except KeyError as e:
             cli_utils.error(str(e))
 
-        cli_utils.print_pydantic_models(
-            [api_key],
-            exclude_columns=[
-                "service_account",
+        cli_utils.print_pydantic_model(
+            title=f"API key '{api_key.name}'",
+            model=api_key,
+            exclude_columns={
                 "key",
-                "created",
-                "updated",
-            ],
+            },
         )
 
 
@@ -427,6 +439,13 @@ def rotate_api_key(
         set_key: Configure the local client with the newly generated key.
     """
     client = Client()
+    zen_store = client.zen_store
+    if not zen_store.TYPE == StoreType.REST:
+        raise NotImplementedError(
+            "API key rotation is only supported if connected to a "
+            "ZenML server."
+        )
+
     try:
         api_key = client.rotate_api_key(
             service_account_name_id_or_prefix=service_account_name_or_id,
@@ -442,12 +461,6 @@ def rotate_api_key(
             f"The previous API key will remain valid for {retain} minutes."
         )
 
-    if not set_key:
-        set_key = cli_utils.confirmation(
-            "Would you like to configure the local client with the newly "
-            "generated API key?"
-        )
-
     if set_key and api_key.key:
         client.set_api_key(api_key.key)
         cli_utils.declare(
@@ -458,7 +471,8 @@ def rotate_api_key(
             f"The new API key value is: '{api_key.key}'\nPlease store it "
             "safely as it will not be shown again.\nTo configure a ZenML "
             "client to use this API key, run:\n\n"
-            f"zenml connect --url <zenml-server-URL> --api-key {api_key.key}\n"
+            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+            f"    '{api_key.key}'\n"
         )
 
 

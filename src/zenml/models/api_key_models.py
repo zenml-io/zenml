@@ -246,7 +246,7 @@ class APIKeyFilterModel(BaseFilterModel):
 
         if self.service_account:
             scope_filter = (
-                getattr(table, "service_account_id") == self.service_account,
+                getattr(table, "service_account_id") == self.service_account
             )
             query = query.where(scope_filter)
 

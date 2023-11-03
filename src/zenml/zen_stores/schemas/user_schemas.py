@@ -206,7 +206,7 @@ class UserSchema(NamedSchema, table=True):
             The updated `UserSchema`.
         """
         for field, value in service_account_update.dict(
-            exclude_unset=True
+            exclude_none=True
         ).items():
             setattr(self, field, value)
 

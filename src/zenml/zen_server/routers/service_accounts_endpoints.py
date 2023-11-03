@@ -222,7 +222,7 @@ def get_api_key(
 
 
 @router.get(
-    "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
+    "/{service_account_id}" + API_KEYS,
     response_model=Page[APIKeyResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

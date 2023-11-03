@@ -1979,7 +1979,7 @@ class SqlZenStore(BaseZenStore):
                 updated=user.updated,
                 password=user.password,
                 activation_token=user.activation_token,
-                is_service_account=user.is_service_account,
+                is_service_account=user.is_service_account or False,
             )
 
     def list_users(
