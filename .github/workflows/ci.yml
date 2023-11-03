@@ -37,6 +37,23 @@ jobs:
       - name: Check for broken dependencies
         run: pip check
 
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Test migrations across versions
+      run: |
+        chmod +x scripts/test_migrations.sh
+        scripts/test_migrations.sh
+
   ubuntu-setup-and-test-python:
     if: github.event.pull_request.draft == false
     strategy:
