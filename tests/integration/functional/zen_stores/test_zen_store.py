@@ -2452,6 +2452,7 @@ class TestModel:
                 )
                 models = zs.list_models(ModelFilterModel())
                 assert models[0].latest_version == mv.name
+                time.sleep(1)  # thanks to MySQL again!
 
 
 class TestModelVersion:
