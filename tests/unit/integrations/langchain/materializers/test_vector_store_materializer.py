@@ -16,25 +16,21 @@
 from tests.unit.test_general import _test_materializer
 
 
-def test_langchain_openai_embedding_materializer(clean_client):
-    """Tests the Langchain OpenAI Embeddings materializer."""
-    from langchain.embeddings import OpenAIEmbeddings
+def test_langchain_vectorstore_materializer(clean_client):
+    """Tests the Langchain Vector Store materializer."""
+    from langchain.embeddings import FakeEmbeddings
+    from langchain.vectorstores import SKLearnVectorStore
 
-    from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
-        LangchainOpenaiEmbeddingMaterializer,
+    from zenml.integrations.langchain.materializers.vector_store_materializer import (
+        LangchainVectorStoreMaterializer,
     )
 
-    fake_key = "aria_and_blupus"
-    fake_chunk_size = 1234
+    embeddings = FakeEmbeddings(size=1352)
 
-    embeddings = _test_materializer(
-        step_output=OpenAIEmbeddings(
-            chunk_size=fake_chunk_size,
-            openai_api_key=fake_key,
-        ),
-        materializer_class=LangchainOpenaiEmbeddingMaterializer,
+    langchain_vector_store = _test_materializer(
+        step_output=SKLearnVectorStore(embedding=embeddings),
+        materializer_class=LangchainVectorStoreMaterializer,
         expected_metadata_size=1,
     )
 
-    assert embeddings.openai_api_key == fake_key
-    assert embeddings.chunk_size == fake_chunk_size
+    assert langchain_vector_store.embeddings
