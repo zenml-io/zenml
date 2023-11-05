@@ -84,6 +84,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
 from zenml.models.flavor_models import FlavorBaseModel
+from zenml.models.model_models import ModelFilterModel
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.artifact_utils import (
     _load_artifact_store,
@@ -2431,6 +2432,27 @@ def test_connector_validation():
 #################
 # Models
 #################
+
+
+class TestModel:
+    def test_latest_version_properly_fetched(self):
+        """Test that latest version can be properly fetched."""
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            models = zs.list_models(ModelFilterModel())
+            assert models[0].latest_version is None
+            for name in ["great one", "yet another one"]:
+                mv = zs.create_model_version(
+                    ModelVersionRequestModel(
+                        user=model.user.id,
+                        workspace=model.workspace.id,
+                        model=model.id,
+                        name=name,
+                    )
+                )
+                models = zs.list_models(ModelFilterModel())
+                assert models[0].latest_version == mv.name
+                time.sleep(1)  # thanks to MySQL again!
 
 
 class TestModelVersion:
