@@ -31,6 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -267,12 +268,12 @@ class StepLauncher:
         step_instance = BaseStep.load_from_source(self._step.spec.source)
 
         docstring = step_instance.docstring
-        if docstring and len(docstring) > 1000:
-            docstring = docstring[:1000] + "..."
+        if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
+            docstring = docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         source_code = step_instance.source_code
-        if source_code and len(source_code) > 1000:
-            source_code = source_code[:1000] + "..."
+        if source_code and len(source_code) > TEXT_FIELD_MAX_LENGTH:
+            source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         return docstring, source_code
 
