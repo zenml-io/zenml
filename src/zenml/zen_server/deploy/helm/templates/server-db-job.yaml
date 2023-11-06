@@ -10,6 +10,7 @@ metadata:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded 
 spec:
+  backoffLimit: 2
   template:
     metadata:
       annotations:
@@ -36,7 +37,6 @@ spec:
               - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
                 path: credentials.json
       {{- end }}
-      backoffLimit: 2
       restartPolicy: Never
       containers:
         - name: {{ .Chart.Name }}-db-migration
