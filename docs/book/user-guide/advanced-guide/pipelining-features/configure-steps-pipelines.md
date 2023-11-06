@@ -106,8 +106,8 @@ def divide(a: int, b: int) -> Tuple[
 
 {% hint style="info" %}
 If you do not give your outputs custom names, the created artifacts will be
-named "{pipeline_name}::{step_name}::output" or 
-"{pipeline_name}::{step_name}::output_{i}" in the dashboard. See the
+named `{pipeline_name}::{step_name}::output` or 
+`{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the
 [documentation on artifact versioning and configuration](./artifact-versioning.md)
 for more information.
 {% endhint %}

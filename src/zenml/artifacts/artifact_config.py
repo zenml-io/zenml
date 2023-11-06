@@ -52,10 +52,10 @@ class ArtifactConfig(BaseModel):
         version: The version of the artifact.
         tags: The tags of the artifact.
         model_name: The name of the model to link artifact to.
-        model_version: The identifier of the model version to link artifact to.
-            It can be an exact version ("23"), exact version number (42), stage
-            (ModelStages.PRODUCTION) or None for the latest version (default).
-        model_stage: The stage of the model version to link artifact to.
+        model_version: The identifier of the model version to link the artifact
+            to. It can be an exact version ("my_version"), exact version number
+            (42), stage (ModelStages.PRODUCTION or "production"), or None for
+            the latest version (default).
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
@@ -80,8 +80,8 @@ class ArtifactConfig(BaseModel):
 
         Returns:
             The model configuration or None if the model configuration cannot
-            be acquired from @step or @pipeline or built on the fly from
-            fields of this class.
+                be acquired from @step or @pipeline or built on the fly from
+                fields of this class.
         """
         try:
             model_config = get_step_context().model_config

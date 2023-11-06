@@ -436,7 +436,6 @@ class StepLauncher:
                     link_artifact_config_to_model(
                         artifact_config=artifact_config_,
                         model_config=model_config,
-                        artifact_name=output_name_,
                         artifact_id=output_id,
                     )
 

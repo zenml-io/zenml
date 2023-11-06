@@ -46,7 +46,8 @@ def link_step_artifacts_to_model(
         step_context = get_step_context()
     except StepContextError:
         raise RuntimeError(
-            "`link_artifacts_to_model` can only be called from within a step."
+            "`link_step_artifacts_to_model` can only be called from within a "
+            "step."
         )
     try:
         model_config = step_context.model_config
@@ -73,7 +74,6 @@ def link_step_artifacts_to_model(
         if artifact_config and model_config:
             link_artifact_config_to_model(
                 artifact_config=artifact_config,
-                artifact_name=artifact_name,
                 artifact_id=artifact_id,
                 model_config=model_config,
             )
@@ -82,7 +82,6 @@ def link_step_artifacts_to_model(
 def link_artifact_config_to_model(
     artifact_config: ArtifactConfig,
     model_config: "ModelConfig",
-    artifact_name: str,
     artifact_id: UUID,
 ) -> None:
     """Link an artifact config to a model version.
@@ -90,16 +89,9 @@ def link_artifact_config_to_model(
     Args:
         artifact_config: The artifact config to link.
         model_config: The model config to link the artifact to.
-        artifact_name: The name of the artifact to link.
         artifact_id: The ID of the artifact to link.
     """
     client = Client()
-
-    artifact_name = artifact_config.name or artifact_name
-    if artifact_name is None:
-        artifact = client.zen_store.get_artifact(artifact_id=artifact_id)
-        artifact_name = artifact.name
-
     model_version = model_config._get_model_version()
     model_id = model_version.model.id
     model_version_id = model_version.id

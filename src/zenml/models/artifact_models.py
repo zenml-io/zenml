@@ -229,5 +229,4 @@ class ArtifactUpdateModel(BaseModel):
     """Artifact update model."""
 
     name: Optional[str] = None
-    version: Optional[Union[str, int]] = None
     tags: Optional[List[str]] = None

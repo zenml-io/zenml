@@ -28,8 +28,34 @@ def my_multi_output_step() -> Tuple[
 ## Assign custom artifact names
 
 If you do not give your outputs custom names, the artifacts created by your
-ZenML steps will be named "{pipeline_name}::{step_name}::output" or
-"{pipeline_name}::{step_name}::output_{i}" by default.
+ZenML steps will be named `{pipeline_name}::{step_name}::output` or
+`{pipeline_name}::{step_name}::output_{i}` by default:
+
+```python
+from zenml import pipeline, step
+
+@step
+def my_step() -> int:
+    ...
+
+@step
+def my_multi_output_step() -> Tuple[int, int]
+    ...
+
+@pipeline
+def my_pipeline():
+
+    # Default artifact name will be `my_pipeline::my_step::output`
+    my_step()
+
+    # Default artifact names will be
+    #   - `my_pipeline::my_multi_output_step::output_1`
+    #   - `my_pipeline::my_multi_output_step::output_2`
+    my_multi_output_step()
+```
+
+</details>
+
 
 To give your artifacts custom names, use the `name` parameter of the
 `ArtifactConfig` class:
@@ -112,3 +138,6 @@ this step, which can later be used to filter for artifacts in the dashboard.
 how artifacts are linked to models. 
 
 TODO: link to model control plane section
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
