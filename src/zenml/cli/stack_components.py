@@ -142,12 +142,12 @@ def generate_stack_component_describe_command(
             if active_components:
                 active_component_id = active_components[0].id
 
-                cli_utils.print_stack_component_configuration(
-                    component=component_,
-                    active_status=component_.id == active_component_id,
-                )
+            cli_utils.print_stack_component_configuration(
+                component=component_,
+                active_status=component_.id == active_component_id,
+            )
 
-                print_model_url(get_component_url(active_components[0]))
+            print_model_url(get_component_url(component_))
 
     return describe_stack_component_command
 
