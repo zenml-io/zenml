@@ -180,10 +180,10 @@ database. Search can be performed in one of the following ways:
 - By providing an artifact ID.
 - By providing an artifact name and version.
 - By providing an artifact name and a pipeline run name.
-- By providing an artifact name and a pipeline name, in which case the
-    artifact will be searched in the latest run of the pipeline.
+- By providing an artifact name and a pipeline name, in which case ZenML
+    will attempt to find the artifact in the latest run of the pipeline.
 - By only providing an artifact name, in which case the latest version
-  of the artifact will be used.
+    of the artifact will be used.
 
 ```python
 from uuid import UUID

@@ -48,10 +48,10 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     - By providing an artifact ID.
     - By providing an artifact name and version.
     - By providing an artifact name and a pipeline run name.
-    - By providing an artifact name and a pipeline name, in which case the
-        artifact will be searched in the latest run of the pipeline.
+    - By providing an artifact name and a pipeline name, in which case ZenML
+        will attempt to find the artifact in the latest run of the pipeline.
     - By only providing an artifact name, in which case the latest version
-      of the artifact will be used.
+        of the artifact will be used.
 
     Args:
         value: The artifact value.
@@ -104,13 +104,13 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         ]
         if sum(options) > 1:
             raise ValueError(
-                "Only a value, an ID, or an artifact name can be provided "
-                "when creating an external artifact."
+                "Only one of `value`, `id`, or `name` can be provided when "
+                "creating an external artifact."
             )
         elif sum(options) == 0:
             raise ValueError(
-                "Either a value, an ID, or an artifact name must be provided "
-                "when creating an external artifact."
+                "Either `value`, `id`, or `name` must be provided when "
+                "creating an external artifact."
             )
         return values
 
