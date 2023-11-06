@@ -21,7 +21,6 @@ slow down the CLI.
 from typing import Optional
 
 from zenml.logger import get_logger
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
@@ -54,7 +53,7 @@ def show(
 
     if prefill_username:
         url = (
-            f"{url}:{port}/login?username={DEFAULT_USERNAME}" if port else url
+            f"{url}:{port}/login?username=default" if port else url
         )
     else:
         url = f"{url}:{port}" if port else url
