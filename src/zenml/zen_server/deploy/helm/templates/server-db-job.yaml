@@ -36,6 +36,7 @@ spec:
               - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
                 path: credentials.json
       {{- end }}
+      backoffLimit: 2
       restartPolicy: Never
       containers:
         - name: {{ .Chart.Name }}-db-migration
