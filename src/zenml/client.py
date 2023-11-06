@@ -5392,7 +5392,7 @@ class Client(metaclass=ClientMetaClass):
         # If more than one entity with the same name is found, raise an error.
         entity_label = get_method.__name__.replace("get_", "") + "s"
         formatted_entity_items = [
-            f"- {item.name}: (id: {item.id}, flavor: {item.flavor})\n"
+            f"- {item.name}: (id: {item.id})\n"
             for item in entity.items
         ]
         raise ZenKeyError(
