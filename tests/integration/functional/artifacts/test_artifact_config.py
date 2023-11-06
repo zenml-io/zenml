@@ -415,74 +415,8 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         }, "some artifacts tracked as higher versions, while all should be version 1"
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, version="good_one"))
-def single_output_step_no_versioning() -> (
-    Annotated[int, ArtifactConfig(overwrite_model_link=True)]
-):
-    """Single output with overwrite and step context."""
-    return 1
-
-
-@pipeline(enable_cache=False)
-def simple_pipeline_no_versioning():
-    """Single output with overwrite and step context."""
-    single_output_step_no_versioning()
-
-
-def test_link_no_versioning():
-    """Test that not versioned artifact is properly overwritten and no new versions created."""
-    with model_killer():
-        client = Client()
-        user = client.active_user.id
-        ws = client.active_workspace.id
-
-        # manual creation needed, as we work with specific versions
-        model = ModelConfig(
-            name=MODEL_NAME,
-        ).get_or_create_model()
-        mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
-        )
-
-        simple_pipeline_no_versioning()
-
-        al1 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
-        )
-        assert al1.size == 1
-        assert al1[0].link_version == 1
-        assert al1[0].name == "output"
-
-        simple_pipeline_no_versioning()
-
-        al2 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
-        )
-        assert al2.size == 1
-        assert al2[0].link_version == 1
-        assert al2[0].name == "output"
-        assert al1[0].id != al2[0].id
-
-
 @step
-def single_output_step_with_versioning() -> (
-    Annotated[int, "predictions", ArtifactConfig(overwrite_model_link=False)]
-):
+def single_output_step_with_versioning() -> Annotated[int, "predictions"]:
     """Single output with overwrite disabled and step context."""
     return 1
 

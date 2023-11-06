@@ -24,7 +24,6 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.model.model_config import ModelConfig
 from zenml.models.model_models import (
-    ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
 )
 from zenml.new.steps.step_context import get_step_context
@@ -106,8 +105,6 @@ def link_artifact_config_to_model(
     model_version_id = model_version.id
     is_model_object = artifact_config.is_model_artifact
     is_deployment = artifact_config.is_deployment_artifact
-
-    # Create a request model for the model version artifact link
     request = ModelVersionArtifactRequestModel(
         user=client.active_user.id,
         workspace=client.active_workspace.id,
@@ -116,35 +113,5 @@ def link_artifact_config_to_model(
         model_version=model_version_id,
         is_model_object=is_model_object,
         is_deployment=is_deployment,
-        overwrite=artifact_config.overwrite_model_link,
     )
-
-    # Create the model version artifact link using the ZenML client
-    existing_links = client.list_model_version_artifact_links(
-        ModelVersionArtifactFilterModel(
-            user_id=client.active_user.id,
-            workspace_id=client.active_workspace.id,
-            model_id=model_id,
-            model_version_id=model_version_id,
-            only_artifacts=not (is_model_object or is_deployment),
-            only_deployments=is_deployment,
-            only_model_objects=is_model_object,
-        )
-    )
-    if len(existing_links):
-        if artifact_config.overwrite_model_link:
-            logger.info(
-                f"Deleting existing artifact link(s) for artifact "
-                f"`{artifact_name}`."
-            )
-            client.zen_store.delete_model_version_artifact_link(
-                model_name_or_id=model_id,
-                model_version_name_or_id=model_version_id,
-                model_version_artifact_link_name_or_id=artifact_name,
-            )
-        else:
-            logger.info(
-                f"Artifact link `{artifact_name}` already exists, adding "
-                "new version."
-            )
     client.zen_store.create_model_version_artifact_link(request)

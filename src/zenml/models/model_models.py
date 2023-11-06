@@ -424,8 +424,6 @@ class ModelVersionArtifactRequestModel(
 ):
     """Model version link with artifact request model."""
 
-    overwrite: bool = False
-
 
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel

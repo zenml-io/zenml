@@ -56,8 +56,6 @@ class ArtifactConfig(BaseModel):
             It can be an exact version ("23"), exact version number (42), stage
             (ModelStages.PRODUCTION) or None for the latest version (default).
         model_stage: The stage of the model version to link artifact to.
-        overwrite_model_link: Whether to overwrite an existing model link or
-            create a new one.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
@@ -68,7 +66,6 @@ class ArtifactConfig(BaseModel):
 
     model_name: Optional[str] = None
     model_version: Optional[Union[ModelStages, str, int]] = None
-    overwrite_model_link: bool = False
     is_model_artifact: bool = False
     is_deployment_artifact: bool = False
 

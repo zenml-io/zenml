@@ -221,9 +221,7 @@ def test_create_new_version_only_in_pipeline():
 
 
 @step
-def _this_step_produces_output() -> (
-    Annotated[int, "data", ArtifactConfig(overwrite_model_link=False)]
-):
+def _this_step_produces_output() -> Annotated[int, "data"]:
     return 1
 
 

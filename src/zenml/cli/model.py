@@ -505,14 +505,7 @@ def _print_artifacts_links_generic(
 
     cli_utils.print_pydantic_models(
         links,
-        columns=[
-            "pipeline_name",
-            "step_name",
-            "name",
-            "link_version",
-            "artifact",
-            "created",
-        ],
+        columns=["artifact", "created"],
     )
 
 

@@ -5984,7 +5984,6 @@ class SqlZenStore(BaseZenStore):
                     ModelVersionArtifactSchema.artifact_id
                     == model_version_artifact_link.artifact,
                 )
-                .order_by(ModelVersionArtifactSchema.version.desc())  # type: ignore[attr-defined]
             ).first()
             if existing_model_version_artifact_link is not None:
                 return existing_model_version_artifact_link.to_model()
