@@ -21,17 +21,23 @@ slow down the CLI.
 from typing import Optional
 
 from zenml.logger import get_logger
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
 
-def show(ngrok_token: Optional[str] = None) -> None:
+def show(
+    ngrok_token: Optional[str] = None,
+    prefill_username: bool = False,
+) -> None:
     """Show the ZenML dashboard.
 
     Args:
         ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
+        prefill_username: Whether to prefill the username field in the login
+            page of the dashboard.
     """
     from zenml.utils.dashboard_utils import show_dashboard
     from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
@@ -46,5 +52,10 @@ def show(ngrok_token: Optional[str] = None) -> None:
         logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
         url = ngrok_url
 
-    url = f"{url}:{port}" if port else url
+    if prefill_username:
+        url = (
+            f"{url}:{port}/login?username={DEFAULT_USERNAME}" if port else url
+        )
+    else:
+        url = f"{url}:{port}" if port else url
     show_dashboard(url)

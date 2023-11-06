@@ -208,7 +208,7 @@ def up(
                 f"'{server.status.url}'. You can connect to it using the "
                 f"'{DEFAULT_USERNAME}' username and an empty password. "
             )
-            zenml.show(ngrok_token=ngrok_token)
+            zenml.show(ngrok_token=ngrok_token, prefill_username=True)
 
 
 @click.option(
