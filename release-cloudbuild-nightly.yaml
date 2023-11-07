@@ -1,46 +1,4 @@
 steps:
-# build base image - python 3.8
-- name: gcr.io/cloud-builders/docker
-  args:
-  - '-c'
-  - |
-    docker build \
-      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
-      --build-arg PYTHON_VERSION=3.8 \
-      --target base \
-      -f docker/base.Dockerfile . \
-      -t $$USERNAME/zenml:$TAG_NAME-py3.8-nightly
-
-    # no need to check for official release regex, this is for nightly builds
-    docker tag $$USERNAME/zenml:$TAG_NAME-py3.8-nightly $$USERNAME/zenml:py3.8-nightly
-
-  id: build-base-3.8-nightly
-  waitFor: ['-']
-  entrypoint: bash
-  secretEnv:
-  - USERNAME
-
-# build base image - python 3.9
-- name: gcr.io/cloud-builders/docker
-  args:
-  - '-c'
-  - |
-    docker build \
-      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
-      --build-arg PYTHON_VERSION=3.9 \
-      --target base \
-      -f docker/base.Dockerfile . \
-      -t $$USERNAME/zenml:$TAG_NAME-py3.9-nightly
-
-    # no need to check for official release regex, this is for nightly builds
-    docker tag $$USERNAME/zenml:$TAG_NAME-py3.9-nightly $$USERNAME/zenml:py3.9-nightly
-
-  id: build-base-3.9-nightly
-  waitFor: ['-']
-  entrypoint: bash
-  secretEnv:
-  - USERNAME
-
 # build base image - python 3.10
 - name: gcr.io/cloud-builders/docker
   args:
@@ -57,27 +15,6 @@ steps:
     docker tag $$USERNAME/zenml:$TAG_NAME-py3.10-nightly $$USERNAME/zenml:py3.10-nightly
 
   id: build-base-3.10-nightly
-  waitFor: ['-']
-  entrypoint: bash
-  secretEnv:
-  - USERNAME
-
-# build base image - python 3.11
-- name: gcr.io/cloud-builders/docker
-  args:
-  - '-c'
-  - |
-    docker build \
-      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
-      --build-arg PYTHON_VERSION=3.11 \
-      --target base \
-      -f docker/base.Dockerfile . \
-      -t $$USERNAME/zenml:$TAG_NAME-py3.11-nightly
-
-    # no need to check for official release regex, this is for nightly builds
-    docker tag $$USERNAME/zenml:$TAG_NAME-py3.11-nightly $$USERNAME/zenml:py3.11-nightly
-
-  id: build-base-3.11-nightly
   waitFor: ['-']
   entrypoint: bash
   secretEnv:
