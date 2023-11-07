@@ -17,6 +17,17 @@ jobs:
         with:
           ref: 'develop'
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
       - name: Set nightly version
         run: |
             # Extract the current version
@@ -39,17 +50,6 @@ jobs:
 
               # Update the version to the nightly version
               poetry version $NIGHTLY_VERSION
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
 
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
