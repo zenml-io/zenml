@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base model definitions."""
+
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
@@ -201,7 +203,7 @@ class BaseResponse(BaseZenModel):
     # Body and metadata properties
     @property
     def created(self):
-        """The`created` property"""
+        """The`created` property."""
         return self.body.created
 
     @property

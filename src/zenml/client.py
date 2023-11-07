@@ -80,9 +80,11 @@ from zenml.models import (
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
+    CodeRepositoryUpdate,
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
+    ComponentUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -113,6 +115,7 @@ from zenml.models import (
     RoleFilter,
     RoleRequest,
     RoleResponse,
+    RoleUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -121,6 +124,7 @@ from zenml.models import (
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
+    SecretUpdateModel,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -1066,7 +1070,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
 
-        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
+        role_update = RoleUpdate(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
             if union_add_rm := set(remove_permission) & set(add_permission):
@@ -2205,7 +2209,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
+        update_model = ComponentUpdate(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             component_spec_path=component_spec_path,
@@ -4050,7 +4054,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(  # type: ignore[call-arg]
+        update = CodeRepositoryUpdate(  # type: ignore[call-arg]
             name=name, description=description, logo_url=logo_url
         )
         return self.zen_store.update_code_repository(

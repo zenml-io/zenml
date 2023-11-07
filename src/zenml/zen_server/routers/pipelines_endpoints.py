@@ -155,6 +155,8 @@ def list_pipeline_runs(
     Args:
         pipeline_run_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.

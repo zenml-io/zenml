@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Scoped model definitions."""
 
 from abc import abstractmethod
 from typing import (
@@ -367,8 +368,7 @@ class ShareableResponse(WorkspaceScopedResponse):
 
 
 class ShareableFilter(WorkspaceScopedFilter):
-    """Model to enable advanced scoping with workspace and user scoped
-    shareable things."""
+    """Model for workspace and user scoped shareable entities."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,

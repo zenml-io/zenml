@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 class FlavorRequest(BaseRequest):
-    """Request model for flavors"""
+    """Request model for flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
@@ -136,7 +136,7 @@ class FlavorResponseBody(BaseResponseBody):
 
 
 class FlavorResponseMetadata(BaseResponseMetadata):
-    """Response metadata for flavors"""
+    """Response metadata for flavors."""
 
     workspace: Optional["WorkspaceResponse"] = Field(
         title="The project of this resource."
@@ -181,7 +181,7 @@ class FlavorResponseMetadata(BaseResponseMetadata):
 
 
 class FlavorResponse(BaseResponse):
-    """Response model for flavors"""
+    """Response model for flavors."""
 
     # Analytics
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -200,7 +200,7 @@ class FlavorResponse(BaseResponse):
     metadata: Optional["FlavorResponseMetadata"]
 
     def get_hydrated_version(self) -> "FlavorResponse":
-        """Get the hydrated version of the flavor"""
+        """Get the hydrated version of the flavor."""
         from zenml.client import Client
 
         return Client().zen_store.get_flavor(self.id)

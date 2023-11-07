@@ -283,7 +283,7 @@ class UserResponse(BaseResponse):
 
     @hydrated_property
     def active(self):
-        """The `active` property`"""
+        """The `active` property."""
         return self.metadata.active
 
     @hydrated_property

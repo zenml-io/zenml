@@ -46,10 +46,13 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.service_connector import (
         ServiceConnectorResponse,
     )
-# ------------------ Request Model ------------------
+
+# ------------------ Base Model ------------------
 
 
 class ComponentBase(BaseModel):
+    """Base model for components."""
+
     name: str = Field(
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -83,6 +86,9 @@ class ComponentBase(BaseModel):
         default=None,
         title="The path to the component spec used for mlstacks deployments.",
     )
+
+
+# ------------------ Request Model ------------------
 
 
 class ComponentRequest(ComponentBase, ShareableRequest):

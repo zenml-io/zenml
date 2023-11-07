@@ -82,7 +82,6 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         Returns:
             The `Visualization`.
         """
-
         body = ArtifactVisualizationResponseBody(
             type=self.type,
             uri=self.uri,

@@ -96,7 +96,7 @@ class ScheduleRequest(WorkspaceScopedRequest):
 
 @update_model
 class ScheduleUpdate(ScheduleRequest):
-    """Update model for schedules"""
+    """Update model for schedules."""
 
 
 # ------------------ Response Model ------------------
@@ -133,7 +133,7 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
     metadata: Optional["ScheduleResponseMetadata"]
 
     def get_hydrated_version(self) -> "ScheduleResponse":
-        """Get the hydrated version of this schedule"""
+        """Get the hydrated version of this schedule."""
         from zenml.client import Client
 
         return Client().zen_store.get_schedule(self.id)

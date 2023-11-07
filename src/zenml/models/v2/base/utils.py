@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility methods for base models."""
+
 from typing import TYPE_CHECKING, Type, TypeVar
 
 if TYPE_CHECKING:
-    from zenml.models.v2.base.base import BaseResponse
+    from zenml.models.v2.base.base import BaseRequest, BaseResponse
 
-T = TypeVar("T", bound="BaseRequestModel")
+T = TypeVar("T", bound="BaseRequest")
 
 
 def update_model(_cls: Type[T]) -> Type[T]:

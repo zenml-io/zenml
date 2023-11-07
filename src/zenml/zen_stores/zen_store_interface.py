@@ -948,6 +948,8 @@ class ZenStoreInterface(ABC):
         Args:
             run_metadata_filter_model: All filter parameters including
                 pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The run metadata.

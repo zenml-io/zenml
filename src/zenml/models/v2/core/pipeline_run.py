@@ -250,42 +250,42 @@ class PipelineRunResponse(WorkspaceScopedResponse):
 
     @hydrated_property
     def run_metadata(self):
-        """The `run_metadata` property"""
+        """The `run_metadata` property."""
         return self.metadata.run_metadata
 
     @hydrated_property
     def steps(self):
-        """The `steps` property"""
+        """The `steps` property."""
         return self.metadata.steps
 
     @hydrated_property
     def config(self):
-        """The `config` property"""
+        """The `config` property."""
         return self.metadata.config
 
     @hydrated_property
     def start_time(self):
-        """The `start_time` property"""
+        """The `start_time` property."""
         return self.metadata.start_time
 
     @hydrated_property
     def end_time(self):
-        """The `end_time` property"""
+        """The `end_time` property."""
         return self.metadata.end_time
 
     @hydrated_property
     def client_environment(self):
-        """The `client_environment` property"""
+        """The `client_environment` property."""
         return self.metadata.client_environment
 
     @hydrated_property
     def orchestrator_environment(self):
-        """The `orchestrator_environment` property"""
+        """The `orchestrator_environment` property."""
         return self.metadata.orchestrator_environment
 
     @hydrated_property
     def orchestrator_run_id(self):
-        """The `orchestrator_run_id` property"""
+        """The `orchestrator_run_id` property."""
         return self.metadata.orchestrator_run_id
 
 

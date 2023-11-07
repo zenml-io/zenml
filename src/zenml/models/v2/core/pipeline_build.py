@@ -204,7 +204,7 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
 
 
 class PipelineBuildResponse(WorkspaceScopedResponse):
-    """Response model for pipeline builds"""
+    """Response model for pipeline builds."""
 
     # Body and metadata pair
     body: "PipelineBuildResponseBody"

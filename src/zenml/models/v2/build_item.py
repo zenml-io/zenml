@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Model definition for pipeline build item."""
+
 from typing import Optional
 
 from pydantic import BaseModel, Field

@@ -804,8 +804,7 @@ class Pipeline:
     def get_new_version_requests(
         self, deployment: "PipelineDeploymentBase"
     ) -> Dict[str, NewModelVersionRequest]:
-        """Get the running versions of the models that are used in the
-        pipeline run.
+        """Get the running versions of the models that are used in the pipeline run.
 
         Args:
             deployment: The pipeline deployment configuration.

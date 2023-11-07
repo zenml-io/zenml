@@ -2695,18 +2695,14 @@ class RestZenStore(BaseZenStore):
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_filter_model: All filter parameters including
-                        pagination params.
-        =======
-                    model_name_or_id: name or id of the model containing the model versions.
-                    model_version_filter_model: All filter parameters including pagination
-                        params.
-        >>>>>>> origin/develop
+        Args:
+            model_name_or_id: name or id of the model containing the
+                model versions.
+            model_version_filter_model: All filter parameters including
+                pagination params.
 
-                Returns:
-                    A page of all model versions.
+        Returns:
+            A page of all model versions.
         """
         return self._list_paginated_resources(
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",

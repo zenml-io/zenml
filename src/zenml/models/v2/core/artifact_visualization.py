@@ -81,7 +81,7 @@ class ArtifactVisualizationResponse(BaseResponse):
 
     @hydrated_property
     def artifact_id(self):
-        """The `artifact_id` property"""
+        """The `artifact_id` property."""
         return self.metadata.artifact_id
 
 

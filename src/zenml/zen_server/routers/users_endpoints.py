@@ -390,7 +390,10 @@ def list_role_assignments_for_user(
     """Returns a list of all roles that are assigned to a user.
 
     Args:
-        user_role_assignment_filter_model: filter models for user role assignments
+        user_role_assignment_filter_model: filter models for user role
+            assignments.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all roles that are assigned to a user.

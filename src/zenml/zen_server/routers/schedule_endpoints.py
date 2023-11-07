@@ -57,6 +57,8 @@ def list_schedules(
     Args:
         schedule_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of schedule objects.
@@ -81,6 +83,8 @@ def get_schedule(
 
     Args:
         schedule_id: ID of the schedule to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific schedule object.

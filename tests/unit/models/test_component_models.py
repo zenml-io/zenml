@@ -18,13 +18,14 @@ from pydantic import ValidationError
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models import ComponentBase
 
 
 def test_component_base_model_fails_with_long_flavor():
     """Test that the component base model fails with long flavor strings."""
     long_flavor = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        ComponentBaseModel(
+        ComponentBase(
             name="abc",
             type=StackComponentType.ANNOTATOR,
             flavor=long_flavor,

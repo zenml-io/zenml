@@ -111,7 +111,7 @@ class PipelineResponse(WorkspaceScopedResponse):
     metadata: Optional["PipelineResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineResponse":
-        """Get the hydrated version of this pipeline"""
+        """Get the hydrated version of this pipeline."""
         from zenml.client import Client
 
         return Client().zen_store.get_pipeline(self.id)
