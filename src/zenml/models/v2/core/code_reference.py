@@ -26,9 +26,7 @@ from zenml.models.v2.base.base import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.code_repository import (
-        CodeRepositoryResponse,
-    )
+    from zenml.models.v2.core.code_repository import CodeRepositoryResponse
 
 
 # ------------------ Request Model ------------------

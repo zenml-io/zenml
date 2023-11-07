@@ -106,7 +106,6 @@ class StepRunRequest(WorkspaceScopedRequest):
     deployment: UUID = Field(
         title="The deployment associated with the step run."
     )
-    code_hash: Optional[str]
 
 
 # ------------------ Update Model ------------------
