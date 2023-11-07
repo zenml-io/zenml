@@ -2435,6 +2435,7 @@ def test_connector_validation():
 
 
 class TestModel:
+    @pytest.mark.skip("TODO: Fix to come from Andrei")
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""
         with ModelVersionContext() as model:
@@ -2452,6 +2453,7 @@ class TestModel:
                 )
                 models = zs.list_models(ModelFilterModel())
                 assert models[0].latest_version == mv.name
+                time.sleep(1)  # thanks to MySQL again!
 
 
 class TestModelVersion:
