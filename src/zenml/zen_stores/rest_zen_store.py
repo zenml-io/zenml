@@ -206,12 +206,18 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-AnyRequestModel = TypeVar("AnyRequestModel", BaseRequest, BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", BaseResponse, BaseResponseModel)
+AnyRequestModel = TypeVar(
+    "AnyRequestModel", bound=Union[BaseRequest, BaseRequestModel]
+)
+AnyResponseModel = TypeVar(
+    "AnyResponseModel", bound=Union[BaseResponse, BaseResponseModel]
+)
 AnyWorkspaceScopedRequestModel = TypeVar(
     "AnyWorkspaceScopedRequestModel",
-    WorkspaceScopedRequestModel,
-    WorkspaceRequest,
+    bound=Union[
+        WorkspaceScopedRequestModel,
+        WorkspaceRequest,
+    ],
 )
 
 
