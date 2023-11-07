@@ -69,6 +69,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineUpdate,
     RoleFilter,
+    RoleRequest,
     RoleResponse,
     RoleUpdate,
     RunMetadataFilter,
@@ -896,6 +897,19 @@ class ZenStoreInterface(ABC):
         """
 
     # -------------------- Roles --------------------
+    @abstractmethod
+    def create_role(self, role: RoleRequest) -> RoleResponse:
+        """Creates a new role.
+
+        Args:
+            role: The role model to create.
+
+        Returns:
+            The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
 
     @abstractmethod
     def get_role(self, role_id: UUID, hydrate: bool = True) -> RoleResponse:

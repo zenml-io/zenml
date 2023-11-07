@@ -168,7 +168,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar("AnyResponse", BaseResponse, BaseResponseModel)
+AnyResponse = TypeVar("AnyResponse", bound=[BaseResponse, BaseResponseModel])
 
 
 class ClientConfiguration(FileSyncModel):

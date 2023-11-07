@@ -30,8 +30,7 @@ from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
-from zenml.models.v2.base.filter import LogicalOperators
+from zenml.enums import ExecutionStatus, LogicalOperators
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,

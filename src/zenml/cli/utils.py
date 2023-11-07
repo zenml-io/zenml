@@ -104,7 +104,8 @@ logger = get_logger(__name__)
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
-T = TypeVar("T", bound=Union[BaseResponse, BaseResponseModel])
+
+T = TypeVar("T", bound=Union[BaseResponse[Any, Any], BaseResponseModel])
 
 
 def title(text: str) -> None:
@@ -285,14 +286,15 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             if isinstance(model, BaseResponse):
-                model.hydrate()  # TODO: We can do this better
                 include_columns = [
                     k
-                    for k in model.body.dict().keys()
+                    for k in model.__fields__["body"].type_.__fields__.keys()
                     if k not in exclude_columns
                 ] + [
                     k
-                    for k in model.metadata.dict().keys()
+                    for k in model.__fields__[
+                        "metadata"
+                    ].type_.__fields__.keys()
                     if k not in exclude_columns
                 ]
             else:
@@ -311,7 +313,7 @@ def print_pydantic_models(
             #  such a field, else the id is used
             if isinstance(value, (BaseResponse, BaseResponseModel)):
                 if "name" in value.__fields__:
-                    items[k] = str(value.name)  # type: ignore[attr-defined]
+                    items[k] = str(getattr(value, "name"))  # type: ignore[attr-defined]
                 else:
                     items[k] = str(value.id)
 
@@ -321,7 +323,9 @@ def print_pydantic_models(
                 for v in value:
                     if isinstance(v, (BaseResponse, BaseResponseModel)):
                         if "name" in v.__fields__:
-                            items.setdefault(k, []).append(str(v.name))
+                            items.setdefault(k, []).append(
+                                str(getattr(v, "name"))
+                            )
                         else:
                             items.setdefault(k, []).append(str(v.id))
             elif isinstance(value, Set) or isinstance(value, List):

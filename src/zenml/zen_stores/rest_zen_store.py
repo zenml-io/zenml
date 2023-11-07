@@ -184,6 +184,7 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceScopedRequest,
     WorkspaceScopedRequestModel,
     WorkspaceUpdate,
 )
@@ -216,7 +217,7 @@ AnyWorkspaceScopedRequestModel = TypeVar(
     "AnyWorkspaceScopedRequestModel",
     bound=Union[
         WorkspaceScopedRequestModel,
-        WorkspaceRequest,
+        WorkspaceScopedRequest,
     ],
 )
 
