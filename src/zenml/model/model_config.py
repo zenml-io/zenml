@@ -132,7 +132,12 @@ class ModelConfig(BaseModel):
                 if self.delete_new_version_on_failure:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
-                        f"for model `{self.name}` since it already exists"
+                        f"for model `{self.name}` since it already exists. "
+                        "This could happen for unforseen reasons (e.g. unexpected "
+                        "intteruption of previous pipeline run flow).\n"
+                        "If you would like to remove the staling version use "
+                        "following CLI command:\n"
+                        f"`zenml model version delete {self.name} {self.version}`"
                     )
         except KeyError:
             self.get_or_create_model_version()
