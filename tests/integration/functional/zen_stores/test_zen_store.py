@@ -30,6 +30,7 @@ from tests.integration.functional.zen_stores.utils import (
     ModelVersionContext,
     PipelineRunContext,
     RoleContext,
+    ServiceAccountContext,
     ServiceConnectorContext,
     ServiceConnectorTypeContext,
     StackContext,
@@ -67,6 +68,8 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    ServiceAccountRequestModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
@@ -75,6 +78,7 @@ from zenml.models import (
     StepRunFilterModel,
     TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
+    UserRequestModel,
     UserRoleAssignmentRequestModel,
     UserUpdateModel,
     WorkspaceFilterModel,
@@ -382,6 +386,47 @@ def test_active_user():
         assert True
 
 
+def test_creating_user_with_existing_name_fails():
+    """Tests creating a user with an existing account name fails."""
+    zen_store = Client().zen_store
+
+    with UserContext() as existing_user:
+        with pytest.raises(EntityExistsError):
+            zen_store.create_user(
+                UserRequestModel(name=existing_user.name, password="password")
+            )
+
+    with ServiceAccountContext() as existing_service_account:
+        with pytest.raises(EntityExistsError):
+            zen_store.create_user(
+                UserRequestModel(
+                    name=existing_service_account.name, password="password"
+                )
+            )
+
+
+def test_updating_user_with_existing_name_fails():
+    """Tests updating a user with an existing account name fails."""
+    zen_store = Client().zen_store
+
+    with UserContext() as user:
+        with UserContext() as existing_user:
+            with pytest.raises(EntityExistsError):
+                zen_store.update_user(
+                    user_id=user.id,
+                    user_update=UserUpdateModel(name=existing_user.name),
+                )
+
+        with ServiceAccountContext() as existing_service_account:
+            with pytest.raises(EntityExistsError):
+                zen_store.update_user(
+                    user_id=user.id,
+                    user_update=UserUpdateModel(
+                        name=existing_service_account.name
+                    ),
+                )
+
+
 def test_updating_default_user_fails():
     """Tests that updating the default user is prohibited."""
     client = Client()
@@ -421,6 +466,217 @@ def test_team_for_user_succeeds():
             updated_user_response = zen_store.get_user(created_user.id)
 
             assert team_update in updated_user_response.teams
+
+
+#  .-----------------.
+# | SERVICE ACCOUNTS |
+# '------------------'
+
+
+def test_create_service_account():
+    """Tests creating a service account."""
+    zen_store = Client().zen_store
+
+    account_name = sample_name("axl")
+    new_account = zen_store.create_service_account(
+        ServiceAccountRequestModel(
+            name=account_name,
+            active=True,
+        )
+    )
+
+    account = zen_store.get_service_account(account_name)
+    assert account.id == new_account.id
+    assert account.name == new_account.name
+    assert account.active is True
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.name == new_account.name
+    assert account.active is True
+
+
+def test_create_service_account_used_name_fails():
+    """Tests creating a service account name with a name that is already used."""
+    zen_store = Client().zen_store
+
+    with UserContext() as existing_user:
+        with pytest.raises(EntityExistsError):
+            zen_store.create_service_account(
+                ServiceAccountRequestModel(
+                    name=existing_user.name,
+                    active=True,
+                )
+            )
+
+    with ServiceAccountContext() as existing_service_account:
+        with pytest.raises(EntityExistsError):
+            zen_store.create_service_account(
+                ServiceAccountRequestModel(
+                    name=existing_service_account.name,
+                    active=True,
+                )
+            )
+
+
+def test_update_service_account_name():
+    """Tests updating a service account name."""
+    zen_store = Client().zen_store
+
+    account_name = sample_name("blupus")
+    new_account = zen_store.create_service_account(
+        ServiceAccountRequestModel(
+            name=account_name,
+            active=True,
+        )
+    )
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.name == new_account.name
+    assert account.active is True
+
+    new_account_name = sample_name("aria")
+
+    # Update by name
+    updated_account = zen_store.update_service_account(
+        service_account_name_or_id=account_name,
+        service_account_update=ServiceAccountUpdateModel(
+            name=new_account_name,
+        ),
+    )
+    assert updated_account.id == new_account.id
+    assert updated_account.name == new_account_name
+    assert updated_account.active is True
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.name == new_account_name
+    assert account.active is True
+
+    account = zen_store.get_service_account(new_account_name)
+    assert account.id == new_account.id
+
+    new_account_name = sample_name("aria")
+
+    # Update by ID
+    updated_account = zen_store.update_service_account(
+        service_account_name_or_id=new_account.id,
+        service_account_update=ServiceAccountUpdateModel(
+            name=new_account_name,
+        ),
+    )
+    assert updated_account.id == new_account.id
+    assert updated_account.name == new_account_name
+    assert updated_account.active is True
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.name == new_account_name
+    assert account.active is True
+
+    account = zen_store.get_service_account(new_account_name)
+    assert account.id == new_account.id
+
+
+def test_update_service_account_used_name_fails():
+    """Tests updating a service account name to a name that is already used."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        with UserContext() as existing_user:
+            # Update by name
+            with pytest.raises(EntityExistsError):
+                zen_store.update_service_account(
+                    service_account_name_or_id=service_account.name,
+                    service_account_update=ServiceAccountUpdateModel(
+                        name=existing_user.name,
+                    ),
+                )
+
+            account = zen_store.get_service_account(service_account.id)
+            assert account.name == service_account.name
+
+            # Update by ID
+            with pytest.raises(EntityExistsError):
+                zen_store.update_service_account(
+                    service_account_name_or_id=service_account.id,
+                    service_account_update=ServiceAccountUpdateModel(
+                        name=existing_user.name,
+                    ),
+                )
+
+            account = zen_store.get_service_account(service_account.id)
+            assert account.name == service_account.name
+
+        with ServiceAccountContext() as existing_service_account:
+            # Update by name
+            with pytest.raises(EntityExistsError):
+                zen_store.update_service_account(
+                    service_account_name_or_id=service_account.name,
+                    service_account_update=ServiceAccountUpdateModel(
+                        name=existing_service_account.name,
+                    ),
+                )
+
+            account = zen_store.get_service_account(service_account.id)
+            assert account.name == service_account.name
+
+            # Update by ID
+            with pytest.raises(EntityExistsError):
+                zen_store.update_service_account(
+                    service_account_name_or_id=service_account.id,
+                    service_account_update=ServiceAccountUpdateModel(
+                        name=existing_service_account.name,
+                    ),
+                )
+
+            account = zen_store.get_service_account(service_account.id)
+            assert account.name == service_account.name
+
+
+def test_deactivate_service_account():
+    """Tests deactivating a service account."""
+    zen_store = Client().zen_store
+
+    account_name = sample_name("blupus")
+    new_account = zen_store.create_service_account(
+        ServiceAccountRequestModel(
+            name=account_name,
+            active=True,
+        )
+    )
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.active is True
+
+    # Update by name
+    updated_account = zen_store.update_service_account(
+        service_account_name_or_id=account_name,
+        service_account_update=ServiceAccountUpdateModel(
+            active=False,
+        ),
+    )
+    assert updated_account.id == new_account.id
+    assert updated_account.active is False
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.active is False
+
+    # Update by ID
+    updated_account = zen_store.update_service_account(
+        service_account_name_or_id=new_account.id,
+        service_account_update=ServiceAccountUpdateModel(
+            active=True,
+        ),
+    )
+    assert updated_account.id == new_account.id
+    assert updated_account.active is True
+
+    account = zen_store.get_service_account(new_account.id)
+    assert account.id == new_account.id
+    assert account.active is True
 
 
 # .-------.

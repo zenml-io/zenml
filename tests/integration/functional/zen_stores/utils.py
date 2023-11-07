@@ -29,6 +29,7 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.models import (
+    APIKeyRequestModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     AuthenticationMethodModel,
@@ -60,6 +61,7 @@ from zenml.models import (
     RoleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
+    ServiceAccountRequestModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorTypeModel,
@@ -221,6 +223,85 @@ class UserContext:
                 pass
 
 
+class ServiceAccountContext:
+    def __init__(
+        self,
+        name: str = "aria",
+        login: bool = False,
+        existing_account: bool = False,
+        delete: bool = True,
+    ):
+        if existing_account:
+            self.name = name
+        else:
+            self.name = sample_name(name)
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.login = login
+        self.existing_account = existing_account
+        self.delete = delete
+
+    def __enter__(self):
+        if not self.existing_account:
+            new_account = ServiceAccountRequestModel(
+                name=self.name,
+                active=True,
+            )
+            self.created_service_account = self.store.create_service_account(
+                new_account
+            )
+        else:
+            self.created_service_account = self.store.get_service_account(
+                self.name
+            )
+
+        if self.login or self.existing_account:
+            if not self.existing_account:
+                self.client.create_user_role_assignment(
+                    role_name_or_id="admin",
+                    user_name_or_id=self.created_service_account.id,
+                )
+            # Create a temporary API key for the service account
+            api_key_name = sample_name("temp_api_key")
+            self.api_key = self.store.create_api_key(
+                self.created_service_account.id,
+                APIKeyRequestModel(
+                    name=api_key_name,
+                ),
+            )
+            self.original_config = GlobalConfiguration.get_instance()
+            self.original_client = Client.get_instance()
+
+            GlobalConfiguration._reset_instance()
+            Client._reset_instance()
+            self.client = Client()
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                api_key=self.api_key.key,
+                secrets_store=self.original_config.store.secrets_store,
+            )
+            GlobalConfiguration().set_store(config=store_config)
+        return self.created_service_account
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.login or self.existing_account:
+            GlobalConfiguration._reset_instance(self.original_config)
+            Client._reset_instance(self.original_client)
+            _ = Client().zen_store
+            self.store.delete_api_key(
+                self.created_service_account.id,
+                self.api_key.id,
+            )
+        if not self.existing_account and self.delete:
+            try:
+                self.store.delete_service_account(
+                    self.created_service_account.id
+                )
+            except KeyError:
+                pass
+
+
 class StackContext:
     def __init__(
         self,
@@ -302,7 +383,7 @@ class TeamContext:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
-            self.store.delete_team(self.created_team.id),
+            (self.store.delete_team(self.created_team.id),)
         except KeyError:
             pass
 

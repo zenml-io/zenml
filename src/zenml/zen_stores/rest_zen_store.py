@@ -922,6 +922,22 @@ class RestZenStore(BaseZenStore):
             response_model=ServiceAccountResponseModel,
         )
 
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+        """
+        self._delete_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+        )
+
+
     # --------
     # API Keys
     # --------

@@ -160,6 +160,23 @@ def update_service_account(
     )
 
 
+@router.delete(
+    "/{service_account_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_service_account(
+    service_account_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> None:
+    """Delete a specific service account.
+
+    Args:
+        service_account_name_or_id: Name or ID of the service account.
+    """
+    return zen_store().delete_service_account(service_account_name_or_id)
+
+
 # --------
 # API Keys
 # --------

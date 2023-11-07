@@ -19,6 +19,7 @@ from typing import Optional, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -39,7 +40,7 @@ class APIKeySchema(NamedSchema, table=True):
 
     __tablename__ = "api_key"
 
-    description: str
+    description: str = Field(sa_column=Column(TEXT))
     key: str
     previous_key: Optional[str] = Field(default=None, nullable=True)
     retain_period: int = Field(default=0)

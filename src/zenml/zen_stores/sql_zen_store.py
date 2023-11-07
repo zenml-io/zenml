@@ -1894,6 +1894,90 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
+    def _account_owns_resources(
+        self, account: UserSchema, session: Session
+    ) -> bool:
+        """Check if the account owns any resources.
+
+        Args:
+            account: The account to check.
+            session: The database session to use for the query.
+
+        Returns:
+            Whether the account owns any resources.
+        """
+        # Get a list of attributes that represent relationships to other
+        # resources
+        resource_attrs = [
+            attr
+            for attr in UserSchema.__sqlmodel_relationships__.keys()
+            if attr
+            not in
+            # These are not resources owned by the user or  are resources that
+            # are deleted automatically when the user is deleted
+            ["teams", "assigned_roles", "api_keys", "auth_devices"]
+        ]
+
+        # This next part is crucial in preserving scalability: we don't fetch
+        # the values of the relationship attributes, because this would
+        # potentially load a huge amount of data into memory through
+        # lazy-loading. Instead, we use a DB subquery to count resources
+        # associated with the user.
+        for resource_attr in resource_attrs:
+            # Extract the target schema from the annotation
+            annotation = UserSchema.__annotations__[resource_attr]
+            target_schema = annotation.__args__[0]
+
+            relationship = UserSchema.__sqlmodel_relationships__[resource_attr]
+            # Get the name of the target table
+            table_name = relationship.table
+            # table_name = UserSchema.__sqlmodel_relationships__[
+            #     resource_attr
+            # ].back_populates
+            # Get table that contains the resource
+            table = UserSchema.metadata.tables[table_name]
+            count = session.scalar(
+                select([func.count("*")]).select_from(table)
+            )
+            print(f"Counted {count} {resource_attr} for user {account.name}")
+            if count > 0:
+                return True
+
+        return False
+
+    def _get_user_account(
+        self, user_name_or_id: Union[str, UUID], session: Session
+    ) -> UserSchema:
+        """Helper method to fetch a user account by name or ID.
+
+        This is used on top of `_get_user_schema` to additionally filter
+        only user schemas that are user accounts. This is required because
+        in the DB, user accounts and service accounts are stored using the same
+        UserSchema for legacy reasons.
+
+        Args:
+            user_name_or_id: The name or ID of the user account
+                to fetch.
+            session: The database session to use for the query.
+
+        Returns:
+            The requested user account.
+
+        Raises:
+            KeyError: if the name or ID identifies a service account
+                instead of a user account.
+        """
+        account = self._get_user_schema(user_name_or_id, session=session)
+        if account.is_service_account:
+            raise KeyError(
+                f"Unable to get user account with name or ID "
+                f"'{user_name_or_id}': No user account with "
+                "this name or ID was found, but a service "
+                "account with this name or ID is registered."
+            )
+
+        return account
+
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
@@ -1908,7 +1992,7 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if user with the given name already exists
+            # Check if an account with the given name already exists
             existing_user = session.exec(
                 select(UserSchema).where(UserSchema.name == user.name)
             ).first()
@@ -1940,12 +2024,27 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
+
+        Raises:
+            KeyError: If the user does not exist.
         """
         if not user_name_or_id:
             user_name_or_id = self._default_user_name
 
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
+            # Until the dashboard can handle service accounts independently from
+            # user accounts, keep this here for backwards compatibility: this
+            # method can be used to also retrieve service accounts.
+            try:
+                user = self._get_user_account(user_name_or_id, session=session)
+            except KeyError as e:
+                try:
+                    user = self._get_service_account(
+                        service_account_name_or_id=user_name_or_id,
+                        session=session,
+                    )
+                except KeyError:
+                    raise e
 
             return user.to_model(include_private=include_private)
 
@@ -1961,14 +2060,7 @@ class SqlZenStore(BaseZenStore):
             The requested user, if it was found.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-            if user.is_service_account:
-                # We prevent service accounts from being used for user
-                # authentication
-                raise KeyError(
-                    f"Unable to get user account with name or ID "
-                    f"'{user_name_or_id}': No user with this ID found."
-                )
+            user = self._get_user_account(user_name_or_id, session=session)
             return UserAuthModel(
                 id=user.id,
                 name=user.name,
@@ -1979,7 +2071,7 @@ class SqlZenStore(BaseZenStore):
                 updated=user.updated,
                 password=user.password,
                 activation_token=user.activation_token,
-                is_service_account=user.is_service_account or False,
+                is_service_account=False,
             )
 
     def list_users(
@@ -2019,30 +2111,31 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the request tries to update the username
                 for the default user account.
+            EntityExistsError: If the request tries to update the username to
+                a name that is already taken by another user or service account.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user_id, session=session)
-            if existing_user.is_service_account:
-                # Given that service accounts are a subset of users and
-                # represented in the DB using the same UserSchema, we need to
-                # explicitly prevent service accounts from being managed as
-                # regular user accounts here.
-                raise IllegalOperationError(
-                    f"The '{existing_user.name}' account is a service account. "
-                    "Service accounts cannot be updated as regular user "
-                    "accounts. Please use the service account interface "
-                    "instead."
-                )
+            existing_user = self._get_user_account(user_id, session=session)
 
             if (
-                existing_user.name == self._default_user_name
-                and "name" in user_update.__fields_set__
+                user_update.name is not None
                 and user_update.name != existing_user.name
             ):
-                raise IllegalOperationError(
-                    "The username of the default user account cannot be "
-                    "changed."
-                )
+                if existing_user.name == self._default_user_name:
+                    raise IllegalOperationError(
+                        "The username of the default user account cannot be "
+                        "changed."
+                    )
+
+                try:
+                    self._get_user_schema(user_update.name, session=session)
+                    raise EntityExistsError(
+                        f"Unable to update user account with name "
+                        f"'{user_update.name}': Found existing user "
+                        "or service account with this name."
+                    )
+                except KeyError:
+                    pass
 
             existing_user.update_user(user_update=user_update)
             session.add(existing_user)
@@ -2059,25 +2152,23 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
-            IllegalOperationError: If the user is the default user account.
+            IllegalOperationError: If the user is the default user account or
+                if the user already owns resources.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-            if user.is_service_account:
-                # Given that service accounts are a subset of users and
-                # represented in the DB using the same UserSchema, we need to
-                # explicitly prevent service accounts from being managed as
-                # regular user accounts here.
-                raise IllegalOperationError(
-                    f"The '{user.name}' account is a service account. "
-                    "Service accounts cannot be deleted as regular user "
-                    "accounts. Please use the service account interface "
-                    "instead."
-                )
+            user = self._get_user_account(user_name_or_id, session=session)
             if user.name == self._default_user_name:
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
                 )
+            if self._account_owns_resources(user, session=session):
+                raise IllegalOperationError(
+                    "The user account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the user "
+                    "account or consider deactivating it instead."
+                )
+
             self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
 
             session.delete(user)
@@ -2116,7 +2207,8 @@ class SqlZenStore(BaseZenStore):
             raise KeyError(
                 f"Unable to get service account with name or ID "
                 f"'{service_account_name_or_id}': No service account with "
-                "this ID found."
+                "this name or ID was found but a user account with this name "
+                "or ID is registered."
             )
 
         return account
@@ -2139,12 +2231,12 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if a user or service account with the given name already
             # exists
-            existing_user = session.exec(
+            existing_account = session.exec(
                 select(UserSchema).where(
                     UserSchema.name == service_account.name
                 )
             ).first()
-            if existing_user is not None:
+            if existing_account is not None:
                 raise EntityExistsError(
                     f"Unable to create service account with name "
                     f"'{service_account.name}': Found existing user or service "
@@ -2222,11 +2314,33 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
         """
         with Session(self.engine) as session:
             existing_service_account = self._get_service_account(
                 service_account_name_or_id, session=session
             )
+
+            if (
+                service_account_update.name is not None
+                and service_account_update.name
+                != existing_service_account.name
+            ):
+                try:
+                    self._get_user_schema(
+                        service_account_update.name, session=session
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update service account with name "
+                        f"'{service_account_update.name}': Found existing user "
+                        "or service account with this name."
+                    )
+                except KeyError:
+                    pass
+
             existing_service_account.update_service_account(
                 service_account_update=service_account_update
             )
@@ -2236,6 +2350,37 @@ class SqlZenStore(BaseZenStore):
             # Refresh the Model that was just created
             session.refresh(existing_service_account)
             return existing_service_account.to_service_account_model()
+
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
+        """
+        with Session(self.engine) as session:
+            service_account = self._get_service_account(
+                service_account_name_or_id, session=session
+            )
+            # Check if the service account has any resources associated with it
+            # and raise an error if it does.
+            if self._account_owns_resources(service_account, session=session):
+                raise IllegalOperationError(
+                    "The service account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the service "
+                    "account or consider deactivating it instead."
+                )
+
+            session.delete(service_account)
+            session.commit()
 
     # --------
     # API Keys
@@ -6598,16 +6743,13 @@ class SqlZenStore(BaseZenStore):
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_deployments:
@@ -6615,12 +6757,10 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_deployment)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_model_objects:
@@ -6628,12 +6768,10 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_model_object)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
                     )
                 )
             else:

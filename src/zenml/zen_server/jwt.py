@@ -89,11 +89,7 @@ class JWTToken(BaseModel):
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
             claims = cast(Dict[str, Any], claims_data)
-        except (
-            jwt.PyJWTError,
-            jwt.exceptions.DecodeError,
-            jwt.exceptions.PyJWKClientError,
-        ) as e:
+        except jwt.PyJWTError as e:
             raise AuthorizationException(f"Invalid JWT token: {e}") from e
 
         subject: str = claims.get("sub", "")

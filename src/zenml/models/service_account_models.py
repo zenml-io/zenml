@@ -31,7 +31,7 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.user_models import UserResponseModel
 
 if TYPE_CHECKING:
@@ -53,6 +53,11 @@ class ServiceAccountBaseModel(BaseModel):
     name: str = Field(
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: str = Field(
+        default="",
+        title="A description of the service account.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
     active: bool = Field(default=False, title="Whether the account is active.")
@@ -108,6 +113,10 @@ class ServiceAccountFilterModel(BaseFilterModel):
         default=None,
         description="Name of the user",
     )
+    description: Optional[str] = Field(
+        default=None,
+        title="Filter by the service account description.",
+    )
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
@@ -155,7 +164,11 @@ class ServiceAccountRequestModel(BaseRequestModel):
         title="The unique name for the service account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
+    description: str = Field(
+        default="",
+        title="A description of the service account.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     active: bool = Field(title="Whether the service account is active or not.")
 
     class Config:

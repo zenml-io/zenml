@@ -22,7 +22,7 @@ from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     APIKeyFilterModel,
@@ -93,6 +93,14 @@ def service_account() -> None:
 )
 @click.argument("service_account_name", type=str, required=True)
 @click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    default="",
+    help="The API key description.",
+)
+@click.option(
     "--skip-api-key",
     help=("Skip creating an API key for the service account."),
     is_flag=True,
@@ -113,6 +121,7 @@ def service_account() -> None:
 )
 def create_service_account(
     service_account_name: str,
+    description: str = "",
     skip_api_key: bool = False,
     set_key: bool = False,
     initial_role: str = "admin",
@@ -121,6 +130,7 @@ def create_service_account(
 
     Args:
         service_account_name: The name of the service account to create.
+        description: The API key description.
         skip_api_key: Skip creating an API key for the service account.
         set_key: Configure the local client to use the generated API key.
         initial_role: Give the service account an initial role
@@ -129,6 +139,7 @@ def create_service_account(
     try:
         service_account = client.create_service_account(
             name=service_account_name,
+            description=description,
             initial_role=initial_role,
         )
 
@@ -209,6 +220,13 @@ def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
     help="New service account name.",
 )
 @click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The API key description.",
+)
+@click.option(
     "--active",
     type=bool,
     required=False,
@@ -217,6 +235,7 @@ def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
 def update_service_account(
     service_account_name_or_id: str,
     updated_name: Optional[str] = None,
+    description: Optional[str] = None,
     active: Optional[bool] = None,
 ) -> None:
     """Update an existing service account.
@@ -225,16 +244,37 @@ def update_service_account(
         service_account_name_or_id: The name or ID of the service account to
             update.
         updated_name: The new name of the service account.
+        description: The new API key description.
         active: Activate or deactivate a service account.
     """
     try:
         Client().update_service_account(
             name_id_or_prefix=service_account_name_or_id,
             updated_name=updated_name,
+            description=description,
             active=active,
         )
     except (KeyError, EntityExistsError) as err:
         cli_utils.error(str(err))
+
+
+@service_account.command("delete")
+@click.argument("service_account_name_or_id", type=str, required=True)
+def delete_service_account(service_account_name_or_id: str) -> None:
+    """Delete a service account.
+
+    Args:
+        service_account_name_or_id: The name or ID of the service account.
+    """
+    client = Client()
+    try:
+        client.delete_service_account(service_account_name_or_id)
+    except (KeyError, IllegalOperationError) as err:
+        cli_utils.error(str(err))
+
+    cli_utils.declare(
+        f"Deleted service account '{service_account_name_or_id}'."
+    )
 
 
 @service_account.group(

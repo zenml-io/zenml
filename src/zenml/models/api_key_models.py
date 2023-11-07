@@ -26,7 +26,7 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import BaseFilterModel
 from zenml.utils.string_utils import b64_decode, b64_encode
 
@@ -89,7 +89,7 @@ class APIKeyBaseModel(BaseModel):
     description: str = Field(
         default="",
         title="The description of the API Key.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
 
@@ -208,6 +208,10 @@ class APIKeyFilterModel(BaseFilterModel):
     name: Optional[str] = Field(
         default=None,
         description="Name of the API key",
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="Filter by the API key description.",
     )
     active: Optional[Union[bool, str]] = Field(
         default=None,

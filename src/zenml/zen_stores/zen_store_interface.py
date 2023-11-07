@@ -601,6 +601,22 @@ class ZenStoreInterface(ABC):
             KeyError: If no service account with the given name exists.
         """
 
+    @abstractmethod
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
+        """
+
     # --------
     # API Keys
     # --------

@@ -735,7 +735,6 @@ class Client(metaclass=ClientMetaClass):
         email: Optional[str] = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
-        is_service_account: Optional[bool] = None,
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -773,7 +772,6 @@ class Client(metaclass=ClientMetaClass):
                 email=email,
                 active=active,
                 email_opted_in=email_opted_in,
-                is_service_account=is_service_account,
             )
         )
 
@@ -835,19 +833,23 @@ class Client(metaclass=ClientMetaClass):
     def create_service_account(
         self,
         name: str,
+        description: str = "",
         initial_role: Optional[str] = None,
     ) -> ServiceAccountResponseModel:
         """Create a new service account.
 
         Args:
             name: The name of the service account.
+            description: The description of the service account.
             initial_role: Optionally, an initial role to assign to the service
                 account.
 
         Returns:
             The created service account.
         """
-        service_account = ServiceAccountRequestModel(name=name, active=True)
+        service_account = ServiceAccountRequestModel(
+            name=name, description=description, active=True
+        )
         created_service_account = self.zen_store.create_service_account(
             service_account=service_account
         )
@@ -892,6 +894,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> Page[ServiceAccountResponseModel]:
         """List all service accounts.
@@ -905,6 +908,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the service account name for filtering
+            description: Use the service account description for filtering
             active: Use the service account active status for filtering
 
         Returns:
@@ -920,6 +924,7 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
                 name=name,
+                description=description,
                 active=active,
             )
         )
@@ -928,6 +933,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         updated_name: Optional[str] = None,
+        description: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> ServiceAccountResponseModel:
         """Update a service account.
@@ -935,6 +941,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name or ID of the service account to update.
             updated_name: The new name of the service account.
+            description: The new description of the service account.
             active: The new active status of the service account.
 
         Returns:
@@ -945,12 +952,29 @@ class Client(metaclass=ClientMetaClass):
         )
         service_account_update = ServiceAccountUpdateModel(
             name=updated_name,
+            description=description,
             active=active,
         )
 
         return self.zen_store.update_service_account(
             service_account_name_or_id=service_account.id,
             service_account_update=service_account_update,
+        )
+
+    def delete_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to delete.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_service_account(
+            service_account_name_or_id=service_account.id
         )
 
     # .----------.
@@ -1022,6 +1046,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         active: Optional[bool] = None,
         last_login: Optional[Union[datetime, str]] = None,
         last_rotated: Optional[Union[datetime, str]] = None,
@@ -1039,6 +1064,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
             name: The name of the API key to filter by.
+            description: The description of the API key to filter by.
             active: Whether the API key is active or not.
             last_login: The last time the API key was used.
             last_rotated: The last time the API key was rotated.
@@ -1059,6 +1085,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            description=description,
             active=active,
             last_login=last_login,
             last_rotated=last_rotated,

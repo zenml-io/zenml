@@ -16,6 +16,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
+from sqlalchemy import TEXT, Column
 
 from sqlmodel import Field, Relationship
 
@@ -64,6 +65,7 @@ class UserSchema(NamedSchema, table=True):
 
     is_service_account: Optional[bool] = Field(default=False, nullable=True)
     full_name: str
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
@@ -165,6 +167,7 @@ class UserSchema(NamedSchema, table=True):
         """
         return cls(
             name=model.name,
+            description=model.description,
             active=model.active,
             is_service_account=True,
             email_opted_in=False,
@@ -273,6 +276,7 @@ class UserSchema(NamedSchema, table=True):
             return ServiceAccountResponseModel(
                 id=self.id,
                 name=self.name,
+                description=self.description or "",
                 active=self.active,
                 created=self.created,
                 updated=self.updated,
@@ -281,6 +285,7 @@ class UserSchema(NamedSchema, table=True):
             return ServiceAccountResponseModel(
                 id=self.id,
                 name=self.name,
+                description=self.description or "",
                 active=self.active,
                 teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 created=self.created,

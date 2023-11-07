@@ -22,6 +22,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     Union,
 )
 from uuid import UUID
@@ -39,7 +40,9 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
+    from sqlmodel.sql.expression import Select, SelectOfScalar
 
+    from zenml.models.filter_models import AnySchema
     from zenml.models.team_models import TeamResponseModel
 
 logger = get_logger(__name__)
@@ -303,10 +306,6 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 class UserFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    is_service_account: Optional[Union[bool, str]] = Field(
-        default=None,
-        title="Whether the account is a service account or a user account.",
-    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the user",
@@ -331,6 +330,27 @@ class UserFilterModel(BaseFilterModel):
         default=None,
         title="The external user ID associated with the account.",
     )
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Override to filter out service accounts from the query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+        query = query.where(
+            getattr(table, "is_service_account") != True  # noqa: E712
+        )
+
+        return query
 
 
 # ------- #
