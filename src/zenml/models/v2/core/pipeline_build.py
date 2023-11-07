@@ -26,7 +26,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 from zenml.models.v2.build_item import BuildItem
 
 if TYPE_CHECKING:
@@ -311,45 +310,45 @@ class PipelineBuildResponse(WorkspaceScopedResponse):
             )
 
     # Body and metadata properties
-    @hydrated_property
-    def pipeline(self):
+    @property
+    def pipeline(self) -> Optional["PipelineResponse"]:
         """The `pipeline` property."""
-        return self.metadata.pipeline
+        return self.get_metadata().pipeline
 
-    @hydrated_property
-    def stack(self):
+    @property
+    def stack(self) -> Optional["StackResponse"]:
         """The `stack` property."""
-        return self.metadata.stack
+        return self.get_metadata().stack
 
-    @hydrated_property
-    def images(self):
+    @property
+    def images(self) -> Dict[str, "BuildItem"]:
         """The `images` property."""
-        return self.metadata.images
+        return self.get_metadata().images
 
-    @hydrated_property
-    def zenml_version(self):
+    @property
+    def zenml_version(self) -> Optional[str]:
         """The `zenml_version` property."""
-        return self.metadata.zenml_version
+        return self.get_metadata().zenml_version
 
-    @hydrated_property
-    def python_version(self):
+    @property
+    def python_version(self) -> Optional[str]:
         """The `python_version` property."""
-        return self.metadata.python_version
+        return self.get_metadata().python_version
 
-    @hydrated_property
-    def checksum(self):
+    @property
+    def checksum(self) -> Optional[str]:
         """The `checksum` property."""
-        return self.metadata.checksum
+        return self.get_metadata().checksum
 
-    @hydrated_property
-    def is_local(self):
+    @property
+    def is_local(self) -> bool:
         """The `is_local` property."""
-        return self.metadata.is_local
+        return self.get_metadata().is_local
 
-    @hydrated_property
-    def contains_code(self):
+    @property
+    def contains_code(self) -> bool:
         """The `contains_code` property."""
-        return self.metadata.contains_code
+        return self.get_metadata().contains_code
 
 
 # ------------------ Filter Model ------------------

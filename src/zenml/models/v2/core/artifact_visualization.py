@@ -23,7 +23,6 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 # ------------------ Request Model ------------------
 
@@ -70,19 +69,19 @@ class ArtifactVisualizationResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def type(self):
+    def type(self) -> VisualizationType:
         """The `type` property."""
         return self.body.type
 
     @property
-    def uri(self):
+    def uri(self) -> str:
         """The `uri` property."""
         return self.body.uri
 
-    @hydrated_property
-    def artifact_id(self):
+    @property
+    def artifact_id(self) -> UUID:
         """The `artifact_id` property."""
-        return self.metadata.artifact_id
+        return self.get_metadata().artifact_id
 
 
 # ------------------ Filter Model ------------------

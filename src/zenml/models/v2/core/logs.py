@@ -25,7 +25,6 @@ from zenml.models.v2.base.scoped import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 # ------------------ Request Model ------------------
 
@@ -93,24 +92,24 @@ class LogsResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def uri(self):
+    def uri(self) -> str:
         """The `uri` property."""
         return self.body.uri
 
-    @hydrated_property
-    def step_run_id(self):
+    @property
+    def step_run_id(self) -> Optional[Union[str, UUID]]:
         """The `step_run_id` property."""
-        return self.metadata.step_run_id
+        return self.get_metadata().step_run_id
 
-    @hydrated_property
-    def pipeline_run_id(self):
+    @property
+    def pipeline_run_id(self) -> Optional[Union[str, UUID]]:
         """The `pipeline_run_id` property."""
-        return self.metadata.pipeline_run_id
+        return self.get_metadata().pipeline_run_id
 
-    @hydrated_property
-    def artifact_store_id(self):
+    @property
+    def artifact_store_id(self) -> Union[str, UUID]:
         """The `artifact_store_id` property."""
-        return self.metadata.artifact_store_id
+        return self.get_metadata().artifact_store_id
 
 
 # ------------------ Filter Model ------------------

@@ -84,6 +84,7 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseResponse,
+    BaseResponseModel,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -251,7 +252,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponse)
+B = TypeVar("B", bound=Union[BaseResponse, BaseResponseModel])
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning

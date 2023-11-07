@@ -27,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     BaseResponseMetadata,
     WorkspaceScopedFilter,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -230,69 +230,69 @@ class FlavorResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def user(self):
+    def user(self) -> Union["UserResponse", None]:
         """The `user` property."""
         return self.body.user
 
     @property
-    def type(self):
+    def type(self) -> StackComponentType:
         """The `type` property."""
         return self.body.type
 
     @property
-    def integration(self):
+    def integration(self) -> Optional[str]:
         """The `integration` property."""
         return self.body.integration
 
     @property
-    def logo_url(self):
+    def logo_url(self) -> Optional[str]:
         """The `logo_url` property."""
         return self.body.logo_url
 
-    @hydrated_property
-    def workspace(self):
+    @property
+    def workspace(self) -> Optional["WorkspaceResponse"]:
         """The `workspace` property."""
-        return self.metadata.workspace
+        return self.get_metadata().workspace
 
-    @hydrated_property
-    def config_schema(self):
+    @property
+    def config_schema(self) -> Dict[str, Any]:
         """The `config_schema` property."""
-        return self.metadata.config_schema
+        return self.get_metadata().config_schema
 
-    @hydrated_property
-    def connector_type(self):
+    @property
+    def connector_type(self) -> Optional[str]:
         """The `connector_type` property."""
-        return self.metadata.connector_type
+        return self.get_metadata().connector_type
 
-    @hydrated_property
-    def connector_resource_type(self):
+    @property
+    def connector_resource_type(self) -> Optional[str]:
         """The `connector_resource_type` property."""
-        return self.metadata.connector_resource_type
+        return self.get_metadata().connector_resource_type
 
-    @hydrated_property
-    def connector_resource_id_attr(self):
+    @property
+    def connector_resource_id_attr(self) -> Optional[str]:
         """The `connector_resource_id_attr` property."""
-        return self.metadata.connector_resource_id_attr
+        return self.get_metadata().connector_resource_id_attr
 
-    @hydrated_property
-    def source(self):
+    @property
+    def source(self) -> str:
         """The `source` property."""
-        return self.metadata.source
+        return self.get_metadata().source
 
-    @hydrated_property
-    def docs_url(self):
+    @property
+    def docs_url(self) -> Optional[str]:
         """The `docs_url` property."""
-        return self.metadata.docs_url
+        return self.get_metadata().docs_url
 
-    @hydrated_property
-    def sdk_docs_url(self):
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
         """The `sdk_docs_url` property."""
-        return self.metadata.sdk_docs_url
+        return self.get_metadata().sdk_docs_url
 
-    @hydrated_property
-    def is_custom(self):
+    @property
+    def is_custom(self) -> bool:
         """The `is_custom` property."""
-        return self.metadata.is_custom
+        return self.get_metadata().is_custom
 
 
 # ------------------ Filter Model ------------------

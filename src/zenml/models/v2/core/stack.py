@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     ShareableRequest,
     ShareableResponse,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 from zenml.models.v2.core.component import ComponentResponse
 
 # ------------------ Request Model ------------------
@@ -169,20 +169,20 @@ class StackResponse(ShareableResponse):
         return metadata
 
     # Body and metadata properties
-    @hydrated_property
-    def description(self):
+    @property
+    def description(self) -> Optional[str]:
         """The `description` property."""
-        return self.metadata.description
+        return self.get_metadata().description
 
-    @hydrated_property
-    def stack_spec_path(self):
+    @property
+    def stack_spec_path(self) -> Optional[str]:
         """The `stack_spec_path` property."""
-        return self.metadata.stack_spec_path
+        return self.get_metadata().stack_spec_path
 
-    @hydrated_property
-    def components(self):
+    @property
+    def components(self) -> Dict[StackComponentType, List[ComponentResponse]]:
         """The `components` property."""
-        return self.metadata.components
+        return self.get_metadata().components
 
 
 # ------------------ Filter Model ------------------

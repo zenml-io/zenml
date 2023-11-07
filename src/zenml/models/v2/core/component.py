@@ -36,7 +36,7 @@ from zenml.models.v2.base.scoped import (
     ShareableRequest,
     ShareableResponse,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -190,39 +190,39 @@ class ComponentResponse(ShareableResponse):
 
     # Body and metadata properties
     @property
-    def type(self):
+    def type(self) -> StackComponentType:
         """The `type` property."""
         return self.body.type
 
     @property
-    def flavor(self):
+    def flavor(self) -> str:
         """The `flavor` property."""
         return self.body.flavor
 
-    @hydrated_property
-    def configuration(self):
+    @property
+    def configuration(self) -> Dict[str, Any]:
         """The `configuration` property."""
-        return self.metadata.configuration
+        return self.get_metadata().configuration
 
-    @hydrated_property
-    def labels(self):
+    @property
+    def labels(self) -> Optional[Dict[str, Any]]:
         """The `labels` property."""
-        return self.metadata.labels
+        return self.get_metadata().labels
 
-    @hydrated_property
-    def component_spec_path(self):
+    @property
+    def component_spec_path(self) -> Optional[str]:
         """The `component_spec_path` property."""
-        return self.metadata.component_spec_path
+        return self.get_metadata().component_spec_path
 
-    @hydrated_property
-    def connector_resource_id(self):
+    @property
+    def connector_resource_id(self) -> Optional[str]:
         """The `connector_resource_id` property."""
-        return self.metadata.connector_resource_id
+        return self.get_metadata().connector_resource_id
 
-    @hydrated_property
-    def connector(self):
+    @property
+    def connector(self) -> Optional["ServiceConnectorResponse"]:
         """The `connector` property."""
-        return self.metadata.connector
+        return self.get_metadata().connector
 
 
 # ------------------ Filter Model ------------------

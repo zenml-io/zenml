@@ -28,7 +28,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.utils import (
-    hydrated_property,
     update_model,
 )
 
@@ -109,24 +108,24 @@ class CodeRepositoryResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def source(self):
+    def source(self) -> Source:
         """The `source` property."""
         return self.body.source
 
     @property
-    def logo_url(self):
+    def logo_url(self) -> Optional[str]:
         """The `logo_url` property."""
         return self.body.logo_url
 
-    @hydrated_property
-    def config(self):
+    @property
+    def config(self) -> Dict[str, Any]:
         """The `config` property."""
-        return self.metadata.config
+        return self.get_metadata().config
 
-    @hydrated_property
-    def description(self):
+    @property
+    def description(self) -> Optional[str]:
         """The `description` property."""
-        return self.metadata.description
+        return self.get_metadata().description
 
 
 # ------------------ Filter Model ------------------

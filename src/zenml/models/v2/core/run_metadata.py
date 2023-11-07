@@ -27,7 +27,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 # ------------------ Request Model ------------------
 
@@ -111,39 +110,39 @@ class RunMetadataResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def key(self):
+    def key(self) -> str:
         """The `key` property."""
         return self.body.key
 
-    @hydrated_property
-    def pipeline_run_id(self):
+    @property
+    def pipeline_run_id(self) -> Optional[UUID]:
         """The `pipeline_run_id` property."""
-        return self.metadata.pipeline_run_id
+        return self.get_metadata().pipeline_run_id
 
-    @hydrated_property
-    def step_run_id(self):
+    @property
+    def step_run_id(self) -> Optional[UUID]:
         """The `step_run_id` property."""
-        return self.metadata.step_run_id
+        return self.get_metadata().step_run_id
 
-    @hydrated_property
-    def artifact_id(self):
+    @property
+    def artifact_id(self) -> Optional[UUID]:
         """The `artifact_id` property."""
-        return self.metadata.artifact_id
+        return self.get_metadata().artifact_id
 
-    @hydrated_property
-    def stack_component_id(self):
+    @property
+    def stack_component_id(self) -> Optional[UUID]:
         """The `stack_component_id` property."""
-        return self.metadata.stack_component_id
+        return self.get_metadata().stack_component_id
 
-    @hydrated_property
-    def value(self):
+    @property
+    def value(self) -> MetadataType:
         """The `value` property."""
-        return self.metadata.value
+        return self.get_metadata().value
 
-    @hydrated_property
-    def type(self):
+    @property
+    def type(self) -> MetadataTypeEnum:
         """The `type` property."""
-        return self.metadata.type
+        return self.get_metadata().type
 
 
 # ------------------ Filter Model ------------------

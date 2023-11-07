@@ -80,7 +80,7 @@ class RoleResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def permissions(self):
+    def permissions(self) -> Set[PermissionType]:
         """The `permissions` property."""
         return self.body.permissions
 

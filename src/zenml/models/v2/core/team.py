@@ -26,7 +26,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 from zenml.models.v2.core.user import UserResponse
 
 # ------------------ Request Model ------------------
@@ -111,10 +111,10 @@ class TeamResponse(BaseResponse):
             return []
 
     # Body and metadata properties
-    @hydrated_property
+    @property
     def users(self) -> List["UserResponse"]:
         """The `users` property."""
-        return self.metadata.users
+        return self.get_metadata().users
 
 
 # ------------------ Filter Model ------------------

@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -174,60 +173,60 @@ class PipelineDeploymentResponse(WorkspaceScopedResponse):
         return Client().zen_store.get_deployment(self.id)
 
     # Body and metadata properties
-    @hydrated_property
-    def run_name_template(self):
+    @property
+    def run_name_template(self) -> str:
         """The `run_name_template` property."""
-        return self.metadata.run_name_template
+        return self.get_metadata().run_name_template
 
-    @hydrated_property
-    def pipeline_configuration(self):
+    @property
+    def pipeline_configuration(self) -> PipelineConfiguration:
         """The `pipeline_configuration` property."""
-        return self.metadata.pipeline_configuration
+        return self.get_metadata().pipeline_configuration
 
-    @hydrated_property
-    def step_configurations(self):
+    @property
+    def step_configurations(self) -> Dict[str, Step]:
         """The `step_configurations` property."""
-        return self.metadata.step_configurations
+        return self.get_metadata().step_configurations
 
-    @hydrated_property
-    def client_environment(self):
+    @property
+    def client_environment(self) -> Dict[str, str]:
         """The `client_environment` property."""
-        return self.metadata.client_environment
+        return self.get_metadata().client_environment
 
-    @hydrated_property
-    def client_version(self):
+    @property
+    def client_version(self) -> str:
         """The `client_version` property."""
-        return self.metadata.client_version
+        return self.get_metadata().client_version
 
-    @hydrated_property
-    def server_version(self):
+    @property
+    def server_version(self) -> str:
         """The `server_version` property."""
-        return self.metadata.server_version
+        return self.get_metadata().server_version
 
-    @hydrated_property
-    def pipeline(self):
+    @property
+    def pipeline(self) -> Optional[PipelineResponse]:
         """The `pipeline` property."""
-        return self.metadata.pipeline
+        return self.get_metadata().pipeline
 
-    @hydrated_property
-    def stack(self):
+    @property
+    def stack(self) -> Optional[StackResponse]:
         """The `stack` property."""
-        return self.metadata.stack
+        return self.get_metadata().stack
 
-    @hydrated_property
-    def build(self):
+    @property
+    def build(self) -> Optional[PipelineBuildResponse]:
         """The `build` property."""
-        return self.metadata.build
+        return self.get_metadata().build
 
-    @hydrated_property
-    def schedule(self):
+    @property
+    def schedule(self) -> Optional[ScheduleResponse]:
         """The `schedule` property."""
-        return self.metadata.schedule
+        return self.get_metadata().schedule
 
-    @hydrated_property
-    def code_reference(self):
+    @property
+    def code_reference(self) -> Optional[CodeReferenceResponse]:
         """The `code_reference` property."""
-        return self.metadata.code_reference
+        return self.get_metadata().code_reference
 
 
 # ------------------ Filter Model ------------------

@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact import ArtifactResponse
@@ -268,89 +267,89 @@ class StepRunResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def status(self):
+    def status(self) -> ExecutionStatus:
         """The `status` property."""
         return self.body.status
 
     @property
-    def inputs(self):
+    def inputs(self) -> Dict[str, "ArtifactResponse"]:
         """The `inputs` property."""
         return self.body.inputs
 
     @property
-    def outputs(self):
+    def outputs(self) -> Dict[str, "ArtifactResponse"]:
         """The `outputs` property."""
         return self.body.outputs
 
-    @hydrated_property
-    def config(self):
+    @property
+    def config(self) -> "StepConfiguration":
         """The `config` property."""
-        return self.metadata.config
+        return self.get_metadata().config
 
-    @hydrated_property
-    def spec(self):
+    @property
+    def spec(self) -> "StepSpec":
         """The `spec` property."""
-        return self.metadata.spec
+        return self.get_metadata().spec
 
-    @hydrated_property
-    def cache_key(self):
+    @property
+    def cache_key(self) -> Optional[str]:
         """The `cache_key` property."""
-        return self.metadata.cache_key
+        return self.get_metadata().cache_key
 
-    @hydrated_property
-    def code_hash(self):
+    @property
+    def code_hash(self) -> Optional[str]:
         """The `code_hash` property."""
-        return self.metadata.code_hash
+        return self.get_metadata().code_hash
 
-    @hydrated_property
-    def docstring(self):
+    @property
+    def docstring(self) -> Optional[str]:
         """The `docstring` property."""
-        return self.metadata.docstring
+        return self.get_metadata().docstring
 
-    @hydrated_property
-    def source_code(self):
+    @property
+    def source_code(self) -> Optional[str]:
         """The `source_code` property."""
-        return self.metadata.source_code
+        return self.get_metadata().source_code
 
-    @hydrated_property
-    def start_time(self):
+    @property
+    def start_time(self) -> Optional[datetime]:
         """The `start_time` property."""
-        return self.metadata.start_time
+        return self.get_metadata().start_time
 
-    @hydrated_property
-    def end_time(self):
+    @property
+    def end_time(self) -> Optional[datetime]:
         """The `end_time` property."""
-        return self.metadata.end_time
+        return self.get_metadata().end_time
 
-    @hydrated_property
-    def logs(self):
+    @property
+    def logs(self) -> Optional["LogsResponse"]:
         """The `logs` property."""
-        return self.metadata.logs
+        return self.get_metadata().logs
 
-    @hydrated_property
-    def deployment_id(self):
+    @property
+    def deployment_id(self) -> UUID:
         """The `deployment_id` property."""
-        return self.metadata.deployment_id
+        return self.get_metadata().deployment_id
 
-    @hydrated_property
-    def pipeline_run_id(self):
+    @property
+    def pipeline_run_id(self) -> UUID:
         """The `pipeline_run_id` property."""
-        return self.metadata.pipeline_run_id
+        return self.get_metadata().pipeline_run_id
 
-    @hydrated_property
-    def original_step_run_id(self):
+    @property
+    def original_step_run_id(self) -> Optional[UUID]:
         """The `original_step_run_id` property."""
-        return self.metadata.original_step_run_id
+        return self.get_metadata().original_step_run_id
 
-    @hydrated_property
-    def parent_step_ids(self):
+    @property
+    def parent_step_ids(self) -> List[UUID]:
         """The `parent_step_ids` property."""
-        return self.metadata.parent_step_ids
+        return self.get_metadata().parent_step_ids
 
-    @hydrated_property
-    def run_metadata(self):
+    @property
+    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
         """The `run_metadata` property."""
-        return self.metadata.run_metadata
+        return self.get_metadata().run_metadata
 
 
 # ------------------ Filter Model ------------------

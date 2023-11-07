@@ -29,7 +29,7 @@ from zenml.models.v2.base.scoped import (
     ShareableRequest,
     ShareableResponse,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 from zenml.models.v2.service_connector_type import ServiceConnectorTypeModel
 
 logger = get_logger(__name__)
@@ -491,65 +491,65 @@ class ServiceConnectorResponse(ShareableResponse):
         return self.expires_at < datetime.now(timezone.utc)
 
     # Body and metadata properties
-    @hydrated_property
-    def description(self):
+    @property
+    def description(self) -> str:
         """The `description`` property."""
-        return self.metadata.description
+        return self.get_metadata().description
 
-    @hydrated_property
-    def connector_type(self):
+    @property
+    def connector_type(self) -> Union[str, "ServiceConnectorTypeModel"]:
         """The `connector_type` property."""
-        return self.metadata.connector_type
+        return self.get_metadata().connector_type
 
-    @hydrated_property
-    def auth_method(self):
+    @property
+    def auth_method(self) -> str:
         """The `auth_method` property."""
-        return self.metadata.auth_method
+        return self.get_metadata().auth_method
 
-    @hydrated_property
-    def resource_types(self):
+    @property
+    def resource_types(self) -> List[str]:
         """The `resource_types` property."""
-        return self.metadata.resource_types
+        return self.get_metadata().resource_types
 
-    @hydrated_property
-    def resource_id(self):
+    @property
+    def resource_id(self) -> Optional[str]:
         """The `resource_id` property."""
-        return self.metadata.resource_id
+        return self.get_metadata().resource_id
 
-    @hydrated_property
-    def supports_instances(self):
+    @property
+    def supports_instances(self) -> bool:
         """The `supports_instances` property."""
-        return self.metadata.supports_instances
+        return self.get_metadata().supports_instances
 
-    @hydrated_property
-    def expires_at(self):
-        """The `expires_at` property."""
-        return self.metadata.expires_at
-
-    @hydrated_property
-    def expiration_seconds(self):
-        """The `expiration_seconds` property."""
-        return self.metadata.expiration_seconds
-
-    @hydrated_property
-    def configuration(self):
+    @property
+    def configuration(self) -> Dict[str, Any]:
         """The `configuration` property."""
-        return self.metadata.configuration
+        return self.get_metadata().configuration
 
-    @hydrated_property
-    def secrets(self):
-        """The `secrets` property."""
-        return self.metadata.secrets
-
-    @hydrated_property
-    def labels(self):
-        """The `labels` property."""
-        return self.metadata.labels
-
-    @hydrated_property
-    def secret_id(self):
+    @property
+    def secret_id(self) -> Optional[UUID]:
         """The `secret_id` property."""
-        return self.metadata.secret_id
+        return self.get_metadata().secret_id
+
+    @property
+    def expires_at(self) -> Optional[datetime]:
+        """The `expires_at` property."""
+        return self.get_metadata().expires_at
+
+    @property
+    def expiration_seconds(self) -> Optional[int]:
+        """The `expiration_seconds` property."""
+        return self.get_metadata().expiration_seconds
+
+    @property
+    def secrets(self) -> Dict[str, Optional[SecretStr]]:
+        """The `secrets` property."""
+        return self.get_metadata().secrets
+
+    @property
+    def labels(self) -> Dict[str, str]:
+        """The `labels` property."""
+        return self.get_metadata().labels
 
 
 # ------------------ Filter Model ------------------

@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_run import (
@@ -191,29 +191,29 @@ class PipelineResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def status(self):
+    def status(self) -> Optional[List[ExecutionStatus]]:
         """The `status` property."""
         return self.body.status
 
-    @hydrated_property
-    def version_hash(self):
-        """The `version_hash` property."""
-        return self.metadata.version_hash
-
-    @hydrated_property
-    def docstring(self):
-        """The `docstring` property."""
-        return self.metadata.docstring
-
-    @hydrated_property
-    def spec(self):
-        """The `spec` property."""
-        return self.metadata.spec
-
-    @hydrated_property
-    def version(self):
+    @property
+    def version(self) -> str:
         """The `version` property."""
-        return self.metadata.version
+        return self.get_metadata().version
+
+    @property
+    def spec(self) -> PipelineSpec:
+        """The `spec` property."""
+        return self.get_metadata().spec
+
+    @property
+    def version_hash(self) -> str:
+        """The `version_hash` property."""
+        return self.get_metadata().version_hash
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """The `docstring` property."""
+        return self.get_metadata().docstring
 
 
 # ------------------ Filter Model ------------------

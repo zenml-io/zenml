@@ -39,7 +39,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -224,69 +223,69 @@ class PipelineRunResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def status(self):
+    def status(self) -> ExecutionStatus:
         """The `status` property."""
         return self.body.status
 
     @property
-    def stack(self):
+    def stack(self) -> Optional["StackResponse"]:
         """The `stack` property."""
         return self.body.stack
 
     @property
-    def pipeline(self):
+    def pipeline(self) -> Optional["PipelineResponse"]:
         """The `pipeline` property."""
         return self.body.pipeline
 
     @property
-    def build(self):
+    def build(self) -> Optional["PipelineBuildResponse"]:
         """The `build` property."""
         return self.body.build
 
     @property
-    def schedule(self):
+    def schedule(self) -> Optional["ScheduleResponse"]:
         """The `schedule` property."""
         return self.body.schedule
 
-    @hydrated_property
-    def run_metadata(self):
+    @property
+    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
         """The `run_metadata` property."""
-        return self.metadata.run_metadata
+        return self.get_metadata().run_metadata
 
-    @hydrated_property
-    def steps(self):
+    @property
+    def steps(self) -> Dict[str, "StepRunResponse"]:
         """The `steps` property."""
-        return self.metadata.steps
+        return self.get_metadata().steps
 
-    @hydrated_property
-    def config(self):
+    @property
+    def config(self) -> PipelineConfiguration:
         """The `config` property."""
-        return self.metadata.config
+        return self.get_metadata().config
 
-    @hydrated_property
-    def start_time(self):
+    @property
+    def start_time(self) -> Optional[datetime]:
         """The `start_time` property."""
-        return self.metadata.start_time
+        return self.get_metadata().start_time
 
-    @hydrated_property
-    def end_time(self):
+    @property
+    def end_time(self) -> Optional[datetime]:
         """The `end_time` property."""
-        return self.metadata.end_time
+        return self.get_metadata().end_time
 
-    @hydrated_property
-    def client_environment(self):
+    @property
+    def client_environment(self) -> Dict[str, str]:
         """The `client_environment` property."""
-        return self.metadata.client_environment
+        return self.get_metadata().client_environment
 
-    @hydrated_property
-    def orchestrator_environment(self):
+    @property
+    def orchestrator_environment(self) -> Dict[str, str]:
         """The `orchestrator_environment` property."""
-        return self.metadata.orchestrator_environment
+        return self.get_metadata().orchestrator_environment
 
-    @hydrated_property
-    def orchestrator_run_id(self):
+    @property
+    def orchestrator_run_id(self) -> Optional[str]:
         """The `orchestrator_run_id` property."""
-        return self.metadata.orchestrator_run_id
+        return self.get_metadata().orchestrator_run_id
 
 
 # ------------------ Filter Model ------------------

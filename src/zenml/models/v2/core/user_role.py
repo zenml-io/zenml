@@ -25,7 +25,6 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.role import RoleResponse
@@ -86,20 +85,20 @@ class UserRoleAssignmentResponse(BaseResponse):
         return Client().zen_store.get_user_role_assignment(self.id)
 
     # Body and metadata properties
-    @hydrated_property
-    def workspace(self):
+    @property
+    def workspace(self) -> Optional["WorkspaceResponse"]:
         """The `workspace` property."""
-        return self.metadata.workspace
+        return self.get_metadata().workspace
 
-    @hydrated_property
-    def user(self):
+    @property
+    def user(self) -> Optional["UserResponse"]:
         """The`user` property."""
-        return self.metadata.user
+        return self.get_metadata().user
 
-    @hydrated_property
-    def role(self):
+    @property
+    def role(self) -> Optional["RoleResponse"]:
         """The `role` property."""
-        return self.metadata.role
+        return self.get_metadata().role
 
 
 # ------------------ Filter Model ------------------

@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_visualization import (
@@ -138,44 +137,46 @@ class ArtifactResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def uri(self):
+    def uri(self) -> str:
         """The `uri` property."""
         return self.body.uri
 
     @property
-    def type(self):
+    def type(self) -> ArtifactType:
         """The `type` property."""
         return self.body.type
 
-    @hydrated_property
-    def artifact_store_id(self):
+    @property
+    def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property."""
-        return self.metadata.artifact_store_id
+        return self.get_metadata().artifact_store_id
 
-    @hydrated_property
-    def producer_step_run_id(self):
+    @property
+    def producer_step_run_id(self) -> Optional[UUID]:
         """The `producer_step_run_id` property."""
-        return self.metadata.producer_step_run_id
+        return self.get_metadata().producer_step_run_id
 
-    @hydrated_property
-    def visualizations(self):
+    @property
+    def visualizations(
+        self,
+    ) -> Optional[List["ArtifactVisualizationResponse"]]:
         """The `visualizations` property."""
-        return self.metadata.visualizations
+        return self.get_metadata().visualizations
 
-    @hydrated_property
-    def run_metadata(self):
+    @property
+    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
         """The `metadata` property."""
-        return self.metadata.run_metadata
+        return self.get_metadata().run_metadata
 
-    @hydrated_property
-    def materializer(self):
+    @property
+    def materializer(self) -> Source:
         """The `materializer` property."""
-        return self.metadata.materializer
+        return self.get_metadata().materializer
 
-    @hydrated_property
-    def data_type(self):
+    @property
+    def data_type(self) -> Source:
         """The `data_type` property."""
-        return self.metadata.data_type
+        return self.get_metadata().data_type
 
     # Helper methods
     @property

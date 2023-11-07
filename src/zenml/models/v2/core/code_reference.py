@@ -85,17 +85,17 @@ class CodeReferenceResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def commit(self):
+    def commit(self) -> str:
         """The `commit` property."""
         return self.body.commit
 
     @property
-    def subdirectory(self):
+    def subdirectory(self) -> str:
         """The `subdirectory` property."""
         return self.body.subdirectory
 
     @property
-    def code_repository(self):
+    def code_repository(self) -> "CodeRepositoryResponse":
         """The `code_repository` property."""
         return self.body.code_repository
 

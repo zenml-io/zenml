@@ -14,7 +14,7 @@
 """Base model definitions."""
 
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, Generic, List, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import Field, SecretStr
@@ -101,18 +101,21 @@ class BaseResponseMetadata(BaseZenModel):
     """
 
 
-class BaseResponse(BaseZenModel):
+AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
+
+
+class BaseResponse(BaseZenModel, Generic[AnyMetadata]):
     """Base domain model."""
 
     id: UUID = Field(title="The unique resource id.")
 
     # Body and metadata pair
     body: "BaseResponseBody" = Field(title="The body of the resource.")
-    metadata: Optional["BaseResponseMetadata"] = Field(
+    metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
     )
 
-    def get_hydrated_version(self) -> "BaseResponse":
+    def get_hydrated_version(self) -> "BaseResponse[AnyMetadata]":
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:
@@ -147,7 +150,7 @@ class BaseResponse(BaseZenModel):
             return False
 
     def _validate_hydrated_version(
-        self, hydrated_model: "BaseResponse"
+        self, hydrated_model: "BaseResponse[AnyMetadata]"
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 
@@ -179,7 +182,7 @@ class BaseResponse(BaseZenModel):
                 "The hydrated model does not have a metadata field."
             )
 
-    def hydrate(self) -> None:
+    def get_metadata(self) -> "AnyMetadata":
         """Generalized method to hydrate a non-hydrated instance of a model.
 
         Gets only executed if the model has not been hydrated before.
@@ -188,6 +191,8 @@ class BaseResponse(BaseZenModel):
             hydrated_version = self.get_hydrated_version()
             self._validate_hydrated_version(hydrated_version)
             self.metadata = hydrated_version.metadata
+
+        return self.metadata
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
@@ -202,11 +207,11 @@ class BaseResponse(BaseZenModel):
 
     # Body and metadata properties
     @property
-    def created(self):
+    def created(self) -> Optional[datetime]:
         """The`created` property."""
         return self.body.created
 
     @property
-    def updated(self):
+    def updated(self) -> Optional[datetime]:
         """The `updated` property."""
         return self.body.updated

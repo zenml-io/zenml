@@ -25,7 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 
 # ------------------ Request Model ------------------
 
@@ -87,10 +87,10 @@ class WorkspaceResponse(BaseResponse):
         return Client().zen_store.get_workspace(self.id)
 
     # Body and metadata properties
-    @hydrated_property
-    def description(self):
+    @property
+    def description(self) -> str:
         """The `description` property."""
-        return self.metadata.description
+        return self.get_metadata().description
 
 
 # ------------------ Filter Model ------------------

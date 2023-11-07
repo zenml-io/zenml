@@ -37,7 +37,6 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.user import UserResponse
@@ -166,7 +165,7 @@ class UserScopedResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def user(self):
+    def user(self) -> "UserResponse":
         """The `user` property."""
         return self.body.user
 
@@ -256,10 +255,10 @@ class WorkspaceScopedResponse(UserScopedResponse):
         """
 
     # Body and metadata properties
-    @hydrated_property
-    def workspace(self):
+    @property
+    def workspace(self) -> "WorkspaceResponse":
         """The workspace property."""
-        return self.metadata.workspace
+        return self.get_metadata().workspace
 
 
 class WorkspaceScopedFilter(BaseFilter):
@@ -362,7 +361,7 @@ class ShareableResponse(WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def is_shared(self):
+    def is_shared(self) -> bool:
         """The is_shared property."""
         return self.body.is_shared
 

@@ -29,7 +29,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 
 logger = get_logger(__name__)
 
@@ -165,44 +165,44 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
 
     # Body and metadata properties
     @property
-    def active(self):
+    def active(self) -> bool:
         """The `active` property."""
         return self.body.active
 
     @property
-    def cron_expression(self):
+    def cron_expression(self) -> Optional[str]:
         """The `cron_expression` property."""
         return self.body.cron_expression
 
     @property
-    def start_time(self):
+    def start_time(self) -> Optional[datetime.datetime]:
         """The `start_time` property."""
         return self.body.start_time
 
     @property
-    def end_time(self):
+    def end_time(self) -> Optional[datetime.datetime]:
         """The `end_time` property."""
         return self.body.end_time
 
     @property
-    def interval_second(self):
+    def interval_second(self) -> Optional[datetime.timedelta]:
         """The `interval_second` property."""
         return self.body.interval_second
 
     @property
-    def catchup(self):
+    def catchup(self) -> bool:
         """The `catchup` property."""
         return self.body.catchup
 
-    @hydrated_property
-    def orchestrator_id(self):
+    @property
+    def orchestrator_id(self) -> Optional[UUID]:
         """The `orchestrator_id` property."""
-        return self.metadata.orchestrator_id
+        return self.get_metadata().orchestrator_id
 
-    @hydrated_property
-    def pipeline_id(self):
+    @property
+    def pipeline_id(self) -> Optional[UUID]:
         """The `pipeline_id` property."""
-        return self.metadata.pipeline_id
+        return self.get_metadata().pipeline_id
 
 
 # ------------------ Filter Model ------------------

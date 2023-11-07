@@ -36,7 +36,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.base.utils import hydrated_property, update_model
+from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
@@ -266,40 +266,40 @@ class UserResponse(BaseResponse):
         return Client().zen_store.get_user(self.id)
 
     # Body and metadata properties
-    @hydrated_property
-    def full_name(self):
+    @property
+    def full_name(self) -> str:
         """The `full_name` property."""
-        return self.metadata.full_name
+        return self.get_metadata().full_name
 
-    @hydrated_property
-    def email(self):
+    @property
+    def email(self) -> Optional[str]:
         """The `email` property."""
-        return self.metadata.email
+        return self.get_metadata().email
 
-    @hydrated_property
-    def email_opted_in(self):
+    @property
+    def email_opted_in(self) -> Optional[bool]:
         """The `email_opted_in` property."""
-        return self.metadata.email_opted_in
+        return self.get_metadata().email_opted_in
 
-    @hydrated_property
-    def active(self):
+    @property
+    def active(self) -> bool:
         """The `active` property."""
-        return self.metadata.active
+        return self.get_metadata().active
 
-    @hydrated_property
-    def activation_token(self):
+    @property
+    def activation_token(self) -> Optional[str]:
         """The `activation_token` property."""
-        return self.metadata.activation_token
+        return self.get_metadata().activation_token
 
-    @hydrated_property
-    def hub_token(self):
+    @property
+    def hub_token(self) -> Optional[str]:
         """The `hub_token` property."""
-        return self.metadata.hub_token
+        return self.get_metadata().hub_token
 
-    @hydrated_property
-    def external_user_id(self):
+    @property
+    def external_user_id(self) -> Optional[UUID]:
         """The `external_user_id` property."""
-        return self.metadata.external_user_id
+        return self.get_metadata().external_user_id
 
 
 # ------------------ Filter Model ------------------
