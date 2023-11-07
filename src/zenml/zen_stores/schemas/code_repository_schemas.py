@@ -24,6 +24,7 @@ from sqlmodel import Field, Relationship
 from zenml.models import (
     CodeReferenceRequest,
     CodeReferenceResponse,
+    CodeReferenceResponseBody,
     CodeReferenceResponseMetadata,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
@@ -205,7 +206,7 @@ class CodeReferenceSchema(BaseSchema, table=True):
         Returns:
             The converted model.
         """
-        body = CodeRepositoryResponseBody(
+        body = CodeReferenceResponseBody(
             commit=self.commit,
             subdirectory=self.subdirectory,
             code_repository=self.code_repository.to_model(),
