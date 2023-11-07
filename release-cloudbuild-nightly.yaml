@@ -1,0 +1,138 @@
+steps:
+# build base image - python 3.8
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - |
+    docker build \
+      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
+      --build-arg PYTHON_VERSION=3.8 \
+      --target base \
+      -f docker/base.Dockerfile . \
+      -t $$USERNAME/zenml:$TAG_NAME-py3.8-nightly
+
+    # no need to check for official release regex, this is for nightly builds
+    docker tag $$USERNAME/zenml:$TAG_NAME-py3.8-nightly $$USERNAME/zenml:py3.8-nightly
+
+  id: build-base-3.8-nightly
+  waitFor: ['-']
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# build base image - python 3.9
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - |
+    docker build \
+      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
+      --build-arg PYTHON_VERSION=3.9 \
+      --target base \
+      -f docker/base.Dockerfile . \
+      -t $$USERNAME/zenml:$TAG_NAME-py3.9-nightly
+
+    # no need to check for official release regex, this is for nightly builds
+    docker tag $$USERNAME/zenml:$TAG_NAME-py3.9-nightly $$USERNAME/zenml:py3.9-nightly
+
+  id: build-base-3.9-nightly
+  waitFor: ['-']
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# build base image - python 3.10
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - |
+    docker build \
+      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
+      --build-arg PYTHON_VERSION=3.10 \
+      --target base \
+      -f docker/base.Dockerfile . \
+      -t $$USERNAME/zenml:$TAG_NAME-py3.10-nightly
+
+    # no need to check for official release regex, this is for nightly builds
+    docker tag $$USERNAME/zenml:$TAG_NAME-py3.10-nightly $$USERNAME/zenml:py3.10-nightly
+
+  id: build-base-3.10-nightly
+  waitFor: ['-']
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# build base image - python 3.11
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - |
+    docker build \
+      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
+      --build-arg PYTHON_VERSION=3.11 \
+      --target base \
+      -f docker/base.Dockerfile . \
+      -t $$USERNAME/zenml:$TAG_NAME-py3.11-nightly
+
+    # no need to check for official release regex, this is for nightly builds
+    docker tag $$USERNAME/zenml:$TAG_NAME-py3.11-nightly $$USERNAME/zenml:py3.11-nightly
+
+  id: build-base-3.11-nightly
+  waitFor: ['-']
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# build server image - python 3.8 only
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - "docker build \\\n--build-arg ZENML_VERSION=$TAG_NAME-nightly \\\n--build-arg PYTHON_VERSION=3.8 \\\n-f docker/base.Dockerfile . \\\n-t $$USERNAME/zenml-server:$TAG_NAME-nightly\n  #magic___^_^___line\n# use latest tags only for official releases"
+  id: build-server-nightly
+  waitFor: ['-']
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# login to Dockerhub
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - docker login --username=$$USERNAME --password=$$PASSWORD
+  id: docker-login-nightly
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+  - PASSWORD
+
+# push base images
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - docker push --all-tags $$USERNAME/zenml
+  id: push-base
+  waitFor:
+  - docker-login
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+# push server images
+- name: gcr.io/cloud-builders/docker
+  args:
+  - '-c'
+  - docker push --all-tags $$USERNAME/zenml-server
+  id: push-server
+  waitFor:
+  - docker-login
+  entrypoint: bash
+  secretEnv:
+  - USERNAME
+
+timeout: 3600s
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/docker-password/versions/1
+    env: PASSWORD
+  - versionName: projects/$PROJECT_ID/secrets/docker-username/versions/1
+    env: USERNAME

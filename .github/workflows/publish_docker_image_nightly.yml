@@ -1,0 +1,36 @@
+name: Publish Nightly Docker image
+
+on: workflow_call
+
+jobs:
+  publish_to_pypi_nightly:
+    name: Publish Docker 🐋 image 🖼️ to Dockerhub
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: 'develop'
+
+      - name: Get the version from the github tag ref
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+
+      # Cloudbuild
+      - name: Build docker images
+        run: |-
+          gcloud builds submit \
+            --quiet \
+            --config=release-cloudbuild-nightly.yaml \
+            --substitutions=TAG_NAME=${{github.ref_name}} .

@@ -7,34 +7,28 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  nightly_build:
-    name: Publish Nightly Build to PyPI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Modify pyproject.toml for nightly release
-        run: |
-            # Change the package name to `zenml-nightly`
-            sed -i 's/name = "zenml"/name = "zenml-nightly"/' pyproject.toml
+    setup-and-test:
+        uses: ./.github/workflows/setup-python-environment.yml
+        with:
+          os: "ubuntu-latest"
+          python-version: "3.8"
+          git-ref: "develop"
+        secrets: inherit
 
-            # Update the version to the nightly version
-            poetry version $NIGHTLY_VERSION
-      
-      - name: Calculate nightly version
-        id: nightly_version
-        run: echo "NIGHTLY_VERSION=$(date +'%Y%m%d').dev" >> $GITHUB_ENV
-      
-      - name: Install dependencies
-        run: poetry install
-        
-      - name: Run Tests
-        run: # add your test running command here
-      
-      - name: Publish
-        env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry version $NIGHTLY_VERSION
-          poetry publish --build --username __token__ --password $PYPI_TOKEN
+    publish-python-package:
+        needs: setup-and-test
+        uses: ./.github/workflows/publish_to_pypi_nightly.yml
+        secrets: inherit
+
+    wait-for-package-release:
+        runs-on: ubuntu-latest
+        needs: publish-python-package
+        steps:
+          - name: Sleep for 4 minutes
+            run: sleep 240
+            shell: bash
+
+    publish-docker-image:
+        needs: wait-for-package-release
+        uses: ./.github/workflows/publish_docker_image_nightly.yml
+        secrets: inherit
