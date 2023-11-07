@@ -116,6 +116,8 @@ class FlavorSchema(NamedSchema, table=True):
             type=self.type,
             integration=self.integration,
             logo_url=self.logo_url,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
@@ -123,8 +125,6 @@ class FlavorSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model()
                 if self.workspace
                 else None,
-                created=self.created,
-                updated=self.updated,
                 config_schema=json.loads(self.config_schema),
                 connector_type=self.connector_type,
                 connector_resource_type=self.connector_resource_type,

@@ -85,14 +85,14 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         body = ArtifactVisualizationResponseBody(
             type=self.type,
             uri=self.uri,
+            created=self.created,
+            updated=self.updated,
         )
 
         metadata = None
         if hydrate:
             metadata = ArtifactVisualizationResponseMetadata(
                 artifact_id=self.artifact_id,
-                created=self.created,
-                updated=self.updated,
             )
 
         return ArtifactVisualizationResponse(

@@ -127,13 +127,13 @@ class RunMetadataSchema(BaseSchema, table=True):
         body = RunMetadataResponseBody(
             user=self.user.to_model() if self.user else None,
             key=self.key,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = RunMetadataResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 pipeline_run_id=self.pipeline_run_id,
                 step_run_id=self.step_run_id,
                 artifact_id=self.artifact_id,

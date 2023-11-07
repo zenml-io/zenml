@@ -182,8 +182,6 @@ class UserSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = UserResponseMetadata(
-                created=self.created,
-                updated=self.updated,
                 full_name=self.full_name,
                 email=self.email if include_private else None,
                 email_opted_in=self.email_opted_in,
@@ -195,6 +193,9 @@ class UserSchema(NamedSchema, table=True):
         return UserResponse(
             id=self.id,
             name=self.name,
-            body=UserResponseBody(),
+            body=UserResponseBody(
+                created=self.created,
+                updated=self.updated,
+            ),
             metadata=metadata,
         )

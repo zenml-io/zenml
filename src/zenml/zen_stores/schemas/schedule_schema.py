@@ -177,13 +177,13 @@ class ScheduleSchema(NamedSchema, table=True):
             end_time=self.end_time,
             interval_second=interval_second,
             catchup=self.catchup,
+            updated=self.updated,
+            created=self.created,
         )
         metadata = None
         if hydrate:
             metadata = ScheduleResponseMetadata(
                 workspace=self.workspace.to_model(),
-                updated=self.updated,
-                created=self.created,
                 pipeline_id=self.pipeline_id,
                 orchestrator_id=self.orchestrator_id,
             )

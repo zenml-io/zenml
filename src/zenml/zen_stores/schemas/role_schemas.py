@@ -266,12 +266,13 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         Returns:
             The converted `TeamRoleAssignmentResponse`.
         """
-        body = TeamRoleAssignmentResponseBody()
+        body = TeamRoleAssignmentResponseBody(
+            created=self.created,
+            updated=self.updated,
+        )
         metadata = None
         if hydrate:
             metadata = TeamRoleAssignmentResponseMetadata(
-                created=self.created,
-                updated=self.updated,
                 workspace=self.workspace.to_model()
                 if self.workspace
                 else None,

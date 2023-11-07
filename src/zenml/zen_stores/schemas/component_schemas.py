@@ -153,13 +153,13 @@ class StackComponentSchema(ShareableSchema, table=True):
             flavor=self.flavor,
             user=self.user.to_model() if self.user else None,
             is_shared=self.is_shared,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = ComponentResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

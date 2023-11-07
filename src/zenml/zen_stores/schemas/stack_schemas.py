@@ -144,13 +144,13 @@ class StackSchema(ShareableSchema, table=True):
         body = StackResponseBody(
             user=self.user.to_model() if self.user else None,
             is_shared=self.is_shared,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = StackResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
             )

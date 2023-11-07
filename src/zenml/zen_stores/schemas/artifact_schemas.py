@@ -170,14 +170,14 @@ class ArtifactSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=self.type,
+            created=self.created,
+            updated=self.updated,
         )
 
         metadata = None
         if hydrate:
             metadata = ArtifactResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 artifact_store_id=self.artifact_store_id,
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model for v in self.visualizations],

@@ -242,13 +242,13 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         body = ServiceConnectorResponseBody(
             user=self.user.to_model() if self.user else None,
             is_shared=self.is_shared,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = ServiceConnectorResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 description=self.description,
                 connector_type=self.connector_type,
                 auth_method=self.auth_method,

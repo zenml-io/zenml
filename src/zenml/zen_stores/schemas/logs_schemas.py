@@ -87,12 +87,12 @@ class LogsSchema(BaseSchema, table=True):
         """
         body = LogsResponseBody(
             uri=self.uri,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = LogsResponseMetadata(
-                created=self.created,
-                updated=self.updated,
                 step_run_id=self.step_run_id,
                 pipeline_run_id=self.pipeline_run_id,
                 artifact_store_id=self.artifact_store_id,

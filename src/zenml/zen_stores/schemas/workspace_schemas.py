@@ -185,12 +185,13 @@ class WorkspaceSchema(NamedSchema, table=True):
         if hydrate:
             metadata = WorkspaceResponseMetadata(
                 description=self.description,
-                created=self.created,
-                updated=self.updated,
             )
         return WorkspaceResponse(
             id=self.id,
             name=self.name,
-            body=WorkspaceResponseBody(),
+            body=WorkspaceResponseBody(
+                created=self.created,
+                updated=self.updated,
+            ),
             metadata=metadata,
         )

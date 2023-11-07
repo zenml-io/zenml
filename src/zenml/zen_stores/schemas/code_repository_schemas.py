@@ -209,13 +209,12 @@ class CodeReferenceSchema(BaseSchema, table=True):
             commit=self.commit,
             subdirectory=self.subdirectory,
             code_repository=self.code_repository.to_model(),
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
-            metadata = CodeReferenceResponseMetadata(
-                created=self.created,
-                updated=self.updated,
-            )
+            metadata = CodeReferenceResponseMetadata()
 
         return CodeReferenceResponse(
             id=self.id,

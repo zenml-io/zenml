@@ -254,13 +254,13 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline=pipeline,
             build=build,
             schedule=schedule,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 run_metadata=run_metadata,
                 config=config,
                 steps=steps,

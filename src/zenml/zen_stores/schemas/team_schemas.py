@@ -101,14 +101,15 @@ class TeamSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = TeamResponseMetadata(
-                created=self.created,
-                updated=self.updated,
                 users=[u.to_model() for u in self.users],
             )
 
         return TeamResponse(
             id=self.id,
             name=self.name,
-            body=TeamResponseBody(),
+            body=TeamResponseBody(
+                created=self.created,
+                updated=self.updated,
+            ),
             metadata=metadata,
         )

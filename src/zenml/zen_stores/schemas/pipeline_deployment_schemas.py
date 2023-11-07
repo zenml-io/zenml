@@ -204,13 +204,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
         body = PipelineDeploymentResponseBody(
             user=self.user.to_model() if self.user else None,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = PipelineDeploymentResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,

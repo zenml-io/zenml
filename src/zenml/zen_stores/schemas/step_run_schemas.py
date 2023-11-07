@@ -210,13 +210,13 @@ class StepRunSchema(NamedSchema, table=True):
             status=self.status,
             inputs=input_artifacts,
             outputs=output_artifacts,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = StepRunResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 config=full_step_config.config,
                 spec=full_step_config.spec,
                 cache_key=self.cache_key,

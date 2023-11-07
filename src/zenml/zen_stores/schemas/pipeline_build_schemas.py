@@ -145,13 +145,13 @@ class PipelineBuildSchema(BaseSchema, table=True):
         """
         body = PipelineBuildResponseBody(
             user=self.user.to_model() if self.user else None,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = False
         if hydrate:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
                 stack=self.stack.to_model() if self.stack else None,
                 images=json.loads(self.images),
