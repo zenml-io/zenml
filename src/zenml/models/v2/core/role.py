@@ -60,17 +60,13 @@ class RoleResponseMetadata(BaseResponseMetadata):
     """Response metadata for roles."""
 
 
-class RoleResponse(BaseResponse):
+class RoleResponse(BaseResponse[RoleResponseBody, RoleResponseMetadata]):
     """Response model for roles."""
 
     name: str = Field(
         title="The unique name of the role.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "RoleResponseBody"
-    metadata: Optional["RoleResponseMetadata"]
 
     def get_hydrated_version(self) -> "RoleResponse":
         """Get the hydrated version of this role."""
@@ -82,7 +78,7 @@ class RoleResponse(BaseResponse):
     @property
     def permissions(self) -> Set[PermissionType]:
         """The `permissions` property."""
-        return self.body.permissions
+        return self.get_body().permissions
 
 
 # ------------------ Filter Model ------------------

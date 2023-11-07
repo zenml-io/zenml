@@ -101,21 +101,22 @@ class BaseResponseMetadata(BaseZenModel):
     """
 
 
+AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
 AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 
 
-class BaseResponse(BaseZenModel, Generic[AnyMetadata]):
+class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata]):
     """Base domain model."""
 
     id: UUID = Field(title="The unique resource id.")
 
     # Body and metadata pair
-    body: "BaseResponseBody" = Field(title="The body of the resource.")
+    body: "AnyBody" = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
     )
 
-    def get_hydrated_version(self) -> "BaseResponse[AnyMetadata]":
+    def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:
@@ -150,7 +151,7 @@ class BaseResponse(BaseZenModel, Generic[AnyMetadata]):
             return False
 
     def _validate_hydrated_version(
-        self, hydrated_model: "BaseResponse[AnyMetadata]"
+        self, hydrated_model: "BaseResponse[AnyBody, AnyMetadata]"
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 
@@ -182,14 +183,20 @@ class BaseResponse(BaseZenModel, Generic[AnyMetadata]):
                 "The hydrated model does not have a metadata field."
             )
 
-    def get_metadata(self) -> "AnyMetadata":
-        """Generalized method to hydrate a non-hydrated instance of a model.
+    def get_body(self) -> AnyBody:
+        """Fetch the body of the entity."""
+        # TODO: When RBAC is implemented, we can throw an error here, if
+        #   anyone tries to fetch an entity which can not be accessed.
+        return self.body
 
-        Gets only executed if the model has not been hydrated before.
-        """
+    def get_metadata(self) -> "AnyMetadata":
+        """Fetch the metadata of the entity."""
         if self.metadata is None:
             hydrated_version = self.get_hydrated_version()
             self._validate_hydrated_version(hydrated_version)
+
+            assert hydrated_version.metadata is not None
+
             self.metadata = hydrated_version.metadata
 
         return self.metadata

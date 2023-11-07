@@ -19,7 +19,7 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.scoped import (
+from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
@@ -77,12 +77,8 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
-class LogsResponse(BaseResponse):
+class LogsResponse(BaseResponse[LogsResponseBody, LogsResponseMetadata]):
     """Response model for logs."""
-
-    # Body and metadata pair
-    body: "LogsResponseBody"
-    metadata: Optional["LogsResponseMetadata"]
 
     def get_hydrated_version(self) -> "LogsResponse":
         """Get the hydrated version of these logs."""
@@ -94,7 +90,7 @@ class LogsResponse(BaseResponse):
     @property
     def uri(self) -> str:
         """The `uri` property."""
-        return self.body.uri
+        return self.get_body().uri
 
     @property
     def step_run_id(self) -> Optional[Union[str, UUID]]:

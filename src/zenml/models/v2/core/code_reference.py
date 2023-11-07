@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing code references."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import Field
@@ -70,12 +70,10 @@ class CodeReferenceResponseMetadata(BaseResponseMetadata):
     """Response metadata for code references."""
 
 
-class CodeReferenceResponse(BaseResponse):
+class CodeReferenceResponse(
+    BaseResponse[CodeReferenceResponseBody, CodeReferenceResponseMetadata]
+):
     """Response model for code references."""
-
-    # Body and metadata pair
-    body: "CodeReferenceResponseBody"
-    metadata: Optional["CodeReferenceResponseMetadata"]
 
     def get_hydrated_version(self) -> "CodeReferenceResponse":
         """Get the hydrated version of this code reference."""
@@ -87,17 +85,17 @@ class CodeReferenceResponse(BaseResponse):
     @property
     def commit(self) -> str:
         """The `commit` property."""
-        return self.body.commit
+        return self.get_body().commit
 
     @property
     def subdirectory(self) -> str:
         """The `subdirectory` property."""
-        return self.body.subdirectory
+        return self.get_body().subdirectory
 
     @property
     def code_repository(self) -> "CodeRepositoryResponse":
         """The `code_repository` property."""
-        return self.body.code_repository
+        return self.get_body().code_repository
 
 
 # ------------------ Filter Model ------------------

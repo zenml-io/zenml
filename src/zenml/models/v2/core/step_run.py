@@ -208,17 +208,15 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StepRunResponse(WorkspaceScopedResponse):
+class StepRunResponse(
+    WorkspaceScopedResponse[StepRunResponseBody, StepRunResponseMetadata]
+):
     """Response model for step runs."""
 
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "StepRunResponseBody"
-    metadata: Optional["StepRunResponseMetadata"]
 
     def get_hydrated_version(self) -> "StepRunResponse":
         """Get the hydrated version of this step run."""
@@ -269,17 +267,17 @@ class StepRunResponse(WorkspaceScopedResponse):
     @property
     def status(self) -> ExecutionStatus:
         """The `status` property."""
-        return self.body.status
+        return self.get_body().status
 
     @property
     def inputs(self) -> Dict[str, "ArtifactResponse"]:
         """The `inputs` property."""
-        return self.body.inputs
+        return self.get_body().inputs
 
     @property
     def outputs(self) -> Dict[str, "ArtifactResponse"]:
         """The `outputs` property."""
-        return self.body.outputs
+        return self.get_body().outputs
 
     @property
     def config(self) -> "StepConfiguration":

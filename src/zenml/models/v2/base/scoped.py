@@ -19,6 +19,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    Generic,
     List,
     Optional,
     Type,
@@ -131,20 +132,22 @@ class UserScopedResponseMetadata(BaseResponseMetadata):
     """Base user-owned metadata."""
 
 
-class UserScopedResponse(BaseResponse):
+UserBody = TypeVar("UserBody", bound=UserScopedResponseBody)
+UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
+
+
+class UserScopedResponse(
+    BaseResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
+):
     """Base user-owned model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    # Body and metadata pair
-    body: UserScopedResponseBody = Field("The body of this resource.")
-    metadata: Optional["UserScopedResponseMetadata"] = Field(
-        title="The metadata related to this resource."
-    )
-
     @abstractmethod
-    def get_hydrated_version(self) -> "UserScopedResponse":
+    def get_hydrated_version(
+        self,
+    ) -> "UserScopedResponse[UserBody, UserMetadata]":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -165,9 +168,9 @@ class UserScopedResponse(BaseResponse):
 
     # Body and metadata properties
     @property
-    def user(self) -> "UserResponse":
+    def user(self) -> Optional["UserResponse"]:
         """The `user` property."""
-        return self.body.user
+        return self.get_body().user
 
 
 class UserScopedFilter(BaseFilter):
@@ -236,18 +239,25 @@ class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
     )
 
 
-class WorkspaceScopedResponse(UserScopedResponse):
+WorkspaceBody = TypeVar("WorkspaceBody", bound=WorkspaceScopedResponseBody)
+WorkspaceMetadata = TypeVar(
+    "WorkspaceMetadata", bound=WorkspaceScopedResponseMetadata
+)
+
+
+class WorkspaceScopedResponse(
+    UserScopedResponse[WorkspaceBody, WorkspaceMetadata],
+    Generic[WorkspaceBody, WorkspaceMetadata],
+):
     """Base workspace-scoped domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    # Body and metadata definition
-    body: "WorkspaceScopedResponseBody"
-    metadata: Optional["WorkspaceScopedResponseMetadata"]
-
     @abstractmethod
-    def get_hydrated_version(self) -> "WorkspaceScopedResponse":
+    def get_hydrated_version(
+        self,
+    ) -> "WorkspaceScopedResponse[WorkspaceBody, WorkspaceMetadata]":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -314,7 +324,7 @@ class WorkspaceScopedFilter(BaseFilter):
 
 
 # Shareable models
-class SharableResponseBody(WorkspaceScopedResponseBody):
+class ShareableResponseBody(WorkspaceScopedResponseBody):
     """Base shareable workspace-scoped body."""
 
     is_shared: bool = Field(
@@ -325,23 +335,30 @@ class SharableResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class SharableResponseMetadata(WorkspaceScopedResponseMetadata):
+class ShareableResponseMetadata(WorkspaceScopedResponseMetadata):
     """Base shareable workspace-scoped metadata."""
 
 
-class ShareableResponse(WorkspaceScopedResponse):
+ShareableBody = TypeVar("ShareableBody", bound=ShareableResponseBody)
+ShareableMetadata = TypeVar(
+    "ShareableMetadata", bound=ShareableResponseMetadata
+)
+
+
+class ShareableResponse(
+    WorkspaceScopedResponse[ShareableBody, ShareableMetadata],
+    Generic[ShareableBody, ShareableMetadata],
+):
     """Base shareable workspace-scoped domain model.
 
     Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
 
-    # Body and metadata definition
-    body: "SharableResponseBody"
-    metadata: Optional["SharableResponseMetadata"]
-
     @abstractmethod
-    def get_hydrated_version(self) -> "ShareableResponse":
+    def get_hydrated_version(
+        self,
+    ) -> "ShareableResponse[ShareableBody, ShareableMetadata]":
         """Abstract method that needs to be implemented to hydrate the instance.
 
         Each response model has a metadata field. The purpose of this
@@ -363,7 +380,7 @@ class ShareableResponse(WorkspaceScopedResponse):
     @property
     def is_shared(self) -> bool:
         """The is_shared property."""
-        return self.body.is_shared
+        return self.get_body().is_shared
 
 
 class ShareableFilter(WorkspaceScopedFilter):

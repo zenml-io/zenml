@@ -20,13 +20,13 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.scoped import (
+from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
-    WorkspaceScopedFilter,
 )
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
@@ -180,7 +180,7 @@ class FlavorResponseMetadata(BaseResponseMetadata):
     )
 
 
-class FlavorResponse(BaseResponse):
+class FlavorResponse(BaseResponse[FlavorResponseBody, FlavorResponseMetadata]):
     """Response model for flavors."""
 
     # Analytics
@@ -194,10 +194,6 @@ class FlavorResponse(BaseResponse):
         title="The name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "FlavorResponseBody"
-    metadata: Optional["FlavorResponseMetadata"]
 
     def get_hydrated_version(self) -> "FlavorResponse":
         """Get the hydrated version of the flavor."""
@@ -232,22 +228,22 @@ class FlavorResponse(BaseResponse):
     @property
     def user(self) -> Union["UserResponse", None]:
         """The `user` property."""
-        return self.body.user
+        return self.get_body().user
 
     @property
     def type(self) -> StackComponentType:
         """The `type` property."""
-        return self.body.type
+        return self.get_body().type
 
     @property
     def integration(self) -> Optional[str]:
         """The `integration` property."""
-        return self.body.integration
+        return self.get_body().integration
 
     @property
     def logo_url(self) -> Optional[str]:
         """The `logo_url` property."""
-        return self.body.logo_url
+        return self.get_body().logo_url
 
     @property
     def workspace(self) -> Optional["WorkspaceResponse"]:

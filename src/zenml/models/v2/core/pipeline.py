@@ -98,17 +98,15 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineResponse(WorkspaceScopedResponse):
+class PipelineResponse(
+    WorkspaceScopedResponse[PipelineResponseBody, PipelineResponseMetadata]
+):
     """Response model for pipelines."""
 
     name: str = Field(
         title="The name of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "PipelineResponseBody"
-    metadata: Optional["PipelineResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineResponse":
         """Get the hydrated version of this pipeline."""
@@ -193,7 +191,7 @@ class PipelineResponse(WorkspaceScopedResponse):
     @property
     def status(self) -> Optional[List[ExecutionStatus]]:
         """The `status` property."""
-        return self.body.status
+        return self.get_body().status
 
     @property
     def version(self) -> str:

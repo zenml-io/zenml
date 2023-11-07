@@ -239,7 +239,7 @@ class UserResponseMetadata(BaseResponseMetadata):
     )
 
 
-class UserResponse(BaseResponse):
+class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
     """Response model for users."""
 
     # Analytics fields
@@ -254,10 +254,6 @@ class UserResponse(BaseResponse):
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "UserResponseBody"
-    metadata: Optional["UserResponseMetadata"]
 
     def get_hydrated_version(self) -> "UserResponse":
         """Get the hydrated version of this user."""

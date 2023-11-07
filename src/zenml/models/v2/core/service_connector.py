@@ -23,11 +23,11 @@ from pydantic import Field, SecretStr, root_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import (
-    SharableResponseBody,
-    SharableResponseMetadata,
     ShareableFilter,
     ShareableRequest,
     ShareableResponse,
+    ShareableResponseBody,
+    ShareableResponseMetadata,
 )
 from zenml.models.v2.base.utils import update_model
 from zenml.models.v2.service_connector_type import ServiceConnectorTypeModel
@@ -293,11 +293,11 @@ class ServiceConnectorUpdate(ServiceConnectorRequest):
 # ------------------ Response Model ------------------
 
 
-class ServiceConnectorResponseBody(SharableResponseBody):
+class ServiceConnectorResponseBody(ShareableResponseBody):
     """Response body for service connectors."""
 
 
-class ServiceConnectorResponseMetadata(SharableResponseMetadata):
+class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
     """Response metadata for service connectors."""
 
     description: str = Field(
@@ -362,17 +362,17 @@ class ServiceConnectorResponseMetadata(SharableResponseMetadata):
     )
 
 
-class ServiceConnectorResponse(ShareableResponse):
+class ServiceConnectorResponse(
+    ShareableResponse[
+        ServiceConnectorResponseBody, ServiceConnectorResponseMetadata
+    ]
+):
     """Response model for service connectors."""
 
     name: str = Field(
         title="The service connector name.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "ServiceConnectorResponseBody"
-    metadata: Optional["ServiceConnectorResponseMetadata"]
 
     def get_hydrated_version(self) -> "ServiceConnectorResponse":
         """Get the hydrated version of this service connector."""

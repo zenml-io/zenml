@@ -120,17 +120,16 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_id: Optional[UUID]
 
 
-class ScheduleResponse(Schedule, WorkspaceScopedResponse):
+class ScheduleResponse(
+    Schedule,
+    WorkspaceScopedResponse[ScheduleResponseBody, ScheduleResponseMetadata],
+):
     """Response model for schedules."""
 
     name: str = Field(
         title="Name of this schedule.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "ScheduleResponseBody"
-    metadata: Optional["ScheduleResponseMetadata"]
 
     def get_hydrated_version(self) -> "ScheduleResponse":
         """Get the hydrated version of this schedule."""
@@ -167,32 +166,32 @@ class ScheduleResponse(Schedule, WorkspaceScopedResponse):
     @property
     def active(self) -> bool:
         """The `active` property."""
-        return self.body.active
+        return self.get_body().active
 
     @property
     def cron_expression(self) -> Optional[str]:
         """The `cron_expression` property."""
-        return self.body.cron_expression
+        return self.get_body().cron_expression
 
     @property
     def start_time(self) -> Optional[datetime.datetime]:
         """The `start_time` property."""
-        return self.body.start_time
+        return self.get_body().start_time
 
     @property
     def end_time(self) -> Optional[datetime.datetime]:
         """The `end_time` property."""
-        return self.body.end_time
+        return self.get_body().end_time
 
     @property
     def interval_second(self) -> Optional[datetime.timedelta]:
         """The `interval_second` property."""
-        return self.body.interval_second
+        return self.get_body().interval_second
 
     @property
     def catchup(self) -> bool:
         """The `catchup` property."""
-        return self.body.catchup
+        return self.get_body().catchup
 
     @property
     def orchestrator_id(self) -> Optional[UUID]:

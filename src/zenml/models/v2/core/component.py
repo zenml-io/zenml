@@ -30,11 +30,11 @@ from pydantic import BaseModel, Field, validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.scoped import (
-    SharableResponseBody,
-    SharableResponseMetadata,
     ShareableFilter,
     ShareableRequest,
     ShareableResponse,
+    ShareableResponseBody,
+    ShareableResponseMetadata,
 )
 from zenml.models.v2.base.utils import update_model
 from zenml.utils import secret_utils
@@ -131,7 +131,7 @@ class ComponentUpdate(ComponentRequest):
 
 
 # ------------------ Response Model ------------------
-class ComponentResponseBody(SharableResponseBody):
+class ComponentResponseBody(ShareableResponseBody):
     """Response body for components."""
 
     type: StackComponentType = Field(
@@ -143,7 +143,7 @@ class ComponentResponseBody(SharableResponseBody):
     )
 
 
-class ComponentResponseMetadata(SharableResponseMetadata):
+class ComponentResponseMetadata(ShareableResponseMetadata):
     """Response metadata for components."""
 
     configuration: Dict[str, Any] = Field(
@@ -168,7 +168,9 @@ class ComponentResponseMetadata(SharableResponseMetadata):
     )
 
 
-class ComponentResponse(ShareableResponse):
+class ComponentResponse(
+    ShareableResponse[ComponentResponseBody, ComponentResponseMetadata]
+):
     """Response model for components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
@@ -177,10 +179,6 @@ class ComponentResponse(ShareableResponse):
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "ComponentResponseBody"
-    metadata: Optional["ComponentResponseMetadata"]
 
     def get_hydrated_version(self) -> "ComponentResponse":
         """Get the hydrated version of this component."""
@@ -192,12 +190,12 @@ class ComponentResponse(ShareableResponse):
     @property
     def type(self) -> StackComponentType:
         """The `type` property."""
-        return self.body.type
+        return self.get_body().type
 
     @property
     def flavor(self) -> str:
         """The `flavor` property."""
-        return self.body.flavor
+        return self.get_body().flavor
 
     @property
     def configuration(self) -> Dict[str, Any]:

@@ -88,7 +88,11 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class CodeRepositoryResponse(WorkspaceScopedResponse):
+class CodeRepositoryResponse(
+    WorkspaceScopedResponse[
+        CodeRepositoryResponseBody, CodeRepositoryResponseMetadata
+    ]
+):
     """Response model for code repositories."""
 
     name: str = Field(
@@ -110,12 +114,12 @@ class CodeRepositoryResponse(WorkspaceScopedResponse):
     @property
     def source(self) -> Source:
         """The `source` property."""
-        return self.body.source
+        return self.get_body().source
 
     @property
     def logo_url(self) -> Optional[str]:
         """The `logo_url` property."""
-        return self.body.logo_url
+        return self.get_body().logo_url
 
     @property
     def config(self) -> Dict[str, Any]:

@@ -95,12 +95,12 @@ class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class RunMetadataResponse(WorkspaceScopedResponse):
+class RunMetadataResponse(
+    WorkspaceScopedResponse[
+        RunMetadataResponseBody, RunMetadataResponseMetadata
+    ]
+):
     """Response model for run metadata."""
-
-    # Body and metadata pair
-    body: "RunMetadataResponseBody"
-    metadata: Optional["RunMetadataResponseMetadata"]
 
     def get_hydrated_version(self) -> "RunMetadataResponse":
         """Get the hydrated version of this run metadata."""
@@ -112,7 +112,7 @@ class RunMetadataResponse(WorkspaceScopedResponse):
     @property
     def key(self) -> str:
         """The `key` property."""
-        return self.body.key
+        return self.get_body().key
 
     @property
     def pipeline_run_id(self) -> Optional[UUID]:

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing artifact visualizations."""
 
-from typing import Optional
 from uuid import UUID
 
 from zenml.enums import VisualizationType
@@ -54,12 +53,13 @@ class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     artifact_id: UUID
 
 
-class ArtifactVisualizationResponse(BaseResponse):
+class ArtifactVisualizationResponse(
+    BaseResponse[
+        ArtifactVisualizationResponseBody,
+        ArtifactVisualizationResponseMetadata,
+    ]
+):
     """Response model for artifact visualizations."""
-
-    # Body and metadata pair
-    body: "ArtifactVisualizationResponseBody"
-    metadata: Optional["ArtifactVisualizationResponseMetadata"]
 
     def get_hydrated_version(self) -> "ArtifactVisualizationResponse":
         """Get the hydrated version of this artifact visualization."""
@@ -71,12 +71,12 @@ class ArtifactVisualizationResponse(BaseResponse):
     @property
     def type(self) -> VisualizationType:
         """The `type` property."""
-        return self.body.type
+        return self.get_body().type
 
     @property
     def uri(self) -> str:
         """The `uri` property."""
-        return self.body.uri
+        return self.get_body().uri
 
     @property
     def artifact_id(self) -> UUID:

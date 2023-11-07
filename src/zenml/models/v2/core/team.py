@@ -67,17 +67,13 @@ class TeamResponseMetadata(BaseResponseMetadata):
     )
 
 
-class TeamResponse(BaseResponse):
+class TeamResponse(BaseResponse[TeamResponseBody, TeamResponseMetadata]):
     """Response model  for teams."""
 
     name: str = Field(
         title="The unique name of the team.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "TeamResponseBody"
-    metadata: Optional["TeamResponseMetadata"]
 
     def get_hydrated_version(self) -> "TeamResponse":
         """Get the hydrated version of this team."""

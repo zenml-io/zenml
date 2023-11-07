@@ -69,7 +69,9 @@ class WorkspaceResponseMetadata(BaseResponseMetadata):
     )
 
 
-class WorkspaceResponse(BaseResponse):
+class WorkspaceResponse(
+    BaseResponse[WorkspaceResponseBody, WorkspaceResponseMetadata]
+):
     """Response model for workspaces."""
 
     name: str = Field(

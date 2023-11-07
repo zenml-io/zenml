@@ -90,8 +90,8 @@ from zenml.models.v2.base.scoped import (
     ShareableRequest,
     ShareableFilter,
     ShareableResponse,
-    SharableResponseBody,
-    SharableResponseMetadata,
+    ShareableResponseBody,
+    ShareableResponseMetadata,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -523,8 +523,8 @@ __all__ = [
     "ShareableRequest",
     "ShareableFilter",
     "ShareableResponse",
-    "SharableResponseBody",
-    "SharableResponseMetadata",
+    "ShareableResponseBody",
+    "ShareableResponseMetadata",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",

@@ -71,12 +71,12 @@ class UserRoleAssignmentResponseMetadata(BaseResponseMetadata):
     )
 
 
-class UserRoleAssignmentResponse(BaseResponse):
+class UserRoleAssignmentResponse(
+    BaseResponse[
+        UserRoleAssignmentResponseBody, UserRoleAssignmentResponseMetadata
+    ]
+):
     """Response model for user role assignments."""
-
-    # Body and metadata pair
-    body: "UserRoleAssignmentResponseBody"
-    metadata: Optional["UserRoleAssignmentResponseMetadata"]
 
     def get_hydrated_version(self) -> "UserRoleAssignmentResponse":
         """Get the hydrated version of this user role assignment."""

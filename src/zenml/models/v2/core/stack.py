@@ -22,11 +22,11 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.scoped import (
-    SharableResponseBody,
-    SharableResponseMetadata,
     ShareableFilter,
     ShareableRequest,
     ShareableResponse,
+    ShareableResponseBody,
+    ShareableResponseMetadata,
 )
 from zenml.models.v2.base.utils import update_model
 from zenml.models.v2.core.component import ComponentResponse
@@ -81,11 +81,11 @@ class StackUpdate(StackRequest):
 # ------------------ Response Model ------------------
 
 
-class StackResponseBody(SharableResponseBody):
+class StackResponseBody(ShareableResponseBody):
     """Response body for stacks."""
 
 
-class StackResponseMetadata(SharableResponseMetadata):
+class StackResponseMetadata(ShareableResponseMetadata):
     """Response metadata for stacks."""
 
     components: Dict[StackComponentType, List[ComponentResponse]] = Field(
@@ -103,7 +103,9 @@ class StackResponseMetadata(SharableResponseMetadata):
     )
 
 
-class StackResponse(ShareableResponse):
+class StackResponse(
+    ShareableResponse[StackResponseBody, StackResponseMetadata]
+):
     """Response model for stacks."""
 
     name: str = Field(

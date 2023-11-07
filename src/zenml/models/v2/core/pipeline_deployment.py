@@ -159,12 +159,12 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineDeploymentResponse(WorkspaceScopedResponse):
+class PipelineDeploymentResponse(
+    WorkspaceScopedResponse[
+        PipelineDeploymentResponseBody, PipelineDeploymentResponseMetadata
+    ]
+):
     """Response model for pipeline deployments."""
-
-    # Body and metadata pair
-    body: PipelineDeploymentResponseBody
-    metadata: Optional[PipelineDeploymentResponseMetadata]
 
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
         """Return the hydrated version of this pipeline deployment."""

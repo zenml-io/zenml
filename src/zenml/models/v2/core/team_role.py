@@ -70,12 +70,12 @@ class TeamRoleAssignmentResponseMetadata(BaseResponseMetadata):
     )
 
 
-class TeamRoleAssignmentResponse(BaseResponse):
+class TeamRoleAssignmentResponse(
+    BaseResponse[
+        TeamRoleAssignmentResponseBody, TeamRoleAssignmentResponseMetadata
+    ]
+):
     """Response model for team role assignments."""
-
-    # Body and metadata pair
-    body: "TeamRoleAssignmentResponseBody"
-    metadata: Optional["TeamRoleAssignmentResponseMetadata"]
 
     def get_hydrated_version(self) -> "TeamRoleAssignmentResponse":
         """Get the hydrated version of the team role assignment."""

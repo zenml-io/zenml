@@ -117,17 +117,15 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     _convert_source = convert_source_validator("materializer", "data_type")
 
 
-class ArtifactResponse(WorkspaceScopedResponse):
+class ArtifactResponse(
+    WorkspaceScopedResponse[ArtifactResponseBody, ArtifactResponseMetadata]
+):
     """Response model for artifacts."""
 
     name: str = Field(
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "ArtifactResponseBody"
-    metadata: Optional["ArtifactResponseMetadata"]
 
     def get_hydrated_version(self) -> "ArtifactResponse":
         """Get the hydrated version of this artifact."""
@@ -139,12 +137,12 @@ class ArtifactResponse(WorkspaceScopedResponse):
     @property
     def uri(self) -> str:
         """The `uri` property."""
-        return self.body.uri
+        return self.get_body().uri
 
     @property
     def type(self) -> ArtifactType:
         """The `type` property."""
-        return self.body.type
+        return self.get_body().type
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:

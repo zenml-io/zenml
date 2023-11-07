@@ -180,17 +180,17 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineRunResponse(WorkspaceScopedResponse):
+class PipelineRunResponse(
+    WorkspaceScopedResponse[
+        PipelineRunResponseBody, PipelineRunResponseMetadata
+    ]
+):
     """Response model for pipeline runs."""
 
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    # Body and metadata pair
-    body: "PipelineRunResponseBody"
-    metadata: Optional["PipelineRunResponseMetadata"]
 
     def get_hydrated_version(self) -> "PipelineRunResponse":
         """Get the hydrated version of this pipeline run."""
@@ -225,27 +225,27 @@ class PipelineRunResponse(WorkspaceScopedResponse):
     @property
     def status(self) -> ExecutionStatus:
         """The `status` property."""
-        return self.body.status
+        return self.get_body().status
 
     @property
     def stack(self) -> Optional["StackResponse"]:
         """The `stack` property."""
-        return self.body.stack
+        return self.get_body().stack
 
     @property
     def pipeline(self) -> Optional["PipelineResponse"]:
         """The `pipeline` property."""
-        return self.body.pipeline
+        return self.get_body().pipeline
 
     @property
     def build(self) -> Optional["PipelineBuildResponse"]:
         """The `build` property."""
-        return self.body.build
+        return self.get_body().build
 
     @property
     def schedule(self) -> Optional["ScheduleResponse"]:
         """The `schedule` property."""
-        return self.body.schedule
+        return self.get_body().schedule
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
