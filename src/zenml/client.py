@@ -5384,6 +5384,8 @@ class Client(metaclass=ClientMetaClass):
         entity_label = get_method.__name__.replace("get_", "") + "s"
         formatted_entity_items = [
             f"- {item.name}: (id: {item.id})\n"
+            if hasattr(item, "name")
+            else f"- {item.id}\n"
             for item in entity.items
         ]
         raise ZenKeyError(
