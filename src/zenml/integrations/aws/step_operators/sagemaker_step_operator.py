@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
+import boto3
 import sagemaker
 
 from zenml.client import Client
@@ -164,6 +165,10 @@ class SagemakerStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+
+        Raises:
+            RuntimeError: If the connector returns an object that is not a
+                `boto3.Session`.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -193,7 +198,24 @@ class SagemakerStepOperator(BaseStepOperator):
 
         # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args
-        session = sagemaker.Session(default_bucket=self.config.bucket)
+
+        # Get authenticated session
+        # Option 1: Service connector
+        boto_session: boto3.Session
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        # Option 2: Implicit configuration
+        else:
+            boto_session = boto3.Session()
+
+        session = sagemaker.Session(
+            boto_session=boto_session, default_bucket=self.config.bucket
+        )
 
         estimator_args.setdefault(
             "instance_type", settings.instance_type or "ml.m5.large"

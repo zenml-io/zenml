@@ -14,11 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .promote_get_metric import promote_get_metric
-from .promote_metric_compare_promoter_in_model_registry import (
-    promote_metric_compare_promoter_in_model_registry,
-)
-from .promote_get_versions import promote_get_versions
-from .promote_model_version_in_model_control_plane import (
-    promote_model_version_in_model_control_plane,
-)
+
+
+from sklearn.base import ClassifierMixin
+
+
+def get_model_from_config(
+    model_package: str, model_class: str
+) -> ClassifierMixin:
+    if model_package == "sklearn.ensemble":
+        import sklearn.ensemble as package
+
+        model_class = getattr(package, model_class)
+    elif model_package == "sklearn.tree":
+        import sklearn.tree as package
+
+        model_class = getattr(package, model_class)
+    else:
+        raise ValueError(f"Unsupported model package: {model_package}")
+
+    return model_class

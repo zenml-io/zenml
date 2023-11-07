@@ -633,6 +633,7 @@ class Pipeline:
                 )
 
             stack = Client().active_stack
+            stack.validate()
 
             new_version_requests = self.get_new_version_requests(deployment)
             deployment = self.update_new_versions_requests(
