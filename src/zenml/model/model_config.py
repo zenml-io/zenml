@@ -128,12 +128,11 @@ class ModelConfig(BaseModel):
                             "This run also operates with unnamed model version - "
                             "new run will be stopped to prevent unexpected behavior."
                         )
-
                 if self.delete_new_version_on_failure:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
                         f"for model `{self.name}` since it already exists. "
-                        "This could happen for unforseen reasons (e.g. unexpected "
+                        "This could happen for unforeseen reasons (e.g. unexpected "
                         "intteruption of previous pipeline run flow).\n"
                         "If you would like to remove the staling version use "
                         "following CLI command:\n"
@@ -241,8 +240,8 @@ class ModelConfig(BaseModel):
             model_version = zenml_client.create_model_version(
                 model_version=mv_request
             )
-            logger.info(f"New model version `{self.version}` was created.")
             self.was_created_in_this_run = True
+            logger.info(f"New model version `{self.version}` was created.")
         return model_version
 
     def _merge(self, model_config: "ModelConfig") -> None:
