@@ -659,27 +659,24 @@ class ModelResponseModel(
         )
 
     def get_version(
-        self, version: Optional[Union[str, int, ModelStages]] = None
+        self, version: Union[str, int, ModelStages]
     ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
         Args:
-            version: version name, number, stage or None for latest version.
+            version: version name, number, stage
 
         Returns:
             The requested model version.
         """
         from zenml.client import Client
 
-        if version is None:
-            return Client().get_model_version(model_name_or_id=self.name)
-        else:
-            return Client().get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=getattr(
-                    version, "value", version
-                ),
-            )
+        return Client().get_model_version(
+            model_name_or_id=self.name,
+            model_version_name_or_number_or_id=getattr(
+                version, "value", version
+            ),
+        )
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):

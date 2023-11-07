@@ -58,7 +58,6 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
-    LATEST_MODEL_VERSION_PLACEHOLDER,
 )
 from zenml.enums import (
     LoggingLevels,
@@ -5739,16 +5738,13 @@ class SqlZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5762,9 +5758,8 @@ class SqlZenStore(BaseZenStore):
                 ModelVersionSchema.model_id == model.id
             )
             if (
-                model_version_name_or_number_or_id is None
-                or model_version_name_or_number_or_id
-                == LATEST_MODEL_VERSION_PLACEHOLDER
+                str(model_version_name_or_number_or_id)
+                == ModelStages.LATEST.value
             ):
                 query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
             elif model_version_name_or_number_or_id in [

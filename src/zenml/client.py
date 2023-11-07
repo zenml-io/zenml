@@ -5077,16 +5077,13 @@ class Client(metaclass=ClientMetaClass):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
 
         Returns:
             The model version of interest.
@@ -5145,16 +5142,13 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -5181,16 +5175,13 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 

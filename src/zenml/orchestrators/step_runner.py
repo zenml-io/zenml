@@ -695,7 +695,7 @@ class StepRunner:
             if artifact_config is not None:
                 try:
                     model_version = (
-                        artifact_config._model_config._get_model_version()
+                        artifact_config._model_config.get_or_create_model_version()
                     )
                     models.add((model_version.model.id, model_version.id))
                 except RuntimeError:
@@ -719,6 +719,7 @@ class StepRunner:
             if (
                 external_artifact.model_artifact_name is not None
                 and external_artifact.model_name is not None
+                and external_artifact.model_version is not None
             ):
                 model_version = client.get_model_version(
                     model_name_or_id=external_artifact.model_name,
@@ -735,7 +736,7 @@ class StepRunner:
         """
         try:
             mc = get_step_context().model_config
-            model_version = mc._get_model_version()
+            model_version = mc.get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:
             return set()
