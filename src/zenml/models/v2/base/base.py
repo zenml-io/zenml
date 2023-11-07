@@ -18,6 +18,7 @@ from typing import Any, ClassVar, Dict, Generic, List, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import Field, SecretStr
+from pydantic.generics import GenericModel
 
 from zenml.exceptions import HydrationError
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
@@ -105,7 +106,7 @@ AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
 AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 
 
-class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata]):
+class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     """Base domain model."""
 
     id: UUID = Field(title="The unique resource id.")
