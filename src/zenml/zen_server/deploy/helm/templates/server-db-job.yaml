@@ -1,20 +1,16 @@
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.zenml.database.url }}
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: {{ include "zenml.fullname" . }}
+  name: {{ include "zenml.fullname" . }}-db-migration
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded 
 spec:
-  {{- if .Values.zenml.database.url }}
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.zenml.replicaCount }}
-  {{- end }}
-  {{- else }}
-  replicas: 1
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "zenml.selectorLabels" . | nindent 6 }}
+  backoffLimit: 2
   template:
     metadata:
       annotations:
@@ -41,82 +37,28 @@ spec:
               - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
                 path: credentials.json
       {{- end }}
+      restartPolicy: Never
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-db-migration
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          args: ["migrate-database"]
+          command: ['zenml']
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
-            {{- if .Values.zenml.analyticsOptIn }}
-            - name: ZENML_ANALYTICS_OPT_IN
-              value: "True"
-            {{- else if not .Values.zenml.analyticsOptIn }}
             - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
-            {{- end }}
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
             - name: ZENML_SERVER_AUTH_SCHEME
               value: {{ .Values.zenml.authType | default .Values.zenml.auth.authType | quote }}
-            {{- if .Values.zenml.auth.jwtTokenAlgorithm }}
-            - name: ZENML_SERVER_JWT_TOKEN_ALGORITHM
-              value: {{ .Values.zenml.auth.jwtTokenAlgorithm | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.jwtTokenIssuer }}
-            - name: ZENML_SERVER_JWT_TOKEN_ISSUER
-              value: {{ .Values.zenml.auth.jwtTokenIssuer | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.jwtTokenAudience }}
-            - name: ZENML_SERVER_JWT_TOKEN_AUDIENCE
-              value: {{ .Values.zenml.auth.jwtTokenAudience | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.jwtTokenLeewaySeconds }}
-            - name: ZENML_SERVER_JWT_TOKEN_LEEWAY_SECONDS
-              value: {{ .Values.zenml.auth.jwtTokenLeewaySeconds | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.jwtTokenExpireMinutes }}
-            - name: ZENML_SERVER_JWT_TOKEN_EXPIRE_MINUTES
-              value: {{ .Values.zenml.auth.jwtTokenExpireMinutes | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.authCookieName }}
-            - name: ZENML_SERVER_AUTH_COOKIE_NAME
-              value: {{ .Values.zenml.auth.authCookieName | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.authCookieDomain }}
-            - name: ZENML_SERVER_AUTH_COOKIE_DOMAIN
-              value: {{ .Values.zenml.auth.authCookieDomain | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.corsAllowOrigins }}
-            - name: ZENML_SERVER_CORS_ALLOW_ORIGINS
-              value: {{ join "," .Values.zenml.auth.corsAllowOrigins | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.maxFailedDeviceAuthAttempts }}
-            - name: ZENML_SERVER_MAX_FAILED_DEVICE_AUTH_ATTEMPTS
-              value: {{ .Values.zenml.auth.maxFailedDeviceAuthAttempts | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.deviceAuthTimeout }}
-            - name: ZENML_SERVER_DEVICE_AUTH_TIMEOUT
-              value: {{ .Values.zenml.auth.deviceAuthTimeout | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.deviceAuthPollingInterval }}
-            - name: ZENML_SERVER_DEVICE_AUTH_POLLING_INTERVAL
-              value: {{ .Values.zenml.auth.deviceAuthPollingInterval | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.dashboardURL }}
-            - name: ZENML_SERVER_DASHBOARD_URL
-              value: {{ .Values.zenml.auth.dashboardURL | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.deviceExpirationMinutes }}
-            - name: ZENML_SERVER_DEVICE_EXPIRATION_MINUTES
-              value: {{ .Values.zenml.auth.deviceExpirationMinutes | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.trustedDeviceExpirationMinutes }}
-            - name: ZENML_SERVER_TRUSTED_DEVICE_EXPIRATION_MINUTES
-              value: {{ .Values.zenml.auth.trustedDeviceExpirationMinutes | quote }}
-            {{- end }}
             {{- if .Values.zenml.auth.externalLoginURL }}
             - name: ZENML_SERVER_EXTERNAL_LOGIN_URL
               value: {{ .Values.zenml.auth.externalLoginURL | quote }}
@@ -129,30 +71,10 @@ spec:
             - name: ZENML_SERVER_EXTERNAL_COOKIE_NAME
               value: {{ .Values.zenml.auth.externalCookieName | quote }}
             {{- end }}
-            {{- if .Values.zenml.auth.externalServerID }}
-            - name: ZENML_SERVER_EXTERNAL_SERVER_ID
-              value: {{ .Values.zenml.auth.externalServerID | quote }}
-            {{- end }}
-            {{- if .Values.zenml.rootUrlPath }}
-            - name: ZENML_SERVER_ROOT_URL_PATH
-              value: {{ .Values.zenml.rootUrlPath | quote }}
-            {{- end }}
-            - name: ZENML_DEFAULT_PROJECT_NAME
-              value: {{ .Values.zenml.defaultProject | quote }}
-            - name: ZENML_DEFAULT_USER_NAME
-              value: {{ .Values.zenml.defaultUsername | quote }}
-            {{- if .Values.zenml.enableImplicitAuthMethods }}
-            - name: ZENML_ENABLE_IMPLICIT_AUTH_METHODS
-              value: "True"
-            {{- end }}
-            {{- if .Values.zenml.database.url }}
             - name: ZENML_STORE_TYPE
               value: sql
-            - name: DISABLE_DATABASE_MIGRATION
-              value: "True"
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
-            {{- end }}
             {{- if .Values.zenml.secretsStore.enabled }}
             - name: ZENML_SECRETS_STORE_TYPE
               value: {{ .Values.zenml.secretsStore.type | quote }}
@@ -190,8 +112,6 @@ spec:
             - name: ZENML_SECRETS_STORE_TYPE
               value: none
             {{- end }}
-            - name: ZENML_SERVER_DEPLOYMENT_TYPE
-              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
             {{- if .Values.zenml.environment }}
             {{- range $key, $value := .Values.zenml.environment }}
             - name: {{ $key }}
@@ -207,29 +127,16 @@ spec:
               mountPath: /gcp-credentials
               readOnly: true
           {{- end }}
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
+      {{- with .Values.resources }}
+      resources:
+        {{- toYaml . | nindent 12 }}
       {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+{{- end }}
