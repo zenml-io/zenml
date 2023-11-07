@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility methods for base models."""
 
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Type, TypeVar
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.base import BaseRequest, BaseResponse
@@ -40,7 +40,7 @@ def update_model(_cls: Type[T]) -> Type[T]:
     return _cls
 
 
-def hydrated_property(class_method) -> property:
+def hydrated_property(class_method: Callable[..., Any]) -> property:
     """Turns a class method into a property which always hydrates the instance.
 
     Args:
@@ -50,7 +50,7 @@ def hydrated_property(class_method) -> property:
         the corresponding property object.
     """
 
-    def wrapper(instance: "BaseResponse"):
+    def wrapper(instance: "BaseResponse") -> Any:
         """The wrapper function which acts as the property.
 
         It makes sure that every time the property get accessed the main

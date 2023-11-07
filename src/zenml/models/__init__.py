@@ -37,7 +37,6 @@ from zenml.models.device_models import (
     OAuthDeviceResponseModel,
     OAuthDeviceUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.models.secret_models import (
     SecretBaseModel,
     SecretFilterModel,
