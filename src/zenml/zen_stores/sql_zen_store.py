@@ -21,12 +21,14 @@ import os
 import re
 from contextvars import ContextVar
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
     ClassVar,
     Dict,
+    ForwardRef,
     List,
     Optional,
     Tuple,
@@ -48,7 +50,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, and_, create_engine, or_, select
+from sqlmodel import Session, SQLModel, and_, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -1894,6 +1896,79 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _get_resource_references(
+        cls,
+    ) -> List[Tuple[Type[SQLModel], str]]:
+        """Get a list of all other table columns that reference the user table.
+
+        Given that this list doesn't change at runtime, we cache it.
+
+        Returns:
+            A list of all other table columns that reference the user table
+            as a list of tuples of the form
+            (<sqlmodel-schema-class>, <attribute-name>).
+        """
+        from zenml.zen_stores import schemas as zenml_schemas
+
+        # Get a list of attributes that represent relationships to other
+        # resources
+        resource_attrs = [
+            attr
+            for attr in UserSchema.__sqlmodel_relationships__.keys()
+            if not attr.startswith("_") and attr not in
+            # These are not resources owned by the user or  are resources that
+            # are deleted automatically when the user is deleted
+            ["teams", "assigned_roles", "api_keys", "auth_devices"]
+        ]
+
+        # This next part is crucial in preserving scalability: we don't fetch
+        # the values of the relationship attributes, because this would
+        # potentially load a huge amount of data into memory through
+        # lazy-loading. Instead, we use a DB query to count resources
+        # associated with the user for each individual resource attribute.
+
+        # To create this query, we need a list of all tables and their foreign
+        # keys that point to the user table.
+        foreign_keys: List[Tuple[Type[SQLModel], str]] = []
+        for resource_attr in resource_attrs:
+            # Extract the target schema from the annotation
+            annotation = UserSchema.__annotations__[resource_attr]
+
+            # The annotation must be of the form
+            # `typing.List[ForwardRef('<schema-class>')]`
+            # We need to recover the schema class from the ForwardRef
+            assert annotation._name == "List"
+            assert annotation.__args__
+            schema_ref = annotation.__args__[0]
+            assert isinstance(schema_ref, ForwardRef)
+            # We pass the zenml_schemas module as the globals dict to
+            # _evaluate, because this is where the schema classes are
+            # defined
+            target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            assert target_schema is not None
+            assert issubclass(target_schema, SQLModel)
+
+            # Next, we need to identify the foreign key attribute in the
+            # target table
+            table = UserSchema.metadata.tables[target_schema.__tablename__]
+            foreign_key_attr = None
+            for fk in table.foreign_keys:
+                if fk.column.table.name != UserSchema.__tablename__:
+                    continue
+                if fk.column.name != "id":
+                    continue
+                assert fk.parent is not None
+                foreign_key_attr = fk.parent.name
+                break
+
+            assert foreign_key_attr is not None
+
+            foreign_keys.append((target_schema, foreign_key_attr))
+
+        return foreign_keys
+
     def _account_owns_resources(
         self, account: UserSchema, session: Session
     ) -> bool:
@@ -1906,41 +1981,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Whether the account owns any resources.
         """
-        # Get a list of attributes that represent relationships to other
-        # resources
-        resource_attrs = [
-            attr
-            for attr in UserSchema.__sqlmodel_relationships__.keys()
-            if attr
-            not in
-            # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted
-            ["teams", "assigned_roles", "api_keys", "auth_devices"]
-        ]
-
-        # This next part is crucial in preserving scalability: we don't fetch
-        # the values of the relationship attributes, because this would
-        # potentially load a huge amount of data into memory through
-        # lazy-loading. Instead, we use a DB subquery to count resources
-        # associated with the user.
-        for resource_attr in resource_attrs:
-            # Extract the target schema from the annotation
-            annotation = UserSchema.__annotations__[resource_attr]
-            target_schema = annotation.__args__[0]
-
-            relationship = UserSchema.__sqlmodel_relationships__[resource_attr]
-            # Get the name of the target table
-            table_name = relationship.table
-            # table_name = UserSchema.__sqlmodel_relationships__[
-            #     resource_attr
-            # ].back_populates
-            # Get table that contains the resource
-            table = UserSchema.metadata.tables[table_name]
+        # Get a list of all other table columns that reference the user table
+        resource_attrs = self._get_resource_references()
+        for schema, resource_attr in resource_attrs:
+            # Check if the user owns any resources of this type
             count = session.scalar(
-                select([func.count("*")]).select_from(table)
+                select([func.count("*")])
+                .select_from(schema)
+                .where(getattr(schema, resource_attr) == account.id)
             )
-            print(f"Counted {count} {resource_attr} for user {account.name}")
             if count > 0:
+                logger.debug(
+                    f"User {account.name} owns {count} resources of type "
+                    f"{schema.__tablename__}"
+                )
                 return True
 
         return False
@@ -1993,13 +2047,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if an account with the given name already exists
-            existing_user = session.exec(
-                select(UserSchema).where(UserSchema.name == user.name)
-            ).first()
+            existing_user = self._get_user_account(
+                user.name,
+                session=session,
+            )
             if existing_user is not None:
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
-                    f"Found existing user or service account with this name."
+                    f"Found an existing user account with this name."
                 )
 
             # Create the user
@@ -2015,6 +2070,9 @@ class SqlZenStore(BaseZenStore):
         include_private: bool = False,
     ) -> UserResponseModel:
         """Gets a specific user, when no id is specified the active user is returned.
+
+        # noqa: DAR401
+        # noqa: DAR402
 
         Raises a KeyError in case a user with that id does not exist.
 
@@ -2128,11 +2186,11 @@ class SqlZenStore(BaseZenStore):
                     )
 
                 try:
-                    self._get_user_schema(user_update.name, session=session)
+                    self._get_user_account(user_update.name, session=session)
                     raise EntityExistsError(
                         f"Unable to update user account with name "
-                        f"'{user_update.name}': Found existing user "
-                        "or service account with this name."
+                        f"'{user_update.name}': Found an existing user "
+                        "account with this name."
                     )
                 except KeyError:
                     pass
@@ -2229,17 +2287,15 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if a user or service account with the given name already
+            # Check if a service account with the given name already
             # exists
-            existing_account = session.exec(
-                select(UserSchema).where(
-                    UserSchema.name == service_account.name
-                )
-            ).first()
+            existing_account = self._get_service_account(
+                service_account.name, session=session
+            )
             if existing_account is not None:
                 raise EntityExistsError(
                     f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing user or service "
+                    f"'{service_account.name}': Found existing service "
                     "account with this name."
                 )
 
@@ -2330,13 +2386,13 @@ class SqlZenStore(BaseZenStore):
                 != existing_service_account.name
             ):
                 try:
-                    self._get_user_schema(
+                    self._get_service_account(
                         service_account_update.name, session=session
                     )
                     raise EntityExistsError(
                         f"Unable to update service account with name "
-                        f"'{service_account_update.name}': Found existing user "
-                        "or service account with this name."
+                        f"'{service_account_update.name}': Found an existing "
+                        "service account with this name."
                     )
                 except KeyError:
                     pass
@@ -2619,6 +2675,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated API key.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
         """
         with Session(self.engine) as session:
             api_key = session.exec(
@@ -2652,10 +2711,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated API key.
-
-        Raises:
-            KeyError: if an API key with the given name or ID is not configured
-                for the given service account.
         """
         with Session(self.engine) as session:
             api_key = self._get_api_key(
@@ -6743,13 +6798,16 @@ class SqlZenStore(BaseZenStore):
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_deployments:
@@ -6757,10 +6815,12 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_deployment)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_model_object
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             elif model_version_artifact_link_filter_model.only_model_objects:
@@ -6768,10 +6828,12 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_model_object)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment == False  # noqa: E712
+                        ModelVersionArtifactSchema.is_deployment
+                        == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.artifact != None  # noqa: E712, E711
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
                     )
                 )
             else:

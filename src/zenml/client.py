@@ -752,7 +752,6 @@ class Client(metaclass=ClientMetaClass):
             email: Use the user email for filtering
             active: User the user active status for filtering
             email_opted_in: Use the user opt in status for filtering
-            is_service_account: Filter by whether the user is a service account
 
         Returns:
             The User
@@ -1023,6 +1022,10 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             key: The API key to use.
+
+        Raises:
+            NotImplementedError: If the client is not connected to a ZenML
+                server.
         """
         from zenml.zen_stores.rest_zen_store import RestZenStore
 

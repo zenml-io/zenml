@@ -50,10 +50,7 @@ def _create_api_key(
     client = Client()
     zen_store = client.zen_store
     if not zen_store.TYPE == StoreType.REST:
-        raise NotImplementedError(
-            "API key configuration is only supported if connected to a "
-            "ZenML server."
-        )
+        set_key = False
 
     with console.status(f"Creating API key '{name}'...\n"):
         try:
@@ -74,6 +71,12 @@ def _create_api_key(
             "The local client has been configured with the new API key."
         )
     else:
+        if not zen_store.TYPE == StoreType.REST:
+            cli_utils.warning(
+                "Could not configure the local ZenML client with the generated "
+                "API key. This type of authentication is only supported if "
+                "connected to a ZenML server."
+            )
         cli_utils.declare(
             f"The API key value is: '{api_key.key}'\nPlease store it safely as "
             "it will not be shown again.\nTo configure a ZenML client to use "
@@ -481,10 +484,7 @@ def rotate_api_key(
     client = Client()
     zen_store = client.zen_store
     if not zen_store.TYPE == StoreType.REST:
-        raise NotImplementedError(
-            "API key rotation is only supported if connected to a "
-            "ZenML server."
-        )
+        set_key = False
 
     try:
         api_key = client.rotate_api_key(
@@ -507,6 +507,13 @@ def rotate_api_key(
             "The local client has been configured with the new API key."
         )
     else:
+        if not zen_store.TYPE == StoreType.REST:
+            cli_utils.warning(
+                "Could not configure the local ZenML client with the generated "
+                "API key. This type of authentication is only supported if "
+                "connected to a ZenML server."
+            )
+
         cli_utils.declare(
             f"The new API key value is: '{api_key.key}'\nPlease store it "
             "safely as it will not be shown again.\nTo configure a ZenML "

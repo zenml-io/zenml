@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 
 import contextlib
-from typing import Any, Dict, Generator
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from time import sleep
-import jwt
+from typing import Any, Dict, Generator
 
+import jwt
 import pytest
 
 from zenml.constants import DEFAULT_ZENML_JWT_TOKEN_LEEWAY
@@ -162,15 +162,18 @@ def test_token_wrong_audience():
     with _hack_token() as claims_data:
         claims_data["aud"] = "fake_audience"
 
+
 def test_token_no_audience():
     """Test that tokens without an audience are rejected."""
     with _hack_token() as claims_data:
         claims_data.pop("aud")
 
+
 def test_token_wrong_issuer():
     """Test that tokens with the wrong issuer are rejected."""
     with _hack_token() as claims_data:
         claims_data["iss"] = "fake_issuer"
+
 
 def test_token_no_issuer():
     """Test that tokens without an issuer are rejected."""

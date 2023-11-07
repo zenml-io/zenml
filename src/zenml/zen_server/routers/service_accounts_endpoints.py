@@ -174,7 +174,7 @@ def delete_service_account(
     Args:
         service_account_name_or_id: Name or ID of the service account.
     """
-    return zen_store().delete_service_account(service_account_name_or_id)
+    zen_store().delete_service_account(service_account_name_or_id)
 
 
 # --------
@@ -320,7 +320,6 @@ def rotate_api_key(
             belongs.
         api_key_name_or_id: Name or ID of the API key to rotate.
         rotate_request: API key rotation request.
-        auth_context: Authentication context.
 
     Returns:
         The updated API key.
