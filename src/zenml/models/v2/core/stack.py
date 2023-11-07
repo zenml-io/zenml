@@ -112,10 +112,6 @@ class StackResponse(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
 
-    # Body and metadata pair
-    body: "StackResponseBody"
-    metadata: Optional["StackResponseMetadata"]
-
     def get_hydrated_version(self) -> "StackResponse":
         """Get the hydrated version of this stack."""
         from zenml.client import Client

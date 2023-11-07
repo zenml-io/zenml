@@ -45,8 +45,7 @@ from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
-    from zenml.models.v2.core.artifact import ArtifactResponse
-    from zenml.models.v2.core.pipeline import PipelineRunResponse
+    from zenml.models import ArtifactResponse, PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)

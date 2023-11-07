@@ -19,7 +19,6 @@ from uuid import UUID
 
 from pydantic import Field, root_validator
 
-from zenml.config.schedule import Schedule
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import (
@@ -121,7 +120,6 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
 
 
 class ScheduleResponse(
-    Schedule,
     WorkspaceScopedResponse[ScheduleResponseBody, ScheduleResponseMetadata],
 ):
     """Response model for schedules."""

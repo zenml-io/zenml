@@ -100,10 +100,6 @@ class CodeRepositoryResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    # Body and metadata pair
-    body: "CodeRepositoryResponseBody"
-    metadata: Optional["CodeRepositoryResponseMetadata"]
-
     def get_hydrated_version(self) -> "CodeRepositoryResponse":
         """Get the hydrated version of this code repository."""
         from zenml.client import Client
