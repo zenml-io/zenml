@@ -1,4 +1,36 @@
 <!-- markdown-link-check-disable -->
+# 0.46.0
+
+This release brings some upgrades, documentation updates and bug fixes. Notably,
+our `langchain` integration now supports more modern versions and has been
+upgraded to a new version at the lower edge of supported packages on account of
+a security vulnerability.
+
+Other fixes related to the Model Control Plane which was updated to support the
+deletion of model versions via the CLI, for example.
+
+## Breaking Change
+
+We removed the `llama_index` integration in this release. This related to
+unsolvable dependency clashes that relate to `sqlmodel` and our database. We
+expect these clashes to be resolved in the future and then we will add our
+integration back in. If you were using the `llama_index` materializer that was
+part of the integration, you will have to use a custom materializer in the
+meanwhile. We apologize for the inconvenience.
+
+## What's Changed
+* MCP-driven E2E template by @avishniakov in https://github.com/zenml-io/zenml/pull/2004
+* Model scoped endpoints by @avishniakov in https://github.com/zenml-io/zenml/pull/2003
+* Delete model version in cli by @avishniakov in https://github.com/zenml-io/zenml/pull/2006
+* Add latest version to model list response by @avishniakov in https://github.com/zenml-io/zenml/pull/2007
+* Fix `gcs bucket` docs error message by @safoinme in https://github.com/zenml-io/zenml/pull/2018
+* Fix `Skypilot` docs configuration by @safoinme in https://github.com/zenml-io/zenml/pull/2017
+* Bump `langchain`, disable `llama_index`, and fix Vector Store materializer by @strickvl in https://github.com/zenml-io/zenml/pull/2013
+* Fix Build Options of `GCPImageBuilder` by @fa9r in https://github.com/zenml-io/zenml/pull/1992
+* Fix the stack component describe CLI output by @stefannica in https://github.com/zenml-io/zenml/pull/2001
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.6...0.46.0
 
 # 0.45.6
 

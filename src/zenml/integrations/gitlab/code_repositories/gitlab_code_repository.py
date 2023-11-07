@@ -16,8 +16,8 @@ import os
 import re
 from typing import Optional
 
-from gitlab import Gitlab  # type: ignore
-from gitlab.v4.objects import Project  # type: ignore
+from gitlab import Gitlab
+from gitlab.v4.objects import Project
 
 from zenml.code_repositories import (
     BaseCodeRepository,
