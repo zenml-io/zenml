@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import sys
 from contextvars import ContextVar
 from datetime import datetime
 from functools import lru_cache
@@ -1946,7 +1947,14 @@ class SqlZenStore(BaseZenStore):
             # We pass the zenml_schemas module as the globals dict to
             # _evaluate, because this is where the schema classes are
             # defined
-            target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            if sys.version_info < (3, 9):
+                # For Python versions <3.9, leave out the third parameter to
+                # _evaluate
+                target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            else:
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, frozenset()
+                )
             assert target_schema is not None
             assert issubclass(target_schema, SQLModel)
 
