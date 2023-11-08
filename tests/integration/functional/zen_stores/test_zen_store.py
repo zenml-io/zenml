@@ -24,6 +24,7 @@ from pydantic import SecretStr
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
+    APIKeyLoginContext,
     CodeRepositoryContext,
     ComponentContext,
     CrudTestConfig,
@@ -46,6 +47,7 @@ from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
+    AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
@@ -53,6 +55,10 @@ from zenml.exceptions import (
 )
 from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactResponseModel,
     ComponentFilterModel,
@@ -69,6 +75,7 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    ServiceAccountFilterModel,
     ServiceAccountRequestModel,
     ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
@@ -768,6 +775,80 @@ def test_get_service_account():
             assert user.is_service_account is False
 
 
+def test_list_service_accounts():
+    """Tests listing service accounts."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account_one:
+        accounts = zen_store.list_service_accounts(
+            ServiceAccountFilterModel()
+        ).items
+        assert service_account_one.id in [account.id for account in accounts]
+
+        accounts = zen_store.list_service_accounts(
+            ServiceAccountFilterModel(
+                name=service_account_one.name,
+            )
+        ).items
+        assert service_account_one.id in [account.id for account in accounts]
+
+        accounts = zen_store.list_service_accounts(
+            ServiceAccountFilterModel(
+                id=service_account_one.id,
+            )
+        ).items
+        assert service_account_one.id in [account.id for account in accounts]
+
+        with ServiceAccountContext() as service_account_two:
+            accounts = zen_store.list_service_accounts(
+                ServiceAccountFilterModel()
+            ).items
+            assert service_account_one.id in [
+                account.id for account in accounts
+            ]
+            assert service_account_two.id in [
+                account.id for account in accounts
+            ]
+
+            accounts = zen_store.list_service_accounts(
+                ServiceAccountFilterModel(
+                    name=service_account_one.name,
+                )
+            ).items
+            assert len(accounts) == 1
+            assert service_account_one.id in [
+                account.id for account in accounts
+            ]
+
+            accounts = zen_store.list_service_accounts(
+                ServiceAccountFilterModel(
+                    name=service_account_two.name,
+                )
+            ).items
+            assert len(accounts) == 1
+            assert service_account_two.id in [
+                account.id for account in accounts
+            ]
+
+            accounts = zen_store.list_service_accounts(
+                ServiceAccountFilterModel(
+                    active=True,
+                )
+            ).items
+            assert service_account_one.id in [
+                account.id for account in accounts
+            ]
+            assert service_account_two.id in [
+                account.id for account in accounts
+            ]
+
+            with UserContext() as user:
+                accounts = zen_store.list_service_accounts(
+                    ServiceAccountFilterModel()
+                ).items
+                assert user.id not in [account.id for account in accounts]
+
+
 def test_update_service_account_name():
     """Tests updating a service account name."""
     zen_store = Client().zen_store
@@ -934,6 +1015,837 @@ def test_update_service_account_description():
         assert account.name == service_account.name
         assert account.active is True
         assert updated_account.description == new_description
+
+
+# .----------.
+# | API KEYS |
+# '----------'
+
+
+def test_create_api_key():
+    """Tests creating a service account."""
+    zen_store = Client().zen_store
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        new_api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        assert new_api_key.name == api_key_request.name
+        assert new_api_key.description == api_key_request.description
+        assert new_api_key.service_account.id == service_account.id
+        assert new_api_key.key is not None
+        assert new_api_key.active is True
+        assert new_api_key.last_login is None
+        assert new_api_key.last_rotated is None
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.id,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+        assert api_key.description == api_key_request.description
+        assert api_key.service_account.id == service_account.id
+        assert api_key.key is None
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.name,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+
+
+def test_delete_api_key():
+    """Tests deleting an API key."""
+    zen_store = Client().zen_store
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        new_api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.id,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.name,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+
+        # delete by name
+        zen_store.delete_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.name,
+        )
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=new_api_key.id,
+            )
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_request.name,
+            )
+
+        with pytest.raises(KeyError):
+            zen_store.delete_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=new_api_key.name,
+            )
+
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        new_api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.id,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.name,
+        )
+        assert api_key.id == new_api_key.id
+        assert api_key.name == api_key_request.name
+
+        # delete by ID
+        zen_store.delete_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_api_key.id,
+        )
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=new_api_key.id,
+            )
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_request.name,
+            )
+
+        with pytest.raises(KeyError):
+            zen_store.delete_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=new_api_key.id,
+            )
+
+
+def test_create_api_key_used_name_fails():
+    """Tests creating an API key with a name that is already used."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        with pytest.raises(EntityExistsError):
+            zen_store.create_api_key(
+                service_account_id=service_account.id,
+                api_key=api_key_request,
+            )
+
+
+def test_list_api_keys():
+    """Tests listing API keys."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        api_key_one = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(),
+        ).items
+        assert len(keys) == 1
+        assert api_key_one.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                name=api_key_one.name,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_one.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                id=api_key_one.id,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_one.id in [key.id for key in keys]
+
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key_two = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(),
+        ).items
+        assert len(keys) == 2
+        assert api_key_one.id in [key.id for key in keys]
+        assert api_key_two.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                name=api_key_one.name,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_one.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                name=api_key_two.name,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_two.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                id=api_key_one.id,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_one.id in [key.id for key in keys]
+
+        keys = zen_store.list_api_keys(
+            service_account_id=service_account.id,
+            filter_model=APIKeyFilterModel(
+                id=api_key_two.id,
+            ),
+        ).items
+        assert len(keys) == 1
+        assert api_key_two.id in [key.id for key in keys]
+
+
+def test_update_key_name():
+    """Tests updating an API key name."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        # Update by name
+        new_key_name = "aria"
+        updated_key = zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key_request.name,
+            api_key_update=APIKeyUpdateModel(
+                name=new_key_name,
+            ),
+        )
+        assert updated_key.id == api_key.id
+        assert updated_key.name == new_key_name
+        assert updated_key.active is True
+        assert updated_key.description == api_key.description
+
+        key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_key_name,
+        )
+        assert key.id == api_key.id
+        assert key.name == new_key_name
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.name,
+            )
+
+        # Update by ID
+        new_new_key_name = "blupus"
+        updated_key = zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=APIKeyUpdateModel(
+                name=new_new_key_name,
+            ),
+        )
+        assert updated_key.id == api_key.id
+        assert updated_key.name == new_new_key_name
+        assert updated_key.active is True
+        assert updated_key.description == api_key.description
+
+        key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=new_new_key_name,
+        )
+        assert key.id == api_key.id
+        assert key.name == new_new_key_name
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.name,
+            )
+
+        with pytest.raises(KeyError):
+            zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=new_key_name,
+            )
+
+
+def test_update_api_key_used_name_fails():
+    """Tests updating an API key name to a name that is already used."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        other_api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=other_api_key_request,
+        )
+
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        # Update by name
+        with pytest.raises(EntityExistsError):
+            zen_store.update_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_request.name,
+                api_key_update=APIKeyUpdateModel(
+                    name=other_api_key_request.name,
+                ),
+            )
+
+        # Update by ID
+        with pytest.raises(EntityExistsError):
+            zen_store.update_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.id,
+                api_key_update=APIKeyUpdateModel(
+                    name=other_api_key_request.name,
+                ),
+            )
+
+
+def test_deactivate_api_key():
+    """Tests deactivating an API key."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+        assert key.id == api_key.id
+        assert key.name == api_key_request.name
+        assert key.active is True
+
+        # Update by name
+        updated_key = zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key_request.name,
+            api_key_update=APIKeyUpdateModel(
+                active=False,
+            ),
+        )
+        assert updated_key.id == api_key.id
+        assert updated_key.name == api_key.name
+        assert updated_key.active is False
+        assert updated_key.description == api_key.description
+
+        # Update by ID
+        updated_key = zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=APIKeyUpdateModel(
+                active=True,
+            ),
+        )
+        assert updated_key.id == api_key.id
+        assert updated_key.name == api_key.name
+        assert updated_key.active is True
+        assert updated_key.description == api_key.description
+
+
+def test_update_api_key_description():
+    """Tests updating an API key description."""
+    zen_store = Client().zen_store
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        new_description = "Axl has taken possession of this API key."
+
+        updated_key = zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=APIKeyUpdateModel(
+                description=new_description,
+            ),
+        )
+        assert updated_key.id == api_key.id
+        assert updated_key.name == api_key.name
+        assert updated_key.active is True
+        assert updated_key.description == new_description
+
+        key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+        assert key.id == api_key.id
+        assert key.name == api_key.name
+        assert key.active is True
+        assert key.description == new_description
+
+
+def test_rotate_api_key():
+    """Tests rotating a service account."""
+    zen_store = Client().zen_store
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="axl",
+            description="Axl's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        assert api_key.name == api_key_request.name
+        assert api_key.key is not None
+        assert api_key.active is True
+        assert api_key.last_login is None
+        assert api_key.last_rotated is None
+
+        rotated_api_key = zen_store.rotate_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=APIKeyRotateRequestModel(),
+        )
+
+        assert rotated_api_key.name == api_key_request.name
+        assert rotated_api_key.key is not None
+        assert rotated_api_key.key != api_key.key
+        assert rotated_api_key.active is True
+        assert rotated_api_key.last_login is None
+        assert rotated_api_key.last_rotated is not None
+
+
+def test_login_api_key():
+    """Tests logging in with an API key."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        api_key = zen_store.get_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+        assert api_key.last_login is not None
+        assert api_key.last_rotated is None
+
+
+def test_login_inactive_api_key():
+    """Tests logging in with an inactive API key."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=APIKeyUpdateModel(
+                active=False,
+            ),
+        )
+
+        with pytest.raises(AuthorizationException):
+            with APIKeyLoginContext(api_key=api_key.key):
+                pass
+
+        zen_store.update_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=APIKeyUpdateModel(
+                active=True,
+            ),
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        # Test deactivation while logged in
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+            new_zen_store.update_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.id,
+                api_key_update=APIKeyUpdateModel(
+                    active=False,
+                ),
+            )
+
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
+
+            # NOTE: use the old store to update the key, since the new store
+            # is no longer authorized
+            zen_store.update_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.id,
+                api_key_update=APIKeyUpdateModel(
+                    active=True,
+                ),
+            )
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+
+def test_login_inactive_service_account():
+    """Tests logging in with an inactive service account."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        zen_store.update_service_account(
+            service_account_name_or_id=service_account.id,
+            service_account_update=ServiceAccountUpdateModel(
+                active=False,
+            ),
+        )
+
+        with pytest.raises(AuthorizationException):
+            with APIKeyLoginContext(api_key=api_key.key):
+                pass
+
+        zen_store.update_service_account(
+            service_account_name_or_id=service_account.id,
+            service_account_update=ServiceAccountUpdateModel(
+                active=True,
+            ),
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        # Test deactivation while logged in
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+            new_zen_store.update_service_account(
+                service_account_name_or_id=service_account.id,
+                service_account_update=ServiceAccountUpdateModel(
+                    active=False,
+                ),
+            )
+
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
+
+            # NOTE: use the old store to update the key, since the new store
+            # is no longer authorized
+            new_zen_store.update_service_account(
+                service_account_name_or_id=service_account.id,
+                service_account_update=ServiceAccountUpdateModel(
+                    active=True,
+                ),
+            )
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+
+def test_login_deleted_key():
+    """Tests logging in with a deleted key."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        zen_store.delete_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+
+        with pytest.raises(AuthorizationException):
+            with APIKeyLoginContext(api_key=api_key.key):
+                pass
+
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        # Test deletion while logged in
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+            new_zen_store.delete_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.id,
+            )
+
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
+
+            # NOTE: use the old store to re-add the key, since the new store
+            # is no longer authorized
+            zen_store.create_api_key(
+                service_account_id=service_account.id,
+                api_key=api_key_request,
+            )
+
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
+
+
+def test_login_rotate_api_key():
+    """Tests logging in with a rotated API key."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        rotated_api_key = zen_store.rotate_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=APIKeyRotateRequestModel(),
+        )
+
+        with pytest.raises(AuthorizationException):
+            with APIKeyLoginContext(api_key=api_key.key):
+                pass
+
+        with APIKeyLoginContext(api_key=rotated_api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        # Test rotation while logged in
+        with APIKeyLoginContext(api_key=rotated_api_key.key):
+            new_zen_store = Client().zen_store
+
+            new_zen_store.rotate_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key.id,
+                rotate_request=APIKeyRotateRequestModel(),
+            )
+
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+
+def test_login_rotate_api_key_retain_period():
+    """Tests logging in with a rotated API key with a retain period."""
+    zen_store = Client().zen_store
+    if zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support API keys login")
+
+    with ServiceAccountContext() as service_account:
+        api_key_request = APIKeyRequestModel(
+            name="aria",
+            description="Aria's API key",
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=api_key_request,
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        rotated_api_key = zen_store.rotate_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=APIKeyRotateRequestModel(retain_period_minutes=1),
+        )
+
+        with APIKeyLoginContext(api_key=api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        with APIKeyLoginContext(api_key=rotated_api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        re_rotated_api_key = zen_store.rotate_api_key(
+            service_account_id=service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=APIKeyRotateRequestModel(retain_period_minutes=1),
+        )
+
+        with APIKeyLoginContext(api_key=re_rotated_api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        with APIKeyLoginContext(api_key=rotated_api_key.key):
+            new_zen_store = Client().zen_store
+            active_user = new_zen_store.get_user()
+            assert active_user.id == service_account.id
+
+        with pytest.raises(AuthorizationException):
+            with APIKeyLoginContext(api_key=api_key.key):
+                pass
 
 
 # .-------.

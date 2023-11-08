@@ -256,17 +256,16 @@ class ServiceAccountContext:
             self.created_service_account = self.store.create_service_account(
                 new_account
             )
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin",
+                user_name_or_id=self.created_service_account.id,
+            )
         else:
             self.created_service_account = self.store.get_service_account(
                 self.name
             )
 
         if self.login or self.existing_account:
-            if not self.existing_account:
-                self.client.create_user_role_assignment(
-                    role_name_or_id="admin",
-                    user_name_or_id=self.created_service_account.id,
-                )
             # Create a temporary API key for the service account
             api_key_name = sample_name("temp_api_key")
             self.api_key = self.store.create_api_key(
@@ -306,6 +305,36 @@ class ServiceAccountContext:
                 )
             except (KeyError, IllegalOperationError):
                 pass
+
+
+class APIKeyLoginContext:
+    def __init__(
+        self,
+        api_key: str,
+    ):
+        self.api_key = api_key
+        self.client = Client()
+        self.store = self.client.zen_store
+
+    def __enter__(self):
+        self.original_config = GlobalConfiguration.get_instance()
+        self.original_client = Client.get_instance()
+
+        GlobalConfiguration._reset_instance()
+        Client._reset_instance()
+        self.client = Client()
+        store_config = StoreConfiguration(
+            url=self.original_config.store.url,
+            type=self.original_config.store.type,
+            api_key=self.api_key,
+            secrets_store=self.original_config.store.secrets_store,
+        )
+        GlobalConfiguration().set_store(config=store_config)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        GlobalConfiguration._reset_instance(self.original_config)
+        Client._reset_instance(self.original_client)
+        _ = Client().zen_store
 
 
 class StackContext:
