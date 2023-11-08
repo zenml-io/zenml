@@ -912,11 +912,13 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_role(self, role_id: UUID, hydrate: bool = True) -> RoleResponse:
+    def get_role(
+        self, role_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> RoleResponse:
         """Get a role by its unique ID.
 
         Args:
-            role_id: The ID of the role to get.
+            role_name_or_id: The name or the ID of the role to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

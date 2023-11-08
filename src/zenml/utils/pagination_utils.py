@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Pagination utilities."""
 
-from typing import Callable, List, TypeVar
+from typing import Any, Callable, List, TypeVar, Union
 
 from zenml.models import BaseResponse, BaseResponseModel, Page
 
-AnyResponseModel = TypeVar("AnyResponseModel", BaseResponse, BaseResponseModel)
+AnyResponseModel = TypeVar(
+    "AnyResponseModel", bound=Union[BaseResponse[Any, Any], BaseResponseModel]
+)
 
 
 def depaginate(

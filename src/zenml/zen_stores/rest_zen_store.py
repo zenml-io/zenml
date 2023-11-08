@@ -211,7 +211,7 @@ AnyRequestModel = TypeVar(
     "AnyRequestModel", bound=Union[BaseRequest, BaseRequestModel]
 )
 AnyResponseModel = TypeVar(
-    "AnyResponseModel", bound=Union[BaseResponse, BaseResponseModel]
+    "AnyResponseModel", bound=Union[BaseResponse[Any, Any], BaseResponseModel]
 )
 AnyWorkspaceScopedRequestModel = TypeVar(
     "AnyWorkspaceScopedRequestModel",
