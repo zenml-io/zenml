@@ -1,4 +1,63 @@
 <!-- markdown-link-check-disable -->
+# 0.46.0
+
+This release brings some upgrades, documentation updates and bug fixes. Notably,
+our `langchain` integration now supports more modern versions and has been
+upgraded to a new version at the lower edge of supported packages on account of
+a security vulnerability.
+
+Other fixes related to the Model Control Plane which was updated to support the
+deletion of model versions via the CLI, for example.
+
+## Breaking Change
+
+We removed the `llama_index` integration in this release. This related to
+unsolvable dependency clashes that relate to `sqlmodel` and our database. We
+expect these clashes to be resolved in the future and then we will add our
+integration back in. If you were using the `llama_index` materializer that was
+part of the integration, you will have to use a custom materializer in the
+meanwhile. We apologize for the inconvenience.
+
+## What's Changed
+* MCP-driven E2E template by @avishniakov in https://github.com/zenml-io/zenml/pull/2004
+* Model scoped endpoints by @avishniakov in https://github.com/zenml-io/zenml/pull/2003
+* Delete model version in cli by @avishniakov in https://github.com/zenml-io/zenml/pull/2006
+* Add latest version to model list response by @avishniakov in https://github.com/zenml-io/zenml/pull/2007
+* Fix `gcs bucket` docs error message by @safoinme in https://github.com/zenml-io/zenml/pull/2018
+* Fix `Skypilot` docs configuration by @safoinme in https://github.com/zenml-io/zenml/pull/2017
+* Bump `langchain`, disable `llama_index`, and fix Vector Store materializer by @strickvl in https://github.com/zenml-io/zenml/pull/2013
+* Fix Build Options of `GCPImageBuilder` by @fa9r in https://github.com/zenml-io/zenml/pull/1992
+* Fix the stack component describe CLI output by @stefannica in https://github.com/zenml-io/zenml/pull/2001
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.6...0.46.0
+
+# 0.45.6
+
+This release brings an array of enhancements and refinements. Notable improvements include 
+allowing for `disconnecting` service connectors from stack components, adding connector support to the
+sagemaker step operator, turning synchronous mode on by default for all orchestrators, and enabling
+server-side component config validation. 
+
+## What's Changed
+* Updating `README.md` and update images by @znegrin in https://github.com/zenml-io/zenml/pull/1986
+* Always set the active workspace to be the default workspace server side by @stefannica in https://github.com/zenml-io/zenml/pull/1989
+* Update outdated CLI docs by @strickvl in https://github.com/zenml-io/zenml/pull/1990
+* Turn synchronous mode on by default for all orchestrators by @stefannica in https://github.com/zenml-io/zenml/pull/1991
+* Use docker credentials in the skypilot orchestrator by @stefannica in https://github.com/zenml-io/zenml/pull/1983
+* Add missing space to `@step` warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1994
+* Fix sagemaker orchestrator and step operator env vars and other minor bugs  by @stefannica in https://github.com/zenml-io/zenml/pull/1993
+* fix: `BasePyTorchMaterliazer` -> `Materializer` by @cameronraysmith in https://github.com/zenml-io/zenml/pull/1969
+* allow calling old base pytorch materilizzer by @safoinme in https://github.com/zenml-io/zenml/pull/1997
+* Add connector support to sagemaker step operator. by @stefannica in https://github.com/zenml-io/zenml/pull/1996
+* Server-Side Component Config Validation by @fa9r in https://github.com/zenml-io/zenml/pull/1988
+* Allow disconnecting service-connector from stack component by @safoinme in https://github.com/zenml-io/zenml/pull/1864
+
+## New Contributors
+* @znegrin made their first contribution in https://github.com/zenml-io/zenml/pull/1986
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.5...test
+
 
 # 0.45.5
 

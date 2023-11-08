@@ -7,7 +7,7 @@ description: Collaborating with the ZenML community.
 The ZenML Hub is a central platform that enables our users to search, share and discover community-contributed code, such as flavors, materializers, and steps, that can be used across organizations. The goal is to allow our users to extend their ZenML experience by leveraging the community's diverse range of implementations.
 
 {% hint style="info" %}
-If you're interested in learning more about our motivation for implementing the ZenML Hub and our plans for its future, we invite you to read [our new blog post](https://blog.zenml.io/zenml-hub-launch). In addition to this technical documentation, the blog post provides a comprehensive overview of the ZenML Hub's goals and objectives, as well as the features that we plan to introduce in the future.
+If you're interested in learning more about our motivation for implementing the ZenML Hub and our plans for its future, we invite you to read [our blog post](https://blog.zenml.io/zenml-hub-launch). In addition to this technical documentation, the blog post provides a comprehensive overview of the ZenML Hub's goals and objectives, as well as the features that we plan to introduce in the future.
 {% endhint %}
 
 ### Plugins <a href="#plugins" id="plugins"></a>
@@ -23,7 +23,7 @@ Users can create a ZenML Hub account to contribute, rate, and star these plugins
 
 ### What is already built in? <a href="#what-is-already-built-in" id="what-is-already-built-in"></a>
 
-With the release of ZenML version 0.38.0, the ZenML Hub will make its first appearance and be equipped with a set of plugins that feature ZenML-verified steps (with a heavy emphasis on data loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
+The ZenML Hub has been available since the release of version 0.38.0, and is equipped with a set of plugins that feature ZenML-verified steps (with a heavy emphasis on data-loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
 
 ## How do I use it?
 
@@ -81,7 +81,7 @@ You should see a table similar to:
 In order to create your own plugin and submit it to the ZenML hub, you need to first log in. In the first version, authentication is only possible through GitHub.
 
 {% hint style="info" %}
-If you haven't used the ZenML Hub before, this process will create a ZenML Hub account that shares the same username as your GitHub account. It will also associate your current ZenML user with this newly generated ZenML Hub account.
+If you haven't used the ZenML Hub before, this process will create a ZenML Hub account that shares the same username as your GitHub account. It will also associate your current ZenML user with this newly-generated ZenML Hub account.
 {% endhint %}
 
 {% tabs %}

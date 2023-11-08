@@ -31,6 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -267,12 +268,12 @@ class StepLauncher:
         step_instance = BaseStep.load_from_source(self._step.spec.source)
 
         docstring = step_instance.docstring
-        if docstring and len(docstring) > 1000:
-            docstring = docstring[:1000] + "..."
+        if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
+            docstring = docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         source_code = step_instance.source_code
-        if source_code and len(source_code) > 1000:
-            source_code = source_code[:1000] + "..."
+        if source_code and len(source_code) > TEXT_FIELD_MAX_LENGTH:
+            source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         return docstring, source_code
 
@@ -508,17 +509,14 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
         """
-        from zenml.step_operators.step_operator_entrypoint_configuration import (
-            StepOperatorEntrypointConfiguration,
-        )
-
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
+        entrypoint_cfg_class = step_operator.entrypoint_config_class
         entrypoint_command = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_command()
-            + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+            entrypoint_cfg_class.get_entrypoint_command()
+            + entrypoint_cfg_class.get_entrypoint_arguments(
                 step_name=self._step_name,
                 deployment_id=self._deployment.id,
                 step_run_id=str(step_run_info.step_run_id),
