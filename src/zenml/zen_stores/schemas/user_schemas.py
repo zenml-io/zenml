@@ -188,6 +188,7 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
+                roles=[ra.role.to_model() for ra in self.assigned_roles],
             )
 
         return UserResponse(

@@ -41,6 +41,7 @@ from zenml.models.v2.base.utils import update_model
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
 
+    from zenml.models.v2.core.role import RoleResponse
 
 # ------------------ Request Model ------------------
 
@@ -237,6 +238,9 @@ class UserResponseMetadata(BaseResponseMetadata):
         default=None,
         title="The external user ID associated with the account.",
     )
+    roles: Optional[List["RoleResponse"]] = Field(
+        default=None, title="The list of roles for this user."
+    )
 
 
 class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
@@ -296,6 +300,11 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
     def external_user_id(self) -> Optional[UUID]:
         """The `external_user_id` property."""
         return self.get_metadata().external_user_id
+
+    @property
+    def roles(self) -> Optional[List["RoleResponse"]]:
+        """The `roles` property."""
+        return self.get_metadata().roles
 
 
 # ------------------ Filter Model ------------------

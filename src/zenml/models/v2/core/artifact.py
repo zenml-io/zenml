@@ -195,7 +195,9 @@ class ArtifactResponse(
         Returns:
             The pipeline run that produced this artifact.
         """
-        return self.step.run
+        from zenml.client import Client
+
+        return Client().get_pipeline_run(self.step.pipeline_run_id)
 
     def load(self) -> Any:
         """Materializes (loads) the data stored in this artifact.

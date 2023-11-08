@@ -292,7 +292,7 @@ class ZenStoreInterface(ABC):
     # -------------------- Code References --------------------
 
     @abstractmethod
-    def get_code_references(
+    def get_code_reference(
         self, code_reference_id: UUID, hydrate: bool = True
     ) -> CodeReferenceResponse:
         """Gets a specific code reference.
