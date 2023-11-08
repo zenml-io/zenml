@@ -213,10 +213,6 @@ class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 
 
-class StackComponentValidationError(ZenMLBaseException):
-    """Raised when a stack component configuration is not valid."""
-
-
 class ProvisioningError(ZenMLBaseException):
     """Raised when an error occurs when provisioning resources for a StackComponent."""
 

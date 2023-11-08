@@ -41,7 +41,12 @@ class S3Integration(Integration):
     #
     # The above command installs boto3==1.26.76, so we use the same version
     # here to avoid the dependency resolution overhead.
-    REQUIREMENTS = ["s3fs>2022.3.0,<=2023.4.0", "boto3<=1.26.76"]
+    REQUIREMENTS = [
+        "s3fs>2022.3.0,<=2023.4.0",
+        "boto3<=1.26.76",
+        # The following dependencies are only required for the AWS connector.
+        "aws-profile-manager",
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

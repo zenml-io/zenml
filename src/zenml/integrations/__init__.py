@@ -69,5 +69,5 @@ from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
 
 if sys.version_info > (3, 7):
-    from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
+    # from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
     from zenml.integrations.langchain import LangchainIntegration  # noqa

@@ -16,18 +16,16 @@
 #
 
 
-from config import DEFAULT_PIPELINE_EXTRAS, PIPELINE_SETTINGS, MetaConfig
 from steps import (
     data_loader,
     drift_quality_gate,
     inference_data_preprocessor,
-    inference_get_current_version,
     inference_predict,
     notify_on_failure,
     notify_on_success,
 )
 
-from zenml import pipeline
+from zenml import get_pipeline_context, pipeline
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import evidently_report_step
@@ -39,11 +37,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@pipeline(
-    settings=PIPELINE_SETTINGS,
-    on_failure=notify_on_failure,
-    extra=DEFAULT_PIPELINE_EXTRAS,
-)
+@pipeline(on_failure=notify_on_failure)
 def e2e_use_case_batch_inference():
     """
     Model batch inference pipeline.
@@ -60,7 +54,6 @@ def e2e_use_case_batch_inference():
         dataset_inf=df_inference,
         preprocess_pipeline=ExternalArtifact(
             name="preprocess_pipeline",
-            pipeline_name=MetaConfig.pipeline_name_training,
         ),
         target=target,
     )
@@ -68,7 +61,6 @@ def e2e_use_case_batch_inference():
     report, _ = evidently_report_step(
         reference_dataset=ExternalArtifact(
             name="dataset_trn",
-            pipeline_name=MetaConfig.pipeline_name_training,
         ),
         comparison_dataset=df_inference,
         ignored_cols=["target"],
@@ -78,11 +70,12 @@ def e2e_use_case_batch_inference():
     )
     drift_quality_gate(report)
     ########## Inference stage  ##########
-    registry_model_version = inference_get_current_version()
     deployment_service = mlflow_model_registry_deployer_step(
-        registry_model_name=MetaConfig.mlflow_model_name,
-        registry_model_version=registry_model_version,
-        replace_existing=False,
+        registry_model_name=get_pipeline_context().extra["mlflow_model_name"],
+        registry_model_version=ExternalArtifact(
+            model_artifact_name="promoted_version",
+        ),
+        replace_existing=True,
     )
     inference_predict(
         deployment_service=deployment_service,

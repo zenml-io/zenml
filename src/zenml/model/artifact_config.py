@@ -144,18 +144,18 @@ class ArtifactConfig(BaseModel):
 
         # Create the model version artifact link using the ZenML client
         existing_links = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model_version.model.id,
+            model_version_name_or_number_or_id=model_version.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=client.active_user.id,
                 workspace_id=client.active_workspace.id,
                 name=artifact_name,
-                model_id=model_version.model.id,
-                model_version_id=model_version.id,
                 only_artifacts=not (is_model_object or is_deployment),
                 only_deployments=is_deployment,
                 only_model_objects=is_model_object,
                 pipeline_name=self._pipeline_name,
                 step_name=self._step_name,
-            )
+            ),
         )
         if len(existing_links):
             if self.overwrite:
