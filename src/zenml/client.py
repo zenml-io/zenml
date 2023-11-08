@@ -5345,7 +5345,10 @@ class Client(metaclass=ClientMetaClass):
         # If more than one entity with the same name is found, raise an error.
         entity_label = get_method.__name__.replace("get_", "") + "s"
         formatted_entity_items = [
-            f"- {item.name}: (id: {item.id})\n" for item in entity.items
+            f"- {item.name}: (id: {item.id})\n"
+            if hasattr(item, "name")
+            else f"- {item.id}\n"
+            for item in entity.items
         ]
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
