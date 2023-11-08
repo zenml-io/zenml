@@ -2683,6 +2683,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.get_model_version(
                     model_name_or_id=model.id,
+                    model_version_name_or_number_or_id=ModelStages.LATEST,
                 )
 
     def test_latest_found(self):
@@ -2708,6 +2709,7 @@ class TestModelVersion:
             )
             found_latest = zs.get_model_version(
                 model_name_or_id=model.id,
+                model_version_name_or_number_or_id=ModelStages.LATEST,
             )
             assert latest.id == found_latest.id
 
