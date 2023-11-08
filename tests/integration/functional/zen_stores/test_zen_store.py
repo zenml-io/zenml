@@ -2890,10 +2890,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
 
@@ -2909,13 +2906,9 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
-            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
@@ -2923,16 +2916,10 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[1].id,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
-            assert al2.link_version == 2
             assert al2.artifact == artifacts[1].id
-
-            assert al1.name == al2.name
 
     def test_link_create_overwrite_not_deleted(self):
         with ModelVersionContext(True, create_artifacts=2) as (
@@ -2946,14 +2933,10 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
-            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             with pytest.raises(EntityExistsError):
                 zs.create_model_version_artifact_link(
@@ -2962,11 +2945,8 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        name="link",
                         artifact=artifacts[1].id,
                         overwrite=True,
-                        pipeline_name="pipeline",
-                        step_name="step",
                     )
                 )
 
@@ -2982,14 +2962,10 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
                     overwrite=True,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
-            assert al1.link_version == 1
             assert al1.artifact == artifacts[0].id
             zs.delete_model_version_artifact_link(
                 model_name_or_id=model_version.model.id,
@@ -3002,14 +2978,10 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[1].id,
                     overwrite=True,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
-            assert al2.link_version == 1
             assert al2.artifact == artifacts[1].id
             assert al1.id != al2.id
 
@@ -3025,10 +2997,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
             # id collision
@@ -3039,10 +3008,7 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        name="link2",
                         artifact=artifacts[0].id,
-                        pipeline_name="pipeline",
-                        step_name="step",
                     )
                 )
 
@@ -3060,10 +3026,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="output",
                     artifact=artifacts[0].id,
-                    pipeline_name="pipeline",
-                    step_name="step1",
                     overwrite=False,
                 )
             )
@@ -3073,23 +3036,17 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="output",
                     artifact=artifacts[1].id,
-                    pipeline_name="pipeline",
-                    step_name="step2",
                     overwrite=False,
                 )
             )
 
             links = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
-                    pipeline_name="pipeline",
-                    name="output",
                     model_id=model_version.model.id,
                     model_version_id=model_version.id,
                 )
             )
-            assert links[0].link_version == links[1].link_version == 1
             assert len(links) == 2
 
     def test_link_delete_found(self):
@@ -3098,22 +3055,19 @@ class TestModelVersionArtifactLinks:
             artifacts,
         ):
             zs = Client().zen_store
-            zs.create_model_version_artifact_link(
+            link = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     artifact=artifacts[0].id,
-                    pipeline_name="pipeline",
-                    step_name="step",
                 )
             )
             zs.delete_model_version_artifact_link(
                 model_name_or_id=model_version.model.id,
                 model_version_name_or_id=model_version.id,
-                model_version_artifact_link_name_or_id="link",
+                model_version_artifact_link_name_or_id=link.id,
             )
             mvls = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
@@ -3157,11 +3111,11 @@ class TestModelVersionArtifactLinks:
                 )
             )
             assert len(mvls) == 0
-            for n, mo, dep, artifact in [
-                ("link1", False, False, artifacts[0]),
-                ("link2", True, False, artifacts[1]),
-                ("link3", False, True, artifacts[2]),
-                ("link1", False, False, artifacts[3]),
+            for mo, dep, artifact in [
+                (False, False, artifacts[0]),
+                (True, False, artifacts[1]),
+                (False, True, artifacts[2]),
+                (False, False, artifacts[3]),
             ]:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequestModel(
@@ -3169,12 +3123,9 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        name=n,
                         artifact=artifact.id,
                         is_model_object=mo,
                         is_deployment=dep,
-                        pipeline_name="pipeline",
-                        step_name="step",
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
@@ -3192,11 +3143,7 @@ class TestModelVersionArtifactLinks:
                     only_artifacts=True,
                 )
             )
-            assert (
-                len(mvls) == 2
-                and mvls[0].name == "link1"
-                and mvls[1].name == "link1"
-            )
+            assert len(mvls) == 2
 
             mvls = zs.list_model_version_artifact_links(
                 ModelVersionArtifactFilterModel(
@@ -3280,7 +3227,6 @@ class TestModelVersionPipelineRunLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=prs[0].id,
                 )
             )
@@ -3298,7 +3244,6 @@ class TestModelVersionPipelineRunLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=prs[0].id,
                 )
             )
@@ -3309,7 +3254,6 @@ class TestModelVersionPipelineRunLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=uuid4(),
                 )
             )
@@ -3321,7 +3265,6 @@ class TestModelVersionPipelineRunLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=prs[0].id,
                 )
             )
@@ -3333,7 +3276,7 @@ class TestModelVersionPipelineRunLinks:
             prs,
         ):
             zs = Client().zen_store
-            zs.create_model_version_pipeline_run_link(
+            link = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
@@ -3344,7 +3287,9 @@ class TestModelVersionPipelineRunLinks:
                 )
             )
             zs.delete_model_version_pipeline_run_link(
-                model_version.model.id, model_version.id, "link"
+                model_version.model.id,
+                model_version.id,
+                link.id,
             )
             mvls = zs.list_model_version_pipeline_run_links(
                 ModelVersionPipelineRunFilterModel(
@@ -3393,7 +3338,6 @@ class TestModelVersionPipelineRunLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        name=n,
                         pipeline_run=pr.id,
                     )
                 )
