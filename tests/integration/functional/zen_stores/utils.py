@@ -28,6 +28,7 @@ from zenml.enums import (
     SecretScope,
     StackComponentType,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyRequestModel,
     ArtifactFilterModel,
@@ -163,7 +164,7 @@ class PipelineRunContext:
 class UserContext:
     def __init__(
         self,
-        user_name: Optional[str] = "aria",
+        user_name: Optional[str] = None,
         password: Optional[str] = None,
         login: bool = False,
         existing_user: bool = False,
@@ -171,8 +172,10 @@ class UserContext:
     ):
         if existing_user:
             self.user_name = user_name
+        elif user_name:
+            self.user_name = user_name
         else:
-            self.user_name = sample_name(user_name)
+            self.user_name = sample_name("aria")
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
@@ -183,7 +186,7 @@ class UserContext:
     def __enter__(self):
         if not self.existing_user:
             new_user = UserRequestModel(
-                name=self.user_name, password=self.password
+                name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
         else:
@@ -219,7 +222,7 @@ class UserContext:
         if not self.existing_user and self.delete:
             try:
                 self.store.delete_user(self.created_user.id)
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 pass
 
 
@@ -227,6 +230,7 @@ class ServiceAccountContext:
     def __init__(
         self,
         name: str = "aria",
+        description: str = "Aria's service account",
         login: bool = False,
         existing_account: bool = False,
         delete: bool = True,
@@ -235,6 +239,7 @@ class ServiceAccountContext:
             self.name = name
         else:
             self.name = sample_name(name)
+        self.description = description
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
@@ -245,6 +250,7 @@ class ServiceAccountContext:
         if not self.existing_account:
             new_account = ServiceAccountRequestModel(
                 name=self.name,
+                description=self.description,
                 active=True,
             )
             self.created_service_account = self.store.create_service_account(
@@ -298,7 +304,7 @@ class ServiceAccountContext:
                 self.store.delete_service_account(
                     self.created_service_account.id
                 )
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 pass
 
 
@@ -595,11 +601,12 @@ class ModelVersionContext:
         create_version: bool = False,
         create_artifacts: int = 0,
         create_prs: int = 0,
+        user_id: Optional[uuid.UUID] = None,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
-        self.user = client.active_user.id
-        self.model = "su_model"
+        self.user = user_id or client.active_user.id
+        self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
         self.create_version = create_version

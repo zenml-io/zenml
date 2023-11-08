@@ -164,8 +164,8 @@ class ServiceAccountRequestModel(BaseRequestModel):
         title="The unique name for the service account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: str = Field(
-        default="",
+    description: Optional[str] = Field(
+        default=None,
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )

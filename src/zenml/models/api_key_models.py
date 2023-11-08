@@ -262,8 +262,19 @@ class APIKeyFilterModel(BaseFilterModel):
 # ------- #
 
 
-class APIKeyRequestModel(APIKeyBaseModel, BaseRequestModel):
+class APIKeyRequestModel(BaseRequestModel):
     """Request model for API keys."""
+
+    name: str = Field(
+        title="The name of the API Key.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the API Key.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
 
 
 class APIKeyRotateRequestModel(BaseModel):

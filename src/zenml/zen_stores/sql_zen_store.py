@@ -1282,8 +1282,8 @@ class SqlZenStore(BaseZenStore):
             workspace = self._get_workspace_schema(
                 workspace_name_or_id=stack.workspace, session=session
             )
-            user = self._get_user_schema(
-                user_name_or_id=stack.user, session=session
+            user = self._get_account_schema(
+                account_name_or_id=stack.user, session=session
             )
             raise StackExistsError(
                 f"Unable to register stack with name "
@@ -1326,7 +1326,7 @@ class SqlZenStore(BaseZenStore):
                 f"'{workspace.name}'"
             )
             if existing_shared_stack.user_id:
-                owner_of_shared = self._get_user_schema(
+                owner_of_shared = self._get_account_schema(
                     existing_shared_stack.user_id, session=session
                 )
                 error_msg += f" owned by '{owner_of_shared.name}'."
@@ -1999,39 +1999,6 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
-    def _get_user_account(
-        self, user_name_or_id: Union[str, UUID], session: Session
-    ) -> UserSchema:
-        """Helper method to fetch a user account by name or ID.
-
-        This is used on top of `_get_user_schema` to additionally filter
-        only user schemas that are user accounts. This is required because
-        in the DB, user accounts and service accounts are stored using the same
-        UserSchema for legacy reasons.
-
-        Args:
-            user_name_or_id: The name or ID of the user account
-                to fetch.
-            session: The database session to use for the query.
-
-        Returns:
-            The requested user account.
-
-        Raises:
-            KeyError: if the name or ID identifies a service account
-                instead of a user account.
-        """
-        account = self._get_user_schema(user_name_or_id, session=session)
-        if account.is_service_account:
-            raise KeyError(
-                f"Unable to get user account with name or ID "
-                f"'{user_name_or_id}': No user account with "
-                "this name or ID was found, but a service "
-                "account with this name or ID is registered."
-            )
-
-        return account
-
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
@@ -2046,22 +2013,25 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if an account with the given name already exists
-            existing_user = self._get_user_account(
-                user.name,
-                session=session,
-            )
-            if existing_user is not None:
+            # Check if a user account with the given name already exists
+            try:
+                self._get_account_schema(
+                    user.name,
+                    session=session,
+                    # Filter out service accounts
+                    service_account=False,
+                )
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
                     f"Found an existing user account with this name."
                 )
+            except KeyError:
+                pass
 
             # Create the user
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
             session.commit()
-
             return new_user.to_model()
 
     def get_user(
@@ -2074,7 +2044,10 @@ class SqlZenStore(BaseZenStore):
         # noqa: DAR401
         # noqa: DAR402
 
-        Raises a KeyError in case a user with that id does not exist.
+        Raises a KeyError in case a user with that name or id does not exist.
+
+        For backwards-compatibility reasons, this method can also be called
+        to fetch service accounts by their ID.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
@@ -2090,19 +2063,16 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id = self._default_user_name
 
         with Session(self.engine) as session:
-            # Until the dashboard can handle service accounts independently from
-            # user accounts, keep this here for backwards compatibility: this
-            # method can be used to also retrieve service accounts.
-            try:
-                user = self._get_user_account(user_name_or_id, session=session)
-            except KeyError as e:
-                try:
-                    user = self._get_service_account(
-                        service_account_name_or_id=user_name_or_id,
-                        session=session,
-                    )
-                except KeyError:
-                    raise e
+            # If a UUID is passed, we also allow fetching service accounts
+            # with that ID.
+            service_account: Optional[bool] = False
+            if uuid_utils.is_valid_uuid(user_name_or_id):
+                service_account = None
+            user = self._get_account_schema(
+                user_name_or_id,
+                session=session,
+                service_account=service_account,
+            )
 
             return user.to_model(include_private=include_private)
 
@@ -2118,7 +2088,9 @@ class SqlZenStore(BaseZenStore):
             The requested user, if it was found.
         """
         with Session(self.engine) as session:
-            user = self._get_user_account(user_name_or_id, session=session)
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
             return UserAuthModel(
                 id=user.id,
                 name=user.name,
@@ -2173,7 +2145,9 @@ class SqlZenStore(BaseZenStore):
                 a name that is already taken by another user or service account.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_account(user_id, session=session)
+            existing_user = self._get_account_schema(
+                user_id, session=session, service_account=False
+            )
 
             if (
                 user_update.name is not None
@@ -2186,7 +2160,11 @@ class SqlZenStore(BaseZenStore):
                     )
 
                 try:
-                    self._get_user_account(user_update.name, session=session)
+                    self._get_account_schema(
+                        user_update.name,
+                        session=session,
+                        service_account=False,
+                    )
                     raise EntityExistsError(
                         f"Unable to update user account with name "
                         f"'{user_update.name}': Found an existing user "
@@ -2214,7 +2192,9 @@ class SqlZenStore(BaseZenStore):
                 if the user already owns resources.
         """
         with Session(self.engine) as session:
-            user = self._get_user_account(user_name_or_id, session=session)
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
             if user.name == self._default_user_name:
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
@@ -2236,41 +2216,6 @@ class SqlZenStore(BaseZenStore):
     # Service Accounts
     # ----------------
 
-    def _get_service_account(
-        self, service_account_name_or_id: Union[str, UUID], session: Session
-    ) -> UserSchema:
-        """Helper method to fetch a service account by name or ID.
-
-        This is used on top of `_get_user_schema` to additionally filter
-        only user schemas that are service accounts. This is required because
-        in the DB, user accounts and service accounts are stored using the same
-        UserSchema for legacy reasons.
-
-        Args:
-            service_account_name_or_id: The name or ID of the service account
-                to fetch.
-            session: The database session to use for the query.
-
-        Returns:
-            The requested service account.
-
-        Raises:
-            KeyError: if the name or ID identifies a regular user account
-                instead of a service account.
-        """
-        account = self._get_user_schema(
-            service_account_name_or_id, session=session
-        )
-        if not account.is_service_account:
-            raise KeyError(
-                f"Unable to get service account with name or ID "
-                f"'{service_account_name_or_id}': No service account with "
-                "this name or ID was found but a user account with this name "
-                "or ID is registered."
-            )
-
-        return account
-
     def create_service_account(
         self, service_account: ServiceAccountRequestModel
     ) -> ServiceAccountResponseModel:
@@ -2289,15 +2234,17 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if a service account with the given name already
             # exists
-            existing_account = self._get_service_account(
-                service_account.name, session=session
-            )
-            if existing_account is not None:
+            try:
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
                 raise EntityExistsError(
                     f"Unable to create service account with name "
                     f"'{service_account.name}': Found existing service "
                     "account with this name."
                 )
+            except KeyError:
+                pass
 
             # Create the service account
             new_account = UserSchema.from_service_account_request(
@@ -2324,8 +2271,10 @@ class SqlZenStore(BaseZenStore):
             The requested service account, if it was found.
         """
         with Session(self.engine) as session:
-            account = self._get_service_account(
-                service_account_name_or_id, session=session
+            account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
             )
 
             return account.to_service_account_model()
@@ -2376,8 +2325,10 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            existing_service_account = self._get_service_account(
-                service_account_name_or_id, session=session
+            existing_service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
             )
 
             if (
@@ -2386,8 +2337,10 @@ class SqlZenStore(BaseZenStore):
                 != existing_service_account.name
             ):
                 try:
-                    self._get_service_account(
-                        service_account_update.name, session=session
+                    self._get_account_schema(
+                        service_account_update.name,
+                        session=session,
+                        service_account=True,
                     )
                     raise EntityExistsError(
                         f"Unable to update service account with name "
@@ -2422,8 +2375,10 @@ class SqlZenStore(BaseZenStore):
                 to create other resources.
         """
         with Session(self.engine) as session:
-            service_account = self._get_service_account(
-                service_account_name_or_id, session=session
+            service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
             )
             # Check if the service account has any resources associated with it
             # and raise an error if it does.
@@ -2464,8 +2419,8 @@ class SqlZenStore(BaseZenStore):
                 configured for the given service account.
         """
         # Fetch the service account, to make sure it exists
-        service_account = self._get_service_account(
-            service_account_id, session=session
+        service_account = self._get_account_schema(
+            service_account_id, session=session, service_account=True
         )
 
         if uuid_utils.is_valid_uuid(api_key_name_or_id):
@@ -2506,8 +2461,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Fetch the service account
-            service_account = self._get_service_account(
-                service_account_id, session=session
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
             )
 
             # Check if a key with the same name already exists for the same
@@ -2596,8 +2551,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Fetch the service account
-            service_account = self._get_service_account(
-                service_account_id, session=session
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
             )
 
             filter_model.set_service_account(service_account.id)
@@ -2864,8 +2819,8 @@ class SqlZenStore(BaseZenStore):
             if "users" in team_update.__fields_set__ and team_update.users:
                 for user in team_update.users:
                     existing_team.users.append(
-                        self._get_user_schema(
-                            user_name_or_id=user, session=session
+                        self._get_account_schema(
+                            account_name_or_id=user, session=session
                         )
                     )
 
@@ -3123,7 +3078,7 @@ class SqlZenStore(BaseZenStore):
                 workspace = self._get_workspace_schema(
                     user_role_assignment.workspace, session=session
                 )
-            user = self._get_user_schema(
+            user = self._get_account_schema(
                 user_role_assignment.user, session=session
             )
             query = select(UserRoleAssignmentSchema).where(
@@ -6099,29 +6054,69 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _get_user_schema(
+    def _get_account_schema(
         self,
-        user_name_or_id: Union[str, UUID],
+        account_name_or_id: Union[str, UUID],
         session: Session,
+        service_account: Optional[bool] = None,
     ) -> UserSchema:
-        """Gets a user schema by name or ID.
+        """Gets a user account or a service account schema by name or ID.
 
-        This is a helper method that is used in various places to find the
-        user associated to some other object.
+        This helper method is used to fetch both user accounts and service
+        accounts by name or ID. It is required because in the DB, user accounts
+        and service accounts are stored using the same UserSchema to make
+        it easier to implement resource ownership.
 
         Args:
-            user_name_or_id: The name or ID of the user to get.
+            account_name_or_id: The name or ID of the account to get.
             session: The database session to use.
+            service_account: Whether to get a service account or a user
+                account. If None, both are considered with a priority for
+                user accounts if both exist (e.g. with the same name).
 
         Returns:
-            The user schema.
+            The account schema.
+
+        Raises:
+            KeyError: If no account with the given name or ID exists.
         """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=user_name_or_id,
-            schema_class=UserSchema,
-            schema_name="user",
-            session=session,
+        account_type = " "
+        query = select(UserSchema)
+        if uuid_utils.is_valid_uuid(account_name_or_id):
+            query = query.where(UserSchema.id == account_name_or_id)
+        else:
+            query = query.where(UserSchema.name == account_name_or_id)
+        if service_account is True:
+            query = query.where(
+                UserSchema.is_service_account == True  # noqa: E712
+            )
+            account_type = "service "
+        elif service_account is False:
+            # != True is required to also include NULL values
+            query = query.where(
+                UserSchema.is_service_account != True  # noqa: E712
+            )
+            account_type = "user "
+        error_msg = (
+            f"No {account_type}account with the '{account_name_or_id}' name "
+            "or ID was found"
         )
+
+        results = session.exec(query).all()
+
+        if len(results) == 0:
+            raise KeyError(error_msg)
+
+        if len(results) == 1:
+            return results[0]
+
+        # We could have two results if a service account and a user account
+        # have the same name. In that case, we return the user account.
+        for result in results:
+            if not result.is_service_account:
+                return result
+
+        raise KeyError(error_msg)
 
     def _get_team_schema(
         self,

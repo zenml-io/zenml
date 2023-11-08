@@ -167,7 +167,7 @@ class UserSchema(NamedSchema, table=True):
         """
         return cls(
             name=model.name,
-            description=model.description,
+            description=model.description or "",
             active=model.active,
             is_service_account=True,
             email_opted_in=False,

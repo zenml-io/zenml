@@ -102,7 +102,7 @@ class APIKeySchema(NamedSchema, table=True):
         return (
             cls(
                 name=request.name,
-                description=request.description,
+                description=request.description or "",
                 key=hashed_key,
                 service_account_id=service_account_id,
                 created=now,
@@ -170,14 +170,9 @@ class APIKeySchema(NamedSchema, table=True):
         Returns:
             The updated `APIKeySchema`.
         """
-        if update.name:
-            self.name = update.name
-
-        if update.description:
-            self.description = update.description
-
-        if update.active is not None:
-            self.active = update.active
+        for field, value in update.dict(exclude_none=True).items():
+            if hasattr(self, field):
+                setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
