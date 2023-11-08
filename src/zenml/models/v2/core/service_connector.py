@@ -490,6 +490,124 @@ class ServiceConnectorResponse(
 
         return self.expires_at < datetime.now(timezone.utc)
 
+    def validate_and_configure_resources(
+        self,
+        connector_type: "ServiceConnectorTypeModel",
+        resource_types: Optional[Union[str, List[str]]] = None,
+        resource_id: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+    ) -> None:
+        """Validate and configure the resources that the connector can be used to access.
+
+        Args:
+            connector_type: The connector type specification used to validate
+                the connector configuration.
+            resource_types: The type(s) of resource that the connector instance
+                can be used to access. If omitted, a multi-type connector is
+                configured.
+            resource_id: Uniquely identifies a specific resource instance that
+                the connector instance can be used to access.
+            configuration: The connector configuration.
+            secrets: The connector secrets.
+
+        Raises:
+            ValueError: If the connector configuration is not valid.
+        """
+        if resource_types is None:
+            resource_type = None
+        elif isinstance(resource_types, str):
+            resource_type = resource_types
+        elif len(resource_types) == 1:
+            resource_type = resource_types[0]
+        else:
+            # Multiple or no resource types specified
+            resource_type = None
+
+        try:
+            # Validate the connector configuration and retrieve the resource
+            # specification
+            (
+                auth_method_spec,
+                resource_spec,
+            ) = connector_type.find_resource_specifications(
+                self.auth_method,
+                resource_type,
+            )
+        except (KeyError, ValueError) as e:
+            raise ValueError(
+                f"connector configuration is not valid: {e}"
+            ) from e
+
+        if resource_type and resource_spec:
+            self.resource_types = [resource_spec.resource_type]
+            self.resource_id = resource_id
+            self.supports_instances = resource_spec.supports_instances
+        else:
+            # A multi-type connector is associated with all resource types
+            # that it supports, does not have a resource ID configured
+            # and it's unclear if it supports multiple instances or not
+            self.resource_types = list(
+                connector_type.resource_type_dict.keys()
+            )
+            self.supports_instances = False
+
+        if configuration is None and secrets is None:
+            # No configuration or secrets provided
+            return
+
+        self.configuration = {}
+        self.secrets = {}
+
+        # Validate and configure the connector configuration and secrets
+        configuration = configuration or {}
+        secrets = secrets or {}
+        supported_attrs = []
+        for attr_name, attr_schema in auth_method_spec.config_schema.get(
+            "properties", {}
+        ).items():
+            supported_attrs.append(attr_name)
+            required = attr_name in auth_method_spec.config_schema.get(
+                "required", []
+            )
+            secret = attr_schema.get("format", "") == "password"
+            value = configuration.get(attr_name, secrets.get(attr_name))
+            if required:
+                if value is None:
+                    raise ValueError(
+                        "connector configuration is not valid: missing "
+                        f"required attribute '{attr_name}'"
+                    )
+            elif value is None:
+                continue
+
+            # Split the configuration into secrets and non-secrets
+            if secret:
+                if isinstance(value, SecretStr):
+                    self.secrets[attr_name] = value
+                else:
+                    self.secrets[attr_name] = SecretStr(value)
+            else:
+                self.configuration[attr_name] = value
+
+        # Warn about attributes that are not part of the configuration schema
+        for attr_name in set(list(configuration.keys())) - set(
+            supported_attrs
+        ):
+            logger.warning(
+                f"Ignoring unknown attribute in connector '{self.name}' "
+                f"configuration {attr_name}. Supported attributes are: "
+                f"{supported_attrs}",
+            )
+
+        # Warn about secrets that are not part of the configuration schema
+        for attr_name in set(secrets.keys()) - self.secrets.keys():
+            logger.warning(
+                f"Ignoring unknown attribute in connector '{self.name}' "
+                f"configuration {attr_name}. Supported attributes are: "
+                f"{supported_attrs}",
+            )
+
     # Body and metadata properties
     @property
     def description(self) -> str:

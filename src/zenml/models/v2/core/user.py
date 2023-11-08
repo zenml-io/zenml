@@ -39,7 +39,7 @@ from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
-    from passlib.context import CryptContext  # type: ignore[import]
+    from passlib.context import CryptContext
 
     from zenml.models.v2.core.role import RoleResponse
 

@@ -795,12 +795,12 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             name=name,
             body=ServiceConnectorResponseBody(
                 user=user,
-            ),
-            metadata=ServiceConnectorResponseMetadata(
                 created=datetime.utcnow(),
                 updated=datetime.utcnow(),
-                workspace=workspace,
                 is_shared=is_shared,
+            ),
+            metadata=ServiceConnectorResponseMetadata(
+                workspace=workspace,
                 description=description,
                 connector_type=self.get_type(),
                 auth_method=self.auth_method,

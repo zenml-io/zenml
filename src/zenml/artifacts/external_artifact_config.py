@@ -62,8 +62,8 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         response = None
-        pipeline = client.get_pipeline(  # type:ignore[arg-type]
-            self.pipeline_name
+        pipeline = client.get_pipeline(
+            self.pipeline_name  # type:ignore[arg-type]
         )
         for artifact in pipeline.last_successful_run.artifacts:
             if artifact.name == self.artifact_name:
@@ -92,8 +92,9 @@ class ExternalArtifactConfiguration(BaseModel):
 
         Raises:
             RuntimeError: If artifact was not found in model version
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
+            RuntimeError: If `model_artifact_name` is set, but `model_name`
+                is empty and model configuration is missing in @step and
+                @pipeline.
         """
         if self.model_name is None:
             if model_config is None:

@@ -84,8 +84,7 @@ from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.schedule import Schedule
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, ScheduleResponse
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -510,7 +509,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         pipeline_name: str,
         run_name: str,
         stack: "Stack",
-        schedule: "Schedule",
+        schedule: "ScheduleResponse",
         pipeline_file_path: str,
         settings: VertexOrchestratorSettings,
     ) -> None:
