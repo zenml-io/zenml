@@ -2684,7 +2684,10 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_build(UUID(id_or_prefix))
+            if not isinstance(id_or_prefix, UUID):
+                id_or_prefix = UUID(id_or_prefix, version=4)
+
+            return self.zen_store.get_build(id_or_prefix)
 
         entity = self.list_builds(
             id=f"startswith:{id_or_prefix}",
