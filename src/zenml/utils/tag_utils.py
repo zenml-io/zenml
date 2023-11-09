@@ -58,7 +58,7 @@ def create_links(
             pass
 
 
-def delete_links(
+def remove_links(
     tag_names: List[str],
     resource_id: UUID,
 ) -> None:

@@ -155,13 +155,13 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        from zenml.utils.tag_utils import create_links, delete_links
+        from zenml.utils.tag_utils import create_links, remove_links
 
         for field, value in model_update.dict(exclude_unset=True).items():
             if field == "add_tags":
                 create_links(value, self.id, TaggableResourceTypes.MODEL)
             elif field == "remove_tags":
-                delete_links(value, self.id)
+                remove_links(value, self.id)
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()
