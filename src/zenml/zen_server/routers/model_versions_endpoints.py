@@ -148,9 +148,7 @@ def delete_model_version(
     Args:
         model_version_id: The name or ID of the model version to delete.
     """
-    zen_store().delete_model_version(
-        model_version_id
-    )
+    zen_store().delete_model_version(model_version_id)
 
 
 ##########################
@@ -165,7 +163,7 @@ def delete_model_version(
 )
 @handle_exceptions
 def list_model_version_artifact_links(
-    model_version_name_or_id: Union[str, UUID],
+    model_version_id: Union[str, UUID],
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
@@ -174,7 +172,7 @@ def list_model_version_artifact_links(
     """Get model version to artifact links according to query filters.
 
     Args:
-        model_version_name_or_id: The name or ID of the model version containing links.
+        model_version_id: ID of the model version containing links.
         model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
             filtering
 
@@ -182,7 +180,7 @@ def list_model_version_artifact_links(
         The model version to artifact links according to query filters.
     """
     return zen_store().list_model_version_artifact_links(
-        model_version_id=model_version_name_or_id,
+        model_version_id=model_version_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
     )
 
@@ -217,7 +215,7 @@ def delete_model_version_artifact_link(
 
 
 @router.get(
-    "/{model_version_name_or_id}" + RUNS,
+    "/{model_version_id}" + RUNS,
     response_model=Page[ModelVersionPipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

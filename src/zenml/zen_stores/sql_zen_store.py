@@ -5841,8 +5841,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelVersionSchema).where(
-                    ModelVersionSchema.id == model_version_id
-                )
+                ModelVersionSchema.id == model_version_id
+            )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
