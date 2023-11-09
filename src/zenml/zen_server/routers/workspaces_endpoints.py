@@ -1295,8 +1295,6 @@ def create_model_version(
 @router.post(
     WORKSPACES
     + "/{workspace_name_or_id}"
-    + MODELS
-    + "/{model_name_or_id}"
     + MODEL_VERSIONS
     + "/{model_version_name_or_id}"
     + ARTIFACTS,
@@ -1306,8 +1304,7 @@ def create_model_version(
 @handle_exceptions
 def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
+    model_version_id: Union[str, UUID],
     model_version_artifact_link: ModelVersionArtifactRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -1316,9 +1313,8 @@ def create_model_version_artifact_link(
     """Create a new model version to artifact link.
 
     Args:
-        model_name_or_id: Name or ID of the model.
         workspace_name_or_id: Name or ID of the workspace.
-        model_version_name_or_id: Name or ID of the model version.
+        model_version_id: Name or ID of the model version.
         model_version_artifact_link: The model version to artifact link to create.
         auth_context: Authentication context.
 
@@ -1331,6 +1327,12 @@ def create_model_version_artifact_link(
             user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
+    if model_version_id != model_version_artifact_link.model_version:
+        raise IllegalOperationError(
+            f"The model version id in your path `{model_version_id}` does not "
+            f"match the model version specified in the request model "
+            f"`{model_version_artifact_link.model_version}`"
+        )
 
     if model_version_artifact_link.workspace != workspace.id:
         raise IllegalOperationError(
