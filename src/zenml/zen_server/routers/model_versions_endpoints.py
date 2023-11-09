@@ -99,7 +99,6 @@ def get_model_version(
 
     Args:
         model_version_id: id of the model version to be retrieved.
-        is_number: If the model_version_name_or_number_or_id is a version number
 
     Returns:
         The model version with the given name or ID.
@@ -136,23 +135,21 @@ def update_model_version(
 
 
 @router.delete(
-    "{model_version_name_or_id}",
+    "{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def delete_model_version(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
+    model_version_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Delete a model by name or ID.
 
     Args:
-        model_name_or_id: The name or ID of the model containing version.
-        model_version_name_or_id: The name or ID of the model version to delete.
+        model_version_id: The name or ID of the model version to delete.
     """
     zen_store().delete_model_version(
-        model_name_or_id, model_version_name_or_id
+        model_version_id
     )
 
 
@@ -162,7 +159,7 @@ def delete_model_version(
 
 
 @router.get(
-    "{model_version_id}" + ARTIFACTS,
+    "/{model_version_id}" + ARTIFACTS,
     response_model=Page[ModelVersionArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -191,7 +188,7 @@ def list_model_version_artifact_links(
 
 
 @router.delete(
-    "{model_version_id}"
+    "/{model_version_id}"
     + ARTIFACTS
     + "{model_version_artifact_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -220,7 +217,7 @@ def delete_model_version_artifact_link(
 
 
 @router.get(
-    "{model_version_name_or_id}" + RUNS,
+    "/{model_version_name_or_id}" + RUNS,
     response_model=Page[ModelVersionPipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -249,7 +246,7 @@ def list_model_version_pipeline_run_links(
 
 
 @router.delete(
-    "{model_version_id}"
+    "/{model_version_id}"
     + RUNS
     + "/{model_version_pipeline_run_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
