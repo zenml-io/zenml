@@ -639,9 +639,6 @@ class StepRunner:
                     artifact_config_ = ArtifactConfig(
                         artifact_name=artifact_name,
                     )
-                    logger.info(
-                        f"Linking artifact `{artifact_name}` to model `{model_config_from_context.name}` version `{model_config_from_context.version}` implicitly."
-                    )
             else:
                 artifact_config_ = artifact_config_.copy()
 
@@ -670,6 +667,10 @@ class StepRunner:
                     )
                     artifact_config_._pipeline_name = context.pipeline.name
                     artifact_config_._step_name = context.step_run.name
+                    logger.debug(
+                        f"Linking artifact `{artifact_name}` to model "
+                        f"`{model_config.name}` version `{model_config.version}`."
+                    )
                     artifact_config_.link_to_model(
                         artifact_uuid=artifact_uuid,
                         model_config=model_config,
