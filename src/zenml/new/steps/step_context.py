@@ -395,16 +395,18 @@ class StepContext(metaclass=SingletonMetaClass):
         return self._get_output(output_name).metadata or {}
 
     def add_output_metadata(
-        self, output_name: Optional[str] = None, **metadata: "MetadataType"
+        self,
+        metadata: Dict[str, "MetadataType"],
+        output_name: Optional[str] = None,
     ) -> None:
         """Adds metadata for a given step output.
 
         Args:
+            metadata: The metadata to add.
             output_name: Optional name of the output for which to add the
                 metadata. If no name is given and the step only has a single
                 output, the metadata of this output will be added. If the
                 step has multiple outputs, an exception will be raised.
-            **metadata: The metadata to add.
         """
         output = self._get_output(output_name)
         if not output.metadata:

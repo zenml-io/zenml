@@ -15,103 +15,64 @@
 
 from typing import Dict, Optional
 
+from zenml.client import Client
 from zenml.exceptions import StepContextError
 from zenml.metadata.metadata_types import MetadataType
 from zenml.new.steps.step_context import get_step_context
 
 
 def log_artifact_metadata(
-    output_name: Optional[str] = None,
-    **kwargs: MetadataType,
+    metadata: Dict[str, MetadataType],
+    artifact_name: Optional[str] = None,
+    artifact_version: Optional[str] = None,
 ) -> None:
     """Log artifact metadata.
 
+    This function can be used to log metadata for either existing artifacts or
+    artifacts that are newly created in the same step.
+
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
-            be omitted if there is only one output artifact.
-        **kwargs: Metadata to log.
+        metadata: The metadata to log.
+        artifact_name: The name of the artifact to log metadata for. Can
+            be omitted when being called inside a step with only one output.
+        artifact_version: The version of the artifact to log metadata for. If
+            not provided, the default behavior is as follows:
+            - when being called inside a step that produces an artifact named
+                `artifact_name`, the metadata will be associated to the
+                corresponding newly created artifact.
+            - when being called outside of a step, or in a step that does not
+                produce any artifact named `artifact_name`, the metadata will
+                be associated to the latest version of that artifact.
 
     Raises:
-        RuntimeError: If the function is called outside of a step.
-        ValueError: If no output name is provided and there is more than one
-            output or if the output name is does not exist.
+        ValueError:
+            - If no artifact name is provided and the function is not called
+                inside a step with a single output.
+            - If neither an artifact nor an output with the given name exists.
     """
-    if not kwargs:
-        return
-
     try:
         step_context = get_step_context()
+        in_step_outputs = artifact_name in step_context._outputs
     except StepContextError:
-        raise RuntimeError("Cannot log artifact metadata outside of a step.")
+        step_context = None
+        in_step_outputs = False
 
-    try:
-        step_context.add_output_metadata(output_name=output_name, **kwargs)
-    except StepContextError as e:
-        raise ValueError(e)
+    if not step_context or not in_step_outputs or artifact_version:
+        if not artifact_name:
+            raise ValueError(
+                "Artifact name must be provided unless the function is called "
+                "inside a step with a single output."
+            )
+        client = Client()
+        artifact = client.get_artifact(artifact_name, artifact_version)
+        # TODO
+        # update_model = ArtifactUpdateModel(metadata=metadata)
+        # client.update_artifact(artifact.id, update_model)
 
-
-def log_model_object_metadata(
-    output_name: Optional[str] = None,
-    description: Optional[str] = None,
-    metrics: Optional[Dict[str, MetadataType]] = None,
-    hyperparameters: Optional[Dict[str, MetadataType]] = None,
-    **kwargs: MetadataType,
-) -> None:
-    """Log metadata for a model.
-
-    Args:
-        output_name: The output name of the artifact to log metadata for. Can
-            be omitted if there is only one output artifact.
-        description: A description of the model.
-        metrics: The metrics to log.
-        hyperparameters: The hyperparameters to log.
-        **kwargs: Other metadata to log.
-    """
-    if description:
-        kwargs["description"] = description
-    if metrics:
-        kwargs["metrics"] = metrics
-    if hyperparameters:
-        kwargs["hyperparameters"] = hyperparameters
-    log_artifact_metadata(
-        output_name=output_name,
-        **kwargs,
-    )
-
-
-def log_deployment_metadata(
-    output_name: Optional[str] = None,
-    description: Optional[str] = None,
-    predict_url: Optional[str] = None,
-    explain_url: Optional[str] = None,
-    healthcheck_url: Optional[str] = None,
-    deployer_ui_url: Optional[str] = None,
-    **kwargs: MetadataType,
-) -> None:
-    """Log metadata for a deployment.
-
-    Args:
-        output_name: The output name of the artifact to log metadata for. Can
-            be omitted if there is only one output artifact.
-        description: A description of the deployment.
-        predict_url: The predict URL of the deployment.
-        explain_url: The explain URL of the deployment.
-        healthcheck_url: The healthcheck URL of the deployment.
-        deployer_ui_url: The deployer UI URL of the deployment.
-        **kwargs: Other metadata to log.
-    """
-    if description:
-        kwargs["description"] = description
-    if predict_url:
-        kwargs["predict_url"] = predict_url
-    if explain_url:
-        kwargs["explain_url"] = explain_url
-    if healthcheck_url:
-        kwargs["healthcheck_url"] = healthcheck_url
-    if deployer_ui_url:
-        kwargs["deployer_ui_url"] = deployer_ui_url
-
-    log_artifact_metadata(
-        output_name=output_name,
-        **kwargs,
-    )
+    else:
+        try:
+            step_context.add_output_metadata(
+                metadata=metadata, output_name=artifact_name
+            )
+        except StepContextError as e:
+            raise ValueError(e)
