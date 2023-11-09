@@ -135,7 +135,7 @@ class ModelConfig(BaseModel):
                         f"Cannot create version `{self.version}` "
                         f"for model `{self.name}` since it already exists. "
                         "This could happen for unforeseen reasons (e.g. unexpected "
-                        "intteruption of previous pipeline run flow).\n"
+                        "interruption of previous pipeline run flow).\n"
                         "If you would like to remove the staling version use "
                         "following CLI command:\n"
                         f"`zenml model version delete {self.name} {self.version}`"
