@@ -68,6 +68,14 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
         title="The key of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    value: MetadataType = Field(
+        title="The value of the metadata.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    type: MetadataTypeEnum = Field(
+        title="The type of the metadata.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -84,14 +92,6 @@ class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     )
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
-    )
-    value: MetadataType = Field(
-        title="The value of the metadata.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    type: MetadataTypeEnum = Field(
-        title="The type of the metadata.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
@@ -115,6 +115,16 @@ class RunMetadataResponse(
         return self.get_body().key
 
     @property
+    def value(self) -> MetadataType:
+        """The `value` property."""
+        return self.get_body().value
+
+    @property
+    def type(self) -> MetadataTypeEnum:
+        """The `type` property."""
+        return self.get_body().type
+
+    @property
     def pipeline_run_id(self) -> Optional[UUID]:
         """The `pipeline_run_id` property."""
         return self.get_metadata().pipeline_run_id
@@ -133,16 +143,6 @@ class RunMetadataResponse(
     def stack_component_id(self) -> Optional[UUID]:
         """The `stack_component_id` property."""
         return self.get_metadata().stack_component_id
-
-    @property
-    def value(self) -> MetadataType:
-        """The `value` property."""
-        return self.get_metadata().value
-
-    @property
-    def type(self) -> MetadataTypeEnum:
-        """The `type` property."""
-        return self.get_metadata().type
 
 
 # ------------------ Filter Model ------------------

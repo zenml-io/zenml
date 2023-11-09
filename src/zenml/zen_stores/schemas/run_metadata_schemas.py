@@ -129,6 +129,8 @@ class RunMetadataSchema(BaseSchema, table=True):
             key=self.key,
             created=self.created,
             updated=self.updated,
+            value=json.loads(self.value),
+            type=self.type,
         )
         metadata = None
         if hydrate:
@@ -138,8 +140,6 @@ class RunMetadataSchema(BaseSchema, table=True):
                 step_run_id=self.step_run_id,
                 artifact_id=self.artifact_id,
                 stack_component_id=self.stack_component_id,
-                value=json.loads(self.value),
-                type=self.type,
             )
 
         return RunMetadataResponse(
