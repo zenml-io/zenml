@@ -38,8 +38,10 @@ class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
 
     Attributes:
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on KFP. This setting only
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`. This setting only
             has an effect when specified on the pipeline and will be ignored if
             specified on steps.
         timeout: How many seconds to wait for synchronous runs.
@@ -55,7 +57,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply.
     """
 
-    synchronous: bool = False
+    synchronous: bool = True
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}

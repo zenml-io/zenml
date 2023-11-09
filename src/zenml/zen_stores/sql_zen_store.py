@@ -1539,7 +1539,6 @@ class SqlZenStore(BaseZenStore):
 
             existing_component.update(component_update=component_update)
 
-            service_connector: Optional[ServiceConnectorSchema] = None
             if component_update.connector:
                 service_connector = session.exec(
                     select(ServiceConnectorSchema).where(
@@ -1552,9 +1551,13 @@ class SqlZenStore(BaseZenStore):
                         "Service connector with ID "
                         f"{component_update.connector} not found."
                     )
-
-            if service_connector:
                 existing_component.connector = service_connector
+                existing_component.connector_resource_id = (
+                    component_update.connector_resource_id
+                )
+            else:
+                existing_component.connector = None
+                existing_component.connector_resource_id = None
 
             session.add(existing_component)
             session.commit()
@@ -5826,11 +5829,13 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_versions(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
         Args:
+            model_name_or_id: name or id of the model containing the model versions.
             model_version_filter_model: All filter parameters including pagination
                 params.
 
@@ -5838,6 +5843,7 @@ class SqlZenStore(BaseZenStore):
             A page of all model versions.
         """
         with Session(self.engine) as session:
+            model_version_filter_model.set_scope_model(model_name_or_id)
             query = select(ModelVersionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -5999,11 +6005,15 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -6014,6 +6024,12 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionArtifactSchema)
 
             # issue: https://github.com/tiangolo/sqlmodel/issues/109
+            model_version_artifact_link_filter_model.set_scope_model(
+                model_name_or_id
+            )
+            model_version_artifact_link_filter_model.set_scope_model_version(
+                model_version_name_or_id
+            )
             if model_version_artifact_link_filter_model.only_artifacts:
                 query = query.where(
                     ModelVersionArtifactSchema.is_model_object
@@ -6129,11 +6145,15 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_pipeline_run_links(
         self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -6141,6 +6161,12 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         with Session(self.engine) as session:
+            model_version_pipeline_run_link_filter_model.set_scope_model(
+                model_name_or_id
+            )
+            model_version_pipeline_run_link_filter_model.set_scope_model_version(
+                model_version_name_or_id
+            )
             return self.filter_and_paginate(
                 session=session,
                 query=select(ModelVersionPipelineRunSchema),

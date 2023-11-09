@@ -334,7 +334,8 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     model_versions = Client().list_model_versions(
-        ModelVersionFilterModel(model_id=model_id, **kwargs)
+        model_name_or_id=model_id,
+        model_version_filter_model=ModelVersionFilterModel(**kwargs),
     )
 
     if not model_versions:
@@ -410,10 +411,10 @@ def update_model_version(
         if not force:
             cli_utils.print_pydantic_models(
                 Client().list_model_versions(
-                    ModelVersionFilterModel(
-                        stage=stage,
-                        model_id=model_version.model.id,
-                    )
+                    model_name_or_id=model_version.model.id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        stage=stage
+                    ),
                 ),
                 columns=[
                     "id",
@@ -446,6 +447,48 @@ def update_model_version(
     cli_utils.declare(
         f"Model version '{model_version.name}' stage updated to '{stage}'."
     )
+
+
+@version.command("delete", help="Delete an existing model version.")
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_model_version(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete an existing model version in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model that contains the version.
+        model_version_name_or_number_or_id: The ID, number or name of the model version.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete model version '{model_version_name_or_number_or_id}' from model '{model_name_or_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Model version deletion canceled.")
+            return
+
+    try:
+        Client().delete_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_id=model_version_name_or_number_or_id,
+        )
+    except (KeyError, ValueError) as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Model version '{model_version_name_or_number_or_id}' deleted from model '{model_name_or_id}'."
+        )
 
 
 def _print_artifacts_links_generic(
@@ -493,14 +536,14 @@ def _print_artifacts_links_generic(
     )
 
     links = Client().list_model_version_artifact_links(
-        ModelVersionArtifactFilterModel(
-            model_id=model_version.model.id,
-            model_version_id=model_version.id,
+        model_name_or_id=model_version.model.id,
+        model_version_name_or_number_or_id=model_version.id,
+        model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
             only_artifacts=only_artifact_objects,
             only_deployments=only_deployments,
             only_model_objects=only_model_objects,
             **kwargs,
-        )
+        ),
     )
 
     cli_utils.print_pydantic_models(
@@ -628,11 +671,11 @@ def list_model_version_pipeline_runs(
     )
 
     links = Client().list_model_version_pipeline_run_links(
-        ModelVersionPipelineRunFilterModel(
-            model_id=model_version.model.id,
-            model_version_id=model_version.id,
+        model_name_or_id=model_version.model.id,
+        model_version_name_or_number_or_id=model_version.id,
+        model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
             **kwargs,
-        )
+        ),
     )
 
     cli_utils.print_pydantic_models(

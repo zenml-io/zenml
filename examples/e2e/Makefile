@@ -1,9 +1,9 @@
 stack_name ?= e2e_template_stack
 setup:
 	pip install -r requirements.txt
-	zenml integration install sklearn mlflow s3 kubernetes kubeflow slack evidently -y
+	zenml integration install aws sklearn mlflow slack evidently kubeflow kubernetes -y
 
-install-stack:
+install-stack-local:
 	@echo "Specify stack name [$(stack_name)]: " && read input && [ -n "$$input" ] && stack_name="$$input" || stack_name="$(stack_name)" && \
 	zenml experiment-tracker register -f mlflow mlflow_local_$${stack_name} && \
 	zenml model-registry register -f mlflow mlflow_local_$${stack_name} && \

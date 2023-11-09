@@ -79,12 +79,12 @@ def test_link_minimalistic():
         mv = client.get_model_version(MODEL_NAME)
         assert mv.name == "1"
         links = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
+            ),
         )
         assert links.size == 3
 
@@ -140,12 +140,12 @@ def test_link_multiple_named_outputs():
         mv = client.get_model_version(MODEL_NAME)
         assert mv.name == "1"
         al = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
+            ),
         )
         assert al.size == 3
         assert (
@@ -186,12 +186,12 @@ def test_link_multiple_named_outputs_without_links():
         mv = client.get_model_version(MODEL_NAME)
         assert mv.name == "1"
         artifact_links = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
+            ),
         )
         assert artifact_links.size == 3
         assert {al.name for al in artifact_links} == {"1", "2", "3"}
@@ -263,20 +263,20 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
             multi_named_pipeline_from_self(run_count == 2)
 
             al1 = client.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
+                model_name_or_id=mv1.model.id,
+                model_version_name_or_number_or_id=mv1.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
                     workspace_id=ws,
-                    model_id=mv1.model.id,
-                    model_version_id=mv1.id,
-                )
+                ),
             )
             al2 = client.list_model_version_artifact_links(
-                ModelVersionArtifactFilterModel(
+                model_name_or_id=mv2.model.id,
+                model_version_name_or_number_or_id=mv2.id,
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
                     workspace_id=ws,
-                    model_id=mv2.model.id,
-                    model_version_id=mv2.id,
-                )
+                ),
             )
             assert al1.size == 2
             assert al2.size == 1
@@ -384,12 +384,12 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         for mv in mvs:
             artifact_links.append(
                 client.list_model_version_artifact_links(
-                    ModelVersionArtifactFilterModel(
+                    model_name_or_id=mv.model.id,
+                    model_version_name_or_number_or_id=mv.id,
+                    model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                         user_id=user,
                         workspace_id=ws,
-                        model_id=mv.model.id,
-                        model_version_id=mv.id,
-                    )
+                    ),
                 )
             )
 
@@ -458,12 +458,12 @@ def test_link_with_versioning():
         simple_pipeline_with_versioning()
 
         al1 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
+            ),
         )
         assert al1.size == 1
         assert al1[0].link_version == 1
@@ -472,12 +472,12 @@ def test_link_with_versioning():
         simple_pipeline_with_versioning()
 
         al2 = client.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
-                model_id=model.id,
-                model_version_id=mv.id,
-            )
+            ),
         )
         assert al2.size == 2
         assert al2[0].link_version == 1

@@ -134,6 +134,9 @@ class ModelSchema(NamedSchema, table=True):
             trade_offs=self.trade_offs,
             ethics=self.ethics,
             tags=json.loads(self.tags) if self.tags else None,
+            latest_version=self.model_versions[-1].name
+            if self.model_versions
+            else None,
         )
 
     def update(
