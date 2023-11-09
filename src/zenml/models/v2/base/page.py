@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Page model definitions."""
 
-from typing import Generator, Generic, List, TypeVar, Union
+from typing import Any, Generator, Generic, List, TypeVar, Union
 
 from pydantic import SecretStr
 from pydantic.generics import GenericModel
@@ -23,7 +23,7 @@ from zenml.models.base_models import BaseResponseModel
 from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.filter import BaseFilter
 
-B = TypeVar("B", bound=Union[BaseResponse, BaseResponseModel])
+B = TypeVar("B", bound=Union[BaseResponse[Any, Any], BaseResponseModel])
 
 
 class Page(GenericModel, Generic[B]):

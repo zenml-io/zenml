@@ -460,6 +460,9 @@ UserRoleAssignmentResponseMetadata.update_forward_refs(
     UserResponse=UserResponse,
     RoleResponse=RoleResponse,
 )
+UserResponseMetadata.update_forward_refs(
+    RoleResponse=RoleResponse,
+)
 __all__ = [
     # V1
     "BaseRequestModel",

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing components."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -141,6 +142,12 @@ class ComponentResponseBody(ShareableResponseBody):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    created: datetime = Field(
+        title="The timestamp when this component was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this component was last updated.",
+    )
 
 
 class ComponentResponseMetadata(ShareableResponseMetadata):
@@ -196,6 +203,16 @@ class ComponentResponse(
     def flavor(self) -> str:
         """The `flavor` property."""
         return self.get_body().flavor
+
+    @property
+    def created(self) -> datetime:
+        """The`created` property."""
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property."""
+        return self.get_body().updated
 
     @property
     def configuration(self) -> Dict[str, Any]:

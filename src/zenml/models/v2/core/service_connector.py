@@ -220,7 +220,7 @@ class ServiceConnectorRequest(ShareableRequest):
         else:
             # A multi-type connector is associated with all resource types
             # that it supports, does not have a resource ID configured
-            # and it's unclear if it supports multiple instances or not
+            # and, it's unclear if it supports multiple instances or not
             self.resource_types = list(
                 connector_type.resource_type_dict.keys()
             )
@@ -514,6 +514,8 @@ class ServiceConnectorResponse(
         Raises:
             ValueError: If the connector configuration is not valid.
         """
+        metadata = self.get_metadata()
+
         if resource_types is None:
             resource_type = None
         elif isinstance(resource_types, str):
@@ -540,24 +542,24 @@ class ServiceConnectorResponse(
             ) from e
 
         if resource_type and resource_spec:
-            self.resource_types = [resource_spec.resource_type]
-            self.resource_id = resource_id
-            self.supports_instances = resource_spec.supports_instances
+            metadata.resource_types = [resource_spec.resource_type]
+            metadata.resource_id = resource_id
+            metadata.supports_instances = resource_spec.supports_instances
         else:
             # A multi-type connector is associated with all resource types
             # that it supports, does not have a resource ID configured
-            # and it's unclear if it supports multiple instances or not
-            self.resource_types = list(
+            # and, it's unclear if it supports multiple instances or not
+            metadata.resource_types = list(
                 connector_type.resource_type_dict.keys()
             )
-            self.supports_instances = False
+            metadata.supports_instances = False
 
         if configuration is None and secrets is None:
             # No configuration or secrets provided
             return
 
-        self.configuration = {}
-        self.secrets = {}
+        metadata.configuration = {}
+        metadata.secrets = {}
 
         # Validate and configure the connector configuration and secrets
         configuration = configuration or {}
@@ -584,11 +586,11 @@ class ServiceConnectorResponse(
             # Split the configuration into secrets and non-secrets
             if secret:
                 if isinstance(value, SecretStr):
-                    self.secrets[attr_name] = value
+                    metadata.secrets[attr_name] = value
                 else:
-                    self.secrets[attr_name] = SecretStr(value)
+                    metadata.secrets[attr_name] = SecretStr(value)
             else:
-                self.configuration[attr_name] = value
+                metadata.configuration[attr_name] = value
 
         # Warn about attributes that are not part of the configuration schema
         for attr_name in set(list(configuration.keys())) - set(
@@ -599,9 +601,8 @@ class ServiceConnectorResponse(
                 f"configuration {attr_name}. Supported attributes are: "
                 f"{supported_attrs}",
             )
-
         # Warn about secrets that are not part of the configuration schema
-        for attr_name in set(secrets.keys()) - self.secrets.keys():
+        for attr_name in set(secrets.keys()) - metadata.secrets.keys():
             logger.warning(
                 f"Ignoring unknown attribute in connector '{self.name}' "
                 f"configuration {attr_name}. Supported attributes are: "
