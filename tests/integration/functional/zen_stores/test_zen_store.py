@@ -3615,7 +3615,7 @@ class TestTagResource:
                 zs = Client().zen_store
                 tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
                 fake_model_id = uuid4() if not use_model else model.id
-                zs.create_tag_resoxurce(
+                zs.create_tag_resource(
                     TagResourceRequestModel(
                         tag_id=tag.id,
                         resource_id=fake_model_id,
