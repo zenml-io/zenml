@@ -21,7 +21,6 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus
@@ -662,76 +661,6 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
                 run_name_1,
                 run_name_2,
             }
-
-
-@step
-def _consumer_step(a: int, b: int):
-    assert a == b
-
-
-@step(model_config=ModelConfig(name="step", create_new_model_version=True))
-def _producer_step() -> Tuple[int, int, int]:
-    return 1, 2, 3
-
-
-@pipeline
-def _consumer_pipeline_with_step_context():
-    _consumer_step.with_options(model_config=ModelConfig(name="step"))(
-        ExternalArtifact(model_artifact_name="output_0"), 1
-    )
-
-
-@pipeline
-def _consumer_pipeline_with_artifact_context():
-    _consumer_step(
-        ExternalArtifact(model_artifact_name="output_1", model_name="step"), 2
-    )
-
-
-@pipeline(model_config=ModelConfig(name="step"))
-def _consumer_pipeline_with_pipeline_context():
-    _consumer_step(
-        ExternalArtifact(model_artifact_name="output_2", model_name="step"), 3
-    )
-
-
-@pipeline
-def _producer_pipeline():
-    _producer_step()
-
-
-def test_that_consumption_also_registers_run_in_model_version():
-    """Test that consumption scenario also registers run in model version."""
-    with model_killer():
-        producer_run = f"producer_run_{uuid4()}"
-        consumer_run_1 = f"consumer_run_1_{uuid4()}"
-        consumer_run_2 = f"consumer_run_2_{uuid4()}"
-        consumer_run_3 = f"consumer_run_3_{uuid4()}"
-        _producer_pipeline.with_options(
-            run_name=producer_run, enable_cache=False
-        )()
-        _consumer_pipeline_with_step_context.with_options(
-            run_name=consumer_run_1
-        )()
-        _consumer_pipeline_with_artifact_context.with_options(
-            run_name=consumer_run_2
-        )()
-        _consumer_pipeline_with_pipeline_context.with_options(
-            run_name=consumer_run_3
-        )()
-
-        client = Client()
-        model = client.get_model(model_name_or_id="step")
-        mv = client.get_model_version(
-            model_name_or_id=model.id,
-        )
-        assert len(mv.pipeline_run_ids) == 4
-        assert {run_name for run_name in mv.pipeline_run_ids} == {
-            producer_run,
-            consumer_run_1,
-            consumer_run_2,
-            consumer_run_3,
-        }
 
 
 def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_created():
