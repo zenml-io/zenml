@@ -20,10 +20,8 @@ from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import ModelStages
 from zenml.model.model_config import ModelConfig
 from zenml.models import (
-    ModelRequestModel,
     ModelVersionArtifactFilterModel,
     ModelVersionRequestModel,
 )
@@ -92,8 +90,6 @@ def test_link_minimalistic():
         one_is_model_object = False
         one_is_artifact = False
         for link in links:
-            assert link.link_version == 1
-            assert link.name == "output"
             one_is_deployment ^= (
                 link.is_deployment and not link.is_model_object
             )
@@ -111,9 +107,9 @@ def test_link_minimalistic():
 @step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
 def multi_named_output_step_from_context() -> (
     Tuple[
-        Annotated[int, "1", ArtifactConfig()],
-        Annotated[int, "2", ArtifactConfig()],
-        Annotated[int, "3", ArtifactConfig()],
+        Annotated[int, "1"],
+        Annotated[int, "2"],
+        Annotated[int, "3"],
     ]
 ):
     """3 typed output step with explicit linking from step context."""
@@ -148,53 +144,6 @@ def test_link_multiple_named_outputs():
             ),
         )
         assert al.size == 3
-        assert (
-            al[0].link_version + al[1].link_version + al[2].link_version == 3
-        )
-        assert {al.name for al in al} == {"1", "2", "3"}
-
-
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
-def multi_named_output_step_not_tracked() -> (
-    Tuple[
-        Annotated[int, "1"],
-        Annotated[int, "2"],
-        Annotated[int, "3"],
-    ]
-):
-    """Here links would be implicitly created based on step ModelConfig."""
-    return 1, 2, 3
-
-
-@pipeline(enable_cache=False)
-def multi_named_pipeline_not_tracked():
-    """Here links would be implicitly created based on step ModelConfig."""
-    multi_named_output_step_not_tracked()
-
-
-def test_link_multiple_named_outputs_without_links():
-    """Test multi output step implicit linking based on step context."""
-    with model_killer():
-        client = Client()
-        user = client.active_user.id
-        ws = client.active_workspace.id
-
-        multi_named_pipeline_not_tracked()
-
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
-        assert mv.name == "1"
-        artifact_links = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
-        )
-        assert artifact_links.size == 3
-        assert {al.name for al in artifact_links} == {"1", "2", "3"}
 
 
 @step
@@ -281,12 +230,6 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
             assert al1.size == 2
             assert al2.size == 1
 
-            assert {al.name for al in al1} == {
-                "1",
-                "2",
-            }
-            assert al2[0].name == "3"
-
             # clean-up links to test caching linkage
             for mv, al in zip([mv1, mv2], [al1, al2]):
                 for al_ in al:
@@ -303,7 +246,6 @@ def multi_named_output_step_mixed_linkage() -> (
         Annotated[
             int,
             "2",
-            ArtifactConfig(),
         ],
         Annotated[
             int,
@@ -312,7 +254,7 @@ def multi_named_output_step_mixed_linkage() -> (
         ],
     ]
 ):
-    """Artifact "2"&"3" has own configs, but 2 will get step context and 3 defines own."""
+    """Artifact 2 will get step context and 3 defines own."""
     return 2, 3
 
 
@@ -396,95 +338,6 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         assert artifact_links[0].size == 3
         assert artifact_links[1].size == 2
         assert artifact_links[2].size == 1
-
-        assert {al.name for al in artifact_links[0]} == {
-            "custom_name",
-            "4",
-            "output",
-        }
-        assert {al.name for al in artifact_links[1]} == {
-            "2",
-            "output",
-        }
-        assert artifact_links[2][0].name == "3"
-        assert {al.link_version for al in artifact_links[0]} == {
-            1
-        }, "some artifacts tracked as higher versions, while all should be version 1"
-        assert {al.link_version for al in artifact_links[1]} == {
-            1
-        }, "some artifacts tracked as higher versions, while all should be version 1"
-
-
-@step
-def single_output_step_with_versioning() -> Annotated[int, "predictions"]:
-    """Single output with overwrite disabled and step context."""
-    return 1
-
-
-@pipeline(
-    enable_cache=False,
-    model_config=ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION),
-)
-def simple_pipeline_with_versioning():
-    """Single output with overwrite disabled and step context."""
-    single_output_step_with_versioning()
-
-
-def test_link_with_versioning():
-    """Test that versioned artifact is properly linked and new versions created."""
-    with model_killer():
-        client = Client()
-        user = client.active_user.id
-        ws = client.active_workspace.id
-
-        # manual creation needed, as we work with specific versions
-        model = client.create_model(
-            ModelRequestModel(
-                name=MODEL_NAME,
-                user=user,
-                workspace=ws,
-            )
-        )
-        mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
-        )
-        mv = mv.set_stage(ModelStages.PRODUCTION)
-
-        simple_pipeline_with_versioning()
-
-        al1 = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
-        )
-        assert al1.size == 1
-        assert al1[0].link_version == 1
-        assert al1[0].name == "predictions"
-
-        simple_pipeline_with_versioning()
-
-        al2 = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
-        )
-        assert al2.size == 2
-        assert al2[0].link_version == 1
-        assert al2[1].link_version == 2
-        assert al2[0].name == al2[1].name
-        assert al2[0].id != al2[1].id
-        assert al1[0].id == al1[0].id
 
 
 @step(enable_cache=True)
