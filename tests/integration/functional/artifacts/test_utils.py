@@ -1,11 +1,139 @@
 """Integration tests for artifact util functions."""
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pytest
 from typing_extensions import Annotated
 
-from zenml import log_artifact_metadata, pipeline, step
+from zenml import (
+    load_artifact,
+    log_artifact_metadata,
+    pipeline,
+    save_artifact,
+    step,
+)
+
+
+def test_save_load_artifact_outside_run(clean_client):
+    """Test artifact saving and loading outside of runs."""
+    save_artifact(42, "meaning_of_life")
+    assert load_artifact("meaning_of_life") == 42
+
+    save_artifact(43, "meaning_of_life")
+    assert load_artifact("meaning_of_life") == 43
+    assert load_artifact("meaning_of_life", version="1") == 42
+
+    save_artifact(44, "meaning_of_life", version="44")
+    assert load_artifact("meaning_of_life") == 44
+    assert load_artifact("meaning_of_life", version="44") == 44
+
+
+@step
+def manual_artifact_saving_step(
+    value: int, name: str, version: Optional[str] = None
+) -> None:
+    """A step that logs an artifact."""
+    save_artifact(value, name=name, version=version)
+
+
+@step
+def manual_artifact_loading_step(
+    expected_value: int, name: str, version: Optional[str] = None
+) -> None:
+    """A step that loads an artifact."""
+    loaded_value = load_artifact(name=name, version=version)
+    assert loaded_value == expected_value
+
+
+def test_save_load_artifact_in_run(clean_client):
+    """Test artifact saving and loading inside runs."""
+
+    @pipeline
+    def _save_load_pipeline(
+        value: int,
+        expected_value: int,
+        saving_name: str,
+        loading_name: str,
+        saving_version: Optional[str] = None,
+        loading_version: Optional[str] = None,
+    ):
+        manual_artifact_saving_step(
+            value=value, name=saving_name, version=saving_version
+        )
+        manual_artifact_loading_step(
+            expected_value=expected_value,
+            name=loading_name,
+            version=loading_version,
+            after="manual_artifact_saving_step",
+        )
+
+    @pipeline
+    def _load_pipeline(expected_value, name, version):
+        manual_artifact_loading_step(
+            expected_value=expected_value, name=name, version=version
+        )
+
+    _save_load_pipeline(
+        value=42,
+        saving_name="meaning_of_life",
+        loading_name="meaning_of_life",
+        expected_value=42,
+    )
+
+    _save_load_pipeline(
+        value=43,
+        saving_name="meaning_of_life",
+        loading_name="meaning_of_life",
+        expected_value=43,
+    )
+
+    _load_pipeline(
+        expected_value=42,
+        name="meaning_of_life",
+        version="1",
+    )
+
+    _save_load_pipeline(
+        value=44,
+        saving_name="meaning_of_life",
+        loading_name="meaning_of_life",
+        saving_version="44",
+        loading_version="2",
+        expected_value=43,
+    )
+
+    _load_pipeline(
+        expected_value=44,
+        name="meaning_of_life",
+        version="44",
+    )
+
+
+def test_log_artifact_metadata_existing(clean_client):
+    """Test logging artifact metadata for existing artifacts."""
+    save_artifact(42, "meaning_of_life")
+    log_artifact_metadata(
+        {"description": "Aria is great!"}, artifact_name="meaning_of_life"
+    )
+    save_artifact(43, "meaning_of_life", version="43")
+    log_artifact_metadata(
+        {"description_2": "Blupus is great!"}, artifact_name="meaning_of_life"
+    )
+    log_artifact_metadata(
+        {"description_3": "Axl is great!"},
+        artifact_name="meaning_of_life",
+        artifact_version="1",
+    )
+
+    artifact_1 = clean_client.get_artifact("meaning_of_life", version="1")
+    assert "description" in artifact_1.metadata
+    assert artifact_1.metadata["description"].value == "Aria is great!"
+    assert "description_3" in artifact_1.metadata
+    assert artifact_1.metadata["description_3"].value == "Axl is great!"
+
+    artifact_2 = clean_client.get_artifact("meaning_of_life", version="43")
+    assert "description_2" in artifact_2.metadata
+    assert artifact_2.metadata["description_2"].value == "Blupus is great!"
 
 
 @step

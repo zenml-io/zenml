@@ -222,17 +222,16 @@ def log_artifact_metadata(
             to the latest version of that artifact.
 
     Raises:
-        ValueError:
-            - If no artifact name is provided and the function is not called
-                inside a step with a single output.
-            - If neither an artifact nor an output with the given name exists.
+        ValueError: If no artifact name is provided and the function is not
+            called inside a step with a single output, or, if neither an
+            artifact nor an output with the given name exists.
     """
     try:
         step_context = get_step_context()
         in_step_outputs = (artifact_name in step_context._outputs) or (
             not artifact_name and len(step_context._outputs) == 1
         )
-    except StepContextError:
+    except RuntimeError:
         step_context = None
         in_step_outputs = False
 
