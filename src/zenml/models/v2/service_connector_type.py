@@ -22,7 +22,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.component import ComponentBase
+    from zenml.models.v2.core.component import ComponentBase, ComponentResponse
     from zenml.models.v2.core.service_connector import (
         ServiceConnectorRequest,
         ServiceConnectorResponse,
@@ -502,7 +502,7 @@ class ServiceConnectorRequirements(BaseModel):
         connector: Union[
             "ServiceConnectorResponse", "ServiceConnectorRequest"
         ],
-        component: "ComponentBase",
+        component: Union["ComponentResponse", "ComponentBase"],
     ) -> Tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.
 
