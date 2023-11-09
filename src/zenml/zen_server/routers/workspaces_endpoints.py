@@ -1422,9 +1422,9 @@ def create_model_version_pipeline_run_link(
             user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    if model_version__id != model_version_pipeline_run_link.model_version:
+    if model_version_id != model_version_pipeline_run_link.model_version:
         raise IllegalOperationError(
-            f"The model version id in your path `{model_version__id}` does not "
+            f"The model version id in your path `{model_version_id}` does not "
             f"match the model version specified in the request model "
             f"`{model_version_pipeline_run_link.model_version}`"
         )
