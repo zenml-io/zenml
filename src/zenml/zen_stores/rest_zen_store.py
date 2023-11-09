@@ -2413,7 +2413,7 @@ class RestZenStore(BaseZenStore):
 
     def delete_model_version(
         self,
-        model_version_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version.
 
