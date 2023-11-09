@@ -148,7 +148,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
         )
-        metadata = False
+        metadata = None
         if hydrate:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
