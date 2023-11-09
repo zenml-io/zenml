@@ -479,9 +479,12 @@ def delete_model_version(
             return
 
     try:
-        Client().delete_model_version(
+        model_version = Client().get_model_version(
             model_name_or_id=model_name_or_id,
-            model_version_name_or_id=model_version_name_or_number_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+        Client().delete_model_version(
+            model_version_id=model_version.id,
         )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
@@ -535,9 +538,13 @@ def _print_artifacts_links_generic(
         f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
     )
 
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
+
     links = Client().list_model_version_artifact_links(
-        model_name_or_id=model_version.model.id,
-        model_version_name_or_number_or_id=model_version.id,
+        model_version_id=model_version.id,
         model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
             only_artifacts=only_artifact_objects,
             only_deployments=only_deployments,
@@ -676,10 +683,13 @@ def list_model_version_pipeline_runs(
     cli_utils.title(
         f"Pipeline runs linked to the model version `{model_version.name}[{model_version.number}]`:"
     )
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
 
     links = Client().list_model_version_pipeline_run_links(
-        model_name_or_id=model_version.model.id,
-        model_version_name_or_number_or_id=model_version.id,
+        model_version_id=model_version.id,
         model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
             **kwargs,
         ),

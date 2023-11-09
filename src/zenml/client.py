@@ -5060,18 +5060,15 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_version_id: Id of the model version to be deleted.
         """
         self.zen_store.delete_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_id=model_version_name_or_id,
+            model_version_id=model_version_id,
         )
 
     def get_model_version(
@@ -5098,8 +5095,8 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponseModel]:
         """Get model versions by filter from Model Control Plane.
 
@@ -5143,31 +5140,21 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_id: UUID,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+            model_version_id: id of the model version to be retrieved.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to artifact links.
         """
-        mv = self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        )
         return self.zen_store.list_model_version_artifact_links(
-            model_name_or_id=mv.model.id,
-            model_version_name_or_id=mv.id,
+            model_version_id=model_version_id,
             model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
         )
 
@@ -5179,31 +5166,21 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        model_version_id: UUID,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+            model_version_id: id of the model version to be retrieved.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to pipeline run links.
         """
-        mv = self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        )
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_name_or_id=mv.model.id,
-            model_version_name_or_id=mv.id,
+            model_version_id=model_version_id,
             model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
         )
 
