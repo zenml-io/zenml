@@ -40,29 +40,32 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     can be used to provide any value as input to a step without needing to
     write an additional step that returns this value.
 
-    This class can be configured using the following parameters:
-    - value: The artifact value (any python object), that will be uploaded to the
-        artifact store.
-    - id: The ID of an artifact that is already registered in ZenML.
-    - pipeline_name & artifact_name: Name of a pipeline and artifact to search in
-        latest run.
-    - model_name & model_version & model_artifact_name & model_artifact_version: Name of a
-        model, model version, model artifact and artifact version to search.
+    The external artifact needs to have either a value associated with it
+    that will be uploaded to the artifact store, or reference an artifact
+    that is already registered in ZenML.
+
+    There are several ways to reference an existing artifact:
+    - By providing an artifact ID.
+    - By providing an artifact name and version.
+    - By providing an artifact name and a pipeline run name.
+    - By providing an artifact name and a pipeline name, in which case ZenML
+        will attempt to find the artifact in the latest run of the pipeline.
+    - By only providing an artifact name, in which case the latest version
+        of the artifact will be used.
 
     Args:
         value: The artifact value.
-
         id: The ID of an artifact that should be referenced by this external
             artifact.
-
-        pipeline_name: Name of a pipeline to search for artifact in latest run.
-        artifact_name: Name of an artifact to be searched in latest pipeline run.
-
-        model_name: Name of a model to search for artifact in (if None - derived from step context).
-        model_version: Version of a model to search for artifact in (if None - derived from step context).
-        model_artifact_name: Name of a model artifact to search for.
-        model_artifact_version: Version of a model artifact to search for.
-
+        name: Name of an artifact to search. If none of
+            `version`, `pipeline_run_name`, or `pipeline_name` are set, the
+            latest version of the artifact will be used.
+        version: Version of the artifact to search. Only used when `name` is
+            provided.
+        pipeline_run_name: Name of a pipeline run to search artifacts in. Only
+            used when `name` is provided.
+        pipeline_name: Name of a pipeline in which to search for the artifact.
+            Only used when `name` is provided.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -95,40 +98,19 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     @root_validator
     def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        value = values.get("value", None)
-        id = values.get("id", None)
-        pipeline_name = values.get("pipeline_name", None)
-        artifact_name = values.get("artifact_name", None)
-        model_name = values.get("model_name", None)
-        model_version = values.get("model_version", None)
-        model_artifact_name = values.get("model_artifact_name", None)
-
-        if (value is not None) + (id is not None) + (
-            pipeline_name is not None and artifact_name is not None
-        ) + (model_artifact_name is not None) > 1:
+        options = [
+            values.get(field, None) is not None
+            for field in ["value", "id", "name"]
+        ]
+        if sum(options) > 1:
             raise ValueError(
-                "Only a value, an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group can be "
-                "provided when creating an external artifact."
+                "Only one of `value`, `id`, or `name` can be provided when "
+                "creating an external artifact."
             )
-        elif all(
-            v is None
-            for v in [
-                value,
-                id,
-                pipeline_name or artifact_name,
-                model_name or model_version or model_artifact_name,
-            ]
-        ):
+        elif sum(options) == 0:
             raise ValueError(
-                "Either a value, an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group must be "
-                "provided when creating an external artifact."
-            )
-        elif (pipeline_name is None) != (artifact_name is None):
-            raise ValueError(
-                "`pipeline_name` and `artifact_name` can be only provided "
-                "together when creating an external artifact."
+                "Either `value`, `id`, or `name` must be provided when "
+                "creating an external artifact."
             )
         return values
 
@@ -175,10 +157,9 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         # To avoid duplicate uploads, switch to referencing the uploaded
         # artifact by ID
         self.id = artifact_id
-        # clean-up state after upload done
         self.value = None
-        logger.info("Finished uploading external artifact %s.", artifact_id)
 
+        logger.info("Finished uploading external artifact %s.", artifact_id)
         return self.id
 
     @property
@@ -190,14 +171,10 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """
         return ExternalArtifactConfiguration(
             id=self.id,
+            name=self.name,
+            version=self.version,
+            pipeline_run_name=self.pipeline_run_name,
             pipeline_name=self.pipeline_name,
-            artifact_name=self.artifact_name,
-            model_name=self.model_name,
-            model_version=self.model_version,
-            model_artifact_name=self.model_artifact_name,
-            model_artifact_version=self.model_artifact_version,
-            model_artifact_pipeline_name=self.model_artifact_pipeline_name,
-            model_artifact_step_name=self.model_artifact_step_name,
         )
 
     def _get_materializer_class(self, value: Any) -> Type[BaseMaterializer]:

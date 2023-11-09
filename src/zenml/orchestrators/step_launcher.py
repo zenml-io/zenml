@@ -339,7 +339,6 @@ class StepLauncher:
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
-            model_config=model_config,
         )
         input_artifact_ids = {
             input_name: artifact.id

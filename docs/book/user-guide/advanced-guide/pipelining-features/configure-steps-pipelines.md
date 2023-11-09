@@ -176,18 +176,36 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
 {% endhint %}
 
-You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database. Search can be performed using the UUID of an artifact:
+You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML 
+database. Search can be performed in one of the following ways:
+- By providing an artifact ID.
+- By providing an artifact name and version.
+- By providing an artifact name and a pipeline run name.
+- By providing an artifact name and a pipeline name, in which case ZenML
+    will attempt to find the artifact in the latest run of the pipeline.
+- By only providing an artifact name, in which case the latest version
+    of the artifact will be used.
 
 ```python
 from uuid import UUID
 
+# Fetch by ID
 artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
-```
 
-Another way to search would be by a combination of a pipeline name where the artifact was generated and the artifact name itself. If you search by pipeline/artifact name pair the search will happen using the last successful run of the pipeline:
+# Fetch by name alone - uses latest version of this artifact
+artifact = ExternalArtifact(name="my_artifact")
 
-```python
-artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="model")
+# Fetch by name and version
+artifact = ExternalArtifact(name="my_artifact", version="my_version")
+
+# Fetch by name and pipeline run name
+artifact = ExternalArtifact(
+    name="my_artifact", 
+    pipeline_run_name="training_pipeline-2023_10_12-15_03_45_587216"
+)
+
+# Fetch by name and pipeline name - uses artifact in last successful run
+artifact = ExternalArtifact(name="model", pipeline_name="training_pipeline")
 ```
 
 <details>

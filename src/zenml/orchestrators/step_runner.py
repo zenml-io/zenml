@@ -668,31 +668,6 @@ class StepRunner:
                     break
         return models
 
-    def _get_model_versions_from_external_artifacts(
-        self, external_artifacts: List["ExternalArtifactConfiguration"]
-    ) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the external artifacts.
-
-        Args:
-            external_artifacts: The external artifacts of the step.
-
-        Returns:
-            Set of tuples of (model_id, model_version_id).
-        """
-        client = Client()
-        models = set()
-        for external_artifact in external_artifacts:
-            if (
-                external_artifact.model_artifact_name is not None
-                and external_artifact.model_name is not None
-            ):
-                model_version = client.get_model_version(
-                    model_name_or_id=external_artifact.model_name,
-                    model_version_name_or_number_or_id=external_artifact.model_version,
-                )
-                models.add((model_version.model.id, model_version.id))
-        return models
-
     def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
         """Gets the model versions from the step model config.
 
@@ -751,19 +726,12 @@ class StepRunner:
         )
 
         models = self._get_model_versions_from_artifacts(artifact_names)
-
-        models = models.union(
-            self._get_model_versions_from_external_artifacts(
-                external_artifacts
-            )
-        )
-
         client = Client()
         for model in models:
             client.zen_store.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
                     pipeline_run=pipeline_run.id,
                     model=model[0],
                     model_version=model[1],
