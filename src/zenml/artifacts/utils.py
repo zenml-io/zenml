@@ -13,12 +13,43 @@
 #  permissions and limitations under the License.
 """Utility functions for logging artifact metadata."""
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from zenml.client import Client
 from zenml.exceptions import StepContextError
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.new.steps.step_context import get_step_context
+from zenml.utils.artifact_utils import (
+    load_artifact as load_artifact_from_model,
+)
+from zenml.utils.artifact_utils import upload_artifact
+
+
+def save_artifact(
+    data: Any,
+    name: str,
+) -> ArtifactResponseModel:
+    """Save an artifact."""
+    return upload_artifact(name=name, data=data)
+
+
+def load_artifact(
+    name: str,
+    version: Optional[str] = None,
+) -> Any:
+    """Load an artifact.
+
+    Args:
+        name: The name of the artifact to load.
+        version: The version of the artifact to load. If not provided, the
+            latest version will be loaded.
+
+    Returns:
+        The loaded artifact.
+    """
+    artifact = Client().get_artifact(name, version)
+    return load_artifact_from_model(artifact)
 
 
 def log_artifact_metadata(

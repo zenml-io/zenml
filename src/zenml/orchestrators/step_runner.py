@@ -39,7 +39,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType
 from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
@@ -553,13 +552,7 @@ class StepRunner:
         Returns:
             The IDs of the published output artifacts.
         """
-        client = Client()
         step_context = get_step_context()
-        artifact_stores = client.active_stack_model.components.get(
-            StackComponentType.ARTIFACT_STORE
-        )
-        assert artifact_stores  # Every stack has an artifact store.
-        artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, UUID] = {}
 
         for output_name, return_value in output_data.items():
@@ -596,7 +589,6 @@ class StepRunner:
                 materializer_class = materializer_registry[data_type]
 
             uri = output_artifact_uris[output_name]
-            materializer = materializer_class(uri)
             artifact_config = output_annotations[output_name].artifact_config
 
             if artifact_config is not None:
@@ -620,11 +612,11 @@ class StepRunner:
             # Get metadata that the user logged manually
             user_metadata = step_context.get_output_metadata(output_name)
 
-            artifact_id = artifact_utils.upload_artifact(
+            artifact = artifact_utils.upload_artifact(
                 name=artifact_name,
                 data=return_value,
-                materializer=materializer,
-                artifact_store_id=artifact_store_id,
+                materializer=materializer_class,
+                uri=uri,
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
                 has_custom_name=has_custom_name,
@@ -632,7 +624,7 @@ class StepRunner:
                 tags=tags,
                 user_metadata=user_metadata,
             )
-            output_artifacts[output_name] = artifact_id
+            output_artifacts[output_name] = artifact.id
 
         return output_artifacts
 

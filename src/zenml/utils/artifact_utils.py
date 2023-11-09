@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from zenml.models.step_run_models import StepRunResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
+    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 logger = get_logger(__name__)
 
@@ -353,25 +354,22 @@ def _load_file_from_artifact_store(
 
 
 def upload_artifact(
-    name: str,
     data: Any,
-    materializer: "BaseMaterializer",
-    artifact_store_id: "UUID",
+    name: str,
     version: Optional[Union[int, str]] = None,
     tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
-    has_custom_name: bool = False,
+    has_custom_name: bool = True,
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
-) -> "UUID":
+    materializer: Optional["MaterializerClassOrSource"] = None,
+    uri: Optional[str] = None,
+) -> ArtifactResponseModel:
     """Upload and publish an artifact.
 
     Args:
         name: The name of the artifact.
         data: The artifact data.
-        materializer: The materializer to store the artifact.
-        artifact_store_id: ID of the artifact store in which the artifact should
-            be stored.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
         tags: Tags to associate with the artifact.
@@ -380,18 +378,60 @@ def upload_artifact(
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
         user_metadata: User-provided metadata to store with the artifact.
+        materializer: The materializer to use for saving the artifact to the
+            artifact store.
+        uri: The URI within the artifact store to upload the artifact
+            to. If not provided, the artifact will be uploaded to
+            `custom_artifacts/{name}/{version}`.
 
     Returns:
         The ID of the published artifact.
-    """
-    data_type = type(data)
-    materializer.validate_type_compatibility(data_type)
-    materializer.save(data)
 
+    Raises:
+        RuntimeError: If artifact URI already exists.
+    """
+    from zenml.materializers.materializer_registry import (
+        materializer_registry,
+    )
+    from zenml.utils import source_utils
+
+    # Get new artifact version if not specified
+    version = version or _get_new_artifact_version(name)
+
+    # Get the current artifact store
+    client = Client()
+    artifact_store = client.active_stack.artifact_store
+
+    # Build and check the artifact URI
+    if not uri:
+        uri = os.path.join("custom_artifacts", name, str(version))
+    if not uri.startswith(artifact_store.path):
+        uri = os.path.join(artifact_store.path, uri)
+    if fileio.exists(uri) and (size := fileio.size(uri)) and size > 0:
+        raise RuntimeError(f"Artifact URI '{uri}' already exists.")
+    fileio.makedirs(uri)
+
+    # Find and initialize the right materializer class
+    if isinstance(materializer, type):
+        materializer_class = materializer
+    elif materializer:
+        materializer_class = source_utils.load_and_validate_class(
+            materializer, expected_class=BaseMaterializer
+        )
+    else:
+        materializer_class = materializer_registry[type(data)]
+    materializer_object = materializer_class(uri)
+
+    # Save the artifact to the artifact store
+    data_type = type(data)
+    materializer_object.validate_type_compatibility(data_type)
+    materializer_object.save(data)
+
+    # Save visualizations of the artifact
     visualizations: List[VisualizationModel] = []
     if include_visualizations:
         try:
-            vis_data = materializer.save_visualizations(data)
+            vis_data = materializer_object.save_visualizations(data)
             for vis_uri, vis_type in vis_data.items():
                 vis_model = VisualizationModel(
                     type=vis_type,
@@ -404,10 +444,11 @@ def upload_artifact(
                 f"{e}"
             )
 
+    # Save metadata of the artifact
     artifact_metadata: Dict[str, "MetadataType"] = {}
     if extract_metadata:
         try:
-            artifact_metadata = materializer.extract_full_metadata(data)
+            artifact_metadata = materializer_object.extract_full_metadata(data)
             artifact_metadata.update(user_metadata or {})
         except Exception as e:
             logger.warning(
@@ -416,15 +457,15 @@ def upload_artifact(
 
     artifact = ArtifactRequestModel(
         name=name,
-        version=version or _get_new_artifact_version(name),
+        version=version,
         tags=tags,
-        type=materializer.ASSOCIATED_ARTIFACT_TYPE,
-        uri=materializer.uri,
-        materializer=source_utils.resolve(materializer.__class__),
+        type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer_object.uri,
+        materializer=source_utils.resolve(materializer_object.__class__),
         data_type=source_utils.resolve(data_type),
         user=Client().active_user.id,
         workspace=Client().active_workspace.id,
-        artifact_store_id=artifact_store_id,
+        artifact_store_id=artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
     )
@@ -434,7 +475,7 @@ def upload_artifact(
             metadata=artifact_metadata, artifact_id=response.id
         )
 
-    return response.id
+    return response
 
 
 def _get_new_artifact_version(artifact_name: str) -> int:

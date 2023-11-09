@@ -37,7 +37,11 @@ from zenml.models import *  # noqa: F401
 
 # Define public Python API
 from zenml.api import show
-from zenml.artifacts.utils import log_artifact_metadata
+from zenml.artifacts.utils import (
+    log_artifact_metadata,
+    save_artifact,
+    load_artifact,
+)
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.model.model_config import ModelConfig
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
@@ -49,9 +53,11 @@ __all__ = [
     "ArtifactConfig",
     "get_pipeline_context",
     "get_step_context",
+    "load_artifact",
     "log_artifact_metadata",
     "ModelConfig",
     "pipeline",
+    "save_artifact",
     "show",
     "step",
 ]

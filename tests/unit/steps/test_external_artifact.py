@@ -110,20 +110,15 @@ def test_external_artifact_init(
         )
 
 
-@patch("zenml.artifacts.external_artifact.fileio")
-def test_upload_by_value(mocked_fileio):
+def test_upload_by_value(sample_artifact_model, mocker):
     """Tests that `upload_by_value` works as expected for `value`."""
-    mocked_fileio.exists.return_value = False
     ea = ExternalArtifact(value=1)
     assert ea.id is None
-    with patch.dict(
-        "sys.modules",
-        {
-            "zenml.utils.artifact_utils": MagicMock(),
-            "zenml.client": MockZenmlClient,
-        },
-    ):
-        ea.upload_by_value()
+    mocker.patch(
+        "zenml.utils.artifact_utils.upload_artifact",
+        return_value=sample_artifact_model,
+    )
+    ea.upload_by_value()
     assert ea.id is not None
     assert ea.value is None
     assert ea.pipeline_name is None

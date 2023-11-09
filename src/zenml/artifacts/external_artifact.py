@@ -22,7 +22,6 @@ from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
 from zenml.config.source import Source
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -123,43 +122,28 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         Raises:
             RuntimeError: If artifact URI already exists.
         """
-        from zenml.client import Client
         from zenml.utils.artifact_utils import upload_artifact
 
-        client = Client()
-
-        artifact_store_id = client.active_stack.artifact_store.id
-
-        logger.info("Uploading external artifact...")
         artifact_name = f"external_{uuid4()}"
-        materializer_class = self._get_materializer_class(value=self.value)
+        uri = os.path.join("external_artifacts", artifact_name)
+        logger.info("Uploading external artifact to '%s'.", uri)
 
-        uri = os.path.join(
-            client.active_stack.artifact_store.path,
-            "external_artifacts",
-            artifact_name,
-        )
-        if fileio.exists(uri):
-            raise RuntimeError(f"Artifact URI '{uri}' already exists.")
-        fileio.makedirs(uri)
-
-        materializer = materializer_class(uri)
-
-        artifact_id: UUID = upload_artifact(
+        artifact = upload_artifact(
             name=artifact_name,
             data=self.value,
-            materializer=materializer,
-            artifact_store_id=artifact_store_id,
             extract_metadata=self.store_artifact_metadata,
             include_visualizations=self.store_artifact_visualizations,
+            materializer=self.materializer,
+            uri=uri,
+            has_custom_name=False,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded
         # artifact by ID
-        self.id = artifact_id
+        self.id = artifact.id
         self.value = None
 
-        logger.info("Finished uploading external artifact %s.", artifact_id)
+        logger.info("Finished uploading external artifact %s.", self.id)
         return self.id
 
     @property
@@ -176,31 +160,3 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             pipeline_run_name=self.pipeline_run_name,
             pipeline_name=self.pipeline_name,
         )
-
-    def _get_materializer_class(self, value: Any) -> Type[BaseMaterializer]:
-        """Gets a materializer class for a value.
-
-        If a custom materializer is defined for this artifact it will be
-        returned. Otherwise it will get the materializer class from the
-        registry, falling back to the Cloudpickle materializer if no concrete
-        materializer is registered for the type of value.
-
-        Args:
-            value: The value for which to get the materializer class.
-
-        Returns:
-            The materializer class.
-        """
-        from zenml.materializers.materializer_registry import (
-            materializer_registry,
-        )
-        from zenml.utils import source_utils
-
-        if isinstance(self.materializer, type):
-            return self.materializer
-        elif self.materializer:
-            return source_utils.load_and_validate_class(
-                self.materializer, expected_class=BaseMaterializer
-            )
-        else:
-            return materializer_registry[type(value)]
