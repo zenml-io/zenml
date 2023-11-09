@@ -132,6 +132,8 @@ class BaseZenStore(
 
         Raises:
             RuntimeError: If the store cannot be initialized.
+            AuthorizationException: If the store cannot be initialized due to
+                authentication errors.
         """
         super().__init__(**kwargs)
 
