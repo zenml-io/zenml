@@ -49,8 +49,6 @@ def _create_api_key(
     """
     client = Client()
     zen_store = client.zen_store
-    if not zen_store.TYPE == StoreType.REST:
-        set_key = False
 
     with console.status(f"Creating API key '{name}'...\n"):
         try:
@@ -58,7 +56,6 @@ def _create_api_key(
                 service_account_name_id_or_prefix=service_account_name_or_id,
                 name=name,
                 description=description or "",
-                set_key=set_key,
             )
         except (KeyError, EntityExistsError) as e:
             cli_utils.error(str(e))
@@ -66,24 +63,26 @@ def _create_api_key(
         cli_utils.declare(f"Successfully created API key `{name}`.")
 
     if set_key and api_key.key:
-        client.set_api_key(api_key.key)
-        cli_utils.declare(
-            "The local client has been configured with the new API key."
-        )
-    else:
-        if not zen_store.TYPE == StoreType.REST:
+        if zen_store.TYPE != StoreType.REST:
             cli_utils.warning(
                 "Could not configure the local ZenML client with the generated "
                 "API key. This type of authentication is only supported if "
                 "connected to a ZenML server."
             )
-        cli_utils.declare(
-            f"The API key value is: '{api_key.key}'\nPlease store it safely as "
-            "it will not be shown again.\nTo configure a ZenML client to use "
-            "this API key, run:\n\n"
-            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-            f"    '{api_key.key}'\n"
-        )
+        else:
+            client.set_api_key(api_key.key)
+            cli_utils.declare(
+                "The local client has been configured with the new API key."
+            )
+            return
+
+    cli_utils.declare(
+        f"The API key value is: '{api_key.key}'\nPlease store it safely as "
+        "it will not be shown again.\nTo configure a ZenML client to use "
+        "this API key, run:\n\n"
+        f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+        f"    '{api_key.key}'\n"
+    )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -104,12 +103,13 @@ def service_account() -> None:
     help="The API key description.",
 )
 @click.option(
-    "--skip-api-key",
-    help=("Skip creating an API key for the service account."),
-    is_flag=True,
+    "--create-api-key",
+    help=("Create an API key for the service account."),
+    type=bool,
+    default=True,
 )
 @click.option(
-    "--set-key",
+    "--set-api-key",
     help=("Configure the local client to use the generated API key."),
     is_flag=True,
 )
@@ -125,8 +125,8 @@ def service_account() -> None:
 def create_service_account(
     service_account_name: str,
     description: str = "",
-    skip_api_key: bool = False,
-    set_key: bool = False,
+    create_api_key: bool = True,
+    set_api_key: bool = False,
     initial_role: str = "admin",
 ) -> None:
     """Create a new service account.
@@ -134,8 +134,8 @@ def create_service_account(
     Args:
         service_account_name: The name of the service account to create.
         description: The API key description.
-        skip_api_key: Skip creating an API key for the service account.
-        set_key: Configure the local client to use the generated API key.
+        create_api_key: Create an API key for the service account.
+        set_api_key: Configure the local client to use the generated API key.
         initial_role: Give the service account an initial role
     """
     client = Client()
@@ -146,16 +146,16 @@ def create_service_account(
             initial_role=initial_role,
         )
 
-        cli_utils.declare(f"Created service account'{service_account.name}'.")
+        cli_utils.declare(f"Created service account '{service_account.name}'.")
     except EntityExistsError as err:
         cli_utils.error(str(err))
 
-    if not skip_api_key:
+    if create_api_key:
         _create_api_key(
             service_account_name_or_id=service_account.name,
             name="default",
             description="Default API key.",
-            set_key=set_key,
+            set_key=set_api_key,
         )
 
 
@@ -483,15 +483,12 @@ def rotate_api_key(
     """
     client = Client()
     zen_store = client.zen_store
-    if not zen_store.TYPE == StoreType.REST:
-        set_key = False
 
     try:
         api_key = client.rotate_api_key(
             service_account_name_id_or_prefix=service_account_name_or_id,
             name_id_or_prefix=name_or_id,
             retain_period_minutes=retain,
-            set_key=set_key,
         )
     except KeyError as e:
         cli_utils.error(str(e))
@@ -503,25 +500,26 @@ def rotate_api_key(
         )
 
     if set_key and api_key.key:
-        client.set_api_key(api_key.key)
-        cli_utils.declare(
-            "The local client has been configured with the new API key."
-        )
-    else:
-        if not zen_store.TYPE == StoreType.REST:
+        if zen_store.TYPE != StoreType.REST:
             cli_utils.warning(
                 "Could not configure the local ZenML client with the generated "
                 "API key. This type of authentication is only supported if "
                 "connected to a ZenML server."
             )
+        else:
+            client.set_api_key(api_key.key)
+            cli_utils.declare(
+                "The local client has been configured with the new API key."
+            )
+            return
 
-        cli_utils.declare(
-            f"The new API key value is: '{api_key.key}'\nPlease store it "
-            "safely as it will not be shown again.\nTo configure a ZenML "
-            "client to use this API key, run:\n\n"
-            f"zenml connect --url {zen_store.config.url} --api-key \\\n"
-            f"    '{api_key.key}'\n"
-        )
+    cli_utils.declare(
+        f"The new API key value is: '{api_key.key}'\nPlease store it "
+        "safely as it will not be shown again.\nTo configure a ZenML "
+        "client to use this API key, run:\n\n"
+        f"zenml connect --url {zen_store.config.url} --api-key \\\n"
+        f"    '{api_key.key}'\n"
+    )
 
 
 @api_key.command("delete")

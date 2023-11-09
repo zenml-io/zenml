@@ -1289,7 +1289,7 @@ ssl_verify_server_cert: false
 ```
 
 Managing users, teams, workspaces and roles
------------------------------------------
+-------------------------------------------
 
 When using the ZenML service, you can manage permissions by managing users,
 teams, workspaces and roles using the CLI.
@@ -1383,6 +1383,95 @@ zenml role assignment list
 At any point you may inspect all available permissions:
 ```bash
 zenml permission list
+```
+
+Managing service accounts
+-------------------------
+
+ZenML supports the use of service accounts to authenticate clients to the
+ZenML server using API keys. This is useful for automating tasks such as
+running pipelines or deploying models.
+
+To create a new service account, run:
+
+```bash
+zenml service-account create SERVICE_ACCOUNT_NAME
+```
+
+This command creates a service account and an API key for it. The API key is
+displayed as part of the command output and cannot be retrieved later. You can
+then use the issued API key to connect your ZenML client to the server with the
+CLI:
+
+```bash
+zenml connect --url https://... --api-key <API_KEY>
+```
+
+or by setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
+variables when you set up your ZenML client for the first time: 
+
+```bash
+export ZENML_STORE_URL=https://...
+export ZENML_STORE_API_KEY=<API_KEY>
+```
+
+To see all the service accounts you've created and their API keys, use the
+following commands:
+
+```bash
+zenml service-account list
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> list
+```
+
+Additionally, the following command allows you to more precisely inspect one of
+these service accounts and an API key:
+
+```bash
+zenml service-account describe <SERVICE_ACCOUNT_NAME>
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> describe <API_KEY_NAME>
+```
+
+API keys don't have an expiration date. For increased security, we recommend
+that you regularly rotate the API keys to prevent unauthorized access to your
+ZenML server. You can do this with the ZenML CLI:
+
+```bash
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME>
+```
+
+Running this command will create a new API key and invalidate the old one. The
+new API key is displayed as part of the command output and cannot be retrieved
+later. You can then use the new API key to connect your ZenML client to the
+server just as described above.
+
+When rotating an API key, you can also configure a retention period for the old
+API key. This is useful if you need to keep the old API key for a while to
+ensure that all your workloads have been updated to use the new API key. You can
+do this with the `--retain` flag. For example, to rotate an API key and keep the
+old one for 60 minutes, you can run the following command:
+
+```bash
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME> \
+      --retain 60
+```
+
+For increased security, you can deactivate a service account or an API key using
+one of the following commands:
+
+```
+zenml service-account update <SERVICE_ACCOUNT_NAME> --active false
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> update <API_KEY_NAME> \
+      --active false
+```
+
+Deactivating a service account or an API key will prevent it from being used to
+authenticate and has immediate effect on all workloads that use it.
+
+To permanently delete an API key for a service account, use the following
+command:
+
+```bash
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 ```
 
 Deploying ZenML to the cloud
