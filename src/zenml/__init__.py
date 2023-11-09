@@ -34,11 +34,11 @@ __path__ = extend_path(__path__, __name__)
 
 # Define public Python API
 from zenml.api import show
+from zenml.artifacts.utils import log_artifact_metadata
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
 from zenml.new.steps.step_context import get_step_context
-from zenml.new.steps.log_artifact_metadata import log_artifact_metadata
 
 __all__ = [
     "get_pipeline_context",
