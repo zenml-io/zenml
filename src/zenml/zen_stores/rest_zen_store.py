@@ -51,7 +51,6 @@ from zenml.constants import (
     FLAVORS,
     GET_OR_CREATE,
     INFO,
-    LATEST_MODEL_VERSION_PLACEHOLDER,
     LOGIN,
     MODEL_VERSIONS,
     MODELS,
@@ -2430,21 +2429,23 @@ class RestZenStore(BaseZenStore):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+                If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.
         """
         return self._get_resource(
             resource_id=model_version_name_or_number_or_id
-            or LATEST_MODEL_VERSION_PLACEHOLDER,
+            or ModelStages.LATEST,
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
             response_model=ModelVersionResponseModel,
             params={

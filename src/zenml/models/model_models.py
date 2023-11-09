@@ -659,12 +659,13 @@ class ModelResponseModel(
         )
 
     def get_version(
-        self, version: Union[str, int, ModelStages]
+        self, version: Optional[Union[str, int, ModelStages]] = None
     ) -> ModelVersionResponseModel:
         """Get specific version of the model.
 
         Args:
-            version: version name, number, stage
+            version: version name, number, stage.
+                If skipped - latest version is retrieved.
 
         Returns:
             The requested model version.
@@ -674,7 +675,7 @@ class ModelResponseModel(
         return Client().get_model_version(
             model_name_or_id=self.name,
             model_version_name_or_number_or_id=getattr(
-                version, "value", version
+                version, "value", version or ModelStages.LATEST
             ),
         )
 

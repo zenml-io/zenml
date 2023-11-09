@@ -5077,20 +5077,24 @@ class Client(metaclass=ClientMetaClass):
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, UUID, ModelStages]
+        ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped - latest version is retrieved.
 
         Returns:
             The model version of interest.
         """
         return self.zen_store.get_model_version(
             model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id
+            or ModelStages.LATEST,
         )
 
     def list_model_versions(
