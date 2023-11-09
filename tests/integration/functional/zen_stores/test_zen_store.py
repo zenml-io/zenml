@@ -1684,7 +1684,7 @@ def test_login_inactive_service_account():
             assert active_user.id == service_account.id
 
 
-def test_login_deleted_key():
+def test_login_deleted_api_key():
     """Tests logging in with a deleted key."""
     zen_store = Client().zen_store
     if zen_store.type == StoreType.SQL:

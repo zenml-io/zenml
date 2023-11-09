@@ -175,7 +175,7 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
             and self.retain_period_minutes > 0
         ):
             # check if the previous key is still valid
-            if datetime.now() - self.last_rotated < timedelta(
+            if datetime.utcnow() - self.last_rotated < timedelta(
                 minutes=self.retain_period_minutes
             ):
                 key_hash = self.previous_key

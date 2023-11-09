@@ -490,6 +490,7 @@ def rotate_api_key(
         api_key = client.rotate_api_key(
             service_account_name_id_or_prefix=service_account_name_or_id,
             name_id_or_prefix=name_or_id,
+            retain_period_minutes=retain,
             set_key=set_key,
         )
     except KeyError as e:
