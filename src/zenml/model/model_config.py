@@ -125,7 +125,7 @@ class ModelConfig(BaseModel):
                         raise RuntimeError(
                             f"You configure model context with explicit `version` passed, "
                             "so new unnamed model version has to be created, "
-                            f"but pipeline run `{run_name}` have not finished yet. "
+                            f"but pipeline run `{run_name}` has not finished yet. "
                             "To proceed you can:\n"
                             "- Wait for previous run to finish\n"
                             "- Provide explicit `version` in configuration"
