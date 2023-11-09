@@ -1363,7 +1363,7 @@ def create_model_version_artifact_link(
 @handle_exceptions
 def list_workspace_model_version_artifact_links(
     workspace_name_or_id: Union[str, UUID],
-    model_version_id: Union[str, UUID],
+    model_version_id: UUID,
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
@@ -1460,7 +1460,7 @@ def create_model_version_pipeline_run_link(
 @handle_exceptions
 def list_workspace_model_version_pipeline_run_links(
     workspace_name_or_id: Union[str, UUID],
-    model_version_id: Union[str, UUID],
+    model_version_id: UUID,
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
         make_dependable(ModelVersionPipelineRunFilterModel)
     ),

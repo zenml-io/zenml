@@ -140,7 +140,7 @@ def update_model_version(
 )
 @handle_exceptions
 def delete_model_version(
-    model_version_id: Union[str, UUID],
+    model_version_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Delete a model by name or ID.
@@ -163,7 +163,7 @@ def delete_model_version(
 )
 @handle_exceptions
 def list_model_version_artifact_links(
-    model_version_id: Union[str, UUID],
+    model_version_id: UUID,
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
