@@ -188,7 +188,7 @@ def list_model_version_artifact_links(
 @router.delete(
     "/{model_version_id}"
     + ARTIFACTS
-    + "{model_version_artifact_link_name_or_id}",
+    + "/{model_version_artifact_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
