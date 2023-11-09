@@ -1920,8 +1920,10 @@ class SqlZenStore(BaseZenStore):
             for attr in UserSchema.__sqlmodel_relationships__.keys()
             if not attr.startswith("_") and attr not in
             # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted
-            ["teams", "assigned_roles", "api_keys", "auth_devices"]
+            # are deleted automatically when the user is deleted. Secrets in
+            # particular are left out because they are automatically deleted
+            # even when stored in an external secret store.
+            ["teams", "assigned_roles", "api_keys", "auth_devices", "secrets"]
         ]
 
         # This next part is crucial in preserving scalability: we don't fetch

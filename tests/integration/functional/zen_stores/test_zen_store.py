@@ -453,12 +453,14 @@ def test_get_user():
 
 def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
-
     zen_store = Client().zen_store
 
-    login = zen_store.type != StoreType.SQL
+    if zen_store.type != StoreType.SQL:
+        pytest.skip(
+            "Only SQL Zen Stores allow creating resources for other accounts."
+        )
 
-    with UserContext(login=login, delete=False) as user:
+    with UserContext(delete=False) as user:
         with ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
@@ -485,15 +487,9 @@ def test_delete_user_with_resources_fails():
             with pytest.raises(IllegalOperationError):
                 zen_store.delete_user(user.id)
 
-        if login:
-            # Cannot set user ID for pipeline context
-            with PipelineRunContext(1):
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_user(user.id)
-
-        with SecretContext(user_id=user.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+        with SecretContext(user_id=user.id, delete=False):
+            # Secrets are deleted when the user is deleted
+            pass
 
         with CodeRepositoryContext(user_id=user.id):
             with pytest.raises(IllegalOperationError):
@@ -517,11 +513,8 @@ def test_delete_user_with_resources_fails():
             with pytest.raises(IllegalOperationError):
                 zen_store.delete_user(user.id)
 
-    # TODO: remove this guard when the default stack and components are global
-    # and no longer owned by the user
-    if not login:
-        with does_not_raise():
-            zen_store.delete_user(user.id)
+    with does_not_raise():
+        zen_store.delete_user(user.id)
 
 
 def test_updating_user_with_existing_name_fails():
@@ -635,9 +628,12 @@ def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
 
-    login = zen_store.type != StoreType.SQL
+    if zen_store.type != StoreType.SQL:
+        pytest.skip(
+            "Only SQL Zen Stores allow creating resources for other accounts."
+        )
 
-    with ServiceAccountContext(login=login, delete=False) as service_account:
+    with ServiceAccountContext(delete=False) as service_account:
         with ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
@@ -666,15 +662,9 @@ def test_delete_service_account_with_resources_fails():
             with pytest.raises(IllegalOperationError):
                 zen_store.delete_service_account(service_account.id)
 
-        if login:
-            # Cannot set user ID for pipeline context
-            with PipelineRunContext(1):
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_service_account(service_account.id)
-
-        with SecretContext(user_id=service_account.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+        with SecretContext(user_id=service_account.id, delete=False):
+            # Secrets are deleted when the user is deleted
+            pass
 
         with CodeRepositoryContext(user_id=service_account.id):
             with pytest.raises(IllegalOperationError):
@@ -700,11 +690,8 @@ def test_delete_service_account_with_resources_fails():
             with pytest.raises(IllegalOperationError):
                 zen_store.delete_service_account(service_account.id)
 
-    # TODO: remove this guard when the default stack and components are global
-    # and no longer owned by the user
-    if not login:
-        with does_not_raise():
-            zen_store.delete_service_account(service_account.id)
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
 
 
 def test_create_service_account_used_name_fails():
@@ -1673,7 +1660,7 @@ def test_login_inactive_service_account():
 
             # NOTE: use the old store to update the key, since the new store
             # is no longer authorized
-            new_zen_store.update_service_account(
+            zen_store.update_service_account(
                 service_account_name_or_id=service_account.id,
                 service_account_update=ServiceAccountUpdateModel(
                     active=True,

@@ -1860,11 +1860,13 @@ def test_secret_is_deleted_with_workspace():
 
 def test_secret_is_deleted_with_user():
     """Tests that deleting a user automatically deletes all its secrets."""
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
     client = Client()
     store = client.zen_store
+
+    if store.type != StoreType.SQL:
+        pytest.skip(
+            "Only SQL Zen Stores allow creating resources for other accounts."
+        )
 
     with SecretContext() as secret:
         all_secrets = store.list_secrets(
@@ -1891,26 +1893,24 @@ def test_secret_is_deleted_with_user():
         ).items
         assert len(user_secrets) == 0
 
-        with UserContext(login=True) as user:
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
+        with UserContext(delete=False) as user:
             with SecretContext(
-                secret_name=secret.name, scope=SecretScope.USER, delete=False
+                secret_name=secret.name,
+                scope=SecretScope.USER,
+                delete=False,
+                user_id=user.id,
             ) as other_secret:
                 with does_not_raise():
-                    other_store.get_secret(other_secret.id)
+                    store.get_secret(other_secret.id)
 
-                all_secrets = other_store.list_secrets(
+                all_secrets = store.list_secrets(
                     SecretFilterModel(name=secret.name),
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert other_secret.id in [s.id for s in all_secrets]
 
-                user_secrets = other_store.list_secrets(
+                user_secrets = store.list_secrets(
                     SecretFilterModel(
                         name=secret.name,
                         scope=SecretScope.USER,
@@ -1921,7 +1921,9 @@ def test_secret_is_deleted_with_user():
                 assert len(user_secrets) == 1
                 assert other_secret.id == user_secrets[0].id
 
-        # New user has been deleted at this point
+        store.delete_user(user.id)
+
+        # New secret has been deleted at this point with the user
 
         with pytest.raises(KeyError):
             store.get_secret(other_secret.id)
