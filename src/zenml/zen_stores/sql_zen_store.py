@@ -1053,7 +1053,7 @@ class SqlZenStore(BaseZenStore):
                     session.add(vis_schema)
 
             session.commit()
-            return artifact_schema.to_model()
+            return artifact_schema.to_model(hydrate=True)
 
     def get_artifact(
         self, artifact_id: UUID, hydrate: bool = True
@@ -1243,7 +1243,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_repo)
 
-            return new_repo.to_model()
+            return new_repo.to_model(hydrate=True)
 
     def get_code_repository(
         self, code_repository_id: UUID, hydrate: bool = True
@@ -1436,7 +1436,7 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(new_component)
 
-            return new_component.to_model()
+            return new_component.to_model(hydrate=True)
 
     def get_stack_component(
         self, component_id: UUID, hydrate: bool = True
@@ -1810,7 +1810,7 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_flavor)
                 session.commit()
 
-                return new_flavor.to_model()
+                return new_flavor.to_model(hydrate=True)
 
     def get_flavor(
         self, flavor_id: UUID, hydrate: bool = True
@@ -1999,7 +1999,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model()
+            return new_pipeline.to_model(hydrate=True)
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -2149,7 +2149,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_build)
 
-            return new_build.to_model()
+            return new_build.to_model(hydrate=True)
 
     def get_build(
         self, build_id: UUID, hydrate: bool = True
@@ -2261,7 +2261,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_deployment)
 
-            return new_deployment.to_model()
+            return new_deployment.to_model(hydrate=True)
 
     def get_deployment(
         self, deployment_id: UUID, hydrate: bool = True
@@ -2391,7 +2391,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model()
+            return new_run.to_model(hydrate=True)
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -2571,7 +2571,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.commit()
-            return role_schema.to_model()
+            return role_schema.to_model(hydrate=True)
 
     def get_role(
         self, role_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -2761,7 +2761,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(run_metadata_schema.to_model())
+                return_value.append(run_metadata_schema.to_model(hydrate=True))
         return return_value
 
     def get_run_metadata(
@@ -2835,7 +2835,7 @@ class SqlZenStore(BaseZenStore):
             new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
-            return new_schedule.to_model()
+            return new_schedule.to_model(hydrate=True)
 
     def get_schedule(
         self, schedule_id: UUID, hydrate: bool = True
@@ -3029,7 +3029,7 @@ class SqlZenStore(BaseZenStore):
 
                 raise
 
-            connector = new_service_connector.to_model()
+            connector = new_service_connector.to_model(hydrate=True)
             self._populate_connector_type(connector)
             return connector
 
@@ -3924,7 +3924,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
-            return new_stack_schema.to_model()
+            return new_stack_schema.to_model(hydrate=True)
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -4258,7 +4258,7 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            return step_schema.to_model()
+            return step_schema.to_model(hydrate=True)
 
     def get_run_step(
         self, step_run_id: UUID, hydrate: bool = True
@@ -4559,7 +4559,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_team)
             session.commit()
 
-            return new_team.to_model()
+            return new_team.to_model(hydrate=True)
 
     def get_team(
         self, team_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -4712,7 +4712,7 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(role_assignment)
             session.commit()
-            return role_assignment.to_model()
+            return role_assignment.to_model(hydrate=True)
 
     def get_team_role_assignment(
         self, team_role_assignment_id: UUID, hydrate: bool = True
@@ -4829,7 +4829,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_user)
             session.commit()
 
-            return new_user.to_model()
+            return new_user.to_model(hydrate=True)
 
     def get_user(
         self,
@@ -5020,7 +5020,7 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(role_assignment)
             session.commit()
-            return role_assignment.to_model()
+            return role_assignment.to_model(hydrate=True)
 
     def get_user_role_assignment(
         self, user_role_assignment_id: UUID, hydrate: bool = True
@@ -5145,7 +5145,7 @@ class SqlZenStore(BaseZenStore):
             # Explicitly refresh the new_workspace schema
             session.refresh(new_workspace)
 
-            return new_workspace.to_model()
+            return new_workspace.to_model(hydrate=True)
 
     def get_workspace(
         self, workspace_name_or_id: Union[str, UUID], hydrate: bool = True
