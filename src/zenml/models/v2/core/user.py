@@ -95,7 +95,6 @@ class UserRequest(BaseRequest):
         default=None,
         title="The external user ID associated with the account.",
     )
-
     active: bool = Field(default=False, title="Active account.")
 
     class Config:
@@ -134,7 +133,7 @@ class UserRequest(BaseRequest):
         if secret is None:
             return None
         pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret))
+        return pwd_context.hash(secret)
 
     def create_hashed_password(self) -> Optional[str]:
         """Hashes the password.
