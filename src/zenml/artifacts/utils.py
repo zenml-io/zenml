@@ -52,7 +52,9 @@ def log_artifact_metadata(
     """
     try:
         step_context = get_step_context()
-        in_step_outputs = artifact_name in step_context._outputs
+        in_step_outputs = (artifact_name in step_context._outputs) or (
+            not artifact_name and len(step_context._outputs) == 1
+        )
     except StepContextError:
         step_context = None
         in_step_outputs = False
@@ -65,9 +67,7 @@ def log_artifact_metadata(
             )
         client = Client()
         artifact = client.get_artifact(artifact_name, artifact_version)
-        # TODO
-        # update_model = ArtifactUpdateModel(metadata=metadata)
-        # client.update_artifact(artifact.id, update_model)
+        client.create_run_metadata(metadata=metadata, artifact_id=artifact.id)
 
     else:
         try:
