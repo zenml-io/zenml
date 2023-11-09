@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     Union,
-    cast,
 )
 from uuid import UUID
 
