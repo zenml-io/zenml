@@ -20,11 +20,9 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    ARTIFACTS,
     LATEST_MODEL_VERSION_PLACEHOLDER,
     MODEL_VERSIONS,
     MODELS,
-    RUNS,
     VERSION_1,
 )
 from zenml.enums import ModelStages, PermissionType
@@ -32,13 +30,8 @@ from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
     ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactResponseModel,
     ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunResponseModel,
     ModelVersionResponseModel,
-    ModelVersionUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -171,6 +164,8 @@ def list_model_versions(
 ) -> Page[ModelVersionResponseModel]:
     """Get model versions according to query filters.
 
+    This endpoint serves the purpose of allowing scoped filtering by model_id.
+
     Args:
         model_name_or_id: The name or ID of the model to list in.
         model_version_filter_model: Filter model used for pagination, sorting,
@@ -217,189 +212,4 @@ def get_model_version(
         model_version_name_or_number_or_id
         if not is_number
         else int(model_version_name_or_number_or_id),
-    )
-
-
-@router.put(
-    "/{model_id}" + MODEL_VERSIONS + "/{model_version_id}",
-    response_model=ModelVersionResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def update_model_version(
-    model_version_id: UUID,
-    model_version_update_model: ModelVersionUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ModelVersionResponseModel:
-    """Get all model versions by filter.
-
-    Args:
-        model_version_id: The ID of model version to be updated.
-        model_version_update_model: The model version to be updated.
-
-    Returns:
-        An updated model version.
-    """
-    return zen_store().update_model_version(
-        model_version_id=model_version_id,
-        model_version_update_model=model_version_update_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}" + MODEL_VERSIONS + "/{model_version_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Delete a model by name or ID.
-
-    Args:
-        model_name_or_id: The name or ID of the model containing version.
-        model_version_name_or_id: The name or ID of the model version to delete.
-    """
-    zen_store().delete_model_version(
-        model_name_or_id, model_version_name_or_id
-    )
-
-
-##########################
-# Model Version Artifacts
-##########################
-
-
-@router.get(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS,
-    response_model=Page[ModelVersionArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_model_version_artifact_links(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-        make_dependable(ModelVersionArtifactFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionArtifactResponseModel]:
-    """Get model version to artifact links according to query filters.
-
-    Args:
-        model_name_or_id: The name or ID of the model containing version.
-        model_version_name_or_id: The name or ID of the model version containing links.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model version to artifact links according to query filters.
-    """
-    return zen_store().list_model_version_artifact_links(
-        model_name_or_id=model_name_or_id,
-        model_version_name_or_id=model_version_name_or_id,
-        model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + ARTIFACTS
-    + "/{model_version_artifact_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_artifact_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_artifact_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
-    """
-    zen_store().delete_model_version_artifact_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_artifact_link_name_or_id,
-    )
-
-
-##############################
-# Model Version Pipeline Runs
-##############################
-
-
-@router.get(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS,
-    response_model=Page[ModelVersionPipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_model_version_pipeline_run_links(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionPipelineRunResponseModel]:
-    """Get model version to pipeline run links according to query filters.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            and filtering
-
-    Returns:
-        The model version to pipeline run links according to query filters.
-    """
-    return zen_store().list_model_version_pipeline_run_links(
-        model_name_or_id=model_name_or_id,
-        model_version_name_or_id=model_version_name_or_id,
-        model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
-    )
-
-
-@router.delete(
-    "/{model_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
-    + RUNS
-    + "/{model_version_pipeline_run_link_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_model_version_pipeline_run_link(
-    model_name_or_id: Union[str, UUID],
-    model_version_name_or_id: Union[str, UUID],
-    model_version_pipeline_run_link_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a model version link.
-
-    Args:
-        model_name_or_id: name or ID of the model containing the model version.
-        model_version_name_or_id: name or ID of the model version containing the link.
-        model_version_pipeline_run_link_name_or_id: name or ID of the model version link to be deleted.
-    """
-    zen_store().delete_model_version_pipeline_run_link(
-        model_name_or_id,
-        model_version_name_or_id,
-        model_version_pipeline_run_link_name_or_id,
     )

@@ -2458,8 +2458,8 @@ class RestZenStore(BaseZenStore):
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
@@ -2471,11 +2471,18 @@ class RestZenStore(BaseZenStore):
         Returns:
             A page of all model versions.
         """
-        return self._list_paginated_resources(
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
-            response_model=ModelVersionResponseModel,
-            filter_model=model_version_filter_model,
-        )
+        if model_name_or_id:
+            return self._list_paginated_resources(
+                route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
+                response_model=ModelVersionResponseModel,
+                filter_model=model_version_filter_model,
+            )
+        else:
+            return self._list_paginated_resources(
+                route=f"{MODEL_VERSIONS}",
+                response_model=ModelVersionResponseModel,
+                filter_model=model_version_filter_model,
+            )
 
     def update_model_version(
         self,
@@ -2522,15 +2529,13 @@ class RestZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -2538,27 +2543,25 @@ class RestZenStore(BaseZenStore):
             A page of all model version to artifact links.
         """
         return self._list_paginated_resources(
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{ARTIFACTS}",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
             response_model=ModelVersionArtifactResponseModel,
             filter_model=model_version_artifact_link_filter_model,
         )
 
     def delete_model_version_artifact_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to artifact link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_artifact_link_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{ARTIFACTS}",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
         )
 
     ###############################
@@ -2586,15 +2589,13 @@ class RestZenStore(BaseZenStore):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -2602,27 +2603,25 @@ class RestZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         return self._list_paginated_resources(
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{RUNS}",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
             response_model=ModelVersionPipelineRunResponseModel,
             filter_model=model_version_pipeline_run_link_filter_model,
         )
 
     def delete_model_version_pipeline_run_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_pipeline_run_link_name_or_id,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{RUNS}",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
         )
 
     # ------------------
