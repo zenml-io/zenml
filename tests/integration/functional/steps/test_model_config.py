@@ -21,10 +21,11 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus
-from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
+from zenml.model.model_config import ModelConfig
 from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
@@ -219,9 +220,7 @@ def test_create_new_version_only_in_pipeline():
 
 
 @step
-def _this_step_produces_output() -> (
-    Annotated[int, "data", ArtifactConfig(overwrite=False)]
-):
+def _this_step_produces_output() -> Annotated[int, "data"]:
     return 1
 
 
@@ -545,12 +544,11 @@ def _this_step_has_model_config_on_artifact_level() -> (
         Annotated[
             int, "declarative_link", ArtifactConfig(model_name="declarative")
         ],
-        Annotated[int, "functional_link"],
+        Annotated[
+            int, "functional_link", ArtifactConfig(model_name="functional")
+        ],
     ]
 ):
-    link_output_to_model(
-        ArtifactConfig(model_name="functional"), output_name="functional_link"
-    )
     return 1, 2
 
 

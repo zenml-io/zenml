@@ -12,16 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.config.source import Source
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
-
-MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
     from zenml.models.artifact_models import ArtifactResponseModel

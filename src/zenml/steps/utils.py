@@ -23,8 +23,8 @@ import pydantic.typing as pydantic_typing
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.logger import get_logger
-from zenml.model.artifact_config import ArtifactConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
@@ -128,10 +128,10 @@ def parse_return_type_annotations(
                 )
             for i, annotation in enumerate(args):
                 resolved_annotation = resolve_type_annotation(annotation)
-                (
-                    output_name,
-                    artifact_config,
-                ) = get_output_name_from_annotation_metadata(annotation)
+                artifact_config = get_artifact_config_from_annotation_metadata(
+                    annotation
+                )
+                output_name = artifact_config.name if artifact_config else None
                 has_custom_name = output_name is not None
                 output_name = output_name or f"output_{i}"
                 if output_name in output_signature:
@@ -146,9 +146,10 @@ def parse_return_type_annotations(
 
     # Return type is annotated as single value or is a tuple
     resolved_annotation = resolve_type_annotation(return_annotation)
-    output_name, artifact_config = get_output_name_from_annotation_metadata(
+    artifact_config = get_artifact_config_from_annotation_metadata(
         return_annotation
     )
+    output_name = artifact_config.name if artifact_config else None
     has_custom_name = output_name is not None
     output_name = output_name or SINGLE_RETURN_OUT_NAME
     return {
@@ -183,56 +184,74 @@ def resolve_type_annotation(obj: Any) -> Any:
     return origin
 
 
-def get_output_name_from_annotation_metadata(
+def get_artifact_config_from_annotation_metadata(
     annotation: Any,
-) -> Tuple[Optional[str], Optional[ArtifactConfig]]:
-    """Get the output name from a type annotation.
+) -> Optional[ArtifactConfig]:
+    """Get the artifact config from the annotation metadata of a step output.
 
     Example:
     ```python
-    get_output_name_from_annotation_metadata(int)  # None, None
-    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # name, None
-    get_output_name_from_annotation_metadata(Annotated[int, "name", ArtifactConfig(model_name="foo")]  # name, ArtifactConfig(model_name="foo")
+    get_output_name_from_annotation_metadata(int)  # None
+    get_output_name_from_annotation_metadata(Annotated[int, "name"]  # ArtifactConfig(name="name")
+    get_output_name_from_annotation_metadata(Annotated[int, ArtifactConfig(name="name", model_name="foo")]  # ArtifactConfig(name="name", model_name="foo")
     ```
 
     Args:
         annotation: The type annotation.
 
     Raises:
-        ValueError: If the annotation not following (str,ArtifactConfig) pattern
+        ValueError: If the annotation is not following the expected format
+            or if the name was specified multiple times or is an empty string.
 
     Returns:
-        Tuple of output_name and artifact_config.
+        The artifact config.
     """
     if (pydantic_typing.get_origin(annotation) or annotation) is not Annotated:
-        return None, None
+        return None
 
     annotation, *metadata = pydantic_typing.get_args(annotation)
 
-    msg = ""
-    if len(metadata) > 2:
-        msg += "Annotation metadata can contain not more than 2 elements: the output name and the instance of `ArtifactConfig`.\n"
+    error_message = (
+        "Artifact annotation should only contain two elements: the artifact "
+        "type, and either an output name or an `ArtifactConfig`, e.g.: "
+        "`Annotated[int, 'output_name']` or "
+        "`Annotated[int, ArtifactConfig(name='output_name'), ...]`."
+    )
 
+    if len(metadata) > 2:
+        raise ValueError(error_message)
+
+    # Loop over all values to also support legacy annotations of the form
+    # `Annotated[int, 'output_name', ArtifactConfig(...)]`
     output_name = None
     artifact_config = None
     for metadata_instance in metadata:
         if isinstance(metadata_instance, str):
-            if output_name is None:
-                output_name = metadata_instance
-            else:
-                msg += "Annotation metadata can not contain multiple output names.\n"
+            if output_name is not None:
+                raise ValueError(error_message)
+            output_name = metadata_instance
         elif isinstance(metadata_instance, ArtifactConfig):
-            if artifact_config is None:
-                artifact_config = metadata_instance
-            else:
-                msg += "Annotation metadata can not contain multiple `ArtifactConfig` instances.\n"
+            if artifact_config is not None:
+                raise ValueError(error_message)
+            artifact_config = metadata_instance
         else:
-            msg += "Annotation metadata can only contain `str` and `ArtifactConfig` instances.\n"
+            raise ValueError(error_message)
 
-    if msg:
-        raise ValueError(msg)
+    # Consolidate output name
+    if artifact_config and artifact_config.name:
+        if output_name is not None:
+            raise ValueError(error_message)
+    elif output_name:
+        if not artifact_config:
+            artifact_config = ArtifactConfig(name=output_name)
+        elif not artifact_config.name:
+            artifact_config = artifact_config.copy()
+            artifact_config.name = output_name
 
-    return output_name, artifact_config
+    if artifact_config and artifact_config.name == "":
+        raise ValueError("Output name cannot be an empty string.")
+
+    return artifact_config
 
 
 class ReturnVisitor(ast.NodeVisitor):

@@ -32,18 +32,25 @@ from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
 
+# Need to import zenml.models before zenml.config to avoid circular imports
+from zenml.models import *  # noqa: F401
+
 # Define public Python API
 from zenml.api import show
 from zenml.artifacts.utils import log_artifact_metadata
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.model.model_config import ModelConfig
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
 from zenml.new.steps.step_context import get_step_context
 
 __all__ = [
+    "ArtifactConfig",
     "get_pipeline_context",
     "get_step_context",
     "log_artifact_metadata",
+    "ModelConfig",
     "pipeline",
     "show",
     "step",

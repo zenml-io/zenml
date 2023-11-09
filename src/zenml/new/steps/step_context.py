@@ -28,10 +28,10 @@ from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
+    from zenml.artifacts.artifact_config import ArtifactConfig
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.artifact_config import ArtifactConfig
     from zenml.model.model_config import ModelConfig
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
