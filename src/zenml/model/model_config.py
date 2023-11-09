@@ -123,10 +123,12 @@ class ModelConfig(BaseModel):
                 for run_name, run in model_version.pipeline_runs.items():
                     if run.status == ExecutionStatus.RUNNING:
                         raise RuntimeError(
-                            f"New unnamed model version was requested, "
+                            f"You configure model context with explicit `version` passed, "
+                            "so new unnamed model version has to be created, "
                             f"but pipeline run `{run_name}` have not finished yet. "
-                            "This run also operates with unnamed model version - "
-                            "new run will be stopped to prevent unexpected behavior."
+                            "To proceed you can:\n"
+                            "- Wait for previous run to finish\n"
+                            "- Provide explicit `version` in configuration"
                         )
                 if self.delete_new_version_on_failure:
                     raise RuntimeError(
