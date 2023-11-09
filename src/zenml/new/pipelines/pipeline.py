@@ -952,13 +952,12 @@ class Pipeline:
                 new_version_request.model_config.delete_new_version_on_failure
                 and new_version_request.model_config.version is not None
             ):
-                model = Client().get_model_version(
+                model_version = Client().get_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_number_or_id=new_version_request.model_config.version,
                 )
                 Client().delete_model_version(
-                    model_name_or_id=model_name,
-                    model_version_name_or_id=model.id,
+                    model_version_id=model_version.id
                 )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:

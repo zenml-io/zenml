@@ -162,9 +162,9 @@ class ArtifactConfig(BaseModel):
                 logger.warning(
                     f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
                 )
+
                 client.zen_store.delete_model_version_artifact_link(
-                    model_name_or_id=model_version.model.id,
-                    model_version_name_or_id=model_version.id,
+                    model_version_id=model_version.id,
                     model_version_artifact_link_name_or_id=artifact_name,
                 )
             else:
