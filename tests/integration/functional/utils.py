@@ -2,6 +2,7 @@ from contextlib import contextmanager
 
 from zenml.client import Client
 from zenml.models import ModelFilterModel
+from zenml.models.tag_models import TagFilterModel
 from zenml.utils.string_utils import random_str
 
 
@@ -20,5 +21,19 @@ def model_killer():
         for model in models:
             try:
                 client.delete_model(model.name)
+            except KeyError:
+                pass
+
+
+@contextmanager
+def tags_killer():
+    try:
+        yield
+    finally:
+        client = Client().zen_store
+        tags = client.list_tags(TagFilterModel(size=999))
+        for tag in tags:
+            try:
+                client.delete_tag(tag.id)
             except KeyError:
                 pass

@@ -267,7 +267,7 @@ def update_model(
             trade_offs=tradeoffs,
             ethics=ethical,
             limitations=limitations,
-            tags=tag,
+            add_tags=tag,
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         ),

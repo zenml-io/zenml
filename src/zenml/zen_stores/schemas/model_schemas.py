@@ -14,7 +14,6 @@
 """SQLModel implementation of model tables."""
 
 
-import json
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -22,6 +21,8 @@ from uuid import UUID
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import TaggableResourceTypes
+from zenml.exceptions import EntityExistsError
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
@@ -33,10 +34,12 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
 )
+from zenml.models.tag_models import TagRequestModel, TagResourceRequestModel
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
@@ -73,7 +76,10 @@ class ModelSchema(NamedSchema, table=True):
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
-    tags: str = Field(sa_column=Column(TEXT, nullable=True))
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -108,9 +114,6 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethics=model_request.ethics,
-            tags=json.dumps(model_request.tags)
-            if model_request.tags
-            else None,
         )
 
     def to_model(self) -> ModelResponseModel:
@@ -133,7 +136,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethics=self.ethics,
-            tags=json.loads(self.tags) if self.tags else None,
+            tags=[t.tag.to_model() for t in self.tags],
             latest_version=self.model_versions[-1].name
             if self.model_versions
             else None,
@@ -151,9 +154,36 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
+        from zenml.client import Client
+
+        zs = Client().zen_store
         for field, value in model_update.dict(exclude_unset=True).items():
-            if field == "tags":
-                setattr(self, field, json.dumps(value))
+            if field == "add_tags":
+                for tag_ in value:
+                    try:
+                        tag = zs.get_tag(tag_)
+                    except KeyError:
+                        tag = zs.create_tag(TagRequestModel(name=tag_))
+
+                    try:
+                        tr = zs.create_tag_resource(
+                            TagResourceRequestModel(
+                                tag_id=tag.id,
+                                resource_id=self.id,
+                                resource_type=TaggableResourceTypes.MODEL,
+                            )
+                        )
+                    except EntityExistsError:
+                        pass
+            elif field == "remove_tags":
+                for tag_ in value:
+                    try:
+                        tag = zs.get_tag(tag_)
+                        zs.delete_tag_resource(
+                            tag_id=tag.id, resource_id=self.id
+                        )
+                    except KeyError:
+                        pass
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

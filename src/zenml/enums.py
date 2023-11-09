@@ -291,3 +291,25 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
+
+
+class ColorVariants(Enum):
+    """All possible color variants for frontend."""
+
+    GREY = 1
+    PURPLE = 2
+    RED = 3
+    GREEN = 4
+    YELLOW = 5
+    ORANGE = 6
+    LIME = 7
+    TEAL = 8
+    TURQUOISE = 9
+    MAGENTA = 10
+    BLUE = 11
+
+
+class TaggableResourceTypes(Enum):
+    """All possible resource types for tagging."""
+
+    MODEL = 1

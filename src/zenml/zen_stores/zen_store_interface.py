@@ -86,6 +86,12 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TagFilterModel,
+    TagRequestModel,
+    TagResourceRequestModel,
+    TagResourceResponseModel,
+    TagResponseModel,
+    TagUpdateModel,
     TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
@@ -2038,4 +2044,121 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no device with the given ID exists.
+        """
+
+    #################
+    # Tags
+    #################
+
+    @abstractmethod
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the tag to be created.
+
+        Returns:
+            The newly created tag.
+
+        Raises:
+            EntityExistsError: If a tag with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to delete.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def get_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be retrieved.
+
+        Returns:
+            The tag of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get all tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination params.
+
+        Returns:
+            A page of all tags.
+        """
+
+    @abstractmethod
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Update tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be updated.
+
+        Returns:
+            An updated tag.
+
+        Raises:
+            KeyError: If the tag is not found
+        """
+
+    ####################
+    # Tags <> resources
+    ####################
+
+    @abstractmethod
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequestModel
+    ) -> TagResourceResponseModel:
+        """Creates a new tag resource relationship.
+
+        Args:
+            tag_resource: the tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+
+        Raises:
+            EntityExistsError: If a tag resource relationship with the given configuration.
+        """
+
+    @abstractmethod
+    def delete_tag_resource(
+        self,
+        tag_id: UUID,
+        resource_id: UUID,
+    ) -> None:
+        """Deletes a tag resource relationship.
+
+        Args:
+            tag_id: id of the tag to delete.
+            resource_id: id of the tag to delete.
+
+        Raises:
+            KeyError: specified ID not found.
         """

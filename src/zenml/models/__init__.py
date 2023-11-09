@@ -183,7 +183,14 @@ from zenml.models.model_models import (
     ModelVersionFilterModel,
     ModelVersionUpdateModel,
 )
-
+from zenml.models.tag_models import (
+    TagFilterModel,
+    TagResourceResponseModel,
+    TagResourceRequestModel,
+    TagResponseModel,
+    TagRequestModel,
+    TagUpdateModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -445,6 +452,12 @@ __all__ = [
     "StepRunRequestModel",
     "StepRunResponseModel",
     "StepRunUpdateModel",
+    "TagFilterModel",
+    "TagResourceResponseModel",
+    "TagResourceRequestModel",
+    "TagResponseModel",
+    "TagRequestModel",
+    "TagUpdateModel",
     "TeamFilterModel",
     "TeamRequestModel",
     "TeamResponseModel",

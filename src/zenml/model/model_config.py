@@ -25,9 +25,10 @@ from typing import (
 from pydantic import BaseModel, root_validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ExecutionStatus, ModelStages, TaggableResourceTypes
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.models.tag_models import TagRequestModel, TagResourceRequestModel
 
 if TYPE_CHECKING:
     from zenml.models.model_models import (
@@ -198,6 +199,24 @@ class ModelConfig(BaseModel):
             model_request = ModelRequestModel.parse_obj(model_request)
             try:
                 model = zenml_client.create_model(model=model_request)
+                if model_request.tags:
+                    model.tags = []
+                    for tag_ in model_request.tags:
+                        try:
+                            tag = zenml_client.zen_store.get_tag(tag_)
+                        except KeyError:
+                            tag = zenml_client.zen_store.create_tag(
+                                TagRequestModel(name=tag_)
+                            )
+
+                        tr = zenml_client.zen_store.create_tag_resource(
+                            TagResourceRequestModel(
+                                tag_id=tag.id,
+                                resource_id=model.id,
+                                resource_type=TaggableResourceTypes.MODEL,
+                            )
+                        )
+                        model.tags.append(tag)
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls

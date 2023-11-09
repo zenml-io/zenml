@@ -51,6 +51,7 @@ from zenml.zen_server.routers import (
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    tags_endpoints,
     team_role_assignments_endpoints,
     teams_endpoints,
     users_endpoints,
@@ -229,6 +230,8 @@ app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(models_endpoints.router)
+app.include_router(tags_endpoints.router)
+app.include_router(tags_endpoints.router_tr)
 
 
 def get_root_static_files() -> List[str]:

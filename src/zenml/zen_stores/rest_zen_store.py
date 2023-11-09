@@ -70,6 +70,8 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STEPS,
+    TAG_RESOURCES,
+    TAGS,
     TEAM_ROLE_ASSIGNMENTS,
     TEAMS,
     USER_ROLE_ASSIGNMENTS,
@@ -154,6 +156,12 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TagFilterModel,
+    TagRequestModel,
+    TagResourceRequestModel,
+    TagResourceResponseModel,
+    TagResponseModel,
+    TagUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamRoleAssignmentFilterModel,
@@ -2729,6 +2737,129 @@ class RestZenStore(BaseZenStore):
                 f"{type(response_body)}"
             )
         return response_body
+
+    #################
+    # Tags
+    #################
+
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the tag to be created.
+
+        Returns:
+            The newly created tag.
+        """
+        return self._create_resource(
+            resource=tag,
+            response_model=TagResponseModel,
+            route=TAGS,
+        )
+
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to delete.
+        """
+        self._delete_resource(resource_id=tag_name_or_id, route=TAGS)
+
+    def get_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be retrieved.
+
+        Returns:
+            The tag of interest.
+        """
+        return self._get_resource(
+            resource_id=tag_name_or_id,
+            route=TAGS,
+            response_model=TagResponseModel,
+        )
+
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get all tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination params.
+
+        Returns:
+            A page of all tags.
+        """
+        return self._list_paginated_resources(
+            route=TAGS,
+            response_model=TagResponseModel,
+            filter_model=tag_filter_model,
+        )
+
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Update tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be updated.
+
+        Returns:
+            An updated tag.
+        """
+        tag = self.get_tag(tag_name_or_id)
+        return self._update_resource(
+            resource_id=tag.id,
+            resource_update=tag_update_model,
+            route=TAGS,
+            response_model=TagResponseModel,
+        )
+
+    ####################
+    # Tags <> resources
+    ####################
+
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequestModel
+    ) -> TagResourceResponseModel:
+        """Creates a new tag resource relationship.
+
+        Args:
+            tag_resource: the tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+        return self._create_resource(
+            resource=tag_resource,
+            response_model=TagResourceResponseModel,
+            route=MODELS + TAG_RESOURCES,
+        )
+
+    def delete_tag_resource(
+        self,
+        tag_id: UUID,
+        resource_id: UUID,
+    ) -> None:
+        """Deletes a tag resource relationship.
+
+        Args:
+            tag_id: id of the tag to delete.
+            resource_id: id of the tag to delete.
+        """
+        self._delete_resource(
+            resource_id=tag_resource_id, route=MODELS + TAG_RESOURCES
+        )
 
     # =======================
     # Internal helper methods

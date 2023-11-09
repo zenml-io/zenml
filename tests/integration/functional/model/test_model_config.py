@@ -15,11 +15,14 @@ from unittest import mock
 
 import pytest
 
+from tests.integration.functional.utils import model_killer, tags_killer
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.model import ModelConfig
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
+from zenml.models.model_models import ModelUpdateModel
+from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
 
@@ -203,3 +206,58 @@ class TestModelConfig:
             mv2 = mc.get_or_create_model_version()
 
             assert mv1.id == mv2.id
+
+    def test_tags_properly_created(self):
+        """Test that model context can create proper tag relationships."""
+        with model_killer():
+            with tags_killer():
+                Client().zen_store.create_tag(
+                    TagRequestModel(name="foo", color="green")
+                )
+                mc = ModelConfig(
+                    name=MODEL_NAME,
+                    tags=["foo", "bar"],
+                    create_new_model_version=True,
+                    delete_new_version_on_failure=False,
+                )
+
+                # run 2 times to first create, next get
+                for _ in range(2):
+                    model = mc.get_or_create_model()
+
+                    assert len(model.tags) == 2
+                    assert {t.name for t in model.tags} == {"foo", "bar"}
+                    assert {
+                        t.color for t in model.tags if t.name == "foo"
+                    } == {"green"}
+
+    def test_tags_properly_updated(self):
+        """Test that model context can update proper tag relationships."""
+        with model_killer():
+            with tags_killer():
+                mc = ModelConfig(
+                    name=MODEL_NAME,
+                    tags=["foo", "bar"],
+                    create_new_model_version=True,
+                    delete_new_version_on_failure=False,
+                )
+                model_id = mc.get_or_create_model().id
+
+                Client().update_model(
+                    model_id, ModelUpdateModel(add_tags=["tag1", "tag2"])
+                )
+                model = mc.get_or_create_model()
+                assert len(model.tags) == 4
+                assert {t.name for t in model.tags} == {
+                    "foo",
+                    "bar",
+                    "tag1",
+                    "tag2",
+                }
+
+                Client().update_model(
+                    model_id, ModelUpdateModel(remove_tags=["tag1", "tag2"])
+                )
+                model = mc.get_or_create_model()
+                assert len(model.tags) == 2
+                assert {t.name for t in model.tags} == {"foo", "bar"}
