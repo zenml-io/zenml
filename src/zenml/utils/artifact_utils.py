@@ -357,10 +357,11 @@ def upload_artifact(
     data: Any,
     materializer: "BaseMaterializer",
     artifact_store_id: "UUID",
+    version: Optional[Union[int, str]] = None,
+    tags: Optional[List[str]] = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
     has_custom_name: bool = False,
-    version: Optional[str] = None,
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
 ) -> "UUID":
     """Upload and publish an artifact.
@@ -371,10 +372,11 @@ def upload_artifact(
         materializer: The materializer to store the artifact.
         artifact_store_id: ID of the artifact store in which the artifact should
             be stored.
-        extract_metadata: If artifact metadata should be extracted and returned.
-        include_visualizations: If artifact visualizations should be generated.
         version: The version of the artifact. If not provided, a new
             auto-incremented version will be used.
+        tags: Tags to associate with the artifact.
+        extract_metadata: If artifact metadata should be extracted and returned.
+        include_visualizations: If artifact visualizations should be generated.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
         user_metadata: User-provided metadata to store with the artifact.
@@ -415,6 +417,7 @@ def upload_artifact(
     artifact = ArtifactRequestModel(
         name=name,
         version=version or _get_new_artifact_version(name),
+        tags=tags,
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),

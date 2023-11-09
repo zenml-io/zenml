@@ -71,8 +71,14 @@ class ArtifactBaseModel(BaseModel):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
+    tags: Optional[List[str]] = Field(
+        title="Tags of the artifact.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
+    )
     visualizations: Optional[List[VisualizationModel]] = Field(
-        default=None, title="Visualizations of the artifact."
+        title="Visualizations of the artifact.",
+        default=None,
     )
 
     _convert_source = convert_source_validator("materializer", "data_type")
@@ -171,7 +177,7 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
         default=None,
         description="Version of the artifact",
     )
-    version_number: Optional[int] = Field(
+    version_number: Optional[Union[int, str]] = Field(
         default=None,
         description="Version of the artifact if it is an integer",
     )
@@ -212,3 +218,15 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
 
 class ArtifactRequestModel(ArtifactBaseModel, WorkspaceScopedRequestModel):
     """Request model for artifacts."""
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+class ArtifactUpdateModel(BaseModel):
+    """Artifact update model."""
+
+    name: Optional[str] = None
+    tags: Optional[List[str]] = None

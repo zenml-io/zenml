@@ -24,6 +24,7 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.page_model import Page
 from zenml.models.visualization_models import (
     LoadedVisualizationModel,
@@ -110,6 +111,29 @@ def get_artifact(
         The artifact with the given ID.
     """
     return zen_store().get_artifact(artifact_id)
+
+
+@router.put(
+    "/{artifact_id}",
+    response_model=ArtifactResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_artifact(
+    artifact_id: UUID,
+    artifact_update: ArtifactUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> ArtifactResponseModel:
+    """Update an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to update.
+        artifact_update: The update to apply to the artifact.
+
+    Returns:
+        The updated artifact.
+    """
+    return zen_store().update_artifact(artifact_id, artifact_update)
 
 
 @router.delete(

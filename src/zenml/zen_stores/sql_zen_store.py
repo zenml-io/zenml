@@ -48,7 +48,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, and_, create_engine, or_, select
+from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -181,6 +181,7 @@ from zenml.models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -3882,6 +3883,33 @@ class SqlZenStore(BaseZenStore):
                 filter_model=artifact_filter_model,
             )
 
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdateModel
+    ) -> ArtifactResponseModel:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if not existing_artifact:
+                raise KeyError(f"Artifact with ID {artifact_id} not found.")
+            existing_artifact.update(artifact_update=artifact_update)
+            session.add(existing_artifact)
+            session.commit()
+            session.refresh(existing_artifact)
+            return existing_artifact.to_model()
+
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.
 
@@ -5733,8 +5761,7 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_schema)
 
             session.commit()
-            mv = ModelVersionSchema.to_model(model_version_schema)
-        return mv
+            return model_version_schema.to_model()
 
     def get_model_version(
         self,
@@ -5798,7 +5825,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get model version with identifier `{model_version_name_or_number_or_id}`: "
                     f"No model version with this identifier found."
                 )
-            return ModelVersionSchema.to_model(model_version)
+            return model_version.to_model()
 
     def list_model_versions(
         self,
@@ -5950,44 +5977,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created model version to artifact link.
-
-        Raises:
-            EntityExistsError: If a link with the given name already exists.
         """
         with Session(self.engine) as session:
-            collision_msg = (
-                "Unable to create model version link {name}: "
-                "An artifact with same ID is already tracked in {version} model version "
-                "with the same name. It has to be deleted first."
-            )
-            existing_model_version_artifact_link_in_other_name = session.exec(
-                select(ModelVersionArtifactSchema)
-                .where(
-                    and_(
-                        or_(
-                            ModelVersionArtifactSchema.name
-                            != model_version_artifact_link.name,
-                            ModelVersionArtifactSchema.pipeline_name
-                            != model_version_artifact_link.pipeline_name,
-                            ModelVersionArtifactSchema.step_name
-                            != model_version_artifact_link.step_name,
-                        ),
-                        ModelVersionArtifactSchema.artifact_id
-                        == model_version_artifact_link.artifact,
-                    )
-                )
-                .where(
-                    ModelVersionArtifactSchema.model_version_id
-                    == model_version_artifact_link.model_version
-                )
-            ).first()
-            if existing_model_version_artifact_link_in_other_name is not None:
-                raise EntityExistsError(
-                    collision_msg.format(
-                        name=existing_model_version_artifact_link_in_other_name.name,
-                        version=existing_model_version_artifact_link_in_other_name.model_version,
-                    )
-                )
+            # If the link already exists, return it
             existing_model_version_artifact_link = session.exec(
                 select(ModelVersionArtifactSchema)
                 .where(
@@ -5995,66 +5987,21 @@ class SqlZenStore(BaseZenStore):
                     == model_version_artifact_link.model_version
                 )
                 .where(
-                    or_(
-                        and_(
-                            ModelVersionArtifactSchema.name
-                            == model_version_artifact_link.name,
-                            ModelVersionArtifactSchema.pipeline_name
-                            == model_version_artifact_link.pipeline_name,
-                            ModelVersionArtifactSchema.step_name
-                            == model_version_artifact_link.step_name,
-                        ),
-                        ModelVersionArtifactSchema.artifact_id
-                        == model_version_artifact_link.artifact,
-                    )
+                    ModelVersionArtifactSchema.artifact_id
+                    == model_version_artifact_link.artifact,
                 )
-                .order_by(ModelVersionArtifactSchema.version.desc())  # type: ignore[attr-defined]
             ).first()
             if existing_model_version_artifact_link is not None:
-                if model_version_artifact_link.overwrite:
-                    raise EntityExistsError(
-                        collision_msg.format(
-                            name=existing_model_version_artifact_link.name,
-                            version=existing_model_version_artifact_link.model_version,
-                        )
-                    )
-                elif (
-                    model_version_artifact_link.artifact
-                    == existing_model_version_artifact_link.artifact_id
-                ):
-                    return ModelVersionArtifactSchema.to_model(
-                        existing_model_version_artifact_link
-                    )
-
-            if (
-                model_version_artifact_link.name is None
-                or model_version_artifact_link.pipeline_name is None
-                or model_version_artifact_link.step_name is None
-            ):
-                artifact = self.get_artifact(
-                    model_version_artifact_link.artifact
-                )
-                model_version_artifact_link.name = (
-                    model_version_artifact_link.name or artifact.name
-                )
-
-            version = 1
-            if existing_model_version_artifact_link is not None:
-                version = existing_model_version_artifact_link.version + 1
+                return existing_model_version_artifact_link.to_model()
 
             model_version_artifact_link_schema = (
                 ModelVersionArtifactSchema.from_request(
                     model_version_artifact_request=model_version_artifact_link,
-                    version=version,
                 )
             )
             session.add(model_version_artifact_link_schema)
-
             session.commit()
-            mvl = ModelVersionArtifactSchema.to_model(
-                model_version_artifact_link_schema
-            )
-        return mvl
+            return model_version_artifact_link_schema.to_model()
 
     def list_model_version_artifact_links(
         self,
@@ -6074,6 +6021,8 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to artifact links.
         """
         with Session(self.engine) as session:
+            query = select(ModelVersionArtifactSchema)
+
             # issue: https://github.com/tiangolo/sqlmodel/issues/109
             model_version_artifact_link_filter_model.set_scope_model(
                 model_name_or_id
@@ -6082,49 +6031,18 @@ class SqlZenStore(BaseZenStore):
                 model_version_name_or_id
             )
             if model_version_artifact_link_filter_model.only_artifacts:
-                query = (
-                    select(ModelVersionArtifactSchema)
-                    .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
-                    )
+                query = query.where(
+                    ModelVersionArtifactSchema.is_model_object
+                    == False  # noqa: E712
+                ).where(
+                    ModelVersionArtifactSchema.is_deployment
+                    == False  # noqa: E712
                 )
             elif model_version_artifact_link_filter_model.only_deployments:
-                query = (
-                    select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_deployment)
-                    .where(
-                        ModelVersionArtifactSchema.is_model_object
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
-                    )
-                )
+                query = query.where(ModelVersionArtifactSchema.is_deployment)
             elif model_version_artifact_link_filter_model.only_model_objects:
-                query = (
-                    select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_model_object)
-                    .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
-                    )
-                )
-            else:
-                query = select(ModelVersionArtifactSchema)
+                query = query.where(ModelVersionArtifactSchema.is_model_object)
+
             model_version_artifact_link_filter_model.only_artifacts = None
             model_version_artifact_link_filter_model.only_deployments = None
             model_version_artifact_link_filter_model.only_model_objects = None
@@ -6167,14 +6085,17 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionArtifactSchema.name
+                    ArtifactSchema.name
                     == model_version_artifact_link_name_or_id
+                ).where(
+                    ModelVersionArtifactSchema.artifact == ArtifactSchema.id
                 )
 
             model_version_artifact_link = session.exec(query).first()
             if model_version_artifact_link is None:
                 raise KeyError(
-                    f"Unable to delete model version link with name `{model_version_artifact_link_name_or_id}`: "
+                    f"Unable to delete model version link with name or ID "
+                    f"`{model_version_artifact_link_name_or_id}`: "
                     f"No model version link with this name found."
                 )
 
@@ -6199,6 +6120,7 @@ class SqlZenStore(BaseZenStore):
             - Otherwise, returns the newly created model version to pipeline run link.
         """
         with Session(self.engine) as session:
+            # If the link already exists, return it
             existing_model_version_pipeline_run_link = session.exec(
                 select(ModelVersionPipelineRunSchema)
                 .where(
@@ -6206,36 +6128,22 @@ class SqlZenStore(BaseZenStore):
                     == model_version_pipeline_run_link.model_version
                 )
                 .where(
-                    or_(
-                        ModelVersionPipelineRunSchema.pipeline_run_id
-                        == model_version_pipeline_run_link.pipeline_run,
-                        ModelVersionPipelineRunSchema.name
-                        == model_version_pipeline_run_link.name,
-                    )
+                    ModelVersionPipelineRunSchema.pipeline_run_id
+                    == model_version_pipeline_run_link.pipeline_run,
                 )
             ).first()
             if existing_model_version_pipeline_run_link is not None:
-                return ModelVersionPipelineRunSchema.to_model(
-                    existing_model_version_pipeline_run_link
-                )
+                return existing_model_version_pipeline_run_link.to_model()
 
-            if model_version_pipeline_run_link.name is None:
-                model_version_pipeline_run_link.name = self.get_run(
-                    model_version_pipeline_run_link.pipeline_run
-                ).name
-
+            # Otherwise, create a new link
             model_version_pipeline_run_link_schema = (
                 ModelVersionPipelineRunSchema.from_request(
                     model_version_pipeline_run_link
                 )
             )
             session.add(model_version_pipeline_run_link_schema)
-
             session.commit()
-            mvl = ModelVersionPipelineRunSchema.to_model(
-                model_version_pipeline_run_link_schema
-            )
-        return mvl
+            return model_version_pipeline_run_link_schema.to_model()
 
     def list_model_version_pipeline_run_links(
         self,
@@ -6301,14 +6209,15 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionPipelineRunSchema.name
+                    ModelVersionPipelineRunSchema.pipeline_run.name
                     == model_version_pipeline_run_link_name_or_id
                 )
 
             model_version_pipeline_run_link = session.exec(query).first()
             if model_version_pipeline_run_link is None:
                 raise KeyError(
-                    f"Unable to delete model version link with name `{model_version_pipeline_run_link_name_or_id}`: "
+                    f"Unable to delete model version link with name "
+                    f"`{model_version_pipeline_run_link_name_or_id}`: "
                     f"No model version link with this name found."
                 )
 

@@ -61,16 +61,16 @@ class ModelConfig(BaseModel):
     """
 
     name: str
-    license: Optional[str]
-    description: Optional[str]
-    audience: Optional[str]
-    use_cases: Optional[str]
-    limitations: Optional[str]
-    trade_offs: Optional[str]
-    ethics: Optional[str]
-    tags: Optional[List[str]]
-    version: Optional[Union[ModelStages, int, str]]
-    version_description: Optional[str]
+    license: Optional[str] = None
+    description: Optional[str] = None
+    audience: Optional[str] = None
+    use_cases: Optional[str] = None
+    limitations: Optional[str] = None
+    trade_offs: Optional[str] = None
+    ethics: Optional[str] = None
+    tags: Optional[List[str]] = None
+    version: Optional[Union[ModelStages, int, str]] = None
+    version_description: Optional[str] = None
     create_new_model_version: bool = False
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True

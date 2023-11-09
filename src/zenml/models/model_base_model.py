@@ -33,31 +33,39 @@ class ModelBaseModel(BaseModel):
     license: Optional[str] = Field(
         title="The license model created under",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     description: Optional[str] = Field(
         title="The description of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     audience: Optional[str] = Field(
         title="The target audience of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     use_cases: Optional[str] = Field(
         title="The use cases of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     limitations: Optional[str] = Field(
         title="The know limitations of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     trade_offs: Optional[str] = Field(
         title="The trade offs of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     ethics: Optional[str] = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
+        default=None,
     )

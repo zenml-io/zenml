@@ -171,6 +171,7 @@ from zenml.models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -1741,6 +1742,25 @@ class RestZenStore(BaseZenStore):
             route=ARTIFACTS,
             response_model=ArtifactResponseModel,
             filter_model=artifact_filter_model,
+        )
+
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdateModel
+    ) -> ArtifactResponseModel:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+        """
+        return self._update_resource(
+            resource_id=artifact_id,
+            resource_update=artifact_update,
+            response_model=ArtifactResponseModel,
+            route=ARTIFACTS,
         )
 
     def delete_artifact(self, artifact_id: UUID) -> None:

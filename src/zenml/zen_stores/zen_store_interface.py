@@ -105,6 +105,7 @@ from zenml.models import (
     WorkspaceResponseModel,
     WorkspaceUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactUpdateModel
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
@@ -1339,6 +1340,23 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all artifacts matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdateModel
+    ) -> ArtifactResponseModel:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
         """
 
     @abstractmethod

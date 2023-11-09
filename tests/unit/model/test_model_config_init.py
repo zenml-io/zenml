@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from zenml.enums import ModelStages
-from zenml.model import ModelConfig
+from zenml.model.model_config import ModelConfig
 
 
 @pytest.mark.parametrize(

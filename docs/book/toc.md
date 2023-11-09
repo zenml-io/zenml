@@ -27,6 +27,7 @@
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Artifact management](user-guide/advanced-guide/artifact-management/artifact-management.md)
+    * [Artifact versioning and configuration](user-guide/advanced-guide/artifact-management/artifact-versioning.md)
     * [Handle custom data types](user-guide/advanced-guide/artifact-management/handle-custom-data-types.md)
     * [Visualize artifacts](user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)

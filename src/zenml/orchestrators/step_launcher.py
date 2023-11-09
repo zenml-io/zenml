@@ -31,6 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.model.utils import link_artifact_config_to_model
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
@@ -54,7 +55,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model import ModelConfig
+    from zenml.model.model_config import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -401,7 +402,7 @@ class StepLauncher:
             model_config_from_context: The model config of the current step.
             step_run: The step to run.
         """
-        from zenml.model.artifact_config import ArtifactConfig
+        from zenml.artifacts.artifact_config import ArtifactConfig
         from zenml.steps.base_step import BaseStep
         from zenml.steps.utils import parse_return_type_annotations
 
@@ -409,17 +410,15 @@ class StepLauncher:
         output_annotations = parse_return_type_annotations(
             step_instance.entrypoint
         )
-        for output_name_, output_ in step_run.outputs.items():
+        for output_name_, output_id in step_run.outputs.items():
             if output_name_ in output_annotations:
                 annotation = output_annotations.get(output_name_, None)
                 if annotation and annotation.artifact_config is not None:
                     artifact_config_ = annotation.artifact_config.copy()
                 else:
-                    artifact_config_ = ArtifactConfig(
-                        artifact_name=output_name_
-                    )
+                    artifact_config_ = ArtifactConfig(name=output_name_)
                     logger.info(
-                        f"Linking artifact `{artifact_config_.artifact_name}` to "
+                        f"Linking artifact `{artifact_config_.name}` to "
                         f"model `{artifact_config_.model_name}` version "
                         f"`{artifact_config_.model_version}` implicitly."
                     )
@@ -434,14 +433,10 @@ class StepLauncher:
                     )
                 if model_config:
                     model_config.get_or_create_model_version()
-
-                    artifact_config_._pipeline_name = (
-                        self._deployment.pipeline_configuration.name
-                    )
-                    artifact_config_._step_name = self._step_name
-                    artifact_config_.link_to_model(
-                        artifact_uuid=output_,
+                    link_artifact_config_to_model(
+                        artifact_config=artifact_config_,
                         model_config=model_config,
+                        artifact_id=output_id,
                     )
 
     def _run_step(
