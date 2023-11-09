@@ -1683,7 +1683,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdate(
+        update_model = StackUpdate(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             stack_spec_path=stack_spec_file,
