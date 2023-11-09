@@ -139,12 +139,12 @@ class PipelineSchema(NamedSchema, table=True):
             status=[run.status for run in self.runs[:last_x_runs]],
             created=self.created,
             updated=self.updated,
+            version=self.version,
         )
         metadata = None
         if hydrate:
             metadata = PipelineResponseMetadata(
                 workspace=self.workspace.to_model(),
-                version=self.version,
                 version_hash=self.version_hash,
                 spec=PipelineSpec.parse_raw(self.spec),
                 docstring=self.docstring,

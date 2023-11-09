@@ -78,15 +78,15 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
     status: Optional[List[ExecutionStatus]] = Field(
         default=None, title="The status of the last 3 Pipeline Runs."
     )
+    version: str = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipelines."""
 
-    version: str = Field(
-        title="The version of the pipeline.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     version_hash: str = Field(
         title="The version hash of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -196,7 +196,7 @@ class PipelineResponse(
     @property
     def version(self) -> str:
         """The `version` property."""
-        return self.get_metadata().version
+        return self.get_body().version
 
     @property
     def spec(self) -> PipelineSpec:
