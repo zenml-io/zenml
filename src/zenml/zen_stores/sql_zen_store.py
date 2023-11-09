@@ -6085,8 +6085,10 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionArtifactSchema.artifact.name
+                    ArtifactSchema.name
                     == model_version_artifact_link_name_or_id
+                ).where(
+                    ModelVersionArtifactSchema.artifact == ArtifactSchema.id
                 )
 
             model_version_artifact_link = session.exec(query).first()
