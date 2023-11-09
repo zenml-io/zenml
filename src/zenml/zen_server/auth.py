@@ -172,6 +172,11 @@ def authenticate_credentials(
             error = "Authentication error: invalid username or password"
             logger.error(error)
             raise AuthorizationException(error)
+        if user and not user.active:
+            error = f"Authentication error: user {user.name} is not active"
+            logger.error(error)
+            raise AuthorizationException(error)
+
     elif activation_token is not None:
         if not UserAuthModel.verify_activation_token(activation_token, user):
             error = (
@@ -180,6 +185,7 @@ def authenticate_credentials(
             )
             logger.error(error)
             raise AuthorizationException(error)
+
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
@@ -204,7 +210,7 @@ def authenticate_credentials(
 
         if not user_model.active:
             error = (
-                f"Authentication error: user {decoded_token.user_id} is not "
+                f"Authentication error: user {user_model.name} is not "
                 f"active"
             )
             logger.error(error)
@@ -233,7 +239,7 @@ def authenticate_credentials(
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
-                    f"does not belong to user {user_model.id}"
+                    f"does not belong to user {user_model.name}"
                 )
                 logger.error(error)
                 raise AuthorizationException(error)
