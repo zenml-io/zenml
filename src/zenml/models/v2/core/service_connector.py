@@ -620,6 +620,12 @@ class ServiceConnectorResponse(
         """The `connector_type` property."""
         return self.get_metadata().connector_type
 
+    @connector_type.setter
+    def connector_type(
+        self, value: Union[str, "ServiceConnectorTypeModel"]
+    ) -> None:
+        self.get_metadata().connector_type = value
+
     @property
     def auth_method(self) -> str:
         """The `auth_method` property."""
