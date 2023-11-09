@@ -29,52 +29,51 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
+    ArtifactFilter,
+    ArtifactRequest,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
     ModelFilterModel,
     ModelRequestModel,
     ModelUpdateModel,
     ModelVersionRequestModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleUpdateModel,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineUpdate,
+    RoleFilter,
+    RoleRequest,
+    RoleUpdate,
     SecretFilterModel,
     SecretRequestModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorUpdateModel,
-    StackRequestModel,
-    StepRunFilterModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamUpdateModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceUpdateModel,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorUpdate,
+    StackRequest,
+    StepRunFilter,
+    TeamFilter,
+    TeamRequest,
+    TeamUpdate,
+    UserFilter,
+    UserRequest,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceUpdate,
+Page, BaseFilter
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
-from zenml.models.page_model import Page
-from zenml.models.v2.base import BaseFilterModel
 from zenml.models.v2.service_connector_type import (
     AuthenticationMethodModel,
     ResourceTypeModel,
@@ -135,13 +134,13 @@ class PipelineRunContext:
         #  the test ends up deleting some or all of these, this allows for a
         #  thorough cleanup nonetheless
         self.runs = self.store.list_runs(
-            PipelineRunFilterModel(name=f"startswith:{self.pipeline_name}")
+            PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
         self.artifacts = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
-                StepRunFilterModel(pipeline_run_id=run.id)
+                StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
                 self.artifacts += [a for a in s.outputs.values()]
@@ -182,7 +181,7 @@ class UserContext:
 
     def __enter__(self):
         if not self.existing_user:
-            new_user = UserRequestModel(
+            new_user = UserRequest(
                 name=self.user_name, password=self.password
             )
             self.created_user = self.store.create_user(new_user)
@@ -237,7 +236,7 @@ class StackContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_stack = StackRequestModel(
+        new_stack = StackRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.stack_name,
@@ -271,7 +270,7 @@ class ComponentContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_component = ComponentRequestModel(
+        new_component = ComponentRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.component_name,
@@ -298,7 +297,7 @@ class TeamContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_team = TeamRequestModel(name=self.team_name)
+        new_team = TeamRequest(name=self.team_name)
         self.created_team = self.store.create_team(new_team)
         return self.created_team
 
@@ -316,7 +315,7 @@ class RoleContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_role = RoleRequestModel(name=self.role_name, permissions=set())
+        new_role = RoleRequest(name=self.role_name, permissions=set())
         self.created_role = self.store.create_role(new_role)
         return self.created_role
 
@@ -344,7 +343,7 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = WorkspaceRequestModel(name=self.workspace_name)
+            new_workspace = WorkspaceRequest(name=self.workspace_name)
             self.workspace = self.store.create_workspace(new_workspace)
         else:
             self.workspace = self.store.get_workspace(self.workspace_name)
@@ -423,7 +422,7 @@ class CodeRepositoryContext:
         self.delete = delete
 
     def __enter__(self):
-        request = CodeRepositoryRequestModel(
+        request = CodeRepositoryRequest(
             name=self.code_repo_name,
             config={},
             source={
@@ -483,7 +482,7 @@ class ServiceConnectorContext:
         self.delete = delete
 
     def __enter__(self):
-        request = ServiceConnectorRequestModel(
+        request = ServiceConnectorRequest(
             name=self.name,
             connector_type=self.connector_type,
             auth_method=self.auth_method,
@@ -559,7 +558,7 @@ class ModelVersionContext:
         for _ in range(self.create_artifacts):
             self.artifacts.append(
                 client.zen_store.create_artifact(
-                    ArtifactRequestModel(
+                    ArtifactRequest(
                         name=sample_name("sample_artifact"),
                         data_type="module.class",
                         materializer="module.class",
@@ -572,7 +571,7 @@ class ModelVersionContext:
             )
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequestModel(
+                PipelineDeploymentRequest(
                     user=user.id,
                     workspace=ws.id,
                     stack=stack.id,
@@ -585,7 +584,7 @@ class ModelVersionContext:
             self.deployments.append(deployment)
             self.prs.append(
                 client.zen_store.create_run(
-                    PipelineRunRequestModel(
+                    PipelineRunRequest(
                         id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
                         status="running",
@@ -645,7 +644,7 @@ class CatClawMarks(AuthenticationConfig):
 
 
 class CatVoicePrint(AuthenticationConfig):
-    """Cat voice print authentication credentials."""
+    """Cat voice-print authentication credentials."""
 
     secret_word: SecretStr = Field(
         title="Secret word",
@@ -735,13 +734,13 @@ class CrudTestConfig(BaseModel):
 
     create_model: "BaseRequestModel"
     update_model: Optional["BaseModel"]
-    filter_model: Type[BaseFilterModel]
+    filter_model: Type[BaseFilter]
     entity_name: str
 
     @property
     def list_method(
         self,
-    ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
+    ) -> Callable[[BaseFilter], Page[AnyResponseModel]]:
         store = Client().zen_store
         if self.entity_name.endswith("y"):
             method_name = f"list_{self.entity_name[:-1]}ies"
@@ -773,35 +772,35 @@ class CrudTestConfig(BaseModel):
 
 
 workspace_crud_test_config = CrudTestConfig(
-    create_model=WorkspaceRequestModel(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdateModel(
+    create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
+    update_model=WorkspaceUpdate(
         name=sample_name("updated_sample_workspace")
     ),
-    filter_model=WorkspaceFilterModel,
+    filter_model=WorkspaceFilter,
     entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
-    create_model=UserRequestModel(name=sample_name("sample_user")),
-    update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
-    filter_model=UserFilterModel,
+    create_model=UserRequest(name=sample_name("sample_user")),
+    update_model=UserUpdate(name=sample_name("updated_sample_user")),
+    filter_model=UserFilter,
     entity_name="user",
 )
 role_crud_test_config = CrudTestConfig(
-    create_model=RoleRequestModel(
+    create_model=RoleRequest(
         name=sample_name("sample_role"), permissions=set()
     ),
-    update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
-    filter_model=RoleFilterModel,
+    update_model=RoleUpdate(name=sample_name("updated_sample_role")),
+    filter_model=RoleFilter,
     entity_name="role",
 )
 team_crud_test_config = CrudTestConfig(
-    create_model=TeamRequestModel(name=sample_name("sample_team")),
-    update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
-    filter_model=TeamFilterModel,
+    create_model=TeamRequest(name=sample_name("sample_team")),
+    update_model=TeamUpdate(name=sample_name("updated_sample_team")),
+    filter_model=TeamFilter,
     entity_name="team",
 )
 flavor_crud_test_config = CrudTestConfig(
-    create_model=FlavorRequestModel(
+    create_model=FlavorRequest(
         name=sample_name("sample_flavor"),
         type=StackComponentType.ORCHESTRATOR,
         integration="",
@@ -809,11 +808,11 @@ flavor_crud_test_config = CrudTestConfig(
         config_schema="",
         workspace=uuid.uuid4(),
     ),
-    filter_model=FlavorFilterModel,
+    filter_model=FlavorFilter,
     entity_name="flavor",
 )
 component_crud_test_config = CrudTestConfig(
-    create_model=ComponentRequestModel(
+    create_model=ComponentRequest(
         name=sample_name("sample_component"),
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
@@ -821,14 +820,14 @@ component_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    update_model=ComponentUpdateModel(
+    update_model=ComponentUpdate(
         name=sample_name("updated_sample_component")
     ),
-    filter_model=ComponentFilterModel,
+    filter_model=ComponentFilter,
     entity_name="stack_component",
 )
 pipeline_crud_test_config = CrudTestConfig(
-    create_model=PipelineRequestModel(
+    create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
@@ -836,10 +835,10 @@ pipeline_crud_test_config = CrudTestConfig(
         version="1",
         version_hash="abc123",
     ),
-    update_model=PipelineUpdateModel(
+    update_model=PipelineUpdate(
         name=sample_name("updated_sample_pipeline")
     ),
-    filter_model=PipelineFilterModel,
+    filter_model=PipelineFilter,
     entity_name="pipeline",
 )
 # pipeline_run_crud_test_config = CrudTestConfig(
@@ -858,7 +857,7 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
-    create_model=ArtifactRequestModel(
+    create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
         data_type="module.class",
         materializer="module.class",
@@ -867,7 +866,7 @@ artifact_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=ArtifactFilterModel,
+    filter_model=ArtifactFilter,
     entity_name="artifact",
 )
 secret_crud_test_config = CrudTestConfig(
@@ -881,18 +880,18 @@ secret_crud_test_config = CrudTestConfig(
     entity_name="secret",
 )
 build_crud_test_config = CrudTestConfig(
-    create_model=PipelineBuildRequestModel(
+    create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         images={},
         is_local=False,
         contains_code=True,
     ),
-    filter_model=PipelineBuildFilterModel,
+    filter_model=PipelineBuildFilter,
     entity_name="build",
 )
 deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequestModel(
+    create_model=PipelineDeploymentRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         stack=uuid.uuid4(),
@@ -901,25 +900,25 @@ deployment_crud_test_config = CrudTestConfig(
         client_version="0.12.3",
         server_version="0.12.3",
     ),
-    filter_model=PipelineDeploymentFilterModel,
+    filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
 )
 code_repository_crud_test_config = CrudTestConfig(
-    create_model=CodeRepositoryRequestModel(
+    create_model=CodeRepositoryRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
         source={"module": "module", "type": "user"},
     ),
-    update_model=CodeRepositoryUpdateModel(
+    update_model=CodeRepositoryUpdate(
         name=sample_name("updated_sample_code_repository")
     ),
-    filter_model=CodeRepositoryFilterModel,
+    filter_model=CodeRepositoryFilter,
     entity_name="code_repository",
 )
 service_connector_crud_test_config = CrudTestConfig(
-    create_model=ServiceConnectorRequestModel(
+    create_model=ServiceConnectorRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_service_connector"),
@@ -930,10 +929,10 @@ service_connector_crud_test_config = CrudTestConfig(
             password="password",
         ),
     ),
-    update_model=ServiceConnectorUpdateModel(
+    update_model=ServiceConnectorUpdate(
         name=sample_name("updated_sample_service_connector"),
     ),
-    filter_model=ServiceConnectorFilterModel,
+    filter_model=ServiceConnectorFilter,
     entity_name="service_connector",
 )
 model_crud_test_config = CrudTestConfig(

@@ -51,10 +51,10 @@ from zenml.exceptions import (
 )
 from zenml.logging.step_logging import prepare_logs_uri
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactResponseModel,
-    ComponentFilterModel,
-    ComponentUpdateModel,
+    ArtifactFilter,
+    ArtifactResponse,
+    ComponentFilter,
+    ComponentUpdate,
     ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
     ModelVersionFilterModel,
@@ -62,28 +62,27 @@ from zenml.models import (
     ModelVersionPipelineRunRequestModel,
     ModelVersionRequestModel,
     ModelVersionUpdateModel,
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleUpdateModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamUpdateModel,
-    UserRoleAssignmentRequestModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceUpdateModel,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    RoleFilter,
+    RoleRequest,
+    RoleUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackUpdate,
+    StepRunFilter,
+    TeamRoleAssignmentRequest,
+    TeamUpdate,
+    UserRoleAssignmentRequest,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceUpdate,
 )
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
-from zenml.models.flavor_models import FlavorBaseModel
 from zenml.models.model_models import ModelFilterModel
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.artifact_utils import (
@@ -183,9 +182,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
-    if isinstance(create_model, WorkspaceScopedRequestModel) or isinstance(
-        create_model, FlavorBaseModel
-    ):
+    if isinstance(create_model, WorkspaceScopedRequestModel):
         create_model.user = client.active_user.id
         create_model.workspace = client.active_workspace.id
     # First creation is successful
@@ -256,11 +253,7 @@ def test_only_one_default_workspace_present():
     """Tests that one and only one default workspace is present."""
     client = Client()
     assert (
-        len(
-            client.zen_store.list_workspaces(
-                WorkspaceFilterModel(name="default")
-            )
-        )
+        len(client.zen_store.list_workspaces(WorkspaceFilter(name="default")))
         == 1
     )
 
@@ -271,7 +264,7 @@ def test_updating_default_workspace_fails():
 
     default_workspace = client.zen_store.get_workspace(DEFAULT_WORKSPACE_NAME)
     assert default_workspace.name == DEFAULT_WORKSPACE_NAME
-    workspace_update = WorkspaceUpdateModel(
+    workspace_update = WorkspaceUpdate(
         name="aria_workspace",
         description="Aria has taken possession of this workspace.",
     )
@@ -299,7 +292,7 @@ def test_adding_user_to_team():
     zen_store = Client().zen_store
     with UserContext() as created_user:
         with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = TeamUpdate(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
             )
@@ -319,7 +312,7 @@ def test_adding_nonexistent_user_to_real_team_raises_error():
     with TeamContext() as created_team:
         nonexistent_id = uuid.uuid4()
 
-        team_update = TeamUpdateModel(users=[nonexistent_id])
+        team_update = TeamUpdate(users=[nonexistent_id])
         with pytest.raises(KeyError):
             zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
@@ -334,14 +327,14 @@ def test_removing_user_from_team_succeeds():
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = TeamUpdate(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
             )
 
             assert created_user.id in team_update.user_ids
 
-            team_update = TeamUpdateModel(users=[])
+            team_update = TeamUpdate(users=[])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
             )
@@ -357,7 +350,7 @@ def test_access_user_in_team_succeeds():
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = TeamUpdate(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
             )
@@ -387,7 +380,7 @@ def test_updating_default_user_fails():
     client = Client()
     default_user = client.zen_store.get_user(DEFAULT_USERNAME)
     assert default_user
-    user_update = UserUpdateModel(name="axl")
+    user_update = UserUpdate(name="axl")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_user(
             user_id=default_user.id, user_update=user_update
@@ -405,24 +398,6 @@ def test_getting_team_for_user_succeeds():
     pass
 
 
-def test_team_for_user_succeeds():
-    """Tests accessing a users in a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdateModel(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            updated_user_response = zen_store.get_user(created_user.id)
-
-            assert team_update in updated_user_response.teams
-
-
 # .-------.
 # | ROLES |
 # '-------'
@@ -433,12 +408,12 @@ def test_creating_role_with_empty_permissions_succeeds():
     zen_store = Client().zen_store
 
     with RoleContext() as created_role:
-        new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
+        new_role = RoleRequest(name=sample_name("cat"), permissions=set())
         created_role = zen_store.create_role(new_role)
         with does_not_raise():
             zen_store.get_role(role_name_or_id=created_role.name)
         list_of_roles = zen_store.list_roles(
-            RoleFilterModel(name=created_role.name)
+            RoleFilter(name=created_role.name)
         )
         assert list_of_roles.total > 0
 
@@ -459,7 +434,7 @@ def test_updating_builtin_role_fails():
     zen_store = Client().zen_store
 
     role = zen_store.get_role(DEFAULT_ADMIN_ROLE)
-    role_update = RoleUpdateModel(name="cat_feeder")
+    role_update = RoleUpdate(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
         zen_store.update_role(role_id=role.id, role_update=role_update)
@@ -474,7 +449,7 @@ def test_deleting_assigned_role_fails():
     zen_store = Client().zen_store
     with RoleContext() as created_role:
         with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequest(
                 role=created_role.id,
                 user=created_user.id,
                 workspace=None,
@@ -496,7 +471,7 @@ def test_assigning_role_to_user_succeeds():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequest(
                 role=created_role.id,
                 user=created_user.id,
                 workspace=None,
@@ -517,7 +492,7 @@ def test_assigning_role_to_team_succeeds():
 
     with RoleContext() as created_role:
         with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequestModel(
+            role_assignment = TeamRoleAssignmentRequest(
                 role=created_role.id,
                 team=created_team.id,
                 workspace=None,
@@ -537,7 +512,7 @@ def test_assigning_role_if_assignment_already_exists_fails():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequest(
                 role=created_role.id,
                 user=created_user.id,
                 workspace=None,
@@ -554,7 +529,7 @@ def test_revoking_role_for_user_succeeds():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequest(
                 role=created_role.id,
                 user=created_user.id,
                 workspace=None,
@@ -578,7 +553,7 @@ def test_revoking_role_for_team_succeeds():
 
     with RoleContext() as created_role:
         with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequestModel(
+            role_assignment = TeamRoleAssignmentRequest(
                 role=created_role.id,
                 team=created_team.id,
                 workspace=None,
@@ -621,7 +596,7 @@ def test_update_default_stack_component_fails():
     client = Client()
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
-        ComponentFilterModel(
+        ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name="default",
@@ -629,14 +604,14 @@ def test_update_default_stack_component_fails():
     )[0]
 
     default_orchestrator = store.list_stack_components(
-        ComponentFilterModel(
+        ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name="default",
         )
     )[0]
 
-    component_update = ComponentUpdateModel(name="aria")
+    component_update = ComponentUpdate(name="aria")
     with pytest.raises(IllegalOperationError):
         store.update_stack_component(
             component_id=default_orchestrator.id,
@@ -656,7 +631,7 @@ def test_delete_default_stack_component_fails():
     client = Client()
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
-        ComponentFilterModel(
+        ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name="default",
@@ -664,7 +639,7 @@ def test_delete_default_stack_component_fails():
     )[0]
 
     default_orchestrator = store.list_stack_components(
-        ComponentFilterModel(
+        ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name="default",
@@ -687,7 +662,7 @@ def test_count_stack_components():
     active_workspace = client.active_workspace
 
     count_before = store.list_stack_components(
-        ComponentFilterModel(scope_workspace=active_workspace.id)
+        ComponentFilter(scope_workspace=active_workspace.id)
     ).total
 
     assert (
@@ -719,7 +694,7 @@ def test_updating_default_stack_fails():
 
     default_stack = client.get_stack(DEFAULT_STACK_NAME)
     assert default_stack.name == DEFAULT_WORKSPACE_NAME
-    stack_update = StackUpdateModel(name="axls_stack")
+    stack_update = StackUpdate(name="axls_stack")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_stack(
             stack_id=default_stack.id, stack_update=stack_update
@@ -761,7 +736,7 @@ def test_filter_stack_succeeds():
             }
             with StackContext(components=components) as stack:
                 returned_stacks = store.list_stacks(
-                    StackFilterModel(name=stack.name)
+                    StackFilter(name=stack.name)
                 )
                 assert returned_stacks
 
@@ -782,7 +757,7 @@ def test_crud_on_stack_succeeds():
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             stack_name = sample_name("arias_stack")
-            new_stack = StackRequestModel(
+            new_stack = StackRequest(
                 name=stack_name,
                 components=components,
                 workspace=client.active_workspace.id,
@@ -790,7 +765,7 @@ def test_crud_on_stack_succeeds():
             )
             created_stack = store.create_stack(stack=new_stack)
 
-            stacks = store.list_stacks(StackFilterModel(name=stack_name))
+            stacks = store.list_stacks(StackFilter(name=stack_name))
             assert len(stacks) == 1
 
             with does_not_raise():
@@ -798,12 +773,12 @@ def test_crud_on_stack_succeeds():
                 assert stack is not None
 
             # Update
-            stack_update = StackUpdateModel(name="axls_stack")
+            stack_update = StackUpdate(name="axls_stack")
             store.update_stack(stack_id=stack.id, stack_update=stack_update)
 
-            stacks = store.list_stacks(StackFilterModel(name="axls_stack"))
+            stacks = store.list_stacks(StackFilter(name="axls_stack"))
             assert len(stacks) == 1
-            stacks = store.list_stacks(StackFilterModel(name=stack_name))
+            stacks = store.list_stacks(StackFilter(name=stack_name))
             assert len(stacks) == 0
 
             # Cleanup
@@ -828,7 +803,7 @@ def test_register_stack_fails_when_stack_exists():
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             with StackContext(components=components) as stack:
-                new_stack = StackRequestModel(
+                new_stack = StackRequest(
                     name=stack.name,
                     components=components,
                     workspace=client.active_workspace.id,
@@ -846,7 +821,7 @@ def test_updating_nonexistent_stack_fails():
     client = Client()
     store = client.zen_store
 
-    stack_update = StackUpdateModel(name="axls_stack")
+    stack_update = StackUpdate(name="axls_stack")
     nonexistent_id = uuid.uuid4()
     with pytest.raises(KeyError):
         store.update_stack(stack_id=nonexistent_id, stack_update=stack_update)
@@ -973,7 +948,7 @@ def test_private_stacks_are_inaccessible():
                     #  Client() needs to be instantiated here with the new
                     #  logged-in user
                     filtered_stacks = Client().zen_store.list_stacks(
-                        StackFilterModel(name=stack.name)
+                        StackFilter(name=stack.name)
                     )
                     assert len(filtered_stacks) == 0
 
@@ -1006,7 +981,7 @@ def test_public_stacks_are_accessible():
                 components=components, user_id=default_user_id
             ) as stack:
                 # Update
-                stack_update = StackUpdateModel(is_shared=True)
+                stack_update = StackUpdate(is_shared=True)
                 store.update_stack(
                     stack_id=stack.id, stack_update=stack_update
                 )
@@ -1015,7 +990,7 @@ def test_public_stacks_are_accessible():
                     #  Client() needs to be instantiated here with the new
                     #  logged-in user
                     filtered_stacks = Client().zen_store.list_stacks(
-                        StackFilterModel(name=stack.name)
+                        StackFilter(name=stack.name)
                     )
                     assert len(filtered_stacks) == 1
 
@@ -1034,13 +1009,13 @@ def test_list_runs_is_ordered():
     client = Client()
     store = client.zen_store
 
-    num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
+    num_pipelines_before = store.list_runs(PipelineRunFilter()).total
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        pipelines = store.list_runs(PipelineRunFilter()).items
         assert (
-            store.list_runs(PipelineRunFilterModel()).total
+            store.list_runs(PipelineRunFilter()).total
             == num_pipelines_before + num_runs
         )
         assert all(
@@ -1058,7 +1033,7 @@ def test_count_runs():
     active_workspace = client.active_workspace
 
     num_runs = store.list_runs(
-        PipelineRunFilterModel(scope_workspace=active_workspace.id)
+        PipelineRunFilter(scope_workspace=active_workspace.id)
     ).total
 
     # At baseline this should be the same
@@ -1068,7 +1043,7 @@ def test_count_runs():
         assert (
             store.count_runs(workspace_id=active_workspace.id)
             == store.list_runs(
-                PipelineRunFilterModel(scope_workspace=active_workspace.id)
+                PipelineRunFilter(scope_workspace=active_workspace.id)
             ).total
         )
         assert (
@@ -1094,12 +1069,10 @@ def test_filter_runs_by_code_repo(mocker):
         )
 
         with PipelineRunContext(1):
-            filter_model = PipelineRunFilterModel(
-                code_repository_id=uuid.uuid4()
-            )
+            filter_model = PipelineRunFilter(code_repository_id=uuid.uuid4())
             assert store.list_runs(filter_model).total == 0
 
-            filter_model = PipelineRunFilterModel(code_repository_id=repo.id)
+            filter_model = PipelineRunFilter(code_repository_id=repo.id)
             assert store.list_runs(filter_model).total == 1
 
 
@@ -1109,7 +1082,7 @@ def test_deleting_run_deletes_steps():
     store = client.zen_store
     with PipelineRunContext(num_runs=1) as runs:
         run_id = runs[0].id
-        filter_model = StepRunFilterModel(pipeline_run_id=run_id)
+        filter_model = StepRunFilter(pipeline_run_id=run_id)
         assert store.list_run_steps(filter_model).total == 2
         store.delete_run(run_id)
         assert store.list_run_steps(filter_model).total == 0
@@ -1126,7 +1099,7 @@ def test_get_run_step_outputs_succeeds():
     store = client.zen_store
 
     with PipelineRunContext(1):
-        steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+        steps = store.list_run_steps(StepRunFilter(name="step_2"))
 
         for step in steps.items:
             run_step_outputs = store.get_run_step(step.id).outputs
@@ -1139,7 +1112,7 @@ def test_get_run_step_inputs_succeeds():
     store = client.zen_store
 
     with PipelineRunContext(1):
-        steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+        steps = store.list_run_steps(StepRunFilter(name="step_2"))
         for step in steps.items:
             run_step_inputs = store.get_run_step(step.id).inputs
             assert len(run_step_inputs) == 1
@@ -1155,16 +1128,16 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
+    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
     num_unused_artifacts_before = store.list_artifacts(
-        ArtifactFilterModel(only_unused=True)
+        ArtifactFilter(only_unused=True)
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilterModel())
+        artifacts = store.list_artifacts(ArtifactFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
-        artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
+        artifacts = store.list_artifacts(ArtifactFilter(only_unused=True))
         assert artifacts.total == num_unused_artifacts_before
 
 
@@ -1172,18 +1145,18 @@ def test_artifacts_are_not_deleted_with_run(clean_workspace):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_workspace.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
+    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilterModel())
+        artifacts = store.list_artifacts(ArtifactFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
         # Cleanup
-        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        pipelines = store.list_runs(PipelineRunFilter()).items
         for p in pipelines:
             store.delete_run(p.id)
 
-        artifacts = store.list_artifacts(ArtifactFilterModel())
+        artifacts = store.list_artifacts(ArtifactFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
 
@@ -1198,7 +1171,7 @@ def test_logs_are_recorded_properly(clean_client):
     store = client.zen_store
 
     with PipelineRunContext(2):
-        steps = store.list_run_steps(StepRunFilterModel())
+        steps = store.list_run_steps(StepRunFilter())
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
         artifact_store = _load_artifact_store(
@@ -1224,7 +1197,7 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
     store = client.zen_store
 
     with PipelineRunContext(2, enable_step_logs=False):
-        steps = store.list_run_steps(StepRunFilterModel())
+        steps = store.list_run_steps(StepRunFilter())
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
         assert not step1_logs
@@ -1650,7 +1623,7 @@ def test_connector_list():
             ) as rodent_connector:
                 # List all connectors
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel()
+                    ServiceConnectorFilter()
                 ).items
                 assert len(connectors) >= 3
                 assert aria_connector in connectors
@@ -1659,20 +1632,20 @@ def test_connector_list():
 
                 # Filter by name
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(name=aria_connector.name)
+                    ServiceConnectorFilter(name=aria_connector.name)
                 ).items
                 assert len(connectors) == 1
                 assert aria_connector.id == connectors[0].id
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(name=multi_connector.name)
+                    ServiceConnectorFilter(name=multi_connector.name)
                 ).items
                 assert len(connectors) == 1
                 assert multi_connector.id == connectors[0].id
 
                 # Filter by connector type
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(connector_type="cat'o'matic")
+                    ServiceConnectorFilter(connector_type="cat'o'matic")
                 ).items
                 assert len(connectors) >= 1
                 assert aria_connector.id in [c.id for c in connectors]
@@ -1680,7 +1653,7 @@ def test_connector_list():
                 assert rodent_connector.id not in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(connector_type="tail'o'matic")
+                    ServiceConnectorFilter(connector_type="tail'o'matic")
                 ).items
                 assert len(connectors) >= 2
                 assert aria_connector.id not in [c.id for c in connectors]
@@ -1689,7 +1662,7 @@ def test_connector_list():
 
                 # Filter by auth method
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(auth_method="paw-print")
+                    ServiceConnectorFilter(auth_method="paw-print")
                 ).items
                 assert len(connectors) >= 1
                 assert aria_connector.id in [c.id for c in connectors]
@@ -1697,7 +1670,7 @@ def test_connector_list():
                 assert rodent_connector.id not in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(auth_method="tail-print")
+                    ServiceConnectorFilter(auth_method="tail-print")
                 ).items
                 assert len(connectors) >= 1
                 assert aria_connector.id not in [c.id for c in connectors]
@@ -1706,7 +1679,7 @@ def test_connector_list():
 
                 # Filter by resource type
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(resource_type="cat")
+                    ServiceConnectorFilter(resource_type="cat")
                 ).items
                 assert len(connectors) >= 2
                 assert aria_connector.id in [c.id for c in connectors]
@@ -1714,7 +1687,7 @@ def test_connector_list():
                 assert rodent_connector.id not in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(resource_type="mouse")
+                    ServiceConnectorFilter(resource_type="mouse")
                 ).items
                 assert len(connectors) >= 2
                 assert aria_connector.id not in [c.id for c in connectors]
@@ -1723,7 +1696,7 @@ def test_connector_list():
 
                 # Filter by resource id
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(
+                    ServiceConnectorFilter(
                         resource_type="cat",
                         resource_id="aria",
                     )
@@ -1734,7 +1707,7 @@ def test_connector_list():
                 assert rodent_connector.id not in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(
+                    ServiceConnectorFilter(
                         resource_type="mouse",
                         resource_id="bartholomew",
                     )
@@ -1746,9 +1719,7 @@ def test_connector_list():
 
                 # Filter by labels
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(
-                        labels={"whereabouts": "unknown"}
-                    )
+                    ServiceConnectorFilter(labels={"whereabouts": "unknown"})
                 ).items
                 assert len(connectors) >= 2
                 assert aria_connector.id in [c.id for c in connectors]
@@ -1756,7 +1727,7 @@ def test_connector_list():
                 assert rodent_connector.id in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(labels={"whereabouts": None})
+                    ServiceConnectorFilter(labels={"whereabouts": None})
                 ).items
                 assert len(connectors) >= 3
                 assert aria_connector.id in [c.id for c in connectors]
@@ -1764,7 +1735,7 @@ def test_connector_list():
                 assert rodent_connector.id in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(
+                    ServiceConnectorFilter(
                         labels={"nick": "rodent", "whereabouts": "unknown"}
                     )
                 ).items
@@ -1774,7 +1745,7 @@ def test_connector_list():
                 assert rodent_connector.id in [c.id for c in connectors]
 
                 connectors = store.list_service_connectors(
-                    ServiceConnectorFilterModel(
+                    ServiceConnectorFilter(
                         labels={"weight": None, "whereabouts": None}
                     )
                 ).items
@@ -1806,7 +1777,7 @@ def test_private_connector_not_visible_to_other_user():
                 other_store.get_service_connector(connector.id)
 
             connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
+                ServiceConnectorFilter()
             ).items
 
             assert connector.id not in [c.id for c in connectors]
@@ -1833,7 +1804,7 @@ def test_shared_connector_is_visible_to_other_user():
             other_store.get_service_connector(connector.id)
 
             connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
+                ServiceConnectorFilter()
             ).items
 
             assert connector.id in [c.id for c in connectors]
@@ -1910,7 +1881,7 @@ def _update_connector_and_test(
         )
         store.update_service_connector(
             connector.id,
-            update=ServiceConnectorUpdateModel(
+            update=ServiceConnectorUpdate(
                 name=new_name,
                 connector_type=new_connector_type,
                 auth_method=new_auth_method,
@@ -2095,9 +2066,7 @@ def test_connector_name_update_fails_if_exists():
             with pytest.raises(EntityExistsError):
                 store.update_service_connector(
                     connector_one.id,
-                    update=ServiceConnectorUpdateModel(
-                        name=connector_two.name
-                    ),
+                    update=ServiceConnectorUpdate(name=connector_two.name),
                 )
 
 
@@ -2141,14 +2110,14 @@ def test_connector_sharing():
                 other_store.get_service_connector(connector.id)
 
             connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
+                ServiceConnectorFilter()
             ).items
 
             assert connector.id not in [c.id for c in connectors]
 
         updated_connector = store.update_service_connector(
             connector.id,
-            update=ServiceConnectorUpdateModel(is_shared=True),
+            update=ServiceConnectorUpdate(is_shared=True),
         )
 
         assert updated_connector.secret_id is not None
@@ -2165,7 +2134,7 @@ def test_connector_sharing():
             other_store.get_service_connector(connector.id)
 
             connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
+                ServiceConnectorFilter()
             ).items
 
             assert connector.id in [c.id for c in connectors]
@@ -2194,7 +2163,7 @@ def test_connector_sharing_fails_if_name_shared():
             other_store.get_service_connector(connector.id)
 
             connectors = other_store.list_service_connectors(
-                ServiceConnectorFilterModel()
+                ServiceConnectorFilter()
             ).items
 
             assert connector.id in [c.id for c in connectors]
@@ -2209,7 +2178,7 @@ def test_connector_sharing_fails_if_name_shared():
                 with pytest.raises(EntityExistsError):
                     other_store.update_service_connector(
                         other_connector.id,
-                        update=ServiceConnectorUpdateModel(is_shared=True),
+                        update=ServiceConnectorUpdate(is_shared=True),
                     )
 
 
@@ -3249,15 +3218,15 @@ class TestModelVersionArtifactLinks:
 
             assert isinstance(
                 mv.get_model_object("link2", "1"),
-                ArtifactResponseModel,
+                ArtifactResponse,
             )
             assert isinstance(
                 mv.get_artifact_object("link1", "1"),
-                ArtifactResponseModel,
+                ArtifactResponse,
             )
             assert isinstance(
                 mv.get_deployment("link3", "1"),
-                ArtifactResponseModel,
+                ArtifactResponse,
             )
 
             assert (
@@ -3432,11 +3401,11 @@ class TestModelVersionPipelineRunLinks:
 
             assert isinstance(
                 mv.pipeline_runs["link4"],
-                PipelineRunResponseModel,
+                PipelineRunResponse,
             )
             assert isinstance(
                 mv.pipeline_runs[prs[1].name],
-                PipelineRunResponseModel,
+                PipelineRunResponse,
             )
 
             assert mv.pipeline_runs["link4"].id == prs[0].id

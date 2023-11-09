@@ -29,7 +29,7 @@ from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
 from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
-    PipelineRunUpdateModel,
+    PipelineRunUpdate,
 )
 
 
@@ -884,7 +884,7 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_version_a
         run_id = client.get_pipeline_run(name_id_or_prefix=run_name_1).id
         client.zen_store.update_run(
             run_id=run_id,
-            run_update=PipelineRunUpdateModel(status=ExecutionStatus.RUNNING),
+            run_update=PipelineRunUpdate(status=ExecutionStatus.RUNNING),
         )
         with pytest.raises(
             RuntimeError,

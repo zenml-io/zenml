@@ -23,12 +23,12 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import StepRunResponse
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
@@ -213,6 +213,6 @@ def _assert_step_logs_disabled(pipe: "BasePipeline"):
 
 def _get_first_step_of_last_run(
     pipe: "BasePipeline",
-) -> "StepRunResponseModel":
+) -> "StepRunResponse":
     """Get the output of the last run."""
     return pipe.model.last_run.steps["step_"]
