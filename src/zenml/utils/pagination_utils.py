@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Pagination utilities."""
 
-from typing import Any, Callable, List, TypeVar, Union
+from typing import Any, Callable, List, TypeVar
 
 from zenml.models import BaseResponse, BaseResponseModel, Page
 
 AnyResponseModel = TypeVar(
-    "AnyResponseModel", bound=Union[BaseResponse[Any, Any], BaseResponseModel]
+    "AnyResponseModel", bound=BaseResponse[Any, Any] | BaseResponseModel
 )
 
 

@@ -252,7 +252,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=Union[BaseResponse[Any, Any], BaseResponseModel])
+B = TypeVar("B", bound=BaseResponse[Any, Any] | BaseResponseModel)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -3594,7 +3594,7 @@ class SqlZenStore(BaseZenStore):
                 # Update the scope of the existing secret
                 self.secrets_store.update_secret(
                     secret_id=existing_connector.secret_id,
-                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
+                    secret_update=SecretUpdateModel(
                         scope=SecretScope.WORKSPACE
                         if is_shared
                         else SecretScope.USER,
