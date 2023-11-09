@@ -33,8 +33,7 @@ from zenml.models.model_models import (
     ModelVersionPipelineRunFilterModel,
     ModelVersionUpdateModel,
 )
-
-# from zenml.utils.pagination_utils import depaginate
+from zenml.utils.dict_utils import remove_none_values
 
 logger = get_logger(__name__)
 
@@ -60,6 +59,20 @@ def list_models(**kwargs: Any) -> None:
 
     cli_utils.print_pydantic_models(
         models,
+        columns=[
+            "id",
+            "name",
+            "latest_version",
+            "description",
+            "tagged",
+            "use_cases",
+            "audience",
+            "limitations",
+            "trade_offs",
+            "ethics",
+            "license",
+            "updated",
+        ],
         exclude_columns=["user", "workspace"],
     )
 
@@ -168,8 +181,20 @@ def register_model(
     )
 
     cli_utils.print_pydantic_models(
-        [
-            model,
+        [model],
+        columns=[
+            "id",
+            "name",
+            "latest_version",
+            "description",
+            "tagged",
+            "use_cases",
+            "audience",
+            "limitations",
+            "trade_offs",
+            "ethics",
+            "license",
+            "updated",
         ],
         exclude_columns=["user", "workspace"],
     )
@@ -227,7 +252,15 @@ def register_model(
 @click.option(
     "--tag",
     "-t",
-    help="Tags associated with the model.",
+    help="Tags to be added to the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--remove-tag",
+    "-r",
+    help="Tags to be removed from the model.",
     type=str,
     required=False,
     multiple=True,
@@ -242,6 +275,7 @@ def update_model(
     ethical: Optional[str],
     limitations: Optional[str],
     tag: Optional[List[str]],
+    remove_tag: Optional[List[str]],
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -254,12 +288,12 @@ def update_model(
         tradeoffs: The tradeoffs of the model.
         ethical: The ethical implications of the model.
         limitations: The know limitations of the model.
-        tag: Tags associated with the model.
+        tag: Tags to be added to the model.
+        remove_tag: Tags to be removed from the model.
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
-    model = Client().update_model(
-        model_id=model_id,
-        model_update=ModelUpdateModel(
+    update_dict = remove_none_values(
+        dict(
             license=license,
             description=description,
             audience=audience,
@@ -268,14 +302,32 @@ def update_model(
             ethics=ethical,
             limitations=limitations,
             add_tags=tag,
+            remove_tags=remove_tag,
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
-        ),
+        )
+    )
+
+    model = Client().update_model(
+        model_id=model_id,
+        model_update=ModelUpdateModel(**update_dict),
     )
 
     cli_utils.print_pydantic_models(
-        [
-            model,
+        [model],
+        columns=[
+            "id",
+            "name",
+            "latest_version",
+            "description",
+            "tagged",
+            "use_cases",
+            "audience",
+            "limitations",
+            "trade_offs",
+            "ethics",
+            "license",
+            "updated",
         ],
         exclude_columns=["user", "workspace"],
     )

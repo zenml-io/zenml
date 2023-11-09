@@ -67,6 +67,7 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -5626,6 +5627,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
+        from zenml.utils.tag_utils import create_links
+
         with Session(self.engine) as session:
             existing_model = session.exec(
                 select(ModelSchema).where(ModelSchema.name == model.name)
@@ -5640,6 +5643,10 @@ class SqlZenStore(BaseZenStore):
             session.add(model_schema)
 
             session.commit()
+            if model.tags:
+                create_links(
+                    model.tags, model_schema.id, TaggableResourceTypes.MODEL
+                )
             return ModelSchema.to_model(model_schema)
 
     def get_model(

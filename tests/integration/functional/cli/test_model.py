@@ -40,11 +40,12 @@ def test_model_create_short_names(clean_workspace_with_models):
     with model_killer():
         runner = CliRunner()
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
             args=[
                 "-n",
-                PREFIX + str(uuid4()),
+                model_name,
                 "-l",
                 "a",
                 "-d",
@@ -69,18 +70,30 @@ def test_model_create_short_names(clean_workspace_with_models):
         )
         assert result.exit_code == 0
 
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license == "a"
+        assert model.description == "b"
+        assert model.audience == "c"
+        assert model.use_cases == "d"
+        assert model.trade_offs == "f"
+        assert model.ethics == "g"
+        assert model.limitations == "e"
+        assert set(model.tagged) == {"i", "j", "k"}
+
 
 def test_model_create_full_names(clean_workspace_with_models):
     """Test that zenml model create does not fail with full names."""
     with model_killer():
         runner = CliRunner()
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
             args=[
                 "--name",
-                PREFIX + str(uuid4()),
-                "--limitations",
+                model_name,
+                "--license",
                 "a",
                 "--description",
                 "b",
@@ -104,17 +117,40 @@ def test_model_create_full_names(clean_workspace_with_models):
         )
         assert result.exit_code == 0
 
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license == "a"
+        assert model.description == "b"
+        assert model.audience == "c"
+        assert model.use_cases == "d"
+        assert model.trade_offs == "f"
+        assert model.ethics == "g"
+        assert model.limitations == "e"
+        assert set(model.tagged) == {"i", "j", "k"}
+
 
 def test_model_create_only_required(clean_workspace_with_models):
     """Test that zenml model create does not fail."""
     with model_killer():
         runner = CliRunner()
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
-            args=["--name", PREFIX + str(uuid4())],
+            args=["--name", model_name],
         )
         assert result.exit_code == 0
+
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license is None
+        assert model.description is None
+        assert model.audience is None
+        assert model.use_cases is None
+        assert model.trade_offs is None
+        assert model.ethics is None
+        assert model.limitations is None
+        assert len(model.tagged) == 0
 
 
 def test_model_update(clean_workspace_with_models):
@@ -124,9 +160,25 @@ def test_model_update(clean_workspace_with_models):
         update_command = cli.commands["model"].commands["update"]
         result = runner.invoke(
             update_command,
-            args=[NAME, "--tradeoffs", "foo"],
+            args=[NAME, "--tradeoffs", "foo", "-t", "a"],
         )
         assert result.exit_code == 0
+
+        model = Client().get_model(NAME)
+        assert model.trade_offs == "foo"
+        assert set(model.tagged) == {"a"}
+        assert model.description is None
+
+        result = runner.invoke(
+            update_command,
+            args=[NAME, "-d", "bar", "-r", "a", "-t", "b"],
+        )
+        assert result.exit_code == 0
+
+        model = Client().get_model(NAME)
+        assert model.trade_offs == "foo"
+        assert set(model.tagged) == {"b"}
+        assert model.description == "bar"
 
 
 def test_model_create_without_required_fails(clean_workspace_with_models):

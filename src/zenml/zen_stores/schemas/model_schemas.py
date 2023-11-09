@@ -121,6 +121,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponseModel`.
         """
+        tags = [t.tag.to_model() for t in self.tags]
         return ModelResponseModel(
             id=self.id,
             name=self.name,
@@ -135,7 +136,8 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethics=self.ethics,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=tags,
+            tagged=[t.name for t in tags],
             latest_version=self.model_versions[-1].name
             if self.model_versions
             else None,
