@@ -3553,10 +3553,10 @@ class TestTagResource:
         """Tests creating tag<>resource mapping pass."""
         with tags_killer():
             zs = Client().zen_store
-
+            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
             mapping = zs.create_tag_resource(
                 TagResourceRequestModel(
-                    tag_id=uuid4(),
+                    tag_id=tag.id,
                     resource_id=uuid4(),
                     resource_type=TaggableResourceTypes.MODEL,
                 )
@@ -3568,10 +3568,10 @@ class TestTagResource:
         """Tests creating tag<>resource mapping fails on duplicate."""
         with tags_killer():
             zs = Client().zen_store
-
+            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
             mapping = zs.create_tag_resource(
                 TagResourceRequestModel(
-                    tag_id=uuid4(),
+                    tag_id=tag.id,
                     resource_id=uuid4(),
                     resource_type=TaggableResourceTypes.MODEL,
                 )
@@ -3590,18 +3590,18 @@ class TestTagResource:
         """Tests deleting tag<>resource mapping pass."""
         with tags_killer():
             zs = Client().zen_store
-            tag_id = uuid4()
+            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
             resource_id = uuid4()
             zs.create_tag_resource(
                 TagResourceRequestModel(
-                    tag_id=tag_id,
+                    tag_id=tag.id,
                     resource_id=resource_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             )
-            zs.delete_tag_resource(tag_id, resource_id)
+            zs.delete_tag_resource(tag.id, resource_id)
             with pytest.raises(KeyError):
-                zs.delete_tag_resource(tag_id, resource_id)
+                zs.delete_tag_resource(tag.id, resource_id)
 
     @pytest.mark.parametrize(
         "use_model,use_tag",
@@ -3643,4 +3643,9 @@ class TestTagResource:
                         resource_id=fake_model_id,
                         resource_type=TaggableResourceTypes.MODEL,
                     )
+                )
+                # cleanup
+                zs.delete_tag_resource(
+                    tag_id=tag.id,
+                    resource_id=fake_model_id,
                 )

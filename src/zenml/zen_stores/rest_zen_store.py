@@ -2813,6 +2813,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
 
         Returns:
             An updated tag.
@@ -2858,7 +2859,10 @@ class RestZenStore(BaseZenStore):
             resource_id: id of the tag to delete.
         """
         self._delete_resource(
-            resource_id=tag_resource_id, route=MODELS + TAG_RESOURCES
+            resource_id=TagResourceResponseModel._get_tag_resource_id(
+                tag_id, resource_id
+            ),
+            route=MODELS + TAG_RESOURCES,
         )
 
     # =======================

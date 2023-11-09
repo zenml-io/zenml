@@ -2119,6 +2119,7 @@ class ZenStoreInterface(ABC):
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
 
         Returns:
             An updated tag.

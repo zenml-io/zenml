@@ -66,6 +66,9 @@ from zenml.zen_stores.schemas.model_schemas import (
 )
 from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 
+TagResourceSchema.update_forward_refs(ModelSchema=ModelSchema)
+ModelSchema.update_forward_refs(TagResourceSchema=TagResourceSchema)
+
 __all__ = [
     "ArtifactSchema",
     "BaseSchema",

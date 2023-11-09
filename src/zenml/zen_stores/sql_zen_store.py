@@ -5525,7 +5525,7 @@ class SqlZenStore(BaseZenStore):
         by its name or ID.
 
         Args:
-            model_name_or_id: The name or ID of the tag to get.
+            tag_name_or_id: The name or ID of the tag to get.
             session: The database session to use.
 
         Returns:
@@ -5551,13 +5551,22 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The tag resource schema.
+
+        Raises:
+            KeyError: if entity not found.
         """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=tag_resource_id,
-            schema_class=TagResourceSchema,
-            schema_name=TagResourceSchema.__tablename__,
-            session=session,
-        )
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.id == tag_resource_id
+                )
+            ).first()
+            if schema is None:
+                raise KeyError(
+                    f"Unable to get {TagResourceSchema.__tablename__} with name or ID "
+                    f"'{tag_resource_id}': No {TagResourceSchema.__tablename__} with this ID found."
+                )
+            return schema
 
     @staticmethod
     def _create_or_reuse_code_reference(
@@ -6480,6 +6489,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
 
         Returns:
             An updated tag.

@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
-
-
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -22,7 +20,6 @@ from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import TaggableResourceTypes
-from zenml.exceptions import EntityExistsError
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
@@ -34,7 +31,6 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
 )
-from zenml.models.tag_models import TagRequestModel, TagResourceRequestModel
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -78,7 +74,10 @@ class ModelSchema(NamedSchema, table=True):
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
     tags: List["TagResourceSchema"] = Relationship(
         back_populates="model",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=={TaggableResourceTypes.MODEL.value}, foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            cascade="delete",
+        ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="model",
@@ -154,36 +153,13 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        from zenml.client import Client
+        from zenml.utils.tag_utils import create_links, delete_links
 
-        zs = Client().zen_store
         for field, value in model_update.dict(exclude_unset=True).items():
             if field == "add_tags":
-                for tag_ in value:
-                    try:
-                        tag = zs.get_tag(tag_)
-                    except KeyError:
-                        tag = zs.create_tag(TagRequestModel(name=tag_))
-
-                    try:
-                        tr = zs.create_tag_resource(
-                            TagResourceRequestModel(
-                                tag_id=tag.id,
-                                resource_id=self.id,
-                                resource_type=TaggableResourceTypes.MODEL,
-                            )
-                        )
-                    except EntityExistsError:
-                        pass
+                create_links(value, self.id, TaggableResourceTypes.MODEL)
             elif field == "remove_tags":
-                for tag_ in value:
-                    try:
-                        tag = zs.get_tag(tag_)
-                        zs.delete_tag_resource(
-                            tag_id=tag.id, resource_id=self.id
-                        )
-                    except KeyError:
-                        pass
+                delete_links(value, self.id)
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

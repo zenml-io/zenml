@@ -9,6 +9,7 @@ import json
 import random
 from collections import defaultdict
 from datetime import datetime
+from typing import Set
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -51,7 +52,7 @@ def upgrade() -> None:
         )
     )
     # find unique tags and de-json tags
-    unique_tags = set()
+    unique_tags: Set[str] = set()
     model_tags_prepared = []
     for id_, tags in model_tags:
         try:
@@ -75,16 +76,11 @@ def upgrade() -> None:
     op.create_table(
         "tag_resource",
         sa.Column("tag_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("model_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("resource_type", sa.Integer(), nullable=False),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["model_id"],
-            ["model.id"],
-            name="fk_tag_resource_model_id_model",
-            ondelete="CASCADE",
-        ),
         sa.ForeignKeyConstraint(
             ["tag_id"],
             ["tag.id"],

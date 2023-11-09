@@ -24,7 +24,6 @@ from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
-    update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import BaseFilterModel
@@ -36,7 +35,7 @@ from zenml.utils.uuid_utils import generate_uuid_from_string
 def _validate_color(color: str) -> str:
     try:
         color = str(getattr(ColorVariants, color.upper()).value)
-    except:
+    except NameError:
         raise ValueError(
             f"Given color value `{color}` does not "
             "match any of defined ColorVariants "
@@ -52,7 +51,7 @@ class TagBaseModel(BaseModel):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    color: str = Field(
+    color: Optional[str] = Field(
         description="The color variant assigned to the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -83,7 +82,9 @@ class TagFilterModel(BaseFilterModel):
     color: Optional[str]
 
     @validator("color", pre=True)
-    def _translate_color_to_integer(cls, color: str) -> str:
+    def _translate_color_to_integer(
+        cls, color: Optional[str]
+    ) -> Optional[str]:
         if not color:
             return None
         else:
@@ -94,7 +95,6 @@ class TagRequestModel(TagBaseModel, BaseRequestModel):
     """Request model for tags."""
 
 
-@update_model
 class TagUpdateModel(BaseModel):
     """Update model for tags."""
 
@@ -102,7 +102,9 @@ class TagUpdateModel(BaseModel):
     color: Optional[str]
 
     @validator("color", pre=True)
-    def _translate_color_to_integer(cls, color: str) -> str:
+    def _translate_color_to_integer(
+        cls, color: Optional[str]
+    ) -> Optional[str]:
         if not color:
             return None
         else:
@@ -117,13 +119,19 @@ class TagResourceBaseModel(BaseModel):
 
     tag_id: UUID
     resource_id: UUID
+    resource_type: TaggableResourceTypes
 
     @staticmethod
-    def _get_tag_resource_id(tag_id: UUID, resource_id: UUID):
+    def _get_tag_resource_id(tag_id: UUID, resource_id: UUID) -> UUID:
         return generate_uuid_from_string(str(tag_id) + str(resource_id))
 
     @property
-    def tag_resource_id(self):
+    def tag_resource_id(self) -> UUID:
+        """Get stable ID from tag_id and resource_id.
+
+        Returns:
+            The generated stable ID.
+        """
         return self._get_tag_resource_id(self.tag_id, self.resource_id)
 
 
@@ -133,5 +141,3 @@ class TagResourceResponseModel(TagResourceBaseModel, BaseResponseModel):
 
 class TagResourceRequestModel(TagResourceBaseModel, BaseRequestModel):
     """Request model for tag resource relationships."""
-
-    resource_type: TaggableResourceTypes

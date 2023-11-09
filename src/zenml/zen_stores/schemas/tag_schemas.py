@@ -15,11 +15,10 @@
 
 
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlalchemy import SMALLINT, Column
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
@@ -53,14 +52,17 @@ class TagSchema(NamedSchema, table=True):
         """Convert an `TagRequestModel` to an `TagSchema`.
 
         Args:
-            tag_request: The request model to convert.
+            request: The request model to convert.
 
         Returns:
             The converted schema.
         """
         return cls(
             name=request.name,
-            color=getattr(ColorVariants, request.color.upper()).value,
+            color=getattr(
+                ColorVariants,
+                request.color.upper() if request.color else "GREY",
+            ).value,
         )
 
     def to_model(self) -> TagResponseModel:
@@ -110,19 +112,13 @@ class TagResourceSchema(BaseSchema, table=True):
         nullable=False,
     )
     tag: "TagSchema" = Relationship(back_populates="links")
-    model_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="model",
-        source_column="model_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    model: "ModelSchema" = Relationship(back_populates="tags")
-
-    # extend to self.model_id or self.other_resource_id going forward
-    resource_id: ClassVar[Optional[UUID]] = hybrid_property(
-        lambda self: self.model_id or None
+    resource_id: UUID
+    resource_type: int
+    model: List["ModelSchema"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=={TaggableResourceTypes.MODEL.value}, foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+        ),
     )
 
     @classmethod
@@ -137,16 +133,12 @@ class TagResourceSchema(BaseSchema, table=True):
         Returns:
             The converted schema.
         """
-        if request.resource_type == TaggableResourceTypes.MODEL:
-            return cls(
-                id=request.tag_resource_id,
-                tag_id=request.tag_id,
-                model_id=request.resource_id,
-            )
-        else:
-            raise NotImplementedError(
-                f"Not yet supported `resource_type`=`{request.resource_type}` provided."
-            )
+        return cls(
+            id=request.tag_resource_id,
+            tag_id=request.tag_id,
+            resource_id=request.resource_id,
+            resource_type=request.resource_type.value,
+        )
 
     def to_model(self) -> TagResourceResponseModel:
         """Convert an `TagResourceSchema` to an `TagResourceResponseModel`.
@@ -160,9 +152,5 @@ class TagResourceSchema(BaseSchema, table=True):
             resource_id=self.resource_id,
             created=self.created,
             updated=self.updated,
+            resource_type=TaggableResourceTypes(self.resource_type),
         )
-
-    class Config:
-        """Pydantic config."""
-
-        arbitrary_types_allowed = True

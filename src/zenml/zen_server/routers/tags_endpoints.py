@@ -214,6 +214,4 @@ def delete_tag_resource(
         resource_id: id of the tag to delete.
 
     """
-    zen_store().delete_tag_resource(
-        TagResourceRequestModel._get_tag_resource_id(tag_id, resource_id)
-    )
+    zen_store().delete_tag_resource(tag_id, resource_id)
