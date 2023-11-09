@@ -1,4 +1,4 @@
-"""Integration tests for `zenml.log_artifact_metadata()`."""
+"""Integration tests for artifact util functions."""
 
 from typing import Tuple
 
