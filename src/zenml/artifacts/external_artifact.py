@@ -118,17 +118,14 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
         Returns:
             The uploaded artifact ID.
-
-        Raises:
-            RuntimeError: If artifact URI already exists.
         """
-        from zenml.utils.artifact_utils import upload_artifact
+        from zenml.artifacts.utils import save_artifact
 
         artifact_name = f"external_{uuid4()}"
         uri = os.path.join("external_artifacts", artifact_name)
         logger.info("Uploading external artifact to '%s'.", uri)
 
-        artifact = upload_artifact(
+        artifact = save_artifact(
             name=artifact_name,
             data=self.value,
             extract_metadata=self.store_artifact_metadata,

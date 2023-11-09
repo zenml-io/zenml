@@ -32,6 +32,7 @@ from uuid import UUID
 from pydantic.typing import get_origin, is_union
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -56,7 +57,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import artifact_utils, materializer_utils, source_utils
+from zenml.utils import materializer_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact_config import (
@@ -612,7 +613,7 @@ class StepRunner:
             # Get metadata that the user logged manually
             user_metadata = step_context.get_output_metadata(output_name)
 
-            artifact = artifact_utils.upload_artifact(
+            artifact = save_artifact(
                 name=artifact_name,
                 data=return_value,
                 materializer=materializer_class,

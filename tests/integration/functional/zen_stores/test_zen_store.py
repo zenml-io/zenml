@@ -40,6 +40,10 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
@@ -86,10 +90,6 @@ from zenml.models.base_models import (
 from zenml.models.flavor_models import FlavorBaseModel
 from zenml.models.model_models import ModelFilterModel
 from zenml.utils import code_repository_utils, source_utils
-from zenml.utils.artifact_utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
-)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,

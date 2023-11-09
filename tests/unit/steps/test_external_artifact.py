@@ -115,7 +115,7 @@ def test_upload_by_value(sample_artifact_model, mocker):
     ea = ExternalArtifact(value=1)
     assert ea.id is None
     mocker.patch(
-        "zenml.utils.artifact_utils.upload_artifact",
+        "zenml.artifacts.utils.save_artifact",
         return_value=sample_artifact_model,
     )
     ea.upload_by_value()
@@ -133,7 +133,7 @@ def test_get_artifact_by_value_before_upload_raises():
         with patch.dict(
             "sys.modules",
             {
-                "zenml.utils.artifact_utils": MagicMock(),
+                "zenml.artifacts.utils": MagicMock(),
                 "zenml.client": MockZenmlClient,
             },
         ):
@@ -150,7 +150,7 @@ def test_get_artifact_by_id():
     with patch.dict(
         "sys.modules",
         {
-            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.artifacts.utils": MagicMock(),
             "zenml.client": MockZenmlClient,
         },
     ):
@@ -167,7 +167,7 @@ def test_get_artifact_by_pipeline_run_and_artifact():
     with patch.dict(
         "sys.modules",
         {
-            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.artifacts.utils": MagicMock(),
             "zenml.client": MockZenmlClient,
         },
     ):
@@ -185,7 +185,7 @@ def test_get_artifact_by_pipeline_and_artifact():
     with patch.dict(
         "sys.modules",
         {
-            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.artifacts.utils": MagicMock(),
             "zenml.client": MockZenmlClient,
         },
     ):
@@ -205,7 +205,7 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
             with patch.dict(
                 "sys.modules",
                 {
-                    "zenml.utils.artifact_utils": MagicMock(),
+                    "zenml.artifacts.utils": MagicMock(),
                     "zenml.client": MockZenmlClient,
                 },
             ):
@@ -221,7 +221,7 @@ def test_get_artifact_not_found_in_pipeline_run():
     with patch.dict(
         "sys.modules",
         {
-            "zenml.utils.artifact_utils": MagicMock(),
+            "zenml.artifacts.utils": MagicMock(),
             "zenml.client": MockZenmlClient,
         },
     ):
