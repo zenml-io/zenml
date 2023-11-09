@@ -786,7 +786,8 @@ class Pipeline:
                     )
 
             # Log about the user, stack and components
-            logger.info(f"Using user: `{deployment_model.user.name}`")
+            if deployment_model.user is not None:
+                logger.info(f"Using user: `{deployment_model.user.name}`")
 
             if deployment_model.stack is not None:
                 logger.info(f"Using stack: `{deployment_model.stack.name}`")
