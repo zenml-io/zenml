@@ -2844,25 +2844,21 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=tag_resource,
             response_model=TagResourceResponseModel,
-            route=MODELS + TAG_RESOURCES,
+            route=TAG_RESOURCES,
         )
 
     def delete_tag_resource(
         self,
-        tag_id: UUID,
-        resource_id: UUID,
+        tag_resource_id: UUID,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_id: id of the tag to delete.
-            resource_id: id of the tag to delete.
+            tag_resource_id: id of the tag<>resource to delete.
         """
         self._delete_resource(
-            resource_id=TagResourceResponseModel._get_tag_resource_id(
-                tag_id, resource_id
-            ),
-            route=MODELS + TAG_RESOURCES,
+            resource_id=tag_resource_id,
+            route=TAG_RESOURCES,
         )
 
     # =======================

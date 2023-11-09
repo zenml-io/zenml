@@ -27,14 +27,16 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import BaseFilterModel
-from zenml.utils.uuid_utils import generate_uuid_from_string
 
 # Tags
 
 
 def _validate_color(color: str) -> str:
     try:
-        color = str(getattr(ColorVariants, color.upper()).value)
+        if str(color).isdigit():
+            color = str(ColorVariants(int(color)).value)
+        else:
+            color = str(getattr(ColorVariants, color.upper()).value)
     except NameError:
         raise ValueError(
             f"Given color value `{color}` does not "
@@ -121,10 +123,6 @@ class TagResourceBaseModel(BaseModel):
     resource_id: UUID
     resource_type: TaggableResourceTypes
 
-    @staticmethod
-    def _get_tag_resource_id(tag_id: UUID, resource_id: UUID) -> UUID:
-        return generate_uuid_from_string(str(tag_id) + str(resource_id))
-
     @property
     def tag_resource_id(self) -> UUID:
         """Get stable ID from tag_id and resource_id.
@@ -132,7 +130,9 @@ class TagResourceBaseModel(BaseModel):
         Returns:
             The generated stable ID.
         """
-        return self._get_tag_resource_id(self.tag_id, self.resource_id)
+        from zenml.utils.tag_utils import _get_tag_resource_id
+
+        return _get_tag_resource_id(self.tag_id, self.resource_id)
 
 
 class TagResourceResponseModel(TagResourceBaseModel, BaseResponseModel):

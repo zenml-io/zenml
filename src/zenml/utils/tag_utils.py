@@ -19,6 +19,11 @@ from uuid import UUID
 from zenml.enums import TaggableResourceTypes
 from zenml.exceptions import EntityExistsError
 from zenml.models.tag_models import TagRequestModel, TagResourceRequestModel
+from zenml.utils.uuid_utils import generate_uuid_from_string
+
+
+def _get_tag_resource_id(tag_id: UUID, resource_id: UUID) -> UUID:
+    return generate_uuid_from_string(str(tag_id) + str(resource_id))
 
 
 def create_links(
@@ -69,6 +74,6 @@ def delete_links(
     for tag_name in tag_names:
         try:
             tag = zs.get_tag(tag_name)
-            zs.delete_tag_resource(tag_id=tag.id, resource_id=resource_id)
+            zs.delete_tag_resource(_get_tag_resource_id(tag.id, resource_id))
         except KeyError:
             pass

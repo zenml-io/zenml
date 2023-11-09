@@ -103,6 +103,7 @@ from zenml.utils.artifact_utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
 )
+from zenml.utils.tag_utils import _get_tag_resource_id
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -3599,9 +3600,11 @@ class TestTagResource:
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             )
-            zs.delete_tag_resource(tag.id, resource_id)
+            zs.delete_tag_resource(_get_tag_resource_id(tag.id, resource_id))
             with pytest.raises(KeyError):
-                zs.delete_tag_resource(tag.id, resource_id)
+                zs.delete_tag_resource(
+                    _get_tag_resource_id(tag.id, resource_id)
+                )
 
     @pytest.mark.parametrize(
         "use_model,use_tag",
@@ -3634,6 +3637,9 @@ class TestTagResource:
                     )
                 if use_tag:
                     zs.delete_tag(tag.id)
+                    tag = zs.create_tag(
+                        TagRequestModel(name="foo", color="red")
+                    )
                 else:
                     zs.delete_model(model.id)
                 # should pass
@@ -3646,6 +3652,8 @@ class TestTagResource:
                 )
                 # cleanup
                 zs.delete_tag_resource(
-                    tag_id=tag.id,
-                    resource_id=fake_model_id,
+                    _get_tag_resource_id(
+                        tag_id=tag.id,
+                        resource_id=fake_model_id,
+                    )
                 )

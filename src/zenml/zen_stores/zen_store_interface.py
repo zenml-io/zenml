@@ -2151,14 +2151,12 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_tag_resource(
         self,
-        tag_id: UUID,
-        resource_id: UUID,
+        tag_resource_id: UUID,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_id: id of the tag to delete.
-            resource_id: id of the tag to delete.
+            tag_resource_id: id of the tag<>resource to delete.
 
         Raises:
             KeyError: specified ID not found.

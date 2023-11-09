@@ -6501,20 +6501,17 @@ class SqlZenStore(BaseZenStore):
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id, session=session
             )
-            tag_model = session.exec(
-                select(TagSchema).where(TagSchema.id == tag.id)
-            ).first()
 
-            if not tag_model:
+            if not tag:
                 raise KeyError(f"Tag with ID `{tag_name_or_id}` not found.")
 
-            tag_model.update(update=tag_update_model)
-            session.add(tag_model)
+            tag.update(update=tag_update_model)
+            session.add(tag)
             session.commit()
 
             # Refresh the tag that was just created
-            session.refresh(tag_model)
-            return tag_model.to_model()
+            session.refresh(tag)
+            return tag.to_model()
 
     ####################
     # Tags <> resources
@@ -6555,29 +6552,24 @@ class SqlZenStore(BaseZenStore):
 
     def delete_tag_resource(
         self,
-        tag_id: UUID,
-        resource_id: UUID,
+        tag_resource_id: UUID,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_id: id of the tag to delete.
-            resource_id: id of the tag to delete.
+            tag_resource_id: id of the tag<>resource to delete.
 
         Raises:
             KeyError: specified ID not found.
         """
         with Session(self.engine) as session:
             tag_model = self._get_tag_model_schema(
-                tag_resource_id=TagResourceRequestModel._get_tag_resource_id(
-                    tag_id, resource_id
-                ),
+                tag_resource_id=tag_resource_id,
                 session=session,
             )
             if tag_model is None:
                 raise KeyError(
-                    f"Unable to get tag<>resource with for resource ID `{resource_id}` "
-                    f"and tag ID `{tag_id}`: "
+                    f"Unable to get tag<>resource with ID `{tag_resource_id}`: "
                     f"No tag<>resource with these ID found."
                 )
             session.delete(tag_model)

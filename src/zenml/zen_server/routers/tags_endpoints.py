@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    MODELS,
     TAG_RESOURCES,
     TAGS,
     VERSION_1,
@@ -124,27 +123,27 @@ def get_tag(
 
 
 @router.put(
-    "/{tag_name_or_id}",
+    "/{tag_id}",
     response_model=TagResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_tag(
-    tag_name_or_id: Union[str, UUID],
+    tag_id: UUID,
     tag_update_model: TagUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> TagResponseModel:
     """Updates a tag.
 
     Args:
-        tag_name_or_id: Id or name of the tag.
+        tag_id: Id or name of the tag.
         tag_update_model: Tag to use for the update.
 
     Returns:
         The updated tag.
     """
     return zen_store().update_tag(
-        tag_name_or_id=tag_name_or_id,
+        tag_name_or_id=tag_id,
         tag_update_model=tag_update_model,
     )
 
@@ -170,14 +169,14 @@ def delete_tag(
 # Tags <> Resources
 ##############################
 router_tr = APIRouter(
-    prefix=API + VERSION_1,
+    prefix=API + VERSION_1 + TAG_RESOURCES,
     tags=["tag_resources"],
     responses={401: error_response},
 )
 
 
 @router_tr.post(
-    MODELS + TAG_RESOURCES,
+    "",
     response_model=TagResourceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -198,20 +197,18 @@ def create_tag_resource(
 
 
 @router_tr.delete(
-    MODELS + TAG_RESOURCES + "/{tag_resource_id}",
+    "/{tag_resource_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def delete_tag_resource(
-    tag_id: UUID,
-    resource_id: UUID,
+    tag_resource_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a tag resource relationship.
 
     Args:
-        tag_id: id of the tag to delete.
-        resource_id: id of the tag to delete.
+        tag_resource_id: id of the tag<>resource to delete.
 
     """
-    zen_store().delete_tag_resource(tag_id, resource_id)
+    zen_store().delete_tag_resource(tag_resource_id)
