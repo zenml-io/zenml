@@ -19,14 +19,17 @@ import logging
 import math
 import os
 import re
+import sys
 from contextvars import ContextVar
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
     ClassVar,
     Dict,
+    ForwardRef,
     List,
     Optional,
     Tuple,
@@ -48,7 +51,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, and_, create_engine, or_, select
+from sqlmodel import Session, SQLModel, and_, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -77,6 +80,13 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -146,6 +156,10 @@ from zenml.models import (
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -204,6 +218,7 @@ from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
 from zenml.zen_stores.schemas import (
+    APIKeySchema,
     ArtifactSchema,
     BaseSchema,
     CodeReferenceSchema,
@@ -1267,8 +1282,8 @@ class SqlZenStore(BaseZenStore):
             workspace = self._get_workspace_schema(
                 workspace_name_or_id=stack.workspace, session=session
             )
-            user = self._get_user_schema(
-                user_name_or_id=stack.user, session=session
+            user = self._get_account_schema(
+                account_name_or_id=stack.user, session=session
             )
             raise StackExistsError(
                 f"Unable to register stack with name "
@@ -1311,7 +1326,7 @@ class SqlZenStore(BaseZenStore):
                 f"'{workspace.name}'"
             )
             if existing_shared_stack.user_id:
-                owner_of_shared = self._get_user_schema(
+                owner_of_shared = self._get_account_schema(
                     existing_shared_stack.user_id, session=session
                 )
                 error_msg += f" owned by '{owner_of_shared.name}'."
@@ -1881,6 +1896,118 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _get_resource_references(
+        cls,
+    ) -> List[Tuple[Type[SQLModel], str]]:
+        """Get a list of all other table columns that reference the user table.
+
+        Given that this list doesn't change at runtime, we cache it.
+
+        Returns:
+            A list of all other table columns that reference the user table
+            as a list of tuples of the form
+            (<sqlmodel-schema-class>, <attribute-name>).
+        """
+        from zenml.zen_stores import schemas as zenml_schemas
+
+        # Get a list of attributes that represent relationships to other
+        # resources
+        resource_attrs = [
+            attr
+            for attr in UserSchema.__sqlmodel_relationships__.keys()
+            if not attr.startswith("_") and attr not in
+            # These are not resources owned by the user or  are resources that
+            # are deleted automatically when the user is deleted. Secrets in
+            # particular are left out because they are automatically deleted
+            # even when stored in an external secret store.
+            ["teams", "assigned_roles", "api_keys", "auth_devices", "secrets"]
+        ]
+
+        # This next part is crucial in preserving scalability: we don't fetch
+        # the values of the relationship attributes, because this would
+        # potentially load a huge amount of data into memory through
+        # lazy-loading. Instead, we use a DB query to count resources
+        # associated with the user for each individual resource attribute.
+
+        # To create this query, we need a list of all tables and their foreign
+        # keys that point to the user table.
+        foreign_keys: List[Tuple[Type[SQLModel], str]] = []
+        for resource_attr in resource_attrs:
+            # Extract the target schema from the annotation
+            annotation = UserSchema.__annotations__[resource_attr]
+
+            # The annotation must be of the form
+            # `typing.List[ForwardRef('<schema-class>')]`
+            # We need to recover the schema class from the ForwardRef
+            assert annotation._name == "List"
+            assert annotation.__args__
+            schema_ref = annotation.__args__[0]
+            assert isinstance(schema_ref, ForwardRef)
+            # We pass the zenml_schemas module as the globals dict to
+            # _evaluate, because this is where the schema classes are
+            # defined
+            if sys.version_info < (3, 9):
+                # For Python versions <3.9, leave out the third parameter to
+                # _evaluate
+                target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            else:
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, frozenset()
+                )
+            assert target_schema is not None
+            assert issubclass(target_schema, SQLModel)
+
+            # Next, we need to identify the foreign key attribute in the
+            # target table
+            table = UserSchema.metadata.tables[target_schema.__tablename__]
+            foreign_key_attr = None
+            for fk in table.foreign_keys:
+                if fk.column.table.name != UserSchema.__tablename__:
+                    continue
+                if fk.column.name != "id":
+                    continue
+                assert fk.parent is not None
+                foreign_key_attr = fk.parent.name
+                break
+
+            assert foreign_key_attr is not None
+
+            foreign_keys.append((target_schema, foreign_key_attr))
+
+        return foreign_keys
+
+    def _account_owns_resources(
+        self, account: UserSchema, session: Session
+    ) -> bool:
+        """Check if the account owns any resources.
+
+        Args:
+            account: The account to check.
+            session: The database session to use for the query.
+
+        Returns:
+            Whether the account owns any resources.
+        """
+        # Get a list of all other table columns that reference the user table
+        resource_attrs = self._get_resource_references()
+        for schema, resource_attr in resource_attrs:
+            # Check if the user owns any resources of this type
+            count = session.scalar(
+                select([func.count("*")])
+                .select_from(schema)
+                .where(getattr(schema, resource_attr) == account.id)
+            )
+            if count > 0:
+                logger.debug(
+                    f"User {account.name} owns {count} resources of type "
+                    f"{schema.__tablename__}"
+                )
+                return True
+
+        return False
+
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
@@ -1891,24 +2018,29 @@ class SqlZenStore(BaseZenStore):
             The newly created user.
 
         Raises:
-            EntityExistsError: If a user with the given name already exists.
+            EntityExistsError: If a user or service account with the given name
+                already exists.
         """
         with Session(self.engine) as session:
-            # Check if user with the given name already exists
-            existing_user = session.exec(
-                select(UserSchema).where(UserSchema.name == user.name)
-            ).first()
-            if existing_user is not None:
+            # Check if a user account with the given name already exists
+            try:
+                self._get_account_schema(
+                    user.name,
+                    session=session,
+                    # Filter out service accounts
+                    service_account=False,
+                )
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
-                    f"Found existing user with this name."
+                    f"Found an existing user account with this name."
                 )
+            except KeyError:
+                pass
 
             # Create the user
-            new_user = UserSchema.from_request(user)
+            new_user = UserSchema.from_user_request(user)
             session.add(new_user)
             session.commit()
-
             return new_user.to_model()
 
     def get_user(
@@ -1918,7 +2050,13 @@ class SqlZenStore(BaseZenStore):
     ) -> UserResponseModel:
         """Gets a specific user, when no id is specified the active user is returned.
 
-        Raises a KeyError in case a user with that id does not exist.
+        # noqa: DAR401
+        # noqa: DAR402
+
+        Raises a KeyError in case a user with that name or id does not exist.
+
+        For backwards-compatibility reasons, this method can also be called
+        to fetch service accounts by their ID.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
@@ -1926,12 +2064,24 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
+
+        Raises:
+            KeyError: If the user does not exist.
         """
         if not user_name_or_id:
             user_name_or_id = self._default_user_name
 
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
+            # If a UUID is passed, we also allow fetching service accounts
+            # with that ID.
+            service_account: Optional[bool] = False
+            if uuid_utils.is_valid_uuid(user_name_or_id):
+                service_account = None
+            user = self._get_account_schema(
+                user_name_or_id,
+                session=session,
+                service_account=service_account,
+            )
 
             return user.to_model(include_private=include_private)
 
@@ -1947,7 +2097,9 @@ class SqlZenStore(BaseZenStore):
             The requested user, if it was found.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
             return UserAuthModel(
                 id=user.id,
                 name=user.name,
@@ -1958,6 +2110,7 @@ class SqlZenStore(BaseZenStore):
                 updated=user.updated,
                 password=user.password,
                 activation_token=user.activation_token,
+                is_service_account=False,
             )
 
     def list_users(
@@ -1997,19 +2150,39 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the request tries to update the username
                 for the default user account.
+            EntityExistsError: If the request tries to update the username to
+                a name that is already taken by another user or service account.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user_id, session=session)
+            existing_user = self._get_account_schema(
+                user_id, session=session, service_account=False
+            )
+
             if (
-                existing_user.name == self._default_user_name
-                and "name" in user_update.__fields_set__
+                user_update.name is not None
                 and user_update.name != existing_user.name
             ):
-                raise IllegalOperationError(
-                    "The username of the default user account cannot be "
-                    "changed."
-                )
-            existing_user.update(user_update=user_update)
+                if existing_user.name == self._default_user_name:
+                    raise IllegalOperationError(
+                        "The username of the default user account cannot be "
+                        "changed."
+                    )
+
+                try:
+                    self._get_account_schema(
+                        user_update.name,
+                        session=session,
+                        service_account=False,
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update user account with name "
+                        f"'{user_update.name}': Found an existing user "
+                        "account with this name."
+                    )
+                except KeyError:
+                    pass
+
+            existing_user.update_user(user_update=user_update)
             session.add(existing_user)
             session.commit()
 
@@ -2024,18 +2197,523 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
-            IllegalOperationError: If the user is the default user account.
+            IllegalOperationError: If the user is the default user account or
+                if the user already owns resources.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
             if user.name == self._default_user_name:
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
+                )
+            if self._account_owns_resources(user, session=session):
+                raise IllegalOperationError(
+                    "The user account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the user "
+                    "account or consider deactivating it instead."
                 )
 
             self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
 
             session.delete(user)
+            session.commit()
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    def create_service_account(
+        self, service_account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if a service account with the given name already
+            # exists
+            try:
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
+            except KeyError:
+                pass
+
+            # Create the service account
+            new_account = UserSchema.from_service_account_request(
+                service_account
+            )
+            session.add(new_account)
+            session.commit()
+
+            return new_account.to_service_account_model()
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Raises a KeyError in case a service account with that id does not exist.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        with Session(self.engine) as session:
+            account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+
+            return account.to_service_account_model()
+
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        with Session(self.engine) as session:
+            query = select(UserSchema)
+            paged_service_accounts: Page[
+                ServiceAccountResponseModel
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(),
+            )
+            return paged_service_accounts
+
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            existing_service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+
+            if (
+                service_account_update.name is not None
+                and service_account_update.name
+                != existing_service_account.name
+            ):
+                try:
+                    self._get_account_schema(
+                        service_account_update.name,
+                        session=session,
+                        service_account=True,
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update service account with name "
+                        f"'{service_account_update.name}': Found an existing "
+                        "service account with this name."
+                    )
+                except KeyError:
+                    pass
+
+            existing_service_account.update_service_account(
+                service_account_update=service_account_update
+            )
+            session.add(existing_service_account)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_service_account)
+            return existing_service_account.to_service_account_model()
+
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
+        """
+        with Session(self.engine) as session:
+            service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+            # Check if the service account has any resources associated with it
+            # and raise an error if it does.
+            if self._account_owns_resources(service_account, session=session):
+                raise IllegalOperationError(
+                    "The service account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the service "
+                    "account or consider deactivating it instead."
+                )
+
+            session.delete(service_account)
+            session.commit()
+
+    # --------
+    # API Keys
+    # --------
+
+    def _get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> APIKeySchema:
+        """Helper method to fetch an API key by name or ID.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                fetch the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            session: The database session to use for the query.
+
+        Returns:
+            The requested API key.
+
+        Raises:
+            KeyError: if the name or ID does not identify an API key that is
+                configured for the given service account.
+        """
+        # Fetch the service account, to make sure it exists
+        service_account = self._get_account_schema(
+            service_account_id, session=session, service_account=True
+        )
+
+        if uuid_utils.is_valid_uuid(api_key_name_or_id):
+            filter_params = APIKeySchema.id == api_key_name_or_id
+        else:
+            filter_params = APIKeySchema.name == api_key_name_or_id
+
+        api_key = session.exec(
+            select(APIKeySchema)
+            .where(filter_params)
+            .where(APIKeySchema.service_account_id == service_account.id)
+        ).first()
+
+        if api_key is None:
+            raise KeyError(
+                f"An API key with ID or name '{api_key_name_or_id}' is not "
+                f"configured for service account with ID "
+                f"'{service_account_id}'."
+            )
+        return api_key
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequestModel
+    ) -> APIKeyResponseModel:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+
+        Raises:
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            # Check if a key with the same name already exists for the same
+            # service account
+            try:
+                self._get_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.name,
+                    session=session,
+                )
+                raise EntityExistsError(
+                    f"Unable to register API key with name '{api_key.name}': "
+                    "Found an existing API key with the same name configured "
+                    f"for the same '{service_account.name}' service account."
+                )
+            except KeyError:
+                pass
+
+            new_api_key, key_value = APIKeySchema.from_request(
+                service_account_id=service_account.id,
+                request=api_key,
+            )
+            session.add(new_api_key)
+            session.commit()
+
+            api_key_model = new_api_key.to_model()
+            api_key_model.set_key(key_value)
+            return api_key_model
+
+    def get_api_key(
+        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+    ) -> APIKeyResponseModel:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+
+        Returns:
+            The API key with the given ID.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+            return api_key.to_model()
+
+    def get_internal_api_key(
+        self, api_key_id: UUID
+    ) -> APIKeyInternalResponseModel:
+        """Get internal details for an API key by its unique ID.
+
+        Args:
+            api_key_id: The ID of the API key to get.
+
+        Returns:
+            The internal details for the API key with the given ID.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+            if api_key is None:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+            return api_key.to_internal_model()
+
+    def list_api_keys(
+        self, service_account_id: UUID, filter_model: APIKeyFilterModel
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            filter_model.set_service_account(service_account.id)
+            query = select(APIKeySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=APIKeySchema,
+                filter_model=filter_model,
+            )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdateModel,
+    ) -> APIKeyResponseModel:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            if api_key_update.name and api_key.name != api_key_update.name:
+                # Check if a key with the new name already exists for the same
+                # service account
+                try:
+                    self._get_api_key(
+                        service_account_id=service_account_id,
+                        api_key_name_or_id=api_key_update.name,
+                        session=session,
+                    )
+
+                    raise EntityExistsError(
+                        f"Unable to update API key with name "
+                        f"'{api_key_update.name}': Found an existing API key "
+                        "with the same name configured for the same "
+                        f"'{api_key.service_account.name}' service account."
+                    )
+                except KeyError:
+                    pass
+
+            api_key.update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def update_internal_api_key(
+        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdateModel
+    ) -> APIKeyResponseModel:
+        """Update an API key with internal details.
+
+        Args:
+            api_key_id: The ID of the API key.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+
+            if not api_key:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+
+            api_key.internal_update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequestModel,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            _, new_key = api_key.rotate(rotate_request)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            api_key_model = api_key.to_model()
+            api_key_model.set_key(new_key)
+
+            return api_key_model
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            session.delete(api_key)
             session.commit()
 
     # -----
@@ -2150,8 +2828,8 @@ class SqlZenStore(BaseZenStore):
             if "users" in team_update.__fields_set__ and team_update.users:
                 for user in team_update.users:
                     existing_team.users.append(
-                        self._get_user_schema(
-                            user_name_or_id=user, session=session
+                        self._get_account_schema(
+                            account_name_or_id=user, session=session
                         )
                     )
 
@@ -2409,7 +3087,7 @@ class SqlZenStore(BaseZenStore):
                 workspace = self._get_workspace_schema(
                     user_role_assignment.workspace, session=session
                 )
-            user = self._get_user_schema(
+            user = self._get_account_schema(
                 user_role_assignment.user, session=session
             )
             query = select(UserRoleAssignmentSchema).where(
@@ -5385,29 +6063,69 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _get_user_schema(
+    def _get_account_schema(
         self,
-        user_name_or_id: Union[str, UUID],
+        account_name_or_id: Union[str, UUID],
         session: Session,
+        service_account: Optional[bool] = None,
     ) -> UserSchema:
-        """Gets a user schema by name or ID.
+        """Gets a user account or a service account schema by name or ID.
 
-        This is a helper method that is used in various places to find the
-        user associated to some other object.
+        This helper method is used to fetch both user accounts and service
+        accounts by name or ID. It is required because in the DB, user accounts
+        and service accounts are stored using the same UserSchema to make
+        it easier to implement resource ownership.
 
         Args:
-            user_name_or_id: The name or ID of the user to get.
+            account_name_or_id: The name or ID of the account to get.
             session: The database session to use.
+            service_account: Whether to get a service account or a user
+                account. If None, both are considered with a priority for
+                user accounts if both exist (e.g. with the same name).
 
         Returns:
-            The user schema.
+            The account schema.
+
+        Raises:
+            KeyError: If no account with the given name or ID exists.
         """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=user_name_or_id,
-            schema_class=UserSchema,
-            schema_name="user",
-            session=session,
+        account_type = ""
+        query = select(UserSchema)
+        if uuid_utils.is_valid_uuid(account_name_or_id):
+            query = query.where(UserSchema.id == account_name_or_id)
+        else:
+            query = query.where(UserSchema.name == account_name_or_id)
+        if service_account is True:
+            query = query.where(
+                UserSchema.is_service_account == True  # noqa: E712
+            )
+            account_type = "service "
+        elif service_account is False:
+            # != True is required to also include NULL values
+            query = query.where(
+                UserSchema.is_service_account != True  # noqa: E712
+            )
+            account_type = "user "
+        error_msg = (
+            f"No {account_type}account with the '{account_name_or_id}' name "
+            "or ID was found"
         )
+
+        results = session.exec(query).all()
+
+        if len(results) == 0:
+            raise KeyError(error_msg)
+
+        if len(results) == 1:
+            return results[0]
+
+        # We could have two results if a service account and a user account
+        # have the same name. In that case, we return the user account.
+        for result in results:
+            if not result.is_service_account:
+                return result
+
+        raise KeyError(error_msg)
 
     def _get_team_schema(
         self,
