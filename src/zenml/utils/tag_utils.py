@@ -40,14 +40,14 @@ def create_links(
     """
     from zenml.client import Client
 
-    zs = Client().zen_store
+    client = Client()
     for tag_name in tag_names:
         try:
-            tag = zs.get_tag(tag_name)
+            tag = client.get_tag(tag_name)
         except KeyError:
-            tag = zs.create_tag(TagRequestModel(name=tag_name))
+            tag = client.create_tag(TagRequestModel(name=tag_name))
         try:
-            zs.create_tag_resource(
+            client.zen_store.create_tag_resource(
                 TagResourceRequestModel(
                     tag_id=tag.id,
                     resource_id=resource_id,
@@ -70,10 +70,12 @@ def remove_links(
     """
     from zenml.client import Client
 
-    zs = Client().zen_store
+    client = Client()
     for tag_name in tag_names:
         try:
-            tag = zs.get_tag(tag_name)
-            zs.delete_tag_resource(_get_tag_resource_id(tag.id, resource_id))
+            tag = client.get_tag(tag_name)
+            client.zen_store.delete_tag_resource(
+                _get_tag_resource_id(tag.id, resource_id)
+            )
         except KeyError:
             pass

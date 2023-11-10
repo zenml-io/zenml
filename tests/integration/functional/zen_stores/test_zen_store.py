@@ -115,6 +115,12 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
 
+
+@pytest.fixture
+def client() -> Client:
+    return Client()
+
+
 # .--------------.
 # | GENERIC CRUD |
 # '--------------'
@@ -3464,98 +3470,92 @@ class TestModelVersionPipelineRunLinks:
 
 
 class TestTag:
-    def test_create_pass(self):
+    def test_create_pass(self, client):
         """Tests that tag creation passes."""
         with tags_killer():
-            zs = Client().zen_store
-            tag = zs.create_tag(TagRequestModel(name="foo"))
+            tag = client.create_tag(TagRequestModel(name="foo"))
             assert tag.name == "foo"
             assert tag.color is not None
-            tag = zs.create_tag(TagRequestModel(name="bar", color="yellow"))
+            tag = client.create_tag(
+                TagRequestModel(name="bar", color="yellow")
+            )
             assert tag.name == "bar"
             assert tag.color == ColorVariants.YELLOW.name.lower()
             with pytest.raises(ValueError):
-                zs.create_tag(TagRequestModel(color="yellow"))
+                client.create_tag(TagRequestModel(color="yellow"))
 
-    def test_create_bad_input(self):
+    def test_create_bad_input(self, client):
         """Tests that tag creation fails without a name."""
         with tags_killer():
-            zs = Client().zen_store
             with pytest.raises(ValueError):
-                zs.create_tag(TagRequestModel(color="yellow"))
+                client.create_tag(TagRequestModel(color="yellow"))
 
-    def test_create_duplicate(self):
+    def test_create_duplicate(self, client):
         """Tests that tag creation fails on duplicate."""
         with tags_killer():
-            zs = Client().zen_store
-            zs.create_tag(TagRequestModel(name="foo"))
+            client.create_tag(TagRequestModel(name="foo"))
             with pytest.raises(EntityExistsError):
-                zs.create_tag(TagRequestModel(name="foo", color="yellow"))
+                client.create_tag(TagRequestModel(name="foo", color="yellow"))
 
-    def test_get_tag_found(self):
+    def test_get_tag_found(self, client):
         """Tests that tag get pass if found."""
         with tags_killer():
-            zs = Client().zen_store
-            zs.create_tag(TagRequestModel(name="foo"))
-            tag = zs.get_tag("foo")
+            client.create_tag(TagRequestModel(name="foo"))
+            tag = client.get_tag("foo")
             assert tag.name == "foo"
             assert tag.color is not None
 
-    def test_get_tag_not_found(self):
+    def test_get_tag_not_found(self, client):
         """Tests that tag get fails if not found."""
         with tags_killer():
-            zs = Client().zen_store
             with pytest.raises(KeyError):
-                zs.get_tag("foo")
+                client.get_tag("foo")
 
-    def test_list_tags(self):
+    def test_list_tags(self, client):
         """Tests various list scenarios."""
         with tags_killer():
-            zs = Client().zen_store
-            tags = zs.list_tags(TagFilterModel())
+            tags = client.list_tags(TagFilterModel())
             assert len(tags) == 0
-            zs.create_tag(TagRequestModel(name="foo", color="red"))
-            zs.create_tag(TagRequestModel(name="bar", color="green"))
+            client.create_tag(TagRequestModel(name="foo", color="red"))
+            client.create_tag(TagRequestModel(name="bar", color="green"))
 
-            tags = zs.list_tags(TagFilterModel())
+            tags = client.list_tags(TagFilterModel())
             assert len(tags) == 2
             assert {t.name for t in tags} == {"foo", "bar"}
             assert {t.color for t in tags} == {"red", "green"}
 
-            tags = zs.list_tags(TagFilterModel(name="foo"))
+            tags = client.list_tags(TagFilterModel(name="foo"))
             assert len(tags) == 1
             assert tags[0].name == "foo"
             assert tags[0].color == "red"
 
-            tags = zs.list_tags(TagFilterModel(color="green"))
+            tags = client.list_tags(TagFilterModel(color="green"))
             assert len(tags) == 1
             assert tags[0].name == "bar"
             assert tags[0].color == "green"
 
-    def test_update_tag(self):
+    def test_update_tag(self, client):
         """Tests various update scenarios."""
         with tags_killer():
-            zs = Client().zen_store
-            zs.create_tag(TagRequestModel(name="foo", color="red"))
-            tag = zs.create_tag(TagRequestModel(name="bar", color="green"))
+            client.create_tag(TagRequestModel(name="foo", color="red"))
+            tag = client.create_tag(TagRequestModel(name="bar", color="green"))
 
-            zs.update_tag("foo", TagUpdateModel(name="foo2"))
-            assert zs.get_tag("foo2").color == "red"
+            client.update_tag("foo", TagUpdateModel(name="foo2"))
+            assert client.get_tag("foo2").color == "red"
             with pytest.raises(KeyError):
-                zs.get_tag("foo")
+                client.get_tag("foo")
 
-            zs.update_tag(tag.id, TagUpdateModel(color="yellow"))
-            assert zs.get_tag(tag.id).color == "yellow"
-            assert zs.get_tag("bar").color == "yellow"
+            client.update_tag(tag.id, TagUpdateModel(color="yellow"))
+            assert client.get_tag(tag.id).color == "yellow"
+            assert client.get_tag("bar").color == "yellow"
 
 
 class TestTagResource:
-    def test_create_tag_resource_pass(self):
+    def test_create_tag_resource_pass(self, client):
         """Tests creating tag<>resource mapping pass."""
         with tags_killer():
-            zs = Client().zen_store
-            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
-            mapping = zs.create_tag_resource(
+            tag = client.create_tag(TagRequestModel(name="foo", color="red"))
+            mapping = client.zen_store.create_tag_resource(
                 TagResourceRequestModel(
                     tag_id=tag.id,
                     resource_id=uuid4(),
@@ -3565,12 +3565,11 @@ class TestTagResource:
             assert isinstance(mapping.tag_id, UUID)
             assert isinstance(mapping.resource_id, UUID)
 
-    def test_create_tag_resource_fails_on_duplicate(self):
+    def test_create_tag_resource_fails_on_duplicate(self, client):
         """Tests creating tag<>resource mapping fails on duplicate."""
         with tags_killer():
-            zs = Client().zen_store
-            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
-            mapping = zs.create_tag_resource(
+            tag = client.create_tag(TagRequestModel(name="foo", color="red"))
+            mapping = client.zen_store.create_tag_resource(
                 TagResourceRequestModel(
                     tag_id=tag.id,
                     resource_id=uuid4(),
@@ -3579,7 +3578,7 @@ class TestTagResource:
             )
 
             with pytest.raises(EntityExistsError):
-                zs.create_tag_resource(
+                client.zen_store.create_tag_resource(
                     TagResourceRequestModel(
                         tag_id=mapping.tag_id,
                         resource_id=mapping.resource_id,
@@ -3587,22 +3586,23 @@ class TestTagResource:
                     )
                 )
 
-    def test_delete_tag_resource_pass(self):
+    def test_delete_tag_resource_pass(self, client):
         """Tests deleting tag<>resource mapping pass."""
         with tags_killer():
-            zs = Client().zen_store
-            tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
+            tag = client.create_tag(TagRequestModel(name="foo", color="red"))
             resource_id = uuid4()
-            zs.create_tag_resource(
+            client.zen_store.create_tag_resource(
                 TagResourceRequestModel(
                     tag_id=tag.id,
                     resource_id=resource_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             )
-            zs.delete_tag_resource(_get_tag_resource_id(tag.id, resource_id))
+            client.zen_store.delete_tag_resource(
+                _get_tag_resource_id(tag.id, resource_id)
+            )
             with pytest.raises(KeyError):
-                zs.delete_tag_resource(
+                client.zen_store.delete_tag_resource(
                     _get_tag_resource_id(tag.id, resource_id)
                 )
 
@@ -3611,14 +3611,15 @@ class TestTagResource:
         [[True, False], [False, True]],
         ids=["delete_model", "delete_tag"],
     )
-    def test_cascade_deletion(self, use_model, use_tag):
+    def test_cascade_deletion(self, use_model, use_tag, client):
         """Test that link is deleted on tag deletion."""
         with ModelVersionContext() as model:
             with tags_killer():
-                zs = Client().zen_store
-                tag = zs.create_tag(TagRequestModel(name="foo", color="red"))
+                tag = client.create_tag(
+                    TagRequestModel(name="foo", color="red")
+                )
                 fake_model_id = uuid4() if not use_model else model.id
-                zs.create_tag_resource(
+                client.zen_store.create_tag_resource(
                     TagResourceRequestModel(
                         tag_id=tag.id,
                         resource_id=fake_model_id,
@@ -3628,7 +3629,7 @@ class TestTagResource:
 
                 # duplicate
                 with pytest.raises(EntityExistsError):
-                    zs.create_tag_resource(
+                    client.zen_store.create_tag_resource(
                         TagResourceRequestModel(
                             tag_id=tag.id,
                             resource_id=fake_model_id,
@@ -3636,14 +3637,14 @@ class TestTagResource:
                         )
                     )
                 if use_tag:
-                    zs.delete_tag(tag.id)
-                    tag = zs.create_tag(
+                    client.delete_tag(tag.id)
+                    tag = client.create_tag(
                         TagRequestModel(name="foo", color="red")
                     )
                 else:
-                    zs.delete_model(model.id)
+                    client.delete_model(model.id)
                 # should pass
-                zs.create_tag_resource(
+                client.zen_store.create_tag_resource(
                     TagResourceRequestModel(
                         tag_id=tag.id,
                         resource_id=fake_model_id,
@@ -3651,7 +3652,7 @@ class TestTagResource:
                     )
                 )
                 # cleanup
-                zs.delete_tag_resource(
+                client.zen_store.delete_tag_resource(
                     _get_tag_resource_id(
                         tag_id=tag.id,
                         resource_id=fake_model_id,

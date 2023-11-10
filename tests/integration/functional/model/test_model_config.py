@@ -211,9 +211,7 @@ class TestModelConfig:
         """Test that model context can create proper tag relationships."""
         with model_killer():
             with tags_killer():
-                Client().zen_store.create_tag(
-                    TagRequestModel(name="foo", color="green")
-                )
+                Client().create_tag(TagRequestModel(name="foo", color="green"))
                 mc = ModelConfig(
                     name=MODEL_NAME,
                     tags=["foo", "bar"],

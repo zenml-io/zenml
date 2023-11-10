@@ -30,7 +30,7 @@ def tags_killer():
     try:
         yield
     finally:
-        client = Client().zen_store
+        client = Client()
         tags = client.list_tags(TagFilterModel(size=999))
         for tag in tags:
             try:
