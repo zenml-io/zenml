@@ -88,8 +88,6 @@ from zenml.models import (
     StepRunUpdateModel,
     TagFilterModel,
     TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
     TagResponseModel,
     TagUpdateModel,
     TeamFilterModel,
@@ -2126,38 +2124,4 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the tag is not found
-        """
-
-    ####################
-    # Tags <> resources
-    ####################
-
-    @abstractmethod
-    def create_tag_resource(
-        self, tag_resource: TagResourceRequestModel
-    ) -> TagResourceResponseModel:
-        """Creates a new tag resource relationship.
-
-        Args:
-            tag_resource: the tag resource relationship to be created.
-
-        Returns:
-            The newly created tag resource relationship.
-
-        Raises:
-            EntityExistsError: If a tag resource relationship with the given configuration.
-        """
-
-    @abstractmethod
-    def delete_tag_resource(
-        self,
-        tag_resource_id: UUID,
-    ) -> None:
-        """Deletes a tag resource relationship.
-
-        Args:
-            tag_resource_id: id of the tag<>resource to delete.
-
-        Raises:
-            KeyError: specified ID not found.
         """

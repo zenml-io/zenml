@@ -52,6 +52,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunParentsSchema,
     StepRunSchema,
 )
+from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 from zenml.zen_stores.schemas.team_schemas import (
     TeamAssignmentSchema,
     TeamSchema,
@@ -64,10 +65,6 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
 )
-from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
-
-TagResourceSchema.update_forward_refs(ModelSchema=ModelSchema)
-ModelSchema.update_forward_refs(TagResourceSchema=TagResourceSchema)
 
 __all__ = [
     "ArtifactSchema",

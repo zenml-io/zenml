@@ -70,7 +70,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STEPS,
-    TAG_RESOURCES,
     TAGS,
     TEAM_ROLE_ASSIGNMENTS,
     TEAMS,
@@ -158,8 +157,6 @@ from zenml.models import (
     StepRunUpdateModel,
     TagFilterModel,
     TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
     TagResponseModel,
     TagUpdateModel,
     TeamRequestModel,
@@ -2824,41 +2821,6 @@ class RestZenStore(BaseZenStore):
             resource_update=tag_update_model,
             route=TAGS,
             response_model=TagResponseModel,
-        )
-
-    ####################
-    # Tags <> resources
-    ####################
-
-    def create_tag_resource(
-        self, tag_resource: TagResourceRequestModel
-    ) -> TagResourceResponseModel:
-        """Creates a new tag resource relationship.
-
-        Args:
-            tag_resource: the tag resource relationship to be created.
-
-        Returns:
-            The newly created tag resource relationship.
-        """
-        return self._create_resource(
-            resource=tag_resource,
-            response_model=TagResourceResponseModel,
-            route=TAG_RESOURCES,
-        )
-
-    def delete_tag_resource(
-        self,
-        tag_resource_id: UUID,
-    ) -> None:
-        """Deletes a tag resource relationship.
-
-        Args:
-            tag_resource_id: id of the tag<>resource to delete.
-        """
-        self._delete_resource(
-            resource_id=tag_resource_id,
-            route=TAG_RESOURCES,
         )
 
     # =======================

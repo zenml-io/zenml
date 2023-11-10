@@ -225,7 +225,6 @@ DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
 API_TOKEN = "/api_token"
 TAGS = "/tags"
-TAG_RESOURCES = "/tag_resources"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

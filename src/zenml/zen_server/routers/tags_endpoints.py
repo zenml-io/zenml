@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    TAG_RESOURCES,
     TAGS,
     VERSION_1,
 )
@@ -28,8 +27,6 @@ from zenml.enums import PermissionType
 from zenml.models import (
     TagFilterModel,
     TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
     TagResponseModel,
     TagUpdateModel,
 )
@@ -163,52 +160,3 @@ def delete_tag(
         tag_name_or_id: The name or ID of the tag to delete.
     """
     zen_store().delete_tag(tag_name_or_id)
-
-
-##############################
-# Tags <> Resources
-##############################
-router_tr = APIRouter(
-    prefix=API + VERSION_1 + TAG_RESOURCES,
-    tags=["tag_resources"],
-    responses={401: error_response},
-)
-
-
-@router_tr.post(
-    "",
-    response_model=TagResourceResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_tag_resource(
-    tag_resource: TagResourceRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> TagResourceResponseModel:
-    """Creates a new tag resource relationship.
-
-    Args:
-        tag_resource: the tag resource relationship to be created.
-
-    Returns:
-        The newly created tag resource relationship.
-    """
-    return zen_store().create_tag_resource(tag_resource)
-
-
-@router_tr.delete(
-    "/{tag_resource_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def delete_tag_resource(
-    tag_resource_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Deletes a tag resource relationship.
-
-    Args:
-        tag_resource_id: id of the tag<>resource to delete.
-
-    """
-    zen_store().delete_tag_resource(tag_resource_id)
