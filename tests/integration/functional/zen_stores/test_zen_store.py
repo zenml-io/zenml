@@ -589,11 +589,11 @@ def test_create_user_no_password():
         assert not user.active
         assert user.activation_token is not None
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password=""):
                 pass
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="password"):
                 pass
 
@@ -603,7 +603,7 @@ def test_create_user_no_password():
                 body=UserUpdateModel(password="password"),
             )
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="password"):
                 pass
 
@@ -646,7 +646,7 @@ def test_reactivate_user():
         assert not deactivated_user.active
         assert deactivated_user.activation_token is not None
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="password"):
                 pass
 
@@ -656,11 +656,11 @@ def test_reactivate_user():
                 body=UserUpdateModel(password="newpassword"),
             )
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="password"):
                 pass
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="newpassword"):
                 pass
 
@@ -676,7 +676,7 @@ def test_reactivate_user():
         assert activated_user.name == user.name
         assert activated_user.id == user.id
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AuthorizationException):
             with LoginContext(user_name=user.name, password="password"):
                 pass
 

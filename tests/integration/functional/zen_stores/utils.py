@@ -313,9 +313,9 @@ class ServiceAccountContext:
 class LoginContext:
     def __init__(
         self,
-        user_name: Optional[str],
-        password: Optional[str],
-        api_key: Optional[str],
+        user_name: Optional[str] = None,
+        password: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         self.user_name = user_name
         self.password = password
