@@ -625,9 +625,9 @@ class StepRunner:
 
         context = get_step_context()
         try:
-            model_config_from_context = context.model_version
+            model_version_from_context = context.model_version
         except StepContextError:
-            model_config_from_context = None
+            model_version_from_context = None
 
         for artifact_name in artifact_ids:
             artifact_uuid = artifact_ids[artifact_name]
@@ -635,7 +635,7 @@ class StepRunner:
                 artifact_name
             ).artifact_config
             if artifact_config_ is None:
-                if model_config_from_context is not None:
+                if model_version_from_context is not None:
                     artifact_config_ = ArtifactConfig(
                         artifact_name=artifact_name,
                     )
@@ -644,7 +644,7 @@ class StepRunner:
 
             if artifact_config_ is not None:
                 model_version = None
-                if model_config_from_context is None:
+                if model_version_from_context is None:
                     if artifact_config_.model_name is None:
                         logger.warning(
                             "No model context found, unable to auto-link artifacts."
@@ -659,7 +659,7 @@ class StepRunner:
                         version=artifact_config_.model_version,
                     )
                 else:
-                    model_version = model_config_from_context
+                    model_version = model_version_from_context
 
                 if model_version:
                     artifact_config_.artifact_name = (
@@ -696,7 +696,7 @@ class StepRunner:
             if artifact_config is not None:
                 try:
                     model_version = (
-                        artifact_config._model_config.get_or_create_model_version()
+                        artifact_config._model_version.get_or_create_model_version()
                     )
                     models.add((model_version.model.id, model_version.id))
                 except RuntimeError:
@@ -730,7 +730,7 @@ class StepRunner:
         return models
 
     def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the step model config.
+        """Gets the model versions from the step model version.
 
         Returns:
             Set of tuples of (model_id, model_version_id).

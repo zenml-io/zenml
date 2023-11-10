@@ -399,7 +399,7 @@ class StepLauncher:
         """Links the output artifacts of the cached step to the model version in Control Plane.
 
         Args:
-            model_config_from_context: The model config of the current step.
+            model_version_from_context: The model version of the current step.
             step_run: The step to run.
         """
         from zenml.model.artifact_config import ArtifactConfig

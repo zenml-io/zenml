@@ -34,18 +34,18 @@ from zenml.models import (
 
 
 @step
-def _assert_that_model_config_set(name="foo", version=RUNNING_MODEL_VERSION):
+def _assert_that_model_version_set(name="foo", version=RUNNING_MODEL_VERSION):
     """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_version.name == name
     assert get_step_context().model_version.version == version
 
 
-def test_model_config_passed_to_step_context_via_step():
-    """Test that model config was passed to step context via step."""
+def test_model_version_passed_to_step_context_via_step():
+    """Test that model version was passed to step context via step."""
 
     @pipeline(name="bar", enable_cache=False)
     def _simple_step_pipeline():
-        _assert_that_model_config_set.with_options(
+        _assert_that_model_version_set.with_options(
             model_version=ModelVersion(name="foo"),
         )()
 
@@ -53,8 +53,8 @@ def test_model_config_passed_to_step_context_via_step():
         _simple_step_pipeline()
 
 
-def test_model_config_passed_to_step_context_via_pipeline():
-    """Test that model config was passed to step context via pipeline."""
+def test_model_version_passed_to_step_context_via_pipeline():
+    """Test that model version was passed to step context via pipeline."""
 
     @pipeline(
         name="bar",
@@ -62,14 +62,14 @@ def test_model_config_passed_to_step_context_via_pipeline():
         enable_cache=False,
     )
     def _simple_step_pipeline():
-        _assert_that_model_config_set()
+        _assert_that_model_version_set()
 
     with model_killer():
         _simple_step_pipeline()
 
 
-def test_model_config_passed_to_step_context_via_step_and_pipeline():
-    """Test that model config was passed to step context via both, but step is dominating."""
+def test_model_version_passed_to_step_context_via_step_and_pipeline():
+    """Test that model version was passed to step context via both, but step is dominating."""
 
     @pipeline(
         name="bar",
@@ -77,7 +77,7 @@ def test_model_config_passed_to_step_context_via_step_and_pipeline():
         enable_cache=False,
     )
     def _simple_step_pipeline():
-        _assert_that_model_config_set.with_options(
+        _assert_that_model_version_set.with_options(
             model_version=ModelVersion(name="foo"),
         )()
 
@@ -85,8 +85,8 @@ def test_model_config_passed_to_step_context_via_step_and_pipeline():
         _simple_step_pipeline()
 
 
-def test_model_config_passed_to_step_context_and_switches():
-    """Test that model config was passed to step context via both and switches possible."""
+def test_model_version_passed_to_step_context_and_switches():
+    """Test that model version was passed to step context via both and switches possible."""
 
     @pipeline(
         name="bar",
@@ -95,13 +95,13 @@ def test_model_config_passed_to_step_context_and_switches():
     )
     def _simple_step_pipeline():
         # this step will use ModelVersion from itself
-        _assert_that_model_config_set.with_options(
+        _assert_that_model_version_set.with_options(
             model_version=ModelVersion(name="foo"),
         )()
         # this step will use ModelVersion from pipeline
-        _assert_that_model_config_set(name="bar")
+        _assert_that_model_version_set(name="bar")
         # and another switch of context
-        _assert_that_model_config_set.with_options(
+        _assert_that_model_version_set.with_options(
             model_version=ModelVersion(name="foobar"),
         )(name="foobar")
 
@@ -120,7 +120,7 @@ def _this_step_does_not_create_a_version():
 
 
 def test_create_new_versions_both_pipeline_and_step():
-    """Test that model config on step and pipeline levels can create new model versions at the same time."""
+    """Test that model version on step and pipeline levels can create new model versions at the same time."""
     desc = "Should be the best version ever!"
 
     @pipeline(
@@ -159,7 +159,7 @@ def test_create_new_versions_both_pipeline_and_step():
 
 
 def test_create_new_version_only_in_step():
-    """Test that model config on step level only can create new model version."""
+    """Test that model version on step level only can create new model version."""
 
     @pipeline(name="bar", enable_cache=False)
     def _this_pipeline_does_not_create_a_version():
@@ -183,7 +183,7 @@ def test_create_new_version_only_in_step():
 
 
 def test_create_new_version_only_in_pipeline():
-    """Test that model config on pipeline level only can create new model version."""
+    """Test that model version on pipeline level only can create new model version."""
 
     @pipeline(
         name="bar",
@@ -243,7 +243,7 @@ def _this_step_tries_to_recover(run_number: int):
     ids=["default_running_name", "custom_running_name"],
 )
 def test_recovery_of_steps(model_version: ModelVersion):
-    """Test that model config can recover states after previous fails."""
+    """Test that model version can recover states after previous fails."""
 
     @pipeline(
         name="bar",
@@ -334,7 +334,7 @@ def _new_version_step():
 
 
 @step
-def _no_model_config_step():
+def _no_model_version_step():
     return 1
 
 
@@ -351,7 +351,7 @@ def _new_version_pipeline_overridden_warns():
     model_version=ModelVersion(name="foo"),
 )
 def _new_version_pipeline_not_warns():
-    _no_model_config_step()
+    _no_model_version_step()
 
 
 @pipeline(enable_cache=False)
@@ -371,7 +371,7 @@ def _no_new_version_pipeline_warns_on_steps():
 )
 def _new_version_pipeline_warns_on_steps():
     _new_version_step()
-    _no_model_config_step()
+    _no_model_version_step()
 
 
 @pytest.mark.parametrize(
@@ -403,7 +403,7 @@ def _new_version_pipeline_warns_on_steps():
 def test_multiple_definitions_create_new_version_warns(
     pipeline, expected_warning
 ):
-    """Test that setting conflicting model configurations are raise warnings to user."""
+    """Test that setting conflicting model versions are raise warnings to user."""
     with model_killer():
         with mock.patch(
             "zenml.new.pipelines.pipeline.logger.warning"
@@ -523,7 +523,7 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
 
 
 @step
-def _this_step_has_model_config_on_artifact_level() -> (
+def _this_step_has_model_version_on_artifact_level() -> (
     Tuple[
         Annotated[
             int, "declarative_link", ArtifactConfig(model_name="declarative")
@@ -539,13 +539,13 @@ def _this_step_has_model_config_on_artifact_level() -> (
 
 @pipeline(enable_cache=False)
 def _pipeline_run_link_attached_from_artifact_context_single_step():
-    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
 
 
 @pipeline(enable_cache=False)
 def _pipeline_run_link_attached_from_artifact_context_multiple_step():
-    _this_step_has_model_config_on_artifact_level()
-    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
 
 
 @pipeline(
@@ -553,7 +553,7 @@ def _pipeline_run_link_attached_from_artifact_context_multiple_step():
     model_version=ModelVersion(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_single_step():
-    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model_version=ModelVersion(name="step", version=ModelStages.LATEST),
@@ -565,12 +565,12 @@ def _pipeline_run_link_attached_from_mixed_context_single_step():
     model_version=ModelVersion(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_multiple_step():
-    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model_version=ModelVersion(name="step", version=ModelStages.LATEST),
     )()
-    _this_step_has_model_config_on_artifact_level()
+    _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
         model_version=ModelVersion(name="step", version=ModelStages.LATEST),

@@ -57,14 +57,14 @@ class ArtifactConfig(BaseModel):
         smart_union = True
 
     @property
-    def _model_config(self) -> "ModelVersion":
-        """Property that returns the model configuration.
+    def _model_version(self) -> "ModelVersion":
+        """Property that returns the model version.
 
         Returns:
-            ModelVersion: The model configuration.
+            ModelVersion: The model version.
 
         Raises:
-            RuntimeError: If model configuration cannot be acquired from @step
+            RuntimeError: If model version cannot be acquired from @step
                 or @pipeline or built on the fly from fields of this class.
         """
         try:
@@ -106,7 +106,7 @@ class ArtifactConfig(BaseModel):
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
-            model_version: The model configuration from caller.
+            model_version: The model version from caller.
             is_model_object: Whether the artifact is a model object. Defaults to False.
             is_deployment: Whether the artifact is a deployment. Defaults to False.
         """
@@ -180,7 +180,7 @@ class ArtifactConfig(BaseModel):
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
-            model_version: The model configuration from caller.
+            model_version: The model version from caller.
         """
         self._link_to_model_version(
             artifact_uuid,

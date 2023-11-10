@@ -36,7 +36,7 @@ def resolve_step_inputs(
     Args:
         step: The step for which to resolve the inputs.
         run_id: The ID of the current pipeline run.
-        model_version: The model config of the step (from step or pipeline).
+        model_version: The model version of the step (from step or pipeline).
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing

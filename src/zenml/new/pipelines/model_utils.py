@@ -45,10 +45,10 @@ class NewModelVersionRequest(BaseModel):
         """Model config getter.
 
         Returns:
-            The model config.
+            The model version.
 
         Raises:
-            RuntimeError: If the model config is not set.
+            RuntimeError: If the model version is not set.
         """
         if self._model_version is None:
             raise RuntimeError("Model config is not set.")

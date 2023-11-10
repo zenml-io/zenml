@@ -203,7 +203,7 @@ class ModelVersion(BaseModel):
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
         name is controlled by the `name` parameter.
 
-        Model Version returned by this method is resolved based on model configuration:
+        Model Version returned by this method is resolved based on model version:
         - If there is an existing model version leftover from the previous failed run with
         `delete_new_version_on_failure` is set to False and `version` is None,
         leftover model version will be reused.

@@ -91,13 +91,13 @@ class ExternalArtifactConfiguration(BaseModel):
         Raises:
             RuntimeError: If artifact was not found in model version
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
+                model version is missing in @step and @pipeline.
         """
         if self.model_name is None:
             if model_version is None:
                 raise RuntimeError(
                     "ExternalArtifact initiated with `model_artifact_name`, "
-                    "but no model config was provided and missing in @step or "
+                    "but no model version was provided and missing in @step or "
                     "@pipeline definitions."
                 )
             self.model_name = model_version.name
@@ -151,7 +151,7 @@ class ExternalArtifactConfiguration(BaseModel):
             be searched in the artifact store by the referenced model.
 
         Args:
-            model_version: The model config of the step (from step or pipeline).
+            model_version: The model version of the step (from step or pipeline).
 
         Returns:
             The artifact ID.
@@ -161,7 +161,7 @@ class ExternalArtifactConfiguration(BaseModel):
                 is not the same as the one in the active stack.
             RuntimeError: If the URI of the artifact already exists.
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
+                model version is missing in @step and @pipeline.
             RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
                 artifact name group is provided when creating an external artifact.
         """

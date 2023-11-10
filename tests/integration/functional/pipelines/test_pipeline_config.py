@@ -50,7 +50,7 @@ def assert_extra_step():
 
 
 def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
-    """Test that the pipeline can be configured with a model config from a yaml file."""
+    """Test that the pipeline can be configured with a model version from a yaml file."""
     model_version = ModelVersion(
         name="foo",
         delete_new_version_on_failure=False,
@@ -107,28 +107,30 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
     p()
 
 
-def test_pipeline_config_from_file_not_overridden_for_model_config(
+def test_pipeline_config_from_file_not_overridden_for_model_version(
     clean_workspace, tmp_path
 ):
-    """Test that the pipeline can be configured with a model config
+    """Test that the pipeline can be configured with a model version
     from a yaml file, but the values from yaml are not overridden.
     """
-    initial_model_config = ModelVersion(
+    initial_model_version = ModelVersion(
         name="bar",
     )
 
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model_version=initial_model_config.dict(),
+        model_version=initial_model_version.dict(),
     )
     config_path.write_text(yaml.dump(file_config))
 
     @pipeline(enable_cache=False)
-    def assert_model_config_pipeline():
+    def assert_model_version_pipeline():
         assert_model_version_step()
 
-    p = assert_model_config_pipeline.with_options(config_path=str(config_path))
+    p = assert_model_version_pipeline.with_options(
+        config_path=str(config_path)
+    )
     assert p.configuration.model_version.name == "bar"
 
     with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:

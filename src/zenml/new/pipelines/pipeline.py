@@ -807,7 +807,7 @@ class Pipeline:
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ],
-        other_model_configs: Set["ModelVersion"],
+        other_model_versions: Set["ModelVersion"],
     ) -> None:
         key = (
             model_version.name,
@@ -832,7 +832,7 @@ class Pipeline:
             if model_version.version is None and key in new_versions_requested:
                 model_version.version = constants.RUNNING_MODEL_VERSION
         else:
-            other_model_configs.add(model_version)
+            other_model_versions.add(model_version)
 
     def get_new_version_requests(
         self, deployment: "PipelineDeploymentBaseModel"
@@ -848,31 +848,31 @@ class Pipeline:
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
-        other_model_configs: Set["ModelVersion"] = set()
+        other_model_versions: Set["ModelVersion"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_version
+            step_model_version = step.config.model_version
             all_steps_have_own_config = (
                 all_steps_have_own_config
                 and step.config.model_version is not None
             )
-            if step_model_config:
+            if step_model_version:
                 self._update_new_requesters(
-                    model_version=step_model_config,
+                    model_version=step_model_version,
                     requester_name=step.config.name,
                     new_versions_requested=new_versions_requested,
-                    other_model_configs=other_model_configs,
+                    other_model_versions=other_model_versions,
                 )
         if not all_steps_have_own_config:
-            pipeline_model_config = (
+            pipeline_model_version = (
                 deployment.pipeline_configuration.model_version
             )
-            if pipeline_model_config:
+            if pipeline_model_version:
                 self._update_new_requesters(
-                    model_version=pipeline_model_config,
+                    model_version=pipeline_model_version,
                     requester_name=self.name,
                     new_versions_requested=new_versions_requested,
-                    other_model_configs=other_model_configs,
+                    other_model_versions=other_model_versions,
                 )
         elif deployment.pipeline_configuration.model_version is not None:
             logger.warning(
@@ -881,8 +881,8 @@ class Pipeline:
 
         self._validate_new_version_requests(new_versions_requested)
 
-        for other_model_config in other_model_configs:
-            other_model_config._validate_config_in_runtime()
+        for other_model_version in other_model_versions:
+            other_model_version._validate_config_in_runtime()
 
         return new_versions_requested
 
@@ -892,7 +892,7 @@ class Pipeline:
             Tuple[str, Optional[str]], NewModelVersionRequest
         ],
     ) -> None:
-        """Validate the model configurations that are used in the pipeline run.
+        """Validate the model version that are used in the pipeline run.
 
         Args:
             new_versions_requested: A dict of new model version request objects.
