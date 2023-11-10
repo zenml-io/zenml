@@ -218,7 +218,7 @@ def _this_step_produces_output() -> (
 
 @step
 def _this_step_tries_to_recover(run_number: int):
-    mv = get_step_context().model_version.get_or_create_model_version()
+    mv = get_step_context().model_version._get_or_create_model_version()
     assert (
         len(mv.artifact_object_ids["bar::_this_step_produces_output::data"])
         == run_number

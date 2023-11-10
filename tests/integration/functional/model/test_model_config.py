@@ -80,7 +80,7 @@ class TestModelVersion:
         with ModelContext(create_model=False):
             mc = ModelVersion(name=MODEL_NAME)
             with mock.patch("zenml.model.model_version.logger.info") as logger:
-                model = mc.get_or_create_model()
+                model = mc._get_or_create_model()
                 logger.assert_called_once()
             assert model.name == MODEL_NAME
 
@@ -91,7 +91,7 @@ class TestModelVersion:
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
-                model2 = mc.get_or_create_model()
+                model2 = mc._get_or_create_model()
                 logger.assert_not_called()
             assert model.name == model2.name
             assert model.id == model2.id
@@ -101,7 +101,7 @@ class TestModelVersion:
         with ModelContext(create_model=False):
             mc = ModelVersion(name=MODEL_NAME)
             with mock.patch("zenml.model.model_version.logger.info") as logger:
-                mv = mc.get_or_create_model_version()
+                mv = mc._get_or_create_model_version()
                 logger.assert_called()
             assert mv.name == RUNNING_MODEL_VERSION
             assert mv.model.name == MODEL_NAME
@@ -113,7 +113,7 @@ class TestModelVersion:
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
-                mv_test = mc.get_or_create_model_version()
+                mv_test = mc._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
             assert mv_test.model.name == model.name
@@ -134,7 +134,7 @@ class TestModelVersion:
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
-                mv_test = mc.get_or_create_model_version()
+                mv_test = mc._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
             assert mv_test.model.name == model.name
@@ -150,7 +150,7 @@ class TestModelVersion:
         """Test model and model version retrieval by latest version."""
         with ModelContext(model_version="1.0.0"):
             mc = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
-            mv = mc.get_or_create_model_version()
+            mv = mc._get_or_create_model_version()
 
             assert mv.name == "1.0.0"
 
@@ -174,13 +174,13 @@ class TestModelVersion:
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
             )
-            mv1 = mc.get_or_create_model_version()
+            mv1 = mc._get_or_create_model_version()
             del mc
 
             mc = ModelVersion(
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
             )
-            mv2 = mc.get_or_create_model_version()
+            mv2 = mc._get_or_create_model_version()
 
             assert mv1.id == mv2.id

@@ -429,7 +429,7 @@ class StepLauncher:
                         version=artifact_config_.model_version,
                     )
                 if model_version:
-                    model_version.get_or_create_model_version()
+                    model_version._get_or_create_model_version()
 
                     artifact_config_._pipeline_name = (
                         self._deployment.pipeline_configuration.name

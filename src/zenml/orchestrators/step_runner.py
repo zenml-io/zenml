@@ -608,7 +608,7 @@ class StepRunner:
     def _prepare_model_context_for_step(self) -> None:
         try:
             model_version = get_step_context().model_version
-            model_version.get_or_create_model_version()
+            model_version._get_or_create_model_version()
         except StepContextError:
             return
 
@@ -696,7 +696,7 @@ class StepRunner:
             if artifact_config is not None:
                 try:
                     model_version = (
-                        artifact_config._model_version.get_or_create_model_version()
+                        artifact_config._model_version._get_or_create_model_version()
                     )
                     models.add((model_version.model.id, model_version.id))
                 except RuntimeError:
@@ -737,7 +737,7 @@ class StepRunner:
         """
         try:
             mc = get_step_context().model_version
-            model_version = mc.get_or_create_model_version()
+            model_version = mc._get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:
             return set()

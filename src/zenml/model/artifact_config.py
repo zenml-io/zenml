@@ -119,7 +119,7 @@ class ArtifactConfig(BaseModel):
         # Create a ZenML client
         client = Client()
 
-        model_version = model_version.get_or_create_model_version()
+        model_version = model_version._get_or_create_model_version()
 
         artifact_name = self.artifact_name
         if artifact_name is None:

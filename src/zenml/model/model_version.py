@@ -30,9 +30,11 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.models.model_models import (
+    from zenml.models import (
+        ArtifactResponseModel,
         ModelResponseModel,
         ModelVersionResponseModel,
+        PipelineRunResponseModel,
     )
 
 logger = get_logger(__name__)
@@ -74,6 +76,115 @@ class ModelVersion(BaseModel):
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
+
+    #########################
+    #    Public methods     #
+    #########################
+    @property
+    def all_model_versions(self) -> List["ModelVersionResponseModel"]:
+        return self._get_or_create_model().versions
+
+    def get_model_object(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional["ArtifactResponseModel"]:
+        """Get model object linked to this model version.
+
+        Args:
+            name: The name of the model object to retrieve.
+            version: The version of the model object to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline-generated artifact.
+            step_name: The name of the step-generated artifact.
+
+        Returns:
+            Specific version of Model Object or None
+        """
+        return self._get_or_create_model_version().get_model_object(
+            name=name,
+            version=version,
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+        )
+
+    def get_artifact_object(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional["ArtifactResponseModel"]:
+        """Get artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
+
+        Returns:
+            Specific version of Artifact or None
+        """
+        return self._get_or_create_model_version().get_artifact_object(
+            name=name,
+            version=version,
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+        )
+
+    def get_deployment(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional["ArtifactResponseModel"]:
+        """Get deployment linked to this model version.
+
+        Args:
+            name: The name of the deployment to retrieve.
+            version: The version of the deployment to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated artifact.
+            step_name: The name of the step generated artifact.
+
+        Returns:
+            Specific version of Deployment or None
+        """
+        return self._get_or_create_model_version().get_deployment(
+            name=name,
+            version=version,
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+        )
+
+    def get_pipeline_run(self, name: str) -> "PipelineRunResponseModel":
+        """Get pipeline run linked to this version.
+
+        Args:
+            name: The name of the pipeline run to retrieve.
+
+        Returns:
+            PipelineRun as PipelineRunResponseModel
+        """
+
+        return self._get_or_create_model_version().get_pipeline_run(name=name)
+
+    def set_stage(
+        self, stage: Union[str, ModelStages], force: bool = False
+    ) -> None:
+        """Sets this Model Version to a desired stage.
+
+        Args:
+            stage: the target stage for model version.
+            force: whether to force archiving of current model version in target stage or raise.
+        """
+        self._get_or_create_model_version().set_stage(stage=stage, force=force)
+
+    #########################
+    #   Internal methods    #
+    #########################
 
     class Config:
         """Config class."""
@@ -142,9 +253,9 @@ class ModelVersion(BaseModel):
                         f"`zenml model version delete {self.name} {self.version}`"
                     )
         except KeyError:
-            self.get_or_create_model_version()
+            self._get_or_create_model_version()
 
-    def get_or_create_model(self) -> "ModelResponseModel":
+    def _get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model Control Plane.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -179,7 +290,6 @@ class ModelVersion(BaseModel):
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
                 model = zenml_client.get_model(model_name_or_id=self.name)
-
         return model
 
     def _get_model_version(self) -> "ModelVersionResponseModel":
@@ -197,7 +307,7 @@ class ModelVersion(BaseModel):
             or RUNNING_MODEL_VERSION,
         )
 
-    def get_or_create_model_version(self) -> "ModelVersionResponseModel":
+    def _get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
@@ -219,7 +329,7 @@ class ModelVersion(BaseModel):
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
 
-        model = self.get_or_create_model()
+        model = self._get_or_create_model()
 
         if self.version is None:
             logger.info(

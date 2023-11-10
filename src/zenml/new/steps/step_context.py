@@ -219,13 +219,19 @@ class StepContext(metaclass=SingletonMetaClass):
             StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
         """
         if self.step_run.config.model_version is not None:
-            return self.step_run.config.model_version
-        if self.pipeline_run.config.model_version is not None:
-            return self.pipeline_run.config.model_version
-        raise StepContextError(
-            f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
-            f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
-        )
+            model_version = self.step_run.config.model_version
+        elif self.pipeline_run.config.model_version is not None:
+            model_version = self.pipeline_run.config.model_version
+        else:
+            raise StepContextError(
+                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
+            )
+
+        # warm-up the model version
+        model_version._get_or_create_model_version()
+
+        return model_version
 
     @property
     def stack(self) -> Optional["Stack"]:

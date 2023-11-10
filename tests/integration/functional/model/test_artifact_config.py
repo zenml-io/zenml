@@ -244,10 +244,10 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
         # manual creation needed, as we work with specific versions
         m1 = ModelVersion(
             name=MODEL_NAME,
-        ).get_or_create_model()
+        )._get_or_create_model()
         m2 = ModelVersion(
             name="bar",
-        ).get_or_create_model()
+        )._get_or_create_model()
 
         mv1 = client.create_model_version(
             ModelVersionRequestModel(
@@ -372,7 +372,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
             models.append(
                 ModelVersion(
                     name=n,
-                ).get_or_create_model()
+                )._get_or_create_model()
             )
             mvs.append(
                 client.create_model_version(
@@ -446,7 +446,7 @@ def test_link_no_versioning():
         # manual creation needed, as we work with specific versions
         model = ModelVersion(
             name=MODEL_NAME,
-        ).get_or_create_model()
+        )._get_or_create_model()
         mv = client.create_model_version(
             ModelVersionRequestModel(
                 user=user,
@@ -828,7 +828,7 @@ def test_artifacts_linked_from_cache_steps():
         for i in range(1, 3):
             fake_version = ModelVersion(
                 name="bar"
-            ).get_or_create_model_version()
+            )._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
             mv = client.get_model_version(
@@ -886,7 +886,7 @@ def test_artifacts_linked_from_cache_steps_same_id():
         for i in range(1, 3):
             fake_version = ModelVersion(
                 name="bar"
-            ).get_or_create_model_version()
+            )._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
             mv = client.get_model_version(
