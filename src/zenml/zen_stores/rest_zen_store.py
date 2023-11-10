@@ -1657,7 +1657,21 @@ class RestZenStore(BaseZenStore):
             connector_type.local = True
             if not isinstance(service_connector.connector_type, str):
                 connector_type.remote = True
-            service_connector.connector_type = connector_type
+
+            # TODO: Normally, this could have been handled with setter
+            #   functions over the connector type property in the response
+            #   model. However, pydantic breaks property setter functions.
+            #   We can find a more elegant solution here.
+            if isinstance(service_connector, ServiceConnectorResponse):
+                service_connector.set_connector_type(connector_type)
+            elif isinstance(service_connector, ServiceConnectorResourcesModel):
+                service_connector.connector_type = connector_type
+            else:
+                TypeError(
+                    "The service connector must be an instance of either"
+                    "`ServiceConnectorResponse` or "
+                    "`ServiceConnectorResourcesModel`."
+                )
 
     def verify_service_connector_config(
         self,

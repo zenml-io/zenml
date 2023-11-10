@@ -3506,7 +3506,7 @@ class SqlZenStore(BaseZenStore):
                 service_connector.type
             ):
                 continue
-            service_connector.connector_type = (
+            service_connector.set_connector_type(
                 service_connector_registry.get_service_connector_type(
                     service_connector.type
                 )
@@ -5517,7 +5517,7 @@ class SqlZenStore(BaseZenStore):
                 select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
             ).all()
             for device in expired_devices:
-                # Delete devices that have have expired
+                # Delete devices that have expired
                 if (
                     device.expires is not None
                     and device.expires < datetime.now()

@@ -490,6 +490,12 @@ class ServiceConnectorResponse(
 
         return self.expires_at < datetime.now(timezone.utc)
 
+    def set_connector_type(
+        self, value: Union[str, "ServiceConnectorTypeModel"]
+    ) -> None:
+        """Auxiliary method to set the connector type."""
+        self.get_metadata().connector_type = value
+
     def validate_and_configure_resources(
         self,
         connector_type: "ServiceConnectorTypeModel",
@@ -612,19 +618,13 @@ class ServiceConnectorResponse(
     # Body and metadata properties
     @property
     def description(self) -> str:
-        """The `description`` property."""
+        """The `description` property."""
         return self.get_metadata().description
 
     @property
     def connector_type(self) -> Union[str, "ServiceConnectorTypeModel"]:
         """The `connector_type` property."""
         return self.get_metadata().connector_type
-
-    @connector_type.setter
-    def connector_type(
-        self, value: Union[str, "ServiceConnectorTypeModel"]
-    ) -> None:
-        self.get_metadata().connector_type = value
 
     @property
     def auth_method(self) -> str:

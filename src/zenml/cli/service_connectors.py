@@ -574,8 +574,8 @@ def register_service_connector(
             available_resource_types=available_resource_types
         )
 
-        # Ask the user whether to use auto-configuration, if the connector
-        # implementation is locally available and if auto-configuration is
+        # Ask the user whether to use autoconfiguration, if the connector
+        # implementation is locally available and if autoconfiguration is
         # supported
         if (
             connector_type_spec.supports_auto_configuration
@@ -640,9 +640,23 @@ def register_service_connector(
                     "following configuration:"
                 )
 
-                # Print the configuration detected by the auto-configuration
+                # Print the configuration detected by the autoconfiguration
                 # process
-                connector_model.connector_type = connector_type_spec
+                # TODO: Normally, this could have been handled with setter
+                #   functions over the connector type property in the response
+                #   model. However, pydantic breaks property setter functions.
+                #   We can find a more elegant solution here.
+                if isinstance(service_connector, ServiceConnectorResponse):
+                    service_connector.set_connector_type(connector_type)
+                elif isinstance(service_connector, ServiceConnectorRequest):
+                    service_connector.connector_type = connector_type
+                else:
+                    raise TypeError(
+                        "The service connector must be an instance of either"
+                        "`ServiceConnectorResponse` or "
+                        "`ServiceConnectorRequest`."
+                    )
+
                 cli_utils.print_service_connector_configuration(
                     connector_model,
                     active_status=False,
@@ -657,7 +671,7 @@ def register_service_connector(
                     show_resources_only=True,
                 )
 
-                # Ask the user whether to continue with the auto configuration
+                # Ask the user whether to continue with the autoconfiguration
                 choice = click.prompt(
                     "Would you like to continue with the auto-discovered "
                     "configuration or switch to manual ?",
@@ -666,7 +680,7 @@ def register_service_connector(
                 )
                 if choice == "manual":
                     # Reset the connector configuration to default to let the
-                    # manual configuration kick in in the next step
+                    # manual configuration kick in the next step
                     connector_model = None
                     connector_resources = None
                     expires_at = None
@@ -677,16 +691,16 @@ def register_service_connector(
                 auth_method
             ]
         else:
-            # In this branch, we are either not using auto-configuration or the
-            # auto-configuration failed or was dismissed. In all cases, we need
+            # In this branch, we are either not using autoconfiguration or the
+            # autoconfiguration failed or was dismissed. In all cases, we need
             # to ask the user for the authentication method to use and then
             # prompt for the configuration
 
             auth_methods = list(connector_type_spec.auth_method_dict.keys())
 
             if not no_docs:
-                # Print the name, identifier and description of all available auth
-                # methods
+                # Print the name, identifier and description of all available
+                # auth methods
                 message = "# Available authentication methods\n"
                 for a in auth_methods:
                     message += cli_utils.print_service_connector_auth_method(

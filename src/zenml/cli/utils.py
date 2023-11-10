@@ -1564,7 +1564,7 @@ def print_service_connectors_table(
                         # The connector embedded within the stack component
                         # does not include a hydrated connector type. We need
                         # that to print its emojis.
-                        connector.connector_type = (
+                        connector.set_connector_type(
                             client.get_service_connector_type(
                                 connector.connector_type
                             )
