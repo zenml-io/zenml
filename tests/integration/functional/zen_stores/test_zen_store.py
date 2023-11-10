@@ -24,10 +24,10 @@ from pydantic import SecretStr
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
-    APIKeyLoginContext,
     CodeRepositoryContext,
     ComponentContext,
     CrudTestConfig,
+    LoginContext,
     ModelVersionContext,
     PipelineRunContext,
     RoleContext,
@@ -44,7 +44,7 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
+from zenml.constants import ACTIVATE, DEACTIVATE, RUNNING_MODEL_VERSION, USERS
 from zenml.enums import ModelStages, SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
@@ -87,6 +87,7 @@ from zenml.models import (
     TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
     UserRequestModel,
+    UserResponseModel,
     UserRoleAssignmentRequestModel,
     UserUpdateModel,
     WorkspaceFilterModel,
@@ -558,10 +559,6 @@ def test_deleting_default_user_fails():
         zen_store.delete_user("default")
 
 
-def test_getting_team_for_user_succeeds():
-    pass
-
-
 def test_team_for_user_succeeds():
     """Tests accessing a users in a team."""
 
@@ -578,6 +575,114 @@ def test_team_for_user_succeeds():
             updated_user_response = zen_store.get_user(created_user.id)
 
             assert team_update in updated_user_response.teams
+
+
+def test_create_user_no_password():
+    """Tests that creating a user without a password needs to be activated."""
+    client = Client()
+    store = client.zen_store
+
+    if store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user activation")
+
+    with UserContext(inactive=True) as user:
+        assert not user.active
+        assert user.activation_token is not None
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password=""):
+                pass
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="password"):
+                pass
+
+        with pytest.raises(AuthorizationException):
+            response_body = store.put(
+                f"{USERS}/{str(user.id)}{ACTIVATE}",
+                body=UserUpdateModel(password="password"),
+            )
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="password"):
+                pass
+
+        response_body = store.put(
+            f"{USERS}/{str(user.id)}{ACTIVATE}",
+            body=UserUpdateModel(
+                password="password", activation_token=user.activation_token
+            ),
+        )
+        activated_user = UserResponseModel.parse_obj(response_body)
+        assert activated_user.active
+        assert activated_user.name == user.name
+        assert activated_user.id == user.id
+
+        with LoginContext(user_name=user.name, password="password"):
+            new_store = Client().zen_store
+            assert new_store.get_user().id == user.id
+
+
+def test_reactivate_user():
+    """Tests that reactivating a user with a new password works."""
+    client = Client()
+    store = client.zen_store
+
+    if store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user activation")
+
+    with UserContext(password="password") as user:
+        assert user.active
+        assert user.activation_token is None
+
+        with LoginContext(user_name=user.name, password="password"):
+            new_store = Client().zen_store
+            assert new_store.get_user().id == user.id
+
+        response_body = store.put(
+            f"{USERS}/{str(user.id)}{DEACTIVATE}",
+        )
+        deactivated_user = UserResponseModel.parse_obj(response_body)
+        assert not deactivated_user.active
+        assert deactivated_user.activation_token is not None
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="password"):
+                pass
+
+        with pytest.raises(AuthorizationException):
+            response_body = store.put(
+                f"{USERS}/{str(user.id)}{ACTIVATE}",
+                body=UserUpdateModel(password="newpassword"),
+            )
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="password"):
+                pass
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="newpassword"):
+                pass
+
+        response_body = store.put(
+            f"{USERS}/{str(user.id)}{ACTIVATE}",
+            body=UserUpdateModel(
+                password="newpassword",
+                activation_token=deactivated_user.activation_token,
+            ),
+        )
+        activated_user = UserResponseModel.parse_obj(response_body)
+        assert activated_user.active
+        assert activated_user.name == user.name
+        assert activated_user.id == user.id
+
+        with pytest.raises(RuntimeError):
+            with LoginContext(user_name=user.name, password="password"):
+                pass
+
+        with LoginContext(user_name=user.name, password="newpassword"):
+            new_store = Client().zen_store
+            assert new_store.get_user().id == user.id
 
 
 #  .-----------------.
@@ -1516,7 +1621,7 @@ def test_login_api_key():
             api_key=api_key_request,
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
@@ -1554,7 +1659,7 @@ def test_login_inactive_api_key():
         )
 
         with pytest.raises(AuthorizationException):
-            with APIKeyLoginContext(api_key=api_key.key):
+            with LoginContext(api_key=api_key.key):
                 pass
 
         zen_store.update_api_key(
@@ -1565,13 +1670,13 @@ def test_login_inactive_api_key():
             ),
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
         # Test deactivation while logged in
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
 
             active_user = new_zen_store.get_user()
@@ -1626,7 +1731,7 @@ def test_login_inactive_service_account():
         )
 
         with pytest.raises(AuthorizationException):
-            with APIKeyLoginContext(api_key=api_key.key):
+            with LoginContext(api_key=api_key.key):
                 pass
 
         zen_store.update_service_account(
@@ -1636,13 +1741,13 @@ def test_login_inactive_service_account():
             ),
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
         # Test deactivation while logged in
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
 
             active_user = new_zen_store.get_user()
@@ -1693,7 +1798,7 @@ def test_login_deleted_api_key():
         )
 
         with pytest.raises(AuthorizationException):
-            with APIKeyLoginContext(api_key=api_key.key):
+            with LoginContext(api_key=api_key.key):
                 pass
 
         api_key = zen_store.create_api_key(
@@ -1702,7 +1807,7 @@ def test_login_deleted_api_key():
         )
 
         # Test deletion while logged in
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
 
             active_user = new_zen_store.get_user()
@@ -1743,7 +1848,7 @@ def test_login_rotate_api_key():
             api_key=api_key_request,
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
@@ -1755,16 +1860,16 @@ def test_login_rotate_api_key():
         )
 
         with pytest.raises(AuthorizationException):
-            with APIKeyLoginContext(api_key=api_key.key):
+            with LoginContext(api_key=api_key.key):
                 pass
 
-        with APIKeyLoginContext(api_key=rotated_api_key.key):
+        with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
         # Test rotation while logged in
-        with APIKeyLoginContext(api_key=rotated_api_key.key):
+        with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
 
             new_zen_store.rotate_api_key(
@@ -1793,7 +1898,7 @@ def test_login_rotate_api_key_retain_period():
             api_key=api_key_request,
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
@@ -1804,12 +1909,12 @@ def test_login_rotate_api_key_retain_period():
             rotate_request=APIKeyRotateRequestModel(retain_period_minutes=1),
         )
 
-        with APIKeyLoginContext(api_key=api_key.key):
+        with LoginContext(api_key=api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-        with APIKeyLoginContext(api_key=rotated_api_key.key):
+        with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
@@ -1820,18 +1925,18 @@ def test_login_rotate_api_key_retain_period():
             rotate_request=APIKeyRotateRequestModel(retain_period_minutes=1),
         )
 
-        with APIKeyLoginContext(api_key=re_rotated_api_key.key):
+        with LoginContext(api_key=re_rotated_api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-        with APIKeyLoginContext(api_key=rotated_api_key.key):
+        with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
         with pytest.raises(AuthorizationException):
-            with APIKeyLoginContext(api_key=api_key.key):
+            with LoginContext(api_key=api_key.key):
                 pass
 
 

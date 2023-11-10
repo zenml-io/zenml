@@ -166,6 +166,7 @@ class UserContext:
         self,
         user_name: Optional[str] = None,
         password: Optional[str] = None,
+        inactive: bool = False,
         login: bool = False,
         existing_user: bool = False,
         delete: bool = True,
@@ -179,7 +180,10 @@ class UserContext:
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
-        self.password = password or random_str(32)
+        if inactive and password is None:
+            self.password = None
+        else:
+            self.password = password or random_str(32)
         self.existing_user = existing_user
         self.delete = delete
 
@@ -189,15 +193,14 @@ class UserContext:
                 name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin",
+                user_name_or_id=self.created_user.id,
+            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
         if self.login or self.existing_user:
-            if not self.existing_user:
-                self.client.create_user_role_assignment(
-                    role_name_or_id="admin",
-                    user_name_or_id=self.created_user.id,
-                )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
 
@@ -307,14 +310,16 @@ class ServiceAccountContext:
                 pass
 
 
-class APIKeyLoginContext:
+class LoginContext:
     def __init__(
         self,
-        api_key: str,
+        user_name: Optional[str],
+        password: Optional[str],
+        api_key: Optional[str],
     ):
+        self.user_name = user_name
+        self.password = password
         self.api_key = api_key
-        self.client = Client()
-        self.store = self.client.zen_store
 
     def __enter__(self):
         self.original_config = GlobalConfiguration.get_instance()
@@ -322,11 +327,12 @@ class APIKeyLoginContext:
 
         GlobalConfiguration._reset_instance()
         Client._reset_instance()
-        self.client = Client()
         store_config = StoreConfiguration(
             url=self.original_config.store.url,
             type=self.original_config.store.type,
             api_key=self.api_key,
+            username=self.user_name,
+            password=self.password,
             secrets_store=self.original_config.store.secrets_store,
         )
         GlobalConfiguration().set_store(config=store_config)
@@ -418,7 +424,7 @@ class TeamContext:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
-            (self.store.delete_team(self.created_team.id),)
+            self.store.delete_team(self.created_team.id)
         except KeyError:
             pass
 

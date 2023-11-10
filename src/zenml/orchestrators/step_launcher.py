@@ -419,11 +419,6 @@ class StepLauncher:
                     artifact_config_ = ArtifactConfig(
                         artifact_name=output_name_
                     )
-                    logger.info(
-                        f"Linking artifact `{artifact_config_.artifact_name}` to "
-                        f"model `{artifact_config_.model_name}` version "
-                        f"`{artifact_config_.model_version}` implicitly."
-                    )
                 if artifact_config_.model_name is None:
                     model_config = model_config_from_context
                 else:
@@ -440,6 +435,10 @@ class StepLauncher:
                         self._deployment.pipeline_configuration.name
                     )
                     artifact_config_._step_name = self._step_name
+                    logger.debug(
+                        f"Linking artifact `{artifact_config_.artifact_name}` "
+                        f"to model `{model_config.name}` version `{model_config.version}`."
+                    )
                     artifact_config_.link_to_model(
                         artifact_uuid=output_,
                         model_config=model_config,
