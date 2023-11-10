@@ -511,7 +511,7 @@ def _print_artifacts_links_generic(
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=None
+        model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
     )
@@ -665,7 +665,7 @@ def list_model_version_pipeline_runs(
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=None
+        model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
     )

@@ -1819,7 +1819,7 @@ class ZenStoreInterface(ABC):
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+                If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.

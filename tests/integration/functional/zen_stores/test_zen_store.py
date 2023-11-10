@@ -2542,7 +2542,6 @@ def test_connector_validation():
 
 
 class TestModel:
-    @pytest.mark.skip("TODO: Fix to come from Andrei")
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""
         with ModelVersionContext() as model:
@@ -2790,6 +2789,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.get_model_version(
                     model_name_or_id=model.id,
+                    model_version_name_or_number_or_id=ModelStages.LATEST,
                 )
 
     def test_latest_found(self):
