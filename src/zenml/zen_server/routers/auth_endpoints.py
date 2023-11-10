@@ -47,6 +47,7 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyInternalResponseModel,
     OAuthDeviceAuthorizationResponse,
     OAuthDeviceInternalRequestModel,
     OAuthDeviceInternalResponseModel,
@@ -58,6 +59,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import (
     AuthContext,
+    authenticate_api_key,
     authenticate_credentials,
     authenticate_device,
     authenticate_external_user,
@@ -87,7 +89,8 @@ class OAuthLoginRequestForm:
     This form allows multiple grant types to be used with the same endpoint:
     * standard OAuth2 password grant type
     * standard  OAuth2 device authorization grant type
-    * ZenML External Authenticator grant type
+    * ZenML service account + API key grant type (proprietary)
+    * ZenML External Authenticator grant type (proprietary)
     """
 
     def __init__(
@@ -115,6 +118,8 @@ class OAuthLoginRequestForm:
             # Detect the grant type from the form data
             if username is not None:
                 self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            elif password:
+                self.grant_type = OAuthGrantTypes.ZENML_API_KEY
             elif device_code:
                 self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
             else:
@@ -166,7 +171,13 @@ class OAuthLoginRequestForm:
                     detail="Invalid request: invalid client ID.",
                 )
             self.device_code = device_code
-
+        elif self.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+            if not password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="API key is required.",
+                )
+            self.api_key = password
         elif self.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
             if config.auth_scheme != AuthScheme.EXTERNAL:
                 logger.info(
@@ -182,6 +193,7 @@ def generate_access_token(
     user_id: UUID,
     response: Response,
     device: Optional[OAuthDeviceInternalResponseModel] = None,
+    api_key: Optional[APIKeyInternalResponseModel] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -189,6 +201,7 @@ def generate_access_token(
         user_id: The ID of the user.
         response: The FastAPI response object.
         device: The device used for authentication.
+        api_key: The service account API key used for authentication.
 
     Returns:
         An authentication response with an access token.
@@ -232,6 +245,7 @@ def generate_access_token(
     access_token = JWTToken(
         user_id=user_id,
         device_id=device.id if device else None,
+        api_key_id=api_key.id if api_key else None,
         permissions=[p.value for p in permissions],
     ).encode(expires=expires)
 
@@ -287,6 +301,10 @@ def token(
             client_id=auth_form_data.client_id,
             device_code=auth_form_data.device_code,
         )
+    elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+        auth_context = authenticate_api_key(
+            api_key=auth_form_data.api_key,
+        )
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
         config = server_config()
@@ -335,6 +353,7 @@ def token(
         user_id=auth_context.user.id,
         response=response,
         device=auth_context.device,
+        api_key=auth_context.api_key,
     )
 
 

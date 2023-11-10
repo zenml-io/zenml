@@ -49,6 +49,7 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
@@ -131,6 +132,8 @@ class BaseZenStore(
 
         Raises:
             RuntimeError: If the store cannot be initialized.
+            AuthorizationException: If the store cannot be initialized due to
+                authentication errors.
         """
         super().__init__(**kwargs)
 
@@ -154,6 +157,12 @@ class BaseZenStore(
                     f"{self.url}` to reconnect to the server."
                 )
             raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
+        except AuthorizationException as e:
+            raise AuthorizationException(
+                f"Authorization failed for store at '{self.url}'. Please check "
+                f"your credentials: {str(e)}"
+            )
 
         except Exception as e:
             raise RuntimeError(

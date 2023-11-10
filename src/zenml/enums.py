@@ -210,6 +210,7 @@ class OAuthGrantTypes(StrEnum):
     OAUTH_PASSWORD = "password"
     OAUTH_DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"
     ZENML_EXTERNAL = "zenml-external"
+    ZENML_API_KEY = "zenml-api-key"
 
 
 class OAuthDeviceStatus(StrEnum):
