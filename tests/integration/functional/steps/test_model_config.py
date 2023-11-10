@@ -870,7 +870,7 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_unnamed_v
         )
         with pytest.raises(
             RuntimeError,
-            match="New unnamed model version was requested",
+            match="You have configured a model context without explicit `version`",
         ):
             _this_pipeline_will_fail.with_options(
                 run_name=f"multi_run_{uuid4()}"
