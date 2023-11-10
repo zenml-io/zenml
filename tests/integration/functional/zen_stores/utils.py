@@ -163,6 +163,7 @@ class UserContext:
         self,
         user_name: Optional[str] = "aria",
         password: Optional[str] = None,
+        inactive: bool = False,
         login: bool = False,
         existing_user: bool = False,
         delete: bool = True,
@@ -174,7 +175,10 @@ class UserContext:
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
-        self.password = password or random_str(32)
+        if inactive and password is None:
+            self.password = None
+        else:
+            self.password = password or random_str(32)
         self.existing_user = existing_user
         self.delete = delete
 
@@ -184,15 +188,14 @@ class UserContext:
                 name=self.user_name, password=self.password
             )
             self.created_user = self.store.create_user(new_user)
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin",
+                user_name_or_id=self.created_user.id,
+            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
         if self.login or self.existing_user:
-            if not self.existing_user:
-                self.client.create_user_role_assignment(
-                    role_name_or_id="admin",
-                    user_name_or_id=self.created_user.id,
-                )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
 
@@ -219,6 +222,37 @@ class UserContext:
                 self.store.delete_user(self.created_user.id)
             except KeyError:
                 pass
+
+
+class LoginContext:
+    def __init__(
+        self,
+        user_name: str,
+        password: str,
+    ):
+        self.user_name = user_name
+        self.password = password
+
+    def __enter__(self):
+        self.original_config = GlobalConfiguration.get_instance()
+        self.original_client = Client.get_instance()
+
+        GlobalConfiguration._reset_instance()
+        Client._reset_instance()
+        self.client = Client()
+        store_config = StoreConfiguration(
+            url=self.original_config.store.url,
+            type=self.original_config.store.type,
+            username=self.user_name,
+            password=self.password,
+            secrets_store=self.original_config.store.secrets_store,
+        )
+        GlobalConfiguration().set_store(config=store_config)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        GlobalConfiguration._reset_instance(self.original_config)
+        Client._reset_instance(self.original_client)
+        _ = Client().zen_store
 
 
 class StackContext:
@@ -302,7 +336,7 @@ class TeamContext:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
-            self.store.delete_team(self.created_team.id),
+            self.store.delete_team(self.created_team.id)
         except KeyError:
             pass
 
