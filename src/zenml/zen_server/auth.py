@@ -172,6 +172,20 @@ def authenticate_credentials(
             error = "Authentication error: invalid username or password"
             logger.error(error)
             raise AuthorizationException(error)
+        if user and not user.active:
+            error = f"Authentication error: user {user.name} is not active"
+            logger.error(error)
+            raise AuthorizationException(error)
+
+    elif activation_token is not None:
+        if not UserAuthModel.verify_activation_token(activation_token, user):
+            error = (
+                f"Authentication error: invalid activation token for user "
+                f"{user_name_or_id}"
+            )
+            logger.error(error)
+            raise AuthorizationException(error)
+
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
@@ -196,7 +210,7 @@ def authenticate_credentials(
 
         if not user_model.active:
             error = (
-                f"Authentication error: user {decoded_token.user_id} is not "
+                f"Authentication error: user {user_model.name} is not "
                 f"active"
             )
             logger.error(error)
@@ -225,7 +239,7 @@ def authenticate_credentials(
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
-                    f"does not belong to user {user_model.id}"
+                    f"does not belong to user {user_model.name}"
                 )
                 logger.error(error)
                 raise AuthorizationException(error)
@@ -262,12 +276,14 @@ def authenticate_credentials(
             encoded_access_token=access_token,
             device=device_model,
         )
-    elif activation_token is not None:
-        if not UserAuthModel.verify_activation_token(activation_token, user):
-            error = (
-                f"Authentication error: invalid activation token for user "
-                f"{user_name_or_id}"
-            )
+
+    else:
+        # IMPORTANT: the ONLY way we allow the authentication process to
+        # continue without any credentials (i.e. no password, activation
+        # token or access token) is if authentication is explicitly disabled
+        # by setting the auth_scheme to NO_AUTH.
+        if server_config().auth_scheme != AuthScheme.NO_AUTH:
+            error = "Authentication error: no credentials provided"
             logger.error(error)
             raise AuthorizationException(error)
 
