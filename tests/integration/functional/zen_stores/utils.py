@@ -31,6 +31,7 @@ from zenml.enums import (
 from zenml.models import (
     ArtifactFilter,
     ArtifactRequest,
+    BaseFilter,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryUpdate,
@@ -43,6 +44,7 @@ from zenml.models import (
     ModelRequestModel,
     ModelUpdateModel,
     ModelVersionRequestModel,
+    Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineDeploymentFilter,
@@ -71,7 +73,6 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceUpdate,
-Page, BaseFilter
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.v2.service_connector_type import (
@@ -181,9 +182,7 @@ class UserContext:
 
     def __enter__(self):
         if not self.existing_user:
-            new_user = UserRequest(
-                name=self.user_name, password=self.password
-            )
+            new_user = UserRequest(name=self.user_name, password=self.password)
             self.created_user = self.store.create_user(new_user)
         else:
             self.created_user = self.store.get_user(self.user_name)
@@ -773,9 +772,7 @@ class CrudTestConfig(BaseModel):
 
 workspace_crud_test_config = CrudTestConfig(
     create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdate(
-        name=sample_name("updated_sample_workspace")
-    ),
+    update_model=WorkspaceUpdate(name=sample_name("updated_sample_workspace")),
     filter_model=WorkspaceFilter,
     entity_name="workspace",
 )
@@ -820,9 +817,7 @@ component_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    update_model=ComponentUpdate(
-        name=sample_name("updated_sample_component")
-    ),
+    update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
     filter_model=ComponentFilter,
     entity_name="stack_component",
 )
@@ -835,9 +830,7 @@ pipeline_crud_test_config = CrudTestConfig(
         version="1",
         version_hash="abc123",
     ),
-    update_model=PipelineUpdate(
-        name=sample_name("updated_sample_pipeline")
-    ),
+    update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
     filter_model=PipelineFilter,
     entity_name="pipeline",
 )
