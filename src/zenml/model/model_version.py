@@ -225,6 +225,11 @@ class ModelVersion(BaseModel):
 
         smart_union = True
 
+    def __eq__(self, other: "ModelVersion") -> bool:
+        self_mv = self._get_or_create_model_version()
+        other_mv = other._get_or_create_model_version()
+        return self_mv.id == other_mv.id
+
     @root_validator(pre=True)
     def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate all in one.
