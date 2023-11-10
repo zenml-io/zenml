@@ -40,6 +40,8 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
+    API_KEY_ROTATE,
+    API_KEYS,
     API_TOKEN,
     ARTIFACTS,
     CODE_REPOSITORIES,
@@ -61,6 +63,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
@@ -76,13 +79,23 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import ModelStages, SecretsStoreType, StoreType
+from zenml.enums import (
+    ModelStages,
+    OAuthGrantTypes,
+    SecretsStoreType,
+    StoreType,
+)
 from zenml.exceptions import (
     AuthorizationException,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -139,6 +152,10 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -211,6 +228,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
             store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
+        api_key: The service account API key to use to connect to the Zen
+            server.
+        api_token: The API token to use to connect to the Zen server. Generated
+            by the client and stored in the configuration file on the first
+            login and every time the API key is refreshed.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
@@ -224,6 +246,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     username: Optional[str] = None
     password: Optional[str] = None
+    api_key: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
@@ -261,19 +284,23 @@ class RestZenStoreConfiguration(StoreConfiguration):
             values: A dictionary containing the values to be validated.
 
         Raises:
-            ValueError: If neither api_token nor username is set.
+            ValueError: If neither api_token nor username nor api_key is set.
 
         Returns:
             The values dictionary.
         """
-        # Check if the values dictionary contains either an api_token or a
-        # username as non-empty strings.
-        if values.get("api_token") or values.get("username"):
+        # Check if the values dictionary contains either an API token, an API
+        # key or a username as non-empty strings.
+        if (
+            values.get("api_token")
+            or values.get("username")
+            or values.get("api_key")
+        ):
             return values
-        else:
-            raise ValueError(
-                "Neither api_token nor username is set in the store config."
-            )
+        raise ValueError(
+            "Neither api_token nor username nor api_key is set in the "
+            "store config."
+        )
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -391,7 +418,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
             path.
         """
         assert isinstance(config, RestZenStoreConfiguration)
-        assert config.api_token is not None
+        assert config.api_token is not None or config.api_key is not None
         config = config.copy(exclude={"username", "password"}, deep=True)
         # Load the certificate values back into the configuration
         config.expand_certificates()
@@ -811,6 +838,238 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=user_name_or_id,
             route=USERS,
+        )
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    def create_service_account(
+        self, service_account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+        """
+        return self._create_resource(
+            resource=service_account,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        return self._get_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        return self._list_paginated_resources(
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+        """
+        return self._update_resource(
+            resource_id=service_account_name_or_id,
+            resource_update=service_account_update,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponseModel,
+        )
+
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+        """
+        self._delete_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+        )
+
+    # --------
+    # API Keys
+    # --------
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequestModel
+    ) -> APIKeyResponseModel:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+        """
+        return self._create_resource(
+            resource=api_key,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponseModel,
+        )
+
+    def get_api_key(
+        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+    ) -> APIKeyResponseModel:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+
+        Returns:
+            The API key with the given ID.
+        """
+        return self._get_resource(
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponseModel,
+        )
+
+    def set_api_key(self, api_key: str) -> None:
+        """Set the API key to use for authentication.
+
+        Args:
+            api_key: The API key to use for authentication.
+        """
+        self.config.api_key = api_key
+        self.clear_session()
+        GlobalConfiguration()._write_config()
+
+    def list_api_keys(
+        self, service_account_id: UUID, filter_model: APIKeyFilterModel
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdateModel,
+    ) -> APIKeyResponseModel:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        return self._update_resource(
+            resource_id=api_key_name_or_id,
+            resource_update=api_key_update,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponseModel,
+        )
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequestModel,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        response_body = self.put(
+            f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
+            body=rotate_request,
+        )
+        return APIKeyResponseModel.parse_obj(response_body)
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        self._delete_resource(
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
         )
 
     # -----
@@ -2751,14 +3010,28 @@ class RestZenStore(BaseZenStore):
             elif (
                 self.config.username is not None
                 and self.config.password is not None
+                or self.config.api_key is not None
             ):
+                data: Optional[Dict[str, str]] = None
+                if self.config.api_key is not None:
+                    data = {
+                        "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
+                        "password": self.config.api_key,
+                    }
+                elif (
+                    self.config.username is not None
+                    and self.config.password is not None
+                ):
+                    data = {
+                        "grant_type": OAuthGrantTypes.OAUTH_PASSWORD.value,
+                        "username": self.config.username,
+                        "password": self.config.password,
+                    }
+
                 response = self._handle_response(
                     requests.post(
                         self.url + API + VERSION_1 + LOGIN,
-                        data={
-                            "username": self.config.username,
-                            "password": self.config.password,
-                        },
+                        data=data,
                         verify=self.config.verify_ssl,
                         timeout=self.config.http_timeout,
                     )
@@ -2775,9 +3048,9 @@ class RestZenStore(BaseZenStore):
                 self.config.api_token = self._api_token
             else:
                 raise ValueError(
-                    "No API token or username/password provided. Please "
-                    "provide either a token or a username and password in "
-                    "the ZenStore config."
+                    "No API token, API key or username/password provided. "
+                    "Please provide either an API token, an API key or a "
+                    "username and password in the ZenML config."
                 )
         return self._api_token
 
@@ -2806,10 +3079,12 @@ class RestZenStore(BaseZenStore):
         self._session = None
         self._api_token = None
         # Clear the configured API token only if it's possible to fetch a new
-        # one from the server using other credentials (username/password).
+        # one from the server using other credentials (username/password or
+        # service account API key).
         if (
             self.config.username is not None
             and self.config.password is not None
+            or self.config.api_key is not None
         ):
             self.config.api_token = None
 
@@ -3225,7 +3500,7 @@ class RestZenStore(BaseZenStore):
 
     def _update_resource(
         self,
-        resource_id: UUID,
+        resource_id: Union[str, int, UUID],
         resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,

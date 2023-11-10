@@ -25,13 +25,19 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def show(ngrok_token: Optional[str] = None) -> None:
+def show(
+    ngrok_token: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> None:
     """Show the ZenML dashboard.
 
     Args:
-        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
-            on a public domain. Primarily used for accessing the dashboard in
-            Colab.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML
+            dashboard on a public domain. Primarily used for accessing the
+            dashboard in Colab.
+        username: The username to prefill in the login form.
+        password: The password to prefill in the login form.
     """
     from zenml.utils.dashboard_utils import show_dashboard
     from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
@@ -47,4 +53,9 @@ def show(ngrok_token: Optional[str] = None) -> None:
         url = ngrok_url
 
     url = f"{url}:{port}" if port else url
+    if username:
+        url += f"/login?username={username}"
+    if username and password:
+        url += f"&password={password}"
+
     show_dashboard(url)
