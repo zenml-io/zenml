@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlalchemy import SMALLINT, Column
+from sqlalchemy import VARCHAR, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
@@ -41,7 +41,7 @@ class TagSchema(NamedSchema, table=True):
 
     __tablename__ = "tag"
 
-    color: int = Field(sa_column=Column(SMALLINT, nullable=False))
+    color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -59,10 +59,7 @@ class TagSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            color=getattr(
-                ColorVariants,
-                request.color.upper() if request.color else "GREY",
-            ).value,
+            color=request.color.value,
         )
 
     def to_model(self) -> TagResponseModel:
@@ -74,7 +71,7 @@ class TagSchema(NamedSchema, table=True):
         return TagResponseModel(
             id=self.id,
             name=self.name,
-            color=ColorVariants(self.color).name.lower(),
+            color=ColorVariants(self.color),
             created=self.created,
             updated=self.updated,
             tagged_count=len(self.links),
@@ -113,11 +110,11 @@ class TagResourceSchema(BaseSchema, table=True):
     )
     tag: "TagSchema" = Relationship(back_populates="links")
     resource_id: UUID
-    resource_type: int
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     model: List["ModelSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=={TaggableResourceTypes.MODEL.value}, foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
         ),
     )
 

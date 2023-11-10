@@ -293,23 +293,23 @@ class ModelStages(StrEnum):
     ARCHIVED = "archived"
 
 
-class ColorVariants(Enum):
+class ColorVariants(StrEnum):
     """All possible color variants for frontend."""
 
-    GREY = 1
-    PURPLE = 2
-    RED = 3
-    GREEN = 4
-    YELLOW = 5
-    ORANGE = 6
-    LIME = 7
-    TEAL = 8
-    TURQUOISE = 9
-    MAGENTA = 10
-    BLUE = 11
+    GREY = "grey"
+    PURPLE = "purple"
+    RED = "red"
+    GREEN = "green"
+    YELLOW = "yellow"
+    ORANGE = "orange"
+    LIME = "lime"
+    TEAL = "teal"
+    TURQUOISE = "turquoise"
+    MAGENTA = "magenta"
+    BLUE = "blue"
 
 
-class TaggableResourceTypes(Enum):
+class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
-    MODEL = 1
+    MODEL = "model"

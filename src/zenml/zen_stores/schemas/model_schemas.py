@@ -75,7 +75,7 @@ class ModelSchema(NamedSchema, table=True):
     tags: List["TagResourceSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=={TaggableResourceTypes.MODEL.value}, foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
             cascade="delete",
         ),
     )

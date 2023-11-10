@@ -33,7 +33,7 @@ def upgrade() -> None:
 
     op.create_table(
         "tag",
-        sa.Column("color", sa.SMALLINT(), nullable=False),
+        sa.Column("color", sa.VARCHAR(length=255), nullable=False),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
@@ -69,7 +69,7 @@ def upgrade() -> None:
         """
         now = str(datetime.now())
         for tag in unique_tags:
-            insert_tags += f"('{str(uuid4())}', '{tag}', {random.choice(list(ColorVariants)).value}, '{now}', '{now}'),"
+            insert_tags += f"('{str(uuid4())}', '{tag}', '{random.choice(list(ColorVariants)).value}', '{now}', '{now}'),"
         insert_tags = insert_tags[:-1] + ";"
         session.execute(sa.text(insert_tags))
 
@@ -77,7 +77,7 @@ def upgrade() -> None:
         "tag_resource",
         sa.Column("tag_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("resource_type", sa.Integer(), nullable=False),
+        sa.Column("resource_type", sa.VARCHAR(length=255), nullable=False),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),

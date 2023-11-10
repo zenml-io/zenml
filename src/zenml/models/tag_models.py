@@ -15,10 +15,10 @@
 
 
 import random
-from typing import Any, Dict, Optional
+from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.base_models import (
@@ -31,21 +31,6 @@ from zenml.models.filter_models import BaseFilterModel
 # Tags
 
 
-def _validate_color(color: str) -> str:
-    try:
-        if str(color).isdigit():
-            color = str(ColorVariants(int(color)).value)
-        else:
-            color = str(getattr(ColorVariants, color.upper()).value)
-    except NameError:
-        raise ValueError(
-            f"Given color value `{color}` does not "
-            "match any of defined ColorVariants "
-            f"`{list(ColorVariants.__members__.keys())}`."
-        )
-    return color
-
-
 class TagBaseModel(BaseModel):
     """Base model for tags."""
 
@@ -53,20 +38,10 @@ class TagBaseModel(BaseModel):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    color: Optional[str] = Field(
+    color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        max_length=STR_FIELD_MAX_LENGTH,
+        default_factory=lambda: random.choice(list(ColorVariants)),
     )
-
-    @root_validator(pre=True)
-    def _set_random_color_if_none(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        if not values.get("color", None):
-            values["color"] = random.choice(list(ColorVariants)).name.lower()
-        else:
-            _validate_color(values["color"])
-        return values
 
 
 class TagResponseModel(TagBaseModel, BaseResponseModel):
@@ -81,16 +56,7 @@ class TagFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str]
-    color: Optional[str]
-
-    @validator("color", pre=True)
-    def _translate_color_to_integer(
-        cls, color: Optional[str]
-    ) -> Optional[str]:
-        if not color:
-            return None
-        else:
-            return _validate_color(color)
+    color: Optional[ColorVariants]
 
 
 class TagRequestModel(TagBaseModel, BaseRequestModel):
@@ -101,16 +67,7 @@ class TagUpdateModel(BaseModel):
     """Update model for tags."""
 
     name: Optional[str]
-    color: Optional[str]
-
-    @validator("color", pre=True)
-    def _translate_color_to_integer(
-        cls, color: Optional[str]
-    ) -> Optional[str]:
-        if not color:
-            return None
-        else:
-            return _validate_color(color)
+    color: Optional[ColorVariants]
 
 
 # Tags <> Resources
