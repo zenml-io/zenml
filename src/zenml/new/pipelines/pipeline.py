@@ -915,8 +915,7 @@ class Pipeline:
             Tuple[str, Optional[str]], NewModelVersionRequest
         ],
     ) -> None:
-        """Registers the running versions of the models used in the given
-            pipeline run.
+        """Registers the running versions of the models used in the given pipeline run.
 
         Args:
             new_versions_requested: Dict of models requesting new versions and
