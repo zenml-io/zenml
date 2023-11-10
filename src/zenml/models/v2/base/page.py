@@ -23,7 +23,9 @@ from zenml.models.base_models import BaseResponseModel
 from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.filter import BaseFilter
 
-B = TypeVar("B", bound=Union[BaseResponse, BaseResponseModel])
+B = TypeVar(
+    "B", bound=Union[BaseResponse, BaseResponseModel]  # type: ignore[type-arg]
+)
 
 
 class Page(GenericModel, Generic[B]):

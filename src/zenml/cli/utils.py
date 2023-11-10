@@ -105,7 +105,9 @@ logger = get_logger(__name__)
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-T = TypeVar("T", bound=Union[BaseResponse, BaseResponseModel])
+T = TypeVar(
+    "T", bound=Union[BaseResponse, BaseResponseModel]  # type: ignore[type-arg]
+)
 
 
 def title(text: str) -> None:

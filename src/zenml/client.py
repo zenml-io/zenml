@@ -169,7 +169,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 AnyResponse = TypeVar(
-    "AnyResponse", bound=Union[BaseResponse, BaseResponseModel]
+    "AnyResponse",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
 )
 
 

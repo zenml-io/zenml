@@ -18,7 +18,8 @@ from typing import Callable, List, TypeVar, Union
 from zenml.models import BaseResponse, BaseResponseModel, Page
 
 AnyResponseModel = TypeVar(
-    "AnyResponseModel", bound=Union[BaseResponse, BaseResponseModel]
+    "AnyResponseModel",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
 )
 
 

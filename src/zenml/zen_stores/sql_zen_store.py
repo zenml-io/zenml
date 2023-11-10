@@ -252,7 +252,9 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=Union[BaseResponse, BaseResponseModel])
+B = TypeVar(
+    "B", bound=Union[BaseResponse, BaseResponseModel]  # type: ignore[type-arg]
+)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
