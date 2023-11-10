@@ -101,15 +101,15 @@ class ModelVersion(BaseModel):
         """
         mv = self._get_or_create_model_version()
         data_artifacts = {
-            key: version[[max(version.keys())]]
+            key: version[max(version.keys())]
             for key, version in mv.artifact_object_ids.items()
         }
         model_artifacts = {
-            key: version[[max(version.keys())]]
+            key: version[max(version.keys())]
             for key, version in mv.model_object_ids.items()
         }
         endpoint_artifacts = {
-            key: version[[max(version.keys())]]
+            key: version[max(version.keys())]
             for key, version in mv.deployment_ids.items()
         }
         return {
