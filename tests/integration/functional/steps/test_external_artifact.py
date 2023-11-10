@@ -21,7 +21,7 @@ from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model import ArtifactConfig, ModelConfig
+from zenml.model import ArtifactConfig, ModelVersion
 
 
 @step
@@ -49,7 +49,7 @@ def producer_pipeline(run_count: int):
 @pipeline(
     name="bar",
     enable_cache=False,
-    model_config=ModelConfig(name="foo", version=ModelStages.LATEST),
+    model_version=ModelVersion(name="foo", version=ModelStages.LATEST),
 )
 def consumer_pipeline(
     model_artifact_version: int,
@@ -89,7 +89,7 @@ def consumer_pipeline_with_external_artifact_from_another_model(
 @pipeline(
     name="bar",
     enable_cache=False,
-    model_config=ModelConfig(name="foo"),
+    model_version=ModelVersion(name="foo"),
 )
 def two_step_producer_pipeline():
     producer(1)
@@ -107,9 +107,11 @@ def two_step_producer_pipeline():
 def test_exchange_of_model_artifacts_between_pipelines(consumer_pipeline):
     """Test that ExternalArtifact helps to exchange data from Model between pipelines."""
     with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
+        producer_pipeline.with_options(model_version=ModelVersion(name="foo"))(
+            1
+        )
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
+            model_version=ModelVersion(name="foo", version=ModelStages.LATEST)
         )(
             2
         )  # add to latest version
@@ -164,17 +166,19 @@ def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
 def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number():
     """Test that ExternalArtifact helps to exchange data from Model between pipelines using model version number."""
     with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
+        producer_pipeline.with_options(model_version=ModelVersion(name="foo"))(
+            1
+        )
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
+            model_version=ModelVersion(name="foo", version=ModelStages.LATEST)
         )(
             2
         )  # add to latest version
         consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=1)
+            model_version=ModelVersion(name="foo", version=1)
         )(1)
         consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=1)
+            model_version=ModelVersion(name="foo", version=1)
         )(2)
 
 
@@ -190,11 +194,11 @@ def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number()
 def test_direct_consumption(model_version_name, expected):
     """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
     with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
+        producer_pipeline.with_options(model_version=ModelVersion(name="foo"))(
             42
         )
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version="foo")
+            model_version=ModelVersion(name="foo", version="foo")
         )(23)
         artifact_id = ExternalArtifact(
             model_name="foo",

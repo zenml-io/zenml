@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_version import ModelConfig
+from zenml.model.model_version import ModelVersion
 
 
 class NewModelVersionRequest(BaseModel):
@@ -38,10 +38,10 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_config: Optional[ModelConfig] = PrivateAttr(default=None)
+    _model_version: Optional[ModelVersion] = PrivateAttr(default=None)
 
     @property
-    def model_config(self) -> ModelConfig:
+    def model_version(self) -> ModelVersion:
         """Model config getter.
 
         Returns:
@@ -50,23 +50,23 @@ class NewModelVersionRequest(BaseModel):
         Raises:
             RuntimeError: If the model config is not set.
         """
-        if self._model_config is None:
+        if self._model_version is None:
             raise RuntimeError("Model config is not set.")
-        return self._model_config
+        return self._model_version
 
     def update_request(
         self,
-        model_config: ModelConfig,
+        model_version: ModelVersion,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
         """Update from Model Config Model object in place.
 
         Args:
-            model_config: Model Config Model object.
+            model_version: Model Config Model object.
             requester: Requester of a new model version.
         """
         self.requesters.append(requester)
-        if self._model_config is None:
-            self._model_config = model_config
+        if self._model_version is None:
+            self._model_version = model_version
 
-        self._model_config._merge(model_config)
+        self._model_version._merge(model_version)

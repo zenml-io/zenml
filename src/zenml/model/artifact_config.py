@@ -23,7 +23,7 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelConfig
+    from zenml.model.model_version import ModelVersion
 
 
 logger = get_logger(__name__)
@@ -57,46 +57,46 @@ class ArtifactConfig(BaseModel):
         smart_union = True
 
     @property
-    def _model_config(self) -> "ModelConfig":
+    def _model_config(self) -> "ModelVersion":
         """Property that returns the model configuration.
 
         Returns:
-            ModelConfig: The model configuration.
+            ModelVersion: The model configuration.
 
         Raises:
             RuntimeError: If model configuration cannot be acquired from @step
                 or @pipeline or built on the fly from fields of this class.
         """
         try:
-            model_config = get_step_context().model_config
+            model_version = get_step_context().model_version
         except (StepContextError, RuntimeError):
-            model_config = None
+            model_version = None
         # Check if a specific model name is provided and it doesn't match the context name
         if (self.model_name is not None) and (
-            model_config is None or model_config.name != self.model_name
+            model_version is None or model_version.name != self.model_name
         ):
-            # Create a new ModelConfig instance with the provided model name and version
-            from zenml.model.model_version import ModelConfig
+            # Create a new ModelVersion instance with the provided model name and version
+            from zenml.model.model_version import ModelVersion
 
-            on_the_fly_config = ModelConfig(
+            on_the_fly_config = ModelVersion(
                 name=self.model_name,
                 version=self.model_version,
             )
             return on_the_fly_config
 
-        if model_config is None:
+        if model_version is None:
             raise RuntimeError(
-                "No model configuration found in @step or @pipeline. "
-                "You can configure ModelConfig inside ArtifactConfig as well, but "
+                "No model version configuration found in @step or @pipeline. "
+                "You can configure model version inside ArtifactConfig as well, but "
                 "`model_name` and `model_version` must be provided."
             )
         # Return the model from the context
-        return model_config
+        return model_version
 
     def _link_to_model_version(
         self,
         artifact_uuid: UUID,
-        model_config: "ModelConfig",
+        model_version: "ModelVersion",
         is_model_object: bool = False,
         is_deployment: bool = False,
     ) -> None:
@@ -106,7 +106,7 @@ class ArtifactConfig(BaseModel):
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
-            model_config: The model configuration from caller.
+            model_version: The model configuration from caller.
             is_model_object: Whether the artifact is a model object. Defaults to False.
             is_deployment: Whether the artifact is a deployment. Defaults to False.
         """
@@ -119,7 +119,7 @@ class ArtifactConfig(BaseModel):
         # Create a ZenML client
         client = Client()
 
-        model_version = model_config.get_or_create_model_version()
+        model_version = model_version.get_or_create_model_version()
 
         artifact_name = self.artifact_name
         if artifact_name is None:
@@ -174,17 +174,17 @@ class ArtifactConfig(BaseModel):
         client.zen_store.create_model_version_artifact_link(request)
 
     def link_to_model(
-        self, artifact_uuid: UUID, model_config: "ModelConfig"
+        self, artifact_uuid: UUID, model_version: "ModelVersion"
     ) -> None:
         """Link artifact to the model version.
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
-            model_config: The model configuration from caller.
+            model_version: The model configuration from caller.
         """
         self._link_to_model_version(
             artifact_uuid,
-            model_config=model_config,
+            model_version=model_version,
             is_model_object=self.IS_MODEL_ARTIFACT,
             is_deployment=self.IS_DEPLOYMENT_ARTIFACT,
         )

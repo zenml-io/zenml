@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ModelConfig user facing interface to pass into pipeline or step."""
+"""ModelVersion user facing interface to pass into pipeline or step."""
 
 from typing import (
     TYPE_CHECKING,
@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModelConfig(BaseModel):
-    """ModelConfig class to pass into pipeline or step to set it into a model context.
+class ModelVersion(BaseModel):
+    """ModelVersion class to pass into pipeline or step to set it into a model context.
 
     name: The name of the model.
     license: The license under which the model is created.
@@ -247,25 +247,25 @@ class ModelConfig(BaseModel):
             logger.info(f"New model version `{self.version}` was created.")
         return model_version
 
-    def _merge(self, model_config: "ModelConfig") -> None:
-        self.license = self.license or model_config.license
-        self.description = self.description or model_config.description
-        self.audience = self.audience or model_config.audience
-        self.use_cases = self.use_cases or model_config.use_cases
-        self.limitations = self.limitations or model_config.limitations
-        self.trade_offs = self.trade_offs or model_config.trade_offs
-        self.ethics = self.ethics or model_config.ethics
-        if model_config.tags is not None:
+    def _merge(self, model_version: "ModelVersion") -> None:
+        self.license = self.license or model_version.license
+        self.description = self.description or model_version.description
+        self.audience = self.audience or model_version.audience
+        self.use_cases = self.use_cases or model_version.use_cases
+        self.limitations = self.limitations or model_version.limitations
+        self.trade_offs = self.trade_offs or model_version.trade_offs
+        self.ethics = self.ethics or model_version.ethics
+        if model_version.tags is not None:
             self.tags = list(
-                {t for t in self.tags or []}.union(set(model_config.tags))
+                {t for t in self.tags or []}.union(set(model_version.tags))
             )
 
         self.delete_new_version_on_failure &= (
-            model_config.delete_new_version_on_failure
+            model_version.delete_new_version_on_failure
         )
 
     def __hash__(self) -> int:
-        """Get hash of the `ModelConfig`.
+        """Get hash of the `ModelVersion`.
 
         Returns:
             Hash function results

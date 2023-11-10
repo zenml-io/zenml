@@ -204,7 +204,7 @@ class Compiler:
                 enable_step_logs=config.enable_step_logs,
                 settings=config.settings,
                 extra=config.extra,
-                model_config=config.model_config,
+                model_version=config.model_version,
             )
 
         for invocation_id in config.steps:

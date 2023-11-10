@@ -20,26 +20,26 @@ import yaml
 
 from zenml import get_step_context, pipeline, step
 from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model import ModelConfig
+from zenml.model import ModelVersion
 
 
 @step
-def assert_model_config_step():
-    model_config = get_step_context().model_config
-    assert model_config is not None
-    assert model_config.name == "foo"
-    assert model_config.version == RUNNING_MODEL_VERSION
-    assert not model_config.delete_new_version_on_failure
-    assert model_config.description == "description"
-    assert model_config.license == "MIT"
-    assert model_config.audience == "audience"
-    assert model_config.use_cases == "use_cases"
-    assert model_config.limitations == "limitations"
-    assert model_config.trade_offs == "trade_offs"
-    assert model_config.ethics == "ethics"
-    assert model_config.tags == ["tag"]
-    assert model_config.version_description == "version_description"
-    assert model_config.save_models_to_registry
+def assert_model_version_step():
+    model_version = get_step_context().model_version
+    assert model_version is not None
+    assert model_version.name == "foo"
+    assert model_version.version == RUNNING_MODEL_VERSION
+    assert not model_version.delete_new_version_on_failure
+    assert model_version.description == "description"
+    assert model_version.license == "MIT"
+    assert model_version.audience == "audience"
+    assert model_version.use_cases == "use_cases"
+    assert model_version.limitations == "limitations"
+    assert model_version.trade_offs == "trade_offs"
+    assert model_version.ethics == "ethics"
+    assert model_version.tags == ["tag"]
+    assert model_version.version_description == "version_description"
+    assert model_version.save_models_to_registry
 
 
 @step
@@ -49,9 +49,9 @@ def assert_extra_step():
     assert extra == {"a": 1}
 
 
-def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
+def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
     """Test that the pipeline can be configured with a model config from a yaml file."""
-    model_config = ModelConfig(
+    model_version = ModelVersion(
         name="foo",
         delete_new_version_on_failure=False,
         description="description",
@@ -69,16 +69,16 @@ def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model_config=model_config.dict(),
+        model_version=model_version.dict(),
     )
     config_path.write_text(yaml.dump(file_config))
 
     @pipeline(enable_cache=False)
-    def assert_model_config_pipeline():
-        assert_model_config_step()
+    def assert_model_version_pipeline():
+        assert_model_version_step()
 
-    assert_model_config_pipeline.with_options(model_config=model_config)()
-    assert_model_config_pipeline.with_options(config_path=str(config_path))()
+    assert_model_version_pipeline.with_options(model_version=model_version)()
+    assert_model_version_pipeline.with_options(config_path=str(config_path))()
 
 
 def test_pipeline_config_from_file_not_overridden_for_extra(
@@ -113,27 +113,27 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
     """Test that the pipeline can be configured with a model config
     from a yaml file, but the values from yaml are not overridden.
     """
-    initial_model_config = ModelConfig(
+    initial_model_config = ModelVersion(
         name="bar",
     )
 
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model_config=initial_model_config.dict(),
+        model_version=initial_model_config.dict(),
     )
     config_path.write_text(yaml.dump(file_config))
 
     @pipeline(enable_cache=False)
     def assert_model_config_pipeline():
-        assert_model_config_step()
+        assert_model_version_step()
 
     p = assert_model_config_pipeline.with_options(config_path=str(config_path))
-    assert p.configuration.model_config.name == "bar"
+    assert p.configuration.model_version.name == "bar"
 
     with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
         p.configure(
-            model_config=ModelConfig(
+            model_version=ModelVersion(
                 name="foo",
                 delete_new_version_on_failure=False,
                 description="description",
@@ -150,23 +150,23 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
         )
         warning.assert_called_once()
 
-    assert p.configuration.model_config is not None
-    assert p.configuration.model_config.name == "foo"
-    assert p.configuration.model_config.version is None
-    assert not p.configuration.model_config.delete_new_version_on_failure
-    assert p.configuration.model_config.description == "description"
-    assert p.configuration.model_config.license == "MIT"
-    assert p.configuration.model_config.audience == "audience"
-    assert p.configuration.model_config.use_cases == "use_cases"
-    assert p.configuration.model_config.limitations == "limitations"
-    assert p.configuration.model_config.trade_offs == "trade_offs"
-    assert p.configuration.model_config.ethics == "ethics"
-    assert p.configuration.model_config.tags == ["tag"]
+    assert p.configuration.model_version is not None
+    assert p.configuration.model_version.name == "foo"
+    assert p.configuration.model_version.version is None
+    assert not p.configuration.model_version.delete_new_version_on_failure
+    assert p.configuration.model_version.description == "description"
+    assert p.configuration.model_version.license == "MIT"
+    assert p.configuration.model_version.audience == "audience"
+    assert p.configuration.model_version.use_cases == "use_cases"
+    assert p.configuration.model_version.limitations == "limitations"
+    assert p.configuration.model_version.trade_offs == "trade_offs"
+    assert p.configuration.model_version.ethics == "ethics"
+    assert p.configuration.model_version.tags == ["tag"]
     assert (
-        p.configuration.model_config.version_description
+        p.configuration.model_version.version_description
         == "version_description"
     )
-    assert p.configuration.model_config.save_models_to_registry
+    assert p.configuration.model_version.save_models_to_registry
     with pytest.raises(AssertionError):
         p()
 

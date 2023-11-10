@@ -18,7 +18,7 @@ import pytest
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
-from zenml.model import ModelConfig
+from zenml.model import ModelVersion
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
 MODEL_NAME = "super_model"
@@ -70,7 +70,7 @@ class ModelContext:
             pass
 
 
-class TestModelConfig:
+class TestModelVersion:
     def test_model_created_with_warning(self):
         """Test if the model is created with a warning.
 
@@ -78,7 +78,7 @@ class TestModelConfig:
         Info is expected because the model is not yet created.
         """
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME)
+            mc = ModelVersion(name=MODEL_NAME)
             with mock.patch("zenml.model.model_version.logger.info") as logger:
                 model = mc.get_or_create_model()
                 logger.assert_called_once()
@@ -87,7 +87,7 @@ class TestModelConfig:
     def test_model_exists(self):
         """Test if model fetched fine, if exists."""
         with ModelContext() as model:
-            mc = ModelConfig(name=MODEL_NAME)
+            mc = ModelVersion(name=MODEL_NAME)
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
@@ -99,7 +99,7 @@ class TestModelConfig:
     def test_model_create_model_and_version(self):
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME)
+            mc = ModelVersion(name=MODEL_NAME)
             with mock.patch("zenml.model.model_version.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
@@ -109,7 +109,7 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
         with ModelContext(model_version="1.0.0") as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            mc = ModelVersion(name=MODEL_NAME, version="1.0.0")
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
@@ -121,7 +121,7 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_number_not_found(self):
         """Test model and model version retrieval fails by exact version number, if version missing."""
         with ModelContext():
-            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            mc = ModelVersion(name=MODEL_NAME, version="1.0.0")
             with pytest.raises(KeyError):
                 mc._get_model_version()
 
@@ -130,7 +130,7 @@ class TestModelConfig:
         with ModelContext(
             model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            mc = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch(
                 "zenml.model.model_version.logger.warning"
             ) as logger:
@@ -142,14 +142,14 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_stage_not_found(self):
         """Test model and model version retrieval fails by exact stage number, if version in stage missing."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            mc = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
                 mc._get_model_version()
 
     def test_model_fetch_model_and_version_latest(self):
         """Test model and model version retrieval by latest version."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST)
+            mc = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
             mv = mc.get_or_create_model_version()
 
             assert mv.name == "1.0.0"
@@ -157,27 +157,27 @@ class TestModelConfig:
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
         with mock.patch("zenml.model.model_version.logger.info") as logger:
-            mc = ModelConfig(
+            mc = ModelVersion(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,
             )
             logger.assert_called_once()
             assert mc.version == ModelStages.PRODUCTION.value
 
-        mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+        mc = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
         assert mc.version == ModelStages.PRODUCTION
 
     def test_recovery_flow(self):
         """Test that model context can recover same version after failure."""
         with ModelContext():
-            mc = ModelConfig(
+            mc = ModelVersion(
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
             )
             mv1 = mc.get_or_create_model_version()
             del mc
 
-            mc = ModelConfig(
+            mc = ModelVersion(
                 name=MODEL_NAME,
                 delete_new_version_on_failure=False,
             )

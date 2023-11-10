@@ -607,8 +607,8 @@ class StepRunner:
 
     def _prepare_model_context_for_step(self) -> None:
         try:
-            model_config = get_step_context().model_config
-            model_config.get_or_create_model_version()
+            model_version = get_step_context().model_version
+            model_version.get_or_create_model_version()
         except StepContextError:
             return
 
@@ -625,7 +625,7 @@ class StepRunner:
 
         context = get_step_context()
         try:
-            model_config_from_context = context.model_config
+            model_config_from_context = context.model_version
         except StepContextError:
             model_config_from_context = None
 
@@ -643,7 +643,7 @@ class StepRunner:
                 artifact_config_ = artifact_config_.copy()
 
             if artifact_config_ is not None:
-                model_config = None
+                model_version = None
                 if model_config_from_context is None:
                     if artifact_config_.model_name is None:
                         logger.warning(
@@ -652,16 +652,16 @@ class StepRunner:
                         return
 
                 if artifact_config_.model_name is not None:
-                    from zenml.model.model_version import ModelConfig
+                    from zenml.model.model_version import ModelVersion
 
-                    model_config = ModelConfig(
+                    model_version = ModelVersion(
                         name=artifact_config_.model_name,
                         version=artifact_config_.model_version,
                     )
                 else:
-                    model_config = model_config_from_context
+                    model_version = model_config_from_context
 
-                if model_config:
+                if model_version:
                     artifact_config_.artifact_name = (
                         artifact_config_.artifact_name or artifact_name
                     )
@@ -669,11 +669,11 @@ class StepRunner:
                     artifact_config_._step_name = context.step_run.name
                     logger.debug(
                         f"Linking artifact `{artifact_name}` to model "
-                        f"`{model_config.name}` version `{model_config.version}`."
+                        f"`{model_version.name}` version `{model_version.version}`."
                     )
                     artifact_config_.link_to_model(
                         artifact_uuid=artifact_uuid,
-                        model_config=model_config,
+                        model_version=model_version,
                     )
 
     def _get_model_versions_from_artifacts(
@@ -736,7 +736,7 @@ class StepRunner:
             Set of tuples of (model_id, model_version_id).
         """
         try:
-            mc = get_step_context().model_config
+            mc = get_step_context().model_version
             model_version = mc.get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:

@@ -22,21 +22,21 @@ from zenml.exceptions import InputResolutionError
 from zenml.models import StepRunFilterModel
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelConfig
+    from zenml.model.model_version import ModelVersion
     from zenml.models.artifact_models import ArtifactResponseModel
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-    model_config: Optional["ModelConfig"] = None,
+    model_version: Optional["ModelVersion"] = None,
 ) -> Tuple[Dict[str, "ArtifactResponseModel"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
         run_id: The ID of the current pipeline run.
-        model_config: The model config of the step (from step or pipeline).
+        model_version: The model config of the step (from step or pipeline).
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -77,7 +77,7 @@ def resolve_step_inputs(
         external_artifact,
     ) in step.config.external_input_artifacts.items():
         artifact_id = external_artifact.get_artifact_id(
-            model_config=model_config
+            model_version=model_version
         )
         input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
 

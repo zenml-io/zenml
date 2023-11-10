@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.artifact_config import ArtifactConfig
-    from zenml.model.model_version import ModelConfig
+    from zenml.model.model_version import ModelVersion
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
@@ -205,25 +205,25 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
     @property
-    def model_config(self) -> "ModelConfig":
-        """Returns configured ModelConfig.
+    def model_version(self) -> "ModelVersion":
+        """Returns configured ModelVersion.
 
-        Order of resolution to search for ModelConfig is:
-            1. ModelConfig from @step
-            2. ModelConfig from @pipeline
+        Order of resolution to search for ModelVersion is:
+            1. ModelVersion from @step
+            2. ModelVersion from @pipeline
 
         Returns:
-            The `ModelConfig` object associated with the current step.
+            The `ModelVersion` object associated with the current step.
 
         Raises:
-            StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
+            StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model_config is not None:
-            return self.step_run.config.model_config
-        if self.pipeline_run.config.model_config is not None:
-            return self.pipeline_run.config.model_config
+        if self.step_run.config.model_version is not None:
+            return self.step_run.config.model_version
+        if self.pipeline_run.config.model_version is not None:
+            return self.pipeline_run.config.model_version
         raise StepContextError(
-            f"Unable to get ModelConfig in step '{self.step_name}' of pipeline "
+            f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
             f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
         )
 

@@ -28,7 +28,7 @@ from zenml.model import (
     ArtifactConfig,
     DeploymentArtifactConfig,
     ModelArtifactConfig,
-    ModelConfig,
+    ModelVersion,
 )
 
 
@@ -90,7 +90,7 @@ def step_2() -> (
 
 
 @pipeline(
-    model_config=ModelConfig(name=NAME),
+    model_version=ModelVersion(name=NAME),
     name=NAME,
 )
 def pipeline():

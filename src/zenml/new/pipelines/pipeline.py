@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.model_version import ModelConfig
+    from zenml.model.model_version import ModelVersion
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -125,7 +125,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_version: Optional["ModelVersion"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -146,7 +146,7 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_version: ModelVersion configuration for this step as `ModelVersion` instance.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -165,7 +165,7 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
-                model_config=model_config,
+                model_version=model_version,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -303,7 +303,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_config: Optional["ModelConfig"] = None,
+        model_version: Optional["ModelVersion"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the pipeline.
@@ -338,7 +338,7 @@ class Pipeline:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            model_config: Model(Version) configuration for this step as `ModelConfig` instance.
+            model_version: ModelVersion configuration for this step as `ModelVersion` instance.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -363,7 +363,7 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config": model_config,
+                "model_version": model_version,
             }
         )
         if not self.__suppress_warnings_flag__:
@@ -803,36 +803,36 @@ class Pipeline:
     def _update_new_requesters(
         self,
         requester_name: str,
-        model_config: "ModelConfig",
+        model_version: "ModelVersion",
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ],
-        other_model_configs: Set["ModelConfig"],
+        other_model_configs: Set["ModelVersion"],
     ) -> None:
         key = (
-            model_config.name,
-            str(model_config.version) if model_config.version else None,
+            model_version.name,
+            str(model_version.version) if model_version.version else None,
         )
-        if model_config.version is None:
+        if model_version.version is None:
             version_existed = False
         else:
             try:
-                model_config._get_model_version()
+                model_version._get_model_version()
                 version_existed = key not in new_versions_requested
             except KeyError:
                 version_existed = False
         if not version_existed:
-            model_config.was_created_in_this_run = True
+            model_version.was_created_in_this_run = True
             new_versions_requested[key].update_request(
-                model_config,
+                model_version,
                 NewModelVersionRequest.Requester(
                     source="step", name=requester_name
                 ),
             )
-            if model_config.version is None and key in new_versions_requested:
-                model_config.version = constants.RUNNING_MODEL_VERSION
+            if model_version.version is None and key in new_versions_requested:
+                model_version.version = constants.RUNNING_MODEL_VERSION
         else:
-            other_model_configs.add(model_config)
+            other_model_configs.add(model_version)
 
     def get_new_version_requests(
         self, deployment: "PipelineDeploymentBaseModel"
@@ -848,35 +848,35 @@ class Pipeline:
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
-        other_model_configs: Set["ModelConfig"] = set()
+        other_model_configs: Set["ModelVersion"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_config
+            step_model_config = step.config.model_version
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step.config.model_config is not None
+                and step.config.model_version is not None
             )
             if step_model_config:
                 self._update_new_requesters(
-                    model_config=step_model_config,
+                    model_version=step_model_config,
                     requester_name=step.config.name,
                     new_versions_requested=new_versions_requested,
                     other_model_configs=other_model_configs,
                 )
         if not all_steps_have_own_config:
             pipeline_model_config = (
-                deployment.pipeline_configuration.model_config
+                deployment.pipeline_configuration.model_version
             )
             if pipeline_model_config:
                 self._update_new_requesters(
-                    model_config=pipeline_model_config,
+                    model_version=pipeline_model_config,
                     requester_name=self.name,
                     new_versions_requested=new_versions_requested,
                     other_model_configs=other_model_configs,
                 )
-        elif deployment.pipeline_configuration.model_config is not None:
+        elif deployment.pipeline_configuration.model_version is not None:
             logger.warning(
-                f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
+                f"ModelVersion of pipeline `{self.name}` is overridden in all steps. "
             )
 
         self._validate_new_version_requests(new_versions_requested)
@@ -906,7 +906,7 @@ class Pipeline:
                     "that `ModelConfig` requesting new version is configured only in one "
                     "place of the pipeline."
                 )
-            data.model_config._validate_config_in_runtime()
+            data.model_version._validate_config_in_runtime()
 
     def register_running_versions(
         self,
@@ -942,8 +942,8 @@ class Pipeline:
         for key, new_version_request in new_versions_requested.items():
             model_name, model_version = key
             if (
-                new_version_request.model_config.delete_new_version_on_failure
-                and new_version_request.model_config.was_created_in_this_run
+                new_version_request.model_version.delete_new_version_on_failure
+                and new_version_request.model_version.was_created_in_this_run
             ):
                 model = Client().get_model_version(
                     model_name_or_id=model_name,
@@ -1379,16 +1379,18 @@ class Pipeline:
                 }
             )
 
-            if "model_config" in _from_config_file:
-                if "model_config" in self._from_config_file:
-                    _from_config_file["model_config"] = self._from_config_file[
-                        "model_config"
-                    ]
+            if "model_version" in _from_config_file:
+                if "model_version" in self._from_config_file:
+                    _from_config_file[
+                        "model_version"
+                    ] = self._from_config_file["model_version"]
                 else:
-                    from zenml.model.model_version import ModelConfig
+                    from zenml.model.model_version import ModelVersion
 
-                    _from_config_file["model_config"] = ModelConfig.parse_obj(
-                        _from_config_file["model_config"]
+                    _from_config_file[
+                        "model_version"
+                    ] = ModelVersion.parse_obj(
+                        _from_config_file["model_version"]
                     )
         self._from_config_file = _from_config_file
 

@@ -54,7 +54,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model import ModelConfig
+    from zenml.model import ModelVersion
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -329,16 +329,16 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model_config = (
+        model_version = (
             self._deployment.step_configurations[
                 step_run.name
-            ].config.model_config
-            or self._deployment.pipeline_configuration.model_config
+            ].config.model_version
+            or self._deployment.pipeline_configuration.model_version
         )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
-            model_config=model_config,
+            model_version=model_version,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -383,7 +383,7 @@ class StepLauncher:
                     for output_name, artifact in cached_outputs.items()
                 }
                 self._link_cached_artifacts_to_model_version(
-                    model_config_from_context=model_config,
+                    model_version_from_context=model_version,
                     step_run=step_run,
                 )
                 step_run.status = ExecutionStatus.CACHED
@@ -393,7 +393,7 @@ class StepLauncher:
 
     def _link_cached_artifacts_to_model_version(
         self,
-        model_config_from_context: Optional["ModelConfig"],
+        model_version_from_context: Optional["ModelVersion"],
         step_run: StepRunRequestModel,
     ) -> None:
         """Links the output artifacts of the cached step to the model version in Control Plane.
@@ -420,16 +420,16 @@ class StepLauncher:
                         artifact_name=output_name_
                     )
                 if artifact_config_.model_name is None:
-                    model_config = model_config_from_context
+                    model_version = model_version_from_context
                 else:
-                    from zenml.model.model_version import ModelConfig
+                    from zenml.model.model_version import ModelVersion
 
-                    model_config = ModelConfig(
+                    model_version = ModelVersion(
                         name=artifact_config_.model_name,
                         version=artifact_config_.model_version,
                     )
-                if model_config:
-                    model_config.get_or_create_model_version()
+                if model_version:
+                    model_version.get_or_create_model_version()
 
                     artifact_config_._pipeline_name = (
                         self._deployment.pipeline_configuration.name
@@ -437,11 +437,11 @@ class StepLauncher:
                     artifact_config_._step_name = self._step_name
                     logger.debug(
                         f"Linking artifact `{artifact_config_.artifact_name}` "
-                        f"to model `{model_config.name}` version `{model_config.version}`."
+                        f"to model `{model_version.name}` version `{model_version.version}`."
                     )
                     artifact_config_.link_to_model(
                         artifact_uuid=output_,
-                        model_config=model_config,
+                        model_version=model_version,
                     )
 
     def _run_step(
