@@ -23,7 +23,7 @@ def test_init_warns(
     delete_new_version_on_failure,
     logger,
 ):
-    with patch(f"zenml.model.model_config.logger.{logger}") as logger:
+    with patch(f"zenml.model.model_version.logger.{logger}") as logger:
         ModelConfig(
             name="foo",
             version=version_name,
