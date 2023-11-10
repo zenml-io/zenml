@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -1385,7 +1385,7 @@ class Pipeline:
                         "model_config"
                     ]
                 else:
-                    from zenml.model.model_config import ModelConfig
+                    from zenml.model.model_version import ModelConfig
 
                     _from_config_file["model_config"] = ModelConfig.parse_obj(
                         _from_config_file["model_config"]

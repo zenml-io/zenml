@@ -19,7 +19,7 @@ from pydantic import validator
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelConfig
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings

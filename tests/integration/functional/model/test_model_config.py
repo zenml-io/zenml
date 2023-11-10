@@ -79,7 +79,7 @@ class TestModelConfig:
         """
         with ModelContext(create_model=False):
             mc = ModelConfig(name=MODEL_NAME)
-            with mock.patch("zenml.model.model_config.logger.info") as logger:
+            with mock.patch("zenml.model.model_version.logger.info") as logger:
                 model = mc.get_or_create_model()
                 logger.assert_called_once()
             assert model.name == MODEL_NAME
@@ -89,7 +89,7 @@ class TestModelConfig:
         with ModelContext() as model:
             mc = ModelConfig(name=MODEL_NAME)
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
                 model2 = mc.get_or_create_model()
                 logger.assert_not_called()
@@ -100,7 +100,7 @@ class TestModelConfig:
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
             mc = ModelConfig(name=MODEL_NAME)
-            with mock.patch("zenml.model.model_config.logger.info") as logger:
+            with mock.patch("zenml.model.model_version.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
             assert mv.name == RUNNING_MODEL_VERSION
@@ -111,7 +111,7 @@ class TestModelConfig:
         with ModelContext(model_version="1.0.0") as (model, mv):
             mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
                 mv_test = mc.get_or_create_model_version()
                 logger.assert_not_called()
@@ -132,7 +132,7 @@ class TestModelConfig:
         ) as (model, mv):
             mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
                 mv_test = mc.get_or_create_model_version()
                 logger.assert_not_called()
@@ -156,7 +156,7 @@ class TestModelConfig:
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
-        with mock.patch("zenml.model.model_config.logger.info") as logger:
+        with mock.patch("zenml.model.model_version.logger.info") as logger:
             mc = ModelConfig(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,

@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelConfig
 
 
 class NewModelVersionRequest(BaseModel):

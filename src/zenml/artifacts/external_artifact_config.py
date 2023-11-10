@@ -25,7 +25,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
 
 
@@ -107,7 +107,7 @@ class ExternalArtifactConfiguration(BaseModel):
             or self.model_name != model_config.name
             or self.model_version != model_config.version
         ):
-            from zenml.model.model_config import ModelConfig
+            from zenml.model.model_version import ModelConfig
 
             model_config = ModelConfig(
                 name=self.model_name,

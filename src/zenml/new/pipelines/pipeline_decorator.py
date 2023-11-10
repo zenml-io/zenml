@@ -26,7 +26,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
     from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]

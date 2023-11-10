@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.artifact_config import ArtifactConfig
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel

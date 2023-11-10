@@ -422,7 +422,7 @@ class StepLauncher:
                 if artifact_config_.model_name is None:
                     model_config = model_config_from_context
                 else:
-                    from zenml.model.model_config import ModelConfig
+                    from zenml.model.model_version import ModelConfig
 
                     model_config = ModelConfig(
                         name=artifact_config_.model_name,

@@ -22,7 +22,7 @@ from zenml.exceptions import InputResolutionError
 from zenml.models import StepRunFilterModel
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
     from zenml.models.artifact_models import ArtifactResponseModel
 
 

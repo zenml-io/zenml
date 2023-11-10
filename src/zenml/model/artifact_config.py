@@ -23,7 +23,7 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelConfig
 
 
 logger = get_logger(__name__)
@@ -76,7 +76,7 @@ class ArtifactConfig(BaseModel):
             model_config is None or model_config.name != self.model_name
         ):
             # Create a new ModelConfig instance with the provided model name and version
-            from zenml.model.model_config import ModelConfig
+            from zenml.model.model_version import ModelConfig
 
             on_the_fly_config = ModelConfig(
                 name=self.model_name,

@@ -26,7 +26,7 @@ from typing import (
 )
 
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelConfig
 from zenml.pipelines.base_pipeline import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,

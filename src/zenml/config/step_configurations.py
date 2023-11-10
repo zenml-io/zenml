@@ -34,7 +34,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelConfig
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
