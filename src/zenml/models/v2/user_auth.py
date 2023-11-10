@@ -44,6 +44,10 @@ class UserAuthModel(BaseZenModel):
     )
 
     active: bool = Field(default=False, title="Active account.")
+    is_service_account: bool = Field(
+        title="Indicates whether this is a service account or a regular user "
+        "account."
+    )
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
@@ -56,20 +60,23 @@ class UserAuthModel(BaseZenModel):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner.",
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
     email_opted_in: Optional[bool] = Field(
         default=None,
-        title="Whether the user agreed to share their email.",
+        title="Whether the user agreed to share their email. Only relevant for "
+        "user accounts",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
 
     hub_token: Optional[str] = Field(
         default=None,
-        title="JWT Token for the connected Hub account.",
+        title="JWT Token for the connected Hub account. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
@@ -161,7 +168,14 @@ class UserAuthModel(BaseZenModel):
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
         password_hash: Optional[str] = None
-        if user is not None and user.password is not None:  # and user.active:
+        if (
+            user is not None
+            # Disable password verification for service accounts as an extra
+            # security measure. Service accounts should only be used with API
+            # keys.
+            and not user.is_service_account
+            and user.password is not None
+        ):  # and user.active:
             password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
         return pwd_context.verify(plain_password, password_hash)
@@ -185,6 +199,10 @@ class UserAuthModel(BaseZenModel):
         token_hash: str = ""
         if (
             user is not None
+            # Disable activation tokens for service accounts as an extra
+            # security measure. Service accounts should only be used with API
+            # keys.
+            and not user.is_service_account
             and user.activation_token is not None
             and not user.active
         ):

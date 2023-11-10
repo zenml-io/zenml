@@ -15,6 +15,16 @@
 
 # ------------------------------------- V1 -------------------------------------
 
+from zenml.models.api_key_models import (
+    APIKey,
+    APIKeyFilterModel,
+    APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
+)
 from zenml.models.auth_models import (
     OAuthDeviceAuthorizationRequest,
     OAuthDeviceAuthorizationResponse,
@@ -45,6 +55,12 @@ from zenml.models.secret_models import (
     SecretUpdateModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.models.service_account_models import (
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
+)
 from zenml.models.user_models import ExternalUserModel
 from zenml.models.model_models import (
     ModelFilterModel,
@@ -284,9 +300,16 @@ from zenml.models.v2.user_auth import UserAuthModel
 from zenml.models.v2.build_item import BuildItem
 from zenml.models.v2.loaded_visualization import LoadedVisualization
 
-
 # ----------------------------- Forward References -----------------------------
 
+# V1
+APIKeyResponseModel.update_forward_refs(
+    ServiceAccountResponseModel=ServiceAccountResponseModel,
+)
+APIKeyInternalResponseModel.update_forward_refs(
+    ServiceAccountResponseModel=ServiceAccountResponseModel,
+)
+ServiceAccountResponseModel.update_forward_refs(TeamResponse=TeamResponse)
 SecretResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
@@ -465,6 +488,14 @@ UserResponseMetadata.update_forward_refs(
 )
 __all__ = [
     # V1
+    "APIKey",
+    "APIKeyFilterModel",
+    "APIKeyInternalResponseModel",
+    "APIKeyInternalUpdateModel",
+    "APIKeyRequestModel",
+    "APIKeyResponseModel",
+    "APIKeyRotateRequestModel",
+    "APIKeyUpdateModel",
     "BaseRequestModel",
     "BaseResponseModel",
     "ExternalUserModel",
@@ -504,6 +535,10 @@ __all__ = [
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "ServiceAccountFilterModel",
+    "ServiceAccountRequestModel",
+    "ServiceAccountResponseModel",
+    "ServiceAccountUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
     "WorkspaceScopedRequestModel",

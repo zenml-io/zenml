@@ -171,6 +171,7 @@ DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS = 3
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
+ZENML_API_KEY_PREFIX = "ZENKEY_"
 
 # API Endpoint paths:
 API = "/api"
@@ -225,6 +226,9 @@ DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
 API_TOKEN = "/api_token"
+SERVICE_ACCOUNTS = "/service_accounts"
+API_KEYS = "/api_keys"
+API_KEY_ROTATE = "/rotate"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

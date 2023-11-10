@@ -21,6 +21,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     Union,
 )
 from uuid import UUID
@@ -39,8 +40,11 @@ from zenml.models.v2.base.utils import update_model
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
+    from sqlmodel.sql.expression import Select, SelectOfScalar
 
+    from zenml.models.v2.base.filter import AnySchema
     from zenml.models.v2.core.role import RoleResponse
+    from zenml.models.v2.core.team import TeamResponse
 
 # ------------------ Request Model ------------------
 
@@ -63,7 +67,8 @@ class UserRequest(BaseRequest):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner.",
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email: Optional[str] = Field(
@@ -73,13 +78,15 @@ class UserRequest(BaseRequest):
     )
     email_opted_in: Optional[bool] = Field(
         default=None,
-        title="Whether the user agreed to share their email.",
+        title="Whether the user agreed to share their email. Only relevant for "
+        "user accounts",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
     hub_token: Optional[str] = Field(
         default=None,
-        title="JWT Token for the connected Hub account.",
+        title="JWT Token for the connected Hub account. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     password: Optional[str] = Field(
@@ -94,7 +101,7 @@ class UserRequest(BaseRequest):
         default=None,
         title="The external user ID associated with the account.",
     )
-    active: bool = Field(default=False, title="Active account.")
+    active: bool = Field(default=False, title="Whether the account is active.")
 
     class Config:
         """Pydantic configuration class."""
@@ -182,7 +189,7 @@ class UserUpdate(UserRequest):
                 field was set to True.
         """
         # When someone sets the email, or updates the email and hasn't
-        # before explicitly opted out, they are opted in
+        #  before explicitly opted out, they are opted in
         if values["email"] is not None:
             if values["email_opted_in"] is None:
                 values["email_opted_in"] = True
@@ -209,47 +216,67 @@ class UserResponseMetadata(BaseResponseMetadata):
 
     full_name: str = Field(
         default="",
-        title="The full name for the account owner.",
+        title="The full name for the account owner. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email: Optional[str] = Field(
         default="",
-        title="The email address associated with the account.",
+        title="The email address associated with the account. Only relevant "
+        "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email_opted_in: Optional[bool] = Field(
         default=None,
-        title="Whether the user agreed to share their email.",
+        title="Whether the user agreed to share their email. Only relevant for "
+        "user accounts",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
-    active: bool = Field(default=False, title="Active account.")
+    active: bool = Field(default=False, title="Whether the account is active.")
     activation_token: Optional[str] = Field(
-        default=None, max_length=STR_FIELD_MAX_LENGTH
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+        title="The activation token for the user. Only relevant for user "
+        "accounts.",
     )
     hub_token: Optional[str] = Field(
         default=None,
-        title="JWT Token for the connected Hub account.",
+        title="JWT Token for the connected Hub account. Only relevant for user "
+        "accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     external_user_id: Optional[UUID] = Field(
         default=None,
-        title="The external user ID associated with the account.",
+        title="The external user ID associated with the account. Only relevant "
+        "for user accounts.",
     )
     roles: Optional[List["RoleResponse"]] = Field(
         default=None, title="The list of roles for this user."
     )
+    teams: Optional[List["TeamResponse"]] = Field(
+        default=None, title="The list of teams for this user."
+    )
+    is_service_account: bool = Field(
+        title="Indicates whether this is a service account or a user account."
+    )
 
 
 class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
-    """Response model for users."""
+    """Response model for user and service accounts.
 
-    # Analytics fields
+    This returns the activation_token that is required for the
+    user-invitation-flow of the frontend. This also optionally includes the
+    team the user is a part of. The email is returned optionally as well
+    for use by the analytics on the client-side.
+    """
+
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "name",
         "full_name",
         "active",
         "email_opted_in",
+        "is_service_account",
     ]
 
     name: str = Field(
@@ -304,6 +331,28 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
         """The `roles` property."""
         return self.get_metadata().roles
 
+    @property
+    def teams(self) -> Optional[List["TeamResponse"]]:
+        """The `teams` property."""
+        return self.get_metadata().teams
+
+    @property
+    def is_service_account(self) -> bool:
+        """The `is_service_account` property."""
+        return self.get_metadata().is_service_account
+
+    # Helper methods
+    @classmethod
+    def _get_crypt_context(cls) -> "CryptContext":
+        """Returns the password encryption context.
+
+        Returns:
+            The password encryption context.
+        """
+        from passlib.context import CryptContext
+
+        return CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 # ------------------ Filter Model ------------------
 
@@ -335,3 +384,24 @@ class UserFilter(BaseFilter):
         default=None,
         title="The external user ID associated with the account.",
     )
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Override to filter out service accounts from the query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+        query = query.where(
+            getattr(table, "is_service_account") != True  # noqa: E712
+        )
+
+        return query

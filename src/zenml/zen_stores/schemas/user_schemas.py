@@ -17,9 +17,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     UserRequest,
     UserResponse,
     UserResponseBody,
@@ -31,6 +35,7 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        APIKeySchema,
         ArtifactSchema,
         CodeRepositorySchema,
         FlavorSchema,
@@ -60,7 +65,9 @@ class UserSchema(NamedSchema, table=True):
 
     __tablename__ = "user"
 
+    is_service_account: Optional[bool] = Field(default=False, nullable=True)
     full_name: str
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
@@ -120,9 +127,13 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    api_keys: List["APIKeySchema"] = Relationship(
+        back_populates="service_account",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     @classmethod
-    def from_request(cls, model: UserRequest) -> "UserSchema":
+    def from_user_request(cls, model: UserRequest) -> "UserSchema":
         """Create a `UserSchema` from a `UserRequest`.
 
         Args:
@@ -140,9 +151,32 @@ class UserSchema(NamedSchema, table=True):
             external_user_id=model.external_user_id,
             email_opted_in=model.email_opted_in,
             email=model.email,
+            is_service_account=False,
         )
 
-    def update(self, user_update: UserUpdate) -> "UserSchema":
+    @classmethod
+    def from_service_account_request(
+        cls, model: ServiceAccountRequestModel
+    ) -> "UserSchema":
+        """Create a `UserSchema` from a Service Account request.
+
+        Args:
+            model: The `ServiceAccountRequestModel` from which to create the
+                schema.
+
+        Returns:
+            The created `UserSchema`.
+        """
+        return cls(
+            name=model.name,
+            description=model.description or "",
+            active=model.active,
+            is_service_account=True,
+            email_opted_in=False,
+            full_name="",
+        )
+
+    def update_user(self, user_update: UserUpdate) -> "UserSchema":
         """Update a `UserSchema` from a `UserUpdate`.
 
         Args:
@@ -160,6 +194,26 @@ class UserSchema(NamedSchema, table=True):
                 )
             else:
                 setattr(self, field, value)
+
+        self.updated = datetime.utcnow()
+        return self
+
+    def update_service_account(
+        self, service_account_update: ServiceAccountUpdateModel
+    ) -> "UserSchema":
+        """Update a `UserSchema` from a `ServiceAccountUpdateModel`.
+
+        Args:
+            service_account_update: The `ServiceAccountUpdateModel` from which
+                to update the schema.
+
+        Returns:
+            The updated `UserSchema`.
+        """
+        for field, value in service_account_update.dict(
+            exclude_none=True
+        ).items():
+            setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
@@ -189,6 +243,8 @@ class UserSchema(NamedSchema, table=True):
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
+                teams=[t.to_model() for t in self.teams],
+                is_service_account=self.is_service_account or False,
             )
 
         return UserResponse(
@@ -200,3 +256,35 @@ class UserSchema(NamedSchema, table=True):
             ),
             metadata=metadata,
         )
+
+    def to_service_account_model(
+        self, _block_recursion: bool = False
+    ) -> ServiceAccountResponseModel:
+        """Convert a `UserSchema` to a `ServiceAccountResponseModel`.
+
+        Args:
+            _block_recursion: Don't recursively fill attributes
+
+        Returns:
+            The converted `ServiceAccountResponseModel`.
+        """
+        if _block_recursion:
+            return ServiceAccountResponseModel(
+                id=self.id,
+                name=self.name,
+                description=self.description or "",
+                active=self.active,
+                created=self.created,
+                updated=self.updated,
+            )
+        else:
+            return ServiceAccountResponseModel(
+                id=self.id,
+                name=self.name,
+                description=self.description or "",
+                active=self.active,
+                teams=[t.to_model() for t in self.teams],
+                created=self.created,
+                updated=self.updated,
+                roles=[ra.role.to_model() for ra in self.assigned_roles],
+            )

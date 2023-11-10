@@ -413,6 +413,7 @@ def sample_user_model() -> UserResponse:
         name="axl",
         created=datetime.now(),
         updated=datetime.now(),
+        is_service_account=False,
     )
 
 

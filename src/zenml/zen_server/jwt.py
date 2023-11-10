@@ -39,6 +39,8 @@ class JWTToken(BaseModel):
     Attributes:
         user_id: The id of the authenticated User.
         device_id: The id of the authenticated device.
+        api_key_id: The id of the authenticated API key for which this token
+            was issued.
         pipeline_id: The id of the pipeline for which the token was issued.
         schedule_id: The id of the schedule for which the token was issued.
         permissions: The permissions scope of the authenticated user.
@@ -48,6 +50,7 @@ class JWTToken(BaseModel):
     user_id: UUID
     permissions: List[str]
     device_id: Optional[UUID] = None
+    api_key_id: Optional[UUID] = None
     pipeline_id: Optional[UUID] = None
     schedule_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
@@ -86,11 +89,7 @@ class JWTToken(BaseModel):
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
             claims = cast(Dict[str, Any], claims_data)
-        except (
-            jwt.PyJWTError,
-            jwt.exceptions.DecodeError,
-            jwt.exceptions.PyJWKClientError,
-        ) as e:
+        except jwt.PyJWTError as e:
             raise AuthorizationException(f"Invalid JWT token: {e}") from e
 
         subject: str = claims.get("sub", "")
@@ -113,6 +112,16 @@ class JWTToken(BaseModel):
             except ValueError:
                 raise AuthorizationException(
                     "Invalid JWT token: the device_id claim is not a valid "
+                    "UUID"
+                )
+
+        api_key_id: Optional[UUID] = None
+        if "api_key_id" in claims:
+            try:
+                api_key_id = UUID(claims["api_key_id"])
+            except ValueError:
+                raise AuthorizationException(
+                    "Invalid JWT token: the api_key_id claim is not a valid "
                     "UUID"
                 )
 
@@ -141,6 +150,7 @@ class JWTToken(BaseModel):
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
+            api_key_id=api_key_id,
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
             permissions=list(set(permissions)),
@@ -172,6 +182,8 @@ class JWTToken(BaseModel):
             claims["exp"] = expires
         if self.device_id:
             claims["device_id"] = str(self.device_id)
+        if self.api_key_id:
+            claims["api_key_id"] = str(self.api_key_id)
         if self.pipeline_id:
             claims["pipeline_id"] = str(self.pipeline_id)
         if self.schedule_id:
