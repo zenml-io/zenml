@@ -6090,7 +6090,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no account with the given name or ID exists.
         """
-        account_type = " "
+        account_type = ""
         query = select(UserSchema)
         if uuid_utils.is_valid_uuid(account_name_or_id):
             query = query.where(UserSchema.id == account_name_or_id)
