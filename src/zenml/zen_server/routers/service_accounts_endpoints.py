@@ -32,12 +32,12 @@ from zenml.models import (
     APIKeyResponseModel,
     APIKeyRotateRequestModel,
     APIKeyUpdateModel,
+    Page,
     ServiceAccountFilterModel,
     ServiceAccountRequestModel,
     ServiceAccountResponseModel,
     ServiceAccountUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
