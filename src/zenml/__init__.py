@@ -43,6 +43,7 @@ from zenml.artifacts.utils import (
     load_artifact,
 )
 from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model_config import ModelConfig
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
@@ -51,6 +52,7 @@ from zenml.new.steps.step_context import get_step_context
 
 __all__ = [
     "ArtifactConfig",
+    "ExternalArtifact",
     "get_pipeline_context",
     "get_step_context",
     "load_artifact",
