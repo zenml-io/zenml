@@ -658,27 +658,6 @@ class ModelResponseModel(
             .items
         )
 
-    def get_version(
-        self, version: Optional[Union[str, int, ModelStages]] = None
-    ) -> ModelVersionResponseModel:
-        """Get specific version of the model.
-
-        Args:
-            version: version name, number, stage.
-                If skipped - latest version is retrieved.
-
-        Returns:
-            The requested model version.
-        """
-        from zenml.client import Client
-
-        return Client().get_model_version(
-            model_name_or_id=self.name,
-            model_version_name_or_number_or_id=getattr(
-                version, "value", version or ModelStages.LATEST
-            ),
-        )
-
 
 class ModelFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Workspaces."""
