@@ -102,7 +102,7 @@ class TestModelConfig:
     def test_model_create_model_and_version(self):
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME, create_new_model_version=True)
+            mc = ModelConfig(name=MODEL_NAME)
             with mock.patch("zenml.model.model_config.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
@@ -126,14 +126,14 @@ class TestModelConfig:
         with ModelContext():
             mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
             with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
+                mc._get_model_version()
 
     def test_model_fetch_model_and_version_by_stage(self):
         """Test model and model version retrieval by exact stage number."""
         with ModelContext(
             model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION)
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
@@ -147,32 +147,15 @@ class TestModelConfig:
         with ModelContext(model_version="1.0.0"):
             mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
+                mc._get_model_version()
 
     def test_model_fetch_model_and_version_latest(self):
         """Test model and model version retrieval by latest version."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME)
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST)
             mv = mc.get_or_create_model_version()
 
             assert mv.name == "1.0.0"
-
-    def test_init_create_new_version_with_version_fails(self):
-        """Test that it is not possible to use `version` as ModelStages and `create_new_model_version` together."""
-        with pytest.raises(ValueError):
-            ModelConfig(
-                name=MODEL_NAME,
-                version=ModelStages.PRODUCTION,
-                create_new_model_version=True,
-            )
-
-        mc = ModelConfig(
-            name=MODEL_NAME,
-            create_new_model_version=True,
-        )
-        assert mc.name == MODEL_NAME
-        assert mc.create_new_model_version
-        assert mc.version == RUNNING_MODEL_VERSION
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
@@ -192,7 +175,6 @@ class TestModelConfig:
         with ModelContext():
             mc = ModelConfig(
                 name=MODEL_NAME,
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
             )
             mv1 = mc.get_or_create_model_version()
@@ -200,7 +182,6 @@ class TestModelConfig:
 
             mc = ModelConfig(
                 name=MODEL_NAME,
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
             )
             mv2 = mc.get_or_create_model_version()

@@ -38,13 +38,13 @@ from zenml.models import (
 MODEL_NAME = "foo"
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_config=ModelConfig(name=MODEL_NAME))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
     """Untyped single output linked as Artifact from step context."""
     return 1
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_config=ModelConfig(name=MODEL_NAME))
 def single_output_step_from_context_model() -> (
     Annotated[int, ModelArtifactConfig(save_to_model_registry=True)]
 ):
@@ -52,7 +52,7 @@ def single_output_step_from_context_model() -> (
     return 1
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_config=ModelConfig(name=MODEL_NAME))
 def single_output_step_from_context_deployment() -> (
     Annotated[int, DeploymentArtifactConfig()]
 ):
@@ -83,7 +83,7 @@ def test_link_minimalistic():
 
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
         assert mv.name == "1"
         links = client.list_model_version_artifact_links(
             model_name_or_id=model.id,
@@ -115,7 +115,7 @@ def test_link_minimalistic():
         assert one_is_artifact
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_config=ModelConfig(name=MODEL_NAME))
 def multi_named_output_step_from_context() -> (
     Tuple[
         Annotated[int, "1", ArtifactConfig()],
@@ -144,7 +144,7 @@ def test_link_multiple_named_outputs():
 
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
         assert mv.name == "1"
         al = client.list_model_version_artifact_links(
             model_name_or_id=model.id,
@@ -161,7 +161,7 @@ def test_link_multiple_named_outputs():
         assert {al.name for al in al} == {"1", "2", "3"}
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_config=ModelConfig(name=MODEL_NAME))
 def multi_named_output_step_not_tracked() -> (
     Tuple[
         Annotated[int, "1"],
@@ -190,7 +190,7 @@ def test_link_multiple_named_outputs_without_links():
 
         model = client.get_model(MODEL_NAME)
         assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
         assert mv.name == "1"
         artifact_links = client.list_model_version_artifact_links(
             model_name_or_id=model.id,
@@ -496,7 +496,7 @@ def single_output_step_with_versioning() -> (
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION),
+    model_config=ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION),
 )
 def simple_pipeline_with_versioning():
     """Single output with overwrite disabled and step context."""
@@ -574,7 +574,7 @@ def step_with_manual_linkage() -> (
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(name=MODEL_NAME),
+    model_config=ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST),
 )
 def simple_pipeline_with_manual_linkage():
     """Multi output linking by function."""
@@ -594,7 +594,7 @@ def step_with_manual_and_implicit_linkage() -> (
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(name=MODEL_NAME),
+    model_config=ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST),
 )
 def simple_pipeline_with_manual_and_implicit_linkage():
     """Multi output: 2 is linked by function, 1 is linked implicitly."""
@@ -697,27 +697,6 @@ def simple_pipeline_with_manual_linkage_fail_on_override():
 def test_link_with_manual_linkage_fail_on_override():
     """Test that step fails on manual linkage, cause Annotated provided."""
     with model_killer():
-        client = Client()
-        user = client.active_user.id
-        ws = client.active_workspace.id
-
-        # manual creation needed, as we work with specific versions
-        model = client.create_model(
-            ModelRequestModel(
-                name=MODEL_NAME,
-                user=user,
-                workspace=ws,
-            )
-        )
-        client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
-        )
-
         simple_pipeline_with_manual_linkage_fail_on_override()
 
 
@@ -745,7 +724,9 @@ def simple_pipeline_with_manual_linkage_flexible_config(
         ArtifactConfig(
             model_name=MODEL_NAME, model_version=ModelStages.PRODUCTION
         ),
-        ArtifactConfig(model_name=MODEL_NAME),
+        ArtifactConfig(
+            model_name=MODEL_NAME, model_version=ModelStages.LATEST
+        ),
         ArtifactConfig(model_name=MODEL_NAME, model_version=1),
     ),
     ids=("exact_version", "exact_stage", "latest_version", "exact_number"),
@@ -824,7 +805,7 @@ def test_artifacts_linked_from_cache_steps():
     """Test that artifacts are linked from cache steps."""
 
     @pipeline(
-        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        model_config=ModelConfig(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -844,7 +825,7 @@ def test_artifacts_linked_from_cache_steps():
 
         for i in range(1, 3):
             fake_version = ModelConfig(
-                name="bar", create_new_model_version=True
+                name="bar"
             ).get_or_create_model_version()
             _inner_pipeline(i != 1)
 
@@ -888,7 +869,7 @@ def test_artifacts_linked_from_cache_steps_same_id():
     """
 
     @pipeline(
-        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        model_config=ModelConfig(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -901,8 +882,8 @@ def test_artifacts_linked_from_cache_steps_same_id():
         client = Client()
 
         for i in range(1, 3):
-            ModelConfig(
-                name="bar", create_new_model_version=True
+            fake_version = ModelConfig(
+                name="bar"
             ).get_or_create_model_version()
             _inner_pipeline(i != 1)
 
@@ -922,3 +903,5 @@ def test_artifacts_linked_from_cache_steps_same_id():
                 )
                 == 1
             ), f"Failed on {i} run"
+
+            fake_version._update_default_running_version_name()

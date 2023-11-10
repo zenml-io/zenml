@@ -125,6 +125,13 @@ class ModelSchema(NamedSchema, table=True):
             The created `ModelResponseModel`.
         """
         tags = [t.tag.to_model() for t in self.tags]
+        if self.model_versions:
+            version_numbers = [mv.number for mv in self.model_versions]
+            latest_version = self.model_versions[
+                version_numbers.index(max(version_numbers))
+            ].name
+        else:
+            latest_version = None
         return ModelResponseModel(
             id=self.id,
             name=self.name,
@@ -140,10 +147,7 @@ class ModelSchema(NamedSchema, table=True):
             trade_offs=self.trade_offs,
             ethics=self.ethics,
             tags=tags,
-            tagged=[t.name for t in tags],
-            latest_version=self.model_versions[-1].name
-            if self.model_versions
-            else None,
+            latest_version=latest_version,
         )
 
     def update(

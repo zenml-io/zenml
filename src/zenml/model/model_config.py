@@ -51,10 +51,8 @@ class ModelConfig(BaseModel):
     ethics: The ethical implications of the model.
     tags: Tags associated with the model.
     version: The model version name, number or stage is optional and points model context
-        to a specific version/stage. If skipped and `create_new_model_version` is False -
-        latest model version will be used.
+        to a specific version/stage. If skipped new model version will be created.
     version_description: The description of the model version.
-    create_new_model_version: Whether to create a new model version during execution
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
@@ -71,11 +69,11 @@ class ModelConfig(BaseModel):
     tags: Optional[List[str]]
     version: Optional[Union[ModelStages, int, str]]
     version_description: Optional[str]
-    create_new_model_version: bool = False
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
 
     suppress_class_validation_warnings: bool = False
+    was_created_in_this_run: bool = False
 
     class Config:
         """Config class."""
@@ -91,43 +89,12 @@ class ModelConfig(BaseModel):
 
         Returns:
             Dict of validated values.
-
-        Raises:
-            ValueError: If validation failed on one of the checks.
         """
-        create_new_model_version = values.get(
-            "create_new_model_version", False
-        )
         suppress_class_validation_warnings = values.get(
             "suppress_class_validation_warnings", False
         )
         version = values.get("version", None)
 
-        if create_new_model_version:
-            misuse_message = (
-                "`version` set to {set} cannot be used with `create_new_model_version`."
-                "You can leave it default or set to a non-stage and non-numeric string.\n"
-                "Examples:\n"
-                " - `version` set to 1 or '1' is interpreted as a version number\n"
-                " - `version` set to 'production' is interpreted as a stage\n"
-                " - `version` set to 'my_first_version_in_2023' is a valid version to be created\n"
-                " - `version` set to 'My Second Version!' is a valid version to be created\n"
-            )
-            if isinstance(version, ModelStages) or version in [
-                stage.value for stage in ModelStages
-            ]:
-                raise ValueError(
-                    misuse_message.format(set="a `ModelStages` instance")
-                )
-            if str(version).isnumeric():
-                raise ValueError(misuse_message.format(set="a numeric value"))
-            if version is None:
-                if not suppress_class_validation_warnings:
-                    logger.info(
-                        "Creation of new model version was requested, but no version name was explicitly provided. "
-                        f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
-                    )
-                values["version"] = RUNNING_MODEL_VERSION
         if (
             version in [stage.value for stage in ModelStages]
             and not suppress_class_validation_warnings
@@ -151,18 +118,28 @@ class ModelConfig(BaseModel):
         """
         try:
             model_version = self._get_model_version()
-            if self.create_new_model_version:
+            if self.version is None or self.version == RUNNING_MODEL_VERSION:
+                self.version = RUNNING_MODEL_VERSION
                 for run_name, run in model_version.pipeline_runs.items():
                     if run.status == ExecutionStatus.RUNNING:
                         raise RuntimeError(
-                            f"New model version was requested, but pipeline run `{run_name}` "
-                            f"is still running with version `{model_version.name}`."
+                            "You have configured a model context without explicit "
+                            "`version` argument passed in, so new a unnamed model "
+                            "version has to be created, but pipeline run "
+                            f"`{run_name}` has not finished yet. To proceed you can:\n"
+                            "- Wait for previous run to finish\n"
+                            "- Provide explicit `version` in configuration"
                         )
-
                 if self.delete_new_version_on_failure:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
-                        f"for model `{self.name}` since it already exists"
+                        f"for model `{self.name}` since it already exists "
+                        "and recovery mode is disabled. "
+                        "This could happen for unforeseen reasons (e.g. unexpected "
+                        "interruption of previous pipeline run flow).\n"
+                        "If you would like to remove the staling version use "
+                        "following CLI command:\n"
+                        f"`zenml model version delete {self.name} {self.version}`"
                     )
         except KeyError:
             self.get_or_create_model_version()
@@ -207,19 +184,51 @@ class ModelConfig(BaseModel):
 
         return model
 
-    def _create_model_version(
-        self, model: "ModelResponseModel"
-    ) -> "ModelVersionResponseModel":
-        """This method creates a model version for Model Control Plane.
+    def _get_model_version(self) -> "ModelVersionResponseModel":
+        """This method gets a model version from Model Control Plane.
 
-        Args:
-            model: The model containing the model version.
+        Returns:
+            The model version based on configuration.
+        """
+        from zenml.client import Client
+
+        zenml_client = Client()
+        return zenml_client.get_model_version(
+            model_name_or_id=self.name,
+            model_version_name_or_number_or_id=self.version
+            or RUNNING_MODEL_VERSION,
+        )
+
+    def get_or_create_model_version(self) -> "ModelVersionResponseModel":
+        """This method should get or create a model and a model version from Model Control Plane.
+
+        A new model is created implicitly if missing, otherwise existing model is fetched. Model
+        name is controlled by the `name` parameter.
+
+        Model Version returned by this method is resolved based on model configuration:
+        - If there is an existing model version leftover from the previous failed run with
+        `delete_new_version_on_failure` is set to False and `version` is None,
+        leftover model version will be reused.
+        - Otherwise if `version` is None, a new model version is created.
+        - If `version` is not None a model version will be fetched based on the version:
+            - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
+            - If `version` is set to a string, the model version with the matching version will be fetched.
+            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
 
         Returns:
             The model version based on configuration.
         """
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
+
+        model = self.get_or_create_model()
+
+        if self.version is None:
+            logger.info(
+                "Creation of new model version was requested, but no version name was explicitly provided. "
+                f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
+            )
+            self.version = RUNNING_MODEL_VERSION
 
         zenml_client = Client()
         model_version_request = ModelVersionRequestModel(
@@ -231,67 +240,14 @@ class ModelConfig(BaseModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            mv = zenml_client.get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=self.version,
-            )
-            model_version = mv
+            model_version = self._get_model_version()
         except KeyError:
             model_version = zenml_client.create_model_version(
                 model_version=mv_request
             )
+            self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
-
         return model_version
-
-    def _get_model_version(self) -> "ModelVersionResponseModel":
-        """This method gets a model version from Model Control Plane.
-
-        Returns:
-            The model version based on configuration.
-        """
-        from zenml.client import Client
-
-        zenml_client = Client()
-        if self.version is None:
-            # raise if not found
-            model_version = zenml_client.get_model_version(
-                model_name_or_id=self.name
-            )
-        else:
-            # by version name or stage or number
-            # raise if not found
-            model_version = zenml_client.get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=self.version,
-            )
-        return model_version
-
-    def get_or_create_model_version(self) -> "ModelVersionResponseModel":
-        """This method should get or create a model and a model version from Model Control Plane.
-
-        A new model is created implicitly if missing, otherwise existing model is fetched. Model
-        name is controlled by the `name` parameter.
-
-        Model Version returned by this method is resolved based on model configuration:
-        - If there is an existing model version leftover from the previous failed run with
-        `delete_new_version_on_failure` is set to False and `create_new_model_version` is True,
-        leftover model version will be reused.
-        - Otherwise if `create_new_model_version` is True, a new model version is created.
-        - If `create_new_model_version` is False a model version will be fetched based on the version:
-            - If `version` is not set, the latest model version will be fetched.
-            - If `version` is set to a string, the model version with the matching version will be fetched.
-            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
-
-        Returns:
-            The model version based on configuration.
-        """
-        model = self.get_or_create_model()
-        if self.create_new_model_version:
-            mv = self._create_model_version(model)
-        else:
-            mv = self._get_model_version()
-        return mv
 
     def _merge(self, model_config: "ModelConfig") -> None:
         self.license = self.license or model_config.license
@@ -308,4 +264,23 @@ class ModelConfig(BaseModel):
 
         self.delete_new_version_on_failure &= (
             model_config.delete_new_version_on_failure
+        )
+
+    def __hash__(self) -> int:
+        """Get hash of the `ModelConfig`.
+
+        Returns:
+            Hash function results
+        """
+        return hash(
+            "::".join(
+                (
+                    str(v)
+                    for v in (
+                        self.name,
+                        self.version,
+                        self.delete_new_version_on_failure,
+                    )
+                )
+            )
         )

@@ -291,6 +291,7 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
+    LATEST = "latest"
 
 
 class ColorVariants(StrEnum):
