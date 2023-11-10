@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Union,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, root_validator
 
@@ -83,6 +84,39 @@ class ModelVersion(BaseModel):
     @property
     def all_model_versions(self) -> List["ModelVersionResponseModel"]:
         return self._get_or_create_model().versions
+
+    @property
+    def linked_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Get latest versions of linked artifacts by types.
+
+        Returns:
+            A dictionary of artifact UUID as follows:
+        ```
+        {
+            "data_artifacts": {"full_artifact_name_1": UUID(...), ...},
+            "model_artifacts": {"full_artifact_name_10": UUID(...), ...}
+            "endpoint_artifacts": {"full_artifact_name_20": UUID(...), ...}
+        }
+        ```
+        """
+        mv = self._get_or_create_model_version()
+        data_artifacts = {
+            key: version[[max(version.keys())]]
+            for key, version in mv.artifact_object_ids.items()
+        }
+        model_artifacts = {
+            key: version[[max(version.keys())]]
+            for key, version in mv.model_object_ids.items()
+        }
+        endpoint_artifacts = {
+            key: version[[max(version.keys())]]
+            for key, version in mv.deployment_ids.items()
+        }
+        return {
+            "data_artifacts": data_artifacts,
+            "model_artifacts": model_artifacts,
+            "endpoint_artifacts": endpoint_artifacts,
+        }
 
     def get_model_object(
         self,
