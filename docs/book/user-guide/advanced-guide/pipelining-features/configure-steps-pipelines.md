@@ -120,6 +120,8 @@ When calling a step in a pipeline, the inputs provided to the step function can 
 
 {% hint style="info" %}
 In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
+If you want to pass other non-JSON-serializable objects such as NumPy arrays
+to your steps, use [External Artifacts](../artifact-management/artifact-saving-loading.md#external-artifacts) instead.
 {% endhint %}
 
 ```python
@@ -147,112 +149,6 @@ When an input is passed as a parameter, the step will only be cached if all para
 **Artifacts and caching**
 
 When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
-
-### Pass any kind of data to your steps
-
-**External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by an upstream step.
-
-```python
-import numpy as np
-from zenml import pipeline, step
-from zenml.artifacts.external_artifact import ExternalArtifact
-
-@step
-def trainer(data: np.ndarray) -> ...:
-    ...
-
-@pipeline
-def my_pipeline():
-    trainer(data=ExternalArtifact(np.array([1, 2, 3])))
-
-    # This would not work, as only JSON serializable values
-    # or artifacts can be passed as a step input:
-    # trainer(data=np.array([1, 2, 3]))
-```
-
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
-
-{% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
-{% endhint %}
-
-You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML 
-database. Search can be performed in one of the following ways:
-- By providing an artifact ID.
-- By providing an artifact name and version.
-- By providing an artifact name and a pipeline run name.
-- By providing an artifact name and a pipeline name, in which case ZenML
-    will attempt to find the artifact in the latest run of the pipeline.
-- By only providing an artifact name, in which case the latest version
-    of the artifact will be used.
-
-```python
-from uuid import UUID
-
-# Fetch by ID
-artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
-
-# Fetch by name alone - uses latest version of this artifact
-artifact = ExternalArtifact(name="my_artifact")
-
-# Fetch by name and version
-artifact = ExternalArtifact(name="my_artifact", version="my_version")
-
-# Fetch by name and pipeline run name
-artifact = ExternalArtifact(
-    name="my_artifact", 
-    pipeline_run_name="training_pipeline-2023_10_12-15_03_45_587216"
-)
-
-# Fetch by name and pipeline name - uses artifact in last successful run
-artifact = ExternalArtifact(name="model", pipeline_name="training_pipeline")
-```
-
-<details>
-
-<summary>See it in action with the E2E example</summary>
-
-*To setup the local environment used below, follow the recommendations from the
-[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
-
-In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
-share Artifacts produced by a training pipeline inside a batch inference pipeline.
-
-On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
-With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
-
-```python
-    ########## ETL stage  ##########
-    df_inference, target = data_loader(is_inference=True)
-    df_inference = inference_data_preprocessor(
-        dataset_inf=df_inference,
-        preprocess_pipeline=ExternalArtifact(
-            pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="preprocess_pipeline",
-        ),
-        target=target,
-    )
-```
-
-On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back.
-With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
-
-```python
-    ########## DataQuality stage  ##########
-    report, _ = evidently_report_step(
-        reference_dataset=ExternalArtifact(
-            pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="dataset_trn",
-        ),
-        comparison_dataset=df_inference,
-        ignored_cols=["target"],
-        metrics=[
-            EvidentlyMetricConfig.metric("DataQualityPreset"),
-        ],
-    )
-```
-
-</details>
 
 ### Using a custom step invocation ID
 
