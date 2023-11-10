@@ -237,6 +237,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
 
+        # NOTE: if the activation token is not set, this will raise an
+        # exception
         authenticate_credentials(
             user_name_or_id=user_name_or_id,
             activation_token=user_update.activation_token,
