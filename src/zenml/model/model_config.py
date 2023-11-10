@@ -133,7 +133,8 @@ class ModelConfig(BaseModel):
                 if self.delete_new_version_on_failure:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
-                        f"for model `{self.name}` since it already exists. "
+                        f"for model `{self.name}` since it already exists "
+                        "and recovery mode is disabled. "
                         "This could happen for unforeseen reasons (e.g. unexpected "
                         "interruption of previous pipeline run flow).\n"
                         "If you would like to remove the staling version use "
