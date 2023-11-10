@@ -16,7 +16,7 @@
 ZenML model support Model Control Plane feature.
 """
 
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelConfig
 from zenml.model.artifact_config import (
     ArtifactConfig,
     ModelArtifactConfig,
