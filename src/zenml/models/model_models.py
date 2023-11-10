@@ -636,14 +636,12 @@ class ModelResponseModel(
 ):
     """Model response model.
 
-    tagged: list of tag names attached to the model
     latest_version: name of latest version, if any
     """
 
     tags: List[TagResponseModel] = Field(
         title="Tags associated with the model",
     )
-    tagged: List[str]
     latest_version: Optional[str]
 
     @property
