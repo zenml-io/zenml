@@ -117,6 +117,9 @@ def authenticate_credentials(
     elif activation_token is not None:
         if not UserAuthModel.verify_activation_token(activation_token, user):
             return None
+    else:
+        if authentication_scheme() != AuthScheme.NO_AUTH:
+            return None
 
     return auth_context
 
