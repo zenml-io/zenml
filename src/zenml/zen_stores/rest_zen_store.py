@@ -208,15 +208,14 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 AnyRequestModel = TypeVar(
-    "AnyRequestModel", bound=BaseRequest | BaseRequestModel
+    "AnyRequestModel", bound=Union[BaseRequest, BaseRequestModel]
 )
-
 AnyResponseModel = TypeVar(
-    "AnyResponseModel", bound=BaseResponse[Any, Any] | BaseResponseModel
+    "AnyResponseModel", bound=Union[BaseResponse, BaseResponseModel]
 )
 AnyWorkspaceScopedRequestModel = TypeVar(
     "AnyWorkspaceScopedRequestModel",
-    bound=WorkspaceScopedRequestModel | WorkspaceScopedRequest,
+    bound=Union[WorkspaceScopedRequestModel, WorkspaceScopedRequest],
 )
 
 

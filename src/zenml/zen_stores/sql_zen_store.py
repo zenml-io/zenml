@@ -252,7 +252,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponse[Any, Any] | BaseResponseModel)
+B = TypeVar("B", bound=Union[BaseResponse, BaseResponseModel])
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -835,7 +835,7 @@ class SqlZenStore(BaseZenStore):
                 "since it does not have a `to_model` method."
             )
 
-        return Page(
+        return Page[B](
             total=total,
             total_pages=total_pages,
             items=items,
