@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
@@ -38,6 +38,9 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -146,22 +149,37 @@ class ModelSchema(NamedSchema, table=True):
     def update(
         self,
         model_update: ModelUpdateModel,
+        sql_store: "SqlZenStore",
     ) -> "ModelSchema":
         """Updates a `ModelSchema` from a `ModelUpdateModel`.
 
         Args:
             model_update: The `ModelUpdateModel` to update from.
+            sql_store: SqlZenStore instance.
 
         Returns:
             The updated `ModelSchema`.
         """
-        from zenml.utils.tag_utils import create_links, remove_links
+        from zenml.utils.tag_utils import (
+            attach_tags_to_resource,
+            detach_tags_from_resource,
+        )
 
         for field, value in model_update.dict(exclude_unset=True).items():
             if field == "add_tags":
-                create_links(value, self.id, TaggableResourceTypes.MODEL)
+                attach_tags_to_resource(
+                    tag_names=value,
+                    resource_id=self.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                    sql_store=sql_store,
+                )
             elif field == "remove_tags":
-                remove_links(value, self.id)
+                detach_tags_from_resource(
+                    tag_names=value,
+                    resource_id=self.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                    sql_store=sql_store,
+                )
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

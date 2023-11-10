@@ -105,7 +105,7 @@ def upgrade() -> None:
         now = str(datetime.now())
         for model_id_, tags_in_model in model_tags_prepared:
             for tag in tags_in_model:
-                insert_tag_models += f"('{str(uuid4())}', '{tags_ids_mapping[tag]}', '{model_id_}', {TaggableResourceTypes.MODEL.value}, '{now}', '{now}'),"
+                insert_tag_models += f"('{str(uuid4())}', '{tags_ids_mapping[tag]}', '{model_id_}', '{TaggableResourceTypes.MODEL.value}', '{now}', '{now}'),"
         insert_tag_models = insert_tag_models[:-1] + ";"
         session.execute(sa.text(insert_tag_models))
 

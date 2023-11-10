@@ -103,6 +103,7 @@ from zenml.utils.artifact_utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
 )
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.tag_utils import _get_tag_resource_id
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
@@ -3553,6 +3554,8 @@ class TestTag:
 class TestTagResource:
     def test_create_tag_resource_pass(self, client):
         """Tests creating tag<>resource mapping pass."""
+        if client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
         with tags_killer():
             tag = client.create_tag(TagRequestModel(name="foo", color="red"))
             mapping = client.zen_store.create_tag_resource(
@@ -3567,6 +3570,8 @@ class TestTagResource:
 
     def test_create_tag_resource_fails_on_duplicate(self, client):
         """Tests creating tag<>resource mapping fails on duplicate."""
+        if client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
         with tags_killer():
             tag = client.create_tag(TagRequestModel(name="foo", color="red"))
             mapping = client.zen_store.create_tag_resource(
@@ -3588,6 +3593,8 @@ class TestTagResource:
 
     def test_delete_tag_resource_pass(self, client):
         """Tests deleting tag<>resource mapping pass."""
+        if client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
         with tags_killer():
             tag = client.create_tag(TagRequestModel(name="foo", color="red"))
             resource_id = uuid4()
@@ -3599,11 +3606,40 @@ class TestTagResource:
                 )
             )
             client.zen_store.delete_tag_resource(
-                _get_tag_resource_id(tag.id, resource_id)
+                tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                resource_type=TaggableResourceTypes.MODEL,
             )
             with pytest.raises(KeyError):
                 client.zen_store.delete_tag_resource(
-                    _get_tag_resource_id(tag.id, resource_id)
+                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+
+    def test_delete_tag_resource_mismatch(self, client):
+        """Tests deleting tag<>resource mapping pass."""
+        if client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
+
+        class MockTaggableResourceTypes(StrEnum):
+            APPLE = "apple"
+
+        with tags_killer():
+            tag = client.create_tag(TagRequestModel(name="foo", color="red"))
+            resource_id = uuid4()
+            client.zen_store.create_tag_resource(
+                TagResourceRequestModel(
+                    tag_id=tag.id,
+                    resource_id=resource_id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+            )
+            with pytest.raises(
+                RuntimeError,
+                match="Resource type in request.*do not match",
+            ):
+                client.zen_store.delete_tag_resource(
+                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    resource_type=MockTaggableResourceTypes.APPLE,
                 )
 
     @pytest.mark.parametrize(
@@ -3613,6 +3649,8 @@ class TestTagResource:
     )
     def test_cascade_deletion(self, use_model, use_tag, client):
         """Test that link is deleted on tag deletion."""
+        if client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
         with ModelVersionContext() as model:
             with tags_killer():
                 tag = client.create_tag(
@@ -3656,5 +3694,6 @@ class TestTagResource:
                     _get_tag_resource_id(
                         tag_id=tag.id,
                         resource_id=fake_model_id,
-                    )
+                    ),
+                    resource_type=TaggableResourceTypes.MODEL,
                 )

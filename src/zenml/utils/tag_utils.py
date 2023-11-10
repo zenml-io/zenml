@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for handling tags."""
 
-from typing import List
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from zenml.enums import TaggableResourceTypes
@@ -21,33 +21,35 @@ from zenml.exceptions import EntityExistsError
 from zenml.models.tag_models import TagRequestModel, TagResourceRequestModel
 from zenml.utils.uuid_utils import generate_uuid_from_string
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
 
 def _get_tag_resource_id(tag_id: UUID, resource_id: UUID) -> UUID:
     return generate_uuid_from_string(str(tag_id) + str(resource_id))
 
 
-def create_links(
+def attach_tags_to_resource(
     tag_names: List[str],
     resource_id: UUID,
     resource_type: TaggableResourceTypes,
+    sql_store: "SqlZenStore",
 ) -> None:
     """Creates a tag<>resource link if not present.
 
     Args:
         tag_names: The list of names of the tags.
         resource_id: The id of the resource.
-        resource_type: The type of the resource to create link with
+        resource_type: The type of the resource to create link with.
+        sql_store: SQLZenStore instance.
     """
-    from zenml.client import Client
-
-    client = Client()
     for tag_name in tag_names:
         try:
-            tag = client.get_tag(tag_name)
+            tag = sql_store.get_tag(tag_name)
         except KeyError:
-            tag = client.create_tag(TagRequestModel(name=tag_name))
+            tag = sql_store.create_tag(TagRequestModel(name=tag_name))
         try:
-            client.zen_store.create_tag_resource(
+            sql_store.create_tag_resource(
                 TagResourceRequestModel(
                     tag_id=tag.id,
                     resource_id=resource_id,
@@ -58,24 +60,26 @@ def create_links(
             pass
 
 
-def remove_links(
+def detach_tags_from_resource(
     tag_names: List[str],
     resource_id: UUID,
+    resource_type: TaggableResourceTypes,
+    sql_store: "SqlZenStore",
 ) -> None:
     """Deletes tag<>resource link if present.
 
     Args:
         tag_names: The list of names of the tags.
         resource_id: The id of the resource.
+        resource_type: The type of the resource to create link with.
+        sql_store: SQLZenStore instance.
     """
-    from zenml.client import Client
-
-    client = Client()
     for tag_name in tag_names:
         try:
-            tag = client.get_tag(tag_name)
-            client.zen_store.delete_tag_resource(
-                _get_tag_resource_id(tag.id, resource_id)
+            tag = sql_store.get_tag(tag_name)
+            sql_store.delete_tag_resource(
+                tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                resource_type=resource_type,
             )
         except KeyError:
             pass

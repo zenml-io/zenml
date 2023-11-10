@@ -231,7 +231,6 @@ app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(tags_endpoints.router)
-app.include_router(tags_endpoints.router_tr)
 
 
 def get_root_static_files() -> List[str]:

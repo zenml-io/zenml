@@ -23,6 +23,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, ModelStages
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.model_models import (
     ModelFilterModel,
@@ -164,21 +165,24 @@ def register_model(
         limitations: The know limitations of the model.
         tag: Tags associated with the model.
     """
-    model = Client().create_model(
-        ModelRequestModel(
-            name=name,
-            license=license,
-            description=description,
-            audience=audience,
-            use_cases=use_cases,
-            trade_offs=tradeoffs,
-            ethics=ethical,
-            limitations=limitations,
-            tags=tag,
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
+    try:
+        model = Client().create_model(
+            ModelRequestModel(
+                name=name,
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                trade_offs=tradeoffs,
+                ethics=ethical,
+                limitations=limitations,
+                tags=tag,
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+            )
         )
-    )
+    except (EntityExistsError, ValueError) as e:
+        cli_utils.error(str(e))
 
     cli_utils.print_pydantic_models(
         [model],

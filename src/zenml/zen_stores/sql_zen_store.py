@@ -5627,7 +5627,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
-        from zenml.utils.tag_utils import create_links
+        from zenml.utils.tag_utils import attach_tags_to_resource
 
         with Session(self.engine) as session:
             existing_model = session.exec(
@@ -5642,11 +5642,14 @@ class SqlZenStore(BaseZenStore):
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
-            session.commit()
             if model.tags:
-                create_links(
-                    model.tags, model_schema.id, TaggableResourceTypes.MODEL
+                attach_tags_to_resource(
+                    tag_names=model.tags,
+                    resource_id=model_schema.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                    sql_store=self,
                 )
+            session.commit()
             return ModelSchema.to_model(model_schema)
 
     def get_model(
@@ -5742,7 +5745,7 @@ class SqlZenStore(BaseZenStore):
             if not existing_model:
                 raise KeyError(f"Model with ID {model_id} not found.")
 
-            existing_model.update(model_update=model_update)
+            existing_model.update(model_update=model_update, sql_store=self)
             session.add(existing_model)
             session.commit()
 
@@ -6560,14 +6563,17 @@ class SqlZenStore(BaseZenStore):
     def delete_tag_resource(
         self,
         tag_resource_id: UUID,
+        resource_type: TaggableResourceTypes,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
             tag_resource_id: id of the tag<>resource to delete.
+            resource_type: The type of the resource to create link with.
 
         Raises:
             KeyError: specified ID not found.
+            RuntimeError: on resource type mismatch.
         """
         with Session(self.engine) as session:
             tag_model = self._get_tag_model_schema(
@@ -6576,8 +6582,14 @@ class SqlZenStore(BaseZenStore):
             )
             if tag_model is None:
                 raise KeyError(
-                    f"Unable to get tag<>resource with ID `{tag_resource_id}`: "
+                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
                     f"No tag<>resource with these ID found."
+                )
+            if tag_model.resource_type != resource_type.value:
+                raise RuntimeError(
+                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
+                    f"Resource type in request `{resource_type.value}` do not match "
+                    f"resource type defined in database `{tag_model.resource_type}`."
                 )
             session.delete(tag_model)
             session.commit()
