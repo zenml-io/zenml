@@ -79,7 +79,7 @@ def test_model_create_short_names(clean_workspace_with_models):
         assert model.trade_offs == "f"
         assert model.ethics == "g"
         assert model.limitations == "e"
-        assert set(model.tagged) == {"i", "j", "k"}
+        assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
 def test_model_create_full_names(clean_workspace_with_models):
@@ -126,7 +126,7 @@ def test_model_create_full_names(clean_workspace_with_models):
         assert model.trade_offs == "f"
         assert model.ethics == "g"
         assert model.limitations == "e"
-        assert set(model.tagged) == {"i", "j", "k"}
+        assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
 def test_model_create_only_required(clean_workspace_with_models):
@@ -150,7 +150,7 @@ def test_model_create_only_required(clean_workspace_with_models):
         assert model.trade_offs is None
         assert model.ethics is None
         assert model.limitations is None
-        assert len(model.tagged) == 0
+        assert len(model.tags) == 0
 
 
 def test_model_update(clean_workspace_with_models):
@@ -166,7 +166,7 @@ def test_model_update(clean_workspace_with_models):
 
         model = Client().get_model(NAME)
         assert model.trade_offs == "foo"
-        assert set(model.tagged) == {"a"}
+        assert {t.name for t in model.tags} == {"a"}
         assert model.description is None
 
         result = runner.invoke(
@@ -177,7 +177,7 @@ def test_model_update(clean_workspace_with_models):
 
         model = Client().get_model(NAME)
         assert model.trade_offs == "foo"
-        assert set(model.tagged) == {"b"}
+        assert {t.name for t in model.tags} == {"b"}
         assert model.description == "bar"
 
 
