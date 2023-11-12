@@ -114,7 +114,9 @@ def load_model_from_metadata(model_uri: str) -> Any:
     return model
 
 
-def load_artifact(artifact: "ArtifactResponseModel") -> Any:
+def load_artifact(
+    artifact: "ArtifactResponseModel",
+) -> Any:
     """Load the given artifact into memory.
 
     Args:
@@ -122,6 +124,9 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
 
     Returns:
         The artifact loaded into memory.
+
+    Raises:
+        ImportError: If the artifact store could not be loaded.
     """
     artifact_store_loaded = False
     if artifact.artifact_store_id:
@@ -134,6 +139,11 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
             artifact_store_loaded = True
         except KeyError:
             pass
+        except ImportError:
+            raise ImportError(
+                "Unable to load the artifact store flavor. Please "
+                "ensure that the required dependencies are installed."
+            )
 
     if not artifact_store_loaded:
         logger.warning(

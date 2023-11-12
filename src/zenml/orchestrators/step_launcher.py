@@ -31,6 +31,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -267,12 +268,12 @@ class StepLauncher:
         step_instance = BaseStep.load_from_source(self._step.spec.source)
 
         docstring = step_instance.docstring
-        if docstring and len(docstring) > 1000:
-            docstring = docstring[:1000] + "..."
+        if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
+            docstring = docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         source_code = step_instance.source_code
-        if source_code and len(source_code) > 1000:
-            source_code = source_code[:1000] + "..."
+        if source_code and len(source_code) > TEXT_FIELD_MAX_LENGTH:
+            source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         return docstring, source_code
 
@@ -418,11 +419,6 @@ class StepLauncher:
                     artifact_config_ = ArtifactConfig(
                         artifact_name=output_name_
                     )
-                    logger.info(
-                        f"Linking artifact `{artifact_config_.artifact_name}` to "
-                        f"model `{artifact_config_.model_name}` version "
-                        f"`{artifact_config_.model_version}` implicitly."
-                    )
                 if artifact_config_.model_name is None:
                     model_config = model_config_from_context
                 else:
@@ -439,6 +435,10 @@ class StepLauncher:
                         self._deployment.pipeline_configuration.name
                     )
                     artifact_config_._step_name = self._step_name
+                    logger.debug(
+                        f"Linking artifact `{artifact_config_.artifact_name}` "
+                        f"to model `{model_config.name}` version `{model_config.version}`."
+                    )
                     artifact_config_.link_to_model(
                         artifact_uuid=output_,
                         model_config=model_config,

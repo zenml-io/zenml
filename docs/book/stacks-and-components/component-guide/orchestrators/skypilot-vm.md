@@ -268,7 +268,6 @@ The following code snippets show how to configure the orchestrator settings for 
 ```python
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
-
 skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
     memory="16",
@@ -276,7 +275,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
+    region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
     disk_size=100,
@@ -303,7 +302,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
 
 
 skypilot_settings = SkypilotGCPOrchestratorSettings(
@@ -315,7 +314,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     spot_recovery="recovery_strategy",
     region="us-west1",
     zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    image_id="ubuntu-pro-2004-focal-v20231101",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",
@@ -340,7 +339,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
 
 
 skypilot_settings = SkypilotAzureOrchestratorSettings(
@@ -350,9 +349,8 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
-    zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    region="West Europe",
+    image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",

@@ -449,6 +449,48 @@ def update_model_version(
     )
 
 
+@version.command("delete", help="Delete an existing model version.")
+@click.argument("model_name_or_id")
+@click.argument("model_version_name_or_number_or_id")
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_model_version(
+    model_name_or_id: str,
+    model_version_name_or_number_or_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete an existing model version in the Model Control Plane.
+
+    Args:
+        model_name_or_id: The ID or name of the model that contains the version.
+        model_version_name_or_number_or_id: The ID, number or name of the model version.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete model version '{model_version_name_or_number_or_id}' from model '{model_name_or_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Model version deletion canceled.")
+            return
+
+    try:
+        Client().delete_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_id=model_version_name_or_number_or_id,
+        )
+    except (KeyError, ValueError) as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Model version '{model_version_name_or_number_or_id}' deleted from model '{model_name_or_id}'."
+        )
+
+
 def _print_artifacts_links_generic(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
@@ -469,7 +511,7 @@ def _print_artifacts_links_generic(
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=None
+        model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
     )
@@ -623,7 +665,7 @@ def list_model_version_pipeline_runs(
     """
     model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=None
+        model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
     )

@@ -19,6 +19,7 @@ die() {
 while :; do
   case "${1-}" in
   -p | --push) PUSH="true";;
+  -si | --skip_install) SKIP_INSTALL="true";;
   -l | --latest) LATEST="latest";;
   -s | --source)
     SRC="${2-}"
@@ -41,6 +42,7 @@ done
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 export DISABLE_DATABASE_MIGRATION=1
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 rm -rf docs/mkdocs/core_code_docs || true
 rm -rf docs/mkdocs/integration_code_docs || true
 rm docs/mkdocs/index.md || true
@@ -60,15 +62,18 @@ rm docs/mkdocs/index.md || true
 # 7. Reinstall jinja in the correct version as the contexthandler is
 # deprecated in 3.1.0 but mkdocstring depends on this method
 
-zenml integration install -y feast
-zenml integration install -y label_studio
-zenml integration install -y bentoml
-zenml integration install -y airflow
-zenml integration install -y kserve
-zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
-pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
-pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
-pip install typing-extensions --upgrade
+if [ -z "$SKIP_INSTALL" ]; then
+  zenml integration install -y feast
+  zenml integration install -y label_studio
+  zenml integration install -y bentoml
+  zenml integration install -y airflow
+  zenml integration install -y kserve
+  zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
+  pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
+  pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
+  pip install typing-extensions --upgrade
+  pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
+fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
 

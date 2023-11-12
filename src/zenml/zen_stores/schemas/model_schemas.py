@@ -119,6 +119,13 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponseModel`.
         """
+        if self.model_versions:
+            version_numbers = [mv.number for mv in self.model_versions]
+            latest_version = self.model_versions[
+                version_numbers.index(max(version_numbers))
+            ].name
+        else:
+            latest_version = None
         return ModelResponseModel(
             id=self.id,
             name=self.name,
@@ -134,6 +141,7 @@ class ModelSchema(NamedSchema, table=True):
             trade_offs=self.trade_offs,
             ethics=self.ethics,
             tags=json.loads(self.tags) if self.tags else None,
+            latest_version=latest_version,
         )
 
     def update(

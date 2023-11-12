@@ -110,6 +110,7 @@ zenml image-builder register <NAME> \
     --kubernetes_context=<KUBERNETES_CONTEXT> \
     --kubernetes_namespace=<KUBERNETES_NAMESPACE> \
     --service_account_name=<KUBERNETES_SERVICE_ACCOUNT_NAME>
+    # --executor_args='["--compressed-caching=false", "--use-new-run=true"]'
 
 # or update an existing one
 zenml image-builder update <NAME> \
@@ -139,6 +140,7 @@ zenml image-builder register <NAME> \
     --kubernetes_context=<KUBERNETES_CONTEXT> \
     --volume_mounts='[{"name": "docker-config", "mountPath": "/kaniko/.docker/"}]' \
     --volumes='[{"name": "docker-config", "configMap": {"name": "docker-config"}}]'
+    # --executor_args='["--compressed-caching=false", "--use-new-run=true"]'
 
 # or update an existing one
 zenml image-builder update <NAME> \
@@ -153,8 +155,7 @@ information.
 
 #### Passing additional parameters to the Kaniko build
 
-If you want to pass [additional flags](https://github.com/GoogleContainerTools/kaniko#additional-flags) to the Kaniko
-build, pass them as a JSON string when registering your image builder in the stack:
+You can pass additional parameters to the Kaniko build by setting the `executor_args` attribute of the image builder.
 
 ```shell
 zenml image-builder register <NAME> \
@@ -162,6 +163,17 @@ zenml image-builder register <NAME> \
     --kubernetes_context=<KUBERNETES_CONTEXT> \
     --executor_args='["--label", "key=value"]' # Adds a label to the final image
 ```
+
+List of some possible additional flags:
+
+* `--cache`: Set to `false` to disable caching. Defaults to `true`.
+* `--cache-dir`: Set the directory where to store cached layers. Defaults to `/cache`.
+* `--cache-repo`: Set the repository where to store cached layers. Defaults to `gcr.io/kaniko-project/executor`.
+* `--cache-ttl`: Set the cache expiration time. Defaults to `24h`.
+* `--cleanup`: Set to `false` to disable cleanup of the working directory. Defaults to `true`.
+* `--compressed-caching`: Set to `false` to disable compressed caching. Defaults to `true`.
+
+For a full list of possible flags, check out the [Kaniko additional flags](https://github.com/GoogleContainerTools/kaniko#additional-flags) 
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
