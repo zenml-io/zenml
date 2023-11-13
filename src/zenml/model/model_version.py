@@ -127,25 +127,6 @@ class ModelVersion(BaseModel):
         return self._model_id
 
     @property
-    def version_name(self) -> Optional[str]:
-        """Get version name from  the Model Control Plane.
-
-        Returns:
-            Name of the model version or None, if model version
-                doesn't exist and can only be read given current
-                config (you used stage name or number as
-                a version name).
-        """
-        try:
-            return self._get_or_create_model_version().name
-        except ReservedNameError:
-            logger.info(
-                f"Model version `{self.version}` doesn't exist "
-                "and cannot be fetched from the Model Control Plane."
-            )
-            return None
-
-    @property
     def number(self) -> int:
         """Get version number from  the Model Control Plane.
 
