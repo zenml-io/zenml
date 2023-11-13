@@ -33,7 +33,7 @@ def upgrade() -> None:
     result = connection.execute(get_null_is_service_account)
 
     # For each user, if another user with the same name exists and has
-    # `is_service_account` set to false, delete it and its default stack
+    # `is_service_account` set to false, rename it and its default stack
     for row in result:
         id, name = row
         get_other_user = text(
@@ -49,31 +49,41 @@ def upgrade() -> None:
             get_other_user, {"name": name, "id": id}
         )
         for other_user_row in other_user_result:
+            new_name = f"{name}-{id[:4]}"
             other_user_id = other_user_row[0]
-            delete_other_user = text(
+            update_other_user = text(
                 """
-                DELETE FROM user
+                UPDATE user
+                SET name = :new_name
                 WHERE id = :id
                 """
             )
-            connection.execute(delete_other_user, {"id": other_user_id})
-            delete_default_stack = text(
+            connection.execute(
+                update_other_user, {"new_name": new_name, "id": other_user_id}
+            )
+            update_default_stack = text(
                 """
-                DELETE FROM stack
+                UPDATE stack
+                SET name = :new_name
                 WHERE user_id = :id
                 AND name = 'default'
                 """
             )
-            connection.execute(delete_default_stack, {"id": other_user_id})
-            delete_default_components = text(
+            connection.execute(
+                update_default_stack,
+                {"new_name": new_name, "id": other_user_id},
+            )
+            update_default_components = text(
                 """
-                DELETE FROM component
-                WHERE user_id = :id
-                AND stack_name = 'default'
+                UPDATE stack_component
+                SET user_id = :id
+                WHERE user_id = :other_user_id
+                AND name = 'default'
                 """
             )
             connection.execute(
-                delete_default_components, {"id": other_user_id}
+                update_default_components,
+                {"id": other_user_id, "other_user_id": id},
             )
 
     # Fill in `is_service_account` for all users that don't have it
