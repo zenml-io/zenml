@@ -71,6 +71,7 @@ def upgrade() -> None:
                     "full_name": description,
                 },
             )
+            new_name = f"default-{id[:4]}"
             update_default_stack = text(
                 """
                 UPDATE stack
