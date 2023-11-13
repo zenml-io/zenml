@@ -6799,28 +6799,15 @@ class SqlZenStore(BaseZenStore):
             model_version_artifact_link_filter_model.set_scope_model_version(
                 model_version_name_or_id
             )
-            if model_version_artifact_link_filter_model.only_artifacts:
+            if model_version_artifact_link_filter_model.only_data_artifacts:
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
+                        ModelVersionArtifactSchema.is_model_artifact
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
-                    )
-                )
-            elif model_version_artifact_link_filter_model.only_deployments:
-                query = (
-                    select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_deployment)
-                    .where(
-                        ModelVersionArtifactSchema.is_model_object
+                        ModelVersionArtifactSchema.is_endpoint_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -6828,12 +6815,27 @@ class SqlZenStore(BaseZenStore):
                         != None  # noqa: E712, E711
                     )
                 )
-            elif model_version_artifact_link_filter_model.only_model_objects:
+            elif (
+                model_version_artifact_link_filter_model.only_endpoint_artifacts
+            ):
                 query = (
                     select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_model_object)
+                    .where(ModelVersionArtifactSchema.is_endpoint_artifact)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
+                        ModelVersionArtifactSchema.is_model_artifact
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
+                    )
+                )
+            elif model_version_artifact_link_filter_model.only_model_artifacts:
+                query = (
+                    select(ModelVersionArtifactSchema)
+                    .where(ModelVersionArtifactSchema.is_model_artifact)
+                    .where(
+                        ModelVersionArtifactSchema.is_endpoint_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -6843,9 +6845,13 @@ class SqlZenStore(BaseZenStore):
                 )
             else:
                 query = select(ModelVersionArtifactSchema)
-            model_version_artifact_link_filter_model.only_artifacts = None
-            model_version_artifact_link_filter_model.only_deployments = None
-            model_version_artifact_link_filter_model.only_model_objects = None
+            model_version_artifact_link_filter_model.only_data_artifacts = None
+            model_version_artifact_link_filter_model.only_endpoint_artifacts = (
+                None
+            )
+            model_version_artifact_link_filter_model.only_model_artifacts = (
+                None
+            )
             return self.filter_and_paginate(
                 session=session,
                 query=query,

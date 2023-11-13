@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with Model Control Plane."""
 # from functools import partial
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -23,20 +23,56 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, ModelStages
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.model_models import (
     ModelFilterModel,
     ModelRequestModel,
+    ModelResponseModel,
     ModelUpdateModel,
     ModelVersionArtifactFilterModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
+    ModelVersionResponseModel,
     ModelVersionUpdateModel,
 )
-
-# from zenml.utils.pagination_utils import depaginate
+from zenml.utils.dict_utils import remove_none_values
 
 logger = get_logger(__name__)
+
+
+def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
+    return {
+        "id": model.id,
+        "name": model.name,
+        "latest_version": model.latest_version,
+        "description": model.description,
+        "tags": model.tags,
+        "use_cases": model.use_cases,
+        "audience": model.audience,
+        "limitations": model.limitations,
+        "trade_offs": model.trade_offs,
+        "ethics": model.ethics,
+        "license": model.license,
+        "updated": model.updated.date(),
+    }
+
+
+def _model_version_to_print(
+    model_version: ModelVersionResponseModel,
+) -> Dict[str, Any]:
+    return {
+        "id": model_version.id,
+        "name": model_version.name,
+        "number": model_version.number,
+        "description": model_version.description,
+        "stage": model_version.stage,
+        "data_artifacts_count": len(model_version.data_artifact_ids),
+        "model_artifacts_count": len(model_version.model_artifact_ids),
+        "endpoint_artifacts_count": len(model_version.endpoint_artifact_ids),
+        "pipeline_runs_count": len(model_version.pipeline_run_ids),
+        "updated": model_version.updated.date(),
+    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MODEL_CONTROL_PLANE)
@@ -58,10 +94,10 @@ def list_models(**kwargs: Any) -> None:
         cli_utils.declare("No models found.")
         return
 
-    cli_utils.print_pydantic_models(
-        models,
-        exclude_columns=["user", "workspace"],
-    )
+    to_print = []
+    for model in models:
+        to_print.append(_model_to_print(model))
+    cli_utils.print_table(to_print)
 
 
 @model.command("register", help="Register a new model.")
@@ -151,28 +187,26 @@ def register_model(
         limitations: The know limitations of the model.
         tag: Tags associated with the model.
     """
-    model = Client().create_model(
-        ModelRequestModel(
-            name=name,
-            license=license,
-            description=description,
-            audience=audience,
-            use_cases=use_cases,
-            trade_offs=tradeoffs,
-            ethics=ethical,
-            limitations=limitations,
-            tags=tag,
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
+    try:
+        model = Client().create_model(
+            ModelRequestModel(
+                name=name,
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                trade_offs=tradeoffs,
+                ethics=ethical,
+                limitations=limitations,
+                tags=tag,
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+            )
         )
-    )
+    except (EntityExistsError, ValueError) as e:
+        cli_utils.error(str(e))
 
-    cli_utils.print_pydantic_models(
-        [
-            model,
-        ],
-        exclude_columns=["user", "workspace"],
-    )
+    cli_utils.print_table([_model_to_print(model)])
 
 
 @model.command("update", help="Update an existing model.")
@@ -257,9 +291,8 @@ def update_model(
         tag: Tags associated with the model.
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
-    model = Client().update_model(
-        model_id=model_id,
-        model_update=ModelUpdateModel(
+    update_dict = remove_none_values(
+        dict(
             license=license,
             description=description,
             audience=audience,
@@ -270,15 +303,14 @@ def update_model(
             tags=tag,
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
-        ),
+        )
+    )
+    model = Client().update_model(
+        model_id=model_id,
+        model_update=ModelUpdateModel(**update_dict),
     )
 
-    cli_utils.print_pydantic_models(
-        [
-            model,
-        ],
-        exclude_columns=["user", "workspace"],
-    )
+    cli_utils.print_table([_model_to_print(model)])
 
 
 @model.command("delete", help="Delete an existing model.")
@@ -342,29 +374,11 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
         cli_utils.declare("No model versions found.")
         return
 
+    to_print = []
     for model_version in model_versions:
-        model_version.artifact_objects_count = len(  # type: ignore[attr-defined]
-            model_version.artifact_object_ids
-        )
-        model_version.model_objects_count = len(model_version.model_object_ids)  # type: ignore[attr-defined]
-        model_version.deployments_count = len(model_version.deployment_ids)  # type: ignore[attr-defined]
-        model_version.pipeline_runs_count = len(model_version.pipeline_run_ids)  # type: ignore[attr-defined]
+        to_print.append(_model_version_to_print(model_version))
 
-    cli_utils.print_pydantic_models(
-        model_versions,
-        columns=[
-            "id",
-            "name",
-            "number",
-            "description",
-            "stage",
-            "artifact_objects_count",
-            "model_objects_count",
-            "deployments_count",
-            "pipeline_runs_count",
-            "updated",
-        ],
-    )
+    cli_utils.print_table(to_print)
 
 
 @version.command("update", help="Update an existing model version stage.")
@@ -409,31 +423,22 @@ def update_model_version(
         )
     except RuntimeError:
         if not force:
-            cli_utils.print_pydantic_models(
-                Client().list_model_versions(
-                    model_name_or_id=model_version.model.id,
-                    model_version_filter_model=ModelVersionFilterModel(
-                        stage=stage
-                    ),
-                ),
-                columns=[
-                    "id",
-                    "name",
-                    "number",
-                    "description",
-                    "stage",
-                    "artifact_objects_count",
-                    "model_objects_count",
-                    "deployments_count",
-                    "pipeline_runs_count",
-                    "updated",
-                ],
+            cli_utils.print_table(
+                [
+                    _model_version_to_print(
+                        Client().get_model_version(
+                            model_name_or_id=model_version.model.id,
+                            model_version_name_or_number_or_id=stage,
+                        )
+                    )
+                ]
             )
             confirmation = cli_utils.confirmation(
-                "Are you sure you want to change the status of this model "
-                f"version to '{stage}'? This stage is already taken by "
-                "another model version and if you will proceed the current "
-                "model version in this stage will be archived."
+                "Are you sure you want to change the status of model "
+                f"version '{model_version_name_or_number_or_id}' to "
+                f"'{stage}'?\nThis stage is already taken by "
+                "model version shown above and if you will proceed this "
+                "model version will get into archived stage."
             )
             if not confirmation:
                 cli_utils.declare("Model version stage update canceled.")
@@ -494,9 +499,9 @@ def delete_model_version(
 def _print_artifacts_links_generic(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
-    only_artifact_objects: bool = False,
-    only_deployments: bool = False,
-    only_model_objects: bool = False,
+    only_data_artifacts: bool = False,
+    only_endpoint_artifacts: bool = False,
+    only_model_artifacts: bool = False,
     **kwargs: Any,
 ) -> None:
     """Generic method to print artifacts links.
@@ -504,9 +509,9 @@ def _print_artifacts_links_generic(
     Args:
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
-        only_artifact_objects: If set, only print artifacts.
-        only_deployments: If set, only print deployments.
-        only_model_objects: If set, only print model objects.
+        only_data_artifacts: If set, only print data artifacts.
+        only_endpoint_artifacts: If set, only print endpoint artifacts.
+        only_model_artifacts: If set, only print model artifacts.
         **kwargs: Keyword arguments to filter models.
     """
     model_version = Client().get_model_version(
@@ -517,16 +522,18 @@ def _print_artifacts_links_generic(
     )
     type_ = (
         "artifacts"
-        if only_artifact_objects
+        if only_data_artifacts
         else "deployments"
-        if only_deployments
+        if only_endpoint_artifacts
         else "model objects"
     )
 
     if (
-        (only_artifact_objects and not model_version.artifact_object_ids)
-        or (only_deployments and not model_version.deployment_ids)
-        or (only_model_objects and not model_version.model_object_ids)
+        (only_data_artifacts and not model_version.data_artifact_ids)
+        or (
+            only_endpoint_artifacts and not model_version.endpoint_artifact_ids
+        )
+        or (only_model_artifacts and not model_version.model_artifact_ids)
     ):
         cli_utils.declare(f"No {type_} linked to the model version found.")
         return
@@ -539,9 +546,9 @@ def _print_artifacts_links_generic(
         model_name_or_id=model_version.model.id,
         model_version_name_or_number_or_id=model_version.id,
         model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-            only_artifacts=only_artifact_objects,
-            only_deployments=only_deployments,
-            only_model_objects=only_model_objects,
+            only_data_artifacts=only_data_artifacts,
+            only_endpoint_artifacts=only_endpoint_artifacts,
+            only_model_artifacts=only_model_artifacts,
             **kwargs,
         ),
     )
@@ -560,18 +567,18 @@ def _print_artifacts_links_generic(
 
 
 @version.command(
-    "artifacts",
-    help="List artifacts linked to a model version.",
+    "data_artifacts",
+    help="List data artifacts linked to a model version.",
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
-def list_model_version_artifacts(
+def list_model_version_data_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List artifacts linked to a model version in the Model Control Plane.
+    """List data artifacts linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -582,24 +589,24 @@ def list_model_version_artifacts(
     _print_artifacts_links_generic(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        only_artifact_objects=True,
+        only_data_artifacts=True,
         **kwargs,
     )
 
 
 @version.command(
-    "model_objects",
-    help="List model objects linked to a model version.",
+    "model_artifacts",
+    help="List model artifacts linked to a model version.",
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
-def list_model_version_model_objects(
+def list_model_version_model_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List model objects linked to a model version in the Model Control Plane.
+    """List model artifacts linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -610,24 +617,24 @@ def list_model_version_model_objects(
     _print_artifacts_links_generic(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        only_model_objects=True,
+        only_model_artifacts=True,
         **kwargs,
     )
 
 
 @version.command(
-    "deployments",
-    help="List deployments linked to a model version.",
+    "endpoint_artifacts",
+    help="List endpoint artifacts linked to a model version.",
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
 @cli_utils.list_options(ModelVersionArtifactFilterModel)
-def list_model_version_deployments(
+def list_model_version_endpoint_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
     **kwargs: Any,
 ) -> None:
-    """List deployments linked to a model version in the Model Control Plane.
+    """List endpoint artifacts linked to a model version in the Model Control Plane.
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
@@ -638,7 +645,7 @@ def list_model_version_deployments(
     _print_artifacts_links_generic(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        only_deployments=True,
+        only_endpoint_artifacts=True,
         **kwargs,
     )
 

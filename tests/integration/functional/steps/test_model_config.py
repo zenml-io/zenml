@@ -220,7 +220,7 @@ def _this_step_produces_output() -> (
 def _this_step_tries_to_recover(run_number: int):
     mv = get_step_context().model_version._get_or_create_model_version()
     assert (
-        len(mv.artifact_object_ids["bar::_this_step_produces_output::data"])
+        len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
         == run_number
     ), "expected AssertionError"
 
@@ -273,11 +273,9 @@ def test_recovery_of_steps(model_version: ModelVersion):
             or RUNNING_MODEL_VERSION,
         )
         assert mv.name == model_version.version or RUNNING_MODEL_VERSION
-        assert len(mv.artifact_object_ids) == 1
+        assert len(mv.data_artifact_ids) == 1
         assert (
-            len(
-                mv.artifact_object_ids["bar::_this_step_produces_output::data"]
-            )
+            len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
             == 3
         )
 
@@ -841,7 +839,7 @@ def test_that_artifact_is_removed_on_deletion():
         )
         model = client.get_model(model_name_or_id="step")
         assert len(model.versions) == 1
-        assert len(model.versions[0].artifact_object_ids) == 0
+        assert len(model.versions[0].data_artifact_ids) == 0
 
 
 @step

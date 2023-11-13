@@ -116,9 +116,9 @@ class ExternalArtifactConfiguration(BaseModel):
         model_version = model_version._get_or_create_model_version()
 
         for artifact_getter in [
-            model_version.get_artifact_object,
-            model_version.get_model_object,
-            model_version.get_deployment,
+            model_version.get_data_artifact,
+            model_version.get_model_artifact,
+            model_version.get_endpoint_artifact,
         ]:
             response = artifact_getter(
                 name=self.model_artifact_name,  # type: ignore [arg-type]

@@ -95,24 +95,24 @@ def test_link_minimalistic():
         )
         assert links.size == 3
 
-        one_is_deployment = False
-        one_is_model_object = False
-        one_is_artifact = False
+        one_is_endpoint_artifact = False
+        one_is_model_artifact = False
+        one_is_data_artifact = False
         for link in links:
             assert link.link_version == 1
             assert link.name == "output"
-            one_is_deployment ^= (
-                link.is_deployment and not link.is_model_object
+            one_is_endpoint_artifact ^= (
+                link.is_endpoint_artifact and not link.is_model_artifact
             )
-            one_is_model_object ^= (
-                not link.is_deployment and link.is_model_object
+            one_is_model_artifact ^= (
+                not link.is_endpoint_artifact and link.is_model_artifact
             )
-            one_is_artifact ^= (
-                not link.is_deployment and not link.is_model_object
+            one_is_data_artifact ^= (
+                not link.is_endpoint_artifact and not link.is_model_artifact
             )
-        assert one_is_deployment
-        assert one_is_model_object
-        assert one_is_artifact
+        assert one_is_endpoint_artifact
+        assert one_is_model_artifact
+        assert one_is_data_artifact
 
 
 @step(model_version=ModelVersion(name=MODEL_NAME))
@@ -834,13 +834,13 @@ def test_artifacts_linked_from_cache_steps():
             mv = client.get_model_version(
                 model_name_or_id="foo", model_version_name_or_number_or_id=i
             )
-            assert len(mv.artifact_object_ids) == 2, f"Failed on {i} run"
-            assert len(mv.model_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+            assert len(mv.data_artifact_ids) == 2, f"Failed on {i} run"
+            assert len(mv.model_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mv.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_non_cacheable_step::output",
                 "_inner_pipeline::_cacheable_step_not_annotated::output",
             }, f"Failed on {i} run"
-            assert set(mv.model_object_ids.keys()) == {
+            assert set(mv.model_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
 
@@ -848,13 +848,13 @@ def test_artifacts_linked_from_cache_steps():
                 model_name_or_id="bar",
                 model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
-            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+            assert len(mv.data_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mv.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
             }, f"Failed on {i} run"
             assert (
                 len(
-                    mv.artifact_object_ids[
+                    mv.data_artifact_ids[
                         "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
                     ]
                 )
@@ -893,13 +893,13 @@ def test_artifacts_linked_from_cache_steps_same_id():
                 model_name_or_id="bar",
                 model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
-            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+            assert len(mv.data_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mv.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
             }, f"Failed on {i} run"
             assert (
                 len(
-                    mv.artifact_object_ids[
+                    mv.data_artifact_ids[
                         "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
                     ]
                 )

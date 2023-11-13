@@ -49,7 +49,7 @@ class ArtifactConfig(BaseModel):
     _pipeline_name: str = PrivateAttr()
     _step_name: str = PrivateAttr()
     IS_MODEL_ARTIFACT: ClassVar[bool] = False
-    IS_DEPLOYMENT_ARTIFACT: ClassVar[bool] = False
+    IS_ENDPOINT_ARTIFACT: ClassVar[bool] = False
 
     class Config:
         """Config class for ArtifactConfig."""
@@ -97,8 +97,8 @@ class ArtifactConfig(BaseModel):
         self,
         artifact_uuid: UUID,
         model_version: "ModelVersion",
-        is_model_object: bool = False,
-        is_deployment: bool = False,
+        is_model_artifact: bool = False,
+        is_endpoint_artifact: bool = False,
     ) -> None:
         """Link artifact to the model version.
 
@@ -107,8 +107,8 @@ class ArtifactConfig(BaseModel):
         Args:
             artifact_uuid: The UUID of the artifact to link.
             model_version: The model version from caller.
-            is_model_object: Whether the artifact is a model object. Defaults to False.
-            is_deployment: Whether the artifact is a deployment. Defaults to False.
+            is_model_artifact: Whether the artifact is a model object. Defaults to False.
+            is_endpoint_artifact: Whether the artifact is a deployment. Defaults to False.
         """
         from zenml.client import Client
         from zenml.models.model_models import (
@@ -134,8 +134,8 @@ class ArtifactConfig(BaseModel):
             artifact=artifact_uuid,
             model=model_version.model.id,
             model_version=model_version.id,
-            is_model_object=is_model_object,
-            is_deployment=is_deployment,
+            is_model_artifact=is_model_artifact,
+            is_endpoint_artifact=is_endpoint_artifact,
             overwrite=self.overwrite,
             pipeline_name=self._pipeline_name,
             step_name=self._step_name,
@@ -149,9 +149,11 @@ class ArtifactConfig(BaseModel):
                 user_id=client.active_user.id,
                 workspace_id=client.active_workspace.id,
                 name=artifact_name,
-                only_artifacts=not (is_model_object or is_deployment),
-                only_deployments=is_deployment,
-                only_model_objects=is_model_object,
+                only_data_artifacts=not (
+                    is_model_artifact or is_endpoint_artifact
+                ),
+                only_endpoint_artifacts=is_endpoint_artifact,
+                only_model_artifacts=is_model_artifact,
                 pipeline_name=self._pipeline_name,
                 step_name=self._step_name,
             ),
@@ -185,8 +187,8 @@ class ArtifactConfig(BaseModel):
         self._link_to_model_version(
             artifact_uuid,
             model_version=model_version,
-            is_model_object=self.IS_MODEL_ARTIFACT,
-            is_deployment=self.IS_DEPLOYMENT_ARTIFACT,
+            is_model_artifact=self.IS_MODEL_ARTIFACT,
+            is_endpoint_artifact=self.IS_ENDPOINT_ARTIFACT,
         )
 
 
@@ -203,4 +205,4 @@ class ModelArtifactConfig(ArtifactConfig):
 class DeploymentArtifactConfig(ArtifactConfig):
     """Used to link a Deployment to the model version."""
 
-    IS_DEPLOYMENT_ARTIFACT = True
+    IS_ENDPOINT_ARTIFACT = True

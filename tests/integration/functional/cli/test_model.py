@@ -255,7 +255,7 @@ def test_model_version_delete_not_found(clean_workspace_with_models):
 
 @pytest.mark.parametrize(
     "command",
-    ("artifacts", "deployments", "model_objects", "runs"),
+    ("data_artifacts", "endpoint_artifacts", "model_artifacts", "runs"),
 )
 def test_model_version_links_list(command: str, clean_workspace_with_models):
     """Test that zenml model version artifacts list fails."""

@@ -185,15 +185,15 @@ class ModelVersionResponseModel(
     model: "ModelResponseModel" = Field(
         description="The model containing version",
     )
-    model_object_ids: Dict[str, Dict[str, UUID]] = Field(
+    model_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
         description="Model Objects linked to the model version",
         default={},
     )
-    artifact_object_ids: Dict[str, Dict[str, UUID]] = Field(
+    data_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
         description="Artifacts linked to the model version",
         default={},
     )
-    deployment_ids: Dict[str, Dict[str, UUID]] = Field(
+    endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
         description="Deployments linked to the model version",
         default={},
     )
@@ -203,54 +203,56 @@ class ModelVersionResponseModel(
     )
 
     @property
-    def model_objects(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
-        """Get all model objects linked to this model version.
+    def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+        """Get all model artifacts linked to this model version.
 
         Returns:
-            Dictionary of Model Objects with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Model Artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
         return {
             name: {
                 version: Client().get_artifact(a)
-                for version, a in self.model_object_ids[name].items()
+                for version, a in self.model_artifact_ids[name].items()
             }
-            for name in self.model_object_ids
+            for name in self.model_artifact_ids
         }
 
     @property
-    def artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
-        """Get all artifacts linked to this model version.
+    def data_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+        """Get all data artifacts linked to this model version.
 
         Returns:
-            Dictionary of Artifacts with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
         return {
             name: {
                 version: Client().get_artifact(a)
-                for version, a in self.artifact_object_ids[name].items()
+                for version, a in self.data_artifact_ids[name].items()
             }
-            for name in self.artifact_object_ids
+            for name in self.data_artifact_ids
         }
 
     @property
-    def deployments(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def endpoint_artifacts(
+        self,
+    ) -> Dict[str, Dict[str, ArtifactResponseModel]]:
         """Get all deployments linked to this model version.
 
         Returns:
-            Dictionary of Deployments with versions as Dict[str, ArtifactResponseModel]
+            Dictionary of Deployments with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
         return {
             name: {
                 version: Client().get_artifact(a)
-                for version, a in self.deployment_ids[name].items()
+                for version, a in self.endpoint_artifact_ids[name].items()
             }
-            for name in self.deployment_ids
+            for name in self.endpoint_artifact_ids
         }
 
     @property
@@ -278,7 +280,7 @@ class ModelVersionResponseModel(
         """Get model object linked to this model version.
 
         Args:
-            collection: The collection to search in (one of self.model_object_ids, self.artifact_object_ids, self.deployment_ids)
+            collection: The collection to search in (one of self.model_artifact_ids, self.data_artifact_ids, self.endpoint_artifact_ids)
             name: The name of the model object to retrieve.
             version: The version of the model object to retrieve (None for latest/non-versioned)
             pipeline_name: The name of the pipeline-generated artifact.
@@ -318,7 +320,7 @@ class ModelVersionResponseModel(
             version = max(collection[name].keys())
         return client.get_artifact(collection[name][version])
 
-    def get_model_object(
+    def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -337,10 +339,10 @@ class ModelVersionResponseModel(
             Specific version of Model Object or None
         """
         return self._get_linked_object(
-            self.model_object_ids, name, version, pipeline_name, step_name
+            self.model_artifact_ids, name, version, pipeline_name, step_name
         )
 
-    def get_artifact_object(
+    def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -359,10 +361,10 @@ class ModelVersionResponseModel(
             Specific version of Artifact or None
         """
         return self._get_linked_object(
-            self.artifact_object_ids, name, version, pipeline_name, step_name
+            self.data_artifact_ids, name, version, pipeline_name, step_name
         )
 
-    def get_deployment(
+    def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -381,7 +383,7 @@ class ModelVersionResponseModel(
             Specific version of Deployment or None
         """
         return self._get_linked_object(
-            self.deployment_ids, name, version, pipeline_name, step_name
+            self.endpoint_artifact_ids, name, version, pipeline_name, step_name
         )
 
     def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
@@ -515,19 +517,19 @@ class ModelVersionArtifactBaseModel(BaseModel):
     artifact: UUID
     model: UUID
     model_version: UUID
-    is_model_object: bool = False
-    is_deployment: bool = False
+    is_model_artifact: bool = False
+    is_endpoint_artifact: bool = False
 
-    @validator("is_deployment")
-    def _validate_is_deployment(
-        cls, is_deployment: bool, values: Dict[str, Any]
+    @validator("is_endpoint_artifact")
+    def _validate_is_endpoint_artifact(
+        cls, is_endpoint_artifact: bool, values: Dict[str, Any]
     ) -> bool:
-        is_model_object = values.get("is_model_object", False)
-        if is_model_object and is_deployment:
+        is_model_artifact = values.get("is_model_artifact", False)
+        if is_model_artifact and is_endpoint_artifact:
             raise ValueError(
-                "Artifact cannot be a model object and deployment at the same time."
+                "Artifact cannot be a model artifact and endpoint artifact at the same time."
             )
-        return is_deployment
+        return is_endpoint_artifact
 
 
 class ModelVersionArtifactRequestModel(
@@ -567,15 +569,15 @@ class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
-    only_artifacts: Optional[bool] = False
-    only_model_objects: Optional[bool] = False
-    only_deployments: Optional[bool] = False
+    only_data_artifacts: Optional[bool] = False
+    only_model_artifacts: Optional[bool] = False
+    only_endpoint_artifacts: Optional[bool] = False
 
     CLI_EXCLUDE_FIELDS = [
         *ModelVersionScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "only_artifacts",
-        "only_model_objects",
-        "only_deployments",
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_endpoint_artifacts",
         "user_id",
         "workspace_id",
         "scope_workspace",

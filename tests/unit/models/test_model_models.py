@@ -158,10 +158,10 @@ def test_getters(
             created=datetime.now(),
             updated=datetime.now(),
             id=uuid4(),
-            artifact_object_ids=artifact_object_ids,
+            data_artifact_ids=artifact_object_ids,
         )
         if expected != "RuntimeError":
-            got = mv.get_artifact_object(
+            got = mv.get_data_artifact(
                 name=query_name,
                 pipeline_name=query_pipe,
                 step_name=query_step,
@@ -173,7 +173,7 @@ def test_getters(
                 assert expected is None
         else:
             with pytest.raises(RuntimeError):
-                mv.get_artifact_object(
+                mv.get_data_artifact(
                     name=query_name,
                     pipeline_name=query_pipe,
                     step_name=query_step,

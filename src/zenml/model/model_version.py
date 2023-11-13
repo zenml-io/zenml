@@ -92,7 +92,7 @@ class ModelVersion(BaseModel):
     def number(self) -> str:
         return self._get_or_create_model_version().number
 
-    def get_model_object(
+    def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -110,14 +110,14 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of Model Object or None
         """
-        return self._get_or_create_model_version().get_model_object(
+        return self._get_or_create_model_version().get_model_artifact(
             name=name,
             version=version,
             pipeline_name=pipeline_name,
             step_name=step_name,
         )
 
-    def get_artifact_object(
+    def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -135,14 +135,14 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of Artifact or None
         """
-        return self._get_or_create_model_version().get_artifact_object(
+        return self._get_or_create_model_version().get_data_artifact(
             name=name,
             version=version,
             pipeline_name=pipeline_name,
             step_name=step_name,
         )
 
-    def get_deployment(
+    def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
@@ -160,7 +160,7 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of Deployment or None
         """
-        return self._get_or_create_model_version().get_deployment(
+        return self._get_or_create_model_version().get_endpoint_artifact(
             name=name,
             version=version,
             pipeline_name=pipeline_name,

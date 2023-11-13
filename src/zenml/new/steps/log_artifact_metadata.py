@@ -50,7 +50,7 @@ def log_artifact_metadata(
         raise ValueError(e)
 
 
-def log_model_object_metadata(
+def log_model_artifact_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
     metrics: Optional[Dict[str, MetadataType]] = None,
@@ -79,7 +79,7 @@ def log_model_object_metadata(
     )
 
 
-def log_deployment_metadata(
+def log_endpoint_artifact_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
     predict_url: Optional[str] = None,
@@ -88,7 +88,7 @@ def log_deployment_metadata(
     deployer_ui_url: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for a deployment.
+    """Log metadata for an endpoint.
 
     Args:
         output_name: The output name of the artifact to log metadata for. Can
