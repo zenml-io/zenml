@@ -15,37 +15,10 @@
 
 # ------------------------------------- V1 -------------------------------------
 
-from zenml.models.api_key_models import (
-    APIKey,
-    APIKeyFilterModel,
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
-)
-from zenml.models.auth_models import (
-    OAuthDeviceAuthorizationRequest,
-    OAuthDeviceAuthorizationResponse,
-    OAuthDeviceTokenRequest,
-    OAuthDeviceUserAgentHeader,
-    OAuthDeviceVerificationRequest,
-    OAuthRedirectResponse,
-    OAuthTokenResponse,
-)
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     WorkspaceScopedRequestModel,
-)
-from zenml.models.device_models import (
-    OAuthDeviceFilterModel,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
 )
 from zenml.models.secret_models import (
     SecretBaseModel,
@@ -53,13 +26,6 @@ from zenml.models.secret_models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
-)
-from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
-from zenml.models.service_account_models import (
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
 )
 from zenml.models.user_models import ExternalUserModel
 from zenml.models.model_models import (
@@ -119,6 +85,19 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+
+from zenml.models.v2.core.api_key import (
+    APIKey,
+    APIKeyRequest,
+    APIKeyUpdate,
+    APIKeyFilter,
+    APIKeyResponse,
+    APIKeyResponseBody,
+    APIKeyResponseMetadata,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
+    APIKeyRotateRequest,
+)
 from zenml.models.v2.core.artifact import (
     ArtifactRequest,
     ArtifactFilter,
@@ -154,6 +133,16 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+)
+from zenml.models.v2.core.device import (
+    OAuthDeviceUpdate,
+    OAuthDeviceFilter,
+    OAuthDeviceResponse,
+    OAuthDeviceResponseBody,
+    OAuthDeviceResponseMetadata,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalUpdate,
+    OAuthDeviceInternalResponse,
 )
 from zenml.models.v2.core.flavor import (
     FlavorRequest,
@@ -223,6 +212,14 @@ from zenml.models.v2.core.schedule import (
     ScheduleResponse,
     ScheduleResponseBody,
     ScheduleResponseMetadata,
+)
+from zenml.models.v2.core.service_account import (
+    ServiceAccountFilter,
+    ServiceAccountResponseBody,
+    ServiceAccountResponseMetadata,
+    ServiceAccountUpdate,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
 )
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
@@ -296,6 +293,7 @@ from zenml.models.v2.service_connector_type import (
     ServiceConnectorTypedResourcesModel,
     ResourceTypeModel,
 )
+from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.loaded_visualization import LoadedVisualization
@@ -306,6 +304,16 @@ from zenml.models.v2.misc.hub_plugin_models import (
     HubPluginBaseModel,
     PluginStatus,
 )
+
+from zenml.models.v2.misc.auth_models import (
+    OAuthDeviceAuthorizationRequest,
+    OAuthDeviceAuthorizationResponse,
+    OAuthDeviceTokenRequest,
+    OAuthDeviceUserAgentHeader,
+    OAuthDeviceVerificationRequest,
+    OAuthRedirectResponse,
+    OAuthTokenResponse,
+)
 from zenml.models.v2.misc.server_models import (
     ServerModel,
     ServerDatabaseType,
@@ -315,13 +323,6 @@ from zenml.models.v2.misc.server_models import (
 # ----------------------------- Forward References -----------------------------
 
 # V1
-APIKeyResponseModel.update_forward_refs(
-    ServiceAccountResponseModel=ServiceAccountResponseModel,
-)
-APIKeyInternalResponseModel.update_forward_refs(
-    ServiceAccountResponseModel=ServiceAccountResponseModel,
-)
-ServiceAccountResponseModel.update_forward_refs(TeamResponse=TeamResponse)
 SecretResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
@@ -358,14 +359,11 @@ ModelVersionPipelineRunResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
 )
-OAuthDeviceResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-)
-OAuthDeviceInternalResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-)
 
 # V2
+APIKeyResponseMetadata.update_forward_refs(
+    ServiceAccountResponse=ServiceAccountResponse,
+)
 ArtifactRequest.update_forward_refs(
     ArtifactVisualizationRequest=ArtifactVisualizationRequest,
 )
@@ -398,6 +396,9 @@ FlavorResponseBody.update_forward_refs(
 )
 FlavorResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
+)
+OAuthDeviceResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
 )
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -455,6 +456,10 @@ ScheduleResponseBody.update_forward_refs(
 ScheduleResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
+ServiceAccountResponse.update_forward_refs(
+    TeamResponse=TeamResponse,
+    RoleResponse=RoleResponse,
+)
 ServiceConnectorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -501,14 +506,6 @@ UserResponseMetadata.update_forward_refs(
 )
 __all__ = [
     # V1
-    "APIKey",
-    "APIKeyFilterModel",
-    "APIKeyInternalResponseModel",
-    "APIKeyInternalUpdateModel",
-    "APIKeyRequestModel",
-    "APIKeyResponseModel",
-    "APIKeyRotateRequestModel",
-    "APIKeyUpdateModel",
     "BaseRequestModel",
     "BaseResponseModel",
     "ExternalUserModel",
@@ -529,29 +526,11 @@ __all__ = [
     "ModelVersionPipelineRunFilterModel",
     "ModelVersionPipelineRunRequestModel",
     "ModelVersionPipelineRunResponseModel",
-    "OAuthDeviceAuthorizationRequest",
-    "OAuthDeviceAuthorizationResponse",
-    "OAuthDeviceFilterModel",
-    "OAuthDeviceInternalRequestModel",
-    "OAuthDeviceInternalResponseModel",
-    "OAuthDeviceInternalUpdateModel",
-    "OAuthDeviceResponseModel",
-    "OAuthDeviceTokenRequest",
-    "OAuthDeviceUpdateModel",
-    "OAuthDeviceUserAgentHeader",
-    "OAuthDeviceVerificationRequest",
-    "OAuthRedirectResponse",
-    "OAuthTokenResponse",
-    "Page",
     "SecretBaseModel",
     "SecretFilterModel",
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
-    "ServiceAccountFilterModel",
-    "ServiceAccountRequestModel",
-    "ServiceAccountResponseModel",
-    "ServiceAccountUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
     "WorkspaceScopedRequestModel",
@@ -583,6 +562,16 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "APIKey",
+    "APIKeyRequest",
+    "APIKeyUpdate",
+    "APIKeyFilter",
+    "APIKeyResponse",
+    "APIKeyResponseBody",
+    "APIKeyResponseMetadata",
+    "APIKeyInternalResponse",
+    "APIKeyInternalUpdate",
+    "APIKeyRotateRequest",
     "ArtifactRequest",
     "ArtifactFilter",
     "ArtifactResponse",
@@ -619,6 +608,14 @@ __all__ = [
     "LogsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
+    "OAuthDeviceUpdate",
+    "OAuthDeviceFilter",
+    "OAuthDeviceResponse",
+    "OAuthDeviceResponseBody",
+    "OAuthDeviceResponseMetadata",
+    "OAuthDeviceInternalRequest",
+    "OAuthDeviceInternalUpdate",
+    "OAuthDeviceInternalResponse",
     "PipelineRequest",
     "PipelineUpdate",
     "PipelineFilter",
@@ -660,6 +657,12 @@ __all__ = [
     "ScheduleResponse",
     "ScheduleResponseBody",
     "ScheduleResponseMetadata",
+    "ServiceAccountFilter",
+    "ServiceAccountResponseBody",
+    "ServiceAccountResponseMetadata",
+    "ServiceAccountUpdate",
+    "ServiceAccountRequest",
+    "ServiceAccountResponse",
     "ServiceConnectorRequest",
     "ServiceConnectorUpdate",
     "ServiceConnectorFilter",
@@ -724,4 +727,11 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "OAuthDeviceAuthorizationRequest",
+    "OAuthDeviceAuthorizationResponse",
+    "OAuthDeviceTokenRequest",
+    "OAuthDeviceUserAgentHeader",
+    "OAuthDeviceVerificationRequest",
+    "OAuthRedirectResponse",
+    "OAuthTokenResponse",
 ]

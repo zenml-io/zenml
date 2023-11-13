@@ -25,23 +25,21 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
     ZENML_API_KEY_PREFIX,
 )
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    update_model,
+from zenml.models.v2.base.base import (
+    BaseRequest,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.utils import update_model
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
-    from zenml.models.service_account_models import ServiceAccountResponseModel
     from zenml.models.v2.base.filter import AnySchema
-
-# ---- #
-# BASE #
-# ---- #
+    from zenml.models.v2.core.service_account import ServiceAccountResponse
 
 
 class APIKey(BaseModel):
@@ -81,66 +79,159 @@ class APIKey(BaseModel):
         return f"{ZENML_API_KEY_PREFIX}{encoded_key}"
 
 
-class APIKeyBaseModel(BaseModel):
-    """Base model for API keys."""
+# ------------------ Request Model ------------------
+
+
+class APIKeyRequest(BaseRequest):
+    """Request model for API keys."""
 
     name: str = Field(
         title="The name of the API Key.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    description: str = Field(
-        default="",
+    description: Optional[str] = Field(
+        default=None,
         title="The description of the API Key.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
 
-# -------- #
-# RESPONSE #
-# -------- #
+class APIKeyRotateRequest(BaseModel):
+    """Request model for API key rotation."""
 
-
-class APIKeyResponseModel(APIKeyBaseModel, BaseResponseModel):
-    """Response model for API keys."""
-
-    service_account: "ServiceAccountResponseModel" = Field(
-        title="The service account associated with this API key."
+    retain_period_minutes: int = Field(
+        default=0,
+        title="Number of minutes for which the previous key is still valid "
+        "after it has been rotated.",
     )
+
+
+# ------------------ Update Model ------------------
+
+
+@update_model
+class APIKeyUpdate(APIKeyRequest):
+    """Update model for API keys."""
+
+    active: Optional[bool] = Field(
+        default=True,
+        title="Whether the API key is active.",
+    )
+
+
+class APIKeyInternalUpdate(APIKeyUpdate):
+    """Update model for API keys used internally."""
+
+    update_last_login: bool = Field(
+        default=False,
+        title="Whether to update the last login timestamp.",
+    )
+
+
+# ------------------ Response Model ------------------
+
+
+class APIKeyResponseBody(BaseResponseBody):
+    """Response body for API keys."""
 
     key: Optional[str] = Field(
         default=None,
         title="The API key. Only set immediately after creation or rotation.",
     )
-
     active: bool = Field(
         default=True,
         title="Whether the API key is active.",
     )
+    service_account: "ServiceAccountResponse" = Field(
+        title="The service account associated with this API key."
+    )
 
+
+class APIKeyResponseMetadata(BaseResponseMetadata):
+    """Response metadata for API keys."""
+
+    description: str = Field(
+        default="",
+        title="The description of the API Key.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     retain_period_minutes: int = Field(
         title="Number of minutes for which the previous key is still valid "
         "after it has been rotated.",
     )
-
     last_login: Optional[datetime] = Field(
         default=None, title="Time when the API key was last used to log in."
     )
-
     last_rotated: Optional[datetime] = Field(
         default=None, title="Time when the API key was last rotated."
     )
 
+
+class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
+    """Response model for API keys."""
+
+    name: str = Field(
+        title="The name of the API Key.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    def get_hydrated_version(self) -> "APIKeyResponse":
+        """Get the hydrated version of this API key."""
+        from zenml.client import Client
+
+        return Client().zen_store.get_api_key(
+            service_account_id=self.service_account.id,
+            api_key_name_or_id=self.id,
+        )
+
+    # Helper functions
     def set_key(self, key: str) -> None:
         """Sets the API key and encodes it.
 
         Args:
             key: The API key value to be set.
         """
-        self.key = APIKey(id=self.id, key=key).encode()
+        self.get_body().key = APIKey(id=self.id, key=key).encode()
+
+    # Body and metadata properties
+    @property
+    def key(self) -> Optional[str]:
+        """The `key` property."""
+        return self.get_body().key
+
+    @property
+    def active(self) -> bool:
+        """The `active` property."""
+        return self.get_body().active
+
+    @property
+    def service_account(self) -> "ServiceAccountResponse":
+        """The `service_account` property."""
+        return self.get_body().service_account
+
+    @property
+    def description(self) -> str:
+        """The `description` property."""
+        return self.get_metadata().description
+
+    @property
+    def retain_period_minutes(self) -> int:
+        """The `retain_period_minutes` property."""
+        return self.get_metadata().retain_period_minutes
+
+    @property
+    def last_login(self) -> Optional[datetime]:
+        """The `last_login` property."""
+        return self.get_metadata().last_login
+
+    @property
+    def last_rotated(self) -> Optional[datetime]:
+        """The `last_rotated` property."""
+        return self.get_metadata().last_rotated
 
 
-class APIKeyInternalResponseModel(APIKeyResponseModel):
+class APIKeyInternalResponse(APIKeyResponse):
     """Response model for API keys used internally."""
 
     previous_key: Optional[str] = Field(
@@ -187,13 +278,11 @@ class APIKeyInternalResponseModel(APIKeyResponseModel):
         return result or previous_result
 
 
-# ------ #
-# FILTER #
-# ------ #
+# ------------------ Filter Model ------------------
 
 
-class APIKeyFilterModel(BaseFilter):
-    """Model to enable advanced filtering of API keys."""
+class APIKeyFilter(BaseFilter):
+    """Filter model for API keys."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
@@ -258,57 +347,3 @@ class APIKeyFilterModel(BaseFilter):
             query = query.where(scope_filter)
 
         return query
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class APIKeyRequestModel(BaseRequestModel):
-    """Request model for API keys."""
-
-    name: str = Field(
-        title="The name of the API Key.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    description: Optional[str] = Field(
-        default=None,
-        title="The description of the API Key.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-
-
-class APIKeyRotateRequestModel(BaseModel):
-    """Request model for API key rotation."""
-
-    retain_period_minutes: int = Field(
-        default=0,
-        title="Number of minutes for which the previous key is still valid "
-        "after it has been rotated.",
-    )
-
-
-# ------- #
-# UPDATE  #
-# ------- #
-
-
-@update_model
-class APIKeyUpdateModel(APIKeyRequestModel):
-    """Update model for API keys."""
-
-    active: Optional[bool] = Field(
-        default=True,
-        title="Whether the API key is active.",
-    )
-
-
-class APIKeyInternalUpdateModel(APIKeyUpdateModel):
-    """Update model for API keys used internally."""
-
-    update_last_login: bool = Field(
-        default=False,
-        title="Whether to update the last login timestamp.",
-    )

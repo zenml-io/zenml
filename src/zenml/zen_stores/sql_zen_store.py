@@ -80,13 +80,13 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
+    APIKeyFilter,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -123,12 +123,12 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceFilter,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -160,10 +160,10 @@ from zenml.models import (
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -1040,6 +1040,331 @@ class SqlZenStore(BaseZenStore):
                 )
             return identity.id
 
+    # ------------------------- API Keys -------------------------
+
+    def _get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> APIKeySchema:
+        """Helper method to fetch an API key by name or ID.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                fetch the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            session: The database session to use for the query.
+
+        Returns:
+            The requested API key.
+
+        Raises:
+            KeyError: if the name or ID does not identify an API key that is
+                configured for the given service account.
+        """
+        # Fetch the service account, to make sure it exists
+        service_account = self._get_account_schema(
+            service_account_id, session=session, service_account=True
+        )
+
+        if uuid_utils.is_valid_uuid(api_key_name_or_id):
+            filter_params = APIKeySchema.id == api_key_name_or_id
+        else:
+            filter_params = APIKeySchema.name == api_key_name_or_id
+
+        api_key = session.exec(
+            select(APIKeySchema)
+            .where(filter_params)
+            .where(APIKeySchema.service_account_id == service_account.id)
+        ).first()
+
+        if api_key is None:
+            raise KeyError(
+                f"An API key with ID or name '{api_key_name_or_id}' is not "
+                f"configured for service account with ID "
+                f"'{service_account_id}'."
+            )
+        return api_key
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequest
+    ) -> APIKeyResponse:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+
+        Raises:
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            # Check if a key with the same name already exists for the same
+            # service account
+            try:
+                self._get_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.name,
+                    session=session,
+                )
+                raise EntityExistsError(
+                    f"Unable to register API key with name '{api_key.name}': "
+                    "Found an existing API key with the same name configured "
+                    f"for the same '{service_account.name}' service account."
+                )
+            except KeyError:
+                pass
+
+            new_api_key, key_value = APIKeySchema.from_request(
+                service_account_id=service_account.id,
+                request=api_key,
+            )
+            session.add(new_api_key)
+            session.commit()
+
+            api_key_model = new_api_key.to_model(hydrate=True)
+            api_key_model.set_key(key_value)
+            return api_key_model
+
+    def get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> APIKeyResponse:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The API key with the given ID.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+            return api_key.to_model(hydrate=hydrate)
+
+    def get_internal_api_key(
+        self, api_key_id: UUID, hydrate: bool = True
+    ) -> APIKeyInternalResponse:
+        """Get internal details for an API key by its unique ID.
+
+        Args:
+            api_key_id: The ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The internal details for the API key with the given ID.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+            if api_key is None:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+            return api_key.to_internal_model(hydrate=hydrate)
+
+    def list_api_keys(
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
+    ) -> Page[APIKeyResponse]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            filter_model.set_service_account(service_account.id)
+            query = select(APIKeySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=APIKeySchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdate,
+    ) -> APIKeyResponse:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            if api_key_update.name and api_key.name != api_key_update.name:
+                # Check if a key with the new name already exists for the same
+                # service account
+                try:
+                    self._get_api_key(
+                        service_account_id=service_account_id,
+                        api_key_name_or_id=api_key_update.name,
+                        session=session,
+                    )
+
+                    raise EntityExistsError(
+                        f"Unable to update API key with name "
+                        f"'{api_key_update.name}': Found an existing API key "
+                        "with the same name configured for the same "
+                        f"'{api_key.service_account.name}' service account."
+                    )
+                except KeyError:
+                    pass
+
+            api_key.update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def update_internal_api_key(
+        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
+    ) -> APIKeyResponse:
+        """Update an API key with internal details.
+
+        Args:
+            api_key_id: The ID of the API key.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+
+            if not api_key:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+
+            api_key.internal_update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model()
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequest,
+    ) -> APIKeyResponse:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            _, new_key = api_key.rotate(rotate_request)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            api_key_model = api_key.to_model()
+            api_key_model.set_key(new_key)
+
+            return api_key_model
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            session.delete(api_key)
+            session.commit()
+
     # ----------------------------- Artifacts -----------------------------
 
     def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
@@ -1757,6 +2082,276 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type in workspace "
                 f"'{workspace_id}'."
             )
+
+    # -------------------------- Devices -------------------------
+
+    def create_authorized_device(
+        self, device: OAuthDeviceInternalRequest
+    ) -> OAuthDeviceInternalResponse:
+        """Creates a new OAuth 2.0 authorized device.
+
+        Args:
+            device: The device to be created.
+
+        Returns:
+            The newly created device.
+
+        Raises:
+            EntityExistsError: If a device for the same client ID already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.client_id == device.client_id
+                )
+            ).first()
+            if existing_device is not None:
+                raise EntityExistsError(
+                    f"Unable to create device with client ID "
+                    f"'{device.client_id}': A device with this client ID "
+                    "already exists."
+                )
+
+            (
+                new_device,
+                user_code,
+                device_code,
+            ) = OAuthDeviceSchema.from_request(device)
+            session.add(new_device)
+            session.commit()
+            session.refresh(new_device)
+
+            device_model = new_device.to_internal_model(hydrate=True)
+            # Replace the hashed user code with the original user code
+            device_model.user_code = user_code
+            # Replace the hashed device code with the original device code
+            device_model.device_code = device_code
+
+            return device_model
+
+    def get_authorized_device(
+        self, device_id: UUID, hydrate: bool = True
+    ) -> OAuthDeviceResponse:
+        """Gets a specific OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if device is None:
+                raise KeyError(
+                    f"Unable to get device with ID {device_id}: No device with "
+                    "this ID found."
+                )
+
+            return device.to_model()
+
+    def get_internal_authorized_device(
+        self,
+        device_id: Optional[UUID] = None,
+        client_id: Optional[UUID] = None,
+        hydrate: bool = True,
+    ) -> OAuthDeviceInternalResponse:
+        """Gets a specific OAuth 2.0 authorized device for internal use.
+
+        Args:
+            client_id: The client ID of the device to get.
+            device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given client ID exists.
+            ValueError: If neither device ID nor client ID are provided.
+        """
+        with Session(self.engine) as session:
+            if device_id is not None:
+                device = session.exec(
+                    select(OAuthDeviceSchema).where(
+                        OAuthDeviceSchema.id == device_id
+                    )
+                ).first()
+            elif client_id is not None:
+                device = session.exec(
+                    select(OAuthDeviceSchema).where(
+                        OAuthDeviceSchema.client_id == client_id
+                    )
+                ).first()
+            else:
+                raise ValueError(
+                    "Either device ID or client ID must be provided."
+                )
+            if device is None:
+                raise KeyError(
+                    f"Unable to get device with client ID {client_id}: No "
+                    "device with this client ID found."
+                )
+
+            return device.to_internal_model(hydrate=hydrate)
+
+    def list_authorized_devices(
+        self,
+        filter_model: OAuthDeviceFilter,
+        hydrate: bool = False,
+    ) -> Page[OAuthDeviceResponse]:
+        """List all OAuth 2.0 authorized devices for a user.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all matching OAuth 2.0 authorized devices.
+        """
+        with Session(self.engine) as session:
+            query = select(OAuthDeviceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=OAuthDeviceSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceUpdate
+    ) -> OAuthDeviceResponse:
+        """Updates an existing OAuth 2.0 authorized device for internal use.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to update device with ID {device_id}: No "
+                    "device with this ID found."
+                )
+
+            existing_device.update(update)
+
+            session.add(existing_device)
+            session.commit()
+
+            return existing_device.to_model()
+
+    def update_internal_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceInternalUpdate
+    ) -> OAuthDeviceInternalResponse:
+        """Updates an existing OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to update device with ID {device_id}: No device "
+                    "with this ID found."
+                )
+
+            (
+                _,
+                user_code,
+                device_code,
+            ) = existing_device.internal_update(update)
+
+            session.add(existing_device)
+            session.commit()
+
+            device_model = existing_device.to_internal_model()
+            if user_code:
+                # Replace the hashed user code with the original user code
+                device_model.user_code = user_code
+
+            if device_code:
+                # Replace the hashed device code with the original device code
+                device_model.device_code = device_code
+
+            return device_model
+
+    def delete_authorized_device(self, device_id: UUID) -> None:
+        """Deletes an OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to delete.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to delete device with ID {device_id}: No device "
+                    "with this ID found."
+                )
+
+            session.delete(existing_device)
+            session.commit()
+
+    def delete_expired_authorized_devices(self) -> None:
+        """Deletes all expired OAuth 2.0 authorized devices."""
+        with Session(self.engine) as session:
+            expired_devices = session.exec(
+                select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
+            ).all()
+            for device in expired_devices:
+                # Delete devices that have expired
+                if (
+                    device.expires is not None
+                    and device.expires < datetime.now()
+                    and device.user_id is None
+                ):
+                    session.delete(device)
+            session.commit()
 
     # ----------------------------- Flavors -----------------------------
 
@@ -2960,6 +3555,195 @@ class SqlZenStore(BaseZenStore):
 
             # Delete the schedule
             session.delete(schedule)
+            session.commit()
+
+    # ------------------------- Service Accounts -------------------------
+
+    def create_service_account(
+        self, service_account: ServiceAccountRequest
+    ) -> ServiceAccountResponse:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if a service account with the given name already
+            # exists
+            try:
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
+            except KeyError:
+                pass
+
+            # Create the service account
+            new_account = UserSchema.from_service_account_request(
+                service_account
+            )
+            session.add(new_account)
+            session.commit()
+
+            return new_account.to_service_account_model(hydrate=True)
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ServiceAccountResponse:
+        """Gets a specific service account.
+
+        Raises a KeyError in case a service account with that id does not exist.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        with Session(self.engine) as session:
+            account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+
+            return account.to_service_account_model(hydrate=hydrate)
+
+    def list_service_accounts(
+        self,
+        filter_model: ServiceAccountFilter,
+        hydrate: bool = False,
+    ) -> Page[ServiceAccountResponse]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        with Session(self.engine) as session:
+            query = select(UserSchema)
+            paged_service_accounts: Page[
+                ServiceAccountResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
+                    hydrate=hydrate
+                ),
+                hydrate=hydrate,
+            )
+            return paged_service_accounts
+
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdate,
+    ) -> ServiceAccountResponse:
+        """Updates an existing service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            existing_service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+
+            if (
+                service_account_update.name is not None
+                and service_account_update.name
+                != existing_service_account.name
+            ):
+                try:
+                    self._get_account_schema(
+                        service_account_update.name,
+                        session=session,
+                        service_account=True,
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update service account with name "
+                        f"'{service_account_update.name}': Found an existing "
+                        "service account with this name."
+                    )
+                except KeyError:
+                    pass
+
+            existing_service_account.update_service_account(
+                service_account_update=service_account_update
+            )
+            session.add(existing_service_account)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_service_account)
+            return existing_service_account.to_service_account_model()
+
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
+        """
+        with Session(self.engine) as session:
+            service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+            # Check if the service account has any resources associated with it
+            # and raise an error if it does.
+            if self._account_owns_resources(service_account, session=session):
+                raise IllegalOperationError(
+                    "The service account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the service "
+                    "account or consider deactivating it instead."
+                )
+
+            session.delete(service_account)
             session.commit()
 
     # --------------------------- Service Connectors ---------------------------
@@ -5445,268 +6229,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(workspace)
             session.commit()
 
-    # ------------------
-    # Authorized Devices
-    # ------------------
-
-    def create_authorized_device(
-        self, device: OAuthDeviceInternalRequestModel
-    ) -> OAuthDeviceInternalResponseModel:
-        """Creates a new OAuth 2.0 authorized device.
-
-        Args:
-            device: The device to be created.
-
-        Returns:
-            The newly created device.
-
-        Raises:
-            EntityExistsError: If a device for the same client ID already
-                exists.
-        """
-        with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.client_id == device.client_id
-                )
-            ).first()
-            if existing_device is not None:
-                raise EntityExistsError(
-                    f"Unable to create device with client ID "
-                    f"'{device.client_id}': A device with this client ID "
-                    "already exists."
-                )
-
-            (
-                new_device,
-                user_code,
-                device_code,
-            ) = OAuthDeviceSchema.from_request(device)
-            session.add(new_device)
-            session.commit()
-            session.refresh(new_device)
-
-            device_model = new_device.to_internal_model()
-            # Replace the hashed user code with the original user code
-            device_model.user_code = user_code
-            # Replace the hashed device code with the original device code
-            device_model.device_code = device_code
-
-            return device_model
-
-    def get_authorized_device(
-        self, device_id: UUID
-    ) -> OAuthDeviceResponseModel:
-        """Gets a specific OAuth 2.0 authorized device.
-
-        Args:
-            device_id: The ID of the device to get.
-
-        Returns:
-            The requested device, if it was found.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if device is None:
-                raise KeyError(
-                    f"Unable to get device with ID {device_id}: No device with "
-                    "this ID found."
-                )
-
-            return device.to_model()
-
-    def get_internal_authorized_device(
-        self,
-        device_id: Optional[UUID] = None,
-        client_id: Optional[UUID] = None,
-    ) -> OAuthDeviceInternalResponseModel:
-        """Gets a specific OAuth 2.0 authorized device for internal use.
-
-        Args:
-            client_id: The client ID of the device to get.
-            device_id: The ID of the device to get.
-
-        Returns:
-            The requested device, if it was found.
-
-        Raises:
-            KeyError: If no device with the given client ID exists.
-            ValueError: If neither device ID nor client ID are provided.
-        """
-        with Session(self.engine) as session:
-            if device_id is not None:
-                device = session.exec(
-                    select(OAuthDeviceSchema).where(
-                        OAuthDeviceSchema.id == device_id
-                    )
-                ).first()
-            elif client_id is not None:
-                device = session.exec(
-                    select(OAuthDeviceSchema).where(
-                        OAuthDeviceSchema.client_id == client_id
-                    )
-                ).first()
-            else:
-                raise ValueError(
-                    "Either device ID or client ID must be provided."
-                )
-            if device is None:
-                raise KeyError(
-                    f"Unable to get device with client ID {client_id}: No "
-                    "device with this client ID found."
-                )
-
-            return device.to_internal_model()
-
-    def list_authorized_devices(
-        self, filter_model: OAuthDeviceFilterModel
-    ) -> Page[OAuthDeviceResponseModel]:
-        """List all OAuth 2.0 authorized devices for a user.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A page of all matching OAuth 2.0 authorized devices.
-        """
-        with Session(self.engine) as session:
-            query = select(OAuthDeviceSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=OAuthDeviceSchema,
-                filter_model=filter_model,
-            )
-
-    def update_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceUpdateModel
-    ) -> OAuthDeviceResponseModel:
-        """Updates an existing OAuth 2.0 authorized device for internal use.
-
-        Args:
-            device_id: The ID of the device to update.
-            update: The update to be applied to the device.
-
-        Returns:
-            The updated OAuth 2.0 authorized device.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to update device with ID {device_id}: No "
-                    "device with this ID found."
-                )
-
-            existing_device.update(update)
-
-            session.add(existing_device)
-            session.commit()
-
-            return existing_device.to_model()
-
-    def update_internal_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceInternalUpdateModel
-    ) -> OAuthDeviceInternalResponseModel:
-        """Updates an existing OAuth 2.0 authorized device.
-
-        Args:
-            device_id: The ID of the device to update.
-            update: The update to be applied to the device.
-
-        Returns:
-            The updated OAuth 2.0 authorized device.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to update device with ID {device_id}: No device "
-                    "with this ID found."
-                )
-
-            (
-                _,
-                user_code,
-                device_code,
-            ) = existing_device.internal_update(update)
-
-            session.add(existing_device)
-            session.commit()
-
-            device_model = existing_device.to_internal_model()
-            if user_code:
-                # Replace the hashed user code with the original user code
-                device_model.user_code = user_code
-
-            if device_code:
-                # Replace the hashed device code with the original device code
-                device_model.device_code = device_code
-
-            return device_model
-
-    def delete_authorized_device(self, device_id: UUID) -> None:
-        """Deletes an OAuth 2.0 authorized device.
-
-        Args:
-            device_id: The ID of the device to delete.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to delete device with ID {device_id}: No device "
-                    "with this ID found."
-                )
-
-            session.delete(existing_device)
-            session.commit()
-
-    def delete_expired_authorized_devices(self) -> None:
-        """Deletes all expired OAuth 2.0 authorized devices."""
-        with Session(self.engine) as session:
-            expired_devices = session.exec(
-                select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
-            ).all()
-            for device in expired_devices:
-                # Delete devices that have expired
-                if (
-                    device.expires is not None
-                    and device.expires < datetime.now()
-                    and device.user_id is None
-                ):
-                    session.delete(device)
-            session.commit()
-
     # =======================
     # Internal helper methods
     # =======================
@@ -6773,499 +7295,4 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_pipeline_run_link)
-            session.commit()
-
-    # ----------------
-    # Service Accounts
-    # ----------------
-
-    def create_service_account(
-        self, service_account: ServiceAccountRequestModel
-    ) -> ServiceAccountResponseModel:
-        """Creates a new service account.
-
-        Args:
-            service_account: Service account to be created.
-
-        Returns:
-            The newly created service account.
-
-        Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if a service account with the given name already
-            # exists
-            try:
-                self._get_account_schema(
-                    service_account.name, session=session, service_account=True
-                )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
-            except KeyError:
-                pass
-
-            # Create the service account
-            new_account = UserSchema.from_service_account_request(
-                service_account
-            )
-            session.add(new_account)
-            session.commit()
-
-            return new_account.to_service_account_model()
-
-    def get_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> ServiceAccountResponseModel:
-        """Gets a specific service account.
-
-        Raises a KeyError in case a service account with that id does not exist.
-
-        Args:
-            service_account_name_or_id: The name or ID of the service account to
-                get.
-
-        Returns:
-            The requested service account, if it was found.
-        """
-        with Session(self.engine) as session:
-            account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-
-            return account.to_service_account_model()
-
-    def list_service_accounts(
-        self, filter_model: ServiceAccountFilterModel
-    ) -> Page[ServiceAccountResponseModel]:
-        """List all service accounts.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of filtered service accounts.
-        """
-        with Session(self.engine) as session:
-            query = select(UserSchema)
-            paged_service_accounts: Page[
-                ServiceAccountResponseModel
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserSchema,
-                filter_model=filter_model,
-                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(),
-            )
-            return paged_service_accounts
-
-    def update_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-        service_account_update: ServiceAccountUpdateModel,
-    ) -> ServiceAccountResponseModel:
-        """Updates an existing service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to update.
-            service_account_update: The update to be applied to the service
-                account.
-
-        Returns:
-            The updated service account.
-
-        Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
-        """
-        with Session(self.engine) as session:
-            existing_service_account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-
-            if (
-                service_account_update.name is not None
-                and service_account_update.name
-                != existing_service_account.name
-            ):
-                try:
-                    self._get_account_schema(
-                        service_account_update.name,
-                        session=session,
-                        service_account=True,
-                    )
-                    raise EntityExistsError(
-                        f"Unable to update service account with name "
-                        f"'{service_account_update.name}': Found an existing "
-                        "service account with this name."
-                    )
-                except KeyError:
-                    pass
-
-            existing_service_account.update_service_account(
-                service_account_update=service_account_update
-            )
-            session.add(existing_service_account)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_service_account)
-            return existing_service_account.to_service_account_model()
-
-    def delete_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete a service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to delete.
-
-        Raises:
-            IllegalOperationError: if the service account has already been used
-                to create other resources.
-        """
-        with Session(self.engine) as session:
-            service_account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-            # Check if the service account has any resources associated with it
-            # and raise an error if it does.
-            if self._account_owns_resources(service_account, session=session):
-                raise IllegalOperationError(
-                    "The service account has already been used to create "
-                    "other resources that it now owns and therefore cannot be "
-                    "deleted. Please delete all resources owned by the service "
-                    "account or consider deactivating it instead."
-                )
-
-            session.delete(service_account)
-            session.commit()
-
-    # --------
-    # API Keys
-    # --------
-
-    def _get_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        session: Session,
-    ) -> APIKeySchema:
-        """Helper method to fetch an API key by name or ID.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                fetch the API key.
-            api_key_name_or_id: The name or ID of the API key to get.
-            session: The database session to use for the query.
-
-        Returns:
-            The requested API key.
-
-        Raises:
-            KeyError: if the name or ID does not identify an API key that is
-                configured for the given service account.
-        """
-        # Fetch the service account, to make sure it exists
-        service_account = self._get_account_schema(
-            service_account_id, session=session, service_account=True
-        )
-
-        if uuid_utils.is_valid_uuid(api_key_name_or_id):
-            filter_params = APIKeySchema.id == api_key_name_or_id
-        else:
-            filter_params = APIKeySchema.name == api_key_name_or_id
-
-        api_key = session.exec(
-            select(APIKeySchema)
-            .where(filter_params)
-            .where(APIKeySchema.service_account_id == service_account.id)
-        ).first()
-
-        if api_key is None:
-            raise KeyError(
-                f"An API key with ID or name '{api_key_name_or_id}' is not "
-                f"configured for service account with ID "
-                f"'{service_account_id}'."
-            )
-        return api_key
-
-    def create_api_key(
-        self, service_account_id: UUID, api_key: APIKeyRequestModel
-    ) -> APIKeyResponseModel:
-        """Create a new API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                create the API key.
-            api_key: The API key to create.
-
-        Returns:
-            The created API key.
-
-        Raises:
-            EntityExistsError: If an API key with the same name is already
-                configured for the same service account.
-        """
-        with Session(self.engine) as session:
-            # Fetch the service account
-            service_account = self._get_account_schema(
-                service_account_id, session=session, service_account=True
-            )
-
-            # Check if a key with the same name already exists for the same
-            # service account
-            try:
-                self._get_api_key(
-                    service_account_id=service_account.id,
-                    api_key_name_or_id=api_key.name,
-                    session=session,
-                )
-                raise EntityExistsError(
-                    f"Unable to register API key with name '{api_key.name}': "
-                    "Found an existing API key with the same name configured "
-                    f"for the same '{service_account.name}' service account."
-                )
-            except KeyError:
-                pass
-
-            new_api_key, key_value = APIKeySchema.from_request(
-                service_account_id=service_account.id,
-                request=api_key,
-            )
-            session.add(new_api_key)
-            session.commit()
-
-            api_key_model = new_api_key.to_model()
-            api_key_model.set_key(key_value)
-            return api_key_model
-
-    def get_api_key(
-        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
-    ) -> APIKeyResponseModel:
-        """Get an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to fetch
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to get.
-
-        Returns:
-            The API key with the given ID.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-            return api_key.to_model()
-
-    def get_internal_api_key(
-        self, api_key_id: UUID
-    ) -> APIKeyInternalResponseModel:
-        """Get internal details for an API key by its unique ID.
-
-        Args:
-            api_key_id: The ID of the API key to get.
-
-        Returns:
-            The internal details for the API key with the given ID.
-
-        Raises:
-            KeyError: if the API key doesn't exist.
-        """
-        with Session(self.engine) as session:
-            api_key = session.exec(
-                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
-            ).first()
-            if api_key is None:
-                raise KeyError(f"API key with ID {api_key_id} not found.")
-            return api_key.to_internal_model()
-
-    def list_api_keys(
-        self, service_account_id: UUID, filter_model: APIKeyFilterModel
-    ) -> Page[APIKeyResponseModel]:
-        """List all API keys for a service account matching the given filter criteria.
-
-        Args:
-            service_account_id: The ID of the service account for which to list
-                the API keys.
-            filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            A list of all API keys matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            # Fetch the service account
-            service_account = self._get_account_schema(
-                service_account_id, session=session, service_account=True
-            )
-
-            filter_model.set_service_account(service_account.id)
-            query = select(APIKeySchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=APIKeySchema,
-                filter_model=filter_model,
-            )
-
-    def update_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        api_key_update: APIKeyUpdateModel,
-    ) -> APIKeyResponseModel:
-        """Update an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to update
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to update.
-            api_key_update: The update request on the API key.
-
-        Returns:
-            The updated API key.
-
-        Raises:
-            EntityExistsError: if the API key update would result in a name
-                conflict with an existing API key for the same service account.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            if api_key_update.name and api_key.name != api_key_update.name:
-                # Check if a key with the new name already exists for the same
-                # service account
-                try:
-                    self._get_api_key(
-                        service_account_id=service_account_id,
-                        api_key_name_or_id=api_key_update.name,
-                        session=session,
-                    )
-
-                    raise EntityExistsError(
-                        f"Unable to update API key with name "
-                        f"'{api_key_update.name}': Found an existing API key "
-                        "with the same name configured for the same "
-                        f"'{api_key.service_account.name}' service account."
-                    )
-                except KeyError:
-                    pass
-
-            api_key.update(update=api_key_update)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            return api_key.to_model()
-
-    def update_internal_api_key(
-        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdateModel
-    ) -> APIKeyResponseModel:
-        """Update an API key with internal details.
-
-        Args:
-            api_key_id: The ID of the API key.
-            api_key_update: The update request on the API key.
-
-        Returns:
-            The updated API key.
-
-        Raises:
-            KeyError: if the API key doesn't exist.
-        """
-        with Session(self.engine) as session:
-            api_key = session.exec(
-                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
-            ).first()
-
-            if not api_key:
-                raise KeyError(f"API key with ID {api_key_id} not found.")
-
-            api_key.internal_update(update=api_key_update)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            return api_key.to_model()
-
-    def rotate_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        rotate_request: APIKeyRotateRequestModel,
-    ) -> APIKeyResponseModel:
-        """Rotate an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                rotate the API key.
-            api_key_name_or_id: The name or ID of the API key to rotate.
-            rotate_request: The rotate request on the API key.
-
-        Returns:
-            The updated API key.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            _, new_key = api_key.rotate(rotate_request)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            api_key_model = api_key.to_model()
-            api_key_model.set_key(new_key)
-
-            return api_key_model
-
-    def delete_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                delete the API key.
-            api_key_name_or_id: The name or ID of the API key to delete.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            session.delete(api_key)
             session.commit()

@@ -23,11 +23,13 @@ from sqlmodel import Relationship
 
 from zenml.enums import OAuthDeviceStatus
 from zenml.models import (
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
+    OAuthDeviceResponse,
+    OAuthDeviceResponseBody,
+    OAuthDeviceResponseMetadata,
+    OAuthDeviceUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -99,7 +101,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, request: OAuthDeviceInternalRequestModel
+        cls, request: OAuthDeviceInternalRequest
     ) -> Tuple["OAuthDeviceSchema", str, str]:
         """Create an authorized device DB entry from a device authorization request.
 
@@ -137,9 +139,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             device_code,
         )
 
-    def update(
-        self, device_update: OAuthDeviceUpdateModel
-    ) -> "OAuthDeviceSchema":
+    def update(self, device_update: OAuthDeviceUpdate) -> "OAuthDeviceSchema":
         """Update an authorized device from a device update model.
 
         Args:
@@ -161,7 +161,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         return self
 
     def internal_update(
-        self, device_update: OAuthDeviceInternalUpdateModel
+        self, device_update: OAuthDeviceInternalUpdate
     ) -> Tuple["OAuthDeviceSchema", Optional[str], Optional[str]]:
         """Update an authorized device from an internal device update model.
 
@@ -197,42 +197,59 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         self.updated = now
         return self, user_code, device_code
 
-    def to_model(self) -> OAuthDeviceResponseModel:
+    def to_model(self, hydrate: bool = False) -> OAuthDeviceResponse:
         """Convert a device schema to a device response model.
 
         Returns:
             The converted device response model.
         """
-        return OAuthDeviceResponseModel(
-            id=self.id,
+        metadata = None
+        if hydrate:
+            metadata = OAuthDeviceResponseMetadata(
+                os=self.os,
+                ip_address=self.ip_address,
+                hostname=self.hostname,
+                python_version=self.python_version,
+                zenml_version=self.zenml_version,
+                city=self.city,
+                region=self.region,
+                country=self.country,
+                failed_auth_attempts=self.failed_auth_attempts,
+                last_login=self.last_login,
+            )
+
+        body = OAuthDeviceResponseBody(
             user=self.user.to_model(True) if self.user else None,
-            client_id=self.client_id,
-            expires=self.expires,
-            status=self.status,
-            last_login=self.last_login,
-            trusted_device=self.trusted_device,
-            failed_auth_attempts=self.failed_auth_attempts,
-            hostname=self.hostname,
-            os=self.os,
-            ip_address=self.ip_address,
-            python_version=self.python_version,
-            zenml_version=self.zenml_version,
-            city=self.city,
-            region=self.region,
-            country=self.country,
             created=self.created,
             updated=self.updated,
+            client_id=self.client_id,
+            expires=self.expires,
+            trusted_device=self.trusted_device,
+            status=self.status,
+        )
+        return OAuthDeviceResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )
 
-    def to_internal_model(self) -> OAuthDeviceInternalResponseModel:
+    def to_internal_model(
+        self, hydrate: bool = False
+    ) -> OAuthDeviceInternalResponse:
         """Convert a device schema to an internal device response model.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The converted internal device response model.
         """
-        device_model = self.to_model()
-        return OAuthDeviceInternalResponseModel(
+        device_model = self.to_model(hydrate=hydrate)
+        return OAuthDeviceInternalResponse(
+            id=device_model.id,
+            body=device_model.body,
+            metadata=device_model.metadata,
             user_code=self.user_code,
             device_code=self.device_code,
-            **device_model.dict(),
         )

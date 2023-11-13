@@ -94,11 +94,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -136,9 +136,9 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceFilter,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -166,10 +166,10 @@ from zenml.models import (
     ScheduleResponse,
     ScheduleUpdate,
     ServerModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -508,6 +508,152 @@ class RestZenStore(BaseZenStore):
             The ID of the deployment.
         """
         return self.get_store_info().id
+
+    # ----------------------------- API Keys -----------------------------
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequest
+    ) -> APIKeyResponse:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+        """
+        return self._create_resource(
+            resource=api_key,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponse,
+        )
+
+    def get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> APIKeyResponse:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The API key with the given ID.
+        """
+        return self._get_resource(
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def set_api_key(self, api_key: str) -> None:
+        """Set the API key to use for authentication.
+
+        Args:
+            api_key: The API key to use for authentication.
+        """
+        self.config.api_key = api_key
+        self.clear_session()
+        GlobalConfiguration()._write_config()
+
+    def list_api_keys(
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
+    ) -> Page[APIKeyResponse]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdate,
+    ) -> APIKeyResponse:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                update the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        return self._update_resource(
+            resource_id=api_key_name_or_id,
+            resource_update=api_key_update,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+            response_model=APIKeyResponse,
+        )
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequest,
+    ) -> APIKeyResponse:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        response_body = self.put(
+            f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
+            body=rotate_request,
+        )
+        return APIKeyResponse.parse_obj(response_body)
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        self._delete_resource(
+            resource_id=api_key_name_or_id,
+            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
+        )
 
     # ----------------------------- Artifacts -----------------------------
 
@@ -1530,6 +1676,107 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+        )
+
+    # --------------------------- Service Accounts ---------------------------
+
+    def create_service_account(
+        self, service_account: ServiceAccountRequest
+    ) -> ServiceAccountResponse:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+        """
+        return self._create_resource(
+            resource=service_account,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponse,
+        )
+
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ServiceAccountResponse:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested service account, if it was found.
+        """
+        return self._get_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilter, hydrate: bool = False
+    ) -> Page[ServiceAccountResponse]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+        return self._list_paginated_resources(
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdate,
+    ) -> ServiceAccountResponse:
+        """Updates an existing service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+        """
+        return self._update_resource(
+            resource_id=service_account_name_or_id,
+            resource_update=service_account_update,
+            route=SERVICE_ACCOUNTS,
+            response_model=ServiceAccountResponse,
+        )
+
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+        """
+        self._delete_resource(
+            resource_id=service_account_name_or_id,
+            route=SERVICE_ACCOUNTS,
         )
 
     # --------------------------- Service Connectors ---------------------------
@@ -2915,17 +3162,17 @@ class RestZenStore(BaseZenStore):
             route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}/{model_version_name_or_id}{RUNS}",
         )
 
-    # ------------------
-    # Authorized Devices
-    # ------------------
+    # ---------------------------- Devices ----------------------------
 
     def get_authorized_device(
-        self, device_id: UUID
-    ) -> OAuthDeviceResponseModel:
+        self, device_id: UUID, hydrate: bool = True
+    ) -> OAuthDeviceResponse:
         """Gets a specific OAuth 2.0 authorized device.
 
         Args:
             device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested device, if it was found.
@@ -2933,30 +3180,34 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=device_id,
             route=DEVICES,
-            response_model=OAuthDeviceResponseModel,
+            response_model=OAuthDeviceResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_authorized_devices(
-        self, filter_model: OAuthDeviceFilterModel
-    ) -> Page[OAuthDeviceResponseModel]:
+        self, filter_model: OAuthDeviceFilter, hydrate: bool = False
+    ) -> Page[OAuthDeviceResponse]:
         """List all OAuth 2.0 authorized devices for a user.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all matching OAuth 2.0 authorized devices.
         """
         return self._list_paginated_resources(
             route=DEVICES,
-            response_model=OAuthDeviceResponseModel,
+            response_model=OAuthDeviceResponse,
             filter_model=filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceUpdateModel
-    ) -> OAuthDeviceResponseModel:
+        self, device_id: UUID, update: OAuthDeviceUpdate
+    ) -> OAuthDeviceResponse:
         """Updates an existing OAuth 2.0 authorized device for internal use.
 
         Args:
@@ -2969,7 +3220,7 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=device_id,
             resource_update=update,
-            response_model=OAuthDeviceResponseModel,
+            response_model=OAuthDeviceResponse,
             route=DEVICES,
         )
 
@@ -3567,235 +3818,3 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
-
-    # ----------------
-    # Service Accounts
-    # ----------------
-
-    def create_service_account(
-        self, service_account: ServiceAccountRequestModel
-    ) -> ServiceAccountResponseModel:
-        """Creates a new service account.
-
-        Args:
-            service_account: Service account to be created.
-
-        Returns:
-            The newly created service account.
-        """
-        return self._create_resource(
-            resource=service_account,
-            route=SERVICE_ACCOUNTS,
-            response_model=ServiceAccountResponseModel,
-        )
-
-    def get_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> ServiceAccountResponseModel:
-        """Gets a specific service account.
-
-        Args:
-            service_account_name_or_id: The name or ID of the service account to
-                get.
-
-        Returns:
-            The requested service account, if it was found.
-        """
-        return self._get_resource(
-            resource_id=service_account_name_or_id,
-            route=SERVICE_ACCOUNTS,
-            response_model=ServiceAccountResponseModel,
-        )
-
-    def list_service_accounts(
-        self, filter_model: ServiceAccountFilterModel
-    ) -> Page[ServiceAccountResponseModel]:
-        """List all service accounts.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of filtered service accounts.
-        """
-        return self._list_paginated_resources(
-            route=SERVICE_ACCOUNTS,
-            response_model=ServiceAccountResponseModel,
-            filter_model=filter_model,
-        )
-
-    def update_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-        service_account_update: ServiceAccountUpdateModel,
-    ) -> ServiceAccountResponseModel:
-        """Updates an existing service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to update.
-            service_account_update: The update to be applied to the service
-                account.
-
-        Returns:
-            The updated service account.
-        """
-        return self._update_resource(
-            resource_id=service_account_name_or_id,
-            resource_update=service_account_update,
-            route=SERVICE_ACCOUNTS,
-            response_model=ServiceAccountResponseModel,
-        )
-
-    def delete_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete a service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to delete.
-        """
-        self._delete_resource(
-            resource_id=service_account_name_or_id,
-            route=SERVICE_ACCOUNTS,
-        )
-
-    # --------
-    # API Keys
-    # --------
-
-    def create_api_key(
-        self, service_account_id: UUID, api_key: APIKeyRequestModel
-    ) -> APIKeyResponseModel:
-        """Create a new API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                create the API key.
-            api_key: The API key to create.
-
-        Returns:
-            The created API key.
-        """
-        return self._create_resource(
-            resource=api_key,
-            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
-            response_model=APIKeyResponseModel,
-        )
-
-    def get_api_key(
-        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
-    ) -> APIKeyResponseModel:
-        """Get an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to fetch
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to get.
-
-        Returns:
-            The API key with the given ID.
-        """
-        return self._get_resource(
-            resource_id=api_key_name_or_id,
-            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
-            response_model=APIKeyResponseModel,
-        )
-
-    def set_api_key(self, api_key: str) -> None:
-        """Set the API key to use for authentication.
-
-        Args:
-            api_key: The API key to use for authentication.
-        """
-        self.config.api_key = api_key
-        self.clear_session()
-        GlobalConfiguration()._write_config()
-
-    def list_api_keys(
-        self, service_account_id: UUID, filter_model: APIKeyFilterModel
-    ) -> Page[APIKeyResponseModel]:
-        """List all API keys for a service account matching the given filter criteria.
-
-        Args:
-            service_account_id: The ID of the service account for which to list
-                the API keys.
-            filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            A list of all API keys matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
-            response_model=APIKeyResponseModel,
-            filter_model=filter_model,
-        )
-
-    def update_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        api_key_update: APIKeyUpdateModel,
-    ) -> APIKeyResponseModel:
-        """Update an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to update
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to update.
-            api_key_update: The update request on the API key.
-
-        Returns:
-            The updated API key.
-        """
-        return self._update_resource(
-            resource_id=api_key_name_or_id,
-            resource_update=api_key_update,
-            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
-            response_model=APIKeyResponseModel,
-        )
-
-    def rotate_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        rotate_request: APIKeyRotateRequestModel,
-    ) -> APIKeyResponseModel:
-        """Rotate an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                rotate the API key.
-            api_key_name_or_id: The name or ID of the API key to rotate.
-            rotate_request: The rotate request on the API key.
-
-        Returns:
-            The updated API key.
-        """
-        response_body = self.put(
-            f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}/{str(api_key_name_or_id)}{API_KEY_ROTATE}",
-            body=rotate_request,
-        )
-        return APIKeyResponseModel.parse_obj(response_body)
-
-    def delete_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                delete the API key.
-            api_key_name_or_id: The name or ID of the API key to delete.
-        """
-        self._delete_resource(
-            resource_id=api_key_name_or_id,
-            route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
-        )

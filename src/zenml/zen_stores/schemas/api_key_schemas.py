@@ -23,12 +23,14 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyResponseBody,
+    APIKeyResponseMetadata,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -84,9 +86,9 @@ class APIKeySchema(NamedSchema, table=True):
     def from_request(
         cls,
         service_account_id: UUID,
-        request: APIKeyRequestModel,
+        request: APIKeyRequest,
     ) -> Tuple["APIKeySchema", str]:
-        """Convert a `APIKeyRequestModel` to a `APIKeySchema`.
+        """Convert a `APIKeyRequest` to a `APIKeySchema`.
 
         Args:
             service_account_id: The service account id to associate the key
@@ -111,58 +113,81 @@ class APIKeySchema(NamedSchema, table=True):
             key,
         )
 
-    def to_model(
-        self,
-    ) -> APIKeyResponseModel:
-        """Convert a `APIKeySchema` to an `APIKeyModel`.
+    def to_model(self, hydrate: bool = False) -> APIKeyResponse:
+        """Convert a `APIKeySchema` to an `APIKeyResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created APIKeyModel.
+            The created APIKeyResponse.
         """
-        return APIKeyResponseModel(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            service_account=self.service_account.to_service_account_model(
-                True
-            ),
+        metadata = None
+        if hydrate:
+            metadata = APIKeyResponseMetadata(
+                description=self.description,
+                retain_period_minutes=self.retain_period,
+                last_login=self.last_login,
+                last_rotated=self.last_rotated,
+            )
+
+        body = APIKeyResponseBody(
             created=self.created,
             updated=self.updated,
-            last_login=self.last_login,
-            last_rotated=self.last_rotated,
-            retain_period_minutes=self.retain_period,
             active=self.active,
+            service_account=self.service_account.to_service_account_model(),
+        )
+
+        return APIKeyResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )
 
     def to_internal_model(
-        self,
-    ) -> APIKeyInternalResponseModel:
-        """Convert a `APIKeySchema` to an `APIKeyInternalResponseModel`.
+        self, hydrate: bool = False
+    ) -> APIKeyInternalResponse:
+        """Convert a `APIKeySchema` to an `APIKeyInternalResponse`.
 
         The internal response model includes the hashed key values.
 
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
+
         Returns:
-            The created APIKeyInternalResponseModel.
+            The created APIKeyInternalResponse.
         """
-        return APIKeyInternalResponseModel(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            key=self.key,
-            previous_key=self.previous_key,
-            service_account=self.service_account.to_service_account_model(
-                True
-            ),
+        metadata = None
+
+        if hydrate:
+            metadata = APIKeyResponseMetadata(
+                description=self.description,
+                retain_period_minutes=self.retain_period,
+                last_login=self.last_login,
+                last_rotated=self.last_rotated,
+            )
+
+        body = APIKeyResponseBody(
             created=self.created,
             updated=self.updated,
-            last_login=self.last_login,
-            last_rotated=self.last_rotated,
-            retain_period_minutes=self.retain_period,
             active=self.active,
+            service_account=self.service_account.to_service_account_model(),
+            key=self.key,
         )
 
-    def update(self, update: APIKeyUpdateModel) -> "APIKeySchema":
-        """Update an `APIKeySchema` with an `APIKeyUpdateModel`.
+        return APIKeyInternalResponse(
+            id=self.id,
+            name=self.name,
+            previous_key=self.previous_key,
+            body=body,
+            metadata=metadata,
+        )
+
+    def update(self, update: APIKeyUpdate) -> "APIKeySchema":
+        """Update an `APIKeySchema` with an `APIKeyUpdate`.
 
         Args:
             update: The update model.
@@ -177,10 +202,8 @@ class APIKeySchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def internal_update(
-        self, update: APIKeyInternalUpdateModel
-    ) -> "APIKeySchema":
-        """Update an `APIKeySchema` with an `APIKeyInternalUpdateModel`.
+    def internal_update(self, update: APIKeyInternalUpdate) -> "APIKeySchema":
+        """Update an `APIKeySchema` with an `APIKeyInternalUpdate`.
 
         The internal update can also update the last used timestamp.
 
@@ -199,7 +222,7 @@ class APIKeySchema(NamedSchema, table=True):
 
     def rotate(
         self,
-        rotate_request: APIKeyRotateRequestModel,
+        rotate_request: APIKeyRotateRequest,
     ) -> Tuple["APIKeySchema", str]:
         """Rotate the key for an `APIKeySchema`.
 

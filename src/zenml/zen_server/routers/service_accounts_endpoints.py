@@ -27,16 +27,16 @@ from zenml.constants import (
 )
 from zenml.enums import PermissionType
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
     Page,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -59,7 +59,7 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         409: error_response,
@@ -68,9 +68,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def create_service_account(
-    service_account: ServiceAccountRequestModel,
+    service_account: ServiceAccountRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceAccountResponseModel:
+) -> ServiceAccountResponse:
     """Creates a service account.
 
     Args:
@@ -87,14 +87,14 @@ def create_service_account(
 
 @router.get(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_service_account(
     service_account_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ServiceAccountResponseModel:
+) -> ServiceAccountResponse:
     """Returns a specific service account.
 
     Args:
@@ -108,16 +108,16 @@ def get_service_account(
 
 @router.get(
     "",
-    response_model=Page[ServiceAccountResponseModel],
+    response_model=Page[ServiceAccountResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_service_accounts(
-    filter_model: ServiceAccountFilterModel = Depends(
-        make_dependable(ServiceAccountFilterModel)
+    filter_model: ServiceAccountFilter = Depends(
+        make_dependable(ServiceAccountFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ServiceAccountResponseModel]:
+) -> Page[ServiceAccountResponse]:
     """Returns a list of service accounts.
 
     Args:
@@ -132,7 +132,7 @@ def list_service_accounts(
 
 @router.put(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         404: error_response,
@@ -142,9 +142,9 @@ def list_service_accounts(
 @handle_exceptions
 def update_service_account(
     service_account_name_or_id: Union[str, UUID],
-    service_account_update: ServiceAccountUpdateModel,
+    service_account_update: ServiceAccountUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceAccountResponseModel:
+) -> ServiceAccountResponse:
     """Updates a specific service account.
 
     Args:
@@ -184,15 +184,15 @@ def delete_service_account(
 
 @router.post(
     "/{service_account_id}" + API_KEYS,
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_api_key(
     service_account_id: UUID,
-    api_key: APIKeyRequestModel,
+    api_key: APIKeyRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Creates an API key for a service account.
 
     Args:
@@ -212,7 +212,7 @@ def create_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -220,7 +220,7 @@ def get_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Returns the requested API key.
 
     Args:
@@ -240,17 +240,15 @@ def get_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS,
-    response_model=Page[APIKeyResponseModel],
+    response_model=Page[APIKeyResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_api_keys(
     service_account_id: UUID,
-    filter_model: APIKeyFilterModel = Depends(
-        make_dependable(APIKeyFilterModel)
-    ),
+    filter_model: APIKeyFilter = Depends(make_dependable(APIKeyFilter)),
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> Page[APIKeyResponseModel]:
+) -> Page[APIKeyResponse]:
     """List API keys associated with a service account.
 
     Args:
@@ -270,16 +268,16 @@ def list_api_keys(
 
 @router.put(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    api_key_update: APIKeyUpdateModel,
+    api_key_update: APIKeyUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Updates an API key for a service account.
 
     Args:
@@ -303,16 +301,16 @@ def update_api_key(
     + API_KEYS
     + "/{api_key_name_or_id}"
     + API_KEY_ROTATE,
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def rotate_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    rotate_request: APIKeyRotateRequestModel,
+    rotate_request: APIKeyRotateRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Rotate an API key.
 
     Args:

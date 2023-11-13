@@ -21,9 +21,11 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountResponseBody,
+    ServiceAccountResponseMetadata,
+    ServiceAccountUpdate,
     UserRequest,
     UserResponse,
     UserResponseBody,
@@ -156,12 +158,12 @@ class UserSchema(NamedSchema, table=True):
 
     @classmethod
     def from_service_account_request(
-        cls, model: ServiceAccountRequestModel
+        cls, model: ServiceAccountRequest
     ) -> "UserSchema":
         """Create a `UserSchema` from a Service Account request.
 
         Args:
-            model: The `ServiceAccountRequestModel` from which to create the
+            model: The `ServiceAccountRequest` from which to create the
                 schema.
 
         Returns:
@@ -199,12 +201,12 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def update_service_account(
-        self, service_account_update: ServiceAccountUpdateModel
+        self, service_account_update: ServiceAccountUpdate
     ) -> "UserSchema":
-        """Update a `UserSchema` from a `ServiceAccountUpdateModel`.
+        """Update a `UserSchema` from a `ServiceAccountUpdate`.
 
         Args:
-            service_account_update: The `ServiceAccountUpdateModel` from which
+            service_account_update: The `ServiceAccountUpdate` from which
                 to update the schema.
 
         Returns:
@@ -258,33 +260,34 @@ class UserSchema(NamedSchema, table=True):
         )
 
     def to_service_account_model(
-        self, _block_recursion: bool = False
-    ) -> ServiceAccountResponseModel:
-        """Convert a `UserSchema` to a `ServiceAccountResponseModel`.
+        self, hydrate: bool = False
+    ) -> ServiceAccountResponse:
+        """Convert a `UserSchema` to a `ServiceAccountResponse`.
 
         Args:
-            _block_recursion: Don't recursively fill attributes
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The converted `ServiceAccountResponseModel`.
+            The converted `ServiceAccountResponse`.
         """
-        if _block_recursion:
-            return ServiceAccountResponseModel(
-                id=self.id,
-                name=self.name,
-                description=self.description or "",
-                active=self.active,
-                created=self.created,
-                updated=self.updated,
-            )
-        else:
-            return ServiceAccountResponseModel(
-                id=self.id,
-                name=self.name,
-                description=self.description or "",
-                active=self.active,
+        metadata = None
+        if hydrate:
+            metadata = ServiceAccountResponseMetadata(
                 teams=[t.to_model() for t in self.teams],
-                created=self.created,
-                updated=self.updated,
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
+                description=self.description or "",
             )
+
+        body = ServiceAccountResponseBody(
+            created=self.created,
+            updated=self.updated,
+            active=self.active,
+        )
+
+        return ServiceAccountResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
+        )

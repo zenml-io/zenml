@@ -73,11 +73,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
     ArtifactFilter,
     ArtifactResponse,
     BaseResponse,
@@ -105,9 +105,9 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceFilter,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
     Page,
     PipelineBuildFilter,
     PipelineBuildResponse,
@@ -130,10 +130,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -650,7 +650,7 @@ class Client(metaclass=ClientMetaClass):
             GlobalConfiguration().set_active_workspace(workspace)
         return workspace
 
-    # ----------------------------- Users -----------------------------
+    # ---------------------------------- Users ---------------------------------
 
     def create_user(
         self,
@@ -821,7 +821,7 @@ class Client(metaclass=ClientMetaClass):
             self._active_user = self.zen_store.get_user(include_private=True)
         return self._active_user
 
-    # ----------------------------- Teams -----------------------------
+    # --------------------------------- Teams ----------------------------------
 
     def create_team(
         self, name: str, users: Optional[List[str]] = None
@@ -974,7 +974,7 @@ class Client(metaclass=ClientMetaClass):
         team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
         self.zen_store.delete_team(team_name_or_id=team.id)
 
-    # ----------------------------- Roles -----------------------------
+    # ---------------------------------- Roles ---------------------------------
 
     def create_role(
         self, name: str, permissions_list: List[str]
@@ -1133,7 +1133,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_role(role_name_or_id=role.id)
 
-    # ------------------------- User role assignments -------------------------
+    # ------------------------- User Role Assignments --------------------------
 
     def create_user_role_assignment(
         self,
@@ -1237,7 +1237,7 @@ class Client(metaclass=ClientMetaClass):
         """
         self.zen_store.delete_user_role_assignment(role_assignment_id)
 
-    # ------------------------- Team role assignments -------------------------
+    # ------------------------- Team Role Assignments --------------------------
 
     def get_team_role_assignment(
         self, team_role_assignment_id: UUID
@@ -1341,7 +1341,7 @@ class Client(metaclass=ClientMetaClass):
         """
         self.zen_store.delete_team_role_assignment(role_assignment_id)
 
-    # ----------------------------- Workspaces -----------------------------
+    # -------------------------------- Workspaces ------------------------------
 
     def create_workspace(
         self, name: str, description: str
@@ -1514,7 +1514,7 @@ class Client(metaclass=ClientMetaClass):
             )
         return workspace
 
-    # ----------------------------- Stacks -----------------------------
+    # --------------------------------- Stacks ---------------------------------
 
     def create_stack(
         self,
@@ -1992,7 +1992,7 @@ class Client(metaclass=ClientMetaClass):
                 "an Orchestrator."
             )
 
-    # ----------------------------- Components -----------------------------
+    # -------------------------------- Components ------------------------------
 
     def get_stack_component(
         self,
@@ -2339,7 +2339,7 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
-    # ----------------------------- Flavors -----------------------------
+    # --------------------------------- Flavors --------------------------------
 
     def create_flavor(
         self,
@@ -2524,7 +2524,7 @@ class Client(metaclass=ClientMetaClass):
 
         return flavors[0]
 
-    # ----------------------------- Pipelines -----------------------------
+    # ------------------------------- Pipelines --------------------------------
 
     def list_pipelines(
         self,
@@ -2672,7 +2672,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    # ----------------------------- Builds -----------------------------
+    # -------------------------------- Builds ----------------------------------
 
     def get_build(
         self, id_or_prefix: Union[str, UUID]
@@ -2797,7 +2797,7 @@ class Client(metaclass=ClientMetaClass):
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
 
-    # ----------------------------- Deployments -----------------------------
+    # ------------------------------ Deployments -------------------------------
 
     def get_deployment(self, id_or_prefix: str) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
@@ -2905,7 +2905,7 @@ class Client(metaclass=ClientMetaClass):
         deployment = self.get_deployment(id_or_prefix=id_or_prefix)
         self.zen_store.delete_deployment(deployment_id=deployment.id)
 
-    # ----------------------------- Schedules -----------------------------
+    # ------------------------------- Schedules --------------------------------
 
     def get_schedule(
         self,
@@ -3016,7 +3016,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_schedule(schedule_id=schedule.id)
 
-    # ----------------------------- Pipeline runs -----------------------------
+    # ----------------------------- Pipeline runs ------------------------------
 
     def get_pipeline_run(
         self,
@@ -3149,7 +3149,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_run(run_id=run.id)
 
-    # ----------------------------- Step run -----------------------------
+    # -------------------------------- Step run --------------------------------
 
     def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
         """Get a step run by ID.
@@ -3236,7 +3236,7 @@ class Client(metaclass=ClientMetaClass):
             step_run_filter_model=step_run_filter_model
         )
 
-    # ----------------------------- Artifacts -----------------------------
+    # ------------------------------- Artifacts --------------------------------
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponse:
         """Get an artifact by ID.
@@ -3398,7 +3398,7 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_artifact(artifact.id)
         logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
 
-    # ----------------------------- Run Metadata -----------------------------
+    # ------------------------------ Run Metadata ------------------------------
 
     def create_run_metadata(
         self,
@@ -3548,7 +3548,7 @@ class Client(metaclass=ClientMetaClass):
         metadata_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_metadata(metadata_filter_model)
 
-    # ----------------------------- Secrets -----------------------------
+    # -------------------------------- Secrets ---------------------------------
 
     def create_secret(
         self,
@@ -5168,9 +5168,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
         )
 
-    # .--------------------.
-    # | AUTHORIZED_DEVICES |
-    # '--------------------'
+    # --------------------------- Authorized Devices ---------------------------
 
     def list_authorized_devices(
         self,
@@ -5187,7 +5185,7 @@ class Client(metaclass=ClientMetaClass):
         trusted_device: Union[bool, str, None] = None,
         failed_auth_attempts: Union[int, str, None] = None,
         last_login: Optional[Union[datetime, str, None]] = None,
-    ) -> Page[OAuthDeviceResponseModel]:
+    ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
 
         Args:
@@ -5208,7 +5206,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of authorized devices matching the filter.
         """
-        filter_model = OAuthDeviceFilterModel(
+        filter_model = OAuthDeviceFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5231,7 +5229,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[UUID, str],
         allow_id_prefix_match: bool = True,
-    ) -> OAuthDeviceResponseModel:
+    ) -> OAuthDeviceResponse:
         """Get an authorized device by id or prefix.
 
         Args:
@@ -5267,7 +5265,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[UUID, str],
         locked: Optional[bool] = None,
-    ) -> OAuthDeviceResponseModel:
+    ) -> OAuthDeviceResponse:
         """Update an authorized device.
 
         Args:
@@ -5282,7 +5280,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.update_authorized_device(
             device_id=device.id,
-            update=OAuthDeviceUpdateModel(
+            update=OAuthDeviceUpdate(
                 locked=locked,
             ),
         )
@@ -5437,16 +5435,14 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the {entity_label}s."
         )
 
-    # --------------- #
-    # SERVICE ACCOUNT #
-    # --------------- #
+    # ---------------------------- Service Accounts ----------------------------
 
     def create_service_account(
         self,
         name: str,
         description: str = "",
         initial_role: Optional[str] = None,
-    ) -> ServiceAccountResponseModel:
+    ) -> ServiceAccountResponse:
         """Create a new service account.
 
         Args:
@@ -5458,7 +5454,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created service account.
         """
-        service_account = ServiceAccountRequestModel(
+        service_account = ServiceAccountRequest(
             name=name, description=description, active=True
         )
         created_service_account = self.zen_store.create_service_account(
@@ -5478,7 +5474,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-    ) -> ServiceAccountResponseModel:
+    ) -> ServiceAccountResponse:
         """Gets a service account.
 
         Args:
@@ -5507,7 +5503,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         active: Optional[bool] = None,
-    ) -> Page[ServiceAccountResponseModel]:
+    ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
 
         Args:
@@ -5526,7 +5522,7 @@ class Client(metaclass=ClientMetaClass):
             The list of service accounts matching the filter description.
         """
         return self.zen_store.list_service_accounts(
-            ServiceAccountFilterModel(
+            ServiceAccountFilter(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -5546,7 +5542,7 @@ class Client(metaclass=ClientMetaClass):
         updated_name: Optional[str] = None,
         description: Optional[str] = None,
         active: Optional[bool] = None,
-    ) -> ServiceAccountResponseModel:
+    ) -> ServiceAccountResponse:
         """Update a service account.
 
         Args:
@@ -5561,7 +5557,7 @@ class Client(metaclass=ClientMetaClass):
         service_account = self.get_service_account(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        service_account_update = ServiceAccountUpdateModel(
+        service_account_update = ServiceAccountUpdate(
             name=updated_name,
             description=description,
             active=active,
@@ -5588,9 +5584,7 @@ class Client(metaclass=ClientMetaClass):
             service_account_name_or_id=service_account.id
         )
 
-    # .----------.
-    # | API KEYS |
-    # '----------'
+    # -------------------------------- API Keys --------------------------------
 
     def create_api_key(
         self,
@@ -5598,7 +5592,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         description: str = "",
         set_key: bool = False,
-    ) -> APIKeyResponseModel:
+    ) -> APIKeyResponse:
         """Create a new API key and optionally set it as the active API key.
 
         Args:
@@ -5615,7 +5609,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=service_account_name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        request = APIKeyRequestModel(
+        request = APIKeyRequest(
             name=name,
             description=description,
         )
@@ -5665,7 +5659,7 @@ class Client(metaclass=ClientMetaClass):
         active: Optional[bool] = None,
         last_login: Optional[Union[datetime, str]] = None,
         last_rotated: Optional[Union[datetime, str]] = None,
-    ) -> Page[APIKeyResponseModel]:
+    ) -> Page[APIKeyResponse]:
         """List all API keys.
 
         Args:
@@ -5691,7 +5685,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=service_account_name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        filter_model = APIKeyFilterModel(
+        filter_model = APIKeyFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5714,7 +5708,7 @@ class Client(metaclass=ClientMetaClass):
         service_account_name_id_or_prefix: Union[str, UUID],
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-    ) -> APIKeyResponseModel:
+    ) -> APIKeyResponse:
         """Get an API key by name, id or prefix.
 
         Args:
@@ -5731,7 +5725,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponseModel:
+        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponse:
             return self.zen_store.get_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key_name_or_id,
@@ -5739,7 +5733,7 @@ class Client(metaclass=ClientMetaClass):
 
         def list_api_keys_method(
             **filter_args: Any,
-        ) -> Page[APIKeyResponseModel]:
+        ) -> Page[APIKeyResponse]:
             return self.list_api_keys(
                 service_account_name_id_or_prefix=service_account.id,
                 **filter_args,
@@ -5759,7 +5753,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         active: Optional[bool] = None,
-    ) -> APIKeyResponseModel:
+    ) -> APIKeyResponse:
         """Update an API key.
 
         Args:
@@ -5778,7 +5772,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        update = APIKeyUpdateModel(
+        update = APIKeyUpdate(
             name=name, description=description, active=active
         )
         return self.zen_store.update_api_key(
@@ -5793,7 +5787,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         retain_period_minutes: int = 0,
         set_key: bool = False,
-    ) -> APIKeyResponseModel:
+    ) -> APIKeyResponse:
         """Rotate an API key.
 
         Args:
@@ -5812,7 +5806,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        rotate_request = APIKeyRotateRequestModel(
+        rotate_request = APIKeyRotateRequest(
             retain_period_minutes=retain_period_minutes
         )
         new_key = self.zen_store.rotate_api_key(

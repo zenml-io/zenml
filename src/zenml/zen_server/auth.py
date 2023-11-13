@@ -48,11 +48,11 @@ from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
     ExternalUserModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     UserAuthModel,
     UserRequest,
     UserResponse,
@@ -100,8 +100,8 @@ class AuthContext(BaseModel):
     user: UserResponse
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
-    device: Optional[OAuthDeviceInternalResponseModel] = None
-    api_key: Optional[APIKeyInternalResponseModel] = None
+    device: Optional[OAuthDeviceInternalResponse] = None
+    api_key: Optional[APIKeyInternalResponse] = None
 
     @property
     def permissions(self) -> Set[PermissionType]:
@@ -124,7 +124,7 @@ class AuthContext(BaseModel):
 
 def _fetch_and_verify_api_key(
     api_key_id: UUID, key_to_verify: Optional[str] = None
-) -> APIKeyInternalResponseModel:
+) -> APIKeyInternalResponse:
     """Fetches an API key from the database and verifies it.
 
     Args:
@@ -180,9 +180,7 @@ def _fetch_and_verify_api_key(
     # Update the "last used" timestamp of the API key
     store.update_internal_api_key(
         api_key.id,
-        APIKeyInternalUpdateModel(  # type: ignore[call-arg]
-            update_last_login=True
-        ),
+        APIKeyInternalUpdate(update_last_login=True),  # type: ignore[call-arg]
     )
 
     return api_key
@@ -291,14 +289,14 @@ def authenticate_credentials(
             logger.error(error)
             raise AuthorizationException(error)
 
-        api_key_model: Optional[APIKeyInternalResponseModel] = None
+        api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
             # verify if the API key hasn't been deactivated or deleted in the
             # meantime.
             api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
 
-        device_model: Optional[OAuthDeviceInternalResponseModel] = None
+        device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
             # Access tokens that have been issued for a device are only valid
             # for that device, so we need to check if the device ID matches any
@@ -347,7 +345,7 @@ def authenticate_credentials(
 
             zen_store().update_internal_authorized_device(
                 device_id=device_model.id,
-                update=OAuthDeviceInternalUpdateModel(
+                update=OAuthDeviceInternalUpdate(
                     update_last_login=True,
                 ),
             )
@@ -454,7 +452,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
         # counter and lock the device if the maximum number of failed auth
         # attempts has been reached.
         failed_auth_attempts = device_model.failed_auth_attempts + 1
-        update = OAuthDeviceInternalUpdateModel(
+        update = OAuthDeviceInternalUpdate(
             failed_auth_attempts=failed_auth_attempts
         )
         if failed_auth_attempts >= config.max_failed_device_auth_attempts:
@@ -499,7 +497,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
         else:
             expires_in = config.device_expiration_minutes or 0
 
-    update = OAuthDeviceInternalUpdateModel(
+    update = OAuthDeviceInternalUpdate(
         status=OAuthDeviceStatus.ACTIVE,
         expires_in=expires_in * 60,
     )
