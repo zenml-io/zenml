@@ -144,7 +144,6 @@ class UserScopedResponse(
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    @abstractmethod
     def get_hydrated_version(
         self,
     ) -> "UserScopedResponse[UserBody, UserMetadata]":
@@ -153,6 +152,10 @@ class UserScopedResponse(
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
+        raise NotImplementedError(
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
+        )
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
@@ -254,7 +257,6 @@ class WorkspaceScopedResponse(
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    @abstractmethod
     def get_hydrated_version(
         self,
     ) -> "WorkspaceScopedResponse[WorkspaceBody, WorkspaceMetadata]":
@@ -263,6 +265,10 @@ class WorkspaceScopedResponse(
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
+        raise NotImplementedError(
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
+        )
 
     # Body and metadata properties
     @property
@@ -355,7 +361,6 @@ class ShareableResponse(
     shareable.
     """
 
-    @abstractmethod
     def get_hydrated_version(
         self,
     ) -> "ShareableResponse[ShareableBody, ShareableMetadata]":
@@ -364,6 +369,10 @@ class ShareableResponse(
         Each response model has a metadata field. The purpose of this
         is to populate this field by making an additional call to the API.
         """
+        raise NotImplementedError(
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
+        )
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:

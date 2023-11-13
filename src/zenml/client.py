@@ -858,7 +858,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
-            The Team
+            The team
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_team,
