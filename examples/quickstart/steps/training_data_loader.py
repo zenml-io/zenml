@@ -1,3 +1,4 @@
+import ssl
 from typing import Tuple
 
 import pandas as pd
@@ -30,9 +31,13 @@ def training_data_loader() -> (
         "native-country",
         "income",
     ]
+    # this SSL hack is needed, since URL certificate is corrupt
+    previous_ssl_context = ssl._create_default_https_context
+    ssl._create_default_https_context = ssl._create_unverified_context
     data = pd.read_csv(
         url, names=column_names, na_values="?", skipinitialspace=True
     )
+    ssl._create_default_https_context = previous_ssl_context
 
     # Drop rows with missing values
     data = data.dropna()
