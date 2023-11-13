@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Scoped model definitions."""
 
-from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,

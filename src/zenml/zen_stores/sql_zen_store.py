@@ -751,7 +751,7 @@ class SqlZenStore(BaseZenStore):
                 List[AnySchema],
             ]
         ] = None,
-        hydrate: Optional[bool] = None,
+        hydrate: bool = False,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -840,10 +840,7 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                if hydrate is not None:
-                    items.append(to_model(hydrate=hydrate))
-                else:
-                    items.append(to_model())
+                items.append(to_model(hydrate=hydrate))
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
