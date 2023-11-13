@@ -35,7 +35,7 @@ from typing import (
     TypeVar,
     Union,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import yaml
 from pydantic import ValidationError
@@ -53,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -63,6 +63,7 @@ from zenml.models import (
     PipelineDeploymentResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
@@ -526,7 +527,7 @@ class Pipeline:
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
-    ) -> None:
+    ) -> PipelineRunResponseModel:
         """Runs the pipeline on the active stack.
 
         Args:
@@ -691,6 +692,23 @@ class Pipeline:
 
             self.log_pipeline_deployment_metadata(deployment_model)
 
+            pipeline_run_request = PipelineRunRequestModel(
+                id=uuid4(),
+                name=run_name or f"run_name_{uuid4()}",
+                orchestrator_run_id=None,
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                deployment=deployment_model.id,
+                pipeline=deployment_model.pipeline.id
+                if deployment_model.pipeline
+                else None,
+                status=ExecutionStatus.RUNNING,
+                start_time=datetime.utcnow(),
+            )
+            pipeline_run_model = Client().zen_store.create_run(
+                pipeline_run_request
+            )
+
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
@@ -704,31 +722,18 @@ class Pipeline:
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            runs = Client().list_pipeline_runs(
-                deployment_id=deployment_model.id,
-                sort_by="desc:start_time",
-                size=1,
-            )
-
-            if runs.items:
-                self.register_running_versions(new_version_requests)
-                run_url = dashboard_utils.get_run_url(runs[0])
-                if run_url:
-                    logger.info(f"Dashboard URL: {run_url}")
-                else:
-                    logger.info(
-                        "You can visualize your pipeline runs in the `ZenML "
-                        "Dashboard`. In order to try it locally, please run "
-                        "`zenml up`."
-                    )
+            self.register_running_versions(new_version_requests)
+            run_url = dashboard_utils.get_run_url(pipeline_run_model)
+            if run_url:
+                logger.info(f"Dashboard URL: {run_url}")
             else:
-                logger.warning(
-                    f"Your orchestrator '{stack.orchestrator.name}' is "
-                    f"running remotely. Note that the pipeline run will "
-                    f"only show up on the ZenML dashboard once the first "
-                    f"step has started executing on the remote "
-                    f"infrastructure.",
+                logger.info(
+                    "You can visualize your pipeline runs in the `ZenML "
+                    "Dashboard`. In order to try it locally, please run "
+                    "`zenml up`."
                 )
+
+            return pipeline_run_model
 
     @staticmethod
     def log_pipeline_deployment_metadata(

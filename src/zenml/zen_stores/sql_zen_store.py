@@ -4016,6 +4016,53 @@ class SqlZenStore(BaseZenStore):
                 run_name_or_id, session=session
             ).to_model()
 
+    def reuse_placeholder_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                .with_for_update()
+                .where(
+                    PipelineRunSchema.deployment_id == pipeline_run.deployment
+                )
+                .where(PipelineRunSchema.orchestrator_run_id.is_(None))
+            ).first()
+
+            if not run_schema:
+                raise KeyError("No placeholder run")
+
+            # TODO: check whether we can potentially get back the run with
+            # orchestrator run id already set from a parallel request, not sure
+            # how the `with_for_update` behaves
+            run_schema.orchestrator_run_id = pipeline_run.orchestrator_run_id
+            run_schema.orchestrator_environment = json.dumps(
+                pipeline_run.orchestrator_environment
+            )
+
+            session.add(run_schema)
+            session.commit()
+
+            return run_schema.to_model()
+
+    def get_run_by_orchestrator_run_id(
+        self, orchestrator_run_id: str, deployment_id: UUID
+    ) -> PipelineRunResponseModel:
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.deployment_id == deployment_id)
+                .where(
+                    PipelineRunSchema.orchestrator_run_id
+                    == orchestrator_run_id
+                )
+            ).first()
+
+            if not run_schema:
+                raise KeyError("No template run")
+
+            return run_schema.to_model()
+
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
     ) -> Tuple[PipelineRunResponseModel, bool]:
@@ -4031,6 +4078,11 @@ class SqlZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
+        try:
+            return self.reuse_placeholder_run(pipeline_run=pipeline_run), True
+        except KeyError:
+            pass
+
         # We want to have the 'create' statement in the try block since running
         # it first will reduce concurrency issues.
         try:
@@ -4039,10 +4091,13 @@ class SqlZenStore(BaseZenStore):
             # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
             # since either one can be raised by the database when trying
             # to create a new pipeline run with duplicate ID or name.
-            try:
-                return self.get_run(pipeline_run.id), False
-            except KeyError:
-                return self.get_run(pipeline_run.name), False
+            return (
+                self.get_run_by_orchestrator_run_id(
+                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                    deployment_id=pipeline_run.deployment,
+                ),
+                False,
+            )
 
     def list_runs(
         self, runs_filter_model: PipelineRunFilterModel

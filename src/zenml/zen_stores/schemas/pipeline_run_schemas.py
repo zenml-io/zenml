@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -52,6 +53,13 @@ class PipelineRunSchema(NamedSchema, table=True):
     """SQL Model for pipeline runs."""
 
     __tablename__ = "pipeline_run"
+    __table_args__ = (
+        UniqueConstraint(
+            "orchestrator_run_id",
+            "deployment_id",
+            name="unique_orchestrator_run_id",
+        ),
+    )
 
     # Fields
     orchestrator_run_id: Optional[str] = Field(nullable=True)

@@ -16,16 +16,13 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import uuid4
 
-from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
 from zenml.stack import Stack
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_deployment_models import (
@@ -66,7 +63,7 @@ class LocalOrchestrator(BaseOrchestrator):
             )
 
         self._orchestrator_run_id = str(uuid4())
-        start_time = time.time()
+        time.time()
 
         # Run each step
         for step_name, step in deployment.step_configurations.items():
@@ -82,16 +79,16 @@ class LocalOrchestrator(BaseOrchestrator):
                 step=step,
             )
 
-        run_duration = time.time() - start_time
-        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
-            orchestrator=self, orchestrator_run_id=self._orchestrator_run_id
-        )
-        run_model = Client().zen_store.get_run(run_id)
-        logger.info(
-            "Run `%s` has finished in `%s`.",
-            run_model.name,
-            string_utils.get_human_readable_time(run_duration),
-        )
+        # run_duration = time.time() - start_time
+        # run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
+        #     orchestrator=self, orchestrator_run_id=self._orchestrator_run_id
+        # )
+        # run_model = Client().zen_store.getrun
+        # logger.info(
+        #     "Run `%s` has finished in `%s`.",
+        #     run_model.name,
+        #     string_utils.get_human_readable_time(run_duration),
+        # )
         self._orchestrator_run_id = None
 
     def get_orchestrator_run_id(self) -> str:

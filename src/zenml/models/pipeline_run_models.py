@@ -150,6 +150,25 @@ class PipelineRunResponseModel(
 
         return get_artifacts_of_pipeline_run(self, only_produced=True)
 
+    def wait(self, timeout: int = 3600) -> None:
+        import time
+
+        from zenml.client import Client
+
+        start_time = time.time()
+        while True:
+            current_run_state = Client().get_pipeline_run(self.id)
+            if current_run_state.status != ExecutionStatus.RUNNING:
+                for key in current_run_state.__fields_set__:
+                    setattr(self, key, getattr(current_run_state, key))
+                return
+
+            duration = time.time() - start_time
+            if timeout > 0 and duration > timeout:
+                return
+
+            time.sleep(5)
+
 
 # ------ #
 # FILTER #
