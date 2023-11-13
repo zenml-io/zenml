@@ -87,13 +87,13 @@ def upgrade() -> None:
                 """
                 UPDATE stack_component
                 SET name = :new_name
-                WHERE user_id = :other_user_id
+                WHERE user_id = :id
                 AND name = 'default'
                 """
             )
             connection.execute(
                 update_default_components,
-                {"new_name": new_name, "other_user_id": id},
+                {"new_name": new_name, "id": other_user_id},
             )
 
     # Fill in `is_service_account` for all users that don't have it
