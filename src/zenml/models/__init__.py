@@ -296,9 +296,16 @@ from zenml.models.v2.service_connector_type import (
     ServiceConnectorTypedResourcesModel,
     ResourceTypeModel,
 )
-from zenml.models.v2.user_auth import UserAuthModel
-from zenml.models.v2.build_item import BuildItem
+from zenml.models.v2.misc.user_auth import UserAuthModel
+from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.hub_plugin_models import (
+    HubPluginRequestModel,
+    HubPluginResponseModel,
+    HubUserResponseModel,
+    HubPluginBaseModel,
+    PluginStatus,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -704,4 +711,9 @@ __all__ = [
     "UserAuthModel",
     "BuildItem",
     "LoadedVisualization",
+    "HubPluginRequestModel",
+    "HubPluginResponseModel",
+    "HubUserResponseModel",
+    "HubPluginBaseModel",
+    "PluginStatus",
 ]

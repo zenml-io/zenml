@@ -26,7 +26,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.build_item import BuildItem
+from zenml.models.v2.misc.build_item import BuildItem
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline import PipelineResponse

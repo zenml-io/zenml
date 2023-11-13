@@ -35,7 +35,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table, warning
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models.hub_plugin_models import (
+from zenml.models import (
     HubPluginRequestModel,
     HubPluginResponseModel,
     PluginStatus,

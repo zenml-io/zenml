@@ -37,18 +37,19 @@ from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     CodeRepositoryResponse,
+    HubPluginResponseModel,
     PipelineBuildResponse,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineResponse,
     PipelineRunRequest,
     PipelineRunResponse,
+    PluginStatus,
     StepRunRequest,
     StepRunResponse,
     UserResponse,
     WorkspaceResponse,
 )
-from zenml.models.hub_plugin_models import HubPluginResponseModel, PluginStatus
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
