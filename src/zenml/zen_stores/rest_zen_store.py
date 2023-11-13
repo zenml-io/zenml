@@ -165,6 +165,7 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    ServerModel,
     ServiceAccountFilterModel,
     ServiceAccountRequestModel,
     ServiceAccountResponseModel,
@@ -204,7 +205,6 @@ from zenml.models import (
     WorkspaceScopedRequestModel,
     WorkspaceUpdate,
 )
-from zenml.models.server_models import ServerModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )

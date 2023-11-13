@@ -54,7 +54,7 @@ from zenml.models.secret_models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
 from zenml.models.service_account_models import (
     ServiceAccountFilterModel,
     ServiceAccountRequestModel,
@@ -305,6 +305,11 @@ from zenml.models.v2.misc.hub_plugin_models import (
     HubUserResponseModel,
     HubPluginBaseModel,
     PluginStatus,
+)
+from zenml.models.v2.misc.server_models import (
+    ServerModel,
+    ServerDatabaseType,
+    ServerDeploymentType,
 )
 
 # ----------------------------- Forward References -----------------------------
@@ -716,4 +721,7 @@ __all__ = [
     "HubUserResponseModel",
     "HubPluginBaseModel",
     "PluginStatus",
+    "ServerModel",
+    "ServerDatabaseType",
+    "ServerDeploymentType",
 ]
