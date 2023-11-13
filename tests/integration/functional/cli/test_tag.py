@@ -96,14 +96,15 @@ def test_tag_update():
         tag: TagResponseModel = tags[0]
         runner = CliRunner()
         update_command = cli.commands["tag"].commands["update"]
+        color_to_set = "yellow" if tag.color.value != "yellow" else "grey"
         result = runner.invoke(
             update_command,
             args=[
                 str(tag.id),
                 "-c",
-                "yellow" if tag.color.value != "yellow" else "grey",
+                color_to_set,
                 "-n",
-                "a",
+                "new_name",
             ],
         )
         assert result.exit_code == 0
@@ -111,27 +112,27 @@ def test_tag_update():
         updated_tag = Client().get_tag(tag.id)
         assert tag.name != updated_tag.name
         assert tag.color != updated_tag.color
-        assert updated_tag.name == "a"
-        assert updated_tag.color.value == "yellow"
+        assert updated_tag.name == "new_name"
+        assert updated_tag.color.value == color_to_set
 
         result = runner.invoke(
             update_command,
-            args=["a", "-c", "purple"],
+            args=["new_name", "-c", "purple"],
         )
         assert result.exit_code == 0
 
         updated_tag = Client().get_tag(tag.id)
-        assert updated_tag.name == "a"
+        assert updated_tag.name == "new_name"
         assert updated_tag.color.value == "purple"
 
         result = runner.invoke(
             update_command,
-            args=[str(tag.id), "-n", "b"],
+            args=[str(tag.id), "-n", "new_name2"],
         )
         assert result.exit_code == 0
 
         updated_tag = Client().get_tag(tag.id)
-        assert updated_tag.name == "b"
+        assert updated_tag.name == "new_name2"
         assert updated_tag.color.value == "purple"
 
 
