@@ -27,7 +27,6 @@ from zenml.models.secret_models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.user_models import ExternalUserModel
 from zenml.models.model_models import (
     ModelFilterModel,
     ModelResponseModel,
@@ -304,7 +303,7 @@ from zenml.models.v2.misc.hub_plugin_models import (
     HubPluginBaseModel,
     PluginStatus,
 )
-
+from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
     OAuthDeviceAuthorizationResponse,
@@ -508,7 +507,6 @@ __all__ = [
     # V1
     "BaseRequestModel",
     "BaseResponseModel",
-    "ExternalUserModel",
     "ModelFilterModel",
     "ModelRequestModel",
     "ModelResponseModel",
@@ -531,8 +529,6 @@ __all__ = [
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
-    "ServerDatabaseType",
-    "ServerModel",
     "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",
@@ -717,6 +713,7 @@ __all__ = [
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
     "UserAuthModel",
+    "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
     "HubPluginRequestModel",
