@@ -59,8 +59,7 @@ def upgrade() -> None:
             update_other_user = text(
                 """
                 UPDATE user
-                SET name = :new_name
-                SET full_name = :full_name
+                SET name = :new_name, full_name = :full_name
                 WHERE id = :id
                 """
             )
