@@ -51,39 +51,26 @@ def upgrade() -> None:
         for other_user_row in other_user_result:
             new_name = f"{name}-{id[:4]}"
             other_user_id = other_user_row[0]
+            description = (
+                "This default user was renamed during migration. Please use "
+                "the `default` user instead and delete this user when no "
+                "longer needed."
+            )
             update_other_user = text(
                 """
                 UPDATE user
                 SET name = :new_name
+                SET full_name = :full_name
                 WHERE id = :id
                 """
             )
             connection.execute(
-                update_other_user, {"new_name": new_name, "id": other_user_id}
-            )
-            update_default_stack = text(
-                """
-                UPDATE stack
-                SET name = :new_name
-                WHERE user_id = :id
-                AND name = 'default'
-                """
-            )
-            connection.execute(
-                update_default_stack,
-                {"new_name": new_name, "id": other_user_id},
-            )
-            update_default_components = text(
-                """
-                UPDATE stack_component
-                SET user_id = :id
-                WHERE user_id = :other_user_id
-                AND name = 'default'
-                """
-            )
-            connection.execute(
-                update_default_components,
-                {"id": other_user_id, "other_user_id": id},
+                update_other_user,
+                {
+                    "new_name": new_name,
+                    "id": other_user_id,
+                    "full_name": description,
+                },
             )
 
     # Fill in `is_service_account` for all users that don't have it
