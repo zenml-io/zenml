@@ -88,4 +88,4 @@ jobs:
           rm -rf src/zenml/zen_stores/migrations/script.py.mako
 
       - name: Runs docs generation
-        run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}
+        run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push -v ${{ steps.get_version.outputs.VERSION }}
