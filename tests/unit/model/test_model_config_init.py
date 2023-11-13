@@ -6,11 +6,11 @@ from zenml.model import ModelVersion
 
 
 @pytest.mark.parametrize(
-    "version_name,delete_new_version_on_failure,logger",
+    "version_name,logger",
     [
-        ["staging", False, "info"],
-        ["1", False, "info"],
-        [1, False, "info"],
+        ["staging", "info"],
+        ["1", "info"],
+        [1, "info"],
     ],
     ids=[
         "Pick model by text stage",
@@ -18,15 +18,11 @@ from zenml.model import ModelVersion
         "Pick model by integer version number",
     ],
 )
-def test_init_warns(
-    version_name,
-    delete_new_version_on_failure,
-    logger,
-):
+def test_init_warns(version_name, logger):
     with patch(f"zenml.model.model_version.logger.{logger}") as logger:
         ModelVersion(
             name="foo",
             version=version_name,
-            delete_new_version_on_failure=delete_new_version_on_failure,
+            with_recovery=True,
         )
         logger.assert_called_once()

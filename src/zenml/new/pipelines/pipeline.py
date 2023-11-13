@@ -942,7 +942,7 @@ class Pipeline:
         for key, new_version_request in new_versions_requested.items():
             model_name, model_version = key
             if (
-                new_version_request.model_version.delete_new_version_on_failure
+                not new_version_request.model_version.with_recovery
                 and new_version_request.model_version.was_created_in_this_run
             ):
                 model = Client().get_model_version(
@@ -957,7 +957,7 @@ class Pipeline:
                 logger.warning(
                     f"Model version `{model.name}` was removed from the model `{model_name}`, "
                     "due to run failure. If you would like to persist model versions on run "
-                    "failures use `delete_new_version_on_failure` flag set to False."
+                    "failures use `with_recovery` flag set to True."
                 )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:

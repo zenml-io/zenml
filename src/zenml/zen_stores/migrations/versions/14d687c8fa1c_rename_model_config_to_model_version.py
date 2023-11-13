@@ -7,12 +7,49 @@ Create Date: 2023-11-10 15:54:05.572744
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlmodel import Session
 
 # revision identifiers, used by Alembic.
 revision = "14d687c8fa1c"
 down_revision = "93cbda80a732"
 branch_labels = None
 depends_on = None
+
+update_stmts = [
+    sa.text(
+        """
+        UPDATE pipeline_deployment
+        SET pipeline_configuration = REPLACE(
+            pipeline_configuration,
+            :source_field,
+            :target_field
+        )
+        WHERE pipeline_configuration IS NOT NULL
+        """
+    ),
+    sa.text(
+        """
+        UPDATE pipeline_deployment
+        SET step_configurations = REPLACE(
+            step_configurations,
+            :source_field,
+            :target_field
+        )
+        WHERE step_configurations IS NOT NULL
+        """
+    ),
+    sa.text(
+        """
+        UPDATE step_run
+        SET step_configuration = REPLACE(
+            step_configuration,
+            :source_field,
+            :target_field
+        )
+        WHERE step_configuration IS NOT NULL
+        """
+    ),
+]
 
 
 def upgrade() -> None:
@@ -29,45 +66,21 @@ def upgrade() -> None:
         )
 
     connection = op.get_bind()
+    session = Session(bind=connection)
 
-    update_config_fields = sa.text(
-        """
-        UPDATE pipeline_deployment
-        SET pipeline_configuration = REPLACE(
-            pipeline_configuration,
-            '"model_config"',
-            '"model_version"'
-        )
-        WHERE pipeline_configuration IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
-
-    update_config_fields = sa.text(
-        """
-        UPDATE pipeline_deployment
-        SET step_configurations = REPLACE(
-            step_configurations,
-            '"model_config"',
-            '"model_version"'
-        )
-        WHERE step_configurations IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
-
-    update_config_fields = sa.text(
-        """
-        UPDATE step_run
-        SET step_configuration = REPLACE(
-            step_configuration,
-            '"model_config"',
-            '"model_version"'
-        )
-        WHERE step_configuration IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
+    for source_field, target_field in [
+        ('"model_config"', '"model_version"'),
+        ('"delete_new_version_on_failure": true', '"with_recovery": false'),
+        ('"delete_new_version_on_failure": false', '"with_recovery": true'),
+    ]:
+        for update_stmt in update_stmts:
+            session.execute(
+                update_stmt,
+                params=dict(
+                    source_field=source_field,
+                    target_field=target_field,
+                ),
+            )
     # ### end Alembic commands ###
 
 
@@ -85,43 +98,20 @@ def downgrade() -> None:
         )
 
     connection = op.get_bind()
+    session = Session(bind=connection)
 
-    update_config_fields = sa.text(
-        """
-        UPDATE pipeline_deployment
-        SET pipeline_configuration = REPLACE(
-            pipeline_configuration,
-            '"model_version"',
-            '"model_config"'
-        )
-        WHERE pipeline_configuration IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
+    for source_field, target_field in [
+        ("model_version", "model_config"),
+        ('"with_recovery": false', '"delete_new_version_on_failure": true'),
+        ('"with_recovery": true', '"delete_new_version_on_failure": false'),
+    ]:
+        for update_stmt in update_stmts:
+            session.execute(
+                update_stmt,
+                params=dict(
+                    source_field=source_field,
+                    target_field=target_field,
+                ),
+            )
 
-    update_config_fields = sa.text(
-        """
-        UPDATE pipeline_deployment
-        SET step_configurations = REPLACE(
-            step_configurations,
-            '"model_version"',
-            '"model_config"'
-        )
-        WHERE step_configurations IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
-
-    update_config_fields = sa.text(
-        """
-        UPDATE step_run
-        SET step_configuration = REPLACE(
-            step_configuration,
-            '"model_version"',
-            '"model_config"'
-        )
-        WHERE step_configuration IS NOT NULL
-        """
-    )
-    connection.execute(update_config_fields)
     # ### end Alembic commands ###

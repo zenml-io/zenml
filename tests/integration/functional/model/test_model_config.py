@@ -172,14 +172,14 @@ class TestModelVersion:
         with ModelContext():
             mc = ModelVersion(
                 name=MODEL_NAME,
-                delete_new_version_on_failure=False,
+                with_recovery=True,
             )
             mv1 = mc._get_or_create_model_version()
             del mc
 
             mc = ModelVersion(
                 name=MODEL_NAME,
-                delete_new_version_on_failure=False,
+                with_recovery=True,
             )
             mv2 = mc._get_or_create_model_version()
 

@@ -29,7 +29,7 @@ def assert_model_version_step():
     assert model_version is not None
     assert model_version.name == "foo"
     assert model_version.version == RUNNING_MODEL_VERSION
-    assert not model_version.delete_new_version_on_failure
+    assert model_version.with_recovery
     assert model_version.description == "description"
     assert model_version.license == "MIT"
     assert model_version.audience == "audience"
@@ -52,7 +52,7 @@ def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
     """Test that the pipeline can be configured with a model version from a yaml file."""
     model_version = ModelVersion(
         name="foo",
-        delete_new_version_on_failure=False,
+        with_recovery=True,
         description="description",
         license="MIT",
         audience="audience",
@@ -135,7 +135,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
         p.configure(
             model_version=ModelVersion(
                 name="foo",
-                delete_new_version_on_failure=False,
+                with_recovery=True,
                 description="description",
                 license="MIT",
                 audience="audience",
@@ -152,7 +152,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
     assert p.configuration.model_version is not None
     assert p.configuration.model_version.name == "foo"
     assert p.configuration.model_version.version is None
-    assert not p.configuration.model_version.delete_new_version_on_failure
+    assert p.configuration.model_version.with_recovery
     assert p.configuration.model_version.description == "description"
     assert p.configuration.model_version.license == "MIT"
     assert p.configuration.model_version.audience == "audience"

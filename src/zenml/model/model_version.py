@@ -57,7 +57,7 @@ class ModelVersion(BaseModel):
         to a specific version/stage. If skipped new model version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
+    with_recovery: Whether to keep new versions created in failed runs for future recovery.
     """
 
     name: str
@@ -71,7 +71,7 @@ class ModelVersion(BaseModel):
     tags: Optional[List[str]]
     version: Optional[Union[ModelStages, int, str]]
     save_models_to_registry: bool = True
-    delete_new_version_on_failure: bool = True
+    with_recovery: bool = False
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
@@ -326,7 +326,7 @@ class ModelVersion(BaseModel):
                             "- Wait for previous run to finish\n"
                             "- Provide explicit `version` in configuration"
                         )
-                if self.delete_new_version_on_failure:
+                if not self.with_recovery:
                     raise RuntimeError(
                         f"Cannot create version `{self.version}` "
                         f"for model `{self.name}` since it already exists "
@@ -407,7 +407,7 @@ class ModelVersion(BaseModel):
 
         Model Version returned by this method is resolved based on model version:
         - If there is an existing model version leftover from the previous failed run with
-        `delete_new_version_on_failure` is set to False and `version` is None,
+        `with_recovery` is set to True and `version` is None,
         leftover model version will be reused.
         - Otherwise if `version` is None, a new model version is created.
         - If `version` is not None a model version will be fetched based on the version:
@@ -488,9 +488,7 @@ class ModelVersion(BaseModel):
                 {t for t in self.tags or []}.union(set(model_version.tags))
             )
 
-        self.delete_new_version_on_failure &= (
-            model_version.delete_new_version_on_failure
-        )
+        self.with_recovery |= model_version.with_recovery
 
     def __hash__(self) -> int:
         """Get hash of the `ModelVersion`.
@@ -505,7 +503,7 @@ class ModelVersion(BaseModel):
                     for v in (
                         self.name,
                         self.version,
-                        self.delete_new_version_on_failure,
+                        self.with_recovery,
                     )
                 )
             )

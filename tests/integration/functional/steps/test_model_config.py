@@ -232,12 +232,12 @@ def _this_step_tries_to_recover(run_number: int):
     [
         ModelVersion(
             name="foo",
-            delete_new_version_on_failure=False,
+            with_recovery=True,
         ),
         ModelVersion(
             name="foo",
             version="test running version",
-            delete_new_version_on_failure=False,
+            with_recovery=True,
         ),
     ],
     ids=["default_running_name", "custom_running_name"],
@@ -284,12 +284,12 @@ def test_recovery_of_steps(model_version: ModelVersion):
     [
         ModelVersion(
             name="foo",
-            delete_new_version_on_failure=True,
+            with_recovery=False,
         ),
         ModelVersion(
             name="foo",
             version="test running version",
-            delete_new_version_on_failure=True,
+            with_recovery=False,
         ),
     ],
     ids=["default_running_name", "custom_running_name"],
@@ -442,7 +442,7 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             run_name=run_name_1,
             model_version=ModelVersion(
                 name="foo",
-                delete_new_version_on_failure=True,
+                with_recovery=False,
             ),
         )()
         run_name_2 = f"bar_run_{uuid4()}"
@@ -497,7 +497,7 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
         )(
             ModelVersion(
                 name="foo",
-                delete_new_version_on_failure=True,
+                with_recovery=False,
             )
         )
         run_name_2 = f"bar_run_{uuid4()}"
@@ -851,7 +851,7 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_unnamed_v
         enable_cache=False,
         model_version=ModelVersion(
             name="multi_run",
-            delete_new_version_on_failure=False,
+            with_recovery=True,
         ),
     )
     def _this_pipeline_will_fail():
