@@ -2,7 +2,7 @@
 description: Saving and loading artifacts manually.
 ---
 
-# Artifact Saving and Loading
+# Artifact saving and loading
 
 Whenever you run a ZenML pipeline, all outputs of your steps are automatically saved as artifacts into your artifact store and subsequent steps automatically load them in again. For most use cases, this is the recommended way of saving or loading artifacts. However, there are a few exceptions that are enabled by the following advanced concepts:
 - Using [External Artifacts](#external-artifacts), you can pass existing artifacts from other pipeline runs into your steps. You can also use them to pass complex Python objects that were not loaded by any other steps of your pipeline.
