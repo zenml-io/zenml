@@ -1,5 +1,12 @@
 <!-- markdown-link-check-disable -->
 
+# 0.44.4
+
+Backports some important fixes that have been introduced in more recent versions
+of ZenML to the 0.44.x release line.
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.3...0.44.4
+
 # 0.44.3
 
 ## New Orchestrator: SkyPilot (#1765)
