@@ -1,7 +1,7 @@
 """tags table [6119cd9b93c2].
 
 Revision ID: 6119cd9b93c2
-Revises: 0.46.0
+Revises: 0.46.1
 Create Date: 2023-11-08 11:52:16.440417
 
 """
@@ -18,7 +18,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "6119cd9b93c2"
-down_revision = "93cbda80a732"
+down_revision = "0.46.1"
 branch_labels = None
 depends_on = None
 
