@@ -954,6 +954,11 @@ class Pipeline:
                     model_name_or_id=model_name,
                     model_version_name_or_id=model.id,
                 )
+                logger.warning(
+                    f"Model version `{model.name}` was removed from the model `{model_name}`, "
+                    "due to run failure. If you would like to persist model versions on run "
+                    "failures use `delete_new_version_on_failure` flag set to False."
+                )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.
