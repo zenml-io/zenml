@@ -284,7 +284,7 @@ from zenml.models.v2.core.workspace import (
 )
 
 # V2 Misc
-from zenml.models.v2.service_connector_type import (
+from zenml.models.v2.misc.service_connector_type import (
     AuthenticationMethodModel,
     ServiceConnectorResourcesModel,
     ServiceConnectorRequirements,
@@ -295,7 +295,7 @@ from zenml.models.v2.service_connector_type import (
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
-from zenml.models.v2.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
 from zenml.models.v2.misc.hub_plugin_models import (
     HubPluginRequestModel,
     HubPluginResponseModel,

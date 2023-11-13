@@ -30,7 +30,9 @@ from zenml.models.v2.base.scoped import (
     ShareableResponseMetadata,
 )
 from zenml.models.v2.base.utils import update_model
-from zenml.models.v2.service_connector_type import ServiceConnectorTypeModel
+from zenml.models.v2.misc.service_connector_type import (
+    ServiceConnectorTypeModel,
+)
 
 logger = get_logger(__name__)
 

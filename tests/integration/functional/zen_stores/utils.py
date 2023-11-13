@@ -30,9 +30,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    APIKeyRequestModel,
+    APIKeyRequest,
     ArtifactFilter,
     ArtifactRequest,
+    AuthenticationMethodModel,
     BaseFilter,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -56,14 +57,16 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineUpdate,
+    ResourceTypeModel,
     RoleFilter,
     RoleRequest,
     RoleUpdate,
     SecretFilterModel,
     SecretRequestModel,
-    ServiceAccountRequestModel,
+    ServiceAccountRequest,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
     StackRequest,
     StepRunFilter,
@@ -78,11 +81,6 @@ from zenml.models import (
     WorkspaceUpdate,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
-from zenml.models.v2.service_connector_type import (
-    AuthenticationMethodModel,
-    ResourceTypeModel,
-    ServiceConnectorTypeModel,
-)
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
@@ -253,7 +251,7 @@ class ServiceAccountContext:
 
     def __enter__(self):
         if not self.existing_account:
-            new_account = ServiceAccountRequestModel(
+            new_account = ServiceAccountRequest(
                 name=self.name,
                 description=self.description,
                 active=True,
@@ -275,7 +273,7 @@ class ServiceAccountContext:
             api_key_name = sample_name("temp_api_key")
             self.api_key = self.store.create_api_key(
                 self.created_service_account.id,
-                APIKeyRequestModel(
+                APIKeyRequest(
                     name=api_key_name,
                 ),
             )
