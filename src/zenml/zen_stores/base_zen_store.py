@@ -732,6 +732,7 @@ class BaseZenStore(
             KeyError: If the default user doesn't exist.
         """
         user_name = self._default_user_name
+        self.get_user(user_name)
         try:
             return self.get_user(user_name)
         except KeyError:

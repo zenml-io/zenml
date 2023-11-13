@@ -63,7 +63,7 @@ class UserSchema(NamedSchema, table=True):
 
     __tablename__ = "user"
 
-    is_service_account: Optional[bool] = Field(default=False, nullable=True)
+    is_service_account: bool = Field(default=False)
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
@@ -236,7 +236,7 @@ class UserSchema(NamedSchema, table=True):
                 external_user_id=self.external_user_id,
                 name=self.name,
                 active=self.active,
-                is_service_account=self.is_service_account or False,
+                is_service_account=self.is_service_account,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
@@ -250,7 +250,7 @@ class UserSchema(NamedSchema, table=True):
                 external_user_id=self.external_user_id,
                 name=self.name,
                 active=self.active,
-                is_service_account=self.is_service_account or False,
+                is_service_account=self.is_service_account,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
