@@ -66,6 +66,8 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
     StackComponentType,
+    StepRunInputArtifactType,
+    StepRunOutputArtifactType,
     StoreType,
 )
 from zenml.exceptions import (
@@ -3534,6 +3536,7 @@ class SqlZenStore(BaseZenStore):
                     run_step_id=step_schema.id,
                     artifact_id=artifact_id,
                     name=input_name,
+                    input_type=StepRunInputArtifactType.DEFAULT,
                     session=session,
                 )
 
@@ -3543,6 +3546,7 @@ class SqlZenStore(BaseZenStore):
                     step_run_id=step_schema.id,
                     artifact_id=artifact_id,
                     name=output_name,
+                    output_type=StepRunOutputArtifactType.DEFAULT,
                     session=session,
                 )
 
@@ -3600,7 +3604,12 @@ class SqlZenStore(BaseZenStore):
         session.add(assignment)
 
     def _set_run_step_input_artifact(
-        self, run_step_id: UUID, artifact_id: UUID, name: str, session: Session
+        self,
+        run_step_id: UUID,
+        artifact_id: UUID,
+        name: str,
+        input_type: StepRunInputArtifactType,
+        session: Session,
     ) -> None:
         """Sets an artifact as an input of a step run.
 
@@ -3608,6 +3617,7 @@ class SqlZenStore(BaseZenStore):
             run_step_id: The ID of the step run.
             artifact_id: The ID of the artifact.
             name: The name of the input in the step run.
+            input_type: In which way the artifact was loaded in the step.
             session: The database session to use.
 
         Raises:
@@ -3645,7 +3655,10 @@ class SqlZenStore(BaseZenStore):
 
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
-            step_id=run_step_id, artifact_id=artifact_id, name=name
+            step_id=run_step_id,
+            artifact_id=artifact_id,
+            name=name,
+            type=input_type,
         )
         session.add(assignment)
 
@@ -3654,6 +3667,7 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         artifact_id: UUID,
         name: str,
+        output_type: StepRunOutputArtifactType,
         session: Session,
     ) -> None:
         """Sets an artifact as an output of a step run.
@@ -3662,6 +3676,7 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run.
             artifact_id: The ID of the artifact.
             name: The name of the output in the step run.
+            output_type: In which way the artifact was saved by the step.
             session: The database session to use.
 
         Raises:
@@ -3701,6 +3716,7 @@ class SqlZenStore(BaseZenStore):
             step_id=step_run_id,
             artifact_id=artifact_id,
             name=name,
+            type=output_type,
         )
         session.add(assignment)
 
@@ -3786,6 +3802,33 @@ class SqlZenStore(BaseZenStore):
                     step_run_id=step_run_id,
                     artifact_id=artifact_id,
                     name=name,
+                    output_type=StepRunOutputArtifactType.DEFAULT,
+                    session=session,
+                )
+
+            # Update saved artifacts
+            for (
+                artifact_name,
+                artifact_id,
+            ) in step_run_update.saved_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=artifact_name,
+                    output_type=StepRunOutputArtifactType.MANUAL,
+                    session=session,
+                )
+
+            # Update loaded artifacts.
+            for (
+                artifact_name,
+                artifact_id,
+            ) in step_run_update.loaded_artifacts.items():
+                self._set_run_step_input_artifact(
+                    run_step_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=artifact_name,
+                    input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
 

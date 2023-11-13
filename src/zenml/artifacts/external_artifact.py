@@ -133,6 +133,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             materializer=self.materializer,
             uri=uri,
             has_custom_name=False,
+            manual_save=False,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded

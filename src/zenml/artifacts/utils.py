@@ -29,6 +29,7 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.step_run_models import StepRunUpdateModel
 from zenml.models.visualization_models import (
     LoadedVisualizationModel,
     VisualizationModel,
@@ -67,6 +68,7 @@ def save_artifact(
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
+    manual_save: bool = True,
 ) -> "ArtifactResponseModel":
     """Upload and publish an artifact.
 
@@ -86,6 +88,8 @@ def save_artifact(
         uri: The URI within the artifact store to upload the artifact
             to. If not provided, the artifact will be uploaded to
             `custom_artifacts/{name}/{version}`.
+        manual_save: If this function is called manually and should therefore
+            link the artifact to the current step run.
 
     Returns:
         The ID of the published artifact.
@@ -178,6 +182,18 @@ def save_artifact(
             metadata=artifact_metadata, artifact_id=response.id
         )
 
+    if manual_save:
+        try:
+            step_run = get_step_context().step_run
+            client.zen_store.update_run_step(
+                step_run_id=step_run.id,
+                step_run_update=StepRunUpdateModel(
+                    saved_artifacts={name: response.id}
+                ),
+            )
+        except RuntimeError:
+            logger.debug("Unable to link saved artifact to step run.")
+
     return response
 
 
@@ -196,6 +212,17 @@ def load_artifact(
         The loaded artifact.
     """
     artifact = Client().get_artifact(name, version)
+    try:
+        step_run = get_step_context().step_run
+        client = Client()
+        client.zen_store.update_run_step(
+            step_run_id=step_run.id,
+            step_run_update=StepRunUpdateModel(
+                loaded_artifacts={name: artifact.id}
+            ),
+        )
+    except RuntimeError:
+        logger.debug("Unable to link loaded artifact to step run.")
     return load_artifact_from_model(artifact)
 
 

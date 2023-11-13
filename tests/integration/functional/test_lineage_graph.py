@@ -15,11 +15,13 @@
 
 from uuid import UUID
 
+from typing_extensions import Annotated
+
 from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from zenml import pipeline, step
+from zenml import load_artifact, pipeline, save_artifact, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
@@ -223,6 +225,93 @@ def test_add_external_artifacts(clean_client):
         ):
             external_artifact_is_input_of_step = True
     assert external_artifact_is_input_of_step
+
+
+@step
+def manual_artifact_saving_step() -> Annotated[int, "output"]:
+    """A step that logs an artifact."""
+    save_artifact(1, name="saved_unconsumed")
+    save_artifact(2, name="saved_consumed")
+    return 3
+
+
+@step
+def manual_artifact_loading_step(input: int) -> None:
+    """A step that loads an artifact."""
+    load_artifact(name="saved_consumed")
+    load_artifact(name="saved_before")
+
+
+@pipeline
+def saving_loading_pipeline():
+    output = manual_artifact_saving_step()
+    manual_artifact_loading_step(input=output)
+
+
+def test_manual_save_load_artifact(clean_client):
+    """Test that manually saved and loaded artifacts are added to the graph."""
+
+    # Save an artifact before the pipeline run
+    save_artifact(4, name="saved_before")
+
+    # Create and retrieve a pipeline run
+    saving_loading_pipeline()
+    run_ = saving_loading_pipeline.model.last_run
+
+    # Generate a lineage graph for the pipeline run
+    graph = LineageGraph()
+    graph.generate_run_nodes_and_edges(run_)
+
+    # Check that the graph has the right attributes
+    # 6 = 2 steps + 4 artifacts (3 from save step, 1 additional from load step)
+    assert len(graph.nodes) == 6
+    # 12 edges (3 per step)
+    assert len(graph.edges) == 6
+
+    # Check that the graph generally makes sense
+    _validate_graph(graph, run_)
+
+    # Check that "saved_unconsumed", "saved_consumed", and "saved_before" are
+    # nodes in the graph
+    saved_unconsumed_node_id = None
+    saved_consumed_node_id = None
+    saved_before_node_id = None
+    for node in graph.nodes:
+        if node.type == "artifact":
+            if node.data.name == "saved_unconsumed":
+                saved_unconsumed_node_id = node.id
+            elif node.data.name == "saved_consumed":
+                saved_consumed_node_id = node.id
+            elif node.data.name == "saved_before":
+                saved_before_node_id = node.id
+    assert saved_unconsumed_node_id
+    assert saved_consumed_node_id
+    assert saved_before_node_id
+
+    # Check that "saved_unconsumed" and "saved_consumed" are outputs of step 1
+    step_nodes = [node for node in graph.nodes if node.type == "step"]
+    saved_unconsumed_is_output = False
+    saved_consumed_is_output = False
+    for edge in graph.edges:
+        if edge.source == step_nodes[0].id:
+            if edge.target == saved_unconsumed_node_id:
+                saved_unconsumed_is_output = True
+            elif edge.target == saved_consumed_node_id:
+                saved_consumed_is_output = True
+    assert saved_unconsumed_is_output
+    assert saved_consumed_is_output
+
+    # Check that "saved_consumed" and "saved_before" are inputs of step 2
+    saved_consumed_is_input = False
+    saved_before_is_input = False
+    for edge in graph.edges:
+        if edge.target == step_nodes[1].id:
+            if edge.source == saved_consumed_node_id:
+                saved_consumed_is_input = True
+            elif edge.source == saved_before_node_id:
+                saved_before_is_input = True
+    assert saved_consumed_is_input
+    assert saved_before_is_input
 
 
 def _validate_graph(

@@ -30,6 +30,20 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class StepRunInputArtifactType(StrEnum):
+    """All possible types of a step run input artifact."""
+
+    DEFAULT = "default"  # input argument that is the output of a previous step
+    MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+
+
+class StepRunOutputArtifactType(StrEnum):
+    """All possible types of a step run output artifact."""
+
+    DEFAULT = "default"  # output of the current step
+    MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
