@@ -119,8 +119,6 @@ class ArtifactConfig(BaseModel):
         # Create a ZenML client
         client = Client()
 
-        model_version = model_version._get_or_create_model_version()
-
         artifact_name = self.artifact_name
         if artifact_name is None:
             artifact = client.zen_store.get_artifact(artifact_id=artifact_uuid)
@@ -132,7 +130,7 @@ class ArtifactConfig(BaseModel):
             workspace=client.active_workspace.id,
             name=artifact_name,
             artifact=artifact_uuid,
-            model=model_version.model.id,
+            model=model_version.model_id,
             model_version=model_version.id,
             is_model_artifact=is_model_artifact,
             is_endpoint_artifact=is_endpoint_artifact,
@@ -143,7 +141,7 @@ class ArtifactConfig(BaseModel):
 
         # Create the model version artifact link using the ZenML client
         existing_links = client.list_model_version_artifact_links(
-            model_name_or_id=model_version.model.id,
+            model_name_or_id=model_version.model_id,
             model_version_name_or_number_or_id=model_version.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=client.active_user.id,
@@ -165,7 +163,7 @@ class ArtifactConfig(BaseModel):
                     f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
                 )
                 client.zen_store.delete_model_version_artifact_link(
-                    model_name_or_id=model_version.model.id,
+                    model_name_or_id=model_version.model_id,
                     model_version_name_or_id=model_version.id,
                     model_version_artifact_link_name_or_id=artifact_name,
                 )

@@ -666,9 +666,11 @@ class ModelVersionContext:
             )
         if self.create_version:
             try:
-                mv = client.get_model_version(self.model, self.model_version)
+                mv = client.zen_store.get_model_version(
+                    self.model, self.model_version
+                )
             except KeyError:
-                mv = client.create_model_version(
+                mv = client.zen_store.create_model_version(
                     ModelVersionRequestModel(
                         user=user.id,
                         workspace=ws.id,

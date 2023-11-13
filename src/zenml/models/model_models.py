@@ -44,6 +44,7 @@ from zenml.models.pipeline_run_models import PipelineRunResponseModel
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
+    from zenml.model.model_version import ModelVersion
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -57,9 +58,6 @@ class ModelVersionBaseModel(BaseModel):
     name: Optional[str] = Field(
         description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
-    )
-    number: Optional[int] = Field(
-        description="The number of the model version",
     )
     description: Optional[str] = Field(
         description="The description of the model version",
@@ -171,6 +169,9 @@ class ModelVersionRequestModel(
 ):
     """Model Version request model."""
 
+    number: Optional[int] = Field(
+        description="The number of the model version",
+    )
     model: UUID = Field(
         description="The ID of the model containing version",
     )
@@ -182,6 +183,9 @@ class ModelVersionResponseModel(
 ):
     """Model Version response model."""
 
+    number: int = Field(
+        description="The number of the model version",
+    )
     model: "ModelResponseModel" = Field(
         description="The model containing version",
     )
@@ -201,6 +205,34 @@ class ModelVersionResponseModel(
         description="Pipeline runs linked to the model version",
         default={},
     )
+
+    def to_model_version(
+        self, was_created_in_this_run: bool = False
+    ) -> "ModelVersion":
+        """Convert response model to ModelVersion object.
+
+        Args:
+            was_created_in_this_run: Whether model version was created during current run.
+
+        Returns:
+            ModelVersion object
+        """
+        from zenml.model.model_version import ModelVersion
+
+        return ModelVersion(
+            name=self.model.name,
+            license=self.model.license,
+            description=self.model.description,
+            audience=self.model.audience,
+            use_cases=self.model.use_cases,
+            limitations=self.model.limitations,
+            trade_offs=self.model.trade_offs,
+            ethics=self.model.ethics,
+            tags=self.model.tags,
+            version=self.name,
+            version_description=self.description,
+            was_created_in_this_run=was_created_in_this_run,
+        )
 
     @property
     def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
@@ -401,7 +433,7 @@ class ModelVersionResponseModel(
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> "ModelVersionResponseModel":
+    ) -> "ModelVersion":
         """Sets this Model Version to a desired stage.
 
         Args:
@@ -409,7 +441,7 @@ class ModelVersionResponseModel(
             force: whether to force archiving of current model version in target stage or raise.
 
         Returns:
-            Model Version as a response model.
+            Updated Model Version object.
 
         Raises:
             ValueError: if model_stage is not valid.

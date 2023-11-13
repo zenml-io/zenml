@@ -418,7 +418,7 @@ def update_model_version(
         Client().update_model_version(
             model_version_id=model_version.id,
             model_version_update_model=ModelVersionUpdateModel(
-                model=model_version.model.id, stage=stage, force=force
+                model=model_version.model_id, stage=stage, force=force
             ),
         )
     except RuntimeError:
@@ -426,8 +426,8 @@ def update_model_version(
             cli_utils.print_table(
                 [
                     _model_version_to_print(
-                        Client().get_model_version(
-                            model_name_or_id=model_version.model.id,
+                        Client().zen_store.get_model_version(
+                            model_name_or_id=model_version.model_id,
                             model_version_name_or_number_or_id=stage,
                         )
                     )
@@ -446,7 +446,7 @@ def update_model_version(
             Client().update_model_version(
                 model_version_id=model_version.id,
                 model_version_update_model=ModelVersionUpdateModel(
-                    model=model_version.model.id, stage=stage, force=True
+                    model=model_version.model_id, stage=stage, force=True
                 ),
             )
     cli_utils.declare(
@@ -514,7 +514,7 @@ def _print_artifacts_links_generic(
         only_model_artifacts: If set, only print model artifacts.
         **kwargs: Keyword arguments to filter models.
     """
-    model_version = Client().get_model_version(
+    model_version = Client().zen_store.get_model_version(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
@@ -670,7 +670,7 @@ def list_model_version_pipeline_runs(
             Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
-    model_version = Client().get_model_version(
+    model_version = Client().zen_store.get_model_version(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"

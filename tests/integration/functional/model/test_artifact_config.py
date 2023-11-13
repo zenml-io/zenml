@@ -81,12 +81,11 @@ def test_link_minimalistic():
 
         simple_pipeline()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.name == "1"
+        assert mv.name == MODEL_NAME
+        assert mv.number == 1 and mv.version == "1"
         links = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
+            model_name_or_id=mv.model_id,
             model_version_name_or_number_or_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -142,12 +141,11 @@ def test_link_multiple_named_outputs():
 
         multi_named_pipeline()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.name == "1"
+        assert mv.name == MODEL_NAME
+        assert mv.number == 1 and mv.version == "1"
         al = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
+            model_name_or_id=mv.model_id,
             model_version_name_or_number_or_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -188,12 +186,11 @@ def test_link_multiple_named_outputs_without_links():
 
         multi_named_pipeline_not_tracked()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.name == "1"
+        assert mv.number == 1 and mv.version == "1"
+        assert mv.name == MODEL_NAME
         artifact_links = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
+            model_name_or_id=mv.model_id,
             model_version_name_or_number_or_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
@@ -270,7 +267,7 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
             multi_named_pipeline_from_self(run_count == 2)
 
             al1 = client.list_model_version_artifact_links(
-                model_name_or_id=mv1.model.id,
+                model_name_or_id=mv1.model_id,
                 model_version_name_or_number_or_id=mv1.id,
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
@@ -278,7 +275,7 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
                 ),
             )
             al2 = client.list_model_version_artifact_links(
-                model_name_or_id=mv2.model.id,
+                model_name_or_id=mv2.model_id,
                 model_version_name_or_number_or_id=mv2.id,
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
@@ -298,7 +295,7 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
             for mv, al in zip([mv1, mv2], [al1, al2]):
                 for al_ in al:
                     client.zen_store.delete_model_version_artifact_link(
-                        model_name_or_id=mv.model.id,
+                        model_name_or_id=mv.model_id,
                         model_version_name_or_id=mv.id,
                         model_version_artifact_link_name_or_id=al_.id,
                     )
@@ -391,7 +388,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         for mv in mvs:
             artifact_links.append(
                 client.list_model_version_artifact_links(
-                    model_name_or_id=mv.model.id,
+                    model_name_or_id=mv.model_id,
                     model_version_name_or_number_or_id=mv.id,
                     model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                         user_id=user,
@@ -831,7 +828,7 @@ def test_artifacts_linked_from_cache_steps():
             )._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mv = client.zen_store.get_model_version(
                 model_name_or_id="foo", model_version_name_or_number_or_id=i
             )
             assert len(mv.data_artifact_ids) == 2, f"Failed on {i} run"
@@ -844,7 +841,7 @@ def test_artifacts_linked_from_cache_steps():
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
 
-            mv = client.get_model_version(
+            mv = client.zen_store.get_model_version(
                 model_name_or_id="bar",
                 model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
@@ -889,7 +886,7 @@ def test_artifacts_linked_from_cache_steps_same_id():
             )._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mv = client.zen_store.get_model_version(
                 model_name_or_id="bar",
                 model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )

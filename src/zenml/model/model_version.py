@@ -21,8 +21,9 @@ from typing import (
     Optional,
     Union,
 )
+from uuid import UUID
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, PrivateAttr, root_validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus, ModelStages
@@ -77,15 +78,66 @@ class ModelVersion(BaseModel):
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
 
+    _model_id: UUID = PrivateAttr(None)
+    _id: UUID = PrivateAttr(None)
+    _number: int = PrivateAttr(None)
+
     #########################
     #    Public methods     #
     #########################
     @property
-    def all_model_versions(self) -> List["ModelVersionResponseModel"]:
-        return self._get_or_create_model().versions
+    def all_model_versions(self) -> List["ModelVersion"]:
+        """Get all model versions for current model from the Model Control Plane.
+
+        Returns:
+            A list of ModelVersion objects registered within current model.
+        """
+        return [
+            mv_response.to_model_version()
+            for mv_response in self._get_or_create_model().versions
+        ]
+
+    @property
+    def id(self) -> UUID:
+        """Get version id from  the Model Control Plane.
+
+        Returns:
+            ID of the model version or None, if model version
+                doesn't exist and can only be read given current
+                config (you used stage name or number as
+                a version name).
+        """
+        if self._id is None:
+            try:
+                self._get_or_create_model_version()
+            except ReservedNameError:
+                logger.info(
+                    f"Model version `{self.version}` doesn't exist "
+                    "and cannot be fetched from the Model Control Plane."
+                )
+        return self._id
+
+    @property
+    def model_id(self) -> UUID:
+        """Get model id from  the Model Control Plane.
+
+        Returns:
+            The UUID of the model containing this model version.
+        """
+        if self._model_id is None:
+            self._get_or_create_model()
+        return self._model_id
 
     @property
     def version_name(self) -> Optional[str]:
+        """Get version name from  the Model Control Plane.
+
+        Returns:
+            Name of the model version or None, if model version
+                doesn't exist and can only be read given current
+                config (you used stage name or number as
+                a version name).
+        """
         try:
             return self._get_or_create_model_version().name
         except ReservedNameError:
@@ -96,15 +148,24 @@ class ModelVersion(BaseModel):
             return None
 
     @property
-    def number(self) -> Optional[int]:
-        try:
-            return self._get_or_create_model_version().number
-        except ReservedNameError:
-            logger.info(
-                f"Model version `{self.version}` doesn't exist "
-                "and cannot be fetched from the Model Control Plane."
-            )
-            return None
+    def number(self) -> int:
+        """Get version number from  the Model Control Plane.
+
+        Returns:
+            Number of the model version or None, if model version
+                doesn't exist and can only be read given current
+                config (you used stage name or number as
+                a version name).
+        """
+        if self._number is None:
+            try:
+                self._get_or_create_model_version()
+            except ReservedNameError:
+                logger.info(
+                    f"Model version `{self.version}` doesn't exist "
+                    "and cannot be fetched from the Model Control Plane."
+                )
+        return self._number
 
     def get_model_artifact(
         self,
@@ -190,19 +251,23 @@ class ModelVersion(BaseModel):
         Returns:
             PipelineRun as PipelineRunResponseModel
         """
-
         return self._get_or_create_model_version().get_pipeline_run(name=name)
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> None:
+    ) -> "ModelVersion":
         """Sets this Model Version to a desired stage.
 
         Args:
             stage: the target stage for model version.
             force: whether to force archiving of current model version in target stage or raise.
+
+        Returns:
+            Updated Model Version object.
         """
-        self._get_or_create_model_version().set_stage(stage=stage, force=force)
+        return self._get_or_create_model_version().set_stage(
+            stage=stage, force=force
+        )
 
     #########################
     #   Internal methods    #
@@ -213,7 +278,21 @@ class ModelVersion(BaseModel):
 
         smart_union = True
 
-    def __eq__(self, other: "ModelVersion") -> bool:
+    def __eq__(self, other: object) -> bool:
+        """Check two ModelVersions for equality.
+
+        Args:
+            other: object to compare with
+
+        Returns:
+            True, if equal, False otherwise.
+        """
+        if not isinstance(other, ModelVersion):
+            return NotImplemented
+        if self.name != other.name:
+            return False
+        if self.name == other.name and self.version == other.version:
+            return True
         self_mv = self._get_or_create_model_version()
         other_mv = other._get_or_create_model_version()
         return self_mv.id == other_mv.id
@@ -295,7 +374,9 @@ class ModelVersion(BaseModel):
 
         zenml_client = Client()
         try:
-            model = zenml_client.get_model(model_name_or_id=self.name)
+            model = zenml_client.zen_store.get_model(
+                model_name_or_id=self.name
+            )
         except KeyError:
             model_request = ModelRequestModel(
                 name=self.name,
@@ -312,11 +393,16 @@ class ModelVersion(BaseModel):
             )
             model_request = ModelRequestModel.parse_obj(model_request)
             try:
-                model = zenml_client.create_model(model=model_request)
+                model = zenml_client.zen_store.create_model(
+                    model=model_request
+                )
                 logger.info(f"New model `{self.name}` was created implicitly.")
             except EntityExistsError:
                 # this is backup logic, if model was created somehow in between get and create calls
-                model = zenml_client.get_model(model_name_or_id=self.name)
+                model = zenml_client.zen_store.get_model(
+                    model_name_or_id=self.name
+                )
+        self._model_id = model.id
         return model
 
     def _get_model_version(self) -> "ModelVersionResponseModel":
@@ -328,7 +414,7 @@ class ModelVersion(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        return zenml_client.get_model_version(
+        return zenml_client.zen_store.get_model_version(
             model_name_or_id=self.name,
             model_version_name_or_number_or_id=self.version
             or RUNNING_MODEL_VERSION,
@@ -400,11 +486,14 @@ class ModelVersion(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list {self.name}` CLI command."
                 )
-            model_version = zenml_client.create_model_version(
+            model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
+        self._id = model_version.id
+        self._model_id = model_version.model.id
+        self._number = model_version.number
         return model_version
 
     def _merge(self, model_version: "ModelVersion") -> None:

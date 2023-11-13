@@ -922,7 +922,7 @@ class Pipeline:
         for key, _ in new_versions_requested.items():
             model_name, model_version = key
             if not model_version:
-                mv = Client().get_model_version(
+                mv = Client().zen_store.get_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_number_or_id=constants.RUNNING_MODEL_VERSION,
                 )

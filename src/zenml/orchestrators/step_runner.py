@@ -726,7 +726,7 @@ class StepRunner:
                     model_name_or_id=external_artifact.model_name,
                     model_version_name_or_number_or_id=external_artifact.model_version,
                 )
-                models.add((model_version.model.id, model_version.id))
+                models.add((model_version.model_id, model_version.id))
         return models
 
     def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:

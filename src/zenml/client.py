@@ -175,6 +175,7 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.model.model_version import ModelVersion
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -5467,7 +5468,7 @@ class Client(metaclass=ClientMetaClass):
 
     def create_model_version(
         self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+    ) -> "ModelVersion":
         """Creates a new model version in Model Control Plane.
 
         Args:
@@ -5476,7 +5477,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly created model version.
         """
-        return self.zen_store.create_model_version(model_version=model_version)
+        return self.zen_store.create_model_version(
+            model_version=model_version
+        ).to_model_version(True)
 
     def delete_model_version(
         self,
@@ -5500,7 +5503,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, UUID, ModelStages]
         ] = None,
-    ) -> ModelVersionResponseModel:
+    ) -> "ModelVersion":
         """Get an existing model version from Model Control Plane.
 
         Args:
@@ -5515,7 +5518,7 @@ class Client(metaclass=ClientMetaClass):
             model_name_or_id=model_name_or_id,
             model_version_name_or_number_or_id=model_version_name_or_number_or_id
             or ModelStages.LATEST,
-        )
+        ).to_model_version()
 
     def list_model_versions(
         self,
@@ -5541,7 +5544,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_version_id: UUID,
         model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+    ) -> "ModelVersion":
         """Get all model versions by filter.
 
         Args:
@@ -5554,7 +5557,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_model_version(
             model_version_id=model_version_id,
             model_version_update_model=model_version_update_model,
-        )
+        ).to_model_version()
 
     #################################################
     # Model Versions Artifacts

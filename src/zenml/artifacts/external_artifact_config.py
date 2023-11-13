@@ -113,7 +113,6 @@ class ExternalArtifactConfiguration(BaseModel):
                 name=self.model_name,
                 version=self.model_version,
             )
-        model_version = model_version._get_or_create_model_version()
 
         for artifact_getter in [
             model_version.get_data_artifact,

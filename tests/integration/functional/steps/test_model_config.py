@@ -140,22 +140,22 @@ def test_create_new_versions_both_pipeline_and_step():
         foo = client.get_model("foo")
         assert foo.name == "foo"
         foo_version = client.get_model_version("foo", ModelStages.LATEST)
-        assert foo_version.name == "1"
+        assert foo_version.number == 1
 
         bar = client.get_model("bar")
         assert bar.name == "bar"
         bar_version = client.get_model_version("bar", ModelStages.LATEST)
-        assert bar_version.name == "1"
-        assert bar_version.description == desc
+        assert bar_version.number == 1
+        assert bar_version.version_description == desc
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("foo", ModelStages.LATEST)
-        assert foo_version.name == "2"
+        assert foo_version.number == 2
 
         bar_version = client.get_model_version("bar", ModelStages.LATEST)
-        assert bar_version.name == "2"
-        assert bar_version.description == desc
+        assert foo_version.number == 2
+        assert bar_version.version_description == desc
 
 
 def test_create_new_version_only_in_step():
@@ -174,12 +174,12 @@ def test_create_new_version_only_in_step():
         bar = client.get_model("foo")
         assert bar.name == "foo"
         bar_version = client.get_model_version("foo", ModelStages.LATEST)
-        assert bar_version.name == "1"
+        assert bar_version.number == 1
 
         _this_pipeline_does_not_create_a_version()
 
         bar_version = client.get_model_version("foo", ModelStages.LATEST)
-        assert bar_version.name == "2"
+        assert bar_version.number == 2
 
 
 def test_create_new_version_only_in_pipeline():
@@ -201,12 +201,12 @@ def test_create_new_version_only_in_pipeline():
         foo = client.get_model("bar")
         assert foo.name == "bar"
         foo_version = client.get_model_version("bar", ModelStages.LATEST)
-        assert foo_version.name == "1"
+        assert foo_version.number == 1
 
         _this_pipeline_creates_a_version()
 
         foo_version = client.get_model_version("bar", ModelStages.LATEST)
-        assert foo_version.name == "2"
+        assert foo_version.number == 2
 
 
 @step
@@ -266,9 +266,8 @@ def test_recovery_of_steps(model_version: ModelVersion):
         with pytest.raises(Exception, match="make pipeline fail"):
             _this_pipeline_will_recover(3)
 
-        model = client.get_model("foo")
-        mv = client.get_model_version(
-            model_name_or_id=model.id,
+        mv = client.zen_store.get_model_version(
+            model_name_or_id="foo",
             model_version_name_or_number_or_id=model_version.version
             or RUNNING_MODEL_VERSION,
         )
@@ -452,9 +451,8 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             model_version=ModelVersion(name="foo", version=ModelStages.LATEST),
         )()
 
-        model = client.get_model("foo")
-        mv = client.get_model_version(
-            model_name_or_id=model.id,
+        mv = client.zen_store.get_model_version(
+            model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
 
@@ -507,9 +505,8 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
             run_name=run_name_2,
         )(ModelVersion(name="foo", version=ModelStages.LATEST))
 
-        model = client.get_model("foo")
-        mv = client.get_model_version(
-            model_name_or_id=model.id,
+        mv = client.zen_store.get_model_version(
+            model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
 
@@ -640,7 +637,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
         )()
 
         for model in models:
-            mv = client.get_model_version(
+            mv = client.zen_store.get_model_version(
                 model_name_or_id=model.id,
                 model_version_name_or_number_or_id=ModelStages.LATEST,
             )
@@ -714,9 +711,8 @@ def test_that_consumption_also_registers_run_in_model_version():
         )()
 
         client = Client()
-        model = client.get_model(model_name_or_id="step")
-        mv = client.get_model_version(
-            model_name_or_id=model.id,
+        mv = client.zen_store.get_model_version(
+            model_name_or_id="step",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
         assert len(mv.pipeline_run_ids) == 4
