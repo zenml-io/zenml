@@ -13,9 +13,7 @@ def sample_name(prefix: str = "aria") -> str:
 
 @contextmanager
 def model_killer():
-    try:
-        yield
-    finally:
+    def cleanup():
         client = Client()
         models = client.list_models(ModelFilterModel(size=999))
         for model in models:
@@ -24,12 +22,16 @@ def model_killer():
             except KeyError:
                 pass
 
-
-@contextmanager
-def tags_killer():
+    cleanup()
     try:
         yield
     finally:
+        cleanup()
+
+
+@contextmanager
+def tags_killer():
+    def cleanup():
         client = Client()
         tags = client.list_tags(TagFilterModel(size=999))
         for tag in tags:
@@ -37,3 +39,9 @@ def tags_killer():
                 client.delete_tag(tag.id)
             except KeyError:
                 pass
+
+    cleanup()
+    try:
+        yield
+    finally:
+        cleanup()
