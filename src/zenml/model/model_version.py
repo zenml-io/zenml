@@ -283,7 +283,7 @@ class ModelVersion(BaseModel):
         try:
             model = zenml_client.get_model(model_name_or_id=self.name)
         except KeyError:
-            if str(self.version) in ModelStages.values:
+            if str(self.version) in ModelStages.values():
                 raise RuntimeError(
                     f"Cannot create a model version named {str(self.version)} as "
                     "it matches one of the possible model version stages. If you "
