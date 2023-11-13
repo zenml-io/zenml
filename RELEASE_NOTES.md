@@ -1,4 +1,38 @@
 <!-- markdown-link-check-disable -->
+# 0.46.1
+
+The 0.46.1 release introduces support for Service Accounts and API Keys that
+can be used to authenticate with the ZenML server from environments that do not
+support the web login flow, such as CI/CD environments, for example.
+
+Also included in this release are some documentation updates and bug fixes,
+notably moving the database migration logic deployed with the Helm chart out of
+the init containers and into a Kubernetes Job, which makes it possible to scale
+out the ZenML server deployments without the risk of running into database
+migration conflicts.
+
+## What's Changed
+* Small improvements to Hub docs page by @strickvl in https://github.com/zenml-io/zenml/pull/2015
+* Pin OpenAI integration to `<1.0.0` by @strickvl in https://github.com/zenml-io/zenml/pull/2027
+* Make error message nicer for when two artifacts that share a prefix are found by @strickvl in https://github.com/zenml-io/zenml/pull/2023
+* Move db-migration to `job` instead of `init-container` to allow replicas by @safoinme in https://github.com/zenml-io/zenml/pull/2021
+* Fix stuck/broken CI by @strickvl in https://github.com/zenml-io/zenml/pull/2032
+* Increase `step.source_code` Cut-Off Limit by @fa9r in https://github.com/zenml-io/zenml/pull/2025
+* Improve artifact linkage logging in MCP by @avishniakov in https://github.com/zenml-io/zenml/pull/2016
+* Upgrade feast so apidocs don't fail no mo by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2028
+* Remove NumPy Visualizations for 2D Arrays by @fa9r in https://github.com/zenml-io/zenml/pull/2033
+* Fix user activation bug by @stefannica in https://github.com/zenml-io/zenml/pull/2037
+* Remove `create_new_model_version` arg of `ModelConfig` by @avishniakov in https://github.com/zenml-io/zenml/pull/2030
+* Extend the wait period in between PyPi package publication and Docker image building for releases by @strickvl in https://github.com/zenml-io/zenml/pull/2029
+* Make `zenml up` prefill username when launching dashboard by @strickvl in https://github.com/zenml-io/zenml/pull/2024
+* Add warning when artifact store cannot be loaded by @strickvl in https://github.com/zenml-io/zenml/pull/2011
+* Add extra config to `Kaniko` docs by @safoinme in https://github.com/zenml-io/zenml/pull/2019
+* ZenML API Keys and Service Accounts by @stefannica in https://github.com/zenml-io/zenml/pull/1840
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.46.0..0.46.1
+
+
 # 0.46.0
 
 This release brings some upgrades, documentation updates and bug fixes. Notably,
