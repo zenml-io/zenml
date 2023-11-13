@@ -52,8 +52,8 @@ def upgrade() -> None:
             new_name = f"{name}-{id[:4]}"
             other_user_id = other_user_row[0]
             description = (
-                "This default user was renamed during migration. Please use "
-                "the `default` user instead and delete this user when no "
+                "This user was renamed due to a DB migration error. Please use "
+                f"the `{name}` user instead and delete this user when no "
                 "longer needed."
             )
             update_other_user = text(
