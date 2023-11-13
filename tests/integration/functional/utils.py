@@ -22,7 +22,6 @@ def model_killer():
             except KeyError:
                 pass
 
-    cleanup()
     try:
         yield
     finally:
