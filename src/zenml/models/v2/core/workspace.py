@@ -79,9 +79,6 @@ class WorkspaceResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    # Body and metadata pair
-    metadata: Optional["WorkspaceResponseMetadata"]
-
     def get_hydrated_version(self) -> "WorkspaceResponse":
         """Get the hydrated version of this workspace."""
         from zenml.client import Client
