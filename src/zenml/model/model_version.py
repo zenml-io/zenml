@@ -283,6 +283,26 @@ class ModelVersion(BaseModel):
         try:
             model = zenml_client.get_model(model_name_or_id=self.name)
         except KeyError:
+            if str(self.version) in ModelStages.values:
+                raise RuntimeError(
+                    f"Cannot create a model version named {str(self.version)} as "
+                    "it matches one of the possible model version stages. If you "
+                    "are aiming to fetch model version by stage, check if the "
+                    "model version in given stage exists. It might be missing, if "
+                    "the pipeline promoting model version to this stage failed,"
+                    " as an example. You can explore model versions using "
+                    f"`zenml model version list {self.name}` CLI command."
+                )
+            if str(self.version).isnumeric():
+                raise RuntimeError(
+                    f"Cannot create a model version named {str(self.version)} as "
+                    "numeric model version names are reserved. If you "
+                    "are aiming to fetch model version by number, check if the "
+                    "model version with given number exists. It might be missing, if "
+                    "the pipeline creating model version failed,"
+                    " as an example. You can explore model versions using "
+                    f"`zenml model version list {self.name}` CLI command."
+                )
             model_request = ModelRequestModel(
                 name=self.name,
                 license=self.license,
