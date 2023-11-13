@@ -26,12 +26,13 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
-from zenml.models import BaseFilter, RoleResponse
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     update_model,
 )
+from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.core.role import RoleResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:

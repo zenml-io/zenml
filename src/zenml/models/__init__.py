@@ -485,6 +485,7 @@ UserRoleAssignmentResponseMetadata.update_forward_refs(
 )
 UserResponseMetadata.update_forward_refs(
     RoleResponse=RoleResponse,
+    TeamResponse=TeamResponse,
 )
 __all__ = [
     # V1

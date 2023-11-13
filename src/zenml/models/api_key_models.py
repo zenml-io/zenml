@@ -25,12 +25,12 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
     ZENML_API_KEY_PREFIX,
 )
-from zenml.models import BaseFilter
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     update_model,
 )
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
