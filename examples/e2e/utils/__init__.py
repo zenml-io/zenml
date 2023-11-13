@@ -16,6 +16,6 @@
 #
 
 
-from .batch_inference import e2e_use_case_batch_inference
-from .training import e2e_use_case_training
-from .deployment import e2e_use_case_deployment
+from .get_model_from_config import get_model_from_config
+from .model_versions import get_model_versions, get_model_registry_version
+from .promote_in_model_registry import promote_in_model_registry

@@ -18,23 +18,31 @@
 
 from typing import Optional
 
-import pandas as pd
 from typing_extensions import Annotated
+from utils import get_model_registry_version
 
 from zenml import get_step_context, step
+from zenml.client import Client
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 from zenml.logger import get_logger
-from zenml.model import ArtifactConfig
+from zenml.model import DeploymentArtifactConfig
 
 logger = get_logger(__name__)
 
 
 @step
-def inference_predict(
-    dataset_inf: pd.DataFrame,
-) -> Annotated[pd.Series, "predictions", ArtifactConfig(overwrite=False)]:
+def deployment_deploy() -> (
+    Annotated[
+        Optional[MLFlowDeploymentService],
+        "mlflow_deployment",
+        DeploymentArtifactConfig(),
+    ]
+):
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns
@@ -54,25 +62,17 @@ def inference_predict(
         The predictions as pandas series
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    model_version = get_step_context().model_config._get_model_version()
+    if Client().active_stack.orchestrator.flavor == "local":
+        model_version = get_step_context().model_config._get_model_version()
 
-    # get predictor
-    predictor_service: Optional[
-        MLFlowDeploymentService
-    ] = model_version.get_deployment("mlflow_deployment").load()
-    if predictor_service is not None:
-        # run prediction from service
-        predictions = predictor_service.predict(request=dataset_inf)
-    else:
-        logger.warning(
-            "Predicting from loaded model instead of deployment service "
-            "as the orchestrator is not local."
+        # deploy predictor service
+        deployment_service = mlflow_model_registry_deployer_step.entrypoint(
+            registry_model_name=model_version.model.name,
+            registry_model_version=get_model_registry_version(model_version),
+            replace_existing=True,
         )
-        # run prediction from memory
-        predictor = model_version.get_model_object("model").load()
-        predictions = predictor.predict(dataset_inf)
-
-    predictions = pd.Series(predictions, name="predicted")
+    else:
+        logger.warning("Skipping deployment as the orchestrator is not local.")
+        deployment_service = None
     ### YOUR CODE ENDS HERE ###
-
-    return predictions
+    return deployment_service
