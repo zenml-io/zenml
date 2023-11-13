@@ -6104,13 +6104,14 @@ class SqlZenStore(BaseZenStore):
             query = query.where(UserSchema.id == account_name_or_id)
         else:
             query = query.where(UserSchema.name == account_name_or_id)
-        if service_account is True:
-            account_type = "service "
-        elif service_account is False:
-            account_type = "user "
-        query = query.where(
-            UserSchema.is_service_account == service_account  # noqa: E712
-        )
+        if service_account is not None:
+            if service_account is True:
+                account_type = "service "
+            elif service_account is False:
+                account_type = "user "
+            query = query.where(
+                UserSchema.is_service_account == service_account  # noqa: E712
+            )
         error_msg = (
             f"No {account_type}account with the '{account_name_or_id}' name "
             "or ID was found"
