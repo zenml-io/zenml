@@ -230,7 +230,6 @@ class ModelVersionResponseModel(
             ethics=self.model.ethics,
             tags=self.model.tags,
             version=self.name,
-            version_description=self.description,
             was_created_in_this_run=was_created_in_this_run,
         )
 

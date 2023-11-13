@@ -55,7 +55,6 @@ class ModelVersion(BaseModel):
     tags: Tags associated with the model.
     version: The model version name, number or stage is optional and points model context
         to a specific version/stage. If skipped new model version will be created.
-    version_description: The description of the model version.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     delete_new_version_on_failure: Whether to delete failed runs with new versions for later recovery from it.
@@ -71,7 +70,6 @@ class ModelVersion(BaseModel):
     ethics: Optional[str]
     tags: Optional[List[str]]
     version: Optional[Union[ModelStages, int, str]]
-    version_description: Optional[str]
     save_models_to_registry: bool = True
     delete_new_version_on_failure: bool = True
 
@@ -459,7 +457,7 @@ class ModelVersion(BaseModel):
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
             name=self.version,
-            description=self.version_description,
+            description=self.description,
             model=model.id,
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)

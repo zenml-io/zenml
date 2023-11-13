@@ -125,7 +125,7 @@ def test_create_new_versions_both_pipeline_and_step():
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="bar", version_description=desc),
+        model_version=ModelVersion(name="bar", description=desc),
         enable_cache=False,
     )
     def _this_pipeline_creates_a_version():
@@ -146,7 +146,7 @@ def test_create_new_versions_both_pipeline_and_step():
         assert bar.name == "bar"
         bar_version = client.get_model_version("bar", ModelStages.LATEST)
         assert bar_version.number == 1
-        assert bar_version.version_description == desc
+        assert bar_version.description == desc
 
         _this_pipeline_creates_a_version()
 
@@ -155,7 +155,7 @@ def test_create_new_versions_both_pipeline_and_step():
 
         bar_version = client.get_model_version("bar", ModelStages.LATEST)
         assert foo_version.number == 2
-        assert bar_version.version_description == desc
+        assert bar_version.description == desc
 
 
 def test_create_new_version_only_in_step():

@@ -38,7 +38,6 @@ def assert_model_version_step():
     assert model_version.trade_offs == "trade_offs"
     assert model_version.ethics == "ethics"
     assert model_version.tags == ["tag"]
-    assert model_version.version_description == "version_description"
     assert model_version.save_models_to_registry
 
 
@@ -62,7 +61,6 @@ def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
         trade_offs="trade_offs",
         ethics="ethics",
         tags=["tag"],
-        version_description="version_description",
         save_models_to_registry=True,
     )
 
@@ -146,7 +144,6 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
                 trade_offs="trade_offs",
                 ethics="ethics",
                 tags=["tag"],
-                version_description="version_description",
                 save_models_to_registry=True,
             )
         )
@@ -164,10 +161,6 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
     assert p.configuration.model_version.trade_offs == "trade_offs"
     assert p.configuration.model_version.ethics == "ethics"
     assert p.configuration.model_version.tags == ["tag"]
-    assert (
-        p.configuration.model_version.version_description
-        == "version_description"
-    )
     assert p.configuration.model_version.save_models_to_registry
     with pytest.raises(AssertionError):
         p()
