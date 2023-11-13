@@ -945,13 +945,13 @@ class Pipeline:
                 new_version_request.model_config.delete_new_version_on_failure
                 and new_version_request.model_config.was_created_in_this_run
             ):
-                model_version = Client().get_model_version(
+                model_version_model = Client().get_model_version(
                     model_name_or_id=model_name,
                     model_version_name_or_number_or_id=model_version
                     or constants.RUNNING_MODEL_VERSION,
                 )
                 Client().delete_model_version(
-                    model_version_id=model_version.id
+                    model_version_id=model_version_model.id
                 )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
