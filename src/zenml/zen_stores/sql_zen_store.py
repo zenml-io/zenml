@@ -6344,8 +6344,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a workspace with the given name already exists.
         """
-        from zenml.utils.tag_utils import attach_tags_to_resource
-
         with Session(self.engine) as session:
             existing_model = session.exec(
                 select(ModelSchema).where(ModelSchema.name == model.name)
@@ -6360,11 +6358,10 @@ class SqlZenStore(BaseZenStore):
             session.add(model_schema)
 
             if model.tags:
-                attach_tags_to_resource(
+                self._attach_tags_to_resource(
                     tag_names=model.tags,
                     resource_id=model_schema.id,
                     resource_type=TaggableResourceTypes.MODEL,
-                    sql_store=self,
                 )
             session.commit()
             return ModelSchema.to_model(model_schema)
@@ -6462,7 +6459,23 @@ class SqlZenStore(BaseZenStore):
             if not existing_model:
                 raise KeyError(f"Model with ID {model_id} not found.")
 
-            existing_model.update(model_update=model_update, sql_store=self)
+            if model_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_update.add_tags,
+                    resource_id=existing_model.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+            model_update.add_tags = None
+            if model_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=model_update.remove_tags,
+                    resource_id=existing_model.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+            model_update.remove_tags = None
+
+            existing_model.update(model_update=model_update)
+
             session.add(existing_model)
             session.commit()
 
@@ -7108,6 +7121,60 @@ class SqlZenStore(BaseZenStore):
     #################
     # Tags
     #################
+
+    def _attach_tags_to_resource(
+        self,
+        tag_names: List[str],
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Creates a tag<>resource link if not present.
+
+        Args:
+            tag_names: The list of names of the tags.
+            resource_id: The id of the resource.
+            resource_type: The type of the resource to create link with.
+        """
+        for tag_name in tag_names:
+            try:
+                tag = self.get_tag(tag_name)
+            except KeyError:
+                tag = self.create_tag(TagRequestModel(name=tag_name))
+            try:
+                self.create_tag_resource(
+                    TagResourceRequestModel(
+                        tag_id=tag.id,
+                        resource_id=resource_id,
+                        resource_type=resource_type,
+                    )
+                )
+            except EntityExistsError:
+                pass
+
+    def _detach_tags_from_resource(
+        self,
+        tag_names: List[str],
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Deletes tag<>resource link if present.
+
+        Args:
+            tag_names: The list of names of the tags.
+            resource_id: The id of the resource.
+            resource_type: The type of the resource to create link with.
+        """
+        from zenml.utils.tag_utils import _get_tag_resource_id
+
+        for tag_name in tag_names:
+            try:
+                tag = self.get_tag(tag_name)
+                self.delete_tag_resource(
+                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    resource_type=resource_type,
+                )
+            except KeyError:
+                pass
 
     def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
         """Creates a new tag.

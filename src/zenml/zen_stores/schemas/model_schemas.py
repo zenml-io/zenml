@@ -40,7 +40,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.sql_zen_store import SqlZenStore
+    pass
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -153,39 +153,19 @@ class ModelSchema(NamedSchema, table=True):
     def update(
         self,
         model_update: ModelUpdateModel,
-        sql_store: "SqlZenStore",
     ) -> "ModelSchema":
         """Updates a `ModelSchema` from a `ModelUpdateModel`.
 
         Args:
             model_update: The `ModelUpdateModel` to update from.
-            sql_store: SqlZenStore instance.
 
         Returns:
             The updated `ModelSchema`.
         """
-        from zenml.utils.tag_utils import (
-            attach_tags_to_resource,
-            detach_tags_from_resource,
-        )
-
-        for field, value in model_update.dict(exclude_unset=True).items():
-            if field == "add_tags":
-                attach_tags_to_resource(
-                    tag_names=value,
-                    resource_id=self.id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                    sql_store=sql_store,
-                )
-            elif field == "remove_tags":
-                detach_tags_from_resource(
-                    tag_names=value,
-                    resource_id=self.id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                    sql_store=sql_store,
-                )
-            else:
-                setattr(self, field, value)
+        for field, value in model_update.dict(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            setattr(self, field, value)
         self.updated = datetime.utcnow()
         return self
 
