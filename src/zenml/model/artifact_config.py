@@ -35,7 +35,7 @@ class ArtifactConfig(BaseModel):
     model_name: The name of the model to link artifact to.
     model_version: The identifier of the model version to link artifact to.
         It can be exact version ("23"), exact version number (42), stage
-        (ModelStages.PRODUCTION) or None for the latest version.
+        (ModelStages.PRODUCTION) or ModelStages.LATEST for the latest version.
     model_stage: The stage of the model version to link artifact to.
     artifact_name: The override name of a link instead of an artifact name.
     overwrite: Whether to overwrite an existing link or create new versions.
@@ -81,7 +81,6 @@ class ArtifactConfig(BaseModel):
             on_the_fly_config = ModelConfig(
                 name=self.model_name,
                 version=self.model_version,
-                create_new_model_version=False,
             )
             return on_the_fly_config
 
@@ -120,7 +119,7 @@ class ArtifactConfig(BaseModel):
         # Create a ZenML client
         client = Client()
 
-        model_version = model_config._get_model_version()
+        model_version = model_config.get_or_create_model_version()
 
         artifact_name = self.artifact_name
         if artifact_name is None:

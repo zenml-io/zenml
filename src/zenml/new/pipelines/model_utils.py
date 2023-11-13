@@ -64,18 +64,9 @@ class NewModelVersionRequest(BaseModel):
         Args:
             model_config: Model Config Model object.
             requester: Requester of a new model version.
-
-        Raises:
-            ValueError: If the model version name is configured differently by different requesters.
         """
         self.requesters.append(requester)
         if self._model_config is None:
             self._model_config = model_config
-
-        if self._model_config.version != model_config.version:
-            raise ValueError(
-                f"A mismatch of `version` name in model configurations provided for `{model_config.name} detected."
-                "Since a new model version is requested for this model, all `version` names must match or left default."
-            )
 
         self._model_config._merge(model_config)
