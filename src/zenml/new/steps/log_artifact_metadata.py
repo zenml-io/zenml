@@ -20,14 +20,14 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.new.steps.step_context import get_step_context
 
 
-def log_data_artifact_metadata(
+def log_artifact_metadata(
     output_name: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log data artifact metadata.
+    """Log artifact metadata.
 
     Args:
-        output_name: The output name of the data artifact to log metadata for. Can
+        output_name: The output name of the artifact to log metadata for. Can
             be omitted if there is only one output artifact.
         **kwargs: Metadata to log.
 
@@ -75,7 +75,7 @@ def log_model_artifact_metadata(
         kwargs["metrics"] = metrics
     if hyperparameters:
         kwargs["hyperparameters"] = hyperparameters
-    log_data_artifact_metadata(
+    log_artifact_metadata(
         output_name=output_name,
         **kwargs,
     )
@@ -113,7 +113,7 @@ def log_endpoint_artifact_metadata(
     if deployer_ui_url:
         kwargs["deployer_ui_url"] = deployer_ui_url
 
-    log_data_artifact_metadata(
+    log_artifact_metadata(
         output_name=output_name,
         **kwargs,
     )

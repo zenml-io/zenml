@@ -38,12 +38,12 @@ from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
 from zenml.new.steps.step_context import get_step_context
-from zenml.new.steps.log_artifact_metadata import log_data_artifact_metadata
+from zenml.new.steps.log_artifact_metadata import log_artifact_metadata
 
 __all__ = [
     "get_pipeline_context",
     "get_step_context",
-    "log_data_artifact_metadata",
+    "log_artifact_metadata",
     "pipeline",
     "show",
     "step",
