@@ -4022,6 +4022,16 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             run_schema = session.exec(
                 select(PipelineRunSchema)
+                # The following line locks the row in the DB, so anyone else
+                # calling `SELECT ... FOR UPDATE` will wait until the first
+                # transaction to do so finishes. After the first transaction
+                # finishes, the subsequent queries will not be able to find a
+                # placeholder run anymore, as we already updated the
+                # orchestrator_run_id.
+                # **IMPORTANT**: This works to lock just the single row only if
+                # the where clause of the query is indexed (= covered by a
+                # unique constraint). Otherwise this will lock multiple rows or
+                # even the complete table which we want to avoid.
                 .with_for_update()
                 .where(
                     PipelineRunSchema.deployment_id == pipeline_run.deployment
@@ -4032,9 +4042,6 @@ class SqlZenStore(BaseZenStore):
             if not run_schema:
                 raise KeyError("No placeholder run")
 
-            # TODO: check whether we can potentially get back the run with
-            # orchestrator run id already set from a parallel request, not sure
-            # how the `with_for_update` behaves
             run_schema.orchestrator_run_id = pipeline_run.orchestrator_run_id
             run_schema.orchestrator_environment = json.dumps(
                 pipeline_run.orchestrator_environment
@@ -4059,7 +4066,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
 
             if not run_schema:
-                raise KeyError("No template run")
+                raise KeyError("No run found.")
 
             return run_schema.to_model()
 
