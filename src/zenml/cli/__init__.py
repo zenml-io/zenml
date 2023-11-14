@@ -1578,3 +1578,4 @@ from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.workspace import *  # noqa
+from zenml.cli.tag import *  # noqa
