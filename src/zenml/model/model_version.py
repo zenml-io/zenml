@@ -26,7 +26,7 @@ from uuid import UUID
 from pydantic import BaseModel, PrivateAttr, root_validator
 
 from zenml.enums import ModelStages
-from zenml.exceptions import EntityExistsError, ReservedNameError
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ class ModelVersion(BaseModel):
         if self._id is None:
             try:
                 self._get_or_create_model_version()
-            except ReservedNameError:
+            except RuntimeError:
                 logger.info(
                     f"Model version `{self.version}` doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
@@ -133,7 +133,7 @@ class ModelVersion(BaseModel):
         if self._number is None:
             try:
                 self._get_or_create_model_version()
-            except ReservedNameError:
+            except RuntimeError:
                 logger.info(
                     f"Model version `{self.version}` doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
@@ -154,7 +154,7 @@ class ModelVersion(BaseModel):
             stage = self._get_or_create_model_version().stage
             if stage:
                 return ModelStages(stage)
-        except ReservedNameError:
+        except RuntimeError:
             logger.info(
                 f"Model version `{self.version}` doesn't exist "
                 "and cannot be fetched from the Model Control Plane."
@@ -401,7 +401,7 @@ class ModelVersion(BaseModel):
             The model version based on configuration.
 
         Raises:
-            ReservedNameError: if the model version needs to be created, but provided name is reserved
+            RuntimeError: if the model version needs to be created, but provided name is reserved
         """
         from zenml.client import Client
         from zenml.models.model_models import ModelVersionRequestModel
@@ -452,7 +452,7 @@ class ModelVersion(BaseModel):
                 self.version
                 and str(self.version).lower() in ModelStages.values()
             ):
-                raise ReservedNameError(
+                raise RuntimeError(
                     f"Cannot create a model version named {str(self.version)} as "
                     "it matches one of the possible model version stages. If you "
                     "are aiming to fetch model version by stage, check if the "
@@ -462,7 +462,7 @@ class ModelVersion(BaseModel):
                     f"`zenml model version list {self.name}` CLI command."
                 )
             if str(self.version).isnumeric():
-                raise ReservedNameError(
+                raise RuntimeError(
                     f"Cannot create a model version named {str(self.version)} as "
                     "numeric model version names are reserved. If you "
                     "are aiming to fetch model version by number, check if the "

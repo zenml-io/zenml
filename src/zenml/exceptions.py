@@ -299,7 +299,3 @@ class OAuthError(ValueError):
             the error message
         """
         return f"{self.error}: {self.error_description or ''}"
-
-
-class ReservedNameError(ZenMLBaseException):
-    """Raised when entity is created using reserved name."""
