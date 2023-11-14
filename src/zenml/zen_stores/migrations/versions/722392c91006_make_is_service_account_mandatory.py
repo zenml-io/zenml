@@ -1,7 +1,7 @@
 """make is_service_account mandatory [722392c91006].
 
 Revision ID: 722392c91006
-Revises: 0.46.1
+Revises: 6119cd9b93c2
 Create Date: 2023-11-13 15:38:26.253610
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
 revision = "722392c91006"
-down_revision = "0.46.1"
+down_revision = "6119cd9b93c2"
 branch_labels = None
 depends_on = None
 
