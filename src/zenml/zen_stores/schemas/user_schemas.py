@@ -67,7 +67,7 @@ class UserSchema(NamedSchema, table=True):
 
     __tablename__ = "user"
 
-    is_service_account: Optional[bool] = Field(default=False, nullable=True)
+    is_service_account: bool = Field(default=False)
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
@@ -246,7 +246,7 @@ class UserSchema(NamedSchema, table=True):
                 external_user_id=self.external_user_id,
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
                 teams=[t.to_model() for t in self.teams],
-                is_service_account=self.is_service_account or False,
+                is_service_account=self.is_service_account,
             )
 
         return UserResponse(
