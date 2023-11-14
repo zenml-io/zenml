@@ -290,17 +290,28 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             if isinstance(model, BaseResponse):
-                include_columns = [
-                    k
-                    for k in model.__fields__["body"].type_.__fields__.keys()
-                    if k not in exclude_columns
-                ] + [
-                    k
-                    for k in model.__fields__[
-                        "metadata"
-                    ].type_.__fields__.keys()
-                    if k not in exclude_columns
-                ]
+                include_columns = ["id"]
+
+                if "name" in model.__fields__:
+                    include_columns.append("name")
+
+                include_columns.extend(
+                    [
+                        k
+                        for k in model.__fields__[
+                            "body"
+                        ].type_.__fields__.keys()
+                        if k not in exclude_columns
+                    ]
+                    + [
+                        k
+                        for k in model.__fields__[
+                            "metadata"
+                        ].type_.__fields__.keys()
+                        if k not in exclude_columns
+                    ]
+                )
+
             else:
                 include_columns = [
                     k for k in model.dict().keys() if k not in exclude_columns
