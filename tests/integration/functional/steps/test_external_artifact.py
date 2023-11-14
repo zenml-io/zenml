@@ -21,13 +21,13 @@ from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model import ArtifactConfig, ModelVersion
+from zenml.model import DataArtifactConfig, ModelVersion
 
 
 @step
 def producer(
     run_number: int,
-) -> Annotated[int, "predictions", ArtifactConfig(overwrite=False)]:
+) -> Annotated[int, "predictions", DataArtifactConfig(overwrite=False)]:
     """Step producing versioned output and linking it to a model."""
     return run_number
 

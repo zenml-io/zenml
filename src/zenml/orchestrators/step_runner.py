@@ -621,7 +621,7 @@ class StepRunner:
         Args:
             artifact_ids: The IDs of the published output artifacts.
         """
-        from zenml.model.artifact_config import ArtifactConfig
+        from zenml.model.artifact_config import DataArtifactConfig
 
         context = get_step_context()
         try:
@@ -636,7 +636,7 @@ class StepRunner:
             ).artifact_config
             if artifact_config_ is None:
                 if model_version_from_context is not None:
-                    artifact_config_ = ArtifactConfig(
+                    artifact_config_ = DataArtifactConfig(
                         artifact_name=artifact_name,
                     )
             else:

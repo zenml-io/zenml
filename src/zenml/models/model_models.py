@@ -191,15 +191,15 @@ class ModelVersionResponseModel(
         description="The model containing version",
     )
     model_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Model Objects linked to the model version",
+        description="Model artifacts linked to the model version",
         default={},
     )
     data_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Artifacts linked to the model version",
+        description="Data artifacts linked to the model version",
         default={},
     )
     endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Deployments linked to the model version",
+        description="Endpoint artifacts linked to the model version",
         default={},
     )
     pipeline_run_ids: Dict[str, UUID] = Field(
@@ -239,7 +239,7 @@ class ModelVersionResponseModel(
         """Get all model artifacts linked to this model version.
 
         Returns:
-            Dictionary of Model Artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of model artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
@@ -256,7 +256,7 @@ class ModelVersionResponseModel(
         """Get all data artifacts linked to this model version.
 
         Returns:
-            Dictionary of Artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of data artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
@@ -272,10 +272,10 @@ class ModelVersionResponseModel(
     def endpoint_artifacts(
         self,
     ) -> Dict[str, Dict[str, ArtifactResponseModel]]:
-        """Get all deployments linked to this model version.
+        """Get all endpoint artifacts linked to this model version.
 
         Returns:
-            Dictionary of Deployments with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of endpoint artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
         """
         from zenml.client import Client
 
@@ -309,20 +309,20 @@ class ModelVersionResponseModel(
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional[ArtifactResponseModel]:
-        """Get model object linked to this model version.
+        """Get the artifact linked to this model version given type.
 
         Args:
             collection: The collection to search in (one of self.model_artifact_ids, self.data_artifact_ids, self.endpoint_artifact_ids)
-            name: The name of the model object to retrieve.
-            version: The version of the model object to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated artifact.
-            step_name: The name of the step-generated artifact.
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline-generated the artifact.
+            step_name: The name of the step-generated the artifact.
 
         Returns:
-            Specific version of object from collection or None
+            Specific version of an artifact from collection or None
 
         Raises:
-            RuntimeError: If more than one object is found by given keys
+            RuntimeError: If more than one artifact found by given keys
         """
         from zenml.client import Client
 
@@ -359,16 +359,16 @@ class ModelVersionResponseModel(
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional[ArtifactResponseModel]:
-        """Get model object linked to this model version.
+        """Get the model artifact linked to this model version.
 
         Args:
-            name: The name of the model object to retrieve.
-            version: The version of the model object to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated artifact.
-            step_name: The name of the step-generated artifact.
+            name: The name of the model artifact to retrieve.
+            version: The version of the model artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline-generated the model artifact.
+            step_name: The name of the step-generated the model artifact.
 
         Returns:
-            Specific version of Model Object or None
+            Specific version of the model artifact or None
         """
         return self._get_linked_object(
             self.model_artifact_ids, name, version, pipeline_name, step_name
@@ -381,16 +381,16 @@ class ModelVersionResponseModel(
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional[ArtifactResponseModel]:
-        """Get artifact linked to this model version.
+        """Get the data artifact linked to this model version.
 
         Args:
-            name: The name of the artifact to retrieve.
-            version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            name: The name of the data artifact to retrieve.
+            version: The version of the data artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the data artifact.
+            step_name: The name of the step generated the data artifact.
 
         Returns:
-            Specific version of Artifact or None
+            Specific version of the data artifact or None
         """
         return self._get_linked_object(
             self.data_artifact_ids, name, version, pipeline_name, step_name
@@ -403,16 +403,16 @@ class ModelVersionResponseModel(
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional[ArtifactResponseModel]:
-        """Get deployment linked to this model version.
+        """Get the endpoint artifact linked to this model version.
 
         Args:
-            name: The name of the deployment to retrieve.
-            version: The version of the deployment to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            name: The name of the endpoint artifact to retrieve.
+            version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the endpoint artifact.
+            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
-            Specific version of Deployment or None
+            Specific version of the endpoint artifact or None
         """
         return self._get_linked_object(
             self.endpoint_artifact_ids, name, version, pipeline_name, step_name

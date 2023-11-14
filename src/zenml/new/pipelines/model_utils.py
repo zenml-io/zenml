@@ -59,10 +59,10 @@ class NewModelVersionRequest(BaseModel):
         model_version: ModelVersion,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
-        """Update from Model Config Model object in place.
+        """Update from `ModelVersion` in place.
 
         Args:
-            model_version: Model Config Model object.
+            model_version: `ModelVersion` to use.
             requester: Requester of a new model version.
         """
         self.requesters.append(requester)

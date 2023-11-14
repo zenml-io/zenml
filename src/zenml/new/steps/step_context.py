@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.artifact_config import ArtifactConfig
+    from zenml.model.artifact_config import DataArtifactConfig
     from zenml.model.model_version import ModelVersion
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.pipeline_run_models import PipelineRunResponseModel
@@ -91,7 +91,7 @@ class StepContext(metaclass=SingletonMetaClass):
         step_run: "StepRunResponseModel",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
-        output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
+        output_artifact_configs: Mapping[str, Optional["DataArtifactConfig"]],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
     ) -> None:
@@ -419,7 +419,7 @@ class StepContext(metaclass=SingletonMetaClass):
 
     def _set_artifact_config(
         self,
-        artifact_config: "ArtifactConfig",
+        artifact_config: "DataArtifactConfig",
         output_name: Optional[str] = None,
     ) -> None:
         """Adds artifact config for a given step output.
@@ -450,13 +450,13 @@ class StepContextOutput:
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
     metadata: Optional[Dict[str, "MetadataType"]] = None
-    artifact_config: Optional["ArtifactConfig"]
+    artifact_config: Optional["DataArtifactConfig"]
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
-        artifact_config: Optional["ArtifactConfig"],
+        artifact_config: Optional["DataArtifactConfig"],
     ):
         """Initialize the step output.
 

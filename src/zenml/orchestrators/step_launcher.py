@@ -402,7 +402,7 @@ class StepLauncher:
             model_version_from_context: The model version of the current step.
             step_run: The step to run.
         """
-        from zenml.model.artifact_config import ArtifactConfig
+        from zenml.model.artifact_config import DataArtifactConfig
         from zenml.steps.base_step import BaseStep
         from zenml.steps.utils import parse_return_type_annotations
 
@@ -416,7 +416,7 @@ class StepLauncher:
                 if annotation and annotation.artifact_config is not None:
                     artifact_config_ = annotation.artifact_config.copy()
                 else:
-                    artifact_config_ = ArtifactConfig(
+                    artifact_config_ = DataArtifactConfig(
                         artifact_name=output_name_
                     )
                 if artifact_config_.model_name is None:

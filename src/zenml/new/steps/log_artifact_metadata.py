@@ -20,14 +20,14 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.new.steps.step_context import get_step_context
 
 
-def log_artifact_metadata(
+def log_data_artifact_metadata(
     output_name: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log artifact metadata.
+    """Log data artifact metadata.
 
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
+        output_name: The output name of the data artifact to log metadata for. Can
             be omitted if there is only one output artifact.
         **kwargs: Metadata to log.
 
@@ -42,7 +42,9 @@ def log_artifact_metadata(
     try:
         step_context = get_step_context()
     except StepContextError:
-        raise RuntimeError("Cannot log artifact metadata outside of a step.")
+        raise RuntimeError(
+            "Cannot log data artifact metadata outside of a step."
+        )
 
     try:
         step_context.add_output_metadata(output_name=output_name, **kwargs)
@@ -57,10 +59,10 @@ def log_model_artifact_metadata(
     hyperparameters: Optional[Dict[str, MetadataType]] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for a model.
+    """Log metadata for a model artifact.
 
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
+        output_name: The output name of the model artifact to log metadata for. Can
             be omitted if there is only one output artifact.
         description: A description of the model.
         metrics: The metrics to log.
@@ -73,7 +75,7 @@ def log_model_artifact_metadata(
         kwargs["metrics"] = metrics
     if hyperparameters:
         kwargs["hyperparameters"] = hyperparameters
-    log_artifact_metadata(
+    log_data_artifact_metadata(
         output_name=output_name,
         **kwargs,
     )
@@ -88,16 +90,16 @@ def log_endpoint_artifact_metadata(
     deployer_ui_url: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for an endpoint.
+    """Log metadata for an endpoint artifact.
 
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
+        output_name: The output name of the endpoint artifact to log metadata for. Can
             be omitted if there is only one output artifact.
-        description: A description of the deployment.
-        predict_url: The predict URL of the deployment.
-        explain_url: The explain URL of the deployment.
-        healthcheck_url: The healthcheck URL of the deployment.
-        deployer_ui_url: The deployer UI URL of the deployment.
+        description: A description of the endpoint artifact.
+        predict_url: The predict URL of the endpoint artifact.
+        explain_url: The explain URL of the endpoint artifact.
+        healthcheck_url: The healthcheck URL of the endpoint artifact.
+        deployer_ui_url: The deployer UI URL of the endpoint artifact.
         **kwargs: Other metadata to log.
     """
     if description:
@@ -111,7 +113,7 @@ def log_endpoint_artifact_metadata(
     if deployer_ui_url:
         kwargs["deployer_ui_url"] = deployer_ui_url
 
-    log_artifact_metadata(
+    log_data_artifact_metadata(
         output_name=output_name,
         **kwargs,
     )

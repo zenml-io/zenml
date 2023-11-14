@@ -532,11 +532,11 @@ def _print_artifacts_links_generic(
         else model_version_name_or_number_or_id,
     )
     type_ = (
-        "artifacts"
+        "data artifacts"
         if only_data_artifacts
-        else "deployments"
+        else "endpoint artifacts"
         if only_endpoint_artifacts
-        else "model objects"
+        else "model artifacts"
     )
 
     if (

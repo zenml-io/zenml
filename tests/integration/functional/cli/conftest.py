@@ -25,8 +25,8 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml import pipeline, step
 from zenml.config.schedule import Schedule
 from zenml.model import (
-    ArtifactConfig,
-    DeploymentArtifactConfig,
+    DataArtifactConfig,
+    EndpointArtifactConfig,
     ModelArtifactConfig,
     ModelVersion,
 )
@@ -75,7 +75,7 @@ NAME = f"{PREFIX}{uuid4()}"
 
 
 @step
-def step_1() -> Annotated[int, NAME + "a", ArtifactConfig()]:
+def step_1() -> Annotated[int, NAME + "a", DataArtifactConfig()]:
     return 1
 
 
@@ -83,7 +83,7 @@ def step_1() -> Annotated[int, NAME + "a", ArtifactConfig()]:
 def step_2() -> (
     Tuple[
         Annotated[int, NAME + "b", ModelArtifactConfig()],
-        Annotated[int, NAME + "c", DeploymentArtifactConfig()],
+        Annotated[int, NAME + "c", EndpointArtifactConfig()],
     ]
 ):
     return 2, 3

@@ -23,8 +23,8 @@ from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.model import (
-    ArtifactConfig,
-    DeploymentArtifactConfig,
+    DataArtifactConfig,
+    EndpointArtifactConfig,
     ModelArtifactConfig,
     ModelVersion,
     link_output_to_model,
@@ -39,7 +39,7 @@ MODEL_NAME = "foo"
 
 
 @step(model_version=ModelVersion(name=MODEL_NAME))
-def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
+def single_output_step_from_context() -> Annotated[int, DataArtifactConfig()]:
     """Untyped single output linked as Artifact from step context."""
     return 1
 
@@ -48,15 +48,15 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 def single_output_step_from_context_model() -> (
     Annotated[int, ModelArtifactConfig(save_to_model_registry=True)]
 ):
-    """Untyped single output linked as Model Object from step context."""
+    """Untyped single output linked as a model artifact from step context."""
     return 1
 
 
 @step(model_version=ModelVersion(name=MODEL_NAME))
-def single_output_step_from_context_deployment() -> (
-    Annotated[int, DeploymentArtifactConfig()]
+def single_output_step_from_context_endpoint() -> (
+    Annotated[int, EndpointArtifactConfig()]
 ):
-    """Untyped single output linked as Deployment from step context."""
+    """Untyped single output linked as endpoint artifact from step context."""
     return 1
 
 
@@ -67,7 +67,7 @@ def simple_pipeline():
     single_output_step_from_context_model(
         after=["single_output_step_from_context"]
     )
-    single_output_step_from_context_deployment(
+    single_output_step_from_context_endpoint(
         after=["single_output_step_from_context_model"]
     )
 
@@ -117,9 +117,9 @@ def test_link_minimalistic():
 @step(model_version=ModelVersion(name=MODEL_NAME))
 def multi_named_output_step_from_context() -> (
     Tuple[
-        Annotated[int, "1", ArtifactConfig()],
-        Annotated[int, "2", ArtifactConfig()],
-        Annotated[int, "3", ArtifactConfig()],
+        Annotated[int, "1", DataArtifactConfig()],
+        Annotated[int, "2", DataArtifactConfig()],
+        Annotated[int, "3", DataArtifactConfig()],
     ]
 ):
     """3 typed output step with explicit linking from step context."""
@@ -207,17 +207,17 @@ def multi_named_output_step_from_self() -> (
         Annotated[
             int,
             "1",
-            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
+            DataArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "2",
-            ArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
+            DataArtifactConfig(model_name=MODEL_NAME, model_version="bar"),
         ],
         Annotated[
             int,
             "3",
-            ArtifactConfig(model_name="bar", model_version="foo"),
+            DataArtifactConfig(model_name="bar", model_version="foo"),
         ],
     ]
 ):
@@ -307,12 +307,14 @@ def multi_named_output_step_mixed_linkage() -> (
         Annotated[
             int,
             "2",
-            ArtifactConfig(),
+            DataArtifactConfig(),
         ],
         Annotated[
             int,
             "3",
-            ArtifactConfig(model_name="artifact", model_version="artifact"),
+            DataArtifactConfig(
+                model_name="artifact", model_version="artifact"
+            ),
         ],
     ]
 ):
@@ -323,7 +325,7 @@ def multi_named_output_step_mixed_linkage() -> (
 @step
 def pipeline_configuration_is_used_here() -> (
     Tuple[
-        Annotated[int, "1", ArtifactConfig(artifact_name="custom_name")],
+        Annotated[int, "1", DataArtifactConfig(artifact_name="custom_name")],
         Annotated[str, "4"],
     ]
 ):
@@ -421,7 +423,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
 
 @step(model_version=ModelVersion(name=MODEL_NAME, version="good_one"))
 def single_output_step_no_versioning() -> (
-    Annotated[int, ArtifactConfig(overwrite=True)]
+    Annotated[int, DataArtifactConfig(overwrite=True)]
 ):
     """Single output with overwrite and step context."""
     return 1
@@ -485,7 +487,7 @@ def test_link_no_versioning():
 
 @step
 def single_output_step_with_versioning() -> (
-    Annotated[int, "predictions", ArtifactConfig(overwrite=False)]
+    Annotated[int, "predictions", DataArtifactConfig(overwrite=False)]
 ):
     """Single output with overwrite disabled and step context."""
     return 1
@@ -564,9 +566,9 @@ def step_with_manual_linkage() -> (
     Tuple[Annotated[int, "1"], Annotated[int, "2"]]
 ):
     """Multi output linking by function."""
-    link_output_to_model(ArtifactConfig(), "1")
+    link_output_to_model(DataArtifactConfig(), "1")
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version="bar"), "2"
+        DataArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -586,7 +588,7 @@ def step_with_manual_and_implicit_linkage() -> (
 ):
     """Multi output: 2 is linked by function, 1 is linked implicitly."""
     link_output_to_model(
-        ArtifactConfig(model_name="bar", model_version="bar"), "2"
+        DataArtifactConfig(model_name="bar", model_version="bar"), "2"
     )
     return 1, 2
 
@@ -676,11 +678,11 @@ def test_link_with_manual_linkage(pipeline: Callable):
 
 @step
 def step_with_manual_linkage_fail_on_override() -> (
-    Annotated[int, "1", ArtifactConfig()]
+    Annotated[int, "1", DataArtifactConfig()]
 ):
     """Should fail on manual linkage, cause Annotated provided."""
     with pytest.raises(EntityExistsError):
-        link_output_to_model(ArtifactConfig(), "1")
+        link_output_to_model(DataArtifactConfig(), "1")
     return 1
 
 
@@ -701,7 +703,7 @@ def test_link_with_manual_linkage_fail_on_override():
 
 @step
 def step_with_manual_linkage_flexible_config(
-    artifact_config: ArtifactConfig,
+    artifact_config: DataArtifactConfig,
 ) -> Annotated[int, "1"]:
     """Flexible manual linkage based on input arg."""
     link_output_to_model(artifact_config, "1")
@@ -710,7 +712,7 @@ def step_with_manual_linkage_flexible_config(
 
 @pipeline(enable_cache=False)
 def simple_pipeline_with_manual_linkage_flexible_config(
-    artifact_config: ArtifactConfig,
+    artifact_config: DataArtifactConfig,
 ):
     """Flexible manual linkage based on input arg."""
     step_with_manual_linkage_flexible_config(artifact_config)
@@ -719,19 +721,19 @@ def simple_pipeline_with_manual_linkage_flexible_config(
 @pytest.mark.parametrize(
     "artifact_config",
     (
-        ArtifactConfig(model_name=MODEL_NAME, model_version="good_one"),
-        ArtifactConfig(
+        DataArtifactConfig(model_name=MODEL_NAME, model_version="good_one"),
+        DataArtifactConfig(
             model_name=MODEL_NAME, model_version=ModelStages.PRODUCTION
         ),
-        ArtifactConfig(
+        DataArtifactConfig(
             model_name=MODEL_NAME, model_version=ModelStages.LATEST
         ),
-        ArtifactConfig(model_name=MODEL_NAME, model_version=1),
+        DataArtifactConfig(model_name=MODEL_NAME, model_version=1),
     ),
     ids=("exact_version", "exact_stage", "latest_version", "exact_number"),
 )
 def test_link_with_manual_linkage_flexible_config(
-    artifact_config: ArtifactConfig,
+    artifact_config: DataArtifactConfig,
 ):
     """Test that linking using ArtifactConfig is possible for exact version, stage and latest versions."""
     with model_killer():
@@ -789,7 +791,9 @@ def _cacheable_step_custom_model_annotated() -> (
     Annotated[
         str,
         "cacheable",
-        ArtifactConfig(model_name="bar", model_version=RUNNING_MODEL_VERSION),
+        DataArtifactConfig(
+            model_name="bar", model_version=RUNNING_MODEL_VERSION
+        ),
     ]
 ):
     return "cacheable"

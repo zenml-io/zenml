@@ -153,16 +153,16 @@ class ModelVersion(BaseModel):
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponseModel"]:
-        """Get model object linked to this model version.
+        """Get the model artifact linked to this model version.
 
         Args:
-            name: The name of the model object to retrieve.
-            version: The version of the model object to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated artifact.
-            step_name: The name of the step-generated artifact.
+            name: The name of the model artifact to retrieve.
+            version: The version of the model artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline-generated the model artifact.
+            step_name: The name of the step-generated the model artifact.
 
         Returns:
-            Specific version of Model Object or None
+            Specific version of the model artifact or None
         """
         return self._get_or_create_model_version().get_model_artifact(
             name=name,
@@ -178,16 +178,16 @@ class ModelVersion(BaseModel):
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponseModel"]:
-        """Get artifact linked to this model version.
+        """Get the data artifact linked to this model version.
 
         Args:
-            name: The name of the artifact to retrieve.
-            version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            name: The name of the data artifact to retrieve.
+            version: The version of the data artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the data artifact.
+            step_name: The name of the step generated the data artifact.
 
         Returns:
-            Specific version of Artifact or None
+            Specific version of the data artifact or None
         """
         return self._get_or_create_model_version().get_data_artifact(
             name=name,
@@ -203,16 +203,16 @@ class ModelVersion(BaseModel):
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponseModel"]:
-        """Get deployment linked to this model version.
+        """Get the endpoint artifact linked to this model version.
 
         Args:
-            name: The name of the deployment to retrieve.
-            version: The version of the deployment to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated artifact.
-            step_name: The name of the step generated artifact.
+            name: The name of the endpoint artifact to retrieve.
+            version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the endpoint artifact.
+            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
-            Specific version of Deployment or None
+            Specific version of the endpoint artifact or None
         """
         return self._get_or_create_model_version().get_endpoint_artifact(
             name=name,

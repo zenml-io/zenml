@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ArtifactConfig(BaseModel):
-    """Used to link a generic Artifact to the model version.
+class DataArtifactConfig(BaseModel):
+    """Used to link a data artifact to the model version.
 
     model_name: The name of the model to link artifact to.
     model_version: The identifier of the model version to link artifact to.
@@ -107,8 +107,8 @@ class ArtifactConfig(BaseModel):
         Args:
             artifact_uuid: The UUID of the artifact to link.
             model_version: The model version from caller.
-            is_model_artifact: Whether the artifact is a model object. Defaults to False.
-            is_endpoint_artifact: Whether the artifact is a deployment. Defaults to False.
+            is_model_artifact: Whether the artifact is a model artifact. Defaults to False.
+            is_endpoint_artifact: Whether the artifact is an endpoint artifact. Defaults to False.
         """
         from zenml.client import Client
         from zenml.models.model_models import (
@@ -190,17 +190,17 @@ class ArtifactConfig(BaseModel):
         )
 
 
-class ModelArtifactConfig(ArtifactConfig):
-    """Used to link a Model Object to the model version.
+class ModelArtifactConfig(DataArtifactConfig):
+    """Used to link a model artifact to the model version.
 
-    save_to_model_registry: Whether to save the model object to the model registry.
+    save_to_model_registry: Whether to save the model artifact to the model registry.
     """
 
     save_to_model_registry: bool = True
     IS_MODEL_ARTIFACT = True
 
 
-class DeploymentArtifactConfig(ArtifactConfig):
-    """Used to link a Deployment to the model version."""
+class EndpointArtifactConfig(DataArtifactConfig):
+    """Used to link an endpoint artifact to the model version."""
 
     IS_ENDPOINT_ARTIFACT = True

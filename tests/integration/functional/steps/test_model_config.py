@@ -25,7 +25,7 @@ from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus, ModelStages
-from zenml.model import ArtifactConfig, ModelVersion, link_output_to_model
+from zenml.model import DataArtifactConfig, ModelVersion, link_output_to_model
 from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
@@ -211,7 +211,7 @@ def test_create_new_version_only_in_pipeline():
 
 @step
 def _this_step_produces_output() -> (
-    Annotated[int, "data", ArtifactConfig(overwrite=False)]
+    Annotated[int, "data", DataArtifactConfig(overwrite=False)]
 ):
     return 1
 
@@ -521,13 +521,16 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
 def _this_step_has_model_version_on_artifact_level() -> (
     Tuple[
         Annotated[
-            int, "declarative_link", ArtifactConfig(model_name="declarative")
+            int,
+            "declarative_link",
+            DataArtifactConfig(model_name="declarative"),
         ],
         Annotated[int, "functional_link"],
     ]
 ):
     link_output_to_model(
-        ArtifactConfig(model_name="functional"), output_name="functional_link"
+        DataArtifactConfig(model_name="functional"),
+        output_name="functional_link",
     )
     return 1, 2
 

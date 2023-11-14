@@ -5,7 +5,7 @@ from typing import Tuple
 import pytest
 from typing_extensions import Annotated
 
-from zenml import log_artifact_metadata, pipeline, step
+from zenml import log_data_artifact_metadata, pipeline, step
 
 
 @step
@@ -15,7 +15,7 @@ def artifact_metadata_logging_step() -> str:
         "description": "Aria is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(**output_metadata)
+    log_data_artifact_metadata(**output_metadata)
     return "42"
 
 
@@ -44,7 +44,7 @@ def artifact_multi_output_metadata_logging_step() -> (
         "description": "Blupus is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(output_name="int_output", **output_metadata)
+    log_data_artifact_metadata(output_name="int_output", **output_metadata)
     return "42", 42
 
 
@@ -77,7 +77,7 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
         "description": "Axl is great!",
         "metrics": {"accuracy": 0.9},
     }
-    log_artifact_metadata(**output_metadata)
+    log_data_artifact_metadata(**output_metadata)
     return "42", 42
 
 
