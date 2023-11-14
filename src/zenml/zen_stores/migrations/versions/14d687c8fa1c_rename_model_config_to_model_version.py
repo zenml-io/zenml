@@ -59,10 +59,14 @@ def upgrade() -> None:
         "model_versions_artifacts", schema=None
     ) as batch_op:
         batch_op.alter_column(
-            "is_model_object", new_column_name="is_model_artifact"
+            "is_model_object",
+            new_column_name="is_model_artifact",
+            existing_type=sa.BOOLEAN(),
         )
         batch_op.alter_column(
-            "is_deployment", new_column_name="is_endpoint_artifact"
+            "is_deployment",
+            new_column_name="is_endpoint_artifact",
+            existing_type=sa.BOOLEAN(),
         )
 
     connection = op.get_bind()
@@ -91,10 +95,14 @@ def downgrade() -> None:
         "model_versions_artifacts", schema=None
     ) as batch_op:
         batch_op.alter_column(
-            "is_model_artifact", new_column_name="is_model_object"
+            "is_model_artifact",
+            new_column_name="is_model_object",
+            existing_type=sa.BOOLEAN(),
         )
         batch_op.alter_column(
-            "is_endpoint_artifact", new_column_name="is_deployment"
+            "is_endpoint_artifact",
+            new_column_name="is_deployment",
+            existing_type=sa.BOOLEAN(),
         )
 
     connection = op.get_bind()
