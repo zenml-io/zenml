@@ -32,8 +32,8 @@ logger = get_logger(__name__)
 class DataArtifactConfig(BaseModel):
     """Used to link a data artifact to the model version.
 
-    model_name: The name of the model to link artifact to.
-    model_version: The identifier of the model version to link artifact to.
+    model_name: The name of the model to link data artifact to.
+    model_version: The identifier of the model version to link data artifact to.
         It can be exact version ("23"), exact version number (42), stage
         (ModelStages.PRODUCTION) or ModelStages.LATEST for the latest version.
     model_stage: The stage of the model version to link artifact to.

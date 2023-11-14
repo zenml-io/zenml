@@ -165,7 +165,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: ModelVersion configuration for this step as `ModelVersion` instance.
+            model_version: `ModelVersion` instance.
             **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
@@ -687,7 +687,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: ModelVersion configuration for this step as `ModelVersion` instance.
+            model_version: `ModelVersion` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -811,7 +811,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: ModelVersion configuration for this step as `ModelVersion` instance.
+            model_version: `ModelVersion` instance.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will

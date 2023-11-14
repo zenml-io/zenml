@@ -161,7 +161,7 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_version: ModelVersion configuration for this step as `ModelVersion` instance.
+        model_version: `ModelVersion` instance.
 
     Returns:
         The inner decorator which creates the step class based on the
