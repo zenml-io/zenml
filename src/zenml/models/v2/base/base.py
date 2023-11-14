@@ -121,7 +121,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:
-            NotImplementedError, in case the method is not overriden.
+            NotImplementedError, in case the method is not implemented.
         """
         raise NotImplementedError(
             "Please implement a `get_hydrated_version` method before "
