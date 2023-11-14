@@ -104,12 +104,12 @@ def get_model_version(
         The model version with the given name or ID.
     """
     return zen_store().get_model_version(
-        model_name_or_id=model_version_id,
+        model_version_id=model_version_id,
     )
 
 
 @router.put(
-    "{model_version_id}",
+    "/{model_version_id}",
     response_model=ModelVersionResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -135,7 +135,7 @@ def update_model_version(
 
 
 @router.delete(
-    "{model_version_id}",
+    "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

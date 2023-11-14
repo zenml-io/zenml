@@ -452,7 +452,7 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(ModelScopedFilterModel):
     """Filter Model for Model Version."""
 
-    name: Optional[Union[str, UUID]] = Field(
+    name: Optional[str] = Field(
         default=None,
         description="The name of the Model Version",
     )

@@ -5501,7 +5501,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         model_name_or_id: Union[str, UUID],
         model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
+            Union[str, int, ModelStages, UUID]
         ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
@@ -5514,11 +5514,56 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model version of interest.
         """
-        return self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id
-            or ModelStages.LATEST,
-        )
+        if model_version_name_or_number_or_id is None:
+            model_version_name_or_number_or_id = ModelStages.LATEST
+
+        if isinstance(model_version_name_or_number_or_id, UUID):
+            return self.zen_store.get_model_version(
+                model_version_id=model_version_name_or_number_or_id
+            )
+        elif isinstance(model_version_name_or_number_or_id, int):
+            model_versions = self.list_model_versions(
+                model_name_or_id=model_name_or_id,
+                model_version_filter_model=ModelVersionFilterModel(
+                    number=model_version_name_or_number_or_id
+                ),
+            )
+        elif isinstance(model_version_name_or_number_or_id, str):
+            if model_version_name_or_number_or_id in ModelStages.values():
+                model_versions = self.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        stage=model_version_name_or_number_or_id
+                    ),
+                )
+            else:
+                model_versions = self.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        name=model_version_name_or_number_or_id
+                    ),
+                )
+        else:
+            raise RuntimeError(
+                f"The model version identifier "
+                f"`{model_version_name_or_number_or_id}` is not"
+                f"of the correct type."
+            )
+
+        if len(model_versions) == 1:
+            return model_versions[0]
+        elif len(model_versions) == 0:
+            raise KeyError(
+                f"No model version found for model "
+                f"`{model_name_or_id}` with version identifier "
+                f"`{model_version_name_or_number_or_id}`."
+            )
+        else:
+            raise RuntimeError(
+                f"The model version identifier "
+                f"`{model_version_name_or_number_or_id}` is not"
+                f"unique for model `{model_name_or_id}`."
+            )
 
     def list_model_versions(
         self,

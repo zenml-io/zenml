@@ -81,7 +81,6 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.enums import (
-    ModelStages,
     OAuthGrantTypes,
     SecretsStoreType,
     StoreType,
@@ -2689,32 +2688,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        self, model_version_id: UUID
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest is retrieved.
+            model_version_id: name, id, stage or number of the model version to
+                be retrieved. If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.
         """
         return self._get_resource(
-            resource_id=model_version_name_or_number_or_id
-            or ModelStages.LATEST,
-            route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
+            resource_id=model_version_id,
+            route=MODEL_VERSIONS,
             response_model=ModelVersionResponseModel,
-            params={
-                "is_number": isinstance(
-                    model_version_name_or_number_or_id, int
-                )
-            },
         )
 
     def list_model_versions(
@@ -2785,7 +2773,7 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=model_version_artifact_link,
             response_model=ModelVersionArtifactResponseModel,
-            route=f"{MODELS}/{model_version_artifact_link.model}{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
+            route=f"{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
         )
 
     def list_model_version_artifact_links(
@@ -2845,7 +2833,7 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=model_version_pipeline_run_link,
             response_model=ModelVersionPipelineRunResponseModel,
-            route=f"{MODELS}/{model_version_pipeline_run_link.model}{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
+            route=f"{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
         )
 
     def list_model_version_pipeline_run_links(
