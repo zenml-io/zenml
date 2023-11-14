@@ -112,6 +112,12 @@ class ServiceAccountResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    def get_hydrated_version(self) -> "ServiceAccountResponse":
+        """Get the hydrated version of this service account."""
+        from zenml.client import Client
+
+        return Client().zen_store.get_service_account(self.id)
+
     def to_user_model(self) -> "UserResponse":
         """Converts the service account to a user model.
 
