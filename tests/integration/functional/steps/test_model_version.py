@@ -416,17 +416,17 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
 
 @pipeline(name="bar", enable_cache=False)
 def _pipeline_run_link_attached_from_step_context_single_step(
-    mc: ModelVersion,
+    mv: ModelVersion,
 ):
-    _this_step_produces_output.with_options(model_version=mc)()
+    _this_step_produces_output.with_options(model_version=mv)()
 
 
 @pipeline(name="bar", enable_cache=False)
 def _pipeline_run_link_attached_from_step_context_multiple_step(
-    mc: ModelVersion,
+    mv: ModelVersion,
 ):
-    _this_step_produces_output.with_options(model_version=mc)()
-    _this_step_produces_output.with_options(model_version=mc)()
+    _this_step_produces_output.with_options(model_version=mv)()
+    _this_step_produces_output.with_options(model_version=mv)()
 
 
 @pytest.mark.parametrize(
