@@ -57,8 +57,9 @@ from zenml.enums import (
     OAuthDeviceStatus,
     PermissionType,
     SecretScope,
+    SorterOps,
     StackComponentType,
-    StoreType, SorterOps,
+    StoreType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -5534,12 +5535,14 @@ class Client(metaclass=ClientMetaClass):
             )
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
-                model_versions = [self.list_model_versions(
-                    model_name_or_id=model_name_or_id,
-                    model_version_filter_model=ModelVersionFilterModel(
-                        sort_by=f"{SorterOps.DESCENDING}:created",
-                    ),
-                ).items[0]]
+                model_versions = [
+                    self.list_model_versions(
+                        model_name_or_id=model_name_or_id,
+                        model_version_filter_model=ModelVersionFilterModel(
+                            sort_by=f"{SorterOps.DESCENDING}:created",
+                        ),
+                    ).items[0]
+                ]
             elif model_version_name_or_number_or_id in ModelStages.values():
                 model_versions = self.list_model_versions(
                     model_name_or_id=model_name_or_id,
