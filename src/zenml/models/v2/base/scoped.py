@@ -143,19 +143,6 @@ class UserScopedResponse(
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    def get_hydrated_version(
-        self,
-    ) -> "UserScopedResponse[UserBody, UserMetadata]":
-        """Abstract method that needs to be implemented to hydrate the instance.
-
-        Each response model has a metadata field. The purpose of this
-        is to populate this field by making an additional call to the API.
-        """
-        raise NotImplementedError(
-            "Please implement a `get_hydrated_version` method before "
-            "using/hydrating the model."
-        )
-
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
@@ -256,19 +243,6 @@ class WorkspaceScopedResponse(
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    def get_hydrated_version(
-        self,
-    ) -> "WorkspaceScopedResponse[WorkspaceBody, WorkspaceMetadata]":
-        """Abstract method that needs to be implemented to hydrate the instance.
-
-        Each response model has a metadata field. The purpose of this
-        is to populate this field by making an additional call to the API.
-        """
-        raise NotImplementedError(
-            "Please implement a `get_hydrated_version` method before "
-            "using/hydrating the model."
-        )
-
     # Body and metadata properties
     @property
     def workspace(self) -> "WorkspaceResponse":
@@ -359,19 +333,6 @@ class ShareableResponse(
     Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
-
-    def get_hydrated_version(
-        self,
-    ) -> "ShareableResponse[ShareableBody, ShareableMetadata]":
-        """Abstract method that needs to be implemented to hydrate the instance.
-
-        Each response model has a metadata field. The purpose of this
-        is to populate this field by making an additional call to the API.
-        """
-        raise NotImplementedError(
-            "Please implement a `get_hydrated_version` method before "
-            "using/hydrating the model."
-        )
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
