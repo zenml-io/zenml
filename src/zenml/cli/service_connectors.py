@@ -646,10 +646,10 @@ def register_service_connector(
                 #   functions over the connector type property in the response
                 #   model. However, pydantic breaks property setter functions.
                 #   We can find a more elegant solution here.
-                if isinstance(service_connector, ServiceConnectorResponse):
-                    service_connector.set_connector_type(connector_type)
-                elif isinstance(service_connector, ServiceConnectorRequest):
-                    service_connector.connector_type = connector_type
+                if isinstance(connector_model, ServiceConnectorResponse):
+                    connector_model.set_connector_type(connector_type)
+                elif isinstance(connector_model, ServiceConnectorRequest):
+                    connector_model.connector_type = connector_type
                 else:
                     raise TypeError(
                         "The service connector must be an instance of either"
