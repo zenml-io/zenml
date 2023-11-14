@@ -181,7 +181,6 @@ class PipelineRunSchema(NamedSchema, table=True):
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
         return cls(
-            id=request.id,
             workspace_id=request.workspace,
             user_id=request.user,
             name=request.name,

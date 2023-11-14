@@ -311,7 +311,6 @@ class PipelineRunRequestModel(
 ):
     """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
-    id: UUID
     deployment: UUID = Field(
         title="The deployment associated with the pipeline run."
     )

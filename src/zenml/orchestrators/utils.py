@@ -14,6 +14,7 @@
 """Utility functions for the orchestrator."""
 
 import random
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
@@ -175,3 +176,10 @@ def get_config_environment_vars(
     )
 
     return environment_vars
+
+
+def populate_run_name_template(run_name_template: str) -> str:
+    date = datetime.utcnow().strftime("%Y_%m_%d")
+    time = datetime.utcnow().strftime("%H_%M_%S_%f")
+
+    return run_name_template.format(date=date, time=time)

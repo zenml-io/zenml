@@ -82,7 +82,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         run_duration = time.time() - start_time
         logger.info(
-            "Run has finished in `%s`.",
+            "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
         self._orchestrator_run_id = None

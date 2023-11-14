@@ -35,7 +35,7 @@ from typing import (
     TypeVar,
     Union,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import yaml
 from pydantic import ValidationError
@@ -73,6 +73,7 @@ from zenml.models.pipeline_build_models import (
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelVersionRequest
+from zenml.orchestrators.utils import populate_run_name_template
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
@@ -692,9 +693,13 @@ class Pipeline:
 
             self.log_pipeline_deployment_metadata(deployment_model)
 
+            # TODO: We should probably only do this if there is no schedule?
+            # It will still work, but it might be hours/days until the run gets
+            # populated
             pipeline_run_request = PipelineRunRequestModel(
-                id=uuid4(),
-                name=run_name or f"run_name_{uuid4()}",
+                name=populate_run_name_template(
+                    run_name_template=deployment_model.run_name_template
+                ),
                 orchestrator_run_id=None,
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
@@ -702,7 +707,13 @@ class Pipeline:
                 pipeline=deployment_model.pipeline.id
                 if deployment_model.pipeline
                 else None,
+                # TODO: Maybe we want a state called `preparing` or `launching`
+                # to differentiate between waiting for the first step to get
+                # started
                 status=ExecutionStatus.RUNNING,
+                # Is this the actual start time now, or do we want to set this
+                # once the first step started? Especially for scheduled runs
+                # this would be strange
                 start_time=datetime.utcnow(),
             )
             pipeline_run_model = Client().zen_store.create_run(

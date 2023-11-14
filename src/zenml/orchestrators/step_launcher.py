@@ -49,7 +49,10 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
-from zenml.orchestrators.utils import is_setting_enabled
+from zenml.orchestrators.utils import (
+    is_setting_enabled,
+    populate_run_name_template,
+)
 from zenml.stack import Stack
 from zenml.utils import string_utils
 
@@ -284,24 +287,14 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
-            orchestrator=self._stack.orchestrator,
-            orchestrator_run_id=self._orchestrator_run_id,
+        run_name = populate_run_name_template(
+            run_name_template=self._deployment.run_name_template
         )
 
-        date = datetime.utcnow().strftime("%Y_%m_%d")
-        time = datetime.utcnow().strftime("%H_%M_%S_%f")
-        run_name = self._deployment.run_name_template.format(
-            date=date, time=time
-        )
-
-        logger.debug(
-            "Creating pipeline run with ID: %s, name: %s", run_id, run_name
-        )
+        logger.debug("Creating pipeline run %s", run_name)
 
         client = Client()
         pipeline_run = PipelineRunRequestModel(
-            id=run_id,
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
