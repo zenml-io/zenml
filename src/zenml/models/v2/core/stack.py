@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     ShareableResponseBody,
     ShareableResponseMetadata,
 )
-from zenml.models.v2.base.utils import update_model
+from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
 
 # ------------------ Request Model ------------------

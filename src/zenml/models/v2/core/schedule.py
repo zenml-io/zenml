@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import update_model
+from zenml.models.v2.base.update import update_model
 
 logger = get_logger(__name__)
 

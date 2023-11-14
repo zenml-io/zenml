@@ -27,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.utils import (
+from zenml.models.v2.base.update import (
     update_model,
 )
 
