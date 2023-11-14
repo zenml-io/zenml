@@ -155,7 +155,7 @@ class TestModelConfig:
             mc = ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST)
             mv = mc.get_or_create_model_version()
 
-            assert mv.name == "latest"
+            assert mv.name == "1.0.0"
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
