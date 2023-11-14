@@ -46,6 +46,7 @@ from zenml.constants import (
     ENV_ZENML_REPOSITORY_PATH,
     ENV_ZENML_SERVER,
     PAGE_SIZE_DEFAULT,
+    PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
@@ -160,7 +161,6 @@ from zenml.models.model_models import (
     ModelVersionPipelineRunFilterModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
-    ModelVersionResponseModel,
     ModelVersionUpdateModel,
 )
 from zenml.models.page_model import Page
@@ -178,6 +178,7 @@ from zenml.models.tag_models import (
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -5401,16 +5402,49 @@ class Client(metaclass=ClientMetaClass):
     # Model
     #########
 
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_model(
+        self,
+        name: str,
+        license: Optional[str] = None,
+        description: Optional[str] = None,
+        audience: Optional[str] = None,
+        use_cases: Optional[str] = None,
+        limitations: Optional[str] = None,
+        trade_offs: Optional[str] = None,
+        ethics: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> ModelResponseModel:
         """Creates a new model in Model Control Plane.
 
         Args:
-            model: the Model to be created.
+            name: The name of the model.
+            license: The license under which the model is created.
+            description: The description of the model.
+            audience: The target audience of the model.
+            use_cases: The use cases of the model.
+            limitations: The known limitations of the model.
+            trade_offs: The tradeoffs of the model.
+            ethics: The ethical implications of the model.
+            tags: Tags associated with the model.
 
         Returns:
             The newly created model.
         """
-        return self.zen_store.create_model(model=model)
+        return self.zen_store.create_model(
+            model=ModelRequestModel(
+                name=name,
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                limitations=limitations,
+                trade_offs=trade_offs,
+                ethics=ethics,
+                tags=tags,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+        )
 
     def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
         """Deletes a model from Model Control Plane.
@@ -5422,20 +5456,49 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model(
         self,
-        model_id: UUID,
-        model_update: ModelUpdateModel,
+        model_name_or_id: Union[str, UUID],
+        license: Optional[str] = None,
+        description: Optional[str] = None,
+        audience: Optional[str] = None,
+        use_cases: Optional[str] = None,
+        limitations: Optional[str] = None,
+        trade_offs: Optional[str] = None,
+        ethics: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
     ) -> ModelResponseModel:
         """Updates an existing model in Model Control Plane.
 
         Args:
-            model_id: UUID of the model to be updated.
-            model_update: the Model to be updated.
+            model_name_or_id: name or id of the model to be deleted.
+            license: The license under which the model is created.
+            description: The description of the model.
+            audience: The target audience of the model.
+            use_cases: The use cases of the model.
+            limitations: The known limitations of the model.
+            trade_offs: The tradeoffs of the model.
+            ethics: The ethical implications of the model.
+            add_tags: Tags to add to the model.
+            remove_tags: Tags to remove from to the model.
 
         Returns:
             The updated model.
         """
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.zen_store.get_model(model_name_or_id).id
         return self.zen_store.update_model(
-            model_id=model_id, model_update=model_update
+            model_id=model_name_or_id,  # type: ignore [arg-type]
+            model_update=ModelUpdateModel(
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                limitations=limitations,
+                trade_offs=trade_offs,
+                ethics=ethics,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
         )
 
     def get_model(
@@ -5452,20 +5515,20 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_model(model_name_or_id=model_name_or_id)
 
     def list_models(
-        self,
-        model_filter_model: ModelFilterModel,
+        self, name: Optional[str] = None
     ) -> Page[ModelResponseModel]:
         """Get models by filter from Model Control Plane.
 
         Args:
-            model_filter_model: All filter parameters including pagination
-                params.
+            name: The name of the model to filter by.
 
         Returns:
             A page of all models.
         """
         return self.zen_store.list_models(
-            model_filter_model=model_filter_model
+            model_filter_model=ModelFilterModel(
+                name=name, size=PAGE_SIZE_MAXIMUM
+            )
         )
 
     #################
@@ -5473,19 +5536,32 @@ class Client(metaclass=ClientMetaClass):
     #################
 
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
+        self,
+        model_name_or_id: Union[str, UUID],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> "ModelVersion":
         """Creates a new model version in Model Control Plane.
 
         Args:
-            model_version: the Model Version to be created.
+            model_name_or_id: the name or id of the model to create model version in.
+            name: the name of the Model Version to be created.
+            description: the description of the Model Version to be created.
 
         Returns:
             The newly created model version.
         """
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.get_model(model_name_or_id).id
         return self.zen_store.create_model_version(
-            model_version=model_version
-        ).to_model_version(True)
+            model_version=ModelVersionRequestModel(
+                name=name,
+                description=description,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                model=model_name_or_id,
+            )
+        ).to_model_version(True, False)
 
     def delete_model_version(
         self,
@@ -5524,46 +5600,78 @@ class Client(metaclass=ClientMetaClass):
             model_name_or_id=model_name_or_id,
             model_version_name_or_number_or_id=model_version_name_or_number_or_id
             or ModelStages.LATEST,
-        ).to_model_version()
+        ).to_model_version(suppress_class_validation_warnings=True)
 
     def list_model_versions(
         self,
         model_name_or_id: Union[str, UUID],
-        model_version_filter_model: ModelVersionFilterModel,
-    ) -> Page[ModelVersionResponseModel]:
+        name: Optional[str] = None,
+        number: Optional[int] = None,
+        stage: Optional[Union[str, ModelStages]] = None,
+    ) -> List["ModelVersion"]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            name: name or id of the model version.
+            number: number of the model version.
+            stage: stage of the model version.
 
         Returns:
-            A page of all model versions.
+            A list of all model versions.
         """
-        return self.zen_store.list_model_versions(
+        model_version_filter_model = ModelVersionFilterModel(
+            name=name,
+            number=number,
+            stage=stage,
+            size=PAGE_SIZE_MAXIMUM,
+        )
+        model_versions = self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
         )
+        return [
+            mv.to_model_version(suppress_class_validation_warnings=True)
+            for mv in model_versions
+        ]
 
     def update_model_version(
         self,
-        model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
+        model_name_or_id: Union[str, UUID],
+        version_name_or_id: Union[str, UUID],
+        stage: Optional[Union[str, ModelStages]] = None,
+        force: bool = False,
+        name: Optional[str] = None,
     ) -> "ModelVersion":
         """Get all model versions by filter.
 
         Args:
-            model_version_id: The ID of model version to be updated.
-            model_version_update_model: The model version to be updated.
+            model_name_or_id: The name or ID of the model containing model version.
+            version_name_or_id: The name or ID of model version to be updated.
+            stage: Target model version stage to be set.
+            force: Whether existing model version in target stage should be
+                silently archived or an error should be raised.
+            name: Target model version name to be set.
 
         Returns:
             An updated model version.
         """
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.get_model(model_name_or_id).id
+        if not is_valid_uuid(version_name_or_id):
+            version_name_or_id = self.get_model_version(
+                model_name_or_id, version_name_or_id
+            ).id
+
         return self.zen_store.update_model_version(
-            model_version_id=model_version_id,
-            model_version_update_model=model_version_update_model,
-        ).to_model_version()
+            model_version_id=version_name_or_id,  # type: ignore [arg-type]
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model_name_or_id,
+                stage=stage,
+                force=force,
+                name=name,
+            ),
+        ).to_model_version(suppress_class_validation_warnings=True)
 
     #################################################
     # Model Versions Artifacts

@@ -17,6 +17,7 @@ import re
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -208,12 +209,15 @@ class ModelVersionResponseModel(
     )
 
     def to_model_version(
-        self, was_created_in_this_run: bool = False
+        self,
+        was_created_in_this_run: bool = False,
+        suppress_class_validation_warnings: bool = False,
     ) -> "ModelVersion":
         """Convert response model to ModelVersion object.
 
         Args:
             was_created_in_this_run: Whether model version was created during current run.
+            suppress_class_validation_warnings: internally used to suppress repeated warnings.
 
         Returns:
             ModelVersion object
@@ -223,7 +227,7 @@ class ModelVersionResponseModel(
         return ModelVersion(
             name=self.model.name,
             license=self.model.license,
-            description=self.model.description,
+            description=self.description,
             audience=self.model.audience,
             use_cases=self.model.use_cases,
             limitations=self.model.limitations,
@@ -232,6 +236,7 @@ class ModelVersionResponseModel(
             tags=[t.name for t in self.model.tags],
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
+            suppress_class_validation_warnings=suppress_class_validation_warnings,
         )
 
     @property
@@ -453,12 +458,10 @@ class ModelVersionResponseModel(
             raise ValueError(f"`{stage}` is not a valid model stage.")
 
         return Client().update_model_version(
-            model_version_id=self.id,
-            model_version_update_model=ModelVersionUpdateModel(
-                model=self.model.id,
-                stage=stage,
-                force=force,
-            ),
+            model_name_or_id=self.model.id,
+            version_name_or_id=self.id,
+            stage=stage,
+            force=force,
         )
 
     def _update_default_running_version_name(self) -> None:
@@ -469,10 +472,9 @@ class ModelVersionResponseModel(
         from zenml.client import Client
 
         Client().update_model_version(
-            model_version_id=self.id,
-            model_version_update_model=ModelVersionUpdateModel(
-                model=self.model.id, name=str(self.number)
-            ),
+            model_name_or_id=self.model.id,
+            version_name_or_id=self.id,
+            name=str(self.number),
         )
         logger.info(
             f"Updated model version name for `ID:{self.id}` to `{self.number}`"
@@ -486,7 +488,7 @@ class ModelVersionResponseModel(
 class ModelVersionFilterModel(ModelScopedFilterModel):
     """Filter Model for Model Version."""
 
-    name: Optional[Union[str, UUID]] = Field(
+    name: Optional[str] = Field(
         default=None,
         description="The name of the Model Version",
     )
@@ -526,7 +528,9 @@ class ModelVersionUpdateModel(BaseModel):
     @validator("stage")
     def _validate_stage(cls, stage: str) -> str:
         stage = getattr(stage, "value", stage)
-        if stage not in [stage.value for stage in ModelStages]:
+        if stage is not None and stage not in [
+            stage.value for stage in ModelStages
+        ]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
         return stage
 
@@ -679,7 +683,7 @@ class ModelResponseModel(
     latest_version: Optional[str]
 
     @property
-    def versions(self) -> List[ModelVersionResponseModel]:
+    def versions(self) -> List["ModelVersion"]:
         """List all versions of the model.
 
         Returns:
@@ -687,16 +691,7 @@ class ModelResponseModel(
         """
         from zenml.client import Client
 
-        return (
-            Client()
-            .list_model_versions(
-                model_name_or_id=self.id,
-                model_version_filter_model=ModelVersionFilterModel(
-                    workspace_id=self.workspace.id
-                ),
-            )
-            .items
-        )
+        return Client().list_model_versions(model_name_or_id=self.id)
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):
@@ -712,6 +707,12 @@ class ModelFilterModel(WorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the Model"
     )
+
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "workspace_id",
+        "user_id",
+    ]
 
 
 class ModelUpdateModel(BaseModel):

@@ -30,9 +30,7 @@ from zenml.model import (
     link_output_to_model,
 )
 from zenml.models import (
-    ModelRequestModel,
     ModelVersionArtifactFilterModel,
-    ModelVersionRequestModel,
 )
 
 MODEL_NAME = "foo"
@@ -247,20 +245,12 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
         )._get_or_create_model()
 
         mv1 = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="bar",
-                model=m1.id,
-            )
+            name="bar",
+            model_name_or_id=m1.id,
         )
         mv2 = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="foo",
-                model=m2.id,
-            )
+            name="foo",
+            model_name_or_id=m2.id,
         )
 
         for run_count in range(1, 3):
@@ -375,12 +365,8 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
             )
             mvs.append(
                 client.create_model_version(
-                    ModelVersionRequestModel(
-                        user=user,
-                        workspace=ws,
-                        name=n,
-                        model=models[-1].id,
-                    )
+                    name=n,
+                    model_name_or_id=models[-1].id,
                 )
             )
 
@@ -447,12 +433,8 @@ def test_link_no_versioning():
             name=MODEL_NAME,
         )._get_or_create_model()
         mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
+            name="good_one",
+            model_name_or_id=model.id,
         )
 
         simple_pipeline_no_versioning()
@@ -513,19 +495,11 @@ def test_link_with_versioning():
 
         # manual creation needed, as we work with specific versions
         model = client.create_model(
-            ModelRequestModel(
-                name=MODEL_NAME,
-                user=user,
-                workspace=ws,
-            )
+            name=MODEL_NAME,
         )
         mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
+            name="good_one",
+            model_name_or_id=model.id,
         )
         mv = mv.set_stage(ModelStages.PRODUCTION)
 
@@ -619,34 +593,18 @@ def test_link_with_manual_linkage(pipeline: Callable):
 
         # manual creation needed, as we work with specific versions
         model = client.create_model(
-            ModelRequestModel(
-                name=MODEL_NAME,
-                user=user,
-                workspace=ws,
-            )
+            name=MODEL_NAME,
         )
         model2 = client.create_model(
-            ModelRequestModel(
-                name="bar",
-                user=user,
-                workspace=ws,
-            )
+            name="bar",
         )
         mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
+            name="good_one",
+            model_name_or_id=model.id,
         )
         mv2 = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="bar",
-                model=model2.id,
-            )
+            name="bar",
+            model_name_or_id=model2.id,
         )
 
         pipeline()
@@ -743,19 +701,11 @@ def test_link_with_manual_linkage_flexible_config(
 
         # manual creation needed, as we work with specific versions
         model = client.create_model(
-            ModelRequestModel(
-                name=MODEL_NAME,
-                user=user,
-                workspace=ws,
-            )
+            name=MODEL_NAME,
         )
         mv = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="good_one",
-                model=model.id,
-            )
+            name="good_one",
+            model_name_or_id=model.id,
         )
         mv.set_stage(ModelStages.PRODUCTION)
 

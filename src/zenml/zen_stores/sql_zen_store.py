@@ -6529,6 +6529,9 @@ class SqlZenStore(BaseZenStore):
                 all_versions.number + 1 if all_versions else 1
             )
 
+            if model_version.name is None:
+                model_version.name = str(model_version.number)
+
             model_version_schema = ModelVersionSchema.from_request(
                 model_version
             )

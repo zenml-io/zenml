@@ -20,8 +20,6 @@ from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.model import ModelVersion
-from zenml.models import ModelRequestModel, ModelVersionRequestModel
-from zenml.models.model_models import ModelUpdateModel
 from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
@@ -45,20 +43,12 @@ class ModelContext:
         client = Client()
         if self.create_model:
             model = client.create_model(
-                ModelRequestModel(
-                    name=MODEL_NAME,
-                    user=self.user,
-                    workspace=self.workspace,
-                )
+                name=MODEL_NAME,
             )
             if self.model_version is not None:
                 mv = client.create_model_version(
-                    ModelVersionRequestModel(
-                        model=model.id,
-                        name=self.model_version,
-                        user=self.user,
-                        workspace=self.workspace,
-                    )
+                    model_name_or_id=model.id,
+                    name=self.model_version,
                 )
                 if self.stage is not None:
                     mv.set_stage(self.stage)
@@ -220,9 +210,7 @@ class TestModelVersion:
                 )
                 model_id = mc._get_or_create_model().id
 
-                Client().update_model(
-                    model_id, ModelUpdateModel(add_tags=["tag1", "tag2"])
-                )
+                Client().update_model(model_id, add_tags=["tag1", "tag2"])
                 model = mc._get_or_create_model()
                 assert len(model.tags) == 4
                 assert {t.name for t in model.tags} == {
@@ -232,9 +220,7 @@ class TestModelVersion:
                     "tag2",
                 }
 
-                Client().update_model(
-                    model_id, ModelUpdateModel(remove_tags=["tag1", "tag2"])
-                )
+                Client().update_model(model_id, remove_tags=["tag1", "tag2"])
                 model = mc._get_or_create_model()
                 assert len(model.tags) == 2
                 assert {t.name for t in model.tags} == {"foo", "bar"}

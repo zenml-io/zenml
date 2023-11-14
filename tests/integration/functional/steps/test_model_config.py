@@ -27,8 +27,6 @@ from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ExecutionStatus, ModelStages
 from zenml.model import DataArtifactConfig, ModelVersion, link_output_to_model
 from zenml.models import (
-    ModelRequestModel,
-    ModelVersionRequestModel,
     PipelineRunUpdateModel,
 )
 
@@ -614,20 +612,12 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
         for model_name in model_names:
             models.append(
                 client.create_model(
-                    ModelRequestModel(
-                        name=model_name,
-                        user=Client().active_user.id,
-                        workspace=Client().active_workspace.id,
-                    )
+                    name=model_name,
                 )
             )
             client.create_model_version(
-                ModelVersionRequestModel(
-                    model=models[-1].id,
-                    name="good_one",
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
-                )
+                model_name_or_id=models[-1].id,
+                name="good_one",
             )
 
         run_name_1 = f"bar_run_{uuid4()}"
@@ -751,12 +741,20 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
 
         client = Client()
         model = client.get_model(model_name_or_id="step")
-        assert len(model.versions) == 2
-        assert {
-            run_name
-            for mv in model.versions
-            for run_name in mv.pipeline_run_ids
-        } == {run_1, run_2}
+        mvs = model.versions
+        assert len(mvs) == 2
+        for mv, run_name in zip(mvs, (run_1, run_2)):
+            assert (
+                len(
+                    client.zen_store.get_model_version(
+                        mv.name, mv.version
+                    ).pipeline_run_ids
+                )
+                == 1
+            )
+            assert client.zen_store.get_model_version(
+                mv.name, mv.version
+            ).pipeline_run_ids[run_name]
 
 
 def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
@@ -780,8 +778,16 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
         client = Client()
         client.delete_pipeline_run(run_1)
         model = client.get_model(model_name_or_id="step")
-        assert len(model.versions) == 1
-        assert len(model.versions[0].pipeline_run_ids) == 0
+        mvs = model.versions
+        assert len(mvs) == 1
+        assert (
+            len(
+                client.zen_store.get_model_version(
+                    mvs[0].name, mvs[0].version
+                ).pipeline_run_ids
+            )
+            == 0
+        )
 
 
 def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
@@ -808,8 +814,16 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
             "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
         )
         model = client.get_model(model_name_or_id="step")
-        assert len(model.versions) == 1
-        assert len(model.versions[0].pipeline_run_ids) == 0
+        mvs = model.versions
+        assert len(mvs) == 1
+        assert (
+            len(
+                client.zen_store.get_model_version(
+                    mvs[0].name, mvs[0].version
+                ).pipeline_run_ids
+            )
+            == 0
+        )
 
 
 def test_that_artifact_is_removed_on_deletion():
@@ -837,8 +851,16 @@ def test_that_artifact_is_removed_on_deletion():
             run.steps["_this_step_produces_output"].outputs["data"].id
         )
         model = client.get_model(model_name_or_id="step")
-        assert len(model.versions) == 1
-        assert len(model.versions[0].data_artifact_ids) == 0
+        mvs = model.versions
+        assert len(mvs) == 1
+        assert (
+            len(
+                client.zen_store.get_model_version(
+                    mvs[0].name, mvs[0].version
+                ).pipeline_run_ids
+            )
+            == 0
+        )
 
 
 @step

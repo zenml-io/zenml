@@ -90,10 +90,7 @@ class ModelVersion(BaseModel):
         Returns:
             A list of ModelVersion objects registered within current model.
         """
-        return [
-            mv_response.to_model_version()
-            for mv_response in self._get_or_create_model().versions
-        ]
+        return self._get_or_create_model().versions
 
     @property
     def id(self) -> UUID:
@@ -145,6 +142,27 @@ class ModelVersion(BaseModel):
                     "and cannot be fetched from the Model Control Plane."
                 )
         return self._number
+
+    @property
+    def stage(self) -> ModelStages:
+        """Get version stage from  the Model Control Plane.
+
+        Returns:
+            Stage of the model version or None, if model version
+                doesn't exist and can only be read given current
+                config (you used stage name or number as
+                a version name).
+        """
+        try:
+            stage = self._get_or_create_model_version().stage
+            if stage:
+                return ModelStages(stage)
+        except ReservedNameError:
+            logger.info(
+                f"Model version `{self.version}` doesn't exist "
+                "and cannot be fetched from the Model Control Plane."
+            )
+        return None
 
     def get_model_artifact(
         self,

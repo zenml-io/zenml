@@ -26,15 +26,11 @@ from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.model_models import (
-    ModelFilterModel,
-    ModelRequestModel,
     ModelResponseModel,
-    ModelUpdateModel,
     ModelVersionArtifactFilterModel,
     ModelVersionFilterModel,
     ModelVersionPipelineRunFilterModel,
     ModelVersionResponseModel,
-    ModelVersionUpdateModel,
 )
 from zenml.utils.dict_utils import remove_none_values
 
@@ -80,15 +76,21 @@ def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
-@cli_utils.list_options(ModelFilterModel)
+@click.option(
+    "--name",
+    "-n",
+    help="The name of the model.",
+    type=str,
+    required=False,
+)
 @model.command("list", help="List models with filter.")
-def list_models(**kwargs: Any) -> None:
+def list_models(name: str) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        name: The name filter for models.
     """
-    models = Client().list_models(ModelFilterModel(**kwargs))
+    models = Client().list_models(name=name)
 
     if not models:
         cli_utils.declare("No models found.")
@@ -188,19 +190,15 @@ def register_model(
     """
     try:
         model = Client().create_model(
-            ModelRequestModel(
-                name=name,
-                license=license,
-                description=description,
-                audience=audience,
-                use_cases=use_cases,
-                trade_offs=tradeoffs,
-                ethics=ethical,
-                limitations=limitations,
-                tags=tag,
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-            )
+            name=name,
+            license=license,
+            description=description,
+            audience=audience,
+            use_cases=use_cases,
+            trade_offs=tradeoffs,
+            ethics=ethical,
+            limitations=limitations,
+            tags=tag,
         )
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
@@ -311,14 +309,9 @@ def update_model(
             limitations=limitations,
             add_tags=tag,
             remove_tags=remove_tag,
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
         )
     )
-    model = Client().update_model(
-        model_id=model_id,
-        model_update=ModelUpdateModel(**update_dict),
-    )
+    model = Client().update_model(model_name_or_id=model_id, **update_dict)
 
     cli_utils.print_table([_model_to_print(model)])
 
@@ -375,7 +368,7 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter models.
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
-    model_versions = Client().list_model_versions(
+    model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_id,
         model_version_filter_model=ModelVersionFilterModel(**kwargs),
     )
@@ -426,10 +419,10 @@ def update_model_version(
     )
     try:
         Client().update_model_version(
-            model_version_id=model_version.id,
-            model_version_update_model=ModelVersionUpdateModel(
-                model=model_version.model_id, stage=stage, force=force
-            ),
+            model_name_or_id=model_version.model_id,
+            version_name_or_id=model_version.id,
+            stage=stage,
+            force=force,
         )
     except RuntimeError:
         if not force:
@@ -455,10 +448,10 @@ def update_model_version(
                 cli_utils.declare("Model version stage update canceled.")
                 return
             Client().update_model_version(
-                model_version_id=model_version.id,
-                model_version_update_model=ModelVersionUpdateModel(
-                    model=model_version.model_id, stage=stage, force=True
-                ),
+                model_name_or_id=model_version.model_id,
+                version_name_or_id=model_version.id,
+                stage=stage,
+                force=True,
             )
     cli_utils.declare(
         f"Model version '{model_version.name}' stage updated to '{stage}'."
