@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.45.2"
+version = "0.46.1"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -60,7 +60,7 @@ python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
 rich = {extras = ["jupyter"], version = ">=12.0.0"}
 sqlalchemy_utils = "0.38.3"
-sqlmodel = "~0.0.8"
+sqlmodel = "0.0.8"
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.75,<0.100", optional = true }
@@ -75,8 +75,8 @@ ipinfo = { version = ">=4.4.3", optional = true}
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-black = { version = "^23.3.0", optional = true }
-ruff = { version = "^0.0.285", optional = true }
+black = { version = "^23.10.0", optional = true }
+ruff = { version = "^0.1.0", optional = true }
 
 # Optional terraform dependency for stack recipes and ZenServer deployments
 python-terraform = { version = "^0.10.1", optional = true }
@@ -123,7 +123,7 @@ adlfs = { version = ">=2021.10.0", optional = true }
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
-mypy = { version = "1.5.1", optional = true }
+mypy = { version = "1.6.1", optional = true }
 pre-commit = { version = "^2.14.0", optional = true }
 pyment = { version = "^0.3.3", optional = true }
 tox = { version = "^3.24.3", optional = true }
@@ -162,7 +162,7 @@ types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
 
 # mlstacks dependencies
-mlstacks = { version = "0.7.3", optional = true }
+mlstacks = { version = "0.7.8", optional = true }
 
 [tool.poetry.extras]
 server = [

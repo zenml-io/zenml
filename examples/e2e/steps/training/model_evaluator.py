@@ -16,12 +16,9 @@
 #
 
 
-from typing import Tuple
-
 import mlflow
 import pandas as pd
 from sklearn.base import ClassifierMixin
-from typing_extensions import Annotated
 
 from zenml import step
 from zenml.client import Client
@@ -41,7 +38,7 @@ def model_evaluator(
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
-) -> Tuple[Annotated[float, "trn_acc"], Annotated[float, "tst_acc"]]:
+) -> None:
     """Evaluate a trained model.
 
     This is an example of a model evaluation step that takes in a model artifact
@@ -78,9 +75,6 @@ def model_evaluator(
 
     Raises:
         RuntimeError: if any of accuracies is lower than respective threshold
-
-    Returns:
-        The model accuracy on the train and test set.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Calculate the model accuracy on the train and test set
@@ -115,4 +109,3 @@ def model_evaluator(
             logger.warning(message)
 
     ### YOUR CODE ENDS HERE ###
-    return trn_acc, tst_acc

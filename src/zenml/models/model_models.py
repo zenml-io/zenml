@@ -14,10 +14,19 @@
 """Model implementation to support Model Control Plane feature."""
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
@@ -31,6 +40,14 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models.tag_models import TagResponseModel
+
+if TYPE_CHECKING:
+    from sqlmodel.sql.expression import Select, SelectOfScalar
+
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
 
@@ -53,6 +70,100 @@ class ModelVersionBaseModel(BaseModel):
         description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
+
+class ModelScopedFilterModel(WorkspaceScopedFilterModel):
+    """Base filter model inside Model Scope."""
+
+    _model_id: UUID = PrivateAttr(None)
+
+    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Set the model to scope this response.
+
+        Args:
+            model_name_or_id: The model to scope this response to.
+        """
+        try:
+            model_id = UUID(str(model_name_or_id))
+        except ValueError:
+            from zenml.client import Client
+
+            model_id = Client().get_model(model_name_or_id).id
+
+        self._model_id = model_id
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+
+        if self._model_id:
+            query = query.where(getattr(table, "model_id") == self._model_id)
+
+        return query
+
+
+class ModelVersionScopedFilterModel(ModelScopedFilterModel):
+    """Base filter model inside Model Version Scope."""
+
+    _model_version_id: UUID = PrivateAttr(None)
+
+    def set_scope_model_version(
+        self, model_version_name_or_id: Union[str, UUID]
+    ) -> None:
+        """Set the model version to scope this response.
+
+        Args:
+            model_version_name_or_id: The model version to scope this response to.
+        """
+        try:
+            model_version_id = UUID(str(model_version_name_or_id))
+        except ValueError:
+            from zenml.client import Client
+
+            model_version_id = (
+                Client()
+                .get_model_version(
+                    model_name_or_id=self._model_id,
+                    model_version_name_or_number_or_id=model_version_name_or_id,
+                )
+                .id
+            )
+        self._model_version_id = model_version_id
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+
+        if self._model_id:
+            query = query.where(
+                getattr(table, "model_version_id") == self._model_version_id
+            )
+
+        return query
 
 
 class ModelVersionRequestModel(
@@ -338,12 +449,9 @@ class ModelVersionResponseModel(
     #     """Return HTML/PDF based on input template"""
 
 
-class ModelVersionFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionFilterModel(ModelScopedFilterModel):
     """Filter Model for Model Version."""
 
-    model_id: Union[str, UUID] = Field(
-        description="The ID of the Model",
-    )
     name: Optional[Union[str, UUID]] = Field(
         default=None,
         description="The name of the Model Version",
@@ -361,11 +469,6 @@ class ModelVersionFilterModel(WorkspaceScopedFilterModel):
     stage: Optional[Union[str, ModelStages]] = Field(
         description="The model version stage", default=None
     )
-
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "model_id",
-    ]
 
 
 class ModelVersionUpdateModel(BaseModel):
@@ -446,15 +549,9 @@ class ModelVersionArtifactResponseModel(
     link_version: int
 
 
-class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
     """Model version pipeline run links filter model."""
 
-    model_id: Union[str, UUID] = Field(
-        description="The name or ID of the Model",
-    )
-    model_version_id: Union[str, UUID] = Field(
-        description="The name or ID of the Model Version",
-    )
     name: Optional[str] = Field(
         description="The name of the artifact inside model version.",
     )
@@ -475,9 +572,7 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilterModel):
     only_deployments: Optional[bool] = False
 
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "model_id",
-        "model_version_id",
+        *ModelVersionScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "only_artifacts",
         "only_model_objects",
         "only_deployments",
@@ -513,27 +608,15 @@ class ModelVersionPipelineRunResponseModel(
     """Model version link with pipeline run response model."""
 
 
-class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilterModel):
+class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilterModel):
     """Model version pipeline run links filter model."""
 
-    model_id: Union[str, UUID] = Field(
-        description="The name or ID of the Model",
-    )
-    model_version_id: Union[str, UUID] = Field(
-        description="The name or ID of the Model Version",
-    )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
-
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "model_id",
-        "model_version_id",
-    ]
 
 
 class ModelRequestModel(
@@ -542,14 +625,24 @@ class ModelRequestModel(
 ):
     """Model request model."""
 
-    pass
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model",
+    )
 
 
 class ModelResponseModel(
     WorkspaceScopedResponseModel,
     ModelBaseModel,
 ):
-    """Model response model."""
+    """Model response model.
+
+    latest_version: name of latest version, if any
+    """
+
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
+    latest_version: Optional[str]
 
     @property
     def versions(self) -> List[ModelVersionResponseModel]:
@@ -563,9 +656,10 @@ class ModelResponseModel(
         return (
             Client()
             .list_model_versions(
-                ModelVersionFilterModel(
-                    model_id=self.id, workspace_id=self.workspace.id
-                )
+                model_name_or_id=self.id,
+                model_version_filter_model=ModelVersionFilterModel(
+                    workspace_id=self.workspace.id
+                ),
             )
             .items
         )
@@ -576,22 +670,20 @@ class ModelResponseModel(
         """Get specific version of the model.
 
         Args:
-            version: version name, number, stage or None for latest version.
+            version: version name, number, stage.
+                If skipped - latest version is retrieved.
 
         Returns:
             The requested model version.
         """
         from zenml.client import Client
 
-        if version is None:
-            return Client().get_model_version(model_name_or_id=self.name)
-        else:
-            return Client().get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=getattr(
-                    version, "value", version
-                ),
-            )
+        return Client().get_model_version(
+            model_name_or_id=self.name,
+            model_version_name_or_number_or_id=getattr(
+                version, "value", version or ModelStages.LATEST
+            ),
+        )
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):
@@ -618,5 +710,6 @@ class ModelUpdateModel(BaseModel):
     use_cases: Optional[str]
     limitations: Optional[str]
     trade_offs: Optional[str]
-    ethic: Optional[str]
-    tags: Optional[List[str]]
+    ethics: Optional[str]
+    add_tags: Optional[List[str]]
+    remove_tags: Optional[List[str]]

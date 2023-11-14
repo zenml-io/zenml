@@ -620,7 +620,7 @@ Once you have registered your feature store as a stack component, you can use it
 in your ZenML Stack.
 
 Interacting with Model Deployers
------------------------------------------
+--------------------------------
 
 Model deployers are stack components responsible for online model serving.
 They are responsible for deploying models to a remote server. Model deployers
@@ -1289,7 +1289,7 @@ ssl_verify_server_cert: false
 ```
 
 Managing users, teams, workspaces and roles
------------------------------------------
+-------------------------------------------
 
 When using the ZenML service, you can manage permissions by managing users,
 teams, workspaces and roles using the CLI.
@@ -1385,94 +1385,112 @@ At any point you may inspect all available permissions:
 zenml permission list
 ```
 
-Deploying ZenML to the cloud
-----------------------------
+Managing service accounts
+-------------------------
 
-The ZenML CLI provides a simple way to deploy ZenML to the cloud.
+ZenML supports the use of service accounts to authenticate clients to the
+ZenML server using API keys. This is useful for automating tasks such as
+running pipelines or deploying models.
 
-Deploying cloud resources using Stack Recipes
------------------------------------------------
-
-Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just
-a few commands. Each recipe uses Terraform modules under the hood and once
-executed can set up a ZenML stack, ready to run your pipelines!
-
-A number of stack recipes are already available at [the `mlstacks` repository](https://github.com/zenml-io/mlstacks/). List them
-using the following command:
+To create a new service account, run:
 
 ```bash
-zenml stack recipes list
+zenml service-account create SERVICE_ACCOUNT_NAME
 ```
 
-If you want to pull any specific recipe to your local system, use the `pull`
+This command creates a service account and an API key for it. The API key is
+displayed as part of the command output and cannot be retrieved later. You can
+then use the issued API key to connect your ZenML client to the server with the
+CLI:
+
+```bash
+zenml connect --url https://... --api-key <API_KEY>
+```
+
+or by setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
+variables when you set up your ZenML client for the first time: 
+
+```bash
+export ZENML_STORE_URL=https://...
+export ZENML_STORE_API_KEY=<API_KEY>
+```
+
+To see all the service accounts you've created and their API keys, use the
+following commands:
+
+```bash
+zenml service-account list
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> list
+```
+
+Additionally, the following command allows you to more precisely inspect one of
+these service accounts and an API key:
+
+```bash
+zenml service-account describe <SERVICE_ACCOUNT_NAME>
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> describe <API_KEY_NAME>
+```
+
+API keys don't have an expiration date. For increased security, we recommend
+that you regularly rotate the API keys to prevent unauthorized access to your
+ZenML server. You can do this with the ZenML CLI:
+
+```bash
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME>
+```
+
+Running this command will create a new API key and invalidate the old one. The
+new API key is displayed as part of the command output and cannot be retrieved
+later. You can then use the new API key to connect your ZenML client to the
+server just as described above.
+
+When rotating an API key, you can also configure a retention period for the old
+API key. This is useful if you need to keep the old API key for a while to
+ensure that all your workloads have been updated to use the new API key. You can
+do this with the `--retain` flag. For example, to rotate an API key and keep the
+old one for 60 minutes, you can run the following command:
+
+```bash
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME> \
+      --retain 60
+```
+
+For increased security, you can deactivate a service account or an API key using
+one of the following commands:
+
+```
+zenml service-account update <SERVICE_ACCOUNT_NAME> --active false
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> update <API_KEY_NAME> \
+      --active false
+```
+
+Deactivating a service account or an API key will prevent it from being used to
+authenticate and has immediate effect on all workloads that use it.
+
+To permanently delete an API key for a service account, use the following
 command:
 
 ```bash
-zenml stack recipe pull <stack-recipe-name>
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 ```
 
-If you don't specify a name, `zenml stack recipe pull` will pull all the
-recipes.
+Deploying ZenML to the cloud
+----------------------------
 
-If you notice any inconsistency with the locally-pulled version and the GitHub
-repository, run the `pull` command with the `-y` flag to download any recent
-changes.
+The ZenML CLI provides a simple way to deploy ZenML to the cloud. Simply run
 
 ```bash
-zenml stack recipe pull <stack-recipe-name> -y
+zenml deploy
 ```
 
-Optionally, you can specify the relative path at which you want to install the
-stack recipe(s). Use the `-p` or `--path` flag.
-```bash
-zenml stack recipe pull <stack-recipe-name> --path=<PATH>
-```
-By default, all recipes get downloaded under a directory called
-`zenml_stack_recipes`.
+You will be prompted to provide a name for your deployment and details like what
+cloud provider you want to deploy to, in addition to the username, password, and
+email you want to set for the default user — and that's it! It creates the
+database and any VPCs, permissions, and more that are needed.
 
-To deploy a recipe, use the `deploy` command. Before running deploy, review the 
-`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring
-non-sensitive variables and the
-`zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
-file to add sensitive information like access keys and passwords.
-
-```bash
-zenml stack recipe deploy <stack-recipe-name>
-```
-
-Running deploy without any options will create a new ZenML stack with the same
-name as the stack recipe name. Use the `--stack-name` option to specify your
-own name.
-
-```bash
-zenml stack recipe deploy <stack-recipe-name> --stack-name=my_stack
-```
-
-If you wish to review the stack information from the newly-generated resources
-before importing, you can run `deploy` with the `--no-import` flag.
-
-```bash
-zenml stack recipe deploy <stack-recipe-name> --no-import
-```
-This will still create a stack YAML configuration file but will not auto-import
-it. You can make any changes you want to the configuration and then run
-`zenml stack import` manually.
-
-To remove all resources created as part of the recipe, run the `destroy`
-command.
-
-```bash
-zenml stack recipe destroy <stack-recipe-name>
-```
-
-To delete all the recipe files from your system, you can use the `clean`
- command.
-
-```bash
-zenml stack recipe clean
-```
-
-This deletes all the recipes from the default path where they were downloaded.
+In order to be able to run the deploy command, you should have your cloud
+provider's CLI configured locally with permissions to create resources like
+MySQL databases and networks.
 
 Interacting with the ZenML Hub
 ------------------------------
@@ -1553,9 +1571,11 @@ from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.server import *  # noqa
+from zenml.cli.service_accounts import *  # noqa
 from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.workspace import *  # noqa
+from zenml.cli.tag import *  # noqa

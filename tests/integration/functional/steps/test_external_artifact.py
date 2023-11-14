@@ -20,6 +20,7 @@ from typing_extensions import Annotated
 from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
+from zenml.enums import ModelStages
 from zenml.model import ArtifactConfig, ModelConfig
 
 
@@ -45,7 +46,11 @@ def producer_pipeline(run_count: int):
     producer(run_count)
 
 
-@pipeline(name="bar", enable_cache=False, model_config=ModelConfig(name="foo"))
+@pipeline(
+    name="bar",
+    enable_cache=False,
+    model_config=ModelConfig(name="foo", version=ModelStages.LATEST),
+)
 def consumer_pipeline(
     model_artifact_version: int,
     model_artifact_pipeline_name: str = None,
@@ -62,23 +67,50 @@ def consumer_pipeline(
     )
 
 
+@pipeline(name="bar", enable_cache=False)
+def consumer_pipeline_with_external_artifact_from_another_model(
+    model_artifact_version: int,
+    model_artifact_pipeline_name: str = None,
+    model_artifact_step_name: str = None,
+):
+    consumer(
+        ExternalArtifact(
+            model_name="foo",
+            model_version=1,
+            model_artifact_name="predictions",
+            model_artifact_version=model_artifact_version,
+            model_artifact_pipeline_name=model_artifact_pipeline_name,
+            model_artifact_step_name=model_artifact_step_name,
+        ),
+        model_artifact_version,
+    )
+
+
 @pipeline(
     name="bar",
     enable_cache=False,
-    model_config=ModelConfig(name="foo", create_new_model_version=True),
+    model_config=ModelConfig(name="foo"),
 )
 def two_step_producer_pipeline():
     producer(1)
     producer(1)
 
 
-def test_exchange_of_model_artifacts_between_pipelines():
+@pytest.mark.parametrize(
+    "consumer_pipeline",
+    [
+        consumer_pipeline,
+        consumer_pipeline_with_external_artifact_from_another_model,
+    ],
+    ids=["model context given", "no model context"],
+)
+def test_exchange_of_model_artifacts_between_pipelines(consumer_pipeline):
     """Test that ExternalArtifact helps to exchange data from Model between pipelines."""
     with model_killer():
+        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", create_new_model_version=True)
-        )(1)
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
+            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
+        )(
             2
         )  # add to latest version
         consumer_pipeline(1)
@@ -132,10 +164,10 @@ def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
 def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number():
     """Test that ExternalArtifact helps to exchange data from Model between pipelines using model version number."""
     with model_killer():
+        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", create_new_model_version=True)
-        )(1)
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
+            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
+        )(
             2
         )  # add to latest version
         consumer_pipeline.with_options(
@@ -158,13 +190,11 @@ def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number()
 def test_direct_consumption(model_version_name, expected):
     """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
     with model_killer():
+        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
+            42
+        )
         producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", create_new_model_version=True)
-        )(42)
-        producer_pipeline.with_options(
-            model_config=ModelConfig(
-                name="foo", create_new_model_version=True, version="foo"
-            )
+            model_config=ModelConfig(name="foo", version="foo")
         )(23)
         artifact_id = ExternalArtifact(
             model_name="foo",

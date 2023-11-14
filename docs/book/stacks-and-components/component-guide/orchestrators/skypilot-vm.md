@@ -95,7 +95,10 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
   ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../../stacks-and-components/auth-management/aws-service-connector.md).
-To configure the AWS Service Connector, you need to register a new service connector, but first let's check the available service connector types using the following command:
+To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
+
+
+First, check that the AWS service connector type is available using the following command:
 
 ```
 zenml service-connector list-types --type aws
@@ -111,10 +114,10 @@ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-For this example we will configure a service connector using the `iam-role` auth method. But before we can do that, we recommend you to create a new AWS profile that will be used by the service connector. Once we have created the profile, we can register a new service connector using the following command:
+Next, configure a service connector using the CLI or the dashboard with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
 
 ```shell
-AWS_PROFILE=connectors zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
+zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
 ```
 
 This will automatically configure the service connector with the appropriate credentials and permissions to
@@ -162,7 +165,7 @@ For this example we will configure a service connector using the `user-account` 
 login to GCP using the following command:
 
 ```shell
- gcloud auth application-default login 
+gcloud auth application-default login 
 ```
 
 This will open a browser window and ask you to login to your GCP account. Once you have logged in, you can register a new service connector using the
@@ -263,8 +266,7 @@ The following code snippets show how to configure the orchestrator settings for 
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
-
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
@@ -273,7 +275,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
+    region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
     disk_size=100,
@@ -300,7 +302,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
 
 
 skypilot_settings = SkypilotGCPOrchestratorSettings(
@@ -312,7 +314,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     spot_recovery="recovery_strategy",
     region="us-west1",
     zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    image_id="ubuntu-pro-2004-focal-v20231101",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",
@@ -337,7 +339,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
 
 
 skypilot_settings = SkypilotAzureOrchestratorSettings(
@@ -347,9 +349,8 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
-    zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    region="West Europe",
+    image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",

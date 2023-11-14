@@ -53,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -66,7 +66,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     ScheduleRequestModel,
 )
-from zenml.models.model_base_model import ModelConfigModel
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
@@ -354,8 +353,6 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
-        if model_config:
-            model_config.suppress_warnings = True
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -366,18 +363,12 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_config_model": ModelConfigModel.parse_obj(
-                    model_config.dict()
-                )
-                if model_config is not None
-                else None,
+                "model_config": model_config,
             }
         )
         if not self.__suppress_warnings_flag__:
             to_be_reapplied = []
             for param_, value_ in values.items():
-                if param_ == "model_config_model":
-                    param_ = "model_config"
                 if (
                     param_ in PipelineRunConfiguration.__fields__
                     and param_ in self._from_config_file
@@ -644,11 +635,9 @@ class Pipeline:
                 )
 
             stack = Client().active_stack
+            stack.validate()
 
             new_version_requests = self.get_new_version_requests(deployment)
-            deployment = self.update_new_versions_requests(
-                deployment, new_version_requests
-            )
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -811,9 +800,43 @@ class Pipeline:
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
 
+    def _update_new_requesters(
+        self,
+        requester_name: str,
+        model_config: "ModelConfig",
+        new_versions_requested: Dict[
+            Tuple[str, Optional[str]], NewModelVersionRequest
+        ],
+        other_model_configs: Set["ModelConfig"],
+    ) -> None:
+        key = (
+            model_config.name,
+            str(model_config.version) if model_config.version else None,
+        )
+        if model_config.version is None:
+            version_existed = False
+        else:
+            try:
+                model_config._get_model_version()
+                version_existed = key not in new_versions_requested
+            except KeyError:
+                version_existed = False
+        if not version_existed:
+            model_config.was_created_in_this_run = True
+            new_versions_requested[key].update_request(
+                model_config,
+                NewModelVersionRequest.Requester(
+                    source="step", name=requester_name
+                ),
+            )
+            if model_config.version is None and key in new_versions_requested:
+                model_config.version = constants.RUNNING_MODEL_VERSION
+        else:
+            other_model_configs.add(model_config)
+
     def get_new_version_requests(
         self, deployment: "PipelineDeploymentBaseModel"
-    ) -> Dict[str, NewModelVersionRequest]:
+    ) -> Dict[Tuple[str, Optional[str]], NewModelVersionRequest]:
         """Get the running versions of the models that are used in the pipeline run.
 
         Args:
@@ -823,165 +846,109 @@ class Pipeline:
             A dict of new model version request objects.
         """
         new_versions_requested: Dict[
-            str, NewModelVersionRequest
+            Tuple[str, Optional[str]], NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
+        other_model_configs: Set["ModelConfig"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_config = step.config.model_config_model
+            step_model_config = step.config.model_config
             all_steps_have_own_config = (
                 all_steps_have_own_config
-                and step.config.model_config_model is not None
+                and step.config.model_config is not None
             )
-            if (
-                step_model_config
-                and step_model_config.create_new_model_version
-            ):
-                new_versions_requested[step_model_config.name].update_request(
-                    step_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="step", name=step.config.name
-                    ),
+            if step_model_config:
+                self._update_new_requesters(
+                    model_config=step_model_config,
+                    requester_name=step.config.name,
+                    new_versions_requested=new_versions_requested,
+                    other_model_configs=other_model_configs,
                 )
         if not all_steps_have_own_config:
             pipeline_model_config = (
-                deployment.pipeline_configuration.model_config_model
+                deployment.pipeline_configuration.model_config
             )
-            if (
-                pipeline_model_config
-                and pipeline_model_config.create_new_model_version
-            ):
-                new_versions_requested[
-                    pipeline_model_config.name
-                ].update_request(
-                    pipeline_model_config,
-                    NewModelVersionRequest.Requester(
-                        source="pipeline", name=self.name
-                    ),
+            if pipeline_model_config:
+                self._update_new_requesters(
+                    model_config=pipeline_model_config,
+                    requester_name=self.name,
+                    new_versions_requested=new_versions_requested,
+                    other_model_configs=other_model_configs,
                 )
-        elif deployment.pipeline_configuration.model_config_model is not None:
+        elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
             )
 
         self._validate_new_version_requests(new_versions_requested)
 
+        for other_model_config in other_model_configs:
+            other_model_config._validate_config_in_runtime()
+
         return new_versions_requested
 
     def _validate_new_version_requests(
         self,
-        new_versions_requested: Dict[str, NewModelVersionRequest],
+        new_versions_requested: Dict[
+            Tuple[str, Optional[str]], NewModelVersionRequest
+        ],
     ) -> None:
         """Validate the model configurations that are used in the pipeline run.
 
         Args:
             new_versions_requested: A dict of new model version request objects.
-
-        Raises:
-            RuntimeError: If there is unfinished pipeline run for requested model version.
-            RuntimeError: If recovery not requested, but model version already exists.
-
         """
-        for model_name, data in new_versions_requested.items():
+        for key, data in new_versions_requested.items():
+            model_name, model_version = key
             if len(data.requesters) > 1:
                 logger.warning(
-                    f"New version of model `{model_name}` requested in multiple decorators:\n"
-                    f"{data.requesters}\n We recommend that `create_new_model_version` is configured "
-                    "only in one place of the pipeline."
+                    f"New version of model version `{model_name}::{model_version or 'NEW'}` "
+                    f"requested in multiple decorators:\n{data.requesters}\n We recommend "
+                    "that `ModelConfig` requesting new version is configured only in one "
+                    "place of the pipeline."
                 )
-            try:
-                model_version = data.model_config._get_model_version()
-
-                for run_name, run in model_version.pipeline_runs.items():
-                    if run.status == ExecutionStatus.RUNNING:
-                        raise RuntimeError(
-                            f"New model version was requested, but pipeline run `{run_name}` "
-                            f"is still running with version `{model_version.name}`."
-                        )
-                if (
-                    data.model_config.version
-                    and data.model_config.delete_new_version_on_failure
-                ):
-                    raise RuntimeError(
-                        f"Cannot create version `{data.model_config.version}` "
-                        f"for model `{data.model_config.name}` since it already exists"
-                    )
-            except KeyError:
-                pass
-
-    def update_new_versions_requests(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        new_version_requests: Dict[str, NewModelVersionRequest],
-    ) -> "PipelineDeploymentBaseModel":
-        """Update model configurations that are used in the pipeline run.
-
-        This method is updating create_new_model_version for all model configurations in the pipeline,
-        who deal with model name with existing request to create a new mode version.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            new_version_requests: Dict of models requesting new versions and their definition points.
-
-        Returns:
-            Updated pipeline deployment configuration.
-        """
-        for step_name in deployment.step_configurations:
-            step_model_config = deployment.step_configurations[
-                step_name
-            ].config.model_config_model
-            if (
-                step_model_config is not None
-                and step_model_config.name in new_version_requests
-            ):
-                step_model_config.version = new_version_requests[
-                    step_model_config.name
-                ].model_config.version
-                step_model_config.create_new_model_version = True
-        pipeline_model_config = (
-            deployment.pipeline_configuration.model_config_model
-        )
-        if (
-            pipeline_model_config is not None
-            and pipeline_model_config.name in new_version_requests
-        ):
-            pipeline_model_config.version = new_version_requests[
-                pipeline_model_config.name
-            ].model_config.version
-            pipeline_model_config.create_new_model_version = True
-        return deployment
+            data.model_config._validate_config_in_runtime()
 
     def register_running_versions(
-        self, new_version_requests: Dict[str, NewModelVersionRequest]
+        self,
+        new_versions_requested: Dict[
+            Tuple[str, Optional[str]], NewModelVersionRequest
+        ],
     ) -> None:
         """Registers the running versions of the models used in the given pipeline run.
 
         Args:
-            new_version_requests: Dict of models requesting new versions and their definition points.
+            new_versions_requested: Dict of models requesting new versions and their definition points.
         """
-        for model_name, new_version_request in new_version_requests.items():
-            if new_version_request.model_config.delete_new_version_on_failure:
+        for key, _ in new_versions_requested.items():
+            model_name, model_version = key
+            if not model_version:
                 mv = Client().get_model_version(
                     model_name_or_id=model_name,
-                    model_version_name_or_number_or_id=new_version_request.model_config.version,
+                    model_version_name_or_number_or_id=constants.RUNNING_MODEL_VERSION,
                 )
                 mv._update_default_running_version_name()
 
     def delete_running_versions_without_recovery(
-        self, new_version_requests: Dict[str, NewModelVersionRequest]
+        self,
+        new_versions_requested: Dict[
+            Tuple[str, Optional[str]], NewModelVersionRequest
+        ],
     ) -> None:
         """Delete the running versions of the models without `restore` after fail.
 
         Args:
-            new_version_requests: Dict of models requesting new versions and their definition points.
+            new_versions_requested: Dict of models requesting new versions and their definition points.
         """
-        for model_name, new_version_request in new_version_requests.items():
+        for key, new_version_request in new_versions_requested.items():
+            model_name, model_version = key
             if (
                 new_version_request.model_config.delete_new_version_on_failure
-                and new_version_request.model_config.version is not None
+                and new_version_request.model_config.was_created_in_this_run
             ):
                 model = Client().get_model_version(
                     model_name_or_id=model_name,
-                    model_version_name_or_number_or_id=new_version_request.model_config.version,
+                    model_version_name_or_number_or_id=model_version
+                    or constants.RUNNING_MODEL_VERSION,
                 )
                 Client().delete_model_version(
                     model_name_or_id=model_name,
@@ -1156,7 +1123,7 @@ class Pipeline:
 
         integration_registry.activate_integrations()
 
-        self._from_config_file = self._parse_config_file(
+        self._parse_config_file(
             config_path=config_path,
             matcher=list(PipelineRunConfiguration.__fields__.keys()),
         )
@@ -1393,15 +1360,12 @@ class Pipeline:
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
-    ) -> Dict[str, Any]:
-        """Parses the given configuration file.
+    ) -> None:
+        """Parses the given configuration file and sets `self._from_config_file`.
 
         Args:
             config_path: Path to a yaml configuration file.
             matcher: List of keys to match in the configuration file.
-
-        Returns:
-            The parsed configuration file as a dictionary.
         """
         _from_config_file: Dict[str, Any] = {}
         if config_path:
@@ -1416,12 +1380,17 @@ class Pipeline:
             )
 
             if "model_config" in _from_config_file:
-                from zenml.model.model_config import ModelConfig
+                if "model_config" in self._from_config_file:
+                    _from_config_file["model_config"] = self._from_config_file[
+                        "model_config"
+                    ]
+                else:
+                    from zenml.model.model_config import ModelConfig
 
-                _from_config_file["model_config"] = ModelConfig.parse_obj(
-                    _from_config_file["model_config"]
-                )
-        return _from_config_file
+                    _from_config_file["model_config"] = ModelConfig.parse_obj(
+                        _from_config_file["model_config"]
+                    )
+        self._from_config_file = _from_config_file
 
     def with_options(
         self,
@@ -1460,7 +1429,7 @@ class Pipeline:
         """
         pipeline_copy = self.copy()
 
-        pipeline_copy._from_config_file = self._parse_config_file(
+        pipeline_copy._parse_config_file(
             config_path=config_path,
             matcher=inspect.getfullargspec(self.configure)[0],
         )

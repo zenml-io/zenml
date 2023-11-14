@@ -29,7 +29,6 @@ def assert_model_config_step():
     assert model_config is not None
     assert model_config.name == "foo"
     assert model_config.version == RUNNING_MODEL_VERSION
-    assert model_config.create_new_model_version
     assert not model_config.delete_new_version_on_failure
     assert model_config.description == "description"
     assert model_config.license == "MIT"
@@ -37,7 +36,7 @@ def assert_model_config_step():
     assert model_config.use_cases == "use_cases"
     assert model_config.limitations == "limitations"
     assert model_config.trade_offs == "trade_offs"
-    assert model_config.ethic == "ethic"
+    assert model_config.ethics == "ethics"
     assert model_config.tags == ["tag"]
     assert model_config.version_description == "version_description"
     assert model_config.save_models_to_registry
@@ -54,7 +53,6 @@ def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
     """Test that the pipeline can be configured with a model config from a yaml file."""
     model_config = ModelConfig(
         name="foo",
-        create_new_model_version=True,
         delete_new_version_on_failure=False,
         description="description",
         license="MIT",
@@ -62,7 +60,7 @@ def test_pipeline_with_model_config_from_yaml(clean_workspace, tmp_path):
         use_cases="use_cases",
         limitations="limitations",
         trade_offs="trade_offs",
-        ethic="ethic",
+        ethics="ethics",
         tags=["tag"],
         version_description="version_description",
         save_models_to_registry=True,
@@ -117,7 +115,6 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
     """
     initial_model_config = ModelConfig(
         name="bar",
-        create_new_model_version=True,
     )
 
     config_path = tmp_path / "config.yaml"
@@ -138,7 +135,6 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
         p.configure(
             model_config=ModelConfig(
                 name="foo",
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
                 description="description",
                 license="MIT",
@@ -146,7 +142,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
                 use_cases="use_cases",
                 limitations="limitations",
                 trade_offs="trade_offs",
-                ethic="ethic",
+                ethics="ethics",
                 tags=["tag"],
                 version_description="version_description",
                 save_models_to_registry=True,
@@ -156,8 +152,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
 
     assert p.configuration.model_config is not None
     assert p.configuration.model_config.name == "foo"
-    assert p.configuration.model_config.version == RUNNING_MODEL_VERSION
-    assert p.configuration.model_config.create_new_model_version
+    assert p.configuration.model_config.version is None
     assert not p.configuration.model_config.delete_new_version_on_failure
     assert p.configuration.model_config.description == "description"
     assert p.configuration.model_config.license == "MIT"
@@ -165,7 +160,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_config(
     assert p.configuration.model_config.use_cases == "use_cases"
     assert p.configuration.model_config.limitations == "limitations"
     assert p.configuration.model_config.trade_offs == "trade_offs"
-    assert p.configuration.model_config.ethic == "ethic"
+    assert p.configuration.model_config.ethics == "ethics"
     assert p.configuration.model_config.tags == ["tag"]
     assert (
         p.configuration.model_config.version_description

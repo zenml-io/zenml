@@ -18,6 +18,11 @@ from uuid import UUID
 
 from zenml.enums import ModelStages
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -72,6 +77,10 @@ from zenml.models import (
     RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -86,6 +95,10 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TagFilterModel,
+    TagRequestModel,
+    TagResponseModel,
+    TagUpdateModel,
     TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
@@ -516,6 +529,221 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given ID exists.
+        """
+
+    # ----------------
+    # Service Accounts
+    # ----------------
+
+    @abstractmethod
+    def create_service_account(
+        self, service_account: ServiceAccountRequestModel
+    ) -> ServiceAccountResponseModel:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+
+    @abstractmethod
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> ServiceAccountResponseModel:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+
+        Returns:
+            The requested service account, if it was found.
+
+        Raises:
+            KeyError: If no service account with the given name or ID exists.
+        """
+
+    @abstractmethod
+    def list_service_accounts(
+        self, filter_model: ServiceAccountFilterModel
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of filtered service accounts.
+        """
+
+    @abstractmethod
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdateModel,
+    ) -> ServiceAccountResponseModel:
+        """Updates an existing service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
+
+        Returns:
+            The updated service account.
+
+        Raises:
+            KeyError: If no service account with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
+
+        Raises:
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
+        """
+
+    # --------
+    # API Keys
+    # --------
+
+    @abstractmethod
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequestModel
+    ) -> APIKeyResponseModel:
+        """Create a new API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
+
+        Returns:
+            The created API key.
+
+        Raises:
+            KeyError: If the service account doesn't exist.
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
+        """
+
+    @abstractmethod
+    def get_api_key(
+        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+    ) -> APIKeyResponseModel:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+
+        Returns:
+            The API key with the given ID.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+        """
+
+    @abstractmethod
+    def list_api_keys(
+        self, service_account_id: UUID, filter_model: APIKeyFilterModel
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdateModel,
+    ) -> APIKeyResponseModel:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
+        """
+
+    @abstractmethod
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequestModel,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+        """
+
+    @abstractmethod
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
         """
 
     # -----
@@ -1819,7 +2047,7 @@ class ZenStoreInterface(ABC):
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+                If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.
@@ -1831,11 +2059,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_versions(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
         Args:
+            model_name_or_id: name or id of the model containing the model versions.
             model_version_filter_model: All filter parameters including pagination
                 params.
 
@@ -1886,11 +2116,15 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_artifact_links(
         self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -1938,11 +2172,15 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_pipeline_run_links(
         self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
+            model_name_or_id: name or ID of the model containing the model version.
+            model_version_name_or_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -2028,4 +2266,86 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no device with the given ID exists.
+        """
+
+    #################
+    # Tags
+    #################
+
+    @abstractmethod
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the tag to be created.
+
+        Returns:
+            The newly created tag.
+
+        Raises:
+            EntityExistsError: If a tag with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to delete.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def get_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be retrieved.
+
+        Returns:
+            The tag of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get all tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination params.
+
+        Returns:
+            A page of all tags.
+        """
+
+    @abstractmethod
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Update tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
+
+        Returns:
+            An updated tag.
+
+        Raises:
+            KeyError: If the tag is not found
         """

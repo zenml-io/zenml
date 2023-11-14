@@ -44,6 +44,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    ENV_ZENML_SERVER,
     PAGE_SIZE_DEFAULT,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
@@ -64,13 +65,17 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentValidationError,
     ValidationError,
     ZenKeyError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyFilterModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
     CodeRepositoryFilterModel,
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
@@ -103,6 +108,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -160,6 +169,12 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
+from zenml.models.tag_models import (
+    TagFilterModel,
+    TagRequestModel,
+    TagResponseModel,
+    TagUpdateModel,
+)
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -167,7 +182,7 @@ from zenml.utils.pagination_utils import depaginate
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackComponentConfig
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -816,6 +831,417 @@ class Client(metaclass=ClientMetaClass):
             user_id=user.id, user_update=user_update
         )
 
+    # --------------- #
+    # SERVICE ACCOUNT #
+    # --------------- #
+
+    def create_service_account(
+        self,
+        name: str,
+        description: str = "",
+        initial_role: Optional[str] = None,
+    ) -> ServiceAccountResponseModel:
+        """Create a new service account.
+
+        Args:
+            name: The name of the service account.
+            description: The description of the service account.
+            initial_role: Optionally, an initial role to assign to the service
+                account.
+
+        Returns:
+            The created service account.
+        """
+        service_account = ServiceAccountRequestModel(
+            name=name, description=description, active=True
+        )
+        created_service_account = self.zen_store.create_service_account(
+            service_account=service_account
+        )
+
+        if initial_role:
+            self.create_user_role_assignment(
+                role_name_or_id=initial_role,
+                user_name_or_id=created_service_account.id,
+                workspace_name_or_id=None,
+            )
+
+        return created_service_account
+
+    def get_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> ServiceAccountResponseModel:
+        """Gets a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The ServiceAccount
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_account,
+            list_method=self.list_service_accounts,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def list_service_accounts(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> Page[ServiceAccountResponseModel]:
+        """List all service accounts.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the service account name for filtering
+            description: Use the service account description for filtering
+            active: Use the service account active status for filtering
+
+        Returns:
+            The list of service accounts matching the filter description.
+        """
+        return self.zen_store.list_service_accounts(
+            ServiceAccountFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                description=description,
+                active=active,
+            )
+        )
+
+    def update_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        updated_name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> ServiceAccountResponseModel:
+        """Update a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to update.
+            updated_name: The new name of the service account.
+            description: The new description of the service account.
+            active: The new active status of the service account.
+
+        Returns:
+            The updated service account.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        service_account_update = ServiceAccountUpdateModel(
+            name=updated_name,
+            description=description,
+            active=active,
+        )
+
+        return self.zen_store.update_service_account(
+            service_account_name_or_id=service_account.id,
+            service_account_update=service_account_update,
+        )
+
+    def delete_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to delete.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_service_account(
+            service_account_name_or_id=service_account.id
+        )
+
+    # .----------.
+    # | API KEYS |
+    # '----------'
+
+    def create_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name: str,
+        description: str = "",
+        set_key: bool = False,
+    ) -> APIKeyResponseModel:
+        """Create a new API key and optionally set it as the active API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to create the API key for.
+            name: Name of the API key.
+            description: The description of the API key.
+            set_key: Whether to set the created API key as the active API key.
+
+        Returns:
+            The created API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        request = APIKeyRequestModel(
+            name=name,
+            description=description,
+        )
+        api_key = self.zen_store.create_api_key(
+            service_account_id=service_account.id, api_key=request
+        )
+        assert api_key.key is not None
+
+        if set_key:
+            self.set_api_key(key=api_key.key)
+
+        return api_key
+
+    def set_api_key(self, key: str) -> None:
+        """Configure the client with an API key.
+
+        Args:
+            key: The API key to use.
+
+        Raises:
+            NotImplementedError: If the client is not connected to a ZenML
+                server.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        zen_store = self.zen_store
+        if not zen_store.TYPE == StoreType.REST:
+            raise NotImplementedError(
+                "API key configuration is only supported if connected to a "
+                "ZenML server."
+            )
+        assert isinstance(zen_store, RestZenStore)
+        zen_store.set_api_key(api_key=key)
+
+    def list_api_keys(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+        last_login: Optional[Union[datetime, str]] = None,
+        last_rotated: Optional[Union[datetime, str]] = None,
+    ) -> Page[APIKeyResponseModel]:
+        """List all API keys.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to list the API keys for.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the API key to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the API key to filter by.
+            description: The description of the API key to filter by.
+            active: Whether the API key is active or not.
+            last_login: The last time the API key was used.
+            last_rotated: The last time the API key was rotated.
+
+        Returns:
+            A page of API keys matching the filter description.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        filter_model = APIKeyFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            description=description,
+            active=active,
+            last_login=last_login,
+            last_rotated=last_rotated,
+        )
+        return self.zen_store.list_api_keys(
+            service_account_id=service_account.id, filter_model=filter_model
+        )
+
+    def get_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> APIKeyResponseModel:
+        """Get an API key by name, id or prefix.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to get the API key for.
+            name_id_or_prefix: The name, ID or ID prefix of the API key.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponseModel:
+            return self.zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_name_or_id,
+            )
+
+        def list_api_keys_method(
+            **filter_args: Any,
+        ) -> Page[APIKeyResponseModel]:
+            return self.list_api_keys(
+                service_account_name_id_or_prefix=service_account.id,
+                **filter_args,
+            )
+
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=get_api_key_method,
+            list_method=list_api_keys_method,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def update_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> APIKeyResponseModel:
+        """Update an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to update the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            name: New name of the API key.
+            description: New description of the API key.
+            active: Whether the API key is active or not.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        update = APIKeyUpdateModel(
+            name=name, description=description, active=active
+        )
+        return self.zen_store.update_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=update,
+        )
+
+    def rotate_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        retain_period_minutes: int = 0,
+        set_key: bool = False,
+    ) -> APIKeyResponseModel:
+        """Rotate an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to rotate the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            retain_period_minutes: The number of minutes to retain the old API
+                key for. If set to 0, the old API key will be invalidated.
+            set_key: Whether to set the rotated API key as the active API key.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        rotate_request = APIKeyRotateRequestModel(
+            retain_period_minutes=retain_period_minutes
+        )
+        new_key = self.zen_store.rotate_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=rotate_request,
+        )
+        assert new_key.key is not None
+        if set_key:
+            self.set_api_key(key=new_key.key)
+
+        return new_key
+
+    def delete_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to delete the API key for.
+            name_id_or_prefix: The name, ID or prefix of the API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        self.zen_store.delete_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+
     # ---- #
     # TEAM #
     # ---- #
@@ -1365,6 +1791,13 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
+        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
+
+        # If running in a ZenML server environment, the active workspace is
+        # not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return self.get_workspace(DEFAULT_WORKSPACE_NAME)
+
         workspace = (
             self._config.active_workspace if self._config else None
         ) or GlobalConfiguration().get_active_workspace()
@@ -1374,8 +1807,6 @@ class Client(metaclass=ClientMetaClass):
                 "`zenml workspace set WORKSPACE_NAME` to set the active "
                 "workspace."
             )
-
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
         if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
@@ -1949,24 +2380,32 @@ class Client(metaclass=ClientMetaClass):
                         f"unregistered {component_type} with id "
                         f"'{component_id}'."
                     ) from e
-            # Get the flavor model
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor, component_type=component.type
-            )
 
-            # Create and validate the configuration
-            from zenml.stack import Flavor
+                # Create and validate the configuration
+                from zenml.stack.utils import (
+                    validate_stack_component_config,
+                    warn_if_config_server_mismatch,
+                )
 
-            flavor = Flavor.from_model(flavor_model)
-            configuration = flavor.config_class(**component.configuration)
-            if configuration.is_local:
-                local_components.append(
-                    f"{component.type.value}: {component.name}"
+                configuration = validate_stack_component_config(
+                    configuration_dict=component.configuration,
+                    flavor_name=component.flavor,
+                    component_type=component.type,
+                    # Always enforce validation of custom flavors
+                    validate_custom_flavors=True,
                 )
-            elif configuration.is_remote:
-                remote_components.append(
-                    f"{component.type.value}: {component.name}"
-                )
+                # Guaranteed to not be None by setting
+                # `validate_custom_flavors=True` above
+                assert configuration is not None
+                warn_if_config_server_mismatch(configuration)
+                if configuration.is_local:
+                    local_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
+                elif configuration.is_remote:
+                    remote_components.append(
+                        f"{component.type.value}: {component.name}"
+                    )
 
         if local_components and remote_components:
             logger.warning(
@@ -2142,23 +2581,22 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered component.
         """
-        # Get the flavor model
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=flavor,
+        from zenml.stack.utils import (
+            validate_stack_component_config,
+            warn_if_config_server_mismatch,
+        )
+
+        validated_config = validate_stack_component_config(
+            configuration_dict=configuration,
+            flavor_name=flavor,
             component_type=component_type,
+            # Always enforce validation of custom flavors
+            validate_custom_flavors=True,
         )
-
-        # Create and validate the configuration
-        from zenml.stack import Flavor
-
-        flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(
-            warn_about_plain_text_secrets=True, **configuration
-        )
-
-        self._validate_stack_component_configuration(
-            component_type, configuration=configuration_obj
-        )
+        # Guaranteed to not be None by setting
+        # `validate_custom_flavors=True` above
+        assert validated_config is not None
+        warn_if_config_server_mismatch(validated_config)
 
         create_component_model = ComponentRequestModel(
             name=name,
@@ -2186,6 +2624,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
@@ -2200,6 +2639,8 @@ class Client(metaclass=ClientMetaClass):
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            disconnect: Whether to disconnect the stack component from its
+                service connector.
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
@@ -2254,26 +2695,29 @@ class Client(metaclass=ClientMetaClass):
         if configuration is not None:
             existing_configuration = component.configuration
             existing_configuration.update(configuration)
-
             existing_configuration = {
                 k: v
                 for k, v in existing_configuration.items()
                 if v is not None
             }
 
-            flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor,
+            from zenml.stack.utils import (
+                validate_stack_component_config,
+                warn_if_config_server_mismatch,
+            )
+
+            validated_config = validate_stack_component_config(
+                configuration_dict=existing_configuration,
+                flavor_name=component.flavor,
                 component_type=component.type,
+                # Always enforce validation of custom flavors
+                validate_custom_flavors=True,
             )
+            # Guaranteed to not be None by setting
+            # `validate_custom_flavors=True` above
+            assert validated_config is not None
+            warn_if_config_server_mismatch(validated_config)
 
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-            configuration_obj = flavor.config_class(**existing_configuration)
-
-            self._validate_stack_component_configuration(
-                component.type, configuration=configuration_obj
-            )
             update_model.configuration = existing_configuration
 
         if labels is not None:
@@ -2285,10 +2729,22 @@ class Client(metaclass=ClientMetaClass):
             }
             update_model.labels = existing_labels
 
-        if connector_id is not None:
+        if disconnect:
+            update_model.connector = None
+            update_model.connector_resource_id = None
+        else:
+            existing_component = self.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
             update_model.connector = connector_id
-        if connector_resource_id is not None:
             update_model.connector_resource_id = connector_resource_id
+            if connector_id is None and existing_component.connector:
+                update_model.connector = existing_component.connector.id
+                update_model.connector_resource_id = (
+                    existing_component.connector_resource_id
+                )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
@@ -2319,45 +2775,6 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
-
-    def _validate_stack_component_configuration(
-        self,
-        component_type: "StackComponentType",
-        configuration: "StackComponentConfig",
-    ) -> None:
-        """Validates the configuration of a stack component.
-
-        Args:
-            component_type: The type of the component.
-            configuration: The component configuration to validate.
-
-        Raises:
-            StackComponentValidationError: in case the stack component configuration is invalid.
-        """
-        from zenml.enums import StoreType
-
-        if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type != StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local ZenML server. The component "
-                    "may not be able to reach the local ZenML server and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-        elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warning(
-                "You are configuring a stack component that is using "
-                "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by "
-                "other users. You should consider using a non-local stack "
-                "component alternative instead."
-            )
-        if not configuration.is_valid:
-            raise StackComponentValidationError(
-                f"Invalid stack component configuration. please verify "
-                f"the configurations set for {component_type}."
-            )
 
     # .---------.
     # | FLAVORS |
@@ -5095,23 +5512,26 @@ class Client(metaclass=ClientMetaClass):
         Args:
             model_name_or_id: name or id of the model containing the model version.
             model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+                If skipped - latest version is retrieved.
 
         Returns:
             The model version of interest.
         """
         return self.zen_store.get_model_version(
             model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id
+            or ModelStages.LATEST,
         )
 
     def list_model_versions(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
     ) -> Page[ModelVersionResponseModel]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
             model_version_filter_model: All filter parameters including pagination
                 params.
 
@@ -5119,7 +5539,8 @@ class Client(metaclass=ClientMetaClass):
             A page of all model versions.
         """
         return self.zen_store.list_model_versions(
-            model_version_filter_model=model_version_filter_model
+            model_name_or_id=model_name_or_id,
+            model_version_filter_model=model_version_filter_model,
         )
 
     def update_model_version(
@@ -5149,19 +5570,29 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to artifact links.
         """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
         return self.zen_store.list_model_version_artifact_links(
-            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
         )
 
     #################################################
@@ -5172,19 +5603,29 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
+        model_name_or_id: Union[str, UUID],
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
+        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
             A page of all model version to pipeline run links.
         """
+        mv = self.zen_store.get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model
+            model_name_or_id=mv.model.id,
+            model_version_name_or_id=mv.id,
+            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
         )
 
     # .--------------------.
@@ -5371,11 +5812,17 @@ class Client(metaclass=ClientMetaClass):
 
         # If more than one entity with the same name is found, raise an error.
         entity_label = get_method.__name__.replace("get_", "") + "s"
+        formatted_entity_items = [
+            f"- {item.name}: (id: {item.id})\n"
+            if hasattr(item, "name")
+            else f"- {item.id}\n"
+            for item in entity.items
+        ]
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
             f"a name that matches the provided "
             f"string '{name_id_or_prefix}':\n"
-            f"{[entity.items]}.\n"
+            f"{formatted_entity_items}.\n"
             f"Please use the id to uniquely identify "
             f"only one of the {entity_label}s."
         )
@@ -5449,3 +5896,73 @@ class Client(metaclass=ClientMetaClass):
             f"Please provide more characters to uniquely identify "
             f"only one of the {entity_label}s."
         )
+
+    #############################################
+    # Tags
+    #
+    # Note: tag<>resource are not exposed and
+    # can be accessed via relevant resources
+    #############################################
+
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the Tag to be created.
+
+        Returns:
+            The newly created tag.
+        """
+        return self.zen_store.create_tag(tag=tag)
+
+    def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be deleted.
+        """
+        self.zen_store.delete_tag(tag_name_or_id=tag_name_or_id)
+
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Updates an existing tag.
+
+        Args:
+            tag_name_or_id: name or UUID of the tag to be updated.
+            tag_update_model: the tag to be updated.
+
+        Returns:
+            The updated tag.
+        """
+        return self.zen_store.update_tag(
+            tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
+        )
+
+    def get_tag(self, tag_name_or_id: Union[str, UUID]) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The tag of interest.
+        """
+        return self.zen_store.get_tag(tag_name_or_id=tag_name_or_id)
+
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all tags.
+        """
+        return self.zen_store.list_tags(tag_filter_model=tag_filter_model)

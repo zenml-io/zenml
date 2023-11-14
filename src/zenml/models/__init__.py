@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Pydantic models for the various concepts in ZenML."""
 
+from zenml.models.api_key_models import (
+    APIKey,
+    APIKeyFilterModel,
+    APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
+    APIKeyRequestModel,
+    APIKeyResponseModel,
+    APIKeyRotateRequestModel,
+    APIKeyUpdateModel,
+)
 from zenml.models.artifact_models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -110,6 +120,12 @@ from zenml.models.secret_models import (
     SecretUpdateModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.models.service_account_models import (
+    ServiceAccountFilterModel,
+    ServiceAccountRequestModel,
+    ServiceAccountResponseModel,
+    ServiceAccountUpdateModel,
+)
 from zenml.models.service_connector_models import (
     AuthenticationMethodModel,
     ResourceTypeModel,
@@ -183,7 +199,22 @@ from zenml.models.model_models import (
     ModelVersionFilterModel,
     ModelVersionUpdateModel,
 )
+from zenml.models.tag_models import (
+    TagFilterModel,
+    TagResourceResponseModel,
+    TagResourceRequestModel,
+    TagResponseModel,
+    TagRequestModel,
+    TagUpdateModel,
+)
 
+APIKeyResponseModel.update_forward_refs(
+    ServiceAccountResponseModel=ServiceAccountResponseModel,
+)
+
+APIKeyInternalResponseModel.update_forward_refs(
+    ServiceAccountResponseModel=ServiceAccountResponseModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -201,6 +232,10 @@ FlavorResponseModel.update_forward_refs(
 )
 
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
+
+ServiceAccountResponseModel.update_forward_refs(
+    TeamResponseModel=TeamResponseModel
+)
 
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
@@ -339,6 +374,14 @@ OAuthDeviceInternalResponseModel.update_forward_refs(
 )
 
 __all__ = [
+    "APIKey",
+    "APIKeyFilterModel",
+    "APIKeyInternalResponseModel",
+    "APIKeyInternalUpdateModel",
+    "APIKeyRequestModel",
+    "APIKeyResponseModel",
+    "APIKeyRotateRequestModel",
+    "APIKeyUpdateModel",
     "ArtifactFilterModel",
     "ArtifactRequestModel",
     "ArtifactResponseModel",
@@ -427,8 +470,14 @@ __all__ = [
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "ServiceAccountRequestModel",
+    "ServiceAccountUpdateModel",
     "ServerDatabaseType",
     "ServerModel",
+    "ServiceAccountFilterModel",
+    "ServiceAccountRequestModel",
+    "ServiceAccountResponseModel",
+    "ServiceAccountUpdateModel",
     "ServiceConnectorBaseModel",
     "ServiceConnectorFilterModel",
     "ServiceConnectorRequirements",
@@ -445,6 +494,12 @@ __all__ = [
     "StepRunRequestModel",
     "StepRunResponseModel",
     "StepRunUpdateModel",
+    "TagFilterModel",
+    "TagResourceResponseModel",
+    "TagResourceRequestModel",
+    "TagResponseModel",
+    "TagRequestModel",
+    "TagUpdateModel",
     "TeamFilterModel",
     "TeamRequestModel",
     "TeamResponseModel",

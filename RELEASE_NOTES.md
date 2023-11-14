@@ -1,4 +1,159 @@
 <!-- markdown-link-check-disable -->
+# 0.46.1
+
+The 0.46.1 release introduces support for Service Accounts and API Keys that
+can be used to authenticate with the ZenML server from environments that do not
+support the web login flow, such as CI/CD environments, for example.
+
+Also included in this release are some documentation updates and bug fixes,
+notably moving the database migration logic deployed with the Helm chart out of
+the init containers and into a Kubernetes Job, which makes it possible to scale
+out the ZenML server deployments without the risk of running into database
+migration conflicts.
+
+## What's Changed
+* Small improvements to Hub docs page by @strickvl in https://github.com/zenml-io/zenml/pull/2015
+* Pin OpenAI integration to `<1.0.0` by @strickvl in https://github.com/zenml-io/zenml/pull/2027
+* Make error message nicer for when two artifacts that share a prefix are found by @strickvl in https://github.com/zenml-io/zenml/pull/2023
+* Move db-migration to `job` instead of `init-container` to allow replicas by @safoinme in https://github.com/zenml-io/zenml/pull/2021
+* Fix stuck/broken CI by @strickvl in https://github.com/zenml-io/zenml/pull/2032
+* Increase `step.source_code` Cut-Off Limit by @fa9r in https://github.com/zenml-io/zenml/pull/2025
+* Improve artifact linkage logging in MCP by @avishniakov in https://github.com/zenml-io/zenml/pull/2016
+* Upgrade feast so apidocs don't fail no mo by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2028
+* Remove NumPy Visualizations for 2D Arrays by @fa9r in https://github.com/zenml-io/zenml/pull/2033
+* Fix user activation bug by @stefannica in https://github.com/zenml-io/zenml/pull/2037
+* Remove `create_new_model_version` arg of `ModelConfig` by @avishniakov in https://github.com/zenml-io/zenml/pull/2030
+* Extend the wait period in between PyPi package publication and Docker image building for releases by @strickvl in https://github.com/zenml-io/zenml/pull/2029
+* Make `zenml up` prefill username when launching dashboard by @strickvl in https://github.com/zenml-io/zenml/pull/2024
+* Add warning when artifact store cannot be loaded by @strickvl in https://github.com/zenml-io/zenml/pull/2011
+* Add extra config to `Kaniko` docs by @safoinme in https://github.com/zenml-io/zenml/pull/2019
+* ZenML API Keys and Service Accounts by @stefannica in https://github.com/zenml-io/zenml/pull/1840
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.46.0..0.46.1
+
+
+# 0.46.0
+
+This release brings some upgrades, documentation updates and bug fixes. Notably,
+our `langchain` integration now supports more modern versions and has been
+upgraded to a new version at the lower edge of supported packages on account of
+a security vulnerability.
+
+Other fixes related to the Model Control Plane which was updated to support the
+deletion of model versions via the CLI, for example.
+
+## Breaking Change
+
+We removed the `llama_index` integration in this release. This related to
+unsolvable dependency clashes that relate to `sqlmodel` and our database. We
+expect these clashes to be resolved in the future and then we will add our
+integration back in. If you were using the `llama_index` materializer that was
+part of the integration, you will have to use a custom materializer in the
+meanwhile. We apologize for the inconvenience.
+
+## What's Changed
+* MCP-driven E2E template by @avishniakov in https://github.com/zenml-io/zenml/pull/2004
+* Model scoped endpoints by @avishniakov in https://github.com/zenml-io/zenml/pull/2003
+* Delete model version in cli by @avishniakov in https://github.com/zenml-io/zenml/pull/2006
+* Add latest version to model list response by @avishniakov in https://github.com/zenml-io/zenml/pull/2007
+* Fix `gcs bucket` docs error message by @safoinme in https://github.com/zenml-io/zenml/pull/2018
+* Fix `Skypilot` docs configuration by @safoinme in https://github.com/zenml-io/zenml/pull/2017
+* Bump `langchain`, disable `llama_index`, and fix Vector Store materializer by @strickvl in https://github.com/zenml-io/zenml/pull/2013
+* Fix Build Options of `GCPImageBuilder` by @fa9r in https://github.com/zenml-io/zenml/pull/1992
+* Fix the stack component describe CLI output by @stefannica in https://github.com/zenml-io/zenml/pull/2001
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.6...0.46.0
+
+# 0.45.6
+
+This release brings an array of enhancements and refinements. Notable improvements include 
+allowing for `disconnecting` service connectors from stack components, adding connector support to the
+sagemaker step operator, turning synchronous mode on by default for all orchestrators, and enabling
+server-side component config validation. 
+
+## What's Changed
+* Updating `README.md` and update images by @znegrin in https://github.com/zenml-io/zenml/pull/1986
+* Always set the active workspace to be the default workspace server side by @stefannica in https://github.com/zenml-io/zenml/pull/1989
+* Update outdated CLI docs by @strickvl in https://github.com/zenml-io/zenml/pull/1990
+* Turn synchronous mode on by default for all orchestrators by @stefannica in https://github.com/zenml-io/zenml/pull/1991
+* Use docker credentials in the skypilot orchestrator by @stefannica in https://github.com/zenml-io/zenml/pull/1983
+* Add missing space to `@step` warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1994
+* Fix sagemaker orchestrator and step operator env vars and other minor bugs  by @stefannica in https://github.com/zenml-io/zenml/pull/1993
+* fix: `BasePyTorchMaterliazer` -> `Materializer` by @cameronraysmith in https://github.com/zenml-io/zenml/pull/1969
+* allow calling old base pytorch materilizzer by @safoinme in https://github.com/zenml-io/zenml/pull/1997
+* Add connector support to sagemaker step operator. by @stefannica in https://github.com/zenml-io/zenml/pull/1996
+* Server-Side Component Config Validation by @fa9r in https://github.com/zenml-io/zenml/pull/1988
+* Allow disconnecting service-connector from stack component by @safoinme in https://github.com/zenml-io/zenml/pull/1864
+
+## New Contributors
+* @znegrin made their first contribution in https://github.com/zenml-io/zenml/pull/1986
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.5...test
+
+
+# 0.45.5
+
+This minor release contains bugfixes and documentation improvements. Notably,
+our `sqlmodel` dependency has been pinned to 0.0.8 which fixes installation
+errors following the release of 0.0.9.
+
+## What's Changed
+* Add a 'how do I...' section into docs by @strickvl in https://github.com/zenml-io/zenml/pull/1953
+* Bump `mypy`, `ruff` and `black` by @strickvl in https://github.com/zenml-io/zenml/pull/1963
+* Fix double slashes in weblogin by @schustmi in https://github.com/zenml-io/zenml/pull/1972
+* SQLModel docs backport fixes by @strickvl in https://github.com/zenml-io/zenml/pull/1975
+* Updated quickstart command in cloud quickstart by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1977
+* Make sure vertex job id is only lower case letter, number or dash by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1978
+* Fix DB initialization when using external authentication by @schustmi in https://github.com/zenml-io/zenml/pull/1965
+* Pin SQLModel dependency to `0.0.8` by @strickvl in https://github.com/zenml-io/zenml/pull/1973
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.4...0.45.5
+
+# 0.45.4
+
+This minor update fixes a database migration bug that you could potentially
+encounter while upgrading your ZenML version and relates to use of the
+`ExternalArtifact` object. 
+If you are upgrading from <0.45.x version, this is the recommended release.
+
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 or v0.45.3 and are experiencing
+issues with your database, please consider upgrading to v0.45.4 instead.
+
+## What's Changed
+* Increase reuse of `ModelConfig` by @avishniakov in https://github.com/zenml-io/zenml/pull/1954
+* resolve alembic branches by @avishniakov in https://github.com/zenml-io/zenml/pull/1964
+* Fix corrupted migration for old dbs by @avishniakov in https://github.com/zenml-io/zenml/pull/1966
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.3...0.45.4
+
+# 0.45.3
+
+This minor update fixes a database migration bug that you could potentially
+encounter while upgrading your ZenML version and relates to use of the
+`ExternalArtifact` object.
+
+**PROBLEMS?**: If you upgraded to ZenML v0.45.2 and are experiencing
+issues with your database, please either [reach out to us on Slack directly](https://zenml.io/slack-invite/) or
+feel free to [use this migration
+script](https://gist.github.com/strickvl/2178d93c8693f068768a82587fd4db75) that will
+manually fix the issue.
+
+This release also includes a bugfix from @cameronraysmith relating to the
+resolution of our Helm chart OCI location. Thank you!
+
+## What's Changed
+* fix: match chart name in docs to publish workflow by @cameronraysmith in https://github.com/zenml-io/zenml/pull/1942
+* Evaluate YAML based config early + OSS-2511 by @avishniakov in https://github.com/zenml-io/zenml/pull/1876
+* Fixing nullable parameter to avoid extra migrations by @bcdurak in https://github.com/zenml-io/zenml/pull/1955
+* Pin Helm version to avoid 400 Bad Request error by @wjayesh in https://github.com/zenml-io/zenml/pull/1958
+* `external_input_artifact` backward compatibility with alembic by @avishniakov in https://github.com/zenml-io/zenml/pull/1957
+
+## New Contributors
+* @cameronraysmith made their first contribution in https://github.com/zenml-io/zenml/pull/1942
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.2...0.45.3
 
 # 0.45.2
 
