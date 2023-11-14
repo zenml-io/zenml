@@ -5513,6 +5513,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model version of interest.
+
+        Raises:
+            RuntimeError: In case method inputs don't adhere to restrictions.
+            KeyError: In case no model version with the identifiers exists.
         """
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
