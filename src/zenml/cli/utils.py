@@ -416,18 +416,72 @@ def print_pydantic_model(
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
 
-    model_info = model.dict(include=columns, exclude=exclude_columns)
-    for item in model_info.items():
-        if isinstance(item[1], dict) and "id" in item[1]:
-            value = str(item[1]["id"])
-        elif item[1] is not None:
-            value = str(item[1])
+    # TODO: This uses the same _dictify function up in the print_pydantic_models
+    #   function. This 2 can be generalized.
+    if exclude_columns is None:
+        exclude_columns = list()
+
+    if not columns:
+        if isinstance(model, BaseResponse):
+            include_columns = ["id"]
+
+            if "name" in model.__fields__:
+                include_columns.append("name")
+
+            include_columns.extend(
+                [
+                    k
+                    for k in model.__fields__[
+                    "body"
+                ].type_.__fields__.keys()
+                    if k not in exclude_columns
+                ]
+                + [
+                    k
+                    for k in model.__fields__[
+                        "metadata"
+                    ].type_.__fields__.keys()
+                    if k not in exclude_columns
+                ]
+            )
+
         else:
-            value = ""
-        rich_table.add_row(
-            str(item[0]).upper(),
-            value,
-        )
+            include_columns = [
+                k for k in model.dict().keys() if k not in exclude_columns
+            ]
+    else:
+        include_columns = columns
+
+    items: Dict[str, Any] = {}
+
+    for k in include_columns:
+        value = getattr(model, k)
+        if isinstance(value, (BaseResponse, BaseResponseModel)):
+            if "name" in value.__fields__:
+                items[k] = str(getattr(value, "name"))
+            else:
+                items[k] = str(value.id)
+
+        # If it is a list of `BaseResponseModels` access each Model within
+        #  the list and extract either name or id
+        elif isinstance(value, list):
+            for v in value:
+                if isinstance(v, (BaseResponse, BaseResponseModel)):
+                    if "name" in v.__fields__:
+                        items.setdefault(k, []).append(
+                            str(getattr(v, "name"))
+                        )
+                    else:
+                        items.setdefault(k, []).append(str(v.id))
+
+                items[k] = str(items[k])
+        elif isinstance(value, Set) or isinstance(value, List):
+            items[k] = str([str(v) for v in value])
+        else:
+            items[k] = str(value)
+
+    for k, v in items.items():
+        rich_table.add_row(str(k).upper(), v)
 
     console.print(rich_table)
 
@@ -596,10 +650,6 @@ def print_stack_component_configuration(
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
-
-        component_dict = component.dict()
-        component_dict.pop("configuration")
-        component_dict.update(component.configuration)
 
         items = component.configuration.items()
         for item in items:
