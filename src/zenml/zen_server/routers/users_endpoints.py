@@ -401,7 +401,8 @@ def list_role_assignments_for_user(
         A list of all roles that are assigned to a user.
     """
     return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
+        user_role_assignment_filter_model=user_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
