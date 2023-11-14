@@ -419,7 +419,7 @@ def print_pydantic_model(
     # TODO: This uses the same _dictify function up in the print_pydantic_models
     #   function. This 2 can be generalized.
     if exclude_columns is None:
-        exclude_columns = list()
+        exclude_columns = set()
 
     if not columns:
         if isinstance(model, BaseResponse):
@@ -448,7 +448,7 @@ def print_pydantic_model(
                 k for k in model.dict().keys() if k not in exclude_columns
             ]
     else:
-        include_columns = columns
+        include_columns = list(columns)
 
     items: Dict[str, Any] = {}
 
