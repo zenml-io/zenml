@@ -368,7 +368,7 @@ ModelVersionPipelineRunResponseModel.update_forward_refs(
 )
 
 # V2
-APIKeyResponseMetadata.update_forward_refs(
+APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
 )
 ArtifactRequest.update_forward_refs(
@@ -463,7 +463,7 @@ ScheduleResponseBody.update_forward_refs(
 ScheduleResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
-ServiceAccountResponse.update_forward_refs(
+ServiceAccountResponseMetadata.update_forward_refs(
     TeamResponse=TeamResponse,
     RoleResponse=RoleResponse,
 )
