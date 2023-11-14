@@ -53,6 +53,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunParentsSchema,
     StepRunSchema,
 )
+from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 from zenml.zen_stores.schemas.team_schemas import (
     TeamAssignmentSchema,
     TeamSchema,
@@ -94,6 +95,8 @@ __all__ = [
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
+    "TagSchema",
+    "TagResourceSchema",
     "TeamAssignmentSchema",
     "TeamRoleAssignmentSchema",
     "TeamSchema",

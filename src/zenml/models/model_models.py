@@ -40,6 +40,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models.tag_models import TagResponseModel
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -658,7 +659,9 @@ class ModelRequestModel(
 ):
     """Model request model."""
 
-    pass
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model",
+    )
 
 
 class ModelResponseModel(
@@ -670,6 +673,9 @@ class ModelResponseModel(
     latest_version: name of latest version, if any
     """
 
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
     latest_version: Optional[str]
 
     @property
@@ -718,4 +724,5 @@ class ModelUpdateModel(BaseModel):
     limitations: Optional[str]
     trade_offs: Optional[str]
     ethics: Optional[str]
-    tags: Optional[List[str]]
+    add_tags: Optional[List[str]]
+    remove_tags: Optional[List[str]]

@@ -293,3 +293,25 @@ class ModelStages(StrEnum):
     PRODUCTION = "production"
     ARCHIVED = "archived"
     LATEST = "latest"
+
+
+class ColorVariants(StrEnum):
+    """All possible color variants for frontend."""
+
+    GREY = "grey"
+    PURPLE = "purple"
+    RED = "red"
+    GREEN = "green"
+    YELLOW = "yellow"
+    ORANGE = "orange"
+    LIME = "lime"
+    TEAL = "teal"
+    TURQUOISE = "turquoise"
+    MAGENTA = "magenta"
+    BLUE = "blue"
+
+
+class TaggableResourceTypes(StrEnum):
+    """All possible resource types for tagging."""
+
+    MODEL = "model"

@@ -47,7 +47,7 @@ def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
         "name": model.name,
         "latest_version": model.latest_version,
         "description": model.description,
-        "tags": model.tags,
+        "tags": [t.name for t in model.tags],
         "use_cases": model.use_cases,
         "audience": model.audience,
         "limitations": model.limitations,
@@ -93,7 +93,6 @@ def list_models(**kwargs: Any) -> None:
     if not models:
         cli_utils.declare("No models found.")
         return
-
     to_print = []
     for model in models:
         to_print.append(_model_to_print(model))
@@ -261,7 +260,15 @@ def register_model(
 @click.option(
     "--tag",
     "-t",
-    help="Tags associated with the model.",
+    help="Tags to be added to the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--remove-tag",
+    "-r",
+    help="Tags to be removed from the model.",
     type=str,
     required=False,
     multiple=True,
@@ -276,6 +283,7 @@ def update_model(
     ethical: Optional[str],
     limitations: Optional[str],
     tag: Optional[List[str]],
+    remove_tag: Optional[List[str]],
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -288,7 +296,8 @@ def update_model(
         tradeoffs: The tradeoffs of the model.
         ethical: The ethical implications of the model.
         limitations: The know limitations of the model.
-        tag: Tags associated with the model.
+        tag: Tags to be added to the model.
+        remove_tag: Tags to be removed from the model.
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     update_dict = remove_none_values(
@@ -300,7 +309,8 @@ def update_model(
             trade_offs=tradeoffs,
             ethics=ethical,
             limitations=limitations,
-            tags=tag,
+            add_tags=tag,
+            remove_tags=remove_tag,
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )
@@ -433,6 +443,7 @@ def update_model_version(
                     )
                 ]
             )
+
             confirmation = cli_utils.confirmation(
                 "Are you sure you want to change the status of model "
                 f"version '{model_version_name_or_number_or_id}' to "

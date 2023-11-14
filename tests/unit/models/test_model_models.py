@@ -150,6 +150,7 @@ def test_getters(
             workspace=sample_workspace_model,
             created=datetime.now(),
             updated=datetime.now(),
+            tags=[],
         )
         mv = ModelVersionResponseModel(
             name="foo",
