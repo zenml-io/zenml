@@ -193,7 +193,7 @@ def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
         service_accounts = client.list_service_accounts(**kwargs)
         if not service_accounts:
             cli_utils.declare(
-                "No  service accounts found for the given filters."
+                "No service accounts found for the given filters."
             )
             return
 
