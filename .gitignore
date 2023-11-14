@@ -197,6 +197,3 @@ zenml_tutorial/
 mlstacks_reset.sh
 
 .local/
-
-# exclude installed dashboard folder
-src/zenml/zen_server/dashboard
