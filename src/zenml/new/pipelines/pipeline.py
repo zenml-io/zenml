@@ -903,7 +903,7 @@ class Pipeline:
                 logger.warning(
                     f"New version of model version `{model_name}::{model_version or 'NEW'}` "
                     f"requested in multiple decorators:\n{data.requesters}\n We recommend "
-                    "that `ModelConfig` requesting new version is configured only in one "
+                    "that `ModelVersion` requesting new version is configured only in one "
                     "place of the pipeline."
                 )
             data.model_version._validate_config_in_runtime()

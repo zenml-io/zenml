@@ -42,7 +42,7 @@ class NewModelVersionRequest(BaseModel):
 
     @property
     def model_version(self) -> ModelVersion:
-        """Model config getter.
+        """Model version getter.
 
         Returns:
             The model version.
@@ -51,7 +51,7 @@ class NewModelVersionRequest(BaseModel):
             RuntimeError: If the model version is not set.
         """
         if self._model_version is None:
-            raise RuntimeError("Model config is not set.")
+            raise RuntimeError("Model version is not set.")
         return self._model_version
 
     def update_request(

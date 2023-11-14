@@ -193,16 +193,15 @@ class TestModelVersion:
         with model_killer():
             with tags_killer():
                 Client().create_tag(TagRequestModel(name="foo", color="green"))
-                mc = ModelConfig(
+                mc = ModelVersion(
                     name=MODEL_NAME,
                     tags=["foo", "bar"],
-                    create_new_model_version=True,
                     delete_new_version_on_failure=False,
                 )
 
                 # run 2 times to first create, next get
                 for _ in range(2):
-                    model = mc.get_or_create_model()
+                    model = mc._get_or_create_model()
 
                     assert len(model.tags) == 2
                     assert {t.name for t in model.tags} == {"foo", "bar"}
@@ -214,18 +213,17 @@ class TestModelVersion:
         """Test that model context can update proper tag relationships."""
         with model_killer():
             with tags_killer():
-                mc = ModelConfig(
+                mc = ModelVersion(
                     name=MODEL_NAME,
                     tags=["foo", "bar"],
-                    create_new_model_version=True,
                     delete_new_version_on_failure=False,
                 )
-                model_id = mc.get_or_create_model().id
+                model_id = mc._get_or_create_model().id
 
                 Client().update_model(
                     model_id, ModelUpdateModel(add_tags=["tag1", "tag2"])
                 )
-                model = mc.get_or_create_model()
+                model = mc._get_or_create_model()
                 assert len(model.tags) == 4
                 assert {t.name for t in model.tags} == {
                     "foo",
@@ -237,6 +235,6 @@ class TestModelVersion:
                 Client().update_model(
                     model_id, ModelUpdateModel(remove_tags=["tag1", "tag2"])
                 )
-                model = mc.get_or_create_model()
+                model = mc._get_or_create_model()
                 assert len(model.tags) == 2
                 assert {t.name for t in model.tags} == {"foo", "bar"}
