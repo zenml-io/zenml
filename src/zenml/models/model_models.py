@@ -40,6 +40,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models.tag_models import TagResponseModel
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -624,14 +625,24 @@ class ModelRequestModel(
 ):
     """Model request model."""
 
-    pass
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model",
+    )
 
 
 class ModelResponseModel(
     WorkspaceScopedResponseModel,
     ModelBaseModel,
 ):
-    """Model response model."""
+    """Model response model.
+
+    latest_version: name of latest version, if any
+    """
+
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
+    latest_version: Optional[str]
 
     @property
     def versions(self) -> List[ModelVersionResponseModel]:
@@ -659,22 +670,20 @@ class ModelResponseModel(
         """Get specific version of the model.
 
         Args:
-            version: version name, number, stage or None for latest version.
+            version: version name, number, stage.
+                If skipped - latest version is retrieved.
 
         Returns:
             The requested model version.
         """
         from zenml.client import Client
 
-        if version is None:
-            return Client().get_model_version(model_name_or_id=self.name)
-        else:
-            return Client().get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=getattr(
-                    version, "value", version
-                ),
-            )
+        return Client().get_model_version(
+            model_name_or_id=self.name,
+            model_version_name_or_number_or_id=getattr(
+                version, "value", version or ModelStages.LATEST
+            ),
+        )
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):
@@ -702,4 +711,5 @@ class ModelUpdateModel(BaseModel):
     limitations: Optional[str]
     trade_offs: Optional[str]
     ethics: Optional[str]
-    tags: Optional[List[str]]
+    add_tags: Optional[List[str]]
+    remove_tags: Optional[List[str]]

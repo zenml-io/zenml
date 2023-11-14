@@ -803,7 +803,7 @@ class GCPServiceConnector(ServiceConnector):
             raise ValueError(
                 f"Invalid resource ID for an GCS bucket: {resource_id}. "
                 f"Supported formats are:\n"
-                f"GCS bucket URI: gcs://<bucket-name>\n"
+                f"GCS bucket URI: gs://<bucket-name>\n"
                 f"GCS bucket name: <bucket-name>"
             )
 
