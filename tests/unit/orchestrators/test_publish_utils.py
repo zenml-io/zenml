@@ -17,7 +17,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
-from zenml.models.page_model import Page
+from zenml.models import Page
 from zenml.orchestrators import publish_utils
 
 

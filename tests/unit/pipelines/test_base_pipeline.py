@@ -27,8 +27,7 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.models import PipelineBuildBase, PipelineDeploymentBase
-from zenml.models.page_model import Page
+from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.pipelines import BasePipeline, Schedule, pipeline
 from zenml.steps import BaseParameters, step
