@@ -59,6 +59,7 @@ def list_authorized_devices(
     filter_model: OAuthDeviceFilter = Depends(
         make_dependable(OAuthDeviceFilter)
     ),
+    hydrate: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -67,14 +68,18 @@ def list_authorized_devices(
 
     Args:
         filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: The current auth context.
 
     Returns:
         Page of OAuth2 authorized device objects.
     """
     filter_model.set_scope_user(auth_context.user.id)
-    return zen_store().list_authorized_devices(filter_model=filter_model)
+    return zen_store().list_authorized_devices(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
@@ -86,6 +91,7 @@ def list_authorized_devices(
 def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
+    hydrate: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -96,6 +102,8 @@ def get_authorization_device(
         device_id: The ID of the OAuth2 authorized device to get.
         user_code: The user code of the OAuth2 authorized device to get. Needs
             to be specified with devices that have not been verified yet.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: The current auth context.
 
     Returns:
@@ -106,13 +114,15 @@ def get_authorization_device(
             belong to the current user or could not be verified using the
             given user code.
     """
-    device = zen_store().get_authorized_device(device_id=device_id)
+    device = zen_store().get_authorized_device(
+        device_id=device_id, hydrate=hydrate
+    )
     if not device.user:
         # A device that hasn't been verified and associated with a user yet
         # can only be retrieved if the user code is specified and valid.
         if user_code:
             internal_device = zen_store().get_internal_authorized_device(
-                device_id=device_id
+                device_id=device_id, hydrate=hydrate
             )
             if internal_device.verify_user_code(user_code=user_code):
                 return device

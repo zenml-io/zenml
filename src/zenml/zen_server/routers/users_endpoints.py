@@ -91,7 +91,7 @@ def list_users(
 
     Args:
         user_filter_model: Model that takes care of filtering, sorting and
-            pagination
+            pagination.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 

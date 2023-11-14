@@ -94,16 +94,22 @@ def create_service_account(
 def get_service_account(
     service_account_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    hydrate: bool = True,
 ) -> ServiceAccountResponse:
     """Returns a specific service account.
 
     Args:
         service_account_name_or_id: Name or ID of the service account.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The service account matching the given name or ID.
     """
-    return zen_store().get_service_account(service_account_name_or_id)
+    return zen_store().get_service_account(
+        service_account_name_or_id=service_account_name_or_id,
+        hydrate=hydrate,
+    )
 
 
 @router.get(
@@ -116,6 +122,7 @@ def list_service_accounts(
     filter_model: ServiceAccountFilter = Depends(
         make_dependable(ServiceAccountFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ServiceAccountResponse]:
     """Returns a list of service accounts.
@@ -123,11 +130,15 @@ def list_service_accounts(
     Args:
         filter_model: Model that takes care of filtering, sorting and
             pagination.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of service accounts matching the filter.
     """
-    return zen_store().list_service_accounts(filter_model=filter_model)
+    return zen_store().list_service_accounts(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.put(
@@ -219,6 +230,7 @@ def create_api_key(
 def get_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> APIKeyResponse:
     """Returns the requested API key.
@@ -226,6 +238,8 @@ def get_api_key(
     Args:
         service_account_id: ID of the service account to which the API key
             belongs.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         api_key_name_or_id: Name or ID of the API key to return.
 
     Returns:
@@ -234,6 +248,7 @@ def get_api_key(
     api_key = zen_store().get_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,
+        hydrate=hydrate,
     )
     return api_key
 
@@ -247,6 +262,7 @@ def get_api_key(
 def list_api_keys(
     service_account_id: UUID,
     filter_model: APIKeyFilter = Depends(make_dependable(APIKeyFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> Page[APIKeyResponse]:
     """List API keys associated with a service account.
@@ -254,6 +270,8 @@ def list_api_keys(
     Args:
         service_account_id: ID of the service account to which the API keys
             belong.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         filter_model: Filter model used for pagination, sorting,
             filtering
 
@@ -262,7 +280,9 @@ def list_api_keys(
         service account.
     """
     return zen_store().list_api_keys(
-        service_account_id=service_account_id, filter_model=filter_model
+        service_account_id=service_account_id,
+        filter_model=filter_model,
+        hydrate=hydrate,
     )
 
 
