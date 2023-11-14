@@ -617,11 +617,15 @@ class ZenStoreInterface(ABC):
     # -------------------- Devices --------------------
 
     @abstractmethod
-    def get_authorized_device(self, device_id: UUID) -> OAuthDeviceResponse:
+    def get_authorized_device(
+        self, device_id: UUID, hydrate: bool = True
+    ) -> OAuthDeviceResponse:
         """Gets a specific OAuth 2.0 authorized device.
 
         Args:
             device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested device, if it was found.
@@ -632,13 +636,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_authorized_devices(
-        self, filter_model: OAuthDeviceFilter
+        self, filter_model: OAuthDeviceFilter, hydrate: bool = False
     ) -> Page[OAuthDeviceResponse]:
         """List all OAuth 2.0 authorized devices for a user.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all matching OAuth 2.0 authorized devices.

@@ -2167,7 +2167,7 @@ class SqlZenStore(BaseZenStore):
                     "this ID found."
                 )
 
-            return device.to_model()
+            return device.to_model(hydrate=hydrate)
 
     def get_internal_authorized_device(
         self,

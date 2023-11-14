@@ -431,9 +431,7 @@ def print_pydantic_model(
             include_columns.extend(
                 [
                     k
-                    for k in model.__fields__[
-                    "body"
-                ].type_.__fields__.keys()
+                    for k in model.__fields__["body"].type_.__fields__.keys()
                     if k not in exclude_columns
                 ]
                 + [
@@ -468,9 +466,7 @@ def print_pydantic_model(
             for v in value:
                 if isinstance(v, (BaseResponse, BaseResponseModel)):
                     if "name" in v.__fields__:
-                        items.setdefault(k, []).append(
-                            str(getattr(v, "name"))
-                        )
+                        items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))
 

@@ -219,7 +219,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             )
 
         body = OAuthDeviceResponseBody(
-            user=self.user.to_model(True) if self.user else None,
+            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
             client_id=self.client_id,
