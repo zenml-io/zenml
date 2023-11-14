@@ -296,5 +296,4 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
 ]
 
 # Model Control Plane constants
-RUNNING_MODEL_VERSION = "running"
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"

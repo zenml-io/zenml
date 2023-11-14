@@ -23,6 +23,5 @@ def test_init_warns(version_name, logger):
         ModelVersion(
             name="foo",
             version=version_name,
-            with_recovery=True,
         )
         logger.assert_called_once()

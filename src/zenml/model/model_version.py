@@ -25,8 +25,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
-from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError, ReservedNameError
 from zenml.logger import get_logger
 
@@ -57,7 +56,6 @@ class ModelVersion(BaseModel):
         to a specific version/stage. If skipped new model version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
-    with_recovery: Whether to keep new versions created in failed runs for future recovery.
     """
 
     name: str
@@ -71,7 +69,6 @@ class ModelVersion(BaseModel):
     tags: Optional[List[str]]
     version: Optional[Union[ModelStages, int, str]]
     save_models_to_registry: bool = True
-    with_recovery: bool = False
 
     suppress_class_validation_warnings: bool = False
     was_created_in_this_run: bool = False
@@ -144,7 +141,7 @@ class ModelVersion(BaseModel):
         return self._number
 
     @property
-    def stage(self) -> ModelStages:
+    def stage(self) -> Optional[ModelStages]:
         """Get version stage from  the Model Control Plane.
 
         Returns:
@@ -324,39 +321,8 @@ class ModelVersion(BaseModel):
         return values
 
     def _validate_config_in_runtime(self) -> None:
-        """Validate that config doesn't conflict with runtime environment.
-
-        Raises:
-            RuntimeError: If recovery not requested, but model version already exists.
-            RuntimeError: If there is unfinished pipeline run for requested new model version.
-        """
-        try:
-            model_version = self._get_model_version()
-            if self.version is None or self.version == RUNNING_MODEL_VERSION:
-                self.version = RUNNING_MODEL_VERSION
-                for run_name, run in model_version.pipeline_runs.items():
-                    if run.status == ExecutionStatus.RUNNING:
-                        raise RuntimeError(
-                            "You have configured a model context without explicit "
-                            "`version` argument passed in, so new a unnamed model "
-                            "version has to be created, but pipeline run "
-                            f"`{run_name}` has not finished yet. To proceed you can:\n"
-                            "- Wait for previous run to finish\n"
-                            "- Provide explicit `version` in configuration"
-                        )
-                if not self.with_recovery:
-                    raise RuntimeError(
-                        f"Cannot create version `{self.version}` "
-                        f"for model `{self.name}` since it already exists "
-                        "and recovery mode is disabled. "
-                        "This could happen for unforeseen reasons (e.g. unexpected "
-                        "interruption of previous pipeline run flow).\n"
-                        "If you would like to remove the staling version use "
-                        "following CLI command:\n"
-                        f"`zenml model version delete {self.name} {self.version}`"
-                    )
-        except KeyError:
-            self._get_or_create_model_version()
+        """Validate that config doesn't conflict with runtime environment."""
+        self._get_or_create_model_version()
 
     def _get_or_create_model(self) -> "ModelResponseModel":
         """This method should get or create a model from Model Control Plane.
@@ -415,8 +381,7 @@ class ModelVersion(BaseModel):
         zenml_client = Client()
         return zenml_client.zen_store.get_model_version(
             model_name_or_id=self.name,
-            model_version_name_or_number_or_id=self.version
-            or RUNNING_MODEL_VERSION,
+            model_version_name_or_number_or_id=self.version,
         )
 
     def _get_or_create_model_version(self) -> "ModelVersionResponseModel":
@@ -426,10 +391,7 @@ class ModelVersion(BaseModel):
         name is controlled by the `name` parameter.
 
         Model Version returned by this method is resolved based on model version:
-        - If there is an existing model version leftover from the previous failed run with
-        `with_recovery` is set to True and `version` is None,
-        leftover model version will be reused.
-        - Otherwise if `version` is None, a new model version is created.
+        - If `version` is None, a new model version is created, if not created by other steps in same run.
         - If `version` is not None a model version will be fetched based on the version:
             - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
             - If `version` is set to a string, the model version with the matching version will be fetched.
@@ -446,13 +408,6 @@ class ModelVersion(BaseModel):
 
         model = self._get_or_create_model()
 
-        if self.version is None:
-            logger.info(
-                "Creation of new model version was requested, but no version name was explicitly provided. "
-                f"Setting `version` to `{RUNNING_MODEL_VERSION}`."
-            )
-            self.version = RUNNING_MODEL_VERSION
-
         zenml_client = Client()
         model_version_request = ModelVersionRequestModel(
             user=zenml_client.active_user.id,
@@ -463,9 +418,40 @@ class ModelVersion(BaseModel):
         )
         mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
         try:
-            model_version = self._get_model_version()
+            if not self.version:
+                try:
+                    from zenml import get_step_context
+
+                    context = get_step_context()
+                except RuntimeError:
+                    pass
+                else:
+                    pipeline_mv = context.pipeline_run.config.model_version
+                    if (
+                        pipeline_mv
+                        and pipeline_mv.was_created_in_this_run
+                        and pipeline_mv.name == self.name
+                    ):
+                        self.version = pipeline_mv.version
+                    else:
+                        for step in context.pipeline_run.steps.values():
+                            step_mv = step.config.model_version
+                            if (
+                                step_mv
+                                and step_mv.was_created_in_this_run
+                                and step_mv.name == self.name
+                            ):
+                                self.version = step_mv.version
+                                break
+            if self.version:
+                model_version = self._get_model_version()
+            else:
+                raise KeyError
         except KeyError:
-            if str(self.version).lower() in ModelStages.values():
+            if (
+                self.version
+                and str(self.version).lower() in ModelStages.values()
+            ):
                 raise ReservedNameError(
                     f"Cannot create a model version named {str(self.version)} as "
                     "it matches one of the possible model version stages. If you "
@@ -488,6 +474,7 @@ class ModelVersion(BaseModel):
             model_version = zenml_client.zen_store.create_model_version(
                 model_version=mv_request
             )
+            self.version = model_version.name
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
         self._id = model_version.id
@@ -508,8 +495,6 @@ class ModelVersion(BaseModel):
                 {t for t in self.tags or []}.union(set(model_version.tags))
             )
 
-        self.with_recovery |= model_version.with_recovery
-
     def __hash__(self) -> int:
         """Get hash of the `ModelVersion`.
 
@@ -523,7 +508,6 @@ class ModelVersion(BaseModel):
                     for v in (
                         self.name,
                         self.version,
-                        self.with_recovery,
                     )
                 )
             )

@@ -74,8 +74,6 @@ def upgrade() -> None:
 
     for source_field, target_field in [
         ('"model_config"', '"model_version"'),
-        ('"delete_new_version_on_failure": true', '"with_recovery": false'),
-        ('"delete_new_version_on_failure": false', '"with_recovery": true'),
     ]:
         for update_stmt in update_stmts:
             session.execute(
@@ -110,8 +108,6 @@ def downgrade() -> None:
 
     for source_field, target_field in [
         ("model_version", "model_config"),
-        ('"with_recovery": false', '"delete_new_version_on_failure": true'),
-        ('"with_recovery": true', '"delete_new_version_on_failure": false'),
     ]:
         for update_stmt in update_stmts:
             session.execute(

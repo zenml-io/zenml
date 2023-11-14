@@ -29,7 +29,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
-from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
@@ -462,22 +461,6 @@ class ModelVersionResponseModel(
             version_name_or_id=self.id,
             stage=stage,
             force=force,
-        )
-
-    def _update_default_running_version_name(self) -> None:
-        """Replace default running version name with a version number product."""
-        if self.name != RUNNING_MODEL_VERSION:
-            return
-
-        from zenml.client import Client
-
-        Client().update_model_version(
-            model_name_or_id=self.model.id,
-            version_name_or_id=self.id,
-            name=str(self.number),
-        )
-        logger.info(
-            f"Updated model version name for `ID:{self.id}` to `{self.number}`"
         )
 
     # TODO in https://zenml.atlassian.net/browse/OSS-2433

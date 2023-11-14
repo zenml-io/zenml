@@ -171,6 +171,7 @@ class Pipeline:
         self._parameters: Dict[str, Any] = {}
 
         self.__suppress_warnings_flag__ = False
+        self.__new_unnamed_model_versions_in_current_run__: Dict[str, int] = {}
 
     @property
     def name(self) -> str:
@@ -637,7 +638,7 @@ class Pipeline:
             stack = Client().active_stack
             stack.validate()
 
-            new_version_requests = self.get_new_version_requests(deployment)
+            self.get_new_version_requests(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -697,9 +698,6 @@ class Pipeline:
             try:
                 stack.deploy_pipeline(deployment=deployment_model)
             except Exception as e:
-                self.delete_running_versions_without_recovery(
-                    new_version_requests
-                )
                 raise e
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
@@ -711,7 +709,6 @@ class Pipeline:
             )
 
             if runs.items:
-                self.register_running_versions(new_version_requests)
                 run_url = dashboard_utils.get_run_url(runs[0])
                 if run_url:
                     logger.info(f"Dashboard URL: {run_url}")
@@ -829,8 +826,6 @@ class Pipeline:
                     source="step", name=requester_name
                 ),
             )
-            if model_version.version is None and key in new_versions_requested:
-                model_version.version = constants.RUNNING_MODEL_VERSION
         else:
             other_model_versions.add(model_version)
 
@@ -907,58 +902,9 @@ class Pipeline:
                     "place of the pipeline."
                 )
             data.model_version._validate_config_in_runtime()
-
-    def register_running_versions(
-        self,
-        new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelVersionRequest
-        ],
-    ) -> None:
-        """Registers the running versions of the models used in the given pipeline run.
-
-        Args:
-            new_versions_requested: Dict of models requesting new versions and their definition points.
-        """
-        for key, _ in new_versions_requested.items():
-            model_name, model_version = key
-            if not model_version:
-                mv = Client().zen_store.get_model_version(
-                    model_name_or_id=model_name,
-                    model_version_name_or_number_or_id=constants.RUNNING_MODEL_VERSION,
-                )
-                mv._update_default_running_version_name()
-
-    def delete_running_versions_without_recovery(
-        self,
-        new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelVersionRequest
-        ],
-    ) -> None:
-        """Delete the running versions of the models without `restore` after fail.
-
-        Args:
-            new_versions_requested: Dict of models requesting new versions and their definition points.
-        """
-        for key, new_version_request in new_versions_requested.items():
-            model_name, model_version = key
-            if (
-                not new_version_request.model_version.with_recovery
-                and new_version_request.model_version.was_created_in_this_run
-            ):
-                model = Client().get_model_version(
-                    model_name_or_id=model_name,
-                    model_version_name_or_number_or_id=model_version
-                    or constants.RUNNING_MODEL_VERSION,
-                )
-                Client().delete_model_version(
-                    model_name_or_id=model_name,
-                    model_version_name_or_id=model.id,
-                )
-                logger.warning(
-                    f"Model version `{model.name}` was removed from the model `{model_name}`, "
-                    "due to run failure. If you would like to persist model versions on run "
-                    "failures use `with_recovery` flag set to True."
-                )
+            self.__new_unnamed_model_versions_in_current_run__[
+                data.model_version.name
+            ] = data.model_version.number
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
         """(Deprecated) Get runs of this pipeline.

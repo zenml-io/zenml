@@ -19,7 +19,6 @@ from typing_extensions import Annotated
 from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.model import (
@@ -741,9 +740,7 @@ def _cacheable_step_custom_model_annotated() -> (
     Annotated[
         str,
         "cacheable",
-        DataArtifactConfig(
-            model_name="bar", model_version=RUNNING_MODEL_VERSION
-        ),
+        DataArtifactConfig(model_name="bar", model_version=ModelStages.LATEST),
     ]
 ):
     return "cacheable"
@@ -777,9 +774,7 @@ def test_artifacts_linked_from_cache_steps():
         client = Client()
 
         for i in range(1, 3):
-            fake_version = ModelVersion(
-                name="bar"
-            )._get_or_create_model_version()
+            ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
             mv = client.zen_store.get_model_version(
@@ -797,7 +792,6 @@ def test_artifacts_linked_from_cache_steps():
 
             mv = client.zen_store.get_model_version(
                 model_name_or_id="bar",
-                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
             assert len(mv.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mv.data_artifact_ids.keys()) == {
@@ -811,8 +805,6 @@ def test_artifacts_linked_from_cache_steps():
                 )
                 == 1
             ), f"Failed on {i} run"
-
-            fake_version._update_default_running_version_name()
 
 
 def test_artifacts_linked_from_cache_steps_same_id():
@@ -835,14 +827,11 @@ def test_artifacts_linked_from_cache_steps_same_id():
         client = Client()
 
         for i in range(1, 3):
-            fake_version = ModelVersion(
-                name="bar"
-            )._get_or_create_model_version()
+            ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
             mv = client.zen_store.get_model_version(
                 model_name_or_id="bar",
-                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
             assert len(mv.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mv.data_artifact_ids.keys()) == {
@@ -856,5 +845,3 @@ def test_artifacts_linked_from_cache_steps_same_id():
                 )
                 == 1
             ), f"Failed on {i} run"
-
-            fake_version._update_default_running_version_name()

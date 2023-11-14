@@ -23,19 +23,15 @@ from typing_extensions import Annotated
 from zenml import get_step_context, pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ModelStages
 from zenml.model import DataArtifactConfig, ModelVersion, link_output_to_model
-from zenml.models import (
-    PipelineRunUpdateModel,
-)
 
 
 @step
-def _assert_that_model_version_set(name="foo", version=RUNNING_MODEL_VERSION):
+def _assert_that_model_version_set(name="foo"):
     """Step asserting that passed model name and version is in model context."""
     assert get_step_context().model_version.name == name
-    assert get_step_context().model_version.version == version
+    assert get_step_context().model_version.version == "1"
 
 
 def test_model_version_passed_to_step_context_via_step():
@@ -230,12 +226,10 @@ def _this_step_tries_to_recover(run_number: int):
     [
         ModelVersion(
             name="foo",
-            with_recovery=True,
         ),
         ModelVersion(
             name="foo",
             version="test running version",
-            with_recovery=True,
         ),
     ],
     ids=["default_running_name", "custom_running_name"],
@@ -246,7 +240,6 @@ def test_recovery_of_steps(model_version: ModelVersion):
     @pipeline(
         name="bar",
         enable_cache=False,
-        model_version=model_version,
     )
     def _this_pipeline_will_recover(run_number: int):
         _this_step_produces_output()
@@ -258,69 +251,30 @@ def test_recovery_of_steps(model_version: ModelVersion):
         client = Client()
 
         with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(1)
+            _this_pipeline_will_recover.with_options(
+                model_version=model_version
+            )(1)
+        if model_version.version is None:
+            model_version.version = "1"
         with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(2)
+            _this_pipeline_will_recover.with_options(
+                model_version=model_version
+            )(2)
         with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_recover(3)
+            _this_pipeline_will_recover.with_options(
+                model_version=model_version
+            )(3)
 
         mv = client.zen_store.get_model_version(
             model_name_or_id="foo",
-            model_version_name_or_number_or_id=model_version.version
-            or RUNNING_MODEL_VERSION,
+            model_version_name_or_number_or_id=model_version.version,
         )
-        assert mv.name == model_version.version or RUNNING_MODEL_VERSION
+        assert mv.name == model_version.version
         assert len(mv.data_artifact_ids) == 1
         assert (
             len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
             == 3
         )
-
-
-@pytest.mark.parametrize(
-    "model_version",
-    [
-        ModelVersion(
-            name="foo",
-            with_recovery=False,
-        ),
-        ModelVersion(
-            name="foo",
-            version="test running version",
-            with_recovery=False,
-        ),
-    ],
-    ids=["default_running_name", "custom_running_name"],
-)
-def test_clean_up_after_failure(model_version: ModelVersion):
-    """Test that hanging `running` versions are cleaned-up after failure."""
-
-    @pipeline(
-        name="bar",
-        enable_cache=False,
-        model_version=model_version,
-    )
-    def _this_pipeline_will_not_recover(run_number: int):
-        _this_step_produces_output()
-        _this_step_tries_to_recover(
-            run_number, after=["_this_step_produces_output"]
-        )
-
-    with model_killer():
-        client = Client()
-
-        with pytest.raises(Exception, match="make pipeline fail"):
-            _this_pipeline_will_not_recover(1)
-        with pytest.raises(AssertionError, match="expected AssertionError"):
-            _this_pipeline_will_not_recover(2)
-
-        model = client.get_model("foo")
-        with pytest.raises(KeyError):
-            client.get_model_version(
-                model_name_or_id=model.id,
-                model_version_name_or_number_or_id=model_version.version
-                or RUNNING_MODEL_VERSION,
-            )
 
 
 @step(model_version=ModelVersion(name="foo"))
@@ -440,7 +394,6 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             run_name=run_name_1,
             model_version=ModelVersion(
                 name="foo",
-                with_recovery=False,
             ),
         )()
         run_name_2 = f"bar_run_{uuid4()}"
@@ -495,7 +448,6 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
         )(
             ModelVersion(
                 name="foo",
-                with_recovery=False,
             )
         )
         run_name_2 = f"bar_run_{uuid4()}"
@@ -521,13 +473,17 @@ def _this_step_has_model_version_on_artifact_level() -> (
         Annotated[
             int,
             "declarative_link",
-            DataArtifactConfig(model_name="declarative"),
+            DataArtifactConfig(
+                model_name="declarative", model_version=ModelStages.LATEST
+            ),
         ],
         Annotated[int, "functional_link"],
     ]
 ):
     link_output_to_model(
-        DataArtifactConfig(model_name="functional"),
+        DataArtifactConfig(
+            model_name="functional", model_version=ModelStages.LATEST
+        ),
         output_name="functional_link",
     )
     return 1, 2
@@ -616,7 +572,7 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
                 )
             )
             client.create_model_version(
-                model_name_or_id=models[-1].id,
+                model_name_or_id=model_name,
                 name="good_one",
             )
 
@@ -861,44 +817,3 @@ def test_that_artifact_is_removed_on_deletion():
             )
             == 0
         )
-
-
-@step
-def _this_step_fails():
-    raise Exception("make pipeline fail")
-
-
-def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_unnamed_version_and_with_recovery():
-    """Test that if second pipeline for same new version is started in parallel - it will fail."""
-
-    @pipeline(
-        name="bar",
-        enable_cache=False,
-        model_version=ModelVersion(
-            name="multi_run",
-            with_recovery=True,
-        ),
-    )
-    def _this_pipeline_will_fail():
-        _this_step_fails()
-
-    with model_killer():
-        client = Client()
-        # this pipeline fails, but persists intermediate version
-        with pytest.raises(Exception, match="make pipeline fail"):
-            run_name_1 = f"multi_run_{uuid4()}"
-            _this_pipeline_will_fail.with_options(run_name=run_name_1)()
-
-        # here we fake that previous failed pipeline is still running
-        run_id = client.get_pipeline_run(name_id_or_prefix=run_name_1).id
-        client.zen_store.update_run(
-            run_id=run_id,
-            run_update=PipelineRunUpdateModel(status=ExecutionStatus.RUNNING),
-        )
-        with pytest.raises(
-            RuntimeError,
-            match="You have configured a model context without explicit `version`",
-        ):
-            _this_pipeline_will_fail.with_options(
-                run_name=f"multi_run_{uuid4()}"
-            )()

@@ -44,7 +44,7 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml.client import Client
-from zenml.constants import ACTIVATE, DEACTIVATE, RUNNING_MODEL_VERSION, USERS
+from zenml.constants import ACTIVATE, DEACTIVATE, USERS
 from zenml.enums import (
     ColorVariants,
     ModelStages,
@@ -4325,7 +4325,6 @@ class TestModelVersion:
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
-                    name=RUNNING_MODEL_VERSION,
                 )
             )
             assert (
@@ -4344,7 +4343,6 @@ class TestModelVersion:
                 == "staging"
             )
 
-            mv1._update_default_running_version_name()
             assert (
                 zs.get_model_version(
                     model_name_or_id=model.id,

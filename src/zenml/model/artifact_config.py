@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact Config classes to support Model Control Plane feature."""
-from typing import TYPE_CHECKING, ClassVar, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, root_validator
 
 from zenml import get_step_context
 from zenml.enums import ModelStages
@@ -50,6 +50,19 @@ class DataArtifactConfig(BaseModel):
     _step_name: str = PrivateAttr()
     IS_MODEL_ARTIFACT: ClassVar[bool] = False
     IS_ENDPOINT_ARTIFACT: ClassVar[bool] = False
+
+    @root_validator
+    def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        model_name = values.get("model_name", None)
+        if model_name and values.get("model_version", None) is None:
+            raise ValueError(
+                f"Creation of new model version from `{cls}` is not allowed. "
+                "Please either keep `model_name` and `model_version` both "
+                "`None` to get the model version from the step context or "
+                "specify both at the same time. You can use `ModelStages.LATEST` "
+                "as `model_version` when latest model version is desired."
+            )
+        return values
 
     class Config:
         """Config class for ArtifactConfig."""

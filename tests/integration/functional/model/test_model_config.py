@@ -17,7 +17,6 @@ import pytest
 
 from tests.integration.functional.utils import model_killer, tags_killer
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.model import ModelVersion
 from zenml.models.tag_models import TagRequestModel
@@ -96,7 +95,7 @@ class TestModelVersion:
             with mock.patch("zenml.model.model_version.logger.info") as logger:
                 mv = mc._get_or_create_model_version()
                 logger.assert_called()
-            assert mv.name == RUNNING_MODEL_VERSION
+            assert mv.name == str(mv.number)
             assert mv.model.name == MODEL_NAME
 
     def test_model_fetch_model_and_version_by_number(self):
@@ -163,17 +162,11 @@ class TestModelVersion:
     def test_recovery_flow(self):
         """Test that model context can recover same version after failure."""
         with ModelContext():
-            mc = ModelVersion(
-                name=MODEL_NAME,
-                with_recovery=True,
-            )
+            mc = ModelVersion(name=MODEL_NAME)
             mv1 = mc._get_or_create_model_version()
             del mc
 
-            mc = ModelVersion(
-                name=MODEL_NAME,
-                with_recovery=True,
-            )
+            mc = ModelVersion(name=MODEL_NAME, version=1)
             mv2 = mc._get_or_create_model_version()
 
             assert mv1.id == mv2.id
