@@ -3662,6 +3662,10 @@ class RestZenStore(BaseZenStore):
             **kwargs,
         )
 
+    # TODO: In the helper functions below here, there are a few ignored
+    #   mypy issues. This is mainly due to AnyResponse being bound to two
+    #   different classes. Once the 'BaseResponseModel's are replaced with
+    #   'BaseResponse's, we need to remove the ignore and reevaluate them.
     def _create_resource(
         self,
         resource: AnyRequestModel,
@@ -3682,7 +3686,9 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
-        return response_model.parse_obj(response_body)
+        return response_model.parse_obj(  # type: ignore[return-value]
+            response_body
+        )
 
     def _create_workspace_scoped_resource(
         self,
@@ -3758,7 +3764,7 @@ class RestZenStore(BaseZenStore):
                 f"response from the {route}{GET_OR_CREATE} endpoint but got "
                 f"{type(was_created)} instead."
             )
-        return response_model.parse_obj(model_json), was_created
+        return response_model.parse_obj(model_json), was_created  # type: ignore[return-value]
 
     def _get_or_create_workspace_scoped_resource(
         self,
@@ -3806,7 +3812,7 @@ class RestZenStore(BaseZenStore):
             The retrieved resource.
         """
         body = self.get(f"{route}/{str(resource_id)}", params=params)
-        return response_model.parse_obj(body)
+        return response_model.parse_obj(body)  # type: ignore[return-value]
 
     def _list_paginated_resources(
         self,
@@ -3841,7 +3847,7 @@ class RestZenStore(BaseZenStore):
         page_of_items: Page[AnyResponseModel] = Page.parse_obj(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
-            response_model.parse_obj(generic_item)
+            response_model.parse_obj(generic_item)  # type: ignore[misc]
             for generic_item in page_of_items.items
         ]
         return page_of_items
@@ -3872,7 +3878,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [response_model.parse_obj(entry) for entry in body]
+        return [response_model.parse_obj(entry) for entry in body]  # type: ignore[misc]
 
     def _update_resource(
         self,
@@ -3899,7 +3905,9 @@ class RestZenStore(BaseZenStore):
             f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
-        return response_model.parse_obj(response_body)
+        return response_model.parse_obj(  # type: ignore[return-value]
+            response_body
+        )
 
     def _delete_resource(
         self, resource_id: Union[str, UUID], route: str
