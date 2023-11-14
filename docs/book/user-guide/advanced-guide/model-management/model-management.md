@@ -4,84 +4,98 @@ description: Managing your models with ZenML.
 
 # Model management
 
-BASIC INTRODUCTION
-- how we conceive of models (what is a model in ZenML?)
+Models are a special type of artifact that are used to represent the outputs of
+a training process along with all metadata associated with that output. In other
+words: models in ZenML are more broadly defined as the weights as well as any
+associated information. Models are a first-class citizen in ZenML and as such
+viewing and using them is unified and centralized in the ZenML API, client as
+well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
 
-unified place to combine pipelines, artifacts, crucial business data along with
-the actual 'technical model'
+A Model captures lineage information and more. Within a Model, different Model
+Versions can be staged. For example, you can rely on your predictions at a
+specific stage, like `Production`, and decide whether the Model Version should
+be promoted based on your business rules during training. Plus, accessing data
+from other Models and their Versions is just as simple.
 
-- what is a model version + stage?
+The Model Control Plane is how you manage your models through this unified
+interface. It allows you to combine the logic of your pipelines, artifacts and
+crucial business data along with the actual 'technical model'.
 
-zenml is already versioning your models, but the new upgrades allow you more
-flexibility in terms of how you refer to the models.
-moreover, with the model control plane you can now also associate them with
-stages and promote them to production, e.g. based on your business rules during training.
+## Model Versions
 
-- what is ZenML doing behind the scenes to help with provenance etc.
-
-zenml was already versioning things, but the model control plane gives you an
-interface that makes sense with how people work with models in the real world.
-it also allows you to link things together in a way that makes sense for your
-business.
+ZenML is already versioning your models and storing some metadata, but the Model
+Control Plane allows you more flexibility in terms of how you refer to and use
+the models. Moreover, you can now also associate them with stages and promote
+them to production, e.g. based on your business rules during training. You also
+have an interface that allows you to link these versions with non-technical
+artifacts and data, e.g. business data, datasets, or even stages in your process
+and workflow.
 
 ## Registering models
 
-### explicit registration using CLI
+Registering models can be done in a number of ways depending on your specific
+needs. You can explicitly register models using the CLI or the Python SDK, or
+you can just allow ZenML to implicitly register your models as part of a
+pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/) you will soon
+have [a dashboard interface that allows you to register
+models](./model-control-plane-dashboard.md).)
+
+
+### Explicit CLI registration
+
+Registering models using the CLI is as straightforward as the following command:
 
 ```bash
-zenml model register iris_logistic_regression --licence=... --description=...
-
-zenml model list
-
-zenml model versions list
+zenml model register iris_logistic_regression --license=... --description=...
 ```
 
-### (explicit registration using the dashboard)
+You can view some of the options of what can be passed into this command by
+running `zenml model register --help` but since you are using the CLI outside a
+pipeline run the arguments you can pass in are limited to non-runtime items. You
+can also associate tags with models at this point, for example, using the
+`--tag` option.
 
-not available yet, but you can learn more about it [here](./model-control-plane-dashboard.md)
+### Explicit dashboard registration
 
-### explicit registration using Python SDK
+The Model Control Plane interface on the dashboard is currently in testing
+and will be released soon to ZenML Cloud users. Documentation for this feature
+will be available [here](./model-control-plane-dashboard.md) once it is released.
+
+### Explicit Python SDK registration
+
+You can register a model using the Python SDK as follows:
 
 ```python
-from zenml.models import Model
+from zenml.models import ModelVersion
 from zenml import Client
 
-MODEL_NAME = "iris_logistic_regression"
-
-client = Client()
-
-model = Model(
-    name=MODEL_NAME,
+Client().create_model(
+    name="iris_logistic_regression",
     license="Copyright (c) ZenML GmbH 2023",
-    description="Logistic regression model trained on the iris dataset.",
+    description="Logistic regression model trained on the Iris dataset.",
     tags=["regression", "sklearn", "iris"],
 )
-
-# Register the model
-client.register_model(model)
-
-# Fetch the model
-model = client.get_model(name=MODEL_NAME)
-print(model.versions)  # See the last 50 versions
 ```
 
-### implicit registration
+### Implicit registration by ZenML
 
-how to specify a zenml model as part of a pipeline run using the ModelConfig object
+The most common use case for registering models is to do so implicitly as part
+of a pipeline run. This is done by specifying a `ModelVersion` object as part of
+the `model_version` argument of the `@pipeline` decorator.
 
-as an example: The Training pipeline orchestrates the training of a model
-object, storing datasets and the model object itself as links within a newly
-created Model Version. This integration is achieved by configuring the pipeline
-within a Model Context using ModelConfig. The name and create_new_model_version
-fields are specified, while other fields remain optional for this task.
+As an example, here we have a training pipeline which orchestrates the training
+of a model object, storing datasets and the model object itself as links within
+a newly created Model Version. This integration is achieved by configuring the
+pipeline within a Model Context using `ModelVersion`. The name and
+`create_new_model_version` fields are specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
-from zenml.model import ModelConfig
+from zenml.model import ModelVersion
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(
+    model_config=ModelVersion(
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
@@ -93,55 +107,8 @@ def train_and_promote_model():
     ...
 ```
 
-In the final step of the pipeline, the new Model Version is promoted to the
-Staging stage.
-
-```python
-from zenml import get_step_context, step, pipeline
-from zenml.enums import ModelStages
-
-@step
-def promote_to_staging():
-    model_config = get_step_context().model_config
-    model_version = model_config._get_model_version()
-    model_version.set_stage(ModelStages.STAGING, force=True)
-
-@pipeline(
-    ...
-)
-def train_and_promote_model():
-    ...
-    promote_to_staging(after=["train_and_evaluate"])
-```
 Running the training pipeline creates a model and a Model Version, all while
 maintaining a connection to the artifacts.
-
-```bash
-# run training pipeline: it will create a model, a 
-# model version and link two datasets and one model 
-# object to it, pipeline run is linked automatically
-python3 train.py
-
-# once training complete
-# new model `demo` created
-zenml model list
-
-# new model version `1` created
-zenml model version list demo
-
-# list generic artifacts - train and test datasets are here
-zenml model version artifacts demo 1
-
-# list model objects - trained classifier here
-zenml model version model_objects demo 1
-
-# list deployments - none, as we didn't link any
-zenml model version deployments demo 1
-
-# list runs - training run linked
-zenml model version runs demo 1
-```
-
 
 ## Model versions
 
@@ -171,6 +138,27 @@ not available yet, but you can learn more about it
 [here](./model-control-plane-dashboard.md)
 
 ### via Python SDK
+
+In the final step of the pipeline, the new Model Version is promoted to the
+Staging stage.
+
+```python
+from zenml import get_step_context, step, pipeline
+from zenml.enums import ModelStages
+
+@step
+def promote_to_staging():
+    model_config = get_step_context().model_config
+    model_version = model_config._get_model_version()
+    model_version.set_stage(ModelStages.STAGING, force=True)
+
+@pipeline(
+    ...
+)
+def train_and_promote_model():
+    ...
+    promote_to_staging(after=["train_and_evaluate"])
+```
 
 ```python
 from zenml import Client
