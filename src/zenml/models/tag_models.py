@@ -22,11 +22,8 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
-from zenml.models import (
-    BaseFilter,
-    BaseRequestModel,
-    BaseResponseModel,
-)
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.v2.base.filter import BaseFilter
 
 # Tags
 
