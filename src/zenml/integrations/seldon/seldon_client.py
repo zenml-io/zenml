@@ -340,7 +340,7 @@ class SeldonDeployment(BaseModel):
                 Deployment.
             spec: A Kubernetes pod spec to use for the Seldon Deployment.
             is_custom_deployment: Whether the Seldon Deployment is a custom or a built-in one.
-
+            serviceAccountName: The name of the service account to associate with the predictive unit container.
         Returns:
             A minimal SeldonDeployment object built from the provided
             parameters.
