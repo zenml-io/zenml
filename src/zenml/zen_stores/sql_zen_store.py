@@ -69,6 +69,7 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -178,6 +179,12 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    TagFilterModel,
+    TagRequestModel,
+    TagResourceRequestModel,
+    TagResourceResponseModel,
+    TagResponseModel,
+    TagUpdateModel,
     TeamFilter,
     TeamRequest,
     TeamResponse,
@@ -250,6 +257,8 @@ from zenml.zen_stores.schemas import (
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
+    TagResourceSchema,
+    TagSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
     UserRoleAssignmentSchema,
@@ -6470,11 +6479,11 @@ class SqlZenStore(BaseZenStore):
     ) -> ModelSchema:
         """Gets a model schema by name or ID.
 
-        This is a helper method that is used in various places to find a run
+        This is a helper method that is used in various places to find a model
         by its name or ID.
 
         Args:
-            model_name_or_id: The name or ID of the run to get.
+            model_name_or_id: The name or ID of the model to get.
             session: The database session to use.
 
         Returns:
@@ -6486,6 +6495,60 @@ class SqlZenStore(BaseZenStore):
             schema_name="model",
             session=session,
         )
+
+    def _get_tag_schema(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> TagSchema:
+        """Gets a tag schema by name or ID.
+
+        This is a helper method that is used in various places to find a tag
+        by its name or ID.
+
+        Args:
+            tag_name_or_id: The name or ID of the tag to get.
+            session: The database session to use.
+
+        Returns:
+            The tag schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=tag_name_or_id,
+            schema_class=TagSchema,
+            schema_name=TagSchema.__tablename__,
+            session=session,
+        )
+
+    def _get_tag_model_schema(
+        self,
+        tag_resource_id: Union[str, UUID],
+        session: Session,
+    ) -> TagResourceSchema:
+        """Gets a tag model schema by name or ID.
+
+        Args:
+            tag_resource_id: The ID of the tag resource relation to get.
+            session: The database session to use.
+
+        Returns:
+            The tag resource schema.
+
+        Raises:
+            KeyError: if entity not found.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.id == tag_resource_id
+                )
+            ).first()
+            if schema is None:
+                raise KeyError(
+                    f"Unable to get {TagResourceSchema.__tablename__} with name or ID "
+                    f"'{tag_resource_id}': No {TagResourceSchema.__tablename__} with this ID found."
+                )
+            return schema
 
     @staticmethod
     def _create_or_reuse_code_reference(
@@ -6558,6 +6621,12 @@ class SqlZenStore(BaseZenStore):
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
+            if model.tags:
+                self._attach_tags_to_resource(
+                    tag_names=model.tags,
+                    resource_id=model_schema.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
             session.commit()
             return ModelSchema.to_model(model_schema)
 
@@ -6654,7 +6723,23 @@ class SqlZenStore(BaseZenStore):
             if not existing_model:
                 raise KeyError(f"Model with ID {model_id} not found.")
 
+            if model_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_update.add_tags,
+                    resource_id=existing_model.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+            model_update.add_tags = None
+            if model_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=model_update.remove_tags,
+                    resource_id=existing_model.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                )
+            model_update.remove_tags = None
+
             existing_model.update(model_update=model_update)
+
             session.add(existing_model)
             session.commit()
 
@@ -7295,4 +7380,265 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_pipeline_run_link)
+            session.commit()
+
+    #################
+    # Tags
+    #################
+
+    def _attach_tags_to_resource(
+        self,
+        tag_names: List[str],
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Creates a tag<>resource link if not present.
+
+        Args:
+            tag_names: The list of names of the tags.
+            resource_id: The id of the resource.
+            resource_type: The type of the resource to create link with.
+        """
+        for tag_name in tag_names:
+            try:
+                tag = self.get_tag(tag_name)
+            except KeyError:
+                tag = self.create_tag(TagRequestModel(name=tag_name))
+            try:
+                self.create_tag_resource(
+                    TagResourceRequestModel(
+                        tag_id=tag.id,
+                        resource_id=resource_id,
+                        resource_type=resource_type,
+                    )
+                )
+            except EntityExistsError:
+                pass
+
+    def _detach_tags_from_resource(
+        self,
+        tag_names: List[str],
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Deletes tag<>resource link if present.
+
+        Args:
+            tag_names: The list of names of the tags.
+            resource_id: The id of the resource.
+            resource_type: The type of the resource to create link with.
+        """
+        from zenml.utils.tag_utils import _get_tag_resource_id
+
+        for tag_name in tag_names:
+            try:
+                tag = self.get_tag(tag_name)
+                self.delete_tag_resource(
+                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    resource_type=resource_type,
+                )
+            except KeyError:
+                pass
+
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the tag to be created.
+
+        Returns:
+            The newly created tag.
+
+        Raises:
+            EntityExistsError: If a tag with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            existing_tag = session.exec(
+                select(TagSchema).where(TagSchema.name == tag.name)
+            ).first()
+            if existing_tag is not None:
+                raise EntityExistsError(
+                    f"Unable to create tag {tag.name}: "
+                    "A tag with this name already exists."
+                )
+
+            tag_schema = TagSchema.from_request(tag)
+            session.add(tag_schema)
+
+            session.commit()
+            return TagSchema.to_model(tag_schema)
+
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to delete.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+        with Session(self.engine) as session:
+            tag = self._get_tag_schema(
+                tag_name_or_id=tag_name_or_id, session=session
+            )
+            if tag is None:
+                raise KeyError(
+                    f"Unable to delete tag with ID `{tag_name_or_id}`: "
+                    f"No tag with this ID found."
+                )
+            session.delete(tag)
+            session.commit()
+
+    def get_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be retrieved.
+
+        Returns:
+            The tag of interest.
+
+        Raises:
+            KeyError: specified ID or name not found.
+        """
+        with Session(self.engine) as session:
+            tag = self._get_tag_schema(
+                tag_name_or_id=tag_name_or_id, session=session
+            )
+            if tag is None:
+                raise KeyError(
+                    f"Unable to get tag with ID `{tag_name_or_id}`: "
+                    f"No tag with this ID found."
+                )
+            return TagSchema.to_model(tag)
+
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get all tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination params.
+
+        Returns:
+            A page of all tags.
+        """
+        with Session(self.engine) as session:
+            query = select(TagSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TagSchema,
+                filter_model=tag_filter_model,
+            )
+
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Update tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
+
+        Returns:
+            An updated tag.
+
+        Raises:
+            KeyError: If the tag is not found
+        """
+        with Session(self.engine) as session:
+            tag = self._get_tag_schema(
+                tag_name_or_id=tag_name_or_id, session=session
+            )
+
+            if not tag:
+                raise KeyError(f"Tag with ID `{tag_name_or_id}` not found.")
+
+            tag.update(update=tag_update_model)
+            session.add(tag)
+            session.commit()
+
+            # Refresh the tag that was just created
+            session.refresh(tag)
+            return tag.to_model()
+
+    ####################
+    # Tags <> resources
+    ####################
+
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequestModel
+    ) -> TagResourceResponseModel:
+        """Creates a new tag resource relationship.
+
+        Args:
+            tag_resource: the tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+
+        Raises:
+            EntityExistsError: If a tag resource relationship with the given configuration.
+        """
+        with Session(self.engine) as session:
+            existing_tag_resource = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.id == tag_resource.tag_resource_id
+                )
+            ).first()
+            if existing_tag_resource is not None:
+                raise EntityExistsError(
+                    f"Unable to create a tag {tag_resource.resource_type.name.lower()} "
+                    f"relationship with IDs `{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
+                    "This relationship already exists."
+                )
+
+            tag_resource_schema = TagResourceSchema.from_request(tag_resource)
+            session.add(tag_resource_schema)
+
+            session.commit()
+            return TagResourceSchema.to_model(tag_resource_schema)
+
+    def delete_tag_resource(
+        self,
+        tag_resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Deletes a tag resource relationship.
+
+        Args:
+            tag_resource_id: id of the tag<>resource to delete.
+            resource_type: The type of the resource to create link with.
+
+        Raises:
+            KeyError: specified ID not found.
+            RuntimeError: on resource type mismatch.
+        """
+        with Session(self.engine) as session:
+            tag_model = self._get_tag_model_schema(
+                tag_resource_id=tag_resource_id,
+                session=session,
+            )
+            if tag_model is None:
+                raise KeyError(
+                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
+                    f"No tag<>resource with these ID found."
+                )
+            if tag_model.resource_type != resource_type.value:
+                raise RuntimeError(
+                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
+                    f"Resource type in request `{resource_type.value}` do not match "
+                    f"resource type defined in database `{tag_model.resource_type}`."
+                )
+            session.delete(tag_model)
             session.commit()

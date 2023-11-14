@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
-
-
-import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import TaggableResourceTypes
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
@@ -37,8 +35,12 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    pass
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -73,7 +75,13 @@ class ModelSchema(NamedSchema, table=True):
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
-    tags: str = Field(sa_column=Column(TEXT, nullable=True))
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            cascade="delete",
+        ),
+    )
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -108,9 +116,6 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethics=model_request.ethics,
-            tags=json.dumps(model_request.tags)
-            if model_request.tags
-            else None,
         )
 
     def to_model(self) -> ModelResponseModel:
@@ -119,6 +124,7 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponseModel`.
         """
+        tags = [t.tag.to_model() for t in self.tags]
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]
             latest_version = self.model_versions[
@@ -140,7 +146,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethics=self.ethics,
-            tags=json.loads(self.tags) if self.tags else None,
+            tags=tags,
             latest_version=latest_version,
         )
 
@@ -156,11 +162,10 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        for field, value in model_update.dict(exclude_unset=True).items():
-            if field == "tags":
-                setattr(self, field, json.dumps(value))
-            else:
-                setattr(self, field, value)
+        for field, value in model_update.dict(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            setattr(self, field, value)
         self.updated = datetime.utcnow()
         return self
 

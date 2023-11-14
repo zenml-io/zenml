@@ -40,12 +40,14 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
 )
 from zenml.models.model_base_model import ModelBaseModel
+from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
-    from zenml.models import ArtifactResponse, PipelineRunResponse
+    from zenml.models.v2.core.artifact import ArtifactResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -629,7 +631,9 @@ class ModelRequestModel(
 ):
     """Model request model."""
 
-    pass
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model",
+    )
 
 
 class ModelResponseModel(
@@ -641,6 +645,9 @@ class ModelResponseModel(
     latest_version: name of latest version, if any
     """
 
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
     latest_version: Optional[str]
 
     @property
@@ -710,4 +717,5 @@ class ModelUpdateModel(BaseModel):
     limitations: Optional[str]
     trade_offs: Optional[str]
     ethics: Optional[str]
-    tags: Optional[List[str]]
+    add_tags: Optional[List[str]]
+    remove_tags: Optional[List[str]]

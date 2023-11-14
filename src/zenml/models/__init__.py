@@ -46,6 +46,14 @@ from zenml.models.model_models import (
     ModelVersionFilterModel,
     ModelVersionUpdateModel,
 )
+from zenml.models.tag_models import (
+    TagFilterModel,
+    TagResourceResponseModel,
+    TagResourceRequestModel,
+    TagResponseModel,
+    TagRequestModel,
+    TagUpdateModel,
+)
 
 # ------------------------------------- V2 -------------------------------------
 
@@ -529,6 +537,12 @@ __all__ = [
     "SecretRequestModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "TagFilterModel",
+    "TagResourceResponseModel",
+    "TagResourceRequestModel",
+    "TagResponseModel",
+    "TagRequestModel",
+    "TagUpdateModel",
     "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model base model to support Model Control Plane feature."""
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -57,7 +57,4 @@ class ModelBaseModel(BaseModel):
     ethics: Optional[str] = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
-    )
-    tags: Optional[List[str]] = Field(
-        title="Tags associated with the model",
     )

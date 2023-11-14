@@ -146,6 +146,10 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunResponse,
+    TagFilterModel,
+    TagRequestModel,
+    TagResponseModel,
+    TagUpdateModel,
     TeamFilter,
     TeamRequest,
     TeamResponse,
@@ -5841,3 +5845,73 @@ class Client(metaclass=ClientMetaClass):
             service_account_id=api_key.service_account.id,
             api_key_name_or_id=api_key.id,
         )
+
+    #############################################
+    # Tags
+    #
+    # Note: tag<>resource are not exposed and
+    # can be accessed via relevant resources
+    #############################################
+
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the Tag to be created.
+
+        Returns:
+            The newly created tag.
+        """
+        return self.zen_store.create_tag(tag=tag)
+
+    def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be deleted.
+        """
+        self.zen_store.delete_tag(tag_name_or_id=tag_name_or_id)
+
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Updates an existing tag.
+
+        Args:
+            tag_name_or_id: name or UUID of the tag to be updated.
+            tag_update_model: the tag to be updated.
+
+        Returns:
+            The updated tag.
+        """
+        return self.zen_store.update_tag(
+            tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
+        )
+
+    def get_tag(self, tag_name_or_id: Union[str, UUID]) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The tag of interest.
+        """
+        return self.zen_store.get_tag(tag_name_or_id=tag_name_or_id)
+
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all tags.
+        """
+        return self.zen_store.list_tags(tag_filter_model=tag_filter_model)
