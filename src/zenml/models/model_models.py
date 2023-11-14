@@ -229,7 +229,7 @@ class ModelVersionResponseModel(
             limitations=self.model.limitations,
             trade_offs=self.model.trade_offs,
             ethics=self.model.ethics,
-            tags=self.model.tags,
+            tags=[t.name for t in self.model.tags],
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
         )
