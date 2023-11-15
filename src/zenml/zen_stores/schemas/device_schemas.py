@@ -200,6 +200,10 @@ class OAuthDeviceSchema(BaseSchema, table=True):
     def to_model(self, hydrate: bool = False) -> OAuthDeviceResponse:
         """Convert a device schema to a device response model.
 
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
+
         Returns:
             The converted device response model.
         """
