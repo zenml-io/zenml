@@ -4036,8 +4036,8 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.deployment_id == pipeline_run.deployment
                 )
                 .where(
-                    PipelineRunSchema.orchestrator_run_id.is_(None)
-                )  # type:ignore[union-attr]
+                    PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                )
             ).first()
 
             if not run_schema:
@@ -4112,6 +4112,10 @@ class SqlZenStore(BaseZenStore):
                 True,
             )
         except KeyError:
+            # No placeholder run available for this run -> We now try to create
+            # a new run in the database, which will fail if a run with the same
+            # orchestrator_run_id and deployment_id already exists. In that case
+            # we fetch and return that run.
             pass
 
         # We want to have the 'create' statement in the try block since running
