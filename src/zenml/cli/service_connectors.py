@@ -475,6 +475,9 @@ def register_service_connector(
         show_secrets: Show security sensitive configuration attributes in
             the terminal.
         auto_configure: Auto configure the service connector.
+
+    Raises:
+        TypeError: If the connector_model does not have the correct type.
     """
     from rich.markdown import Markdown
 
