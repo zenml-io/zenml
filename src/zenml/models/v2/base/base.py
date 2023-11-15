@@ -14,12 +14,13 @@
 """Base model definitions."""
 
 from datetime import datetime
-from typing import Any, ClassVar, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import Field, SecretStr
 from pydantic.generics import GenericModel
 
+from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
 from zenml.exceptions import HydrationError
 from zenml.logger import get_logger
@@ -30,26 +31,13 @@ logger = get_logger(__name__)
 # -------------------- Base Model --------------------
 
 
-class BaseZenModel(YAMLSerializationMixin):
+class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides
     functionality for tracking analytics events and proper encoding of
     SecretStr values.
     """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = []
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Get the analytics metadata for the model.
-
-        Returns:
-            Dict of analytics metadata.
-        """
-        metadata = {}
-        for field_name in self.ANALYTICS_FIELDS:
-            metadata[field_name] = getattr(self, field_name, None)
-        return metadata
 
     class Config:
         """Pydantic configuration class."""
