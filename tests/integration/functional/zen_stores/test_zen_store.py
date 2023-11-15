@@ -240,13 +240,8 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         # Something in the Model should have changed
         assert updated_entity.json() != created_entity.json()
 
-        # Test that the update method returns a non-hydrated model, if applicable
+        # Test that the update method returns a hydrated model, if applicable
         if hasattr(updated_entity, "metadata"):
-            assert updated_entity.metadata is None
-
-            # Try to hydrate the entity
-            updated_entity.get_metadata()
-
             assert updated_entity.metadata is not None
 
     # Cleanup
