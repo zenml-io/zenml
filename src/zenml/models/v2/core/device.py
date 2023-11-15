@@ -174,11 +174,6 @@ class OAuthDeviceResponseBody(UserScopedResponseBody):
     status: OAuthDeviceStatus = Field(
         description="The status of the OAuth2 device."
     )
-
-
-class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
-    """Response metadata for OAuth2 devices."""
-
     os: Optional[str] = Field(
         default=None,
         description="The operating system of the device used for "
@@ -192,6 +187,11 @@ class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
         default=None,
         description="The hostname of the device used for authentication.",
     )
+
+
+class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for OAuth2 devices."""
+
     python_version: Optional[str] = Field(
         default=None,
         description="The Python version of the device used for authentication.",
@@ -281,7 +281,7 @@ class OAuthDeviceResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().os
+        return self.get_body().os
 
     @property
     def ip_address(self) -> Optional[str]:
@@ -290,7 +290,7 @@ class OAuthDeviceResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().ip_address
+        return self.get_body().ip_address
 
     @property
     def hostname(self) -> Optional[str]:
@@ -299,7 +299,7 @@ class OAuthDeviceResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().hostname
+        return self.get_body().hostname
 
     @property
     def python_version(self) -> Optional[str]:

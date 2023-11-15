@@ -210,9 +210,6 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         metadata = None
         if hydrate:
             metadata = OAuthDeviceResponseMetadata(
-                os=self.os,
-                ip_address=self.ip_address,
-                hostname=self.hostname,
                 python_version=self.python_version,
                 zenml_version=self.zenml_version,
                 city=self.city,
@@ -230,6 +227,9 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             expires=self.expires,
             trusted_device=self.trusted_device,
             status=self.status,
+            os=self.os,
+            ip_address=self.ip_address,
+            hostname=self.hostname,
         )
         return OAuthDeviceResponse(
             id=self.id,
