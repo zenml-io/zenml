@@ -64,7 +64,6 @@ def promote_with_metric_compare(
         name=latest_version.name, version=target_env
     )
 
-    latest_version_number = latest_version.number
     current_version_number = current_version.number
 
     if current_version_number is None:
