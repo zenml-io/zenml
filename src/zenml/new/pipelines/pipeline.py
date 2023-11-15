@@ -638,7 +638,7 @@ class Pipeline:
             stack = Client().active_stack
             stack.validate()
 
-            self.get_new_version_requests(deployment)
+            self.prepare_model_versions(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -829,16 +829,13 @@ class Pipeline:
         else:
             other_model_versions.add(model_version)
 
-    def get_new_version_requests(
+    def prepare_model_versions(
         self, deployment: "PipelineDeploymentBaseModel"
-    ) -> Dict[Tuple[str, Optional[str]], NewModelVersionRequest]:
-        """Get the running versions of the models that are used in the pipeline run.
+    ) -> None:
+        """Prepare nonexisting model versions and validate existing that are used in the pipeline run.
 
         Args:
             deployment: The pipeline deployment configuration.
-
-        Returns:
-            A dict of new model version request objects.
         """
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
@@ -878,8 +875,6 @@ class Pipeline:
 
         for other_model_version in other_model_versions:
             other_model_version._validate_config_in_runtime()
-
-        return new_versions_requested
 
     def _validate_new_version_requests(
         self,
