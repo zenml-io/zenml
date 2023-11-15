@@ -42,7 +42,9 @@ def log_artifact_metadata(
     try:
         step_context = get_step_context()
     except StepContextError:
-        raise RuntimeError("Cannot log artifact metadata outside of a step.")
+        raise RuntimeError(
+            "Cannot log data artifact metadata outside of a step."
+        )
 
     try:
         step_context.add_output_metadata(output_name=output_name, **kwargs)
@@ -50,17 +52,17 @@ def log_artifact_metadata(
         raise ValueError(e)
 
 
-def log_model_object_metadata(
+def log_model_artifact_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
     metrics: Optional[Dict[str, MetadataType]] = None,
     hyperparameters: Optional[Dict[str, MetadataType]] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for a model.
+    """Log metadata for a model artifact.
 
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
+        output_name: The output name of the model artifact to log metadata for. Can
             be omitted if there is only one output artifact.
         description: A description of the model.
         metrics: The metrics to log.
@@ -79,7 +81,7 @@ def log_model_object_metadata(
     )
 
 
-def log_deployment_metadata(
+def log_endpoint_artifact_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
     predict_url: Optional[str] = None,
@@ -88,16 +90,16 @@ def log_deployment_metadata(
     deployer_ui_url: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for a deployment.
+    """Log metadata for an endpoint artifact.
 
     Args:
-        output_name: The output name of the artifact to log metadata for. Can
+        output_name: The output name of the endpoint artifact to log metadata for. Can
             be omitted if there is only one output artifact.
-        description: A description of the deployment.
-        predict_url: The predict URL of the deployment.
-        explain_url: The explain URL of the deployment.
-        healthcheck_url: The healthcheck URL of the deployment.
-        deployer_ui_url: The deployer UI URL of the deployment.
+        description: A description of the endpoint artifact.
+        predict_url: The predict URL of the endpoint artifact.
+        explain_url: The explain URL of the endpoint artifact.
+        healthcheck_url: The healthcheck URL of the endpoint artifact.
+        deployer_ui_url: The deployer UI URL of the endpoint artifact.
         **kwargs: Other metadata to log.
     """
     if description:

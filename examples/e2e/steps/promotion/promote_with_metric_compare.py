@@ -15,14 +15,11 @@
 # limitations under the License.
 #
 
-from utils import (
-    get_model_registry_version,
-    get_model_versions,
-    promote_in_model_registry,
-)
+from utils import promote_in_model_registry
 
 from zenml import get_step_context, step
 from zenml.logger import get_logger
+from zenml.model import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -62,9 +59,14 @@ def promote_with_metric_compare(
     should_promote = True
 
     # Get model version numbers from Model Control Plane
-    latest_version, current_version = get_model_versions(target_env)
+    latest_version = get_step_context().model_version
+    current_version = ModelVersion(
+        name=latest_version.name, version=target_env
+    )
 
-    if latest_version.number == current_version.number:
+    current_version_number = current_version.number
+
+    if current_version_number is None:
         logger.info("No current model version found - promoting latest")
     else:
         logger.info(
@@ -81,21 +83,41 @@ def promote_with_metric_compare(
             )
             should_promote = False
 
-    promoted_version = get_model_registry_version(current_version)
     if should_promote:
         # Promote in Model Control Plane
-        model_version = get_step_context().model_config._get_model_version()
+        model_version = get_step_context().model_version
         model_version.set_stage(stage=target_env, force=True)
         logger.info(f"Current model version was promoted to '{target_env}'.")
 
         # Promote in Model Registry
+        latest_version_model_registry_number = (
+            latest_version.get_model_artifact("model")
+            .metadata["model_registry_version"]
+            .value
+        )
+        if current_version_number is None:
+            current_version_model_registry_number = (
+                latest_version_model_registry_number
+            )
+        else:
+            current_version_model_registry_number = (
+                current_version.get_model_artifact("model")
+                .metadata["model_registry_version"]
+                .value
+            )
         promote_in_model_registry(
-            latest_version=get_model_registry_version(latest_version),
-            current_version=get_model_registry_version(current_version),
+            latest_version=latest_version_model_registry_number,
+            current_version=current_version_model_registry_number,
             model_name=mlflow_model_name,
             target_env=target_env.capitalize(),
         )
-        promoted_version = get_model_registry_version(latest_version)
+        promoted_version = latest_version_model_registry_number
+    else:
+        promoted_version = (
+            current_version.get_model_artifact("model")
+            .metadata["model_registry_version"]
+            .value
+        )
 
     logger.info(
         f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"

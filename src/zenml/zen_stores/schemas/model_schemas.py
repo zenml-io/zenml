@@ -260,41 +260,41 @@ class ModelVersionSchema(NamedSchema, table=True):
             number=self.number,
             description=self.description,
             stage=self.stage,
-            model_object_ids={
+            model_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
                     for al2 in self.artifact_links
-                    if al2.is_model_object
+                    if al2.is_model_artifact
                     and al1.name == al2.name
                     and al1.step_name == al2.step_name
                     and al1.pipeline_name == al2.pipeline_name
                 }
                 for al1 in self.artifact_links
-                if al1.is_model_object
+                if al1.is_model_artifact
             },
-            deployment_ids={
+            endpoint_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
                     for al2 in self.artifact_links
-                    if al2.is_deployment
+                    if al2.is_endpoint_artifact
                     and al1.name == al2.name
                     and al1.step_name == al2.step_name
                     and al1.pipeline_name == al2.pipeline_name
                 }
                 for al1 in self.artifact_links
-                if al1.is_deployment
+                if al1.is_endpoint_artifact
             },
-            artifact_object_ids={
+            data_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
                     for al2 in self.artifact_links
-                    if not (al2.is_deployment or al2.is_model_object)
+                    if not (al2.is_endpoint_artifact or al2.is_model_artifact)
                     and al1.name == al2.name
                     and al1.step_name == al2.step_name
                     and al1.pipeline_name == al2.pipeline_name
                 }
                 for al1 in self.artifact_links
-                if not (al1.is_deployment or al1.is_model_object)
+                if not (al1.is_endpoint_artifact or al1.is_model_artifact)
             },
             pipeline_run_ids={
                 pr.name: pr.pipeline_run_id for pr in self.pipeline_run_links
@@ -384,8 +384,10 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
         back_populates="model_versions_artifacts_links"
     )
 
-    is_model_object: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_deployment: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
+    is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
+    is_endpoint_artifact: bool = Field(
+        sa_column=Column(BOOLEAN, nullable=True)
+    )
     version: int = Field(sa_column=Column(INTEGER, nullable=False))
     pipeline_name: str = Field(sa_column=Column(TEXT, nullable=False))
     step_name: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -414,8 +416,8 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
             artifact_id=model_version_artifact_request.artifact,
-            is_model_object=model_version_artifact_request.is_model_object,
-            is_deployment=model_version_artifact_request.is_deployment,
+            is_model_artifact=model_version_artifact_request.is_model_artifact,
+            is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
             version=version,
         )
 
@@ -437,8 +439,8 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             model=self.model_id,
             model_version=self.model_version_id,
             artifact=self.artifact_id,
-            is_model_object=self.is_model_object,
-            is_deployment=self.is_deployment,
+            is_model_artifact=self.is_model_artifact,
+            is_endpoint_artifact=self.is_endpoint_artifact,
             link_version=self.version,
         )
 

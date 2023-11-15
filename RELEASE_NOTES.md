@@ -1,4 +1,17 @@
 <!-- markdown-link-check-disable -->
+# 0.47.0
+This release fixes a bug that was introduced in 0.46.1 where the default user 
+was made inaccessible and was inadvertently duplicated. This release rescues 
+the original user and renames the duplicate.
+
+## What's Changed
+* Create tags table by @avishniakov in https://github.com/zenml-io/zenml/pull/2036
+* Bring dashboard back to the release by @avishniakov in https://github.com/zenml-io/zenml/pull/2046
+* Fix duplicate default user by @stefannica in https://github.com/zenml-io/zenml/pull/2045
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.46.1...tmp
+
 # 0.46.1
 
 The 0.46.1 release introduces support for Service Accounts and API Keys that

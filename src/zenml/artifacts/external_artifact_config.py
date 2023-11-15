@@ -25,7 +25,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelVersion
     from zenml.models.artifact_models import ArtifactResponseModel
 
 
@@ -78,12 +78,12 @@ class ExternalArtifactConfiguration(BaseModel):
         return response
 
     def _get_artifact_from_model(
-        self, model_config: Optional["ModelConfig"] = None
+        self, model_version: Optional["ModelVersion"] = None
     ) -> "ArtifactResponseModel":
         """Get artifact from Model Control Plane.
 
         Args:
-            model_config: The model containing the model version.
+            model_version: The model containing the model version.
 
         Returns:
             The fetched Artifact.
@@ -91,34 +91,33 @@ class ExternalArtifactConfiguration(BaseModel):
         Raises:
             RuntimeError: If artifact was not found in model version
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
+                model version is missing in @step and @pipeline.
         """
         if self.model_name is None:
-            if model_config is None:
+            if model_version is None:
                 raise RuntimeError(
                     "ExternalArtifact initiated with `model_artifact_name`, "
-                    "but no model config was provided and missing in @step or "
+                    "but no model version was provided and missing in @step or "
                     "@pipeline definitions."
                 )
-            self.model_name = model_config.name
-            self.model_version = model_config.version
+            self.model_name = model_version.name
+            self.model_version = model_version.version
         if (
-            model_config is None
-            or self.model_name != model_config.name
-            or self.model_version != model_config.version
+            model_version is None
+            or self.model_name != model_version.name
+            or self.model_version != model_version.version
         ):
-            from zenml.model.model_config import ModelConfig
+            from zenml.model.model_version import ModelVersion
 
-            model_config = ModelConfig(
+            model_version = ModelVersion(
                 name=self.model_name,
                 version=self.model_version,
             )
-        model_version = model_config.get_or_create_model_version()
 
         for artifact_getter in [
-            model_version.get_artifact_object,
-            model_version.get_model_object,
-            model_version.get_deployment,
+            model_version.get_data_artifact,
+            model_version.get_model_artifact,
+            model_version.get_endpoint_artifact,
         ]:
             response = artifact_getter(
                 name=self.model_artifact_name,  # type: ignore [arg-type]
@@ -139,7 +138,7 @@ class ExternalArtifactConfiguration(BaseModel):
         return response
 
     def get_artifact_id(
-        self, model_config: Optional["ModelConfig"] = None
+        self, model_version: Optional["ModelVersion"] = None
     ) -> UUID:
         """Get the artifact.
 
@@ -151,7 +150,7 @@ class ExternalArtifactConfiguration(BaseModel):
             be searched in the artifact store by the referenced model.
 
         Args:
-            model_config: The model config of the step (from step or pipeline).
+            model_version: The model version of the step (from step or pipeline).
 
         Returns:
             The artifact ID.
@@ -161,7 +160,7 @@ class ExternalArtifactConfiguration(BaseModel):
                 is not the same as the one in the active stack.
             RuntimeError: If the URI of the artifact already exists.
             RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
+                model version is missing in @step and @pipeline.
             RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
                 artifact name group is provided when creating an external artifact.
         """
@@ -174,7 +173,7 @@ class ExternalArtifactConfiguration(BaseModel):
         elif self.pipeline_name and self.artifact_name:
             response = self._get_artifact_from_pipeline_run()
         elif self.model_artifact_name:
-            response = self._get_artifact_from_model(model_config)
+            response = self._get_artifact_from_model(model_version)
         else:
             raise RuntimeError(
                 "Either an ID, pipeline/artifact name pair or "

@@ -19,7 +19,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelVersion
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.utils import pydantic_utils
 
@@ -39,4 +39,4 @@ class PipelineRunConfiguration(
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-    model_config: Optional[ModelConfig] = None
+    model_version: Optional[ModelVersion] = None
