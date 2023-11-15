@@ -32,7 +32,6 @@ from zenml.integrations.label_studio.label_studio_utils import (
     is_s3_url,
 )
 from zenml.io import fileio
-from zenml.steps import step
 from zenml.utils import io_utils
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
