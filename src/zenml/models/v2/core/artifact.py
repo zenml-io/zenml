@@ -175,7 +175,9 @@ class ArtifactResponse(
         return self.get_metadata().producer_step_run_id
 
     @property
-    def visualizations(self) -> Optional[List["ArtifactVisualizationResponse"]]:
+    def visualizations(
+        self,
+    ) -> Optional[List["ArtifactVisualizationResponse"]]:
         """The `visualizations` property.
 
         Returns:
