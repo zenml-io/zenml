@@ -122,9 +122,6 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Raises:
             NotImplementedError: in case the method is not implemented.
-
-        Returns:
-            an instance of the same entity with the metadata field attached.
         """
         raise NotImplementedError(
             "Please implement a `get_hydrated_version` method before "
