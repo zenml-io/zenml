@@ -5532,7 +5532,7 @@ class Client(metaclass=ClientMetaClass):
                 model_version_filter_model=ModelVersionFilterModel(
                     number=model_version_name_or_number_or_id
                 ),
-            )
+            ).items
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
                 model_versions = [
@@ -5549,14 +5549,14 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilterModel(
                         stage=model_version_name_or_number_or_id
                     ),
-                )
+                ).items
             else:
                 model_versions = self.list_model_versions(
                     model_name_or_id=model_name_or_id,
                     model_version_filter_model=ModelVersionFilterModel(
                         name=model_version_name_or_number_or_id
                     ),
-                )
+                ).items
         else:
             raise RuntimeError(
                 f"The model version identifier "
