@@ -160,30 +160,15 @@ class APIKeySchema(NamedSchema, table=True):
         Returns:
             The created APIKeyInternalResponse.
         """
-        metadata = None
-
-        if hydrate:
-            metadata = APIKeyResponseMetadata(
-                description=self.description,
-                retain_period_minutes=self.retain_period,
-                last_login=self.last_login,
-                last_rotated=self.last_rotated,
-            )
-
-        body = APIKeyResponseBody(
-            created=self.created,
-            updated=self.updated,
-            active=self.active,
-            service_account=self.service_account.to_service_account_model(),
-            key=self.key,
-        )
+        model = self.to_model(hydrate=hydrate)
+        model.get_body().key = self.key
 
         return APIKeyInternalResponse(
             id=self.id,
             name=self.name,
             previous_key=self.previous_key,
-            body=body,
-            metadata=metadata,
+            body=model.body,
+            metadata=model.metadata,
         )
 
     def update(self, update: APIKeyUpdate) -> "APIKeySchema":

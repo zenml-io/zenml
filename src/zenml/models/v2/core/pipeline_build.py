@@ -210,7 +210,11 @@ class PipelineBuildResponse(
     """Response model for pipeline builds."""
 
     def get_hydrated_version(self) -> "PipelineBuildResponse":
-        """Return the hydrated version of this pipeline build."""
+        """Return the hydrated version of this pipeline build.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_build(self.id)
@@ -312,42 +316,74 @@ class PipelineBuildResponse(
     # Body and metadata properties
     @property
     def pipeline(self) -> Optional["PipelineResponse"]:
-        """The `pipeline` property."""
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline
 
     @property
     def stack(self) -> Optional["StackResponse"]:
-        """The `stack` property."""
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().stack
 
     @property
     def images(self) -> Dict[str, "BuildItem"]:
-        """The `images` property."""
+        """The `images` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().images
 
     @property
     def zenml_version(self) -> Optional[str]:
-        """The `zenml_version` property."""
+        """The `zenml_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().zenml_version
 
     @property
     def python_version(self) -> Optional[str]:
-        """The `python_version` property."""
+        """The `python_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().python_version
 
     @property
     def checksum(self) -> Optional[str]:
-        """The `checksum` property."""
+        """The `checksum` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().checksum
 
     @property
     def is_local(self) -> bool:
-        """The `is_local` property."""
+        """The `is_local` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().is_local
 
     @property
     def contains_code(self) -> bool:
-        """The `contains_code` property."""
+        """The `contains_code` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().contains_code
 
 

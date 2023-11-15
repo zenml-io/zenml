@@ -218,7 +218,11 @@ class StepRunResponse(
     )
 
     def get_hydrated_version(self) -> "StepRunResponse":
-        """Get the hydrated version of this step run."""
+        """Get the hydrated version of this step run.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_run_step(self.id)
@@ -265,87 +269,155 @@ class StepRunResponse(
     # Body and metadata properties
     @property
     def status(self) -> ExecutionStatus:
-        """The `status` property."""
+        """The `status` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().status
 
     @property
     def inputs(self) -> Dict[str, "ArtifactResponse"]:
-        """The `inputs` property."""
+        """The `inputs` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().inputs
 
     @property
     def outputs(self) -> Dict[str, "ArtifactResponse"]:
-        """The `outputs` property."""
+        """The `outputs` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().outputs
 
     @property
     def config(self) -> "StepConfiguration":
-        """The `config` property."""
+        """The `config` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().config
 
     @property
     def spec(self) -> "StepSpec":
-        """The `spec` property."""
+        """The `spec` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().spec
 
     @property
     def cache_key(self) -> Optional[str]:
-        """The `cache_key` property."""
+        """The `cache_key` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().cache_key
 
     @property
     def code_hash(self) -> Optional[str]:
-        """The `code_hash` property."""
+        """The `code_hash` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().code_hash
 
     @property
     def docstring(self) -> Optional[str]:
-        """The `docstring` property."""
+        """The `docstring` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().docstring
 
     @property
     def source_code(self) -> Optional[str]:
-        """The `source_code` property."""
+        """The `source_code` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().source_code
 
     @property
     def start_time(self) -> Optional[datetime]:
-        """The `start_time` property."""
+        """The `start_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().start_time
 
     @property
     def end_time(self) -> Optional[datetime]:
-        """The `end_time` property."""
+        """The `end_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().end_time
 
     @property
     def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property."""
+        """The `logs` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().logs
 
     @property
     def deployment_id(self) -> UUID:
-        """The `deployment_id` property."""
+        """The `deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().deployment_id
 
     @property
     def pipeline_run_id(self) -> UUID:
-        """The `pipeline_run_id` property."""
+        """The `pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline_run_id
 
     @property
     def original_step_run_id(self) -> Optional[UUID]:
-        """The `original_step_run_id` property."""
+        """The `original_step_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().original_step_run_id
 
     @property
     def parent_step_ids(self) -> List[UUID]:
-        """The `parent_step_ids` property."""
+        """The `parent_step_ids` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().parent_step_ids
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
-        """The `run_metadata` property."""
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().run_metadata
 
 

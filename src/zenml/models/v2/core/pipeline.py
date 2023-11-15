@@ -109,7 +109,11 @@ class PipelineResponse(
     )
 
     def get_hydrated_version(self) -> "PipelineResponse":
-        """Get the hydrated version of this pipeline."""
+        """Get the hydrated version of this pipeline.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_pipeline(self.id)
@@ -190,27 +194,47 @@ class PipelineResponse(
     # Body and metadata properties
     @property
     def status(self) -> Optional[List[ExecutionStatus]]:
-        """The `status` property."""
+        """The `status` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().status
 
     @property
     def version(self) -> str:
-        """The `version` property."""
+        """The `version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().version
 
     @property
     def spec(self) -> PipelineSpec:
-        """The `spec` property."""
+        """The `spec` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().spec
 
     @property
     def version_hash(self) -> str:
-        """The `version_hash` property."""
+        """The `version_hash` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().version_hash
 
     @property
     def docstring(self) -> Optional[str]:
-        """The `docstring` property."""
+        """The `docstring` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().docstring
 
 

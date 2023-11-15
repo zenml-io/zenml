@@ -285,7 +285,11 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
     )
 
     def get_hydrated_version(self) -> "UserResponse":
-        """Get the hydrated version of this user."""
+        """Get the hydrated version of this user.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_user(self.id)
@@ -293,52 +297,92 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
     # Body and metadata properties
     @property
     def full_name(self) -> str:
-        """The `full_name` property."""
+        """The `full_name` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().full_name
 
     @property
     def email(self) -> Optional[str]:
-        """The `email` property."""
+        """The `email` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().email
 
     @property
     def email_opted_in(self) -> Optional[bool]:
-        """The `email_opted_in` property."""
+        """The `email_opted_in` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().email_opted_in
 
     @property
     def active(self) -> bool:
-        """The `active` property."""
+        """The `active` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().active
 
     @property
     def activation_token(self) -> Optional[str]:
-        """The `activation_token` property."""
+        """The `activation_token` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().activation_token
 
     @property
     def hub_token(self) -> Optional[str]:
-        """The `hub_token` property."""
+        """The `hub_token` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().hub_token
 
     @property
     def external_user_id(self) -> Optional[UUID]:
-        """The `external_user_id` property."""
+        """The `external_user_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().external_user_id
 
     @property
     def roles(self) -> Optional[List["RoleResponse"]]:
-        """The `roles` property."""
+        """The `roles` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().roles
 
     @property
     def teams(self) -> Optional[List["TeamResponse"]]:
-        """The `teams` property."""
+        """The `teams` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().teams
 
     @property
     def is_service_account(self) -> bool:
-        """The `is_service_account` property."""
+        """The `is_service_account` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().is_service_account
 
     # Helper methods

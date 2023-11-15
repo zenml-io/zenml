@@ -130,7 +130,11 @@ class ScheduleResponse(
     )
 
     def get_hydrated_version(self) -> "ScheduleResponse":
-        """Get the hydrated version of this schedule."""
+        """Get the hydrated version of this schedule.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_schedule(self.id)
@@ -163,42 +167,74 @@ class ScheduleResponse(
     # Body and metadata properties
     @property
     def active(self) -> bool:
-        """The `active` property."""
+        """The `active` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().active
 
     @property
     def cron_expression(self) -> Optional[str]:
-        """The `cron_expression` property."""
+        """The `cron_expression` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().cron_expression
 
     @property
     def start_time(self) -> Optional[datetime.datetime]:
-        """The `start_time` property."""
+        """The `start_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().start_time
 
     @property
     def end_time(self) -> Optional[datetime.datetime]:
-        """The `end_time` property."""
+        """The `end_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().end_time
 
     @property
     def interval_second(self) -> Optional[datetime.timedelta]:
-        """The `interval_second` property."""
+        """The `interval_second` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().interval_second
 
     @property
     def catchup(self) -> bool:
-        """The `catchup` property."""
+        """The `catchup` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().catchup
 
     @property
     def orchestrator_id(self) -> Optional[UUID]:
-        """The `orchestrator_id` property."""
+        """The `orchestrator_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().orchestrator_id
 
     @property
     def pipeline_id(self) -> Optional[UUID]:
-        """The `pipeline_id` property."""
+        """The `pipeline_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline_id
 
 

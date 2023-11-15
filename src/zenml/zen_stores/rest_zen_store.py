@@ -743,9 +743,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The artifact visualization.
-
-        Raises:
-            KeyError: if the code reference doesn't exist.
         """
         return self._get_resource(
             resource_id=artifact_visualization_id,
@@ -768,9 +765,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The code reference.
-
-        Raises:
-            KeyError: if the code reference doesn't exist.
         """
         return self._get_resource(
             resource_id=code_reference_id,
@@ -1067,9 +1061,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The logs.
-
-        Raises:
-            KeyError: if the logs doesn't exist.
         """
         return self._get_resource(
             resource_id=logs_id,
@@ -1557,9 +1548,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The run metadata.
-
-        Raises:
-            KeyError: if the run metadata doesn't exist.
         """
         return self._get_resource(
             resource_id=run_metadata_id,

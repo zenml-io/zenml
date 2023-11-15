@@ -78,7 +78,11 @@ class TeamRoleAssignmentResponse(
     """Response model for team role assignments."""
 
     def get_hydrated_version(self) -> "TeamRoleAssignmentResponse":
-        """Get the hydrated version of the team role assignment."""
+        """Get the hydrated version of the team role assignment.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_team_role_assignment(self.id)
@@ -86,17 +90,29 @@ class TeamRoleAssignmentResponse(
     # Body and metadata properties
     @property
     def workspace(self) -> Optional["WorkspaceResponse"]:
-        """The `workspace` property."""
+        """The `workspace` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().workspace
 
     @property
     def team(self) -> Optional["TeamResponse"]:
-        """The `team` property."""
+        """The `team` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().team
 
     @property
     def role(self) -> Optional["RoleResponse"]:
-        """The `role` property."""
+        """The `role` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().role
 
 

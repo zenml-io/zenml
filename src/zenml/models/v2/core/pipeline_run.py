@@ -192,7 +192,11 @@ class PipelineRunResponse(
     )
 
     def get_hydrated_version(self) -> "PipelineRunResponse":
-        """Get the hydrated version of this pipeline run."""
+        """Get the hydrated version of this pipeline run.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_run(self.id)
@@ -223,67 +227,119 @@ class PipelineRunResponse(
     # Body and metadata properties
     @property
     def status(self) -> ExecutionStatus:
-        """The `status` property."""
+        """The `status` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().status
 
     @property
     def stack(self) -> Optional["StackResponse"]:
-        """The `stack` property."""
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().stack
 
     @property
     def pipeline(self) -> Optional["PipelineResponse"]:
-        """The `pipeline` property."""
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().pipeline
 
     @property
     def build(self) -> Optional["PipelineBuildResponse"]:
-        """The `build` property."""
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().build
 
     @property
     def schedule(self) -> Optional["ScheduleResponse"]:
-        """The `schedule` property."""
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().schedule
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
-        """The `run_metadata` property."""
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().run_metadata
 
     @property
     def steps(self) -> Dict[str, "StepRunResponse"]:
-        """The `steps` property."""
+        """The `steps` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().steps
 
     @property
     def config(self) -> PipelineConfiguration:
-        """The `config` property."""
+        """The `config` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().config
 
     @property
     def start_time(self) -> Optional[datetime]:
-        """The `start_time` property."""
+        """The `start_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().start_time
 
     @property
     def end_time(self) -> Optional[datetime]:
-        """The `end_time` property."""
+        """The `end_time` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().end_time
 
     @property
     def client_environment(self) -> Dict[str, str]:
-        """The `client_environment` property."""
+        """The `client_environment` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().client_environment
 
     @property
     def orchestrator_environment(self) -> Dict[str, str]:
-        """The `orchestrator_environment` property."""
+        """The `orchestrator_environment` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().orchestrator_environment
 
     @property
     def orchestrator_run_id(self) -> Optional[str]:
-        """The `orchestrator_run_id` property."""
+        """The `orchestrator_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().orchestrator_run_id
 
 

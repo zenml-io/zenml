@@ -76,7 +76,11 @@ class TeamResponse(BaseResponse[TeamResponseBody, TeamResponseMetadata]):
     )
 
     def get_hydrated_version(self) -> "TeamResponse":
-        """Get the hydrated version of this team."""
+        """Get the hydrated version of this team.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_team(self.id)
@@ -109,7 +113,11 @@ class TeamResponse(BaseResponse[TeamResponseBody, TeamResponseMetadata]):
     # Body and metadata properties
     @property
     def users(self) -> List["UserResponse"]:
-        """The `users` property."""
+        """The `users` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().users
 
 

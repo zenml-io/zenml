@@ -74,7 +74,11 @@ class CodeReferenceResponse(
     """Response model for code references."""
 
     def get_hydrated_version(self) -> "CodeReferenceResponse":
-        """Get the hydrated version of this code reference."""
+        """Get the hydrated version of this code reference.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_code_reference(self.id)
@@ -82,17 +86,29 @@ class CodeReferenceResponse(
     # Body and metadata properties
     @property
     def commit(self) -> str:
-        """The `commit` property."""
+        """The `commit` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().commit
 
     @property
     def subdirectory(self) -> str:
-        """The `subdirectory` property."""
+        """The `subdirectory` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().subdirectory
 
     @property
     def code_repository(self) -> "CodeRepositoryResponse":
-        """The `code_repository` property."""
+        """The `code_repository` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().code_repository
 
 

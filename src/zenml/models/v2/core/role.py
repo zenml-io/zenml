@@ -69,7 +69,11 @@ class RoleResponse(BaseResponse[RoleResponseBody, RoleResponseMetadata]):
     )
 
     def get_hydrated_version(self) -> "RoleResponse":
-        """Get the hydrated version of this role."""
+        """Get the hydrated version of this role.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_role(self.id)
@@ -77,7 +81,11 @@ class RoleResponse(BaseResponse[RoleResponseBody, RoleResponseMetadata]):
     # Body and metadata properties
     @property
     def permissions(self) -> Set[PermissionType]:
-        """The `permissions` property."""
+        """The `permissions` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().permissions
 
 

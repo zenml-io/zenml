@@ -196,7 +196,11 @@ class FlavorResponse(BaseResponse[FlavorResponseBody, FlavorResponseMetadata]):
     )
 
     def get_hydrated_version(self) -> "FlavorResponse":
-        """Get the hydrated version of the flavor."""
+        """Get the hydrated version of the flavor.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_flavor(self.id)
@@ -227,67 +231,119 @@ class FlavorResponse(BaseResponse[FlavorResponseBody, FlavorResponseMetadata]):
     # Body and metadata properties
     @property
     def user(self) -> Union["UserResponse", None]:
-        """The `user` property."""
+        """The `user` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().user
 
     @property
     def type(self) -> StackComponentType:
-        """The `type` property."""
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().type
 
     @property
     def integration(self) -> Optional[str]:
-        """The `integration` property."""
+        """The `integration` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().integration
 
     @property
     def logo_url(self) -> Optional[str]:
-        """The `logo_url` property."""
+        """The `logo_url` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().logo_url
 
     @property
     def workspace(self) -> Optional["WorkspaceResponse"]:
-        """The `workspace` property."""
+        """The `workspace` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().workspace
 
     @property
     def config_schema(self) -> Dict[str, Any]:
-        """The `config_schema` property."""
+        """The `config_schema` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().config_schema
 
     @property
     def connector_type(self) -> Optional[str]:
-        """The `connector_type` property."""
+        """The `connector_type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().connector_type
 
     @property
     def connector_resource_type(self) -> Optional[str]:
-        """The `connector_resource_type` property."""
+        """The `connector_resource_type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().connector_resource_type
 
     @property
     def connector_resource_id_attr(self) -> Optional[str]:
-        """The `connector_resource_id_attr` property."""
+        """The `connector_resource_id_attr` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().connector_resource_id_attr
 
     @property
     def source(self) -> str:
-        """The `source` property."""
+        """The `source` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().source
 
     @property
     def docs_url(self) -> Optional[str]:
-        """The `docs_url` property."""
+        """The `docs_url` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().docs_url
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """The `sdk_docs_url` property."""
+        """The `sdk_docs_url` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().sdk_docs_url
 
     @property
     def is_custom(self) -> bool:
-        """The `is_custom` property."""
+        """The `is_custom` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().is_custom
 
 

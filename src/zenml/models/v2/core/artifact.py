@@ -128,7 +128,11 @@ class ArtifactResponse(
     )
 
     def get_hydrated_version(self) -> "ArtifactResponse":
-        """Get the hydrated version of this artifact."""
+        """Get the hydrated version of this artifact.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_artifact(self.id)
@@ -136,44 +140,76 @@ class ArtifactResponse(
     # Body and metadata properties
     @property
     def uri(self) -> str:
-        """The `uri` property."""
+        """The `uri` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().uri
 
     @property
     def type(self) -> ArtifactType:
-        """The `type` property."""
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().type
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:
-        """The `artifact_store_id` property."""
+        """The `artifact_store_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().artifact_store_id
 
     @property
     def producer_step_run_id(self) -> Optional[UUID]:
-        """The `producer_step_run_id` property."""
+        """The `producer_step_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().producer_step_run_id
 
     @property
     def visualizations(
         self,
     ) -> Optional[List["ArtifactVisualizationResponse"]]:
-        """The `visualizations` property."""
+        """The `visualizations` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().visualizations
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
-        """The `metadata` property."""
+        """The `metadata` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().run_metadata
 
     @property
     def materializer(self) -> Source:
-        """The `materializer` property."""
+        """The `materializer` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().materializer
 
     @property
     def data_type(self) -> Source:
-        """The `data_type` property."""
+        """The `data_type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().data_type
 
     # Helper methods

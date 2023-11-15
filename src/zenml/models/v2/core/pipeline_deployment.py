@@ -172,7 +172,11 @@ class PipelineDeploymentResponse(
     """Response model for pipeline deployments."""
 
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
-        """Return the hydrated version of this pipeline deployment."""
+        """Return the hydrated version of this pipeline deployment.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_deployment(self.id)
@@ -180,57 +184,101 @@ class PipelineDeploymentResponse(
     # Body and metadata properties
     @property
     def run_name_template(self) -> str:
-        """The `run_name_template` property."""
+        """The `run_name_template` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().run_name_template
 
     @property
     def pipeline_configuration(self) -> PipelineConfiguration:
-        """The `pipeline_configuration` property."""
+        """The `pipeline_configuration` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline_configuration
 
     @property
     def step_configurations(self) -> Dict[str, Step]:
-        """The `step_configurations` property."""
+        """The `step_configurations` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().step_configurations
 
     @property
     def client_environment(self) -> Dict[str, str]:
-        """The `client_environment` property."""
+        """The `client_environment` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().client_environment
 
     @property
     def client_version(self) -> str:
-        """The `client_version` property."""
+        """The `client_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().client_version
 
     @property
     def server_version(self) -> str:
-        """The `server_version` property."""
+        """The `server_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().server_version
 
     @property
     def pipeline(self) -> Optional[PipelineResponse]:
-        """The `pipeline` property."""
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline
 
     @property
     def stack(self) -> Optional[StackResponse]:
-        """The `stack` property."""
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().stack
 
     @property
     def build(self) -> Optional[PipelineBuildResponse]:
-        """The `build` property."""
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().build
 
     @property
     def schedule(self) -> Optional[ScheduleResponse]:
-        """The `schedule` property."""
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().schedule
 
     @property
     def code_reference(self) -> Optional[CodeReferenceResponse]:
-        """The `code_reference` property."""
+        """The `code_reference` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().code_reference
 
 
