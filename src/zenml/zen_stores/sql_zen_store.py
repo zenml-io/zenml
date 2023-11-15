@@ -3981,6 +3981,24 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline_run.name}' already exists."
                 )
 
+            existing_domain_run = session.exec(
+                select(PipelineRunSchema)
+                .where(
+                    PipelineRunSchema.deployment_id == pipeline_run.deployment
+                )
+                .where(
+                    PipelineRunSchema.orchestrator_run_id
+                    == pipeline_run.orchestrator_run_id
+                )
+            ).first()
+            if existing_domain_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run: A pipeline run with "
+                    f"orchestrator run ID {pipeline_run.orchestrator_run_id} "
+                    f"and deployment ID {pipeline_run.deployment} already "
+                    "exists."
+                )
+
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)

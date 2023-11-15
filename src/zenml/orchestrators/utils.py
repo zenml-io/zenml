@@ -179,5 +179,5 @@ def get_run_name(run_name_template: str) -> str:
 
     if run_name == "":
         raise ValueError("Empty run names are not allowed.")
-    
+
     return run_name

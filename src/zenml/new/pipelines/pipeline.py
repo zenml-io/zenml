@@ -700,12 +700,16 @@ class Pipeline:
             run = None
             if not schedule:
                 run_request = PipelineRunRequestModel(
-                    # TODO: we don't set the start time here, but the run name
-                    # placeholder still contains the current date/time, this is
-                    # a little weird
                     name=get_run_name(
                         run_name_template=deployment_model.run_name_template
                     ),
+                    # We set the start time on the placeholder run already to
+                    # make it consistent with the {time} placeholder in the
+                    # run name. This means the placeholder run will usually
+                    # have longer durations than scheduled runs, as for them
+                    # the start_time is only set once the first step starts
+                    # running.
+                    start_time=datetime.utcnow(),
                     orchestrator_run_id=None,
                     user=deployment_model.user.id,
                     workspace=deployment_model.workspace.id,
