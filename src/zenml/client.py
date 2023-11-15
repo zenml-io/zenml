@@ -5535,14 +5535,17 @@ class Client(metaclass=ClientMetaClass):
             ).items
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
-                model_versions = [
-                    self.list_model_versions(
-                        model_name_or_id=model_name_or_id,
-                        model_version_filter_model=ModelVersionFilterModel(
-                            sort_by=f"{SorterOps.DESCENDING}:created",
-                        ),
-                    ).items[0]
-                ]
+                model_versions_page = self.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        sort_by=f"{SorterOps.DESCENDING}:number",
+                    ),
+                )
+
+                if model_versions_page.size > 0:
+                    model_versions = model_versions_page.items[0]
+                else:
+                    model_versions = []
             elif model_version_name_or_number_or_id in ModelStages.values():
                 model_versions = self.list_model_versions(
                     model_name_or_id=model_name_or_id,

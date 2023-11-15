@@ -30,7 +30,7 @@ from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
-from zenml.enums import SecretScope, StackComponentType
+from zenml.enums import ModelStages, SecretScope, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -42,6 +42,7 @@ from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ComponentResponseModel,
+    ModelRequestModel,
     PipelineBuildRequestModel,
     PipelineDeploymentRequestModel,
     PipelineRequestModel,
@@ -1168,3 +1169,45 @@ def test_basic_crud_for_entity(
             # This means the test already succeeded and deleted the entity,
             # nothing to do here
             pass
+
+
+def test_latest_not_found(clean_client):
+    """Test that get latest fails if not found."""
+
+    cl = Client()
+    model_name = "super_model"
+
+    cl.create_model(
+        model=ModelRequestModel(
+            name=model_name,
+            user=cl.active_user.id,
+            workspace=cl.active_workspace.id,
+        )
+    )
+
+    with pytest.raises(KeyError):
+        Client().get_model_version(
+            model_name_or_id=model_name,
+            model_version_name_or_number_or_id=ModelStages.LATEST,
+        )
+
+
+def test_stage_not_found(clean_client):
+    """Test that get latest fails if not found."""
+
+    cl = Client()
+    model_name = "super_model"
+
+    cl.create_model(
+        model=ModelRequestModel(
+            name=model_name,
+            user=cl.active_user.id,
+            workspace=cl.active_workspace.id,
+        )
+    )
+
+    with pytest.raises(KeyError):
+        Client().get_model_version(
+            model_name_or_id=model_name,
+            model_version_name_or_number_or_id=ModelStages.STAGING,
+        )
