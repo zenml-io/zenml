@@ -5624,16 +5624,28 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             number=number,
             stage=stage,
-            size=PAGE_SIZE_MAXIMUM,
         )
+
         model_versions = self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
         )
-        return [
+        ret = [
             mv.to_model_version(suppress_class_validation_warnings=True)
             for mv in model_versions
         ]
+        for page in range(2, model_versions.total_pages + 1):
+            model_version_filter_model.page = page
+            model_versions = self.zen_store.list_model_versions(
+                model_name_or_id=model_name_or_id,
+                model_version_filter_model=model_version_filter_model,
+            )
+            ret += [
+                mv.to_model_version(suppress_class_validation_warnings=True)
+                for mv in model_versions
+            ]
+
+        return ret
 
     def update_model_version(
         self,

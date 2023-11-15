@@ -30,6 +30,7 @@ from tests.integration.functional.utils import model_killer, sample_name
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
+from zenml.constants import PAGE_SIZE_DEFAULT
 from zenml.enums import ModelStages, SecretScope, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
@@ -1445,13 +1446,13 @@ class TestModelVersion:
     def test_list_model_version(self, warm_up_models):
         with model_killer():
             client = Client()
-            for i in range(5):
+            for i in range(PAGE_SIZE_DEFAULT):
                 client.create_model_version(
                     self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
                 )
 
             model_versions = client.list_model_versions(self.MODEL_NAME)
-            assert len(model_versions) == 6
+            assert len(model_versions) == PAGE_SIZE_DEFAULT + 1
 
             model_versions = client.list_model_versions(
                 self.MODEL_NAME, name=f"{self.VERSION_NAME}_{1}"
@@ -1461,7 +1462,7 @@ class TestModelVersion:
             model_versions = client.list_model_versions(
                 self.MODEL_NAME, name=f"contains:{self.VERSION_NAME}_"
             )
-            assert len(model_versions) == 5
+            assert len(model_versions) == PAGE_SIZE_DEFAULT
 
     def test_delete_model_version_found(self, warm_up_models):
         with model_killer():
