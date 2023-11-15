@@ -210,20 +210,17 @@ class UserUpdate(UserRequest):
 class UserResponseBody(BaseResponseBody):
     """Response body for users."""
 
-
-class UserResponseMetadata(BaseResponseMetadata):
-    """Response metadata for users."""
-
+    active: bool = Field(default=False, title="Whether the account is active.")
+    activation_token: Optional[str] = Field(
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+        title="The activation token for the user. Only relevant for user "
+        "accounts.",
+    )
     full_name: str = Field(
         default="",
         title="The full name for the account owner. Only relevant for user "
         "accounts.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    email: Optional[str] = Field(
-        default="",
-        title="The email address associated with the account. Only relevant "
-        "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email_opted_in: Optional[bool] = Field(
@@ -233,12 +230,19 @@ class UserResponseMetadata(BaseResponseMetadata):
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
-    active: bool = Field(default=False, title="Whether the account is active.")
-    activation_token: Optional[str] = Field(
-        default=None,
+    is_service_account: bool = Field(
+        title="Indicates whether this is a service account or a user account."
+    )
+
+
+class UserResponseMetadata(BaseResponseMetadata):
+    """Response metadata for users."""
+
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account. Only relevant "
+        "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
-        title="The activation token for the user. Only relevant for user "
-        "accounts.",
     )
     hub_token: Optional[str] = Field(
         default=None,
@@ -256,9 +260,6 @@ class UserResponseMetadata(BaseResponseMetadata):
     )
     teams: Optional[List["TeamResponse"]] = Field(
         default=None, title="The list of teams for this user."
-    )
-    is_service_account: bool = Field(
-        title="Indicates whether this is a service account or a user account."
     )
 
 
@@ -296,13 +297,49 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
 
     # Body and metadata properties
     @property
+    def active(self) -> bool:
+        """The `active` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().active
+
+    @property
+    def activation_token(self) -> Optional[str]:
+        """The `activation_token` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().activation_token
+
+    @property
     def full_name(self) -> str:
         """The `full_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().full_name
+        return self.get_body().full_name
+
+    @property
+    def email_opted_in(self) -> Optional[bool]:
+        """The `email_opted_in` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().email_opted_in
+
+    @property
+    def is_service_account(self) -> bool:
+        """The `is_service_account` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_service_account
 
     @property
     def email(self) -> Optional[str]:
@@ -312,33 +349,6 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
             the value of the property.
         """
         return self.get_metadata().email
-
-    @property
-    def email_opted_in(self) -> Optional[bool]:
-        """The `email_opted_in` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().email_opted_in
-
-    @property
-    def active(self) -> bool:
-        """The `active` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().active
-
-    @property
-    def activation_token(self) -> Optional[str]:
-        """The `activation_token` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().activation_token
 
     @property
     def hub_token(self) -> Optional[str]:
@@ -375,15 +385,6 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
             the value of the property.
         """
         return self.get_metadata().teams
-
-    @property
-    def is_service_account(self) -> bool:
-        """The `is_service_account` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().is_service_account
 
     # Helper methods
     @classmethod

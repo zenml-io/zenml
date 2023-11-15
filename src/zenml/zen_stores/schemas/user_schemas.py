@@ -238,21 +238,21 @@ class UserSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = UserResponseMetadata(
-                full_name=self.full_name,
                 email=self.email if include_private else None,
-                email_opted_in=self.email_opted_in,
-                active=self.active,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
                 teams=[t.to_model() for t in self.teams],
-                is_service_account=self.is_service_account,
             )
 
         return UserResponse(
             id=self.id,
             name=self.name,
             body=UserResponseBody(
+                active=self.active,
+                full_name=self.full_name,
+                email_opted_in=self.email_opted_in,
+                is_service_account=self.is_service_account,
                 created=self.created,
                 updated=self.updated,
             ),

@@ -147,7 +147,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # add back the original unhashed activation token, if generated, to
         # send it back to the client
         if token:
-            new_user.get_metadata().activation_token = token
+            new_user.get_body().activation_token = token
         return new_user
 
 
@@ -282,7 +282,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             user_id=user.id, user_update=user_update
         )
         # add back the original unhashed activation token
-        user.get_metadata().activation_token = token
+        user.get_body().activation_token = token
         return user
 
     @router.delete(

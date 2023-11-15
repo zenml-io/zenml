@@ -142,14 +142,15 @@ class ServiceAccountResponse(
         return UserResponse(
             id=self.id,
             name=self.name,
-            body=UserResponseBody(),
+            body=UserResponseBody(
+                active=self.active,
+                is_service_account=True,
+                email_opted_in=False,
+            ),
             metadata=UserResponseMetadata(
                 teams=self.teams,
                 roles=self.roles,
                 description=self.description,
-                active=self.active,
-                is_service_account=True,
-                email_opted_in=False,
             ),
         )
 

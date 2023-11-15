@@ -433,10 +433,9 @@ def sample_user_model() -> UserResponse:
         body=UserResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
-        ),
-        metadata=UserResponseMetadata(
             is_service_account=False,
         ),
+        metadata=UserResponseMetadata(),
     )
 
 
