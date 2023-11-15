@@ -82,7 +82,7 @@ class ModelVersion(BaseModel):
     #########################
     @property
     def id(self) -> UUID:
-        """Get version id from  the Model Control Plane.
+        """Get version id from the Model Control Plane.
 
         Returns:
             ID of the model version or None, if model version
@@ -102,7 +102,7 @@ class ModelVersion(BaseModel):
 
     @property
     def model_id(self) -> UUID:
-        """Get model id from  the Model Control Plane.
+        """Get model id from the Model Control Plane.
 
         Returns:
             The UUID of the model containing this model version.
