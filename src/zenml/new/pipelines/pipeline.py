@@ -695,20 +695,23 @@ class Pipeline:
 
             run = None
             if not schedule:
-                pipeline_run_request = PipelineRunRequestModel(
+                run_request = PipelineRunRequestModel(
+                    # TODO: we don't set the start time here, but the run name
+                    # placeholder still contains the current date/time, this is
+                    # a little weird
                     name=get_run_name(
                         run_name_template=deployment_model.run_name_template
                     ),
                     orchestrator_run_id=None,
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
+                    user=deployment_model.user.id,
+                    workspace=deployment_model.workspace.id,
                     deployment=deployment_model.id,
                     pipeline=deployment_model.pipeline.id
                     if deployment_model.pipeline
                     else None,
                     status=ExecutionStatus.INITIALIZING,
                 )
-                run = Client().zen_store.create_run(pipeline_run_request)
+                run = Client().zen_store.create_run(run_request)
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
