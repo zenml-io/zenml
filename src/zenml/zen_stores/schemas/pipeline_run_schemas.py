@@ -308,7 +308,10 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if self.orchestrator_run_id:
+        if (
+            self.orchestrator_run_id
+            or self.status != ExecutionStatus.INITIALIZING
+        ):
             raise RuntimeError(
                 f"Unable to replace pipeline run {self.id} which is not a "
                 "placeholder run."
