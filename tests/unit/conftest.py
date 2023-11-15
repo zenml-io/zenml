@@ -36,19 +36,37 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
+    ArtifactResponseBody,
+    ArtifactResponseMetadata,
     CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
+    CodeRepositoryResponseMetadata,
     HubPluginResponseModel,
     PipelineBuildResponse,
+    PipelineBuildResponseBody,
+    PipelineBuildResponseMetadata,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentResponseBody,
+    PipelineDeploymentResponseMetadata,
     PipelineResponse,
+    PipelineResponseBody,
+    PipelineResponseMetadata,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineRunResponseBody,
+    PipelineRunResponseMetadata,
     PluginStatus,
     StepRunRequest,
     StepRunResponse,
+    StepRunResponseBody,
+    StepRunResponseMetadata,
     UserResponse,
+    UserResponseBody,
+    UserResponseMetadata,
     WorkspaceResponse,
+    WorkspaceResponseBody,
+    WorkspaceResponseMetadata,
 )
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -412,9 +430,13 @@ def sample_user_model() -> UserResponse:
     return UserResponse(
         id=uuid4(),
         name="axl",
-        created=datetime.now(),
-        updated=datetime.now(),
-        is_service_account=False,
+        body=UserResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+        ),
+        metadata=UserResponseMetadata(
+            is_service_account=False,
+        ),
     )
 
 
@@ -424,8 +446,11 @@ def sample_workspace_model() -> WorkspaceResponse:
     return WorkspaceResponse(
         id=uuid4(),
         name="axl",
-        created=datetime.now(),
-        updated=datetime.now(),
+        body=WorkspaceResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+        ),
+        metadata=WorkspaceResponseMetadata(),
     )
 
 
@@ -470,13 +495,16 @@ def sample_pipeline_run(
     return PipelineRunResponse(
         id=uuid4(),
         name="sample_run_name",
-        config=PipelineConfiguration(name="aria_pipeline"),
-        num_steps=1,
-        status=ExecutionStatus.COMPLETED,
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_user_model,
-        workspace=sample_workspace_model,
+        body=PipelineRunResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+            status=ExecutionStatus.COMPLETED,
+        ),
+        metadata=PipelineRunResponseMetadata(
+            workspace=sample_workspace_model,
+            config=PipelineConfiguration(name="aria_pipeline"),
+        ),
     )
 
 
@@ -518,17 +546,18 @@ def sample_artifact_model(
     return ArtifactResponse(
         id=uuid4(),
         name="sample_artifact",
-        uri="sample_uri",
-        type=ArtifactType.DATA,
-        materializer="sample_module.sample_materializer",
-        data_type="sample_module.sample_data_type",
-        parent_step_id=uuid4(),
-        producer_step_id=uuid4(),
-        is_cached=False,
-        created=datetime.now(),
-        updated=datetime.now(),
-        workspace=sample_workspace_model,
-        user=sample_user_model,
+        body=ArtifactResponseBody(
+            user=sample_user_model,
+            created=datetime.now(),
+            updated=datetime.now(),
+            uri="sample_uri",
+            type=ArtifactType.DATA,
+        ),
+        metadata=ArtifactResponseMetadata(
+            materializer="sample_module.sample_materializer",
+            data_type="sample_module.sample_data_type",
+            workspace=sample_workspace_model,
+        ),
     )
 
 
@@ -541,9 +570,6 @@ def sample_artifact_request_model() -> ArtifactRequest:
         type=ArtifactType.DATA,
         materializer="sample_materializer",
         data_type="sample_data_type",
-        parent_step_id=uuid4(),
-        producer_step_id=uuid4(),
-        is_cached=False,
         workspace=uuid4(),
         user=uuid4(),
     )
@@ -576,17 +602,21 @@ def create_step_run(
         return StepRunResponse(
             id=uuid4(),
             name=step_run_name,
-            pipeline_run_id=uuid4(),
-            deployment_id=uuid4(),
-            spec=spec,
-            config=config,
-            status=ExecutionStatus.COMPLETED,
-            created=datetime.now(),
-            updated=datetime.now(),
-            workspace=sample_workspace_model,
-            user=sample_user_model,
-            outputs=output_artifacts or {},
-            **kwargs,
+            body=StepRunResponseBody(
+                status=ExecutionStatus.COMPLETED,
+                created=datetime.now(),
+                updated=datetime.now(),
+                user=sample_user_model,
+                outputs=output_artifacts or {},
+            ),
+            metadata=StepRunResponseMetadata(
+                pipeline_run_id=uuid4(),
+                deployment_id=uuid4(),
+                spec=spec,
+                config=config,
+                workspace=sample_workspace_model,
+                **kwargs,
+            ),
         )
 
     return f
@@ -603,19 +633,25 @@ def create_pipeline_model(
     def f(
         **kwargs: Any,
     ) -> PipelineResponse:
-        model_args = {
-            "id": uuid4(),
-            "name": "sample_pipeline",
-            "version": 1,
-            "version_hash": "",
-            "created": datetime.now(),
-            "updated": datetime.now(),
-            "workspace": sample_workspace_model,
-            "user": sample_user_model,
-            "spec": PipelineSpec(steps=[]),
-            **kwargs,
-        }
-        return PipelineResponse(**model_args)
+        metadata_kwargs = dict(
+            version_hash="",
+            workspace=sample_workspace_model,
+            spec=PipelineSpec(steps=[]),
+        )
+        metadata_kwargs.update(kwargs)
+        return PipelineResponse(
+            id=uuid4(),
+            name="sample_pipeline",
+            body=PipelineResponseBody(
+                created=datetime.now(),
+                updated=datetime.now(),
+                user=sample_user_model,
+                version="1",
+            ),
+            metadata=PipelineResponseMetadata(
+                **metadata_kwargs,
+            ),
+        )
 
     return f
 
@@ -627,14 +663,18 @@ def sample_deployment_response_model(
 ) -> PipelineDeploymentResponse:
     return PipelineDeploymentResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_user_model,
-        workspace=sample_workspace_model,
-        run_name_template="",
-        pipeline_configuration={"name": ""},
-        client_version="0.12.3",
-        server_version="0.12.3",
+        body=PipelineDeploymentResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+        ),
+        metadata=PipelineDeploymentResponseMetadata(
+            workspace=sample_workspace_model,
+            run_name_template="",
+            pipeline_configuration={"name": ""},
+            client_version="0.12.3",
+            server_version="0.12.3",
+        ),
     )
 
 
@@ -645,13 +685,17 @@ def sample_build_response_model(
 ) -> PipelineBuildResponse:
     return PipelineBuildResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_user_model,
-        workspace=sample_workspace_model,
-        images={},
-        is_local=False,
-        contains_code=True,
+        body=PipelineBuildResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+        ),
+        metadata=PipelineBuildResponseMetadata(
+            workspace=sample_workspace_model,
+            images={},
+            is_local=False,
+            contains_code=True,
+        ),
     )
 
 
@@ -662,13 +706,17 @@ def sample_code_repo_response_model(
 ) -> CodeRepositoryResponse:
     return CodeRepositoryResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_user_model,
-        workspace=sample_workspace_model,
         name="name",
-        config={},
-        source={"module": "zenml", "type": "internal"},
+        body=CodeRepositoryResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+            source={"module": "zenml", "type": "internal"},
+        ),
+        metadata=CodeRepositoryResponseMetadata(
+            workspace=sample_workspace_model,
+            config={},
+        ),
     )
 
 

@@ -59,10 +59,12 @@ class PipelineDeploymentBase(BaseZenModel):
         default={}, title="The client environment for this deployment."
     )
     client_version: Optional[str] = Field(
-        title="The version of the ZenML installation on the client side."
+        default=None,
+        title="The version of the ZenML installation on the client side.",
     )
     server_version: Optional[str] = Field(
-        title="The version of the ZenML installation on the server side."
+        default=None,
+        title="The version of the ZenML installation on the server side.",
     )
 
     @property
@@ -97,16 +99,17 @@ class PipelineDeploymentRequest(
 
     stack: UUID = Field(title="The stack associated with the deployment.")
     pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the deployment."
+        default=None, title="The pipeline associated with the deployment."
     )
     build: Optional[UUID] = Field(
-        title="The build associated with the deployment."
+        default=None, title="The build associated with the deployment."
     )
     schedule: Optional[UUID] = Field(
-        title="The schedule associated with the deployment."
+        default=None, title="The schedule associated with the deployment."
     )
     code_reference: Optional["CodeReferenceRequest"] = Field(
-        title="The code reference associated with the deployment."
+        default=None,
+        title="The code reference associated with the deployment.",
     )
 
 
@@ -143,19 +146,21 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The version of the ZenML installation on the server side."
     )
     pipeline: Optional[PipelineResponse] = Field(
-        title="The pipeline associated with the deployment."
+        default=None, title="The pipeline associated with the deployment."
     )
     stack: Optional[StackResponse] = Field(
-        title="The stack associated with the deployment."
+        default=None, title="The stack associated with the deployment."
     )
     build: Optional[PipelineBuildResponse] = Field(
-        title="The pipeline build associated with the deployment."
+        default=None,
+        title="The pipeline build associated with the deployment.",
     )
     schedule: Optional[ScheduleResponse] = Field(
-        title="The schedule associated with the deployment."
+        default=None, title="The schedule associated with the deployment."
     )
     code_reference: Optional[CodeReferenceResponse] = Field(
-        title="The code reference associated with the deployment."
+        default=None,
+        title="The code reference associated with the deployment.",
     )
 
 

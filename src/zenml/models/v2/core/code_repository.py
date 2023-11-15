@@ -71,8 +71,9 @@ class CodeRepositoryResponseBody(WorkspaceScopedResponseBody):
 
     source: Source = Field(description="The code repository source.")
     logo_url: Optional[str] = Field(
+        default=None,
         description="Optional URL of a logo (png, jpg or svg) for the "
-        "code repository."
+        "code repository.",
     )
 
 
@@ -83,6 +84,7 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
         description="Configuration for the code repository."
     )
     description: Optional[str] = Field(
+        default=None,
         description="Code repository description.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )

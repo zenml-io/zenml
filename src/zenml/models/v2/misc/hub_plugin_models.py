@@ -71,9 +71,9 @@ class HubPluginResponseModel(HubPluginBaseModel):
     status: PluginStatus
     author: str
     version: str
-    index_url: Optional[str]
-    package_name: Optional[str]
-    requirements: Optional[List[str]]
-    build_logs: Optional[str]
+    index_url: Optional[str] = None
+    package_name: Optional[str] = None
+    requirements: Optional[List[str]] = None
+    build_logs: Optional[str] = None
     created: datetime
     updated: datetime

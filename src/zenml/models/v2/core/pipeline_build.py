@@ -178,21 +178,21 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for pipeline builds."""
 
     pipeline: Optional["PipelineResponse"] = Field(
-        title="The pipeline that was used for this build."
+        default=None, title="The pipeline that was used for this build."
     )
     stack: Optional["StackResponse"] = Field(
-        title="The stack that was used for this build."
+        default=None, title="The stack that was used for this build."
     )
     images: Dict[str, "BuildItem"] = Field(
         default={}, title="The images of this build."
     )
     zenml_version: Optional[str] = Field(
-        title="The version of ZenML used for this build."
+        default=None, title="The version of ZenML used for this build."
     )
     python_version: Optional[str] = Field(
-        title="The Python version used for this build."
+        default=None, title="The Python version used for this build."
     )
-    checksum: Optional[str] = Field(title="The build checksum.")
+    checksum: Optional[str] = Field(default=None, title="The build checksum.")
     is_local: bool = Field(
         title="Whether the build images are stored in a container "
         "registry or locally.",
