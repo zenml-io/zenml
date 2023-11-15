@@ -176,6 +176,8 @@ class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    _warn_on_response_updates = False
+
     def get_hydrated_version(self) -> "APIKeyResponse":
         """Get the hydrated version of this API key.
 
