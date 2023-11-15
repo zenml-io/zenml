@@ -32,13 +32,11 @@ from zenml.constants import (
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
-from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
     )
-    from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
 
@@ -57,22 +55,6 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     """
     user_name = Client().active_user.name
     return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
-
-
-def get_run_id_for_orchestrator_run_id(
-    orchestrator: "BaseOrchestrator", orchestrator_run_id: str
-) -> UUID:
-    """Generates a run ID from an orchestrator run id.
-
-    Args:
-        orchestrator: The orchestrator of the run.
-        orchestrator_run_id: The orchestrator run id.
-
-    Returns:
-        The run id generated from the orchestrator run id.
-    """
-    run_id_seed = f"{orchestrator.id}-{orchestrator_run_id}"
-    return uuid_utils.generate_uuid_from_string(run_id_seed)
 
 
 def is_setting_enabled(
@@ -178,7 +160,15 @@ def get_config_environment_vars(
     return environment_vars
 
 
-def populate_run_name_template(run_name_template: str) -> str:
+def get_run_name(run_name_template: str) -> str:
+    """Fill out the run name template to get a complete run name.
+
+    Args:
+        run_name_template: The run name template to fill out.
+
+    Returns:
+        The run name derived from the template.
+    """
     date = datetime.utcnow().strftime("%Y_%m_%d")
     time = datetime.utcnow().strftime("%H_%M_%S_%f")
 

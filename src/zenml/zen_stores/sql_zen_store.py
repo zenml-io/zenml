@@ -3981,18 +3981,6 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline_run.name}' already exists."
                 )
 
-            # Check if pipeline run with same ID already exists.
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with ID "
-                    f"'{pipeline_run.id}' already exists."
-                )
-
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)
@@ -4016,9 +4004,20 @@ class SqlZenStore(BaseZenStore):
                 run_name_or_id, session=session
             ).to_model()
 
-    def reuse_placeholder_run(
+    def _replace_placeholder_run(
         self, pipeline_run: PipelineRunRequestModel
     ) -> PipelineRunResponseModel:
+        """Replace a placeholder run with the requested pipeline run.
+
+        Args:
+            pipeline_run: Pipeline run request.
+
+        Raises:
+            KeyError: If no placeholder run exists.
+
+        Returns:
+            The run model.
+        """
         with Session(self.engine) as session:
             run_schema = session.exec(
                 select(PipelineRunSchema)
@@ -4036,25 +4035,36 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     PipelineRunSchema.deployment_id == pipeline_run.deployment
                 )
-                .where(PipelineRunSchema.orchestrator_run_id.is_(None))
+                .where(
+                    PipelineRunSchema.orchestrator_run_id.is_(None)
+                )  # type:ignore[union-attr]
             ).first()
 
             if not run_schema:
-                raise KeyError("No placeholder run")
+                raise KeyError("No placeholder run found.")
 
-            run_schema.orchestrator_run_id = pipeline_run.orchestrator_run_id
-            run_schema.orchestrator_environment = json.dumps(
-                pipeline_run.orchestrator_environment
-            )
-
+            run_schema.update_placeholder(pipeline_run)
             session.add(run_schema)
             session.commit()
 
             return run_schema.to_model()
 
-    def get_run_by_orchestrator_run_id(
+    def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
     ) -> PipelineRunResponseModel:
+        """Get a pipeline run based on deployment and orchestrator run ID.
+
+        Args:
+            orchestrator_run_id: The orchestrator run ID.
+            deployment_id: The deployment ID.
+
+        Raises:
+            KeyError: If no run exists for the deployment and orchestrator run
+                ID.
+
+        Returns:
+            The pipeline run.
+        """
         with Session(self.engine) as session:
             run_schema = session.exec(
                 select(PipelineRunSchema)
@@ -4066,7 +4076,10 @@ class SqlZenStore(BaseZenStore):
             ).first()
 
             if not run_schema:
-                raise KeyError("No run found.")
+                raise KeyError(
+                    f"Unable to get run for orchestrator run ID "
+                    f"{orchestrator_run_id} and deployment ID {deployment_id}."
+                )
 
             return run_schema.to_model()
 
@@ -4081,12 +4094,23 @@ class SqlZenStore(BaseZenStore):
         Args:
             pipeline_run: The pipeline run to get or create.
 
+        Raises:
+            ValueError: If the request
         Returns:
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
+        if not pipeline_run.orchestrator_run_id:
+            raise ValueError(
+                "Unable to get or create run for request with missing "
+                "orchestrator run ID."
+            )
+
         try:
-            return self.reuse_placeholder_run(pipeline_run=pipeline_run), True
+            return (
+                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                True,
+            )
         except KeyError:
             pass
 
@@ -4099,7 +4123,7 @@ class SqlZenStore(BaseZenStore):
             # since either one can be raised by the database when trying
             # to create a new pipeline run with duplicate ID or name.
             return (
-                self.get_run_by_orchestrator_run_id(
+                self._get_run_by_orchestrator_run_id(
                     orchestrator_run_id=pipeline_run.orchestrator_run_id,
                     deployment_id=pipeline_run.deployment,
                 ),

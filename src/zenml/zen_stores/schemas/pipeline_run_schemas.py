@@ -290,3 +290,23 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         self.updated = datetime.utcnow()
         return self
+
+    def update_placeholder(
+        self, request: "PipelineRunRequestModel"
+    ) -> "PipelineRunSchema":
+        if self.orchestrator_run_id:
+            raise RuntimeError()
+
+        if (
+            self.deployment_id != request.deployment
+            or self.pipeline_id != request.pipeline
+        ):
+            raise ValueError()
+
+        orchestrator_environment = json.dumps(request.orchestrator_environment)
+
+        self.orchestrator_run_id = request.orchestrator_run_id
+        self.orchestrator_environment = orchestrator_environment
+        self.updated = datetime.utcnow()
+
+        return self

@@ -50,8 +50,8 @@ from zenml.orchestrators import (
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.orchestrators.utils import (
+    get_run_name,
     is_setting_enabled,
-    populate_run_name_template,
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
@@ -287,7 +287,7 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        run_name = populate_run_name_template(
+        run_name = get_run_name(
             run_name_template=self._deployment.run_name_template
         )
 

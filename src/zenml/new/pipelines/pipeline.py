@@ -73,7 +73,7 @@ from zenml.models.pipeline_build_models import (
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelVersionRequest
-from zenml.orchestrators.utils import populate_run_name_template
+from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
@@ -697,7 +697,7 @@ class Pipeline:
             # It will still work, but it might be hours/days until the run gets
             # populated
             pipeline_run_request = PipelineRunRequestModel(
-                name=populate_run_name_template(
+                name=get_run_name(
                     run_name_template=deployment_model.run_name_template
                 ),
                 orchestrator_run_id=None,
