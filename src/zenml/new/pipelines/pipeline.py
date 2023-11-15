@@ -528,7 +528,7 @@ class Pipeline:
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
-    ) -> PipelineRunResponseModel:
+    ) -> Optional[PipelineRunResponseModel]:
         """Runs the pipeline on the active stack.
 
         Args:
@@ -556,6 +556,10 @@ class Pipeline:
 
         Raises:
             Exception: bypass any exception from pipeline up.
+
+        Returns:
+            Model of the pipeline run if running without a schedule, `None` if
+            running with a schedule.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
