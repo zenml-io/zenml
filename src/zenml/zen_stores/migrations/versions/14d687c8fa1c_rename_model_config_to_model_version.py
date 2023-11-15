@@ -1,7 +1,7 @@
 """rename model_config to model_version [14d687c8fa1c].
 
 Revision ID: 14d687c8fa1c
-Revises: 93cbda80a732
+Revises: 0.47.0
 Create Date: 2023-11-10 15:54:05.572744
 
 """
@@ -11,7 +11,7 @@ from sqlmodel import Session
 
 # revision identifiers, used by Alembic.
 revision = "14d687c8fa1c"
-down_revision = "722392c91006"
+down_revision = "0.47.0"
 branch_labels = None
 depends_on = None
 
