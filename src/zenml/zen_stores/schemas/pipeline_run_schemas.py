@@ -57,7 +57,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         UniqueConstraint(
             "orchestrator_run_id",
             "deployment_id",
-            name="unique_orchestrator_run_id",
+            name="unique_orchestrator_run_id_for_deployment",
         ),
     )
 
@@ -71,7 +71,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
 
     # Foreign keys
-    deployment_id: UUID = build_foreign_key_field(
+    deployment_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineDeploymentSchema.__tablename__,
         source_column="deployment_id",

@@ -4115,7 +4115,7 @@ class SqlZenStore(BaseZenStore):
             # No placeholder run available for this run -> We now try to create
             # a new run in the database, which will fail if a run with the same
             # orchestrator_run_id and deployment_id already exists. In that case
-            # we fetch and return that run.
+            # we fetch and return the existing run.
             pass
 
         # We want to have the 'create' statement in the try block since running
@@ -4123,7 +4123,7 @@ class SqlZenStore(BaseZenStore):
         try:
             return self.create_run(pipeline_run), True
         except (EntityExistsError, IntegrityError):
-            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
+            # Catch both `EntityExistsError` and `IntegrityError` exceptions
             # since either one can be raised by the database when trying
             # to create a new pipeline run with duplicate ID or name.
             return (
