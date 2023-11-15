@@ -12,7 +12,7 @@ def training_data_loader() -> (
 ):
     """Load the Census Income dataset as tuple of Pandas DataFrame / Series."""
     # Load the dataset
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+    url = "http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
     column_names = [
         "age",
         "workclass",
