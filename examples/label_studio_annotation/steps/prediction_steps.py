@@ -15,33 +15,30 @@ from typing import Dict, List
 
 import torch
 from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
+from typing_extensions import Annotated
 
-from zenml.post_execution import get_pipeline
-from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml import step
+from zenml.client import Client
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"
 PIPELINE_STEP_NAME = "model_trainer"
 
 
-class PredictionServiceLoaderParameters(BaseParameters):
-    training_pipeline_name = "training_pipeline"
-    training_pipeline_step_name = "model_trainer"
-
-
 @step
 def prediction_service_loader(
-    params: PredictionServiceLoaderParameters, context: StepContext
+    training_pipeline_name: str = "training_pipeline",
+    training_pipeline_step_name: str = "pytorch_model_trainer",
 ) -> torch.nn.Module:
-    train_run = get_pipeline(params.training_pipeline_name).runs[0]
-    return train_run.steps[params.training_pipeline_step_name].output.read()
+    train_run = Client().get_pipeline(training_pipeline_name).last_run
+    return train_run.steps[training_pipeline_step_name].output.load()
 
 
 @step(enable_cache=False)
 def predictor(
     model: torch.nn.Module,
     images: Dict,
-) -> Output(predictions=List):
+) -> Annotated[List[Dict[str, str]], "predictions"]:
     preprocess = load_mobilenetv3_transforms()
     preds = []
     for file_name, image in images.items():
