@@ -46,7 +46,6 @@ from zenml.constants import (
     ENV_ZENML_REPOSITORY_PATH,
     ENV_ZENML_SERVER,
     PAGE_SIZE_DEFAULT,
-    PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
@@ -5517,20 +5516,27 @@ class Client(metaclass=ClientMetaClass):
 
     def list_models(
         self, name: Optional[str] = None
-    ) -> Page[ModelResponseModel]:
+    ) -> List[ModelResponseModel]:
         """Get models by filter from Model Control Plane.
 
         Args:
             name: The name of the model to filter by.
 
         Returns:
-            A page of all models.
+            A list of all models.
         """
-        return self.zen_store.list_models(
-            model_filter_model=ModelFilterModel(
-                name=name, size=PAGE_SIZE_MAXIMUM
+        filter = ModelFilterModel(name=name)
+        models = self.zen_store.list_models(model_filter_model=filter)
+
+        ret = models.items
+        for page in range(2, models.total_pages + 1):
+            filter.page = page
+            models = self.zen_store.list_models(
+                model_filter_model=filter,
             )
-        )
+            ret += models.items
+
+        return ret
 
     #################
     # Model Versions

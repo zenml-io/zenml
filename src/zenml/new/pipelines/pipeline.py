@@ -146,7 +146,7 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: `ModelVersion` instance.
+            model_version: configuration of the model version in the Model Control Plane.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -339,7 +339,7 @@ class Pipeline:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            model_version: `ModelVersion` instance.
+            model_version: configuration of the model version in the Model Control Plane.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -832,7 +832,7 @@ class Pipeline:
     def prepare_model_versions(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> None:
-        """Prepare nonexisting model versions and validate existing that are used in the pipeline run.
+        """Create model versions which are missing and validate existing ones that are used in the pipeline run.
 
         Args:
             deployment: The pipeline deployment configuration.

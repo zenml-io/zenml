@@ -81,17 +81,8 @@ class ModelVersion(BaseModel):
     #    Public methods     #
     #########################
     @property
-    def all_model_versions(self) -> List["ModelVersion"]:
-        """Get all model versions for current model from the Model Control Plane.
-
-        Returns:
-            A list of ModelVersion objects registered within current model.
-        """
-        return self._get_or_create_model().versions
-
-    @property
     def id(self) -> UUID:
-        """Get version id from  the Model Control Plane.
+        """Get version id from the Model Control Plane.
 
         Returns:
             ID of the model version or None, if model version
@@ -111,7 +102,7 @@ class ModelVersion(BaseModel):
 
     @property
     def model_id(self) -> UUID:
-        """Get model id from  the Model Control Plane.
+        """Get model id from the Model Control Plane.
 
         Returns:
             The UUID of the model containing this model version.
