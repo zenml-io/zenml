@@ -693,25 +693,22 @@ class Pipeline:
 
             self.log_pipeline_deployment_metadata(deployment_model)
 
-            # TODO: We should probably only do this if there is no schedule?
-            # It will still work, but it might be hours/days until the run gets
-            # populated
-            pipeline_run_request = PipelineRunRequestModel(
-                name=get_run_name(
-                    run_name_template=deployment_model.run_name_template
-                ),
-                orchestrator_run_id=None,
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                deployment=deployment_model.id,
-                pipeline=deployment_model.pipeline.id
-                if deployment_model.pipeline
-                else None,
-                status=ExecutionStatus.INITIALIZING,
-            )
-            pipeline_run_model = Client().zen_store.create_run(
-                pipeline_run_request
-            )
+            run = None
+            if not schedule:
+                pipeline_run_request = PipelineRunRequestModel(
+                    name=get_run_name(
+                        run_name_template=deployment_model.run_name_template
+                    ),
+                    orchestrator_run_id=None,
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    deployment=deployment_model.id,
+                    pipeline=deployment_model.pipeline.id
+                    if deployment_model.pipeline
+                    else None,
+                    status=ExecutionStatus.INITIALIZING,
+                )
+                run = Client().zen_store.create_run(pipeline_run_request)
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
@@ -722,22 +719,34 @@ class Pipeline:
                 self.delete_running_versions_without_recovery(
                     new_version_requests
                 )
+
+                if (
+                    run
+                    and Client().zen_store.get_run(run.id).status
+                    == ExecutionStatus.INITIALIZING
+                ):
+                    # The run hasn't actually started yet, which means that we
+                    # failed beforehand -> We don't want the run to stay in the
+                    # database
+                    Client().zen_store.delete_run(run.id)
+
                 raise e
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
             self.register_running_versions(new_version_requests)
-            run_url = dashboard_utils.get_run_url(pipeline_run_model)
-            if run_url:
-                logger.info(f"Dashboard URL: {run_url}")
-            else:
-                logger.info(
-                    "You can visualize your pipeline runs in the `ZenML "
-                    "Dashboard`. In order to try it locally, please run "
-                    "`zenml up`."
-                )
+            if run:
+                run_url = dashboard_utils.get_run_url(run)
+                if run_url:
+                    logger.info(f"Dashboard URL: {run_url}")
+                else:
+                    logger.info(
+                        "You can visualize your pipeline runs in the `ZenML "
+                        "Dashboard`. In order to try it locally, please run "
+                        "`zenml up`."
+                    )
 
-            return pipeline_run_model
+            return run
 
     @staticmethod
     def log_pipeline_deployment_metadata(
