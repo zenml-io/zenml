@@ -1285,7 +1285,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model()
+            return api_key.to_model(hydrate=True)
 
     def update_internal_api_key(
         self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
@@ -1316,7 +1316,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model()
+            return api_key.to_model(hydrate=True)
 
     def rotate_api_key(
         self,
@@ -1683,7 +1683,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_repo)
             session.commit()
 
-            return existing_repo.to_model()
+            return existing_repo.to_model(hydrate=True)
 
     def delete_code_repository(self, code_repository_id: UUID) -> None:
         """Deletes a code repository.
@@ -1943,7 +1943,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_component)
             session.commit()
 
-            return existing_component.to_model()
+            return existing_component.to_model(hydrate=True)
 
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -2274,7 +2274,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_device)
             session.commit()
 
-            return existing_device.to_model()
+            return existing_device.to_model(hydrate=True)
 
     def update_internal_authorized_device(
         self, device_id: UUID, update: OAuthDeviceInternalUpdate
@@ -2312,7 +2312,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_device)
             session.commit()
 
-            device_model = existing_device.to_internal_model()
+            device_model = existing_device.to_internal_model(hydrate=True)
             if user_code:
                 # Replace the hashed user code with the original user code
                 device_model.user_code = user_code
@@ -2509,7 +2509,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_flavor)
-            return existing_flavor.to_model()
+            return existing_flavor.to_model(hydrate=True)
 
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -2721,7 +2721,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_pipeline)
             session.commit()
 
-            return existing_pipeline.to_model()
+            return existing_pipeline.to_model(hydrate=True)
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -3087,7 +3087,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model()
+            return existing_run.to_model(hydrate=True)
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -3308,7 +3308,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_role)
-            return existing_role.to_model()
+            return existing_role.to_model(hydrate=True)
 
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
@@ -3541,7 +3541,7 @@ class SqlZenStore(BaseZenStore):
             existing_schedule = existing_schedule.update(schedule_update)
             session.add(existing_schedule)
             session.commit()
-            return existing_schedule.to_model()
+            return existing_schedule.to_model(hydrate=True)
 
     def delete_schedule(self, schedule_id: UUID) -> None:
         """Deletes a schedule.
@@ -3721,7 +3721,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_service_account)
-            return existing_service_account.to_service_account_model()
+            return existing_service_account.to_service_account_model(
+                hydrate=True
+            )
 
     def delete_service_account(
         self,
@@ -4100,7 +4102,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_connector)
             session.commit()
 
-            connector = existing_connector.to_model()
+            connector = existing_connector.to_model(hydrate=True)
             self._populate_connector_type(connector)
             return connector
 
@@ -4860,7 +4862,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_stack)
 
-            return existing_stack.to_model()
+            return existing_stack.to_model(hydrate=True)
 
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
@@ -5169,7 +5171,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model()
+            return existing_step_run.to_model(hydrate=True)
 
     @staticmethod
     def _set_run_step_parent_step(
@@ -5456,7 +5458,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_team)
-            return existing_team.to_model()
+            return existing_team.to_model(hydrate=True)
 
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
@@ -5912,7 +5914,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_user)
-            return existing_user.to_model()
+            return existing_user.to_model(hydrate=True)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -6213,7 +6215,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_workspace)
-            return existing_workspace.to_model()
+            return existing_workspace.to_model(hydrate=True)
 
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
         """Deletes a workspace.
