@@ -426,11 +426,17 @@ class ModelVersion(BaseModel):
                 except RuntimeError:
                     pass
                 else:
+                    # if inside a step context we loop over all
+                    # model version configuration to find, if the
+                    # model version for current model was already
+                    # created in the current run, not to create
+                    # new model versions
                     pipeline_mv = context.pipeline_run.config.model_version
                     if (
                         pipeline_mv
                         and pipeline_mv.was_created_in_this_run
                         and pipeline_mv.name == self.name
+                        and pipeline_mv.version is not None
                     ):
                         self.version = pipeline_mv.version
                     else:
@@ -440,6 +446,7 @@ class ModelVersion(BaseModel):
                                 step_mv
                                 and step_mv.was_created_in_this_run
                                 and step_mv.name == self.name
+                                and step_mv.version is not None
                             ):
                                 self.version = step_mv.version
                                 break

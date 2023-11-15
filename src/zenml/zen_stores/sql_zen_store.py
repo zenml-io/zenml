@@ -6519,7 +6519,7 @@ class SqlZenStore(BaseZenStore):
             all_versions = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+                .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
             ).first()
 
             model_version.number = (
@@ -6569,7 +6569,7 @@ class SqlZenStore(BaseZenStore):
                 str(model_version_name_or_number_or_id)
                 == ModelStages.LATEST.value
             ):
-                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+                query = query.order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
             elif model_version_name_or_number_or_id in [
                 stage.value for stage in ModelStages
             ]:
