@@ -26,7 +26,6 @@ def convert_annotations(
     """Converts the annotation from Label Studio to a dictionary."""
     image_urls, labels = [], []
     for annotation in label_studio_annotations:
-        # image_url = annotation["data"]["image"]
         image_url = annotation["storage_filename"]
         label = annotation["annotations"][0]["result"][0]["value"]["choices"][
             0
