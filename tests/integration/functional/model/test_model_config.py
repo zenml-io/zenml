@@ -15,11 +15,14 @@ from unittest import mock
 
 import pytest
 
+from tests.integration.functional.utils import model_killer, tags_killer
 from zenml.client import Client
 from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
 from zenml.model import ModelConfig
 from zenml.models import ModelRequestModel, ModelVersionRequestModel
+from zenml.models.model_models import ModelUpdateModel
+from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
 
@@ -99,7 +102,7 @@ class TestModelConfig:
     def test_model_create_model_and_version(self):
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME, create_new_model_version=True)
+            mc = ModelConfig(name=MODEL_NAME)
             with mock.patch("zenml.model.model_config.logger.info") as logger:
                 mv = mc.get_or_create_model_version()
                 logger.assert_called()
@@ -123,14 +126,14 @@ class TestModelConfig:
         with ModelContext():
             mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
             with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
+                mc._get_model_version()
 
     def test_model_fetch_model_and_version_by_stage(self):
         """Test model and model version retrieval by exact stage number."""
         with ModelContext(
             model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, stage=ModelStages.PRODUCTION)
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch(
                 "zenml.model.model_config.logger.warning"
             ) as logger:
@@ -144,32 +147,15 @@ class TestModelConfig:
         with ModelContext(model_version="1.0.0"):
             mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
-                mc.get_or_create_model_version()
+                mc._get_model_version()
 
     def test_model_fetch_model_and_version_latest(self):
         """Test model and model version retrieval by latest version."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME)
+            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST)
             mv = mc.get_or_create_model_version()
 
             assert mv.name == "1.0.0"
-
-    def test_init_create_new_version_with_version_fails(self):
-        """Test that it is not possible to use `version` as ModelStages and `create_new_model_version` together."""
-        with pytest.raises(ValueError):
-            ModelConfig(
-                name=MODEL_NAME,
-                version=ModelStages.PRODUCTION,
-                create_new_model_version=True,
-            )
-
-        mc = ModelConfig(
-            name=MODEL_NAME,
-            create_new_model_version=True,
-        )
-        assert mc.name == MODEL_NAME
-        assert mc.create_new_model_version
-        assert mc.version == RUNNING_MODEL_VERSION
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
@@ -189,7 +175,6 @@ class TestModelConfig:
         with ModelContext():
             mc = ModelConfig(
                 name=MODEL_NAME,
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
             )
             mv1 = mc.get_or_create_model_version()
@@ -197,9 +182,61 @@ class TestModelConfig:
 
             mc = ModelConfig(
                 name=MODEL_NAME,
-                create_new_model_version=True,
                 delete_new_version_on_failure=False,
             )
             mv2 = mc.get_or_create_model_version()
 
             assert mv1.id == mv2.id
+
+    def test_tags_properly_created(self):
+        """Test that model context can create proper tag relationships."""
+        with model_killer():
+            with tags_killer():
+                Client().create_tag(TagRequestModel(name="foo", color="green"))
+                mc = ModelConfig(
+                    name=MODEL_NAME,
+                    tags=["foo", "bar"],
+                    create_new_model_version=True,
+                    delete_new_version_on_failure=False,
+                )
+
+                # run 2 times to first create, next get
+                for _ in range(2):
+                    model = mc.get_or_create_model()
+
+                    assert len(model.tags) == 2
+                    assert {t.name for t in model.tags} == {"foo", "bar"}
+                    assert {
+                        t.color for t in model.tags if t.name == "foo"
+                    } == {"green"}
+
+    def test_tags_properly_updated(self):
+        """Test that model context can update proper tag relationships."""
+        with model_killer():
+            with tags_killer():
+                mc = ModelConfig(
+                    name=MODEL_NAME,
+                    tags=["foo", "bar"],
+                    create_new_model_version=True,
+                    delete_new_version_on_failure=False,
+                )
+                model_id = mc.get_or_create_model().id
+
+                Client().update_model(
+                    model_id, ModelUpdateModel(add_tags=["tag1", "tag2"])
+                )
+                model = mc.get_or_create_model()
+                assert len(model.tags) == 4
+                assert {t.name for t in model.tags} == {
+                    "foo",
+                    "bar",
+                    "tag1",
+                    "tag2",
+                }
+
+                Client().update_model(
+                    model_id, ModelUpdateModel(remove_tags=["tag1", "tag2"])
+                )
+                model = mc.get_or_create_model()
+                assert len(model.tags) == 2
+                assert {t.name for t in model.tags} == {"foo", "bar"}

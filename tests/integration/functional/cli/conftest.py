@@ -90,7 +90,7 @@ def step_2() -> (
 
 
 @pipeline(
-    model_config=ModelConfig(name=NAME, create_new_model_version=True),
+    model_config=ModelConfig(name=NAME),
     name=NAME,
 )
 def pipeline():

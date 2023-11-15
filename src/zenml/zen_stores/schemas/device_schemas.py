@@ -148,7 +148,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         Returns:
             The updated `OAuthDeviceSchema`.
         """
-        for field, value in device_update.dict(exclude_unset=True).items():
+        for field, value in device_update.dict(exclude_none=True).items():
             if hasattr(self, field):
                 setattr(self, field, value)
 

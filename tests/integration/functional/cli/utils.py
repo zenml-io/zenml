@@ -28,6 +28,7 @@ from zenml.models import (
     UserResponseModel,
     WorkspaceResponseModel,
 )
+from zenml.models.tag_models import TagFilterModel, TagRequestModel
 from zenml.utils.string_utils import random_str
 
 SAMPLE_CUSTOM_ARGUMENTS = [
@@ -189,3 +190,25 @@ def test_temporarily_setting_the_active_stack(clean_workspace):
         assert clean_workspace.active_stack_model == new_stack
 
     assert clean_workspace.active_stack_model == initial_stack
+
+
+@contextmanager
+def tags_killer(tag_create_count: int = 5):
+    tags = []
+    for _ in range(tag_create_count):
+        tags.append(
+            Client().create_tag(TagRequestModel(name=random_resource_name()))
+        )
+    yield tags
+    for tag in Client().list_tags(TagFilterModel(size=999)).items:
+        Client().delete_tag(tag.id)
+
+
+def random_resource_name(length: int = 32) -> str:
+    import random
+    import string
+
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits)
+        for _ in range(length)
+    )
