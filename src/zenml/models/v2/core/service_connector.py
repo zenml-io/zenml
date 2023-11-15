@@ -183,9 +183,6 @@ class ServiceConnectorRequest(ShareableRequest):
                 the connector instance can be used to access.
             configuration: The connector configuration.
             secrets: The connector secrets.
-
-        Raises:
-            ValueError: If the connector configuration is not valid.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -454,7 +451,11 @@ class ServiceConnectorResponse(
     def set_connector_type(
         self, value: Union[str, "ServiceConnectorTypeModel"]
     ) -> None:
-        """Auxiliary method to set the connector type."""
+        """Auxiliary method to set the connector type.
+
+        Args:
+            value: the new value for the connector type.
+        """
         self.get_body().connector_type = value
 
     def validate_and_configure_resources(
@@ -477,9 +478,6 @@ class ServiceConnectorResponse(
                 the connector instance can be used to access.
             configuration: The connector configuration.
             secrets: The connector secrets.
-
-        Raises:
-            ValueError: If the connector configuration is not valid.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -743,6 +741,7 @@ def _validate_and_configure_resources(
 
     Raises:
         ValueError: If the connector configuration is not valid.
+        RunTimeError: If the connector instance had not been hydrated yet.
     """
     # The fields that need to be updated are different between the request
     # and response models. For the request model, the fields are in the
