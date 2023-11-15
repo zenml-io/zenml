@@ -231,7 +231,7 @@ class PipelineBuildResponse(
             The yaml representation of the pipeline build.
         """
         # Get the base attributes
-        yaml_dict = json.loads(
+        yaml_dict: Dict[str, Any] = json.loads(
             self.json(
                 exclude={
                     "body",
