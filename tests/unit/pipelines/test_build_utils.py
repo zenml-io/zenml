@@ -30,7 +30,10 @@ from zenml.models import (
     CodeRepositoryResponse,
     Page,
     PipelineBuildResponse,
+    PipelineBuildResponseBody,
+    PipelineBuildResponseMetadata,
     PipelineDeploymentBase,
+    PipelineDeploymentResponse,
 )
 from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
@@ -149,7 +152,9 @@ def test_stack_with_container_registry_creates_non_local_build(
 
 
 def test_build_uses_correct_settings(
-    clean_client, mocker, empty_pipeline  # noqa: F811
+    clean_client,
+    mocker,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
@@ -317,13 +322,17 @@ def test_custom_build_verification(
 
     missing_image_build = PipelineBuildResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_deployment_response_model.user,
-        workspace=sample_deployment_response_model.workspace,
-        images={"wrong_key": {"image": "docker_image_name"}},
-        is_local=False,
-        contains_code=True,
+        body=PipelineBuildResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_deployment_response_model.user,
+        ),
+        metadata=PipelineBuildResponseMetadata(
+            workspace=sample_deployment_response_model.workspace,
+            images={"wrong_key": {"image": "docker_image_name"}},
+            is_local=False,
+            contains_code=True,
+        ),
     )
 
     with pytest.raises(RuntimeError):
@@ -333,9 +342,10 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    correct_build = PipelineBuildResponse.parse_obj(
+    correct_build = missing_image_build.copy(deep=True)
+    correct_build.metadata = PipelineBuildResponseMetadata.parse_obj(
         {
-            **missing_image_build.dict(),
+            **missing_image_build.metadata.dict(),
             "images": {"key": {"image": "docker_image_name"}},
         }
     )
@@ -347,16 +357,19 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    build_that_requires_download = PipelineBuildResponse.parse_obj(
-        {
-            **missing_image_build.dict(),
-            "images": {
-                "key": {
-                    "image": "docker_image_name",
-                    "requires_code_download": True,
-                }
-            },
-        }
+    build_that_requires_download = missing_image_build.copy(deep=True)
+    build_that_requires_download.metadata = (
+        PipelineBuildResponseMetadata.parse_obj(
+            {
+                **missing_image_build.metadata.dict(),
+                "images": {
+                    "key": {
+                        "image": "docker_image_name",
+                        "requires_code_download": True,
+                    }
+                },
+            }
+        )
     )
 
     mocker.patch.object(
@@ -415,7 +428,9 @@ def test_build_checksum_computation(clean_client, mocker):
     assert checksum != new_checksum
 
 
-def test_local_repo_verification(mocker, sample_deployment_response_model):
+def test_local_repo_verification(
+    mocker, sample_deployment_response_model: PipelineDeploymentResponse
+):
     """Test the local repo verification."""
     mocker.patch.object(
         PipelineDeploymentBase,

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import uuid
 from contextlib import ExitStack as does_not_raise
 
 import pytest
@@ -29,6 +30,8 @@ def test_artifact_request_model_fails_with_long_name():
     with pytest.raises(ValidationError):
         long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name=long_name,
             type=ArtifactType.DATA,
             uri="abc",
@@ -42,6 +45,8 @@ def test_artifact_request_model_fails_with_long_uri():
     long_uri = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
             type=ArtifactType.DATA,
             uri=long_uri,
@@ -55,6 +60,8 @@ def test_artifact_request_model_works_with_long_materializer():
     with does_not_raise():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
             type=ArtifactType.DATA,
             uri="abc",
@@ -68,6 +75,8 @@ def test_artifact_request_model_works_with_long_data_type():
     with does_not_raise():
         long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
             type=ArtifactType.DATA,
             uri="abc",
