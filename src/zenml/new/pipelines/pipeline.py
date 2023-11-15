@@ -832,7 +832,7 @@ class Pipeline:
     def prepare_model_versions(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> None:
-        """Prepare nonexisting model versions and validate existing that are used in the pipeline run.
+        """Create model versions which are missing and validate existing ones that are used in the pipeline run.
 
         Args:
             deployment: The pipeline deployment configuration.
