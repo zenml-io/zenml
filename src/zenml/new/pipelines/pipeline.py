@@ -722,13 +722,13 @@ class Pipeline:
 
                 if (
                     run
-                    and Client().zen_store.get_run(run.id).status
+                    and Client().get_pipeline_run(run.id).status
                     == ExecutionStatus.INITIALIZING
                 ):
                     # The run hasn't actually started yet, which means that we
-                    # failed beforehand -> We don't want the run to stay in the
-                    # database
-                    Client().zen_store.delete_run(run.id)
+                    # failed during initialization -> We don't want the run to
+                    # stay in the database
+                    Client().delete_pipeline_run(run.id)
 
                 raise e
             finally:
