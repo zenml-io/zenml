@@ -28,6 +28,8 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.source import Source
 from zenml.models import (
     CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
+    CodeRepositoryResponseMetadata,
     Page,
     PipelineBuildResponse,
     PipelineBuildResponseBody,
@@ -432,6 +434,15 @@ def test_local_repo_verification(
     mocker, sample_deployment_response_model: PipelineDeploymentResponse
 ):
     """Test the local repo verification."""
+
+    deployment = PipelineDeploymentBase(
+        run_name_template=sample_deployment_response_model.run_name_template,
+        pipeline_configuration=sample_deployment_response_model.pipeline_configuration,
+        step_configurations=sample_deployment_response_model.step_configurations,
+        client_environment=sample_deployment_response_model.client_environment,
+        client_version=sample_deployment_response_model.client_version,
+        server_version=sample_deployment_response_model.server_version,
+    )
     mocker.patch.object(
         PipelineDeploymentBase,
         "requires_code_download",
@@ -445,10 +456,10 @@ def test_local_repo_verification(
     )
 
     assert not build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model, local_repo_context=None
+        deployment=deployment, local_repo_context=None
     )
     assert not build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model,
+        deployment=deployment,
         local_repo_context=context_with_local_changes,
     )
 
@@ -462,34 +473,38 @@ def test_local_repo_verification(
     with pytest.raises(RuntimeError):
         # No local repo
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=None,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=dirty_local_context,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=context_with_local_changes,
         )
 
     repo_response = CodeRepositoryResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_deployment_response_model.user,
-        workspace=sample_deployment_response_model.workspace,
         name="name",
-        config={"key": "value"},
-        source=Source(
-            module=StubCodeRepository.__module__,
-            attribute=StubCodeRepository.__name__,
-            type="unknown",
+        body=CodeRepositoryResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_deployment_response_model.user,
+            source=Source(
+                module=StubCodeRepository.__module__,
+                attribute=StubCodeRepository.__name__,
+                type="unknown",
+            ),
+        ),
+        metadata=CodeRepositoryResponseMetadata(
+            workspace=sample_deployment_response_model.workspace,
+            config={"key": "value"},
         ),
     )
 
@@ -500,7 +515,7 @@ def test_local_repo_verification(
         is_dirty=False, has_local_changes=False
     )
     code_repo = build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model,
+        deployment=deployment,
         local_repo_context=clean_local_context,
     )
     assert isinstance(code_repo, StubCodeRepository)
