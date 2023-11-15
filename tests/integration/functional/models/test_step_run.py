@@ -24,6 +24,7 @@ from tests.integration.functional.zen_stores.utils import (
     int_plus_one_test_step,
 )
 from zenml.enums import ExecutionStatus
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -102,8 +103,16 @@ def test_step_run_with_too_long_source_code_is_truncated(
     ).runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
-    assert step_1.source_code == random_source[:1000] + "..."
-    assert step_2.source_code == random_source[:1000] + "..."
+    assert len(step_1.source_code) == TEXT_FIELD_MAX_LENGTH
+    assert len(step_2.source_code) == TEXT_FIELD_MAX_LENGTH
+    assert (
+        step_1.source_code
+        == random_source[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
+    )
+    assert (
+        step_2.source_code
+        == random_source[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
+    )
 
 
 def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
@@ -140,8 +149,16 @@ def test_step_run_with_too_long_docstring_is_truncated(
     ).runs[0]
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
-    assert step_1.docstring == random_docstring[:1000] + "..."
-    assert step_2.docstring == random_docstring[:1000] + "..."
+    assert len(step_1.docstring) == TEXT_FIELD_MAX_LENGTH
+    assert len(step_2.docstring) == TEXT_FIELD_MAX_LENGTH
+    assert (
+        step_1.docstring
+        == random_docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
+    )
+    assert (
+        step_2.docstring
+        == random_docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
+    )
 
 
 def test_disabling_step_logs(clean_client: "Client", one_step_pipeline):

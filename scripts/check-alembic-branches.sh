@@ -5,6 +5,7 @@ output=$(alembic branches)
 
 # Check if there's any output
 if [[ -n "$output" ]]; then
+  echo $output
   echo "Warning: Diverging Alembic branches detected."
   exit 1  # Exit with failure status
 else

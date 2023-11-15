@@ -47,6 +47,9 @@ from zenml.enums import AuthScheme, OAuthDeviceStatus, PermissionType
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKey,
+    APIKeyInternalResponseModel,
+    APIKeyInternalUpdateModel,
     ExternalUserModel,
     OAuthDeviceInternalResponseModel,
     OAuthDeviceInternalUpdateModel,
@@ -98,6 +101,7 @@ class AuthContext(BaseModel):
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponseModel] = None
+    api_key: Optional[APIKeyInternalResponseModel] = None
 
     @property
     def permissions(self) -> Set[PermissionType]:
@@ -116,6 +120,72 @@ class AuthContext(BaseModel):
             return set(permissions)
 
         return set()
+
+
+def _fetch_and_verify_api_key(
+    api_key_id: UUID, key_to_verify: Optional[str] = None
+) -> APIKeyInternalResponseModel:
+    """Fetches an API key from the database and verifies it.
+
+    Args:
+        api_key_id: The API key ID.
+        key_to_verify: Optional API key value to verify against the API key.
+
+    Returns:
+        The fetched API key.
+
+    Raises:
+        AuthorizationException: If the API key could not be found, is not
+            active, if it could not be verified against the supplied key value
+            or if the associated service account is not active.
+    """
+    store = zen_store()
+
+    try:
+        api_key = zen_store().get_internal_api_key(api_key_id)
+    except KeyError:
+        error = (
+            f"Authentication error: error retrieving API key " f"{api_key_id}"
+        )
+        logger.error(error)
+        raise AuthorizationException(error)
+
+    if not api_key.service_account.active:
+        error = (
+            f"Authentication error: service account "
+            f"{api_key.service_account.name} "
+            f"associated with API key {api_key.name} is not active"
+        )
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    if not api_key.active:
+        error = (
+            f"Authentication error: API key "
+            f"{api_key.name} "
+            f"associated with service account "
+            f"{api_key.service_account.name} is not active"
+        )
+        logger.error(error)
+        raise AuthorizationException(error)
+
+    if key_to_verify and not api_key.verify_key(key_to_verify):
+        error = (
+            f"Authentication error: could not verify key value for API key "
+            f"{api_key.name}"
+        )
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    # Update the "last used" timestamp of the API key
+    store.update_internal_api_key(
+        api_key.id,
+        APIKeyInternalUpdateModel(  # type: ignore[call-arg]
+            update_last_login=True
+        ),
+    )
+
+    return api_key
 
 
 def authenticate_credentials(
@@ -152,6 +222,11 @@ def authenticate_credentials(
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
         try:
+            # NOTE: this method will not return a user if the user name or ID
+            # identifies a service account instead of a regular user. This
+            # is intentional because service accounts are not allowed to
+            # be used to authenticate to the API using a username and password,
+            # or an activation token.
             user = zen_store().get_auth_user(user_name_or_id)
             user_model = zen_store().get_user(
                 user_name_or_id=user_name_or_id, include_private=True
@@ -162,7 +237,7 @@ def authenticate_credentials(
             # password/token verification to protect against response discrepancy
             # attacks (https://cwe.mitre.org/data/definitions/204.html)
             logger.exception(
-                f"Authentication error: error retrieving user "
+                f"Authentication error: error retrieving account "
                 f"{user_name_or_id}"
             )
             pass
@@ -172,6 +247,20 @@ def authenticate_credentials(
             error = "Authentication error: invalid username or password"
             logger.error(error)
             raise AuthorizationException(error)
+        if user and not user.active:
+            error = f"Authentication error: user {user.name} is not active"
+            logger.error(error)
+            raise AuthorizationException(error)
+
+    elif activation_token is not None:
+        if not UserAuthModel.verify_activation_token(activation_token, user):
+            error = (
+                f"Authentication error: invalid activation token for user "
+                f"{user_name_or_id}"
+            )
+            logger.error(error)
+            raise AuthorizationException(error)
+
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
@@ -188,7 +277,7 @@ def authenticate_credentials(
             )
         except KeyError:
             error = (
-                f"Authentication error: error retrieving token user "
+                f"Authentication error: error retrieving token account "
                 f"{decoded_token.user_id}"
             )
             logger.error(error)
@@ -196,11 +285,18 @@ def authenticate_credentials(
 
         if not user_model.active:
             error = (
-                f"Authentication error: user {decoded_token.user_id} is not "
+                f"Authentication error: account {user_model.name} is not "
                 f"active"
             )
             logger.error(error)
             raise AuthorizationException(error)
+
+        api_key_model: Optional[APIKeyInternalResponseModel] = None
+        if decoded_token.api_key_id:
+            # The API token was generated from an API key. We still have to
+            # verify if the API key hasn't been deactivated or deleted in the
+            # meantime.
+            api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
 
         device_model: Optional[OAuthDeviceInternalResponseModel] = None
         if decoded_token.device_id:
@@ -225,7 +321,7 @@ def authenticate_credentials(
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
-                    f"does not belong to user {user_model.id}"
+                    f"does not belong to user {user_model.name}"
                 )
                 logger.error(error)
                 raise AuthorizationException(error)
@@ -261,13 +357,16 @@ def authenticate_credentials(
             access_token=decoded_token,
             encoded_access_token=access_token,
             device=device_model,
+            api_key=api_key_model,
         )
-    elif activation_token is not None:
-        if not UserAuthModel.verify_activation_token(activation_token, user):
-            error = (
-                f"Authentication error: invalid activation token for user "
-                f"{user_name_or_id}"
-            )
+
+    else:
+        # IMPORTANT: the ONLY way we allow the authentication process to
+        # continue without any credentials (i.e. no password, activation
+        # token or access token) is if authentication is explicitly disabled
+        # by setting the auth_scheme to NO_AUTH.
+        if server_config().auth_scheme != AuthScheme.NO_AUTH:
+            error = "Authentication error: no credentials provided"
             logger.error(error)
             raise AuthorizationException(error)
 
@@ -552,6 +651,40 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         )
 
     return AuthContext(user=user)
+
+
+def authenticate_api_key(
+    api_key: str,
+) -> AuthContext:
+    """Implement service account API key authentication.
+
+    Args:
+        api_key: The service account API key.
+
+
+    Returns:
+        The authentication context reflecting the authenticated service account.
+
+    Raises:
+        AuthorizationException: If the service account could not be authorized.
+    """
+    try:
+        decoded_api_key = APIKey.decode_api_key(api_key)
+    except ValueError:
+        error = "Authentication error: error decoding API key"
+        logger.exception(error)
+        raise AuthorizationException(error)
+
+    internal_api_key = _fetch_and_verify_api_key(
+        api_key_id=decoded_api_key.id, key_to_verify=decoded_api_key.key
+    )
+
+    # For now, a lot of code still relies on the active user in the auth
+    # context being a UserResponse object, which is a superset of the
+    # ServiceAccountResponse object. So we need to convert the service
+    # account to a user here.
+    user_model = internal_api_key.service_account.to_user_model()
+    return AuthContext(user=user_model, api_key=internal_api_key)
 
 
 def http_authentication(

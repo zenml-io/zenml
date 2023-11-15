@@ -159,6 +159,8 @@ jobs:
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
       - name: Check for alembic branch divergence
+        env:
+          ZENML_DEBUG: 0
         run: |
           bash scripts/check-alembic-branches.sh
 
