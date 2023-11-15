@@ -2728,7 +2728,7 @@ class RestZenStore(BaseZenStore):
             )
         else:
             return self._list_paginated_resources(
-                route=f"{MODEL_VERSIONS}",
+                route=MODEL_VERSIONS,
                 response_model=ModelVersionResponseModel,
                 filter_model=model_version_filter_model,
             )
@@ -2751,7 +2751,7 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=model_version_id,
             resource_update=model_version_update_model,
-            route=f"{MODELS}/{model_version_update_model.model}{MODEL_VERSIONS}",
+            route=MODEL_VERSIONS,
             response_model=ModelVersionResponseModel,
         )
 

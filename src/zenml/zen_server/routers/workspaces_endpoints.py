@@ -1296,7 +1296,7 @@ def create_model_version(
     WORKSPACES
     + "/{workspace_name_or_id}"
     + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+    + "/{model_version_id}"
     + ARTIFACTS,
     response_model=ModelVersionArtifactResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -1327,7 +1327,8 @@ def create_model_version_artifact_link(
             user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    if model_version_id != model_version_artifact_link.model_version:
+    if str(model_version_id) != str(model_version_artifact_link.model_version):
+        breakpoint()
         raise IllegalOperationError(
             f"The model version id in your path `{model_version_id}` does not "
             f"match the model version specified in the request model "
@@ -1392,7 +1393,7 @@ def list_workspace_model_version_artifact_links(
     WORKSPACES
     + "/{workspace_name_or_id}"
     + MODEL_VERSIONS
-    + "/{model_version_name_or_id}"
+    + "/{model_version_id}"
     + RUNS,
     response_model=ModelVersionPipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -1424,7 +1425,9 @@ def create_model_version_pipeline_run_link(
             user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    if model_version_id != model_version_pipeline_run_link.model_version:
+    if str(model_version_id) != str(
+        model_version_pipeline_run_link.model_version
+    ):
         raise IllegalOperationError(
             f"The model version id in your path `{model_version_id}` does not "
             f"match the model version specified in the request model "

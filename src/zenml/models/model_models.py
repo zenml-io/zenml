@@ -223,7 +223,7 @@ class ModelVersionResponseModel(
         """
         from zenml.model.model_version import ModelVersion
 
-        return ModelVersion(
+        mv = ModelVersion(
             name=self.model.name,
             license=self.model.license,
             description=self.description,
@@ -237,6 +237,9 @@ class ModelVersionResponseModel(
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
         )
+        mv._id = self.id
+
+        return mv
 
     @property
     def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
