@@ -4398,9 +4398,9 @@ class SqlZenStore(BaseZenStore):
         if updated_connector.secrets is None:
             if scope_changed and existing_connector.secret_id:
                 # Update the scope of the existing secret
-                self.secrets_store.update_secret(  # type: ignore[call-arg]
+                self.secrets_store.update_secret(
                     secret_id=existing_connector.secret_id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
                         scope=SecretScope.WORKSPACE
                         if is_shared
                         else SecretScope.USER,
