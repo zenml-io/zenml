@@ -59,8 +59,7 @@ def convert_pred_filenames_to_task_ids(
         for pred in preds
     ]
     filename_id_mapping = {
-        "/".join(clean_url(task["storage_filename"]).split("/")): task["id"]
-        for task in tasks
+        clean_url(task["storage_filename"]): task["id"] for task in tasks
     }
     return [
         {
