@@ -827,10 +827,12 @@ def test_that_artifact_is_removed_on_deletion():
 
         client = Client()
         run = client.get_pipeline_run(run_1)
-        client.delete_pipeline(run.pipeline.id)
-        client.delete_artifact(
+        pipeline_id = run.pipeline.id
+        artifact_id = (
             run.steps["_this_step_produces_output"].outputs["data"].id
         )
+        client.delete_pipeline(pipeline_id)
+        client.delete_artifact(artifact_id)
         model = client.get_model(model_name_or_id="step")
         assert len(model.versions) == 1
         assert len(model.versions[0].artifact_object_ids) == 0

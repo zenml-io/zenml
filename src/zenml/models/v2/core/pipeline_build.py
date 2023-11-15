@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+import json
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -220,6 +221,36 @@ class PipelineBuildResponse(
         return Client().zen_store.get_build(self.id)
 
     # Helper methods
+    def to_yaml(self) -> Dict[str, Any]:
+        """Create a yaml representation of the pipeline build.
+
+        Create a yaml representation of the pipeline build that can be used
+        to create a PipelineBuildBase instance.
+
+        Returns:
+            The yaml representation of the pipeline build.
+        """
+        # Get the base attributes
+        yaml_dict = json.loads(
+            self.json(
+                exclude={
+                    "body",
+                    "metadata",
+                }
+            )
+        )
+        images = json.loads(
+            self.get_metadata().json(
+                exclude={
+                    "pipeline",
+                    "stack",
+                    "workspace",
+                }
+            )
+        )
+        yaml_dict.update(images)
+        return yaml_dict
+
     @property
     def requires_code_download(self) -> bool:
         """Whether the build requires code download.
