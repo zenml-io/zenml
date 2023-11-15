@@ -4095,7 +4095,8 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Raises:
-            ValueError: If the request
+            ValueError: If the request does not contain an orchestrator run ID.
+
         Returns:
             The pipeline run, and a boolean indicating whether the run was
             created or not.
