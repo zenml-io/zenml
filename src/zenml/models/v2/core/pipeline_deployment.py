@@ -281,6 +281,18 @@ class PipelineDeploymentResponse(
         """
         return self.get_metadata().code_reference
 
+    @property
+    def requires_code_download(self) -> bool:
+        """Whether the deployment requires downloading some code files.
+
+        Returns:
+            Whether the deployment requires downloading some code files.
+        """
+        return any(
+            step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
+            for step in self.step_configurations.values()
+        )
+
 
 # ------------------ Filter Model ------------------
 

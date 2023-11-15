@@ -172,7 +172,9 @@ def test_getting_image_from_deployment(
             deployment=sample_deployment_response_model
         )
 
-    sample_deployment_response_model.build = sample_build_response_model
+    sample_deployment_response_model.metadata.build = (
+        sample_build_response_model
+    )
     assert not sample_build_response_model.images
 
     with pytest.raises(KeyError):
@@ -181,7 +183,7 @@ def test_getting_image_from_deployment(
             deployment=sample_deployment_response_model
         )
 
-    sample_build_response_model.images = {
+    sample_build_response_model.metadata.images = {
         ORCHESTRATOR_DOCKER_IMAGE_KEY: BuildItem(image="image_name")
     }
     assert (

@@ -631,6 +631,7 @@ def create_pipeline_model(
     customizable PipelineResponseModel."""
 
     def f(
+        version: Optional[str] = None,
         **kwargs: Any,
     ) -> PipelineResponse:
         metadata_kwargs = dict(
@@ -646,7 +647,7 @@ def create_pipeline_model(
                 created=datetime.now(),
                 updated=datetime.now(),
                 user=sample_user_model,
-                version="1",
+                version=version or "1",
             ),
             metadata=PipelineResponseMetadata(
                 **metadata_kwargs,

@@ -225,6 +225,8 @@ class OAuthDeviceResponse(
 ):
     """Response model for OAuth2 devices."""
 
+    _warn_on_response_updates = False
+
     def get_hydrated_version(self) -> "OAuthDeviceResponse":
         """Get the hydrated version of this OAuth2 device.
 

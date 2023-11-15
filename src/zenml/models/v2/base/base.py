@@ -14,38 +14,30 @@
 """Base model definitions."""
 
 from datetime import datetime
-from typing import Any, ClassVar, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import Field, SecretStr
 from pydantic.generics import GenericModel
 
+from zenml.analytics.models import AnalyticsTrackedModelMixin
+from zenml.enums import ResponseUpdateStrategy
 from zenml.exceptions import HydrationError
+from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
+
+logger = get_logger(__name__)
 
 # -------------------- Base Model --------------------
 
 
-class BaseZenModel(YAMLSerializationMixin):
+class BaseZenModel(YAMLSerializationMixin, AnalyticsTrackedModelMixin):
     """Base model class for all ZenML models.
 
     This class is used as a base class for all ZenML models. It provides
     functionality for tracking analytics events and proper encoding of
     SecretStr values.
     """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = []
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Get the analytics metadata for the model.
-
-        Returns:
-            Dict of analytics metadata.
-        """
-        metadata = {}
-        for field_name in self.ANALYTICS_FIELDS:
-            metadata[field_name] = getattr(self, field_name, None)
-        return metadata
 
     class Config:
         """Pydantic configuration class."""
@@ -117,6 +109,11 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         title="The metadata related to this resource."
     )
 
+    _response_update_strategy: ResponseUpdateStrategy = (
+        ResponseUpdateStrategy.ALLOW
+    )
+    _warn_on_response_updates: bool = True
+
     def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":
         """Abstract method to fetch the hydrated version of the model.
 
@@ -146,7 +143,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             True if the other object is of the same type and has the same UUID.
         """
-        if isinstance(other, BaseResponse):
+        if isinstance(other, type(self)):
             return self.id == other.id
         else:
             return False
@@ -161,28 +158,97 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Raises:
             HydrationError: if the hydrated version has different values set
-                for the main fields.
+                for either the name of the body fields and the
+                _method_body_mutation is set to ResponseBodyUpdate.DENY.
         """
-        # Check the values of each field except the metadata field
-        # TODO: Now that the method is not abstract add more validation
-        fields = set(self.__fields__.keys())
-        fields.remove("metadata")
-
-        for field in fields:
-            original_value = getattr(self, field)
-            hydrated_value = getattr(hydrated_model, field)
-            if original_value != hydrated_value:
-                raise HydrationError(
-                    f"The field {field} in the hydrated version of the "
-                    f"response model has a different value '{hydrated_value}'"
-                    f"than the original value '{original_value}'"
-                )
-
-        # Assert that metadata exists in the hydrated version
+        # Check whether the metadata exists in the hydrated version
         if hydrated_model.metadata is None:
             raise HydrationError(
                 "The hydrated model does not have a metadata field."
             )
+
+        # Check if the ID is the same
+        if self.id != hydrated_model.id:
+            raise HydrationError(
+                "The hydrated version of the model does not have the same id."
+            )
+
+        # Check if the name has changed
+        if "name" in self.__fields__:
+            original_name = getattr(self, "name")
+            hydrated_name = getattr(hydrated_model, "name")
+
+            if original_name != hydrated_name:
+                if (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.ALLOW
+                ):
+                    setattr(self, "name", hydrated_name)
+
+                    if self._warn_on_response_updates:
+                        logger.warning(
+                            f"The name of the entity has changed from "
+                            f"`{original_name}` to `{hydrated_name}`."
+                        )
+
+                elif (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.IGNORE
+                ):
+                    if self._warn_on_response_updates:
+                        logger.warning(
+                            f"Ignoring the name change in the hydrated version "
+                            f"of the response: `{original_name}` to "
+                            f"`{hydrated_name}`."
+                        )
+                elif (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.DENY
+                ):
+                    raise HydrationError(
+                        f"Failing the hydration, because there is a change in "
+                        f"the name of the entity: `{original_name}` to "
+                        f"`{hydrated_name}`."
+                    )
+
+        # Check all the fields in the body
+        for field in self.get_body().__fields__:
+            original_value = getattr(self.get_body(), field)
+            hydrated_value = getattr(hydrated_model.get_body(), field)
+
+            if original_value != hydrated_value:
+                if (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.ALLOW
+                ):
+                    setattr(self.get_body(), field, hydrated_value)
+
+                    if self._warn_on_response_updates:
+                        logger.warning(
+                            f"The field `{field}` in the body of the response "
+                            f"has changed from `{original_value}` to "
+                            f"`{hydrated_value}`."
+                        )
+
+                elif (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.IGNORE
+                ):
+                    if self._warn_on_response_updates:
+                        logger.warning(
+                            f"Ignoring the change in the hydrated version of "
+                            f"the field `{field}`: `{original_value}` -> "
+                            f"`{hydrated_value}`."
+                        )
+                elif (
+                    self._response_update_strategy
+                    == ResponseUpdateStrategy.DENY
+                ):
+                    raise HydrationError(
+                        f"Failing the hydration, because there is a change in "
+                        f"the field `{field}`: `{original_value}` -> "
+                        f"`{hydrated_value}`"
+                    )
 
     def get_body(self) -> AnyBody:
         """Fetch the body of the entity.
@@ -190,8 +256,6 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             The body field of the response.
         """
-        # TODO: When RBAC is implemented, we can throw an error here, if
-        #   anyone tries to fetch an entity which can not be accessed.
         return self.body
 
     def get_metadata(self) -> "AnyMetadata":
@@ -201,12 +265,21 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
             The metadata field of the response.
         """
         if self.metadata is None:
-            hydrated_version = self.get_hydrated_version()
-            self._validate_hydrated_version(hydrated_version)
+            # If the metadata is not there, check the class first.
+            metadata_type = self.__fields__["metadata"].type_
 
-            assert hydrated_version.metadata is not None
+            if len(metadata_type.__fields__):
+                # If the metadata class defines any fields, fetch the metadata
+                # through the hydrated version.
+                hydrated_version = self.get_hydrated_version()
+                self._validate_hydrated_version(hydrated_version)
+                self.metadata = hydrated_version.metadata
+            else:
+                # Otherwise, use the metadata class to create an empty metadata
+                # object.
+                self.metadata = metadata_type()
 
-            self.metadata = hydrated_version.metadata
+        assert self.metadata is not None
 
         return self.metadata
 
