@@ -169,7 +169,7 @@ def _get_metadata_of_last_run(
     clean_client: "Client",
 ) -> Dict[str, "RunMetadataResponse"]:
     """Get the artifact metadata of the last run."""
-    return _get_output_of_last_run(clean_client).metadata
+    return _get_output_of_last_run(clean_client).run_metadata
 
 
 def _assert_visualization_enabled(clean_client: "Client"):

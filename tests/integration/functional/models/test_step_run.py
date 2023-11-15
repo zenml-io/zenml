@@ -41,7 +41,10 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     # Non-cached run
     pipeline_run = pipe.model.last_run
     step_run = pipeline_run.steps["step_"]
-    assert step_run.run == pipeline_run
+
+    run = clean_client.get_pipeline_run(step_run.pipeline_run_id)
+
+    assert run == pipeline_run
 
     # Cached run
     pipe.run()
@@ -62,8 +65,18 @@ def test_step_run_parent_steps_linkage(
     pipeline_run = pipeline_instance.model.last_run
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
-    assert step_1.parent_steps == []
-    assert step_2.parent_steps == [step_1]
+
+    parent_steps = [
+        clean_client.get_run_step(step_id)
+        for step_id in step_1.parent_step_ids
+    ]
+    assert parent_steps == []
+
+    parent_steps = [
+        clean_client.get_run_step(step_id)
+        for step_id in step_2.parent_step_ids
+    ]
+    assert parent_steps == [step_1]
 
 
 def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):

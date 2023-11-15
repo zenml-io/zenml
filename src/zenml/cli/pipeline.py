@@ -34,6 +34,7 @@ from zenml.models import (
 )
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 
@@ -193,19 +194,7 @@ def build_pipeline(
             cli_utils.declare(
                 f"Writing pipeline build output to `{output_path}`."
             )
-            with open(output_path, "w") as f:
-                f.write(
-                    build.yaml(
-                        exclude={
-                            "pipeline",
-                            "stack",
-                            "workspace",
-                            "user",
-                            "created",
-                            "updated",
-                        }
-                    )
-                )
+            write_yaml(output_path, build.to_yaml())
     else:
         cli_utils.declare("No docker builds required.")
 

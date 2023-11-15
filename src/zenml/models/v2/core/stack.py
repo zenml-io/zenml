@@ -144,11 +144,16 @@ class StackResponse(
         component_data = {}
         for component_type, components_list in self.components.items():
             component = components_list[0]
-            component_dict = json.loads(
-                component.json(
-                    include={"name", "type", "flavor", "configuration"}
-                )
+            component_dict = dict(
+                name=component.name,
+                type=str(component.type),
+                flavor=component.flavor,
             )
+            configuration = json.loads(
+                component.get_metadata().json(include={"configuration"})
+            )
+            component_dict.update(configuration)
+
             component_data[component_type.value] = component_dict
 
         # write zenml version and stack dict to YAML
