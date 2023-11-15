@@ -118,8 +118,15 @@ class ModelSchema(NamedSchema, table=True):
             ethics=model_request.ethics,
         )
 
-    def to_model(self) -> ModelResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelResponseModel:
         """Convert an `ModelSchema` to an `ModelResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelResponseModel`.
@@ -243,8 +250,15 @@ class ModelVersionSchema(NamedSchema, table=True):
             stage=model_version_request.stage,
         )
 
-    def to_model(self) -> ModelVersionResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionResponseModel:
         """Convert an `ModelVersionSchema` to an `ModelVersionResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionResponseModel`.
@@ -419,8 +433,15 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             version=version,
         )
 
-    def to_model(self) -> ModelVersionArtifactResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionArtifactResponseModel:
         """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionArtifactResponseModel`.
@@ -526,8 +547,15 @@ class ModelVersionPipelineRunSchema(NamedSchema, table=True):
             pipeline_run_id=model_version_pipeline_run_request.pipeline_run,
         )
 
-    def to_model(self) -> ModelVersionPipelineRunResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionPipelineRunResponseModel:
         """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionPipelineRunResponseModel`.
