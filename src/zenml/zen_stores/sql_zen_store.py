@@ -4036,11 +4036,11 @@ class SqlZenStore(BaseZenStore):
                 # finishes, the subsequent queries will not be able to find a
                 # placeholder run anymore, as we already updated the
                 # orchestrator_run_id.
-                # Note: This works to lock just the single row only if
-                # the where clause of the query is indexed (we have a unique
-                # index due to the unique constraint on those columns).
-                # Otherwise this will lock multiple rows or even the complete
-                # table which we want to avoid.
+                # Note: This only locks a single row if the where clause of
+                # the query is indexed (we have a unique index due to the
+                # unique constraint on those columns). Otherwise this will lock
+                # multiple rows or even the complete table which we want to
+                # avoid.
                 .with_for_update()
                 .where(
                     PipelineRunSchema.deployment_id == pipeline_run.deployment
@@ -4142,14 +4142,14 @@ class SqlZenStore(BaseZenStore):
             #     pipeline run that's trying to create the run. If yes, the
             #     `self.create_run(...)` will succeed. If no, a run with the
             #     same deployment_id and orchestrator_run_id already exists and
-            #     the `self.create_run(...)` call will fail as it checks that
-            #     the combination of these values is unique.
+            #     the `self.create_run(...)` call will fail due to the unique
+            #     contraint on those columns.
             # (2) Same as (1).
-            # (3) The step of the same pipeline run replaced the placeholder
+            # (3) A step of the same pipeline run replaced the placeholder
             #     run, which now contains the deployment_id and
             #     orchestrator_run_id of the run that we're trying to create.
-            #     -> The `self.create_run(...) call will fail as it checks that
-            #        the combination of these values is unique.
+            #     -> The `self.create_run(...) call will fail due to the unique
+            #     contraint on those columns.
             return self.create_run(pipeline_run), True
         except IntegrityError:
             # Creating the run failed with an integrity error. This means we
