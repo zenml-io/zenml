@@ -32,6 +32,6 @@ zenml_sync_params = LabelStudioDatasetSyncParameters(
     regex_filter=IMAGE_REGEX_FILTER,
 )
 
-data_sync = sync_new_data_to_label_studio(
-    params=zenml_sync_params,
+data_sync = sync_new_data_to_label_studio.with_options(
+    parameters={"params": zenml_sync_params},
 )
