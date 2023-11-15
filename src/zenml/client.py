@@ -5543,7 +5543,7 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 if model_versions_page.size > 0:
-                    model_versions = model_versions_page.items[0]
+                    model_versions = [model_versions_page.items[0]]
                 else:
                     model_versions = []
             elif model_version_name_or_number_or_id in ModelStages.values():

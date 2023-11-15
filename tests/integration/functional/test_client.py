@@ -43,6 +43,9 @@ from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ComponentResponseModel,
     ModelRequestModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
+    ModelVersionUpdateModel,
     PipelineBuildRequestModel,
     PipelineDeploymentRequestModel,
     PipelineRequestModel,
@@ -1171,43 +1174,130 @@ def test_basic_crud_for_entity(
             pass
 
 
-def test_latest_not_found(clean_client):
-    """Test that get latest fails if not found."""
-
-    cl = Client()
-    model_name = "super_model"
-
-    cl.create_model(
+def _create_some_model_version(
+    client: Client,
+    model_name: str = "aria_cat_supermodel",
+    model_version_name: str = "1.0.0",
+) -> ModelVersionResponseModel:
+    model = client.create_model(
         model=ModelRequestModel(
             name=model_name,
-            user=cl.active_user.id,
-            workspace=cl.active_workspace.id,
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+        )
+    )
+    return client.create_model_version(
+        ModelVersionRequestModel(
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+            model=model.id,
+            name=model_version_name,
         )
     )
 
-    with pytest.raises(KeyError):
-        Client().get_model_version(
-            model_name_or_id=model_name,
-            model_version_name_or_number_or_id=ModelStages.LATEST,
+
+def test_get_by_latest(clean_client):
+    """Test that model version can be retrieved with latest."""
+
+    cl = Client()
+    mv1 = _create_some_model_version(client=cl)
+
+    # latest returns the only model
+    mv2 = Client().get_model_version(
+        model_name_or_id=mv1.model.id,
+        model_version_name_or_number_or_id=ModelStages.LATEST,
+    )
+    assert mv2 == mv1
+
+    # after second model version, latest should point to it
+    mv3 = cl.create_model_version(
+        ModelVersionRequestModel(
+            user=cl.active_user.id,
+            workspace=cl.active_workspace.id,
+            model=mv1.model.id,
+            name="2.0.0",
         )
+    )
+    mv4 = Client().get_model_version(
+        model_name_or_id=mv1.model.id,
+        model_version_name_or_number_or_id=ModelStages.LATEST,
+    )
+    assert mv4 != mv1
+    assert mv4 == mv3
+
+
+def test_get_by_stage(clean_client):
+    """Test that model version can be retrived by stage."""
+
+    cl = Client()
+    mv1 = _create_some_model_version(client=cl)
+
+    cl.update_model_version(
+        model_version_id=mv1.id,
+        model_version_update_model=ModelVersionUpdateModel(
+            model=mv1.model.id, stage=ModelStages.STAGING, force=True
+        ),
+    )
+
+    mv2 = cl.get_model_version(
+        model_name_or_id=mv1.model.id,
+        model_version_name_or_number_or_id=ModelStages.STAGING,
+    )
+
+    assert mv1 == mv2
 
 
 def test_stage_not_found(clean_client):
-    """Test that get latest fails if not found."""
+    """Test that attempting to get model version fails if none at the given stage."""
 
     cl = Client()
-    model_name = "super_model"
+    mv1 = _create_some_model_version(client=cl)
 
-    cl.create_model(
-        model=ModelRequestModel(
-            name=model_name,
-            user=cl.active_user.id,
-            workspace=cl.active_workspace.id,
+    with pytest.raises(KeyError):
+        Client().get_model_version(
+            model_name_or_id=mv1.model.id,
+            model_version_name_or_number_or_id=ModelStages.STAGING,
         )
+
+
+def test_get_model_version_by_name(clean_client):
+    """Test that model version can be retrieved by its name."""
+
+    cl = Client()
+    model_name = "aria_cat_super_model"
+    model_version_name = "1.0"
+
+    mv1 = _create_some_model_version(
+        client=cl, model_name=model_name, model_version_name=model_version_name
     )
+
+    mv2 = Client().get_model_version(
+        model_name_or_id=model_name,
+        model_version_name_or_number_or_id=model_version_name,
+    )
+    assert mv1 == mv2
 
     with pytest.raises(KeyError):
         Client().get_model_version(
             model_name_or_id=model_name,
-            model_version_name_or_number_or_id=ModelStages.STAGING,
+            model_version_name_or_number_or_id="blupus_cat_super_model",
+        )
+
+
+def test_get_model_version_by_index(clean_client):
+    """Test that model version can be retrieved by its index."""
+
+    cl = Client()
+    mv1 = _create_some_model_version(client=cl)
+
+    mv2 = cl.get_model_version(
+        model_name_or_id=mv1.model.id,
+        model_version_name_or_number_or_id=1,
+    )
+    assert mv1 == mv2
+
+    with pytest.raises(KeyError):
+        cl.get_model_version(
+            model_name_or_id=mv1.model.id,
+            model_version_name_or_number_or_id=2,
         )
