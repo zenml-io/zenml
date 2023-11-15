@@ -137,7 +137,7 @@ The Kubernetes Service Connector is part of the Kubernetes ZenML integration.
 You can either install the entire integration or use a pypi extra to install it
 independently of the integration:
 
-* `pip install zenml[connectors-kubernetes]` installs only prerequisites for the
+* `pip install "zenml[connectors-kubernetes]"` installs only prerequisites for the
 Kubernetes Service Connector Type
 * `zenml integration install kubernetes` installs the entire Kubernetes ZenML
 integration
