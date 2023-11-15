@@ -226,7 +226,11 @@ class OAuthDeviceResponse(
     """Response model for OAuth2 devices."""
 
     def get_hydrated_version(self) -> "OAuthDeviceResponse":
-        """Get the hydrated version of this OAuth2 device."""
+        """Get the hydrated version of this OAuth2 device.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_authorized_device(self.id)
@@ -234,72 +238,128 @@ class OAuthDeviceResponse(
     # Body and metadata properties
     @property
     def client_id(self) -> UUID:
-        """The `client_id` property."""
+        """The `client_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().client_id
 
     @property
     def expires(self) -> Optional[datetime]:
-        """The `expires` property."""
+        """The `expires` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().expires
 
     @property
     def trusted_device(self) -> bool:
-        """The `trusted_device` property."""
+        """The `trusted_device` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().trusted_device
 
     @property
     def status(self) -> OAuthDeviceStatus:
-        """The `status` property."""
+        """The `status` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().status
 
     @property
     def os(self) -> Optional[str]:
-        """The `os` property."""
+        """The `os` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().os
 
     @property
     def ip_address(self) -> Optional[str]:
-        """The `ip_address` property."""
+        """The `ip_address` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().ip_address
 
     @property
     def hostname(self) -> Optional[str]:
-        """The `hostname` property."""
+        """The `hostname` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().hostname
 
     @property
     def python_version(self) -> Optional[str]:
-        """The `python_version` property."""
+        """The `python_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().python_version
 
     @property
     def zenml_version(self) -> Optional[str]:
-        """The `zenml_version` property."""
+        """The `zenml_version` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().zenml_version
 
     @property
     def city(self) -> Optional[str]:
-        """The `city` property."""
+        """The `city` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().city
 
     @property
     def region(self) -> Optional[str]:
-        """The `region` property."""
+        """The `region` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().region
 
     @property
     def country(self) -> Optional[str]:
-        """The `country` property."""
+        """The `country` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().country
 
     @property
     def failed_auth_attempts(self) -> int:
-        """The `failed_auth_attempts` property."""
+        """The `failed_auth_attempts` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().failed_auth_attempts
 
     @property
     def last_login(self) -> Optional[datetime]:
-        """The `last_login` property."""
+        """The `last_login` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().last_login
 
 

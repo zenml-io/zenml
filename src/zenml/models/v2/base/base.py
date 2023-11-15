@@ -121,7 +121,10 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:
-            NotImplementedError, in case the method is not implemented.
+            NotImplementedError: in case the method is not implemented.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
         """
         raise NotImplementedError(
             "Please implement a `get_hydrated_version` method before "
@@ -185,13 +188,21 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
             )
 
     def get_body(self) -> AnyBody:
-        """Fetch the body of the entity."""
+        """Fetch the body of the entity.
+
+        Returns:
+            The body field of the response.
+        """
         # TODO: When RBAC is implemented, we can throw an error here, if
         #   anyone tries to fetch an entity which can not be accessed.
         return self.body
 
     def get_metadata(self) -> "AnyMetadata":
-        """Fetch the metadata of the entity."""
+        """Fetch the metadata of the entity.
+
+        Returns:
+            The metadata field of the response.
+        """
         if self.metadata is None:
             hydrated_version = self.get_hydrated_version()
             self._validate_hydrated_version(hydrated_version)
@@ -216,10 +227,18 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     # Body and metadata properties
     @property
     def created(self) -> Optional[datetime]:
-        """The`created` property."""
+        """The `created` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.body.created
 
     @property
     def updated(self) -> Optional[datetime]:
-        """The `updated` property."""
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.body.updated

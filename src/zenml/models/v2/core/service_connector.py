@@ -332,7 +332,11 @@ class ServiceConnectorResponse(
     )
 
     def get_hydrated_version(self) -> "ServiceConnectorResponse":
-        """Get the hydrated version of this service connector."""
+        """Get the hydrated version of this service connector.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_service_connector(self.id)
@@ -489,62 +493,110 @@ class ServiceConnectorResponse(
     # Body and metadata properties
     @property
     def description(self) -> str:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().description
 
     @property
     def connector_type(self) -> Union[str, "ServiceConnectorTypeModel"]:
-        """The `connector_type` property."""
+        """The `connector_type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().connector_type
 
     @property
     def auth_method(self) -> str:
-        """The `auth_method` property."""
+        """The `auth_method` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().auth_method
 
     @property
     def resource_types(self) -> List[str]:
-        """The `resource_types` property."""
+        """The `resource_types` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().resource_types
 
     @property
     def resource_id(self) -> Optional[str]:
-        """The `resource_id` property."""
+        """The `resource_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().resource_id
 
     @property
     def supports_instances(self) -> bool:
-        """The `supports_instances` property."""
+        """The `supports_instances` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().supports_instances
 
     @property
     def expires_at(self) -> Optional[datetime]:
-        """The `expires_at` property."""
+        """The `expires_at` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().expires_at
 
     @property
     def configuration(self) -> Dict[str, Any]:
-        """The `configuration` property."""
+        """The `configuration` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().configuration
 
     @property
     def secret_id(self) -> Optional[UUID]:
-        """The `secret_id` property."""
+        """The `secret_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().secret_id
 
     @property
     def expiration_seconds(self) -> Optional[int]:
-        """The `expiration_seconds` property."""
+        """The `expiration_seconds` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().expiration_seconds
 
     @property
     def secrets(self) -> Dict[str, Optional[SecretStr]]:
-        """The `secrets` property."""
+        """The `secrets` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().secrets
 
     @property
     def labels(self) -> Dict[str, str]:
-        """The `labels` property."""
+        """The `labels` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().labels
 
 

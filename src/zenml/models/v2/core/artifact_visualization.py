@@ -62,7 +62,11 @@ class ArtifactVisualizationResponse(
     """Response model for artifact visualizations."""
 
     def get_hydrated_version(self) -> "ArtifactVisualizationResponse":
-        """Get the hydrated version of this artifact visualization."""
+        """Get the hydrated version of this artifact visualization.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_artifact_visualization(self.id)
@@ -70,17 +74,29 @@ class ArtifactVisualizationResponse(
     # Body and metadata properties
     @property
     def type(self) -> VisualizationType:
-        """The `type` property."""
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().type
 
     @property
     def uri(self) -> str:
-        """The `uri` property."""
+        """The `uri` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().uri
 
     @property
     def artifact_id(self) -> UUID:
-        """The `artifact_id` property."""
+        """The `artifact_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().artifact_id
 
 

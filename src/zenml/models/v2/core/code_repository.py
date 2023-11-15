@@ -101,7 +101,11 @@ class CodeRepositoryResponse(
     )
 
     def get_hydrated_version(self) -> "CodeRepositoryResponse":
-        """Get the hydrated version of this code repository."""
+        """Get the hydrated version of this code repository.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_code_repository(self.id)
@@ -109,22 +113,38 @@ class CodeRepositoryResponse(
     # Body and metadata properties
     @property
     def source(self) -> Source:
-        """The `source` property."""
+        """The `source` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().source
 
     @property
     def logo_url(self) -> Optional[str]:
-        """The `logo_url` property."""
+        """The `logo_url` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().logo_url
 
     @property
     def config(self) -> Dict[str, Any]:
-        """The `config` property."""
+        """The `config` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().config
 
     @property
     def description(self) -> Optional[str]:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().description
 
 

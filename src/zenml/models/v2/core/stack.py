@@ -113,7 +113,11 @@ class StackResponse(
     )
 
     def get_hydrated_version(self) -> "StackResponse":
-        """Get the hydrated version of this stack."""
+        """Get the hydrated version of this stack.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_stack(self.id)
@@ -169,17 +173,29 @@ class StackResponse(
     # Body and metadata properties
     @property
     def description(self) -> Optional[str]:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().description
 
     @property
     def stack_spec_path(self) -> Optional[str]:
-        """The `stack_spec_path` property."""
+        """The `stack_spec_path` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().stack_spec_path
 
     @property
     def components(self) -> Dict[StackComponentType, List[ComponentResponse]]:
-        """The `components` property."""
+        """The `components` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().components
 
 

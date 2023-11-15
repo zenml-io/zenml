@@ -158,7 +158,11 @@ class UserScopedResponse(
     # Body and metadata properties
     @property
     def user(self) -> Optional["UserResponse"]:
-        """The `user` property."""
+        """The `user` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().user
 
 
@@ -246,7 +250,11 @@ class WorkspaceScopedResponse(
     # Body and metadata properties
     @property
     def workspace(self) -> "WorkspaceResponse":
-        """The workspace property."""
+        """The workspace property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().workspace
 
 
@@ -348,7 +356,11 @@ class ShareableResponse(
     # Body and metadata properties
     @property
     def is_shared(self) -> bool:
-        """The is_shared property."""
+        """The is_shared property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().is_shared
 
 

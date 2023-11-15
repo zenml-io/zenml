@@ -113,7 +113,11 @@ class ServiceAccountResponse(
     )
 
     def get_hydrated_version(self) -> "ServiceAccountResponse":
-        """Get the hydrated version of this service account."""
+        """Get the hydrated version of this service account.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_service_account(self.id)
@@ -152,22 +156,38 @@ class ServiceAccountResponse(
     # Body and metadata properties
     @property
     def active(self) -> bool:
-        """The `active` property."""
+        """The `active` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().active
 
     @property
     def teams(self) -> Optional[List["TeamResponse"]]:
-        """The `teams` property."""
+        """The `teams` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().teams
 
     @property
     def roles(self) -> Optional[List["RoleResponse"]]:
-        """The `roles` property."""
+        """The `roles` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().roles
 
     @property
     def description(self) -> str:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().description
 
 

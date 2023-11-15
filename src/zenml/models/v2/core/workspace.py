@@ -80,7 +80,11 @@ class WorkspaceResponse(
     )
 
     def get_hydrated_version(self) -> "WorkspaceResponse":
-        """Get the hydrated version of this workspace."""
+        """Get the hydrated version of this workspace.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_workspace(self.id)
@@ -88,7 +92,11 @@ class WorkspaceResponse(
     # Body and metadata properties
     @property
     def description(self) -> str:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().description
 
 

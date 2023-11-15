@@ -81,7 +81,11 @@ class LogsResponse(BaseResponse[LogsResponseBody, LogsResponseMetadata]):
     """Response model for logs."""
 
     def get_hydrated_version(self) -> "LogsResponse":
-        """Get the hydrated version of these logs."""
+        """Get the hydrated version of these logs.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_logs(self.id)
@@ -89,22 +93,38 @@ class LogsResponse(BaseResponse[LogsResponseBody, LogsResponseMetadata]):
     # Body and metadata properties
     @property
     def uri(self) -> str:
-        """The `uri` property."""
+        """The `uri` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().uri
 
     @property
     def step_run_id(self) -> Optional[Union[str, UUID]]:
-        """The `step_run_id` property."""
+        """The `step_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().step_run_id
 
     @property
     def pipeline_run_id(self) -> Optional[Union[str, UUID]]:
-        """The `pipeline_run_id` property."""
+        """The `pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline_run_id
 
     @property
     def artifact_store_id(self) -> Union[str, UUID]:
-        """The `artifact_store_id` property."""
+        """The `artifact_store_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().artifact_store_id
 
 

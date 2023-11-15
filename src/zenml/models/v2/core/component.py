@@ -188,7 +188,11 @@ class ComponentResponse(
     )
 
     def get_hydrated_version(self) -> "ComponentResponse":
-        """Get the hydrated version of this component."""
+        """Get the hydrated version of this component.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_stack_component(self.id)
@@ -196,47 +200,83 @@ class ComponentResponse(
     # Body and metadata properties
     @property
     def type(self) -> StackComponentType:
-        """The `type` property."""
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().type
 
     @property
     def flavor(self) -> str:
-        """The `flavor` property."""
+        """The `flavor` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().flavor
 
     @property
     def created(self) -> datetime:
-        """The`created` property."""
+        """The`created` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().created
 
     @property
     def updated(self) -> datetime:
-        """The `updated` property."""
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().updated
 
     @property
     def configuration(self) -> Dict[str, Any]:
-        """The `configuration` property."""
+        """The `configuration` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().configuration
 
     @property
     def labels(self) -> Optional[Dict[str, Any]]:
-        """The `labels` property."""
+        """The `labels` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().labels
 
     @property
     def component_spec_path(self) -> Optional[str]:
-        """The `component_spec_path` property."""
+        """The `component_spec_path` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().component_spec_path
 
     @property
     def connector_resource_id(self) -> Optional[str]:
-        """The `connector_resource_id` property."""
+        """The `connector_resource_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().connector_resource_id
 
     @property
     def connector(self) -> Optional["ServiceConnectorResponse"]:
-        """The `connector` property."""
+        """The `connector` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().connector
 
 

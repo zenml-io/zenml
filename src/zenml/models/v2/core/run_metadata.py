@@ -103,7 +103,11 @@ class RunMetadataResponse(
     """Response model for run metadata."""
 
     def get_hydrated_version(self) -> "RunMetadataResponse":
-        """Get the hydrated version of this run metadata."""
+        """Get the hydrated version of this run metadata.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_run_metadata(self.id)
@@ -111,37 +115,65 @@ class RunMetadataResponse(
     # Body and metadata properties
     @property
     def key(self) -> str:
-        """The `key` property."""
+        """The `key` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().key
 
     @property
     def value(self) -> MetadataType:
-        """The `value` property."""
+        """The `value` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().value
 
     @property
     def type(self) -> MetadataTypeEnum:
-        """The `type` property."""
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().type
 
     @property
     def pipeline_run_id(self) -> Optional[UUID]:
-        """The `pipeline_run_id` property."""
+        """The `pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().pipeline_run_id
 
     @property
     def step_run_id(self) -> Optional[UUID]:
-        """The `step_run_id` property."""
+        """The `step_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().step_run_id
 
     @property
     def artifact_id(self) -> Optional[UUID]:
-        """The `artifact_id` property."""
+        """The `artifact_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().artifact_id
 
     @property
     def stack_component_id(self) -> Optional[UUID]:
-        """The `stack_component_id` property."""
+        """The `stack_component_id` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().stack_component_id
 
 

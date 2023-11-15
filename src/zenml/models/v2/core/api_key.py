@@ -177,7 +177,11 @@ class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
     )
 
     def get_hydrated_version(self) -> "APIKeyResponse":
-        """Get the hydrated version of this API key."""
+        """Get the hydrated version of this API key.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
         from zenml.client import Client
 
         return Client().zen_store.get_api_key(
@@ -197,37 +201,65 @@ class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
     # Body and metadata properties
     @property
     def key(self) -> Optional[str]:
-        """The `key` property."""
+        """The `key` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().key
 
     @property
     def active(self) -> bool:
-        """The `active` property."""
+        """The `active` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().active
 
     @property
     def service_account(self) -> "ServiceAccountResponse":
-        """The `service_account` property."""
+        """The `service_account` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_body().service_account
 
     @property
     def description(self) -> str:
-        """The `description` property."""
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().description
 
     @property
     def retain_period_minutes(self) -> int:
-        """The `retain_period_minutes` property."""
+        """The `retain_period_minutes` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().retain_period_minutes
 
     @property
     def last_login(self) -> Optional[datetime]:
-        """The `last_login` property."""
+        """The `last_login` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().last_login
 
     @property
     def last_rotated(self) -> Optional[datetime]:
-        """The `last_rotated` property."""
+        """The `last_rotated` property.
+
+        Returns:
+            the value of the property.
+        """
         return self.get_metadata().last_rotated
 
 
