@@ -741,7 +741,7 @@ def _validate_and_configure_resources(
 
     Raises:
         ValueError: If the connector configuration is not valid.
-        RunTimeError: If the connector instance had not been hydrated yet.
+        RuntimeError: If the connector instance had not been hydrated yet.
     """
     # The fields that need to be updated are different between the request
     # and response models. For the request model, the fields are in the
