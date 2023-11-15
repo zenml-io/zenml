@@ -166,10 +166,18 @@ def get_run_name(run_name_template: str) -> str:
     Args:
         run_name_template: The run name template to fill out.
 
+    Raises:
+        ValueError: If the run name is empty.
+
     Returns:
         The run name derived from the template.
     """
     date = datetime.utcnow().strftime("%Y_%m_%d")
     time = datetime.utcnow().strftime("%H_%M_%S_%f")
 
-    return run_name_template.format(date=date, time=time)
+    run_name = run_name_template.format(date=date, time=time)
+
+    if run_name == "":
+        raise ValueError("Empty run names are not allowed.")
+    
+    return run_name
