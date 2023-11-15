@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Index
+from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -54,12 +54,10 @@ class PipelineRunSchema(NamedSchema, table=True):
 
     __tablename__ = "pipeline_run"
     __table_args__ = (
-        # This index is needed so we don't lock multiple rows when running the
-        # `SELECT ... FOR UPDATE` query for replacing placeholder runs
-        Index(
-            "deployment_id_orchestrator_run_id_index",
+        UniqueConstraint(
             "deployment_id",
             "orchestrator_run_id",
+            name="unique_orchestrator_run_id_for_deployment_id",
         ),
     )
 
