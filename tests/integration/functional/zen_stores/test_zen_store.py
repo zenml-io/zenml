@@ -100,9 +100,6 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceUpdate,
 )
-from zenml.models.base_models import (
-    WorkspaceScopedRequestModel,
-)
 from zenml.models.model_models import ModelFilterModel
 from zenml.models.tag_models import (
     TagFilterModel,
@@ -150,15 +147,47 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 
     # Create the entity
     create_model = crud_test_config.create_model
-    if "user" in create_model.__fields__:
+    if hasattr(create_model, "user"):
         create_model.user = client.active_user.id
-    if "workspace" in create_model.__fields__:
+    if hasattr(create_model, "workspace"):
         create_model.workspace = client.active_workspace.id
-    if "stack" in create_model.__fields__:
+    if hasattr(create_model, "stack"):
         create_model.stack = client.active_stack_model.id
 
     # Test the creation
     created_entity = crud_test_config.create_method(create_model)
+
+    # Test that the create method returns a hydrated model, if applicable
+    if hasattr(created_entity, "metadata"):
+        assert created_entity.metadata is not None
+
+    # Filter by id to verify the entity was actually created
+    entities_list = crud_test_config.list_method(
+        crud_test_config.filter_model(id=created_entity.id)
+    )
+    assert entities_list.total == 1
+
+    entity = entities_list.items[0]
+
+    # Test that the list method returns a non-hydrated model, if applicable
+    if hasattr(entity, "metadata"):
+        assert entity.metadata is None
+
+        # Try to hydrate the entity
+        entity.get_metadata()
+
+        assert entity.metadata is not None
+
+        # Test that the list method has a `hydrate` argument
+        entities_list = crud_test_config.list_method(
+            crud_test_config.filter_model(id=created_entity.id),
+            hydrate=True,
+        )
+        assert entities_list.total == 1
+
+        entity = entities_list.items[0]
+
+        assert entity.metadata is not None
 
     if hasattr(created_entity, "name"):
         # Filter by name to verify the entity was actually created
@@ -167,15 +196,38 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         )
         assert entities_list.total == 1
 
-    # Filter by id to verify the entity was actually created
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(id=created_entity.id)
-    )
-    assert entities_list.total == 1
+        entity = entities_list.items[0]
+
+        # Test that the list method returns a non-hydrated model, if applicable
+        if hasattr(entity, "metadata"):
+            assert entity.metadata is None
+
+            # Try to hydrate the entity
+            entity.get_metadata()
+
+            assert entity.metadata is not None
+
     # Test the get method
     with does_not_raise():
         returned_entity_by_id = crud_test_config.get_method(created_entity.id)
     assert returned_entity_by_id == created_entity
+
+    # Test that the get method returns a hydrated model, if applicable
+    if hasattr(returned_entity_by_id, "metadata"):
+        assert returned_entity_by_id.metadata is not None
+
+        # Test that the get method has a `hydrate` argument
+        returned_entity_by_id = crud_test_config.get_method(
+            created_entity.id, hydrate=False
+        )
+
+        assert returned_entity_by_id.metadata is None
+
+        # Try to hydrate the entity
+        returned_entity_by_id.get_metadata()
+
+        assert returned_entity_by_id.metadata is not None
+
     if crud_test_config.update_model:
         # Update the created entity
         update_model = crud_test_config.update_model
@@ -187,6 +239,15 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
         assert updated_entity.json() != created_entity.json()
+
+        # Test that the update method returns a non-hydrated model, if applicable
+        if hasattr(updated_entity, "metadata"):
+            assert updated_entity.metadata is None
+
+            # Try to hydrate the entity
+            updated_entity.get_metadata()
+
+            assert updated_entity.metadata is not None
 
     # Cleanup
     with does_not_raise():
@@ -216,8 +277,9 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
-    if isinstance(create_model, WorkspaceScopedRequestModel):
+    if hasattr(create_model, "user"):
         create_model.user = client.active_user.id
+    if hasattr(create_model, "workspace"):
         create_model.workspace = client.active_workspace.id
     # First creation is successful
     created_entity = crud_test_config.create_method(

@@ -798,13 +798,13 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 created=datetime.utcnow(),
                 updated=datetime.utcnow(),
                 is_shared=is_shared,
-            ),
-            metadata=ServiceConnectorResponseMetadata(
-                workspace=workspace,
                 description=description,
                 connector_type=self.get_type(),
                 auth_method=self.auth_method,
                 expires_at=self.expires_at,
+            ),
+            metadata=ServiceConnectorResponseMetadata(
+                workspace=workspace,
                 expiration_seconds=self.expiration_seconds,
                 labels=labels or {},
             ),

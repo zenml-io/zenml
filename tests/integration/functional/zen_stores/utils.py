@@ -851,13 +851,20 @@ AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
 
-class CrudTestConfig(BaseModel):
+class CrudTestConfig:
     """Model to collect all methods pertaining to a given entity."""
 
-    create_model: "BaseRequestModel"
-    update_model: Optional["BaseModel"]
-    filter_model: Type[BaseFilter]
-    entity_name: str
+    def __init__(
+        self,
+        create_model: "BaseModel",
+        filter_model: Type[BaseFilter],
+        entity_name: str,
+        update_model: Optional["BaseModel"] = None,
+    ):
+        self.create_model = create_model
+        self.update_model = update_model
+        self.filter_model = filter_model
+        self.entity_name = entity_name
 
     @property
     def list_method(

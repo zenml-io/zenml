@@ -64,7 +64,7 @@ def list_teams(
     Returns:
         List of all teams.
     """
-    return zen_store().list_teams(team_filter_model)
+    return zen_store().list_teams(team_filter_model, hydrate=hydrate)
 
 
 @router.post(

@@ -244,24 +244,24 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
+            description=self.description,
+            connector_type=self.connector_type,
+            auth_method=self.auth_method,
+            resource_types=self.resource_types_list,
+            resource_id=self.resource_id,
+            supports_instances=self.supports_instances,
+            expires_at=self.expires_at,
         )
         metadata = None
         if hydrate:
             metadata = ServiceConnectorResponseMetadata(
                 workspace=self.workspace.to_model(),
-                description=self.description,
-                connector_type=self.connector_type,
-                auth_method=self.auth_method,
-                resource_types=self.resource_types_list,
-                resource_id=self.resource_id,
-                supports_instances=self.supports_instances,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 )
                 if self.configuration
                 else {},
                 secret_id=self.secret_id,
-                expires_at=self.expires_at,
                 expiration_seconds=self.expiration_seconds,
                 labels=self.labels_dict,
             )

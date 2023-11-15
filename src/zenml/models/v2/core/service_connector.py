@@ -46,9 +46,8 @@ class ServiceConnectorRequest(ShareableRequest):
         title="The service connector name.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_type: Union[str, ServiceConnectorTypeModel] = Field(
+    connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
-        # max_length=STR_FIELD_MAX_LENGTH,  # TODO: There is some issue here
     )
     description: str = Field(
         default="",
@@ -120,8 +119,7 @@ class ServiceConnectorRequest(ShareableRequest):
             metadata["resource_types"] = self.resource_types[0]
         else:
             metadata["resource_types"] = ", ".join(self.resource_types)
-        if not isinstance(self.connector_type, str):
-            metadata["connector_type"] = self.connector_type.connector_type
+        metadata["connector_type"] = self.type
         return metadata
 
     # Helper methods
@@ -255,17 +253,12 @@ class ServiceConnectorUpdate(ServiceConnectorRequest):
 class ServiceConnectorResponseBody(ShareableResponseBody):
     """Response body for service connectors."""
 
-
-class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
-    """Response metadata for service connectors."""
-
     description: str = Field(
         default="",
         title="The service connector instance description.",
     )
     connector_type: Union[str, "ServiceConnectorTypeModel"] = Field(
         title="The type of service connector.",
-        # max_length=STR_FIELD_MAX_LENGTH, # TODO: Same issue as the request
     )
     auth_method: str = Field(
         title="The authentication method that the connector instance uses to "
@@ -290,6 +283,16 @@ class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
         title="Indicates whether the connector instance can be used to access "
         "multiple instances of the configured resource type.",
     )
+    expires_at: Optional[datetime] = Field(
+        default=None,
+        title="Time when the authentication credentials configured for the "
+        "connector expire. If omitted, the credentials do not expire.",
+    )
+
+
+class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
+    """Response metadata for service connectors."""
+
     configuration: Dict[str, Any] = Field(
         default_factory=dict,
         title="The service connector configuration, not including secrets.",
@@ -298,11 +301,6 @@ class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
         default=None,
         title="The ID of the secret that contains the service connector "
         "secret configuration values.",
-    )
-    expires_at: Optional[datetime] = Field(
-        default=None,
-        title="Time when the authentication credentials configured for the "
-        "connector expire. If omitted, the credentials do not expire.",
     )
     expiration_seconds: Optional[int] = Field(
         default=None,
@@ -453,7 +451,7 @@ class ServiceConnectorResponse(
         self, value: Union[str, "ServiceConnectorTypeModel"]
     ) -> None:
         """Auxiliary method to set the connector type."""
-        self.get_metadata().connector_type = value
+        self.get_body().connector_type = value
 
     def validate_and_configure_resources(
         self,
@@ -492,32 +490,37 @@ class ServiceConnectorResponse(
     @property
     def description(self) -> str:
         """The `description` property."""
-        return self.get_metadata().description
+        return self.get_body().description
 
     @property
     def connector_type(self) -> Union[str, "ServiceConnectorTypeModel"]:
         """The `connector_type` property."""
-        return self.get_metadata().connector_type
+        return self.get_body().connector_type
 
     @property
     def auth_method(self) -> str:
         """The `auth_method` property."""
-        return self.get_metadata().auth_method
+        return self.get_body().auth_method
 
     @property
     def resource_types(self) -> List[str]:
         """The `resource_types` property."""
-        return self.get_metadata().resource_types
+        return self.get_body().resource_types
 
     @property
     def resource_id(self) -> Optional[str]:
         """The `resource_id` property."""
-        return self.get_metadata().resource_id
+        return self.get_body().resource_id
 
     @property
     def supports_instances(self) -> bool:
         """The `supports_instances` property."""
-        return self.get_metadata().supports_instances
+        return self.get_body().supports_instances
+
+    @property
+    def expires_at(self) -> Optional[datetime]:
+        """The `expires_at` property."""
+        return self.get_body().expires_at
 
     @property
     def configuration(self) -> Dict[str, Any]:
@@ -528,11 +531,6 @@ class ServiceConnectorResponse(
     def secret_id(self) -> Optional[UUID]:
         """The `secret_id` property."""
         return self.get_metadata().secret_id
-
-    @property
-    def expires_at(self) -> Optional[datetime]:
-        """The `expires_at` property."""
-        return self.get_metadata().expires_at
 
     @property
     def expiration_seconds(self) -> Optional[int]:
@@ -698,13 +696,28 @@ def _validate_and_configure_resources(
     # and response models. For the request model, the fields are in the
     # connector model itself, while for the response model, they are in the
     # metadata field.
-    update_connector: Union[
+    update_connector_metadata: Union[
         ServiceConnectorRequest, ServiceConnectorResponseMetadata
     ]
+    update_connector_body: Union[
+        ServiceConnectorRequest, ServiceConnectorResponseBody
+    ]
     if isinstance(connector, ServiceConnectorRequest):
-        update_connector = connector
+        update_connector_metadata = connector
+        update_connector_body = connector
     else:
-        update_connector = connector.get_metadata()
+        # Updating service connector responses must only be done on hydrated
+        # instances, otherwise the metadata will be missing and we risk calling
+        # the ZenML store to update the connector with additional information.
+        # This is just a safety measure, but it will never happen because
+        # this method will always be called on a hydrated response.
+        if connector.metadata is None:
+            raise RuntimeError(
+                "Cannot update a service connector response that has not been "
+                "hydrated yet."
+            )
+        update_connector_metadata = connector.get_metadata()
+        update_connector_body = connector.get_body()
 
     if resource_types is None:
         resource_type = None
@@ -730,24 +743,26 @@ def _validate_and_configure_resources(
         raise ValueError(f"connector configuration is not valid: {e}") from e
 
     if resource_type and resource_spec:
-        update_connector.resource_types = [resource_spec.resource_type]
-        update_connector.resource_id = resource_id
-        update_connector.supports_instances = resource_spec.supports_instances
+        update_connector_body.resource_types = [resource_spec.resource_type]
+        update_connector_body.resource_id = resource_id
+        update_connector_body.supports_instances = (
+            resource_spec.supports_instances
+        )
     else:
         # A multi-type connector is associated with all resource types
         # that it supports, does not have a resource ID configured
         # and, it's unclear if it supports multiple instances or not
-        update_connector.resource_types = list(
+        update_connector_body.resource_types = list(
             connector_type.resource_type_dict.keys()
         )
-        update_connector.supports_instances = False
+        update_connector_body.supports_instances = False
 
     if configuration is None and secrets is None:
         # No configuration or secrets provided
         return
 
-    update_connector.configuration = {}
-    update_connector.secrets = {}
+    update_connector_metadata.configuration = {}
+    update_connector_metadata.secrets = {}
 
     # Validate and configure the connector configuration and secrets
     configuration = configuration or {}
@@ -774,11 +789,11 @@ def _validate_and_configure_resources(
         # Split the configuration into secrets and non-secrets
         if secret:
             if isinstance(value, SecretStr):
-                update_connector.secrets[attr_name] = value
+                update_connector_metadata.secrets[attr_name] = value
             else:
-                update_connector.secrets[attr_name] = SecretStr(value)
+                update_connector_metadata.secrets[attr_name] = SecretStr(value)
         else:
-            update_connector.configuration[attr_name] = value
+            update_connector_metadata.configuration[attr_name] = value
 
     # Warn about attributes that are not part of the configuration schema
     for attr_name in set(list(configuration.keys())) - set(supported_attrs):
