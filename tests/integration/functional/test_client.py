@@ -1227,7 +1227,7 @@ def test_get_by_latest(clean_client):
 
 
 def test_get_by_stage(clean_client):
-    """Test that model version can be retrived by stage."""
+    """Test that model version can be retrieved by stage."""
 
     cl = Client()
     mv1 = _create_some_model_version(client=cl)
