@@ -707,14 +707,7 @@ class Pipeline:
                 pipeline=deployment_model.pipeline.id
                 if deployment_model.pipeline
                 else None,
-                # TODO: Maybe we want a state called `preparing` or `launching`
-                # to differentiate between waiting for the first step to get
-                # started
-                status=ExecutionStatus.RUNNING,
-                # Is this the actual start time now, or do we want to set this
-                # once the first step started? Especially for scheduled runs
-                # this would be strange
-                start_time=datetime.utcnow(),
+                status=ExecutionStatus.INITIALIZING,
             )
             pipeline_run_model = Client().zen_store.create_run(
                 pipeline_run_request

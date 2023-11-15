@@ -327,6 +327,9 @@ class PipelineRunSchema(NamedSchema, table=True):
 
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
+        self.status = request.status
+        self.start_time = request.start_time
+
         self.updated = datetime.utcnow()
 
         return self

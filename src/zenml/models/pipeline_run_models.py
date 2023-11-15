@@ -158,7 +158,7 @@ class PipelineRunResponseModel(
         start_time = time.time()
         while True:
             current_run_state = Client().get_pipeline_run(self.id)
-            if current_run_state.status != ExecutionStatus.RUNNING:
+            if current_run_state.status.is_finished:
                 for key in current_run_state.__fields_set__:
                     setattr(self, key, getattr(current_run_state, key))
                 return
