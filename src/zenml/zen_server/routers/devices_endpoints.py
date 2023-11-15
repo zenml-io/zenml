@@ -59,7 +59,7 @@ def list_authorized_devices(
     filter_model: OAuthDeviceFilter = Depends(
         make_dependable(OAuthDeviceFilter)
     ),
-    hydrate: bool = True,
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
