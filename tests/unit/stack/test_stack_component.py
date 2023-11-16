@@ -20,7 +20,7 @@ from pydantic import ValidationError, validator
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models import ComponentRequestModel
+from zenml.models import ComponentRequest
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
@@ -121,8 +121,8 @@ class StubOrchestratorFlavor(BaseOrchestratorFlavor):
         return StubOrchestrator
 
 
-def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequestModel:
-    return ComponentRequestModel(
+def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequest:
+    return ComponentRequest(
         name=name,
         configuration=StubOrchestratorConfig(**kwargs),
         flavor="TEST",

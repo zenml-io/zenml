@@ -44,12 +44,12 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -61,41 +61,41 @@ from zenml.models import (
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
+    Page,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleRequest,
+    ScheduleResponse,
     SecretRequestModel,
     SecretResponseModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
+    ServiceConnectorResponse,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentResponse,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -113,40 +113,43 @@ router = APIRouter(
 
 @router.get(
     WORKSPACES,
-    response_model=Page[WorkspaceResponseModel],
+    response_model=Page[WorkspaceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspaces(
-    workspace_filter_model: WorkspaceFilterModel = Depends(
-        make_dependable(WorkspaceFilterModel)
+    workspace_filter_model: WorkspaceFilter = Depends(
+        make_dependable(WorkspaceFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[WorkspaceResponseModel]:
+) -> Page[WorkspaceResponse]:
     """Lists all workspaces in the organization.
 
     Args:
         workspace_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering,
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of workspaces.
     """
     return zen_store().list_workspaces(
-        workspace_filter_model=workspace_filter_model
+        workspace_filter_model=workspace_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     WORKSPACES,
-    response_model=WorkspaceResponseModel,
+    response_model=WorkspaceResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_workspace(
-    workspace: WorkspaceRequestModel,
+    workspace: WorkspaceRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> WorkspaceResponseModel:
+) -> WorkspaceResponse:
     """Creates a workspace based on the requestBody.
 
     # noqa: DAR401
@@ -162,38 +165,43 @@ def create_workspace(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
+    response_model=WorkspaceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_workspace(
     workspace_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> WorkspaceResponseModel:
+) -> WorkspaceResponse:
     """Get a workspace for given name.
 
     # noqa: DAR401
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested workspace.
     """
-    return zen_store().get_workspace(workspace_name_or_id=workspace_name_or_id)
+    return zen_store().get_workspace(
+        workspace_name_or_id=workspace_name_or_id, hydrate=hydrate
+    )
 
 
 @router.put(
     WORKSPACES + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
+    response_model=WorkspaceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_workspace(
     workspace_name_or_id: UUID,
-    workspace_update: WorkspaceUpdateModel,
+    workspace_update: WorkspaceUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> WorkspaceResponseModel:
+) -> WorkspaceResponse:
     """Get a workspace for given name.
 
     # noqa: DAR401
@@ -230,23 +238,26 @@ def delete_workspace(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
-    response_model=Page[UserRoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_user_role_assignments_for_workspace(
     workspace_name_or_id: Union[str, UUID],
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
+    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
+        make_dependable(UserRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         user_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering
+            sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -254,29 +265,33 @@ def list_user_role_assignments_for_workspace(
     workspace = zen_store().get_workspace(workspace_name_or_id)
     user_role_assignment_filter_model.workspace_id = workspace.id
     return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
+        user_role_assignment_filter_model=user_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
-    response_model=Page[TeamRoleAssignmentResponseModel],
+    response_model=Page[TeamRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_team_role_assignments_for_workspace(
     workspace_name_or_id: Union[str, UUID],
-    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
-        make_dependable(TeamRoleAssignmentFilterModel)
+    team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
+        make_dependable(TeamRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamRoleAssignmentResponseModel]:
+) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         team_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering
+            sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -284,33 +299,36 @@ def list_team_role_assignments_for_workspace(
     workspace = zen_store().get_workspace(workspace_name_or_id)
     team_role_assignment_filter_model.workspace_id = workspace.id
     return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model
+        team_role_assignment_filter_model=team_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
-    response_model=Page[StackResponseModel],
+    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_stacks(
     workspace_name_or_id: Union[str, UUID],
-    stack_filter_model: StackFilterModel = Depends(
-        make_dependable(StackFilterModel)
-    ),
+    stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[StackResponseModel]:
+) -> Page[StackResponse]:
     """Get stacks that are part of a specific workspace for the user.
 
     # noqa: DAR401
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
-        stack_filter_model: Filter model used for pagination, sorting, filtering
-        auth_context: Authentication Context
+        stack_filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+        auth_context: Authentication Context.
 
     Returns:
         All stacks part of the specified workspace.
@@ -318,22 +336,24 @@ def list_workspace_stacks(
     workspace = zen_store().get_workspace(workspace_name_or_id)
     stack_filter_model.set_scope_workspace(workspace.id)
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+    return zen_store().list_stacks(
+        stack_filter_model=stack_filter_model, hydrate=hydrate
+    )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_stack(
     workspace_name_or_id: Union[str, UUID],
-    stack: StackRequestModel,
+    stack: StackRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> StackResponseModel:
+) -> StackResponse:
     """Creates a stack for a particular workspace.
 
     Args:
@@ -367,19 +387,20 @@ def create_stack(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=Page[ComponentResponseModel],
+    response_model=Page[ComponentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_stack_components(
     workspace_name_or_id: Union[str, UUID],
-    component_filter_model: ComponentFilterModel = Depends(
-        make_dependable(ComponentFilterModel)
+    component_filter_model: ComponentFilter = Depends(
+        make_dependable(ComponentFilter)
     ),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[ComponentResponseModel]:
+) -> Page[ComponentResponse]:
     """List stack components that are part of a specific workspace.
 
     # noqa: DAR401
@@ -387,8 +408,10 @@ def list_workspace_stack_components(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         component_filter_model: Filter model used for pagination, sorting,
-            filtering
-        auth_context: Authentication Context
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+        auth_context: Authentication Context.
 
     Returns:
         All stack components part of the specified workspace.
@@ -397,23 +420,23 @@ def list_workspace_stack_components(
     component_filter_model.set_scope_workspace(workspace.id)
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
-        component_filter_model=component_filter_model
+        component_filter_model=component_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentResponseModel,
+    response_model=ComponentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_stack_component(
     workspace_name_or_id: Union[str, UUID],
-    component: ComponentRequestModel,
+    component: ComponentRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ComponentResponseModel:
+) -> ComponentResponse:
     """Creates a stack component.
 
     Args:
@@ -459,17 +482,18 @@ def create_stack_component(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=Page[PipelineResponseModel],
+    response_model=Page[PipelineResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_pipelines(
     workspace_name_or_id: Union[str, UUID],
-    pipeline_filter_model: PipelineFilterModel = Depends(
-        make_dependable(PipelineFilterModel)
+    pipeline_filter_model: PipelineFilter = Depends(
+        make_dependable(PipelineFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineResponseModel]:
+) -> Page[PipelineResponse]:
     """Gets pipelines defined for a specific workspace.
 
     # noqa: DAR401
@@ -477,7 +501,9 @@ def list_workspace_pipelines(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         pipeline_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All pipelines within the workspace.
@@ -485,23 +511,23 @@ def list_workspace_pipelines(
     workspace = zen_store().get_workspace(workspace_name_or_id)
     pipeline_filter_model.set_scope_workspace(workspace.id)
     return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model
+        pipeline_filter_model=pipeline_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=PipelineResponseModel,
+    response_model=PipelineResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_pipeline(
     workspace_name_or_id: Union[str, UUID],
-    pipeline: PipelineRequestModel,
+    pipeline: PipelineRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> PipelineResponseModel:
+) -> PipelineResponse:
     """Creates a pipeline.
 
     Args:
@@ -535,17 +561,18 @@ def create_pipeline(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_BUILDS,
-    response_model=Page[PipelineBuildResponseModel],
+    response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_builds(
     workspace_name_or_id: Union[str, UUID],
-    build_filter_model: PipelineBuildFilterModel = Depends(
-        make_dependable(PipelineBuildFilterModel)
+    build_filter_model: PipelineBuildFilter = Depends(
+        make_dependable(PipelineBuildFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineBuildResponseModel]:
+) -> Page[PipelineBuildResponse]:
     """Gets builds defined for a specific workspace.
 
     # noqa: DAR401
@@ -553,29 +580,33 @@ def list_workspace_builds(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         build_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All builds within the workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     build_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_builds(build_filter_model=build_filter_model)
+    return zen_store().list_builds(
+        build_filter_model=build_filter_model, hydrate=hydrate
+    )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_BUILDS,
-    response_model=PipelineBuildResponseModel,
+    response_model=PipelineBuildResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_build(
     workspace_name_or_id: Union[str, UUID],
-    build: PipelineBuildRequestModel,
+    build: PipelineBuildRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> PipelineBuildResponseModel:
+) -> PipelineBuildResponse:
     """Creates a build.
 
     Args:
@@ -609,17 +640,18 @@ def create_build(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
-    response_model=Page[PipelineDeploymentResponseModel],
+    response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_deployments(
     workspace_name_or_id: Union[str, UUID],
-    deployment_filter_model: PipelineDeploymentFilterModel = Depends(
-        make_dependable(PipelineDeploymentFilterModel)
+    deployment_filter_model: PipelineDeploymentFilter = Depends(
+        make_dependable(PipelineDeploymentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineDeploymentResponseModel]:
+) -> Page[PipelineDeploymentResponse]:
     """Gets deployments defined for a specific workspace.
 
     # noqa: DAR401
@@ -627,7 +659,9 @@ def list_workspace_deployments(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         deployment_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All deployments within the workspace.
@@ -635,23 +669,23 @@ def list_workspace_deployments(
     workspace = zen_store().get_workspace(workspace_name_or_id)
     deployment_filter_model.set_scope_workspace(workspace.id)
     return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model
+        deployment_filter_model=deployment_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
-    response_model=PipelineDeploymentResponseModel,
+    response_model=PipelineDeploymentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_deployment(
     workspace_name_or_id: Union[str, UUID],
-    deployment: PipelineDeploymentRequestModel,
+    deployment: PipelineDeploymentRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> PipelineDeploymentResponseModel:
+) -> PipelineDeploymentResponse:
     """Creates a deployment.
 
     Args:
@@ -686,46 +720,50 @@ def create_deployment(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS,
-    response_model=Page[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_runs(
     workspace_name_or_id: Union[str, UUID],
-    runs_filter_model: PipelineRunFilterModel = Depends(
-        make_dependable(PipelineRunFilterModel)
+    runs_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         runs_filter_model: Filter model used for pagination, sorting,
-            filtering
-
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     runs_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_runs(runs_filter_model=runs_filter_model)
+    return zen_store().list_runs(
+        runs_filter_model=runs_filter_model, hydrate=hydrate
+    )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + SCHEDULES,
-    response_model=ScheduleResponseModel,
+    response_model=ScheduleResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_schedule(
     workspace_name_or_id: Union[str, UUID],
-    schedule: ScheduleRequestModel,
+    schedule: ScheduleRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ScheduleResponseModel:
+) -> ScheduleResponse:
     """Creates a schedule.
 
     Args:
@@ -758,18 +796,18 @@ def create_schedule(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS,
-    response_model=PipelineRunResponseModel,
+    response_model=PipelineRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_pipeline_run(
     workspace_name_or_id: Union[str, UUID],
-    pipeline_run: PipelineRunRequestModel,
+    pipeline_run: PipelineRunRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
     get_if_exists: bool = False,
-) -> PipelineRunResponseModel:
+) -> PipelineRunResponse:
     """Creates a pipeline run.
 
     Args:
@@ -808,17 +846,17 @@ def create_pipeline_run(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS + GET_OR_CREATE,
-    response_model=Tuple[PipelineRunResponseModel, bool],
+    response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_or_create_pipeline_run(
     workspace_name_or_id: Union[str, UUID],
-    pipeline_run: PipelineRunRequestModel,
+    pipeline_run: PipelineRunRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> Tuple[PipelineRunResponseModel, bool]:
+) -> Tuple[PipelineRunResponse, bool]:
     """Get or create a pipeline run.
 
     Args:
@@ -852,17 +890,17 @@ def get_or_create_pipeline_run(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUN_METADATA,
-    response_model=List[RunMetadataResponseModel],
+    response_model=List[RunMetadataResponse],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_run_metadata(
     workspace_name_or_id: Union[str, UUID],
-    run_metadata: RunMetadataRequestModel,
+    run_metadata: RunMetadataRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> List[RunMetadataResponseModel]:
+) -> List[RunMetadataResponse]:
     """Creates run metadata.
 
     Args:
@@ -940,17 +978,18 @@ def create_secret(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + CODE_REPOSITORIES,
-    response_model=Page[CodeRepositoryResponseModel],
+    response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_code_repositories(
     workspace_name_or_id: Union[str, UUID],
-    filter_model: CodeRepositoryFilterModel = Depends(
-        make_dependable(CodeRepositoryFilterModel)
+    filter_model: CodeRepositoryFilter = Depends(
+        make_dependable(CodeRepositoryFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[CodeRepositoryResponseModel]:
+) -> Page[CodeRepositoryResponse]:
     """Gets code repositories defined for a specific workspace.
 
     # noqa: DAR401
@@ -958,29 +997,33 @@ def list_workspace_code_repositories(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All code repositories within the workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_code_repositories(filter_model=filter_model)
+    return zen_store().list_code_repositories(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + CODE_REPOSITORIES,
-    response_model=CodeRepositoryResponseModel,
+    response_model=CodeRepositoryResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_code_repository(
     workspace_name_or_id: Union[str, UUID],
-    code_repository: CodeRepositoryRequestModel,
+    code_repository: CodeRepositoryRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> CodeRepositoryResponseModel:
+) -> CodeRepositoryResponse:
     """Creates a code repository.
 
     Args:
@@ -1047,19 +1090,20 @@ def get_workspace_statistics(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
-    response_model=Page[ServiceConnectorResponseModel],
+    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_service_connectors(
     workspace_name_or_id: Union[str, UUID],
-    connector_filter_model: ServiceConnectorFilterModel = Depends(
-        make_dependable(ServiceConnectorFilterModel)
+    connector_filter_model: ServiceConnectorFilter = Depends(
+        make_dependable(ServiceConnectorFilter)
     ),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[ServiceConnectorResponseModel]:
+) -> Page[ServiceConnectorResponse]:
     """List service connectors that are part of a specific workspace.
 
     # noqa: DAR401
@@ -1067,7 +1111,9 @@ def list_workspace_service_connectors(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         connector_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: Authentication Context
 
     Returns:
@@ -1077,23 +1123,23 @@ def list_workspace_service_connectors(
     connector_filter_model.set_scope_workspace(workspace.id)
     connector_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_service_connectors(
-        filter_model=connector_filter_model
+        filter_model=connector_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_service_connector(
     workspace_name_or_id: Union[str, UUID],
-    connector: ServiceConnectorRequestModel,
+    connector: ServiceConnectorRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Creates a service connector.
 
     Args:

@@ -27,17 +27,17 @@ from zenml.constants import (
 )
 from zenml.enums import PermissionType
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
+    Page,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -59,7 +59,7 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         409: error_response,
@@ -68,9 +68,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def create_service_account(
-    service_account: ServiceAccountRequestModel,
+    service_account: ServiceAccountRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceAccountResponseModel:
+) -> ServiceAccountResponse:
     """Creates a service account.
 
     Args:
@@ -87,52 +87,63 @@ def create_service_account(
 
 @router.get(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_service_account(
     service_account_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ServiceAccountResponseModel:
+    hydrate: bool = True,
+) -> ServiceAccountResponse:
     """Returns a specific service account.
 
     Args:
         service_account_name_or_id: Name or ID of the service account.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The service account matching the given name or ID.
     """
-    return zen_store().get_service_account(service_account_name_or_id)
+    return zen_store().get_service_account(
+        service_account_name_or_id=service_account_name_or_id,
+        hydrate=hydrate,
+    )
 
 
 @router.get(
     "",
-    response_model=Page[ServiceAccountResponseModel],
+    response_model=Page[ServiceAccountResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_service_accounts(
-    filter_model: ServiceAccountFilterModel = Depends(
-        make_dependable(ServiceAccountFilterModel)
+    filter_model: ServiceAccountFilter = Depends(
+        make_dependable(ServiceAccountFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ServiceAccountResponseModel]:
+) -> Page[ServiceAccountResponse]:
     """Returns a list of service accounts.
 
     Args:
         filter_model: Model that takes care of filtering, sorting and
             pagination.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of service accounts matching the filter.
     """
-    return zen_store().list_service_accounts(filter_model=filter_model)
+    return zen_store().list_service_accounts(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.put(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponseModel,
+    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         404: error_response,
@@ -142,9 +153,9 @@ def list_service_accounts(
 @handle_exceptions
 def update_service_account(
     service_account_name_or_id: Union[str, UUID],
-    service_account_update: ServiceAccountUpdateModel,
+    service_account_update: ServiceAccountUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceAccountResponseModel:
+) -> ServiceAccountResponse:
     """Updates a specific service account.
 
     Args:
@@ -184,15 +195,15 @@ def delete_service_account(
 
 @router.post(
     "/{service_account_id}" + API_KEYS,
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_api_key(
     service_account_id: UUID,
-    api_key: APIKeyRequestModel,
+    api_key: APIKeyRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Creates an API key for a service account.
 
     Args:
@@ -212,20 +223,23 @@ def create_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Returns the requested API key.
 
     Args:
         service_account_id: ID of the service account to which the API key
             belongs.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         api_key_name_or_id: Name or ID of the API key to return.
 
     Returns:
@@ -234,28 +248,30 @@ def get_api_key(
     api_key = zen_store().get_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,
+        hydrate=hydrate,
     )
     return api_key
 
 
 @router.get(
     "/{service_account_id}" + API_KEYS,
-    response_model=Page[APIKeyResponseModel],
+    response_model=Page[APIKeyResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_api_keys(
     service_account_id: UUID,
-    filter_model: APIKeyFilterModel = Depends(
-        make_dependable(APIKeyFilterModel)
-    ),
+    filter_model: APIKeyFilter = Depends(make_dependable(APIKeyFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> Page[APIKeyResponseModel]:
+) -> Page[APIKeyResponse]:
     """List API keys associated with a service account.
 
     Args:
         service_account_id: ID of the service account to which the API keys
             belong.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         filter_model: Filter model used for pagination, sorting,
             filtering
 
@@ -264,22 +280,24 @@ def list_api_keys(
         service account.
     """
     return zen_store().list_api_keys(
-        service_account_id=service_account_id, filter_model=filter_model
+        service_account_id=service_account_id,
+        filter_model=filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    api_key_update: APIKeyUpdateModel,
+    api_key_update: APIKeyUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Updates an API key for a service account.
 
     Args:
@@ -303,16 +321,16 @@ def update_api_key(
     + API_KEYS
     + "/{api_key_name_or_id}"
     + API_KEY_ROTATE,
-    response_model=APIKeyResponseModel,
+    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def rotate_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    rotate_request: APIKeyRotateRequestModel,
+    rotate_request: APIKeyRotateRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> APIKeyResponseModel:
+) -> APIKeyResponse:
     """Rotate an API key.
 
     Args:

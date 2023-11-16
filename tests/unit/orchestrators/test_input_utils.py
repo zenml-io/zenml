@@ -18,7 +18,7 @@ import pytest
 
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models.page_model import Page
+from zenml.models import Page
 from zenml.orchestrators import input_utils
 
 
