@@ -41,11 +41,9 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
+from zenml.model.model_version import ModelVersion
 from zenml.models import (
     ComponentResponse,
-    ModelRequestModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,
@@ -1541,81 +1539,72 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 client.delete_model_version(uuid4())
 
-
-def _create_some_model_version(
-    client: Client,
-    model_name: str = "aria_cat_supermodel",
-    model_version_name: str = "1.0.0",
-) -> ModelVersionResponseModel:
-    model = client.create_model(
-        model=ModelRequestModel(
+    def _create_some_model_version(
+        self,
+        client: Client,
+        model_name: str = "aria_cat_supermodel",
+        model_version_name: str = "1.0.0",
+    ) -> ModelVersion:
+        model = client.create_model(
             name=model_name,
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
         )
-    )
-    return client.create_model_version(
-        ModelVersionRequestModel(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            model=model.id,
+        return client.create_model_version(
+            model_name_or_id=model.id,
             name=model_version_name,
         )
-    )
 
+    def test_get_by_latest(self):
+        """Test that model version can be retrieved with latest."""
+        with model_killer():
+            cl = Client()
+            mv1 = self._create_some_model_version(client=cl)
 
-def test_get_by_latest(clean_client):
-    """Test that model version can be retrieved with latest."""
+            # latest returns the only model
+            mv2 = Client().get_model_version(
+                model_name_or_id=mv1.model_id,
+                model_version_name_or_number_or_id=ModelStages.LATEST,
+            )
+            assert mv2 == mv1
 
-    cl = Client()
-    mv1 = _create_some_model_version(client=cl)
+            # after second model version, latest should point to it
+            mv3 = cl.create_model_version(
+                model_name_or_id=mv1.model_id, name="2.0.0"
+            )
+            mv4 = Client().get_model_version(
+                model_name_or_id=mv1.model_id,
+                model_version_name_or_number_or_id=ModelStages.LATEST,
+            )
+            assert mv4 != mv1
+            assert mv4 == mv3
 
-    # latest returns the only model
-    mv2 = Client().get_model_version(
-        model_name_or_id=mv1.model.id,
-        model_version_name_or_number_or_id=ModelStages.LATEST,
-    )
-    assert mv2 == mv1
+    def test_get_by_stage(self):
+        """Test that model version can be retrieved by stage."""
+        with model_killer():
+            cl = Client()
+            mv1 = self._create_some_model_version(client=cl)
 
-    # after second model version, latest should point to it
-    mv3 = cl.create_model_version(model_name_or_id=mv1.model.id, name="2.0.0")
-    mv4 = Client().get_model_version(
-        model_name_or_id=mv1.model.id,
-        model_version_name_or_number_or_id=ModelStages.LATEST,
-    )
-    assert mv4 != mv1
-    assert mv4 == mv3
+            cl.update_model_version(
+                version_name_or_id=mv1.id,
+                model_name_or_id=mv1.model_id,
+                stage=ModelStages.STAGING,
+                force=True,
+            )
 
+            mv2 = cl.get_model_version(
+                model_name_or_id=mv1.model_id,
+                model_version_name_or_number_or_id=ModelStages.STAGING,
+            )
 
-def test_get_by_stage(clean_client):
-    """Test that model version can be retrieved by stage."""
+            assert mv1 == mv2
 
-    cl = Client()
-    mv1 = _create_some_model_version(client=cl)
+    def test_stage_not_found(self):
+        """Test that attempting to get model version fails if none at the given stage."""
+        with model_killer():
+            cl = Client()
+            mv1 = self._create_some_model_version(client=cl)
 
-    cl.update_model_version(
-        version_name_or_id=mv1.id,
-        model_name_or_id=mv1.model.id,
-        stage=ModelStages.STAGING,
-        force=True,
-    )
-
-    mv2 = cl.get_model_version(
-        model_name_or_id=mv1.model.id,
-        model_version_name_or_number_or_id=ModelStages.STAGING,
-    )
-
-    assert mv1 == mv2
-
-
-def test_stage_not_found(clean_client):
-    """Test that attempting to get model version fails if none at the given stage."""
-
-    cl = Client()
-    mv1 = _create_some_model_version(client=cl)
-
-    with pytest.raises(KeyError):
-        Client().get_model_version(
-            model_name_or_id=mv1.model.id,
-            model_version_name_or_number_or_id=ModelStages.STAGING,
-        )
+            with pytest.raises(KeyError):
+                Client().get_model_version(
+                    model_name_or_id=mv1.model_id,
+                    model_version_name_or_number_or_id=ModelStages.STAGING,
+                )
