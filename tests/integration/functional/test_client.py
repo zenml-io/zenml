@@ -46,7 +46,6 @@ from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
     ModelVersionResponseModel,
-    ModelVersionUpdateModel,
     PipelineBuildRequestModel,
     PipelineDeploymentRequestModel,
     PipelineRequestModel,
@@ -1572,14 +1571,7 @@ def test_get_by_latest(clean_client):
     assert mv2 == mv1
 
     # after second model version, latest should point to it
-    mv3 = cl.create_model_version(
-        ModelVersionRequestModel(
-            user=cl.active_user.id,
-            workspace=cl.active_workspace.id,
-            model=mv1.model.id,
-            name="2.0.0",
-        )
-    )
+    mv3 = cl.create_model_version(model_name_or_id=mv1.model.id, name="2.0.0")
     mv4 = Client().get_model_version(
         model_name_or_id=mv1.model.id,
         model_version_name_or_number_or_id=ModelStages.LATEST,
@@ -1595,10 +1587,10 @@ def test_get_by_stage(clean_client):
     mv1 = _create_some_model_version(client=cl)
 
     cl.update_model_version(
-        model_version_id=mv1.id,
-        model_version_update_model=ModelVersionUpdateModel(
-            model=mv1.model.id, stage=ModelStages.STAGING, force=True
-        ),
+        version_name_or_id=mv1.id,
+        model_name_or_id=mv1.model.id,
+        stage=ModelStages.STAGING,
+        force=True,
     )
 
     mv2 = cl.get_model_version(

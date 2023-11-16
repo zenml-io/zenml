@@ -426,15 +426,12 @@ def update_model_version(
         )
     except RuntimeError:
         if not force:
-            mv = Client().get_model_version(
-                model_name_or_id=model_version.model_id,
-                model_version_name_or_number_or_id=stage,
-            )
             cli_utils.print_table(
                 [
                     _model_version_to_print(
-                        Client().zen_store.get_model_version(
-                            model_version_id=mv.id
+                        Client()._get_model_version(
+                            model_name_or_id=model_version.model_id,
+                            model_version_name_or_number_or_id=stage,
                         )
                     )
                 ]

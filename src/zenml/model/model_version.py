@@ -370,15 +370,14 @@ class ModelVersion(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        if not self._id:
-            mv = zenml_client.get_model_version(
-                model_name_or_id=self.name,
-                model_version_name_or_number_or_id=self.version,
-            )
-            self._id = mv._id
-        return zenml_client.zen_store.get_model_version(
-            model_version_id=self._id
+        mv = zenml_client._get_model_version(
+            model_name_or_id=self.name,
+            model_version_name_or_number_or_id=self.version,
         )
+        if not self._id:
+            self._id = mv._id
+
+        return mv
 
     def _get_or_create_model_version(self) -> "ModelVersionResponseModel":
         """This method should get or create a model and a model version from Model Control Plane.

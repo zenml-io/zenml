@@ -4242,8 +4242,8 @@ class TestModelVersion:
                     name="yet another one",
                 )
             )
-            found_latest = zs.get_model_version(
-                model_version_id=model.id,
+            found_latest = Client().get_model_version(
+                model_name_or_id=model.id
             )
             assert latest.id == found_latest.id
 
@@ -4415,7 +4415,7 @@ class TestModelVersion:
 
             found = zs.list_model_versions(
                 model_name_or_id=model_version.model.id,
-                model_version_filter_model=ModelVersionFilterModel(number=1),
+                model_version_filter_model=ModelVersionFilterModel(number=2),
             ).items
 
             assert len(found) == 0

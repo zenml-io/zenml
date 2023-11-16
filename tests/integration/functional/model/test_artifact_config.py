@@ -763,10 +763,9 @@ def test_artifacts_linked_from_cache_steps():
             ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="foo", model_version_name_or_number_or_id=i
             )
-            mvrm = client.zen_store.get_model_version(model_version_id=mv.id)
             assert len(mvrm.data_artifact_ids) == 2, f"Failed on {i} run"
             assert len(mvrm.model_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mvrm.data_artifact_ids.keys()) == {
@@ -777,10 +776,9 @@ def test_artifacts_linked_from_cache_steps():
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="bar",
             )
-            mvrm = client.zen_store.get_model_version(mv.id)
 
             assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mvrm.data_artifact_ids.keys()) == {
@@ -819,10 +817,9 @@ def test_artifacts_linked_from_cache_steps_same_id():
             ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="bar",
             )
-            mvrm = client.zen_store.get_model_version(mv.id)
             assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mvrm.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",

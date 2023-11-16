@@ -161,6 +161,7 @@ from zenml.models.model_models import (
     ModelVersionPipelineRunFilterModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
+    ModelVersionResponseModel,
     ModelVersionUpdateModel,
 )
 from zenml.models.page_model import Page
@@ -5604,39 +5605,74 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: In case method inputs don't adhere to restrictions.
             KeyError: In case no model version with the identifiers exists.
         """
+        return self._get_model_version(
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        ).to_model_version(suppress_class_validation_warnings=True)
+
+    def _get_model_version(
+        self,
+        model_name_or_id: Union[str, UUID],
+        model_version_name_or_number_or_id: Optional[
+            Union[str, int, ModelStages, UUID]
+        ] = None,
+    ) -> "ModelVersionResponseModel":
+        """Get an existing model version from Model Control Plane.
+
+        Args:
+            model_name_or_id: name or id of the model containing the model version.
+            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
+                If skipped - latest version is retrieved.
+
+        Returns:
+            The model version of interest.
+
+        Raises:
+            RuntimeError: In case method inputs don't adhere to restrictions.
+            KeyError: In case no model version with the identifiers exists.
+        """
+
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
         if isinstance(model_version_name_or_number_or_id, UUID):
             return self.zen_store.get_model_version(
                 model_version_id=model_version_name_or_number_or_id
-            ).to_model_version(suppress_class_validation_warnings=True)
+            )
         elif isinstance(model_version_name_or_number_or_id, int):
-            model_versions = self.list_model_versions(
+            model_versions = self.zen_store.list_model_versions(
                 model_name_or_id=model_name_or_id,
-                number=model_version_name_or_number_or_id,
+                model_version_filter_model=ModelVersionFilterModel(
+                    number=model_version_name_or_number_or_id,
+                ),
             )
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
-                model_versions = self.list_model_versions(
+                model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    sort_by=f"{SorterOps.DESCENDING}:number",
-                )
+                    model_version_filter_model=ModelVersionFilterModel(
+                        sort_by=f"{SorterOps.DESCENDING}:number"
+                    ),
+                ).items
 
                 if len(model_versions) > 1:
                     model_versions = [model_versions[0]]
                 else:
                     model_versions = []
             elif model_version_name_or_number_or_id in ModelStages.values():
-                model_versions = self.list_model_versions(
+                model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    stage=model_version_name_or_number_or_id,
-                )
+                    model_version_filter_model=ModelVersionFilterModel(
+                        stage=model_version_name_or_number_or_id
+                    ),
+                ).items
             else:
-                model_versions = self.list_model_versions(
+                model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    name=model_version_name_or_number_or_id,
-                )
+                    model_version_filter_model=ModelVersionFilterModel(
+                        name=model_version_name_or_number_or_id
+                    ),
+                ).items
         else:
             raise RuntimeError(
                 f"The model version identifier "
