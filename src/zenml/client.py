@@ -5644,7 +5644,7 @@ class Client(metaclass=ClientMetaClass):
                 model_version_filter_model=ModelVersionFilterModel(
                     number=model_version_name_or_number_or_id,
                 ),
-            )
+            ).items
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
                 model_versions = self.zen_store.list_model_versions(
