@@ -16,9 +16,11 @@
 #
 
 
+import random
 from typing import List, Optional
 
 from steps import (
+    compute_performance_metrics_on_current_data,
     data_loader,
     hp_tuning_select_best_model,
     hp_tuning_single_search,
@@ -26,21 +28,12 @@ from steps import (
     model_trainer,
     notify_on_failure,
     notify_on_success,
-    promote_get_metric,
-    promote_get_versions,
-    promote_metric_compare_promoter_in_model_registry,
-    promote_model_version_in_model_control_plane,
+    promote_with_metric_compare,
     train_data_preprocessor,
     train_data_splitter,
 )
 
 from zenml import get_pipeline_context, pipeline
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
-)
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    mlflow_register_model_step,
-)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -79,7 +72,7 @@ def e2e_use_case_training(
     # of one step as the input of the next step.
     pipeline_extra = get_pipeline_context().extra
     ########## ETL stage ##########
-    raw_data, target = data_loader()
+    raw_data, target, _ = data_loader(random_state=random.randint(0, 100))
     dataset_trn, dataset_tst = train_data_splitter(
         dataset=raw_data,
         test_size=test_size,
@@ -108,9 +101,7 @@ def e2e_use_case_training(
             target=target,
         )
         after.append(step_name)
-    best_model = hp_tuning_select_best_model(
-        search_steps_prefix=search_steps_prefix, after=after
-    )
+    best_model = hp_tuning_select_best_model(after=after)
 
     ########## Training stage ##########
     model = model_trainer(
@@ -127,50 +118,19 @@ def e2e_use_case_training(
         fail_on_accuracy_quality_gates=fail_on_accuracy_quality_gates,
         target=target,
     )
-    mlflow_register_model_step(
-        model,
-        name=pipeline_extra["mlflow_model_name"],
-    )
-
     ########## Promotion stage ##########
-    latest_version, current_version = promote_get_versions(
-        after=["mlflow_register_model_step"],
-    )
-    latest_deployment = mlflow_model_registry_deployer_step(
-        id="deploy_latest_model_version",
-        registry_model_name=pipeline_extra["mlflow_model_name"],
-        registry_model_version=latest_version,
-        replace_existing=True,
-    )
-    latest_metric = promote_get_metric(
-        id="get_metrics_latest_model_version",
-        dataset_tst=dataset_tst,
-        deployment_service=latest_deployment,
-    )
-
-    current_deployment = mlflow_model_registry_deployer_step(
-        id="deploy_current_model_version",
-        registry_model_name=pipeline_extra["mlflow_model_name"],
-        registry_model_version=current_version,
-        replace_existing=True,
-        after=["get_metrics_latest_model_version"],
-    )
-    current_metric = promote_get_metric(
-        id="get_metrics_current_model_version",
-        dataset_tst=dataset_tst,
-        deployment_service=current_deployment,
-    )
-
     (
-        was_promoted,
-        promoted_version,
-    ) = promote_metric_compare_promoter_in_model_registry(
+        latest_metric,
+        current_metric,
+    ) = compute_performance_metrics_on_current_data(
+        dataset_tst=dataset_tst, after=["model_evaluator"]
+    )
+
+    promote_with_metric_compare(
         latest_metric=latest_metric,
         current_metric=current_metric,
-        latest_version=latest_version,
-        current_version=current_version,
     )
-    promote_model_version_in_model_control_plane(was_promoted)
+    last_step = "promote_with_metric_compare"
 
-    notify_on_success(after=["promote_model_version_in_model_control_plane"])
+    notify_on_success(after=[last_step])
     ### YOUR CODE ENDS HERE ###

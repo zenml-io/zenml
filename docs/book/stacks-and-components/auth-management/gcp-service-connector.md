@@ -29,7 +29,7 @@ $ zenml service-connector list-types --type gcp
 
 The GCP Service Connector is part of the GCP ZenML integration. You can either install the entire integration or use a PyPI extra to install it independently of the integration:
 
-* `pip install zenml[connectors-gcp]` installs only prerequisites for the GCP Service Connector Type
+* `pip install "zenml[connectors-gcp]"` installs only prerequisites for the GCP Service Connector Type
 * `zenml integration install gcp` installs the entire GCP ZenML integration
 
 It is not required to [install and set up the GCP CLI on your local machine](https://cloud.google.com/sdk/gcloud) to use the GCP Service Connector to link Stack Components to GCP resources and services. However, it is recommended to do so if you are looking for a quick setup that includes using the auto-configuration Service Connector features.

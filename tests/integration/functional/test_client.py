@@ -41,11 +41,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
-    ComponentResponseModel,
-    PipelineBuildRequestModel,
-    PipelineDeploymentRequestModel,
-    PipelineRequestModel,
-    StackResponseModel,
+    ComponentResponse,
+    PipelineBuildRequest,
+    PipelineDeploymentRequest,
+    PipelineRequest,
+    StackResponse,
 )
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
@@ -54,7 +54,7 @@ from zenml.utils.string_utils import random_str
 def _create_local_orchestrator(
     client: Client,
     orchestrator_name: str = "OrchesTraitor",
-) -> ComponentResponseModel:
+) -> ComponentResponse:
     return client.create_stack_component(
         name=orchestrator_name,
         flavor="local",
@@ -66,7 +66,7 @@ def _create_local_orchestrator(
 def _create_local_artifact_store(
     client: Client,
     artifact_store_name: str = "Art-E-Fact",
-) -> ComponentResponseModel:
+) -> ComponentResponse:
     return client.create_stack_component(
         name=artifact_store_name,
         flavor="local",
@@ -80,7 +80,7 @@ def _create_local_stack(
     stack_name: str,
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
-) -> StackResponseModel:
+) -> StackResponse:
     """Creates a local stack with components with the given names. If the names are not given, a random string is used instead."""
 
     def _random_name():
@@ -125,11 +125,11 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
     stack = client.active_stack_model
     assert isinstance(
         stack.components[StackComponentType.ORCHESTRATOR][0],
-        ComponentResponseModel,
+        ComponentResponse,
     )
     assert isinstance(
         stack.components[StackComponentType.ARTIFACT_STORE][0],
-        ComponentResponseModel,
+        ComponentResponse,
     )
     with pytest.raises(KeyError):
         assert stack.components[StackComponentType.CONTAINER_REGISTRY]
@@ -433,7 +433,7 @@ def test_getting_a_pipeline(clean_client):
     with pytest.raises(KeyError):
         clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
-    request = PipelineRequestModel(
+    request = PipelineRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         name="pipeline",
@@ -470,7 +470,7 @@ def test_listing_pipelines(clean_client):
     """Tests listing of pipelines."""
     assert clean_client.list_pipelines().total == 0
 
-    request = PipelineRequestModel(
+    request = PipelineRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         name="pipeline",
@@ -841,7 +841,7 @@ def test_listing_builds(clean_client):
     builds = clean_client.list_builds()
     assert len(builds) == 0
 
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         images={},
@@ -864,7 +864,7 @@ def test_getting_builds(clean_client):
     with pytest.raises(KeyError):
         clean_client.get_build(str(uuid4()))
 
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         images={},
@@ -884,7 +884,7 @@ def test_deleting_builds(clean_client):
     with pytest.raises(KeyError):
         clean_client.delete_build(str(uuid4()))
 
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         images={},
@@ -910,7 +910,7 @@ def test_listing_deployments(clean_client):
     deployments = clean_client.list_deployments()
     assert len(deployments) == 0
 
-    request = PipelineDeploymentRequestModel(
+    request = PipelineDeploymentRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,
@@ -934,7 +934,7 @@ def test_getting_deployments(clean_client):
     with pytest.raises(KeyError):
         clean_client.get_deployment(str(uuid4()))
 
-    request = PipelineDeploymentRequestModel(
+    request = PipelineDeploymentRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,
@@ -956,7 +956,7 @@ def test_deleting_deployments(clean_client):
     with pytest.raises(KeyError):
         clean_client.delete_deployment(str(uuid4()))
 
-    request = PipelineDeploymentRequestModel(
+    request = PipelineDeploymentRequest(
         user=clean_client.active_user.id,
         workspace=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,

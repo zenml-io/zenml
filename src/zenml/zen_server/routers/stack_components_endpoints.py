@@ -20,11 +20,11 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import (
-    ComponentFilterModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
+    ComponentFilter,
+    ComponentResponse,
+    ComponentUpdate,
+    Page,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -56,21 +56,24 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ComponentResponseModel],
+    response_model=Page[ComponentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stack_components(
-    component_filter_model: ComponentFilterModel = Depends(
-        make_dependable(ComponentFilterModel)
+    component_filter_model: ComponentFilter = Depends(
+        make_dependable(ComponentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[ComponentResponseModel]:
+) -> Page[ComponentResponse]:
     """Get a list of all stack components for a specific type.
 
     Args:
         component_filter_model: Filter model used for pagination, sorting,
-                                filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of stack components for a specific type.
@@ -79,43 +82,49 @@ def list_stack_components(
         filter_model=component_filter_model,
         resource_type=ResourceType.STACK_COMPONENT,
         list_method=zen_store().list_stack_components,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{component_id}",
-    response_model=ComponentResponseModel,
+    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack_component(
     component_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> ComponentResponseModel:
+) -> ComponentResponse:
     """Returns the requested stack component.
 
     Args:
         component_id: ID of the stack component.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack component.
     """
     return verify_permissions_and_get_entity(
-        id=component_id, get_method=zen_store().get_stack_component
+        id=component_id,
+        get_method=zen_store().get_stack_component,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     "/{component_id}",
-    response_model=ComponentResponseModel,
+    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_stack_component(
     component_id: UUID,
-    component_update: ComponentUpdateModel,
+    component_update: ComponentUpdate,
     _: AuthContext = Security(authorize),
-) -> ComponentResponseModel:
+) -> ComponentResponse:
     """Updates a stack component.
 
     Args:

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -102,7 +102,7 @@ def generate_cache_key(
     return hash_.hexdigest()
 
 
-def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
+def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     """If a given step can be cached, get the corresponding existing step run.
 
     A step run can be cached if there is an existing step run in the same

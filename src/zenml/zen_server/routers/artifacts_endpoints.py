@@ -19,13 +19,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-)
-from zenml.models.page_model import Page
-from zenml.models.visualization_models import (
-    LoadedVisualizationModel,
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    LoadedVisualization,
+    Page,
 )
 from zenml.utils.artifact_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
@@ -52,21 +50,24 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ArtifactResponseModel],
+    response_model=Page[ArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_artifacts(
-    artifact_filter_model: ArtifactFilterModel = Depends(
-        make_dependable(ArtifactFilterModel)
+    artifact_filter_model: ArtifactFilter = Depends(
+        make_dependable(ArtifactFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[ArtifactResponseModel]:
+) -> Page[ArtifactResponse]:
     """Get artifacts according to query filters.
 
     Args:
         artifact_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The artifacts according to query filters.
@@ -75,19 +76,20 @@ def list_artifacts(
         filter_model=artifact_filter_model,
         resource_type=ResourceType.ARTIFACT,
         list_method=zen_store().list_artifacts,
+        hydrate=hydrate,
     )
 
 
 @router.post(
     "",
-    response_model=ArtifactResponseModel,
+    response_model=ArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_artifact(
-    artifact: ArtifactRequestModel,
+    artifact: ArtifactRequest,
     _: AuthContext = Security(authorize),
-) -> ArtifactResponseModel:
+) -> ArtifactResponse:
     """Create a new artifact.
 
     Args:
@@ -105,24 +107,27 @@ def create_artifact(
 
 @router.get(
     "/{artifact_id}",
-    response_model=ArtifactResponseModel,
+    response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_artifact(
     artifact_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> ArtifactResponseModel:
+) -> ArtifactResponse:
     """Get an artifact by ID.
 
     Args:
         artifact_id: The ID of the artifact to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The artifact with the given ID.
     """
     return verify_permissions_and_get_entity(
-        id=artifact_id, get_method=zen_store().get_artifact
+        id=artifact_id, get_method=zen_store().get_artifact, hydrate=hydrate
     )
 
 
@@ -149,7 +154,7 @@ def delete_artifact(
 
 @router.get(
     "/{artifact_id}" + VISUALIZE,
-    response_model=LoadedVisualizationModel,
+    response_model=LoadedVisualization,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -157,7 +162,7 @@ def get_artifact_visualization(
     artifact_id: UUID,
     index: int = 0,
     _: AuthContext = Security(authorize),
-) -> LoadedVisualizationModel:
+) -> LoadedVisualization:
     """Get the visualization of an artifact.
 
     Args:

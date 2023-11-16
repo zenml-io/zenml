@@ -26,14 +26,14 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.models import (
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    Page,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
+    ServiceConnectorResponse,
     ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
+    ServiceConnectorUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -70,23 +70,26 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ServiceConnectorResponseModel],
+    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_service_connectors(
-    connector_filter_model: ServiceConnectorFilterModel = Depends(
-        make_dependable(ServiceConnectorFilterModel)
+    connector_filter_model: ServiceConnectorFilter = Depends(
+        make_dependable(ServiceConnectorFilter)
     ),
     expand_secrets: bool = True,
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[ServiceConnectorResponseModel]:
+) -> Page[ServiceConnectorResponse]:
     """Get a list of all service connectors for a specific type.
 
     Args:
         connector_filter_model: Filter model used for pagination, sorting,
             filtering
         expand_secrets: Whether to expand secrets or not.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         Page with list of service connectors for a specific type.
@@ -95,6 +98,7 @@ def list_service_connectors(
         filter_model=connector_filter_model,
         resource_type=ResourceType.SERVICE_CONNECTOR,
         list_method=zen_store().list_service_connectors,
+        hydrate=hydrate,
     )
 
     if expand_secrets:
@@ -131,25 +135,30 @@ def list_service_connectors(
 
 @router.get(
     "/{connector_id}",
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_service_connector(
     connector_id: UUID,
     expand_secrets: bool = True,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Returns the requested service connector.
 
     Args:
         connector_id: ID of the service connector.
         expand_secrets: Whether to expand secrets or not.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested service connector.
     """
-    connector = zen_store().get_service_connector(connector_id)
+    connector = zen_store().get_service_connector(
+        connector_id, hydrate=hydrate
+    )
     verify_permission_for_model(connector, action=Action.READ)
 
     if (
@@ -169,15 +178,15 @@ def get_service_connector(
 
 @router.put(
     "/{connector_id}",
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_service_connector(
     connector_id: UUID,
-    connector_update: ServiceConnectorUpdateModel,
+    connector_update: ServiceConnectorUpdate,
     _: AuthContext = Security(authorize),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Updates a service connector.
 
     Args:
@@ -223,7 +232,7 @@ def delete_service_connector(
 )
 @handle_exceptions
 def validate_and_verify_service_connector_config(
-    connector: ServiceConnectorRequestModel,
+    connector: ServiceConnectorRequest,
     list_resources: bool = True,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResourcesModel:
@@ -296,7 +305,7 @@ def validate_and_verify_service_connector(
 
 @router.get(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
-    response_model=ServiceConnectorResponseModel,
+    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -305,7 +314,7 @@ def get_service_connector_client(
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> ServiceConnectorResponseModel:
+) -> ServiceConnectorResponse:
     """Get a service connector client for a service connector and given resource.
 
     This requires the service connector implementation to be installed

@@ -65,15 +65,15 @@ To use the SkyPilot VM Orchestrator, you need:
 * One of the SkyPilot integrations installed. You can install the SkyPilot integration for your cloud provider of choice using the following command:
   ```shell
     # For AWS
-    pip install zenml[connectors-gcp]
+    pip install "zenml[connectors-gcp]"
     zenml integration install aws vm_aws 
 
     # for GCP
-    pip install zenml[connectors-gcp]
+    pip install "zenml[connectors-gcp]"
     zenml integration install gcp vm_gcp # for GCP
 
     # for Azure
-    pip install zenml[connectors-azure]
+    pip install "zenml[connectors-azure]"
     zenml integration install azure vm_azure # for Azure
   ```
 * [Docker](https://www.docker.com) installed and running.
@@ -90,7 +90,7 @@ To use the SkyPilot VM Orchestrator, you need:
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-aws]
+    pip install "zenml[connectors-aws]"
     zenml integration install aws vm_aws 
   ```
 
@@ -140,8 +140,8 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for GCP and the GCP extra for ZenML, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-gcp]
-    zenml integration install gcp vm_gcp 
+    pip install "zenml[connectors-gcp]"
+    zenml integration install gcp vm_gcp
   ```
 
 To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../../stacks-and-components/auth-management/gcp-service-connector.md)
@@ -198,7 +198,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for Azure and the Azure extra for ZenML, using the following two commands
 
   ```shell
-    pip install zenml[connectors-azure]
+    pip install "zenml[connectors-azure]"
     zenml integration install azure vm_azure 
   ```
 
@@ -266,8 +266,7 @@ The following code snippets show how to configure the orchestrator settings for 
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
-
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
@@ -276,7 +275,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
+    region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
     disk_size=100,
@@ -303,7 +302,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
 
 
 skypilot_settings = SkypilotGCPOrchestratorSettings(
@@ -315,7 +314,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     spot_recovery="recovery_strategy",
     region="us-west1",
     zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    image_id="ubuntu-pro-2004-focal-v20231101",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",
@@ -340,7 +339,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
 
 
 skypilot_settings = SkypilotAzureOrchestratorSettings(
@@ -350,9 +349,8 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
-    zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    region="West Europe",
+    image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",

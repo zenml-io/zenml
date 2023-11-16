@@ -15,7 +15,7 @@
 import getpass
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
@@ -51,8 +51,7 @@ from zenml.exceptions import (
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.models import StackFilterModel
-from zenml.models.stack_models import StackResponseModel
+from zenml.models import StackFilter
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -65,6 +64,9 @@ from zenml.utils.mlstacks_utils import (
     verify_spec_and_tf_files_exist,
 )
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models import StackResponse
 
 logger = get_logger(__name__)
 
@@ -692,7 +694,7 @@ def rename_stack(
 
 
 @stack.command("list")
-@list_options(StackFilterModel)
+@list_options(StackFilter)
 @click.pass_context
 def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
@@ -744,7 +746,7 @@ def describe_stack(
 
     with console.status("Describing the stack...\n"):
         try:
-            stack_: StackResponseModel = client.get_stack(
+            stack_: "StackResponse" = client.get_stack(
                 name_id_or_prefix=stack_name_or_id
             )
         except KeyError as err:

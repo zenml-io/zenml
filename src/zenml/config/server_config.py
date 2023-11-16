@@ -30,7 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
-from zenml.models.server_models import ServerDeploymentType
+from zenml.models import ServerDeploymentType
 
 logger = get_logger(__name__)
 

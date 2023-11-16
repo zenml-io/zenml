@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
-
-
-import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import TaggableResourceTypes
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
@@ -37,8 +35,12 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    pass
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -73,7 +75,13 @@ class ModelSchema(NamedSchema, table=True):
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
-    tags: str = Field(sa_column=Column(TEXT, nullable=True))
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            cascade="delete",
+        ),
+    )
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -108,17 +116,29 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethics=model_request.ethics,
-            tags=json.dumps(model_request.tags)
-            if model_request.tags
-            else None,
         )
 
-    def to_model(self) -> ModelResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelResponseModel:
         """Convert an `ModelSchema` to an `ModelResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelResponseModel`.
         """
+        tags = [t.tag.to_model() for t in self.tags]
+        if self.model_versions:
+            version_numbers = [mv.number for mv in self.model_versions]
+            latest_version = self.model_versions[
+                version_numbers.index(max(version_numbers))
+            ].name
+        else:
+            latest_version = None
         return ModelResponseModel(
             id=self.id,
             name=self.name,
@@ -133,10 +153,8 @@ class ModelSchema(NamedSchema, table=True):
             limitations=self.limitations,
             trade_offs=self.trade_offs,
             ethics=self.ethics,
-            tags=json.loads(self.tags) if self.tags else None,
-            latest_version=self.model_versions[-1].name
-            if self.model_versions
-            else None,
+            tags=tags,
+            latest_version=latest_version,
         )
 
     def update(
@@ -151,11 +169,10 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The updated `ModelSchema`.
         """
-        for field, value in model_update.dict(exclude_unset=True).items():
-            if field == "tags":
-                setattr(self, field, json.dumps(value))
-            else:
-                setattr(self, field, value)
+        for field, value in model_update.dict(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            setattr(self, field, value)
         self.updated = datetime.utcnow()
         return self
 
@@ -233,8 +250,15 @@ class ModelVersionSchema(NamedSchema, table=True):
             stage=model_version_request.stage,
         )
 
-    def to_model(self) -> ModelVersionResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionResponseModel:
         """Convert an `ModelVersionSchema` to an `ModelVersionResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionResponseModel`.
@@ -409,8 +433,15 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             version=version,
         )
 
-    def to_model(self) -> ModelVersionArtifactResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionArtifactResponseModel:
         """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionArtifactResponseModel`.
@@ -516,8 +547,15 @@ class ModelVersionPipelineRunSchema(NamedSchema, table=True):
             pipeline_run_id=model_version_pipeline_run_request.pipeline_run,
         )
 
-    def to_model(self) -> ModelVersionPipelineRunResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionPipelineRunResponseModel:
         """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ModelVersionPipelineRunResponseModel`.

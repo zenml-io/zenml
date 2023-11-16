@@ -28,50 +28,53 @@ from zenml.enums import (
     SecretScope,
     StackComponentType,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
+    APIKeyRequest,
+    ArtifactFilter,
+    ArtifactRequest,
     AuthenticationMethodModel,
-    BaseFilterModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
+    BaseFilter,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
     ModelFilterModel,
     ModelRequestModel,
     ModelUpdateModel,
     ModelVersionRequestModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineUpdateModel,
+    Page,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineUpdate,
     ResourceTypeModel,
     SecretFilterModel,
     SecretRequestModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    ServiceAccountRequest,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackRequestModel,
-    StepRunFilterModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceUpdateModel,
+    ServiceConnectorUpdate,
+    StackRequest,
+    StepRunFilter,
+    UserFilter,
+    UserRequest,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceUpdate,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
-from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
@@ -127,13 +130,13 @@ class PipelineRunContext:
         #  the test ends up deleting some or all of these, this allows for a
         #  thorough cleanup nonetheless
         self.runs = self.store.list_runs(
-            PipelineRunFilterModel(name=f"startswith:{self.pipeline_name}")
+            PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
         self.artifacts = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
-                StepRunFilterModel(pipeline_run_id=run.id)
+                StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
                 self.artifacts += [a for a in s.outputs.values()]
@@ -155,29 +158,39 @@ class PipelineRunContext:
 class UserContext:
     def __init__(
         self,
-        user_name: Optional[str] = "aria",
+        user_name: Optional[str] = None,
         password: Optional[str] = None,
+        inactive: bool = False,
         login: bool = False,
         existing_user: bool = False,
         delete: bool = True,
     ):
         if existing_user:
             self.user_name = user_name
+        elif user_name:
+            self.user_name = user_name
         else:
-            self.user_name = sample_name(user_name)
+            self.user_name = sample_name("aria")
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
-        self.password = password or random_str(32)
+        if inactive and password is None:
+            self.password = None
+        else:
+            self.password = password or random_str(32)
         self.existing_user = existing_user
         self.delete = delete
 
     def __enter__(self):
         if not self.existing_user:
-            new_user = UserRequestModel(
-                name=self.user_name, password=self.password
+            new_user = UserRequest(
+                name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin",
+                user_name_or_id=self.created_user.id,
+            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
@@ -206,8 +219,122 @@ class UserContext:
         if not self.existing_user and self.delete:
             try:
                 self.store.delete_user(self.created_user.id)
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 pass
+
+
+class ServiceAccountContext:
+    def __init__(
+        self,
+        name: str = "aria",
+        description: str = "Aria's service account",
+        login: bool = False,
+        existing_account: bool = False,
+        delete: bool = True,
+    ):
+        if existing_account:
+            self.name = name
+        else:
+            self.name = sample_name(name)
+        self.description = description
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.login = login
+        self.existing_account = existing_account
+        self.delete = delete
+
+    def __enter__(self):
+        if not self.existing_account:
+            new_account = ServiceAccountRequest(
+                name=self.name,
+                description=self.description,
+                active=True,
+            )
+            self.created_service_account = self.store.create_service_account(
+                new_account
+            )
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin",
+                user_name_or_id=self.created_service_account.id,
+            )
+        else:
+            self.created_service_account = self.store.get_service_account(
+                self.name
+            )
+
+        if self.login or self.existing_account:
+            # Create a temporary API key for the service account
+            api_key_name = sample_name("temp_api_key")
+            self.api_key = self.store.create_api_key(
+                self.created_service_account.id,
+                APIKeyRequest(
+                    name=api_key_name,
+                ),
+            )
+            self.original_config = GlobalConfiguration.get_instance()
+            self.original_client = Client.get_instance()
+
+            GlobalConfiguration._reset_instance()
+            Client._reset_instance()
+            self.client = Client()
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                api_key=self.api_key.key,
+                secrets_store=self.original_config.store.secrets_store,
+            )
+            GlobalConfiguration().set_store(config=store_config)
+        return self.created_service_account
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.login or self.existing_account:
+            GlobalConfiguration._reset_instance(self.original_config)
+            Client._reset_instance(self.original_client)
+            _ = Client().zen_store
+            self.store.delete_api_key(
+                self.created_service_account.id,
+                self.api_key.id,
+            )
+        if not self.existing_account and self.delete:
+            try:
+                self.store.delete_service_account(
+                    self.created_service_account.id
+                )
+            except (KeyError, IllegalOperationError):
+                pass
+
+
+class LoginContext:
+    def __init__(
+        self,
+        user_name: Optional[str] = None,
+        password: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ):
+        self.user_name = user_name
+        self.password = password
+        self.api_key = api_key
+
+    def __enter__(self):
+        self.original_config = GlobalConfiguration.get_instance()
+        self.original_client = Client.get_instance()
+
+        GlobalConfiguration._reset_instance()
+        Client._reset_instance()
+        store_config = StoreConfiguration(
+            url=self.original_config.store.url,
+            type=self.original_config.store.type,
+            api_key=self.api_key,
+            username=self.user_name,
+            password=self.password,
+            secrets_store=self.original_config.store.secrets_store,
+        )
+        GlobalConfiguration().set_store(config=store_config)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        GlobalConfiguration._reset_instance(self.original_config)
+        Client._reset_instance(self.original_client)
+        _ = Client().zen_store
 
 
 class StackContext:
@@ -224,7 +351,7 @@ class StackContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_stack = StackRequestModel(
+        new_stack = StackRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.stack_name,
@@ -258,7 +385,7 @@ class ComponentContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_component = ComponentRequestModel(
+        new_component = ComponentRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.component_name,
@@ -295,7 +422,7 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = WorkspaceRequestModel(name=self.workspace_name)
+            new_workspace = WorkspaceRequest(name=self.workspace_name)
             self.workspace = self.store.create_workspace(new_workspace)
         else:
             self.workspace = self.store.get_workspace(self.workspace_name)
@@ -374,7 +501,7 @@ class CodeRepositoryContext:
         self.delete = delete
 
     def __enter__(self):
-        request = CodeRepositoryRequestModel(
+        request = CodeRepositoryRequest(
             name=self.code_repo_name,
             config={},
             source={
@@ -432,7 +559,7 @@ class ServiceConnectorContext:
         self.delete = delete
 
     def __enter__(self):
-        request = ServiceConnectorRequestModel(
+        request = ServiceConnectorRequest(
             name=self.name,
             connector_type=self.connector_type,
             auth_method=self.auth_method,
@@ -464,11 +591,12 @@ class ModelVersionContext:
         create_version: bool = False,
         create_artifacts: int = 0,
         create_prs: int = 0,
+        user_id: Optional[uuid.UUID] = None,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
-        self.user = client.active_user.id
-        self.model = "su_model"
+        self.user = user_id or client.active_user.id
+        self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
         self.create_version = create_version
@@ -507,7 +635,7 @@ class ModelVersionContext:
         for _ in range(self.create_artifacts):
             self.artifacts.append(
                 client.zen_store.create_artifact(
-                    ArtifactRequestModel(
+                    ArtifactRequest(
                         name=sample_name("sample_artifact"),
                         data_type="module.class",
                         materializer="module.class",
@@ -520,7 +648,7 @@ class ModelVersionContext:
             )
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequestModel(
+                PipelineDeploymentRequest(
                     user=user.id,
                     workspace=ws.id,
                     stack=stack.id,
@@ -533,7 +661,7 @@ class ModelVersionContext:
             self.deployments.append(deployment)
             self.prs.append(
                 client.zen_store.create_run(
-                    PipelineRunRequestModel(
+                    PipelineRunRequest(
                         id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
                         status="running",
@@ -593,7 +721,7 @@ class CatClawMarks(AuthenticationConfig):
 
 
 class CatVoicePrint(AuthenticationConfig):
-    """Cat voice print authentication credentials."""
+    """Cat voice-print authentication credentials."""
 
     secret_word: SecretStr = Field(
         title="Secret word",
@@ -678,18 +806,25 @@ AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
 
-class CrudTestConfig(BaseModel):
+class CrudTestConfig:
     """Model to collect all methods pertaining to a given entity."""
 
-    create_model: "BaseRequestModel"
-    update_model: Optional["BaseModel"]
-    filter_model: Type[BaseFilterModel]
-    entity_name: str
+    def __init__(
+        self,
+        create_model: "BaseModel",
+        filter_model: Type[BaseFilter],
+        entity_name: str,
+        update_model: Optional["BaseModel"] = None,
+    ):
+        self.create_model = create_model
+        self.update_model = update_model
+        self.filter_model = filter_model
+        self.entity_name = entity_name
 
     @property
     def list_method(
         self,
-    ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
+    ) -> Callable[[BaseFilter], Page[AnyResponseModel]]:
         store = Client().zen_store
         if self.entity_name.endswith("y"):
             method_name = f"list_{self.entity_name[:-1]}ies"
@@ -721,21 +856,19 @@ class CrudTestConfig(BaseModel):
 
 
 workspace_crud_test_config = CrudTestConfig(
-    create_model=WorkspaceRequestModel(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdateModel(
-        name=sample_name("updated_sample_workspace")
-    ),
-    filter_model=WorkspaceFilterModel,
+    create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
+    update_model=WorkspaceUpdate(name=sample_name("updated_sample_workspace")),
+    filter_model=WorkspaceFilter,
     entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
-    create_model=UserRequestModel(name=sample_name("sample_user")),
-    update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
-    filter_model=UserFilterModel,
+    create_model=UserRequest(name=sample_name("sample_user")),
+    update_model=UserUpdate(name=sample_name("updated_sample_user")),
+    filter_model=UserFilter,
     entity_name="user",
 )
 flavor_crud_test_config = CrudTestConfig(
-    create_model=FlavorRequestModel(
+    create_model=FlavorRequest(
         name=sample_name("sample_flavor"),
         type=StackComponentType.ORCHESTRATOR,
         integration="",
@@ -743,11 +876,11 @@ flavor_crud_test_config = CrudTestConfig(
         config_schema="",
         workspace=uuid.uuid4(),
     ),
-    filter_model=FlavorFilterModel,
+    filter_model=FlavorFilter,
     entity_name="flavor",
 )
 component_crud_test_config = CrudTestConfig(
-    create_model=ComponentRequestModel(
+    create_model=ComponentRequest(
         name=sample_name("sample_component"),
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
@@ -755,14 +888,12 @@ component_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    update_model=ComponentUpdateModel(
-        name=sample_name("updated_sample_component")
-    ),
-    filter_model=ComponentFilterModel,
+    update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
+    filter_model=ComponentFilter,
     entity_name="stack_component",
 )
 pipeline_crud_test_config = CrudTestConfig(
-    create_model=PipelineRequestModel(
+    create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
@@ -770,10 +901,8 @@ pipeline_crud_test_config = CrudTestConfig(
         version="1",
         version_hash="abc123",
     ),
-    update_model=PipelineUpdateModel(
-        name=sample_name("updated_sample_pipeline")
-    ),
-    filter_model=PipelineFilterModel,
+    update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    filter_model=PipelineFilter,
     entity_name="pipeline",
 )
 # pipeline_run_crud_test_config = CrudTestConfig(
@@ -792,7 +921,7 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
-    create_model=ArtifactRequestModel(
+    create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
         data_type="module.class",
         materializer="module.class",
@@ -801,7 +930,7 @@ artifact_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=ArtifactFilterModel,
+    filter_model=ArtifactFilter,
     entity_name="artifact",
 )
 secret_crud_test_config = CrudTestConfig(
@@ -815,18 +944,18 @@ secret_crud_test_config = CrudTestConfig(
     entity_name="secret",
 )
 build_crud_test_config = CrudTestConfig(
-    create_model=PipelineBuildRequestModel(
+    create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         images={},
         is_local=False,
         contains_code=True,
     ),
-    filter_model=PipelineBuildFilterModel,
+    filter_model=PipelineBuildFilter,
     entity_name="build",
 )
 deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequestModel(
+    create_model=PipelineDeploymentRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         stack=uuid.uuid4(),
@@ -835,25 +964,25 @@ deployment_crud_test_config = CrudTestConfig(
         client_version="0.12.3",
         server_version="0.12.3",
     ),
-    filter_model=PipelineDeploymentFilterModel,
+    filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
 )
 code_repository_crud_test_config = CrudTestConfig(
-    create_model=CodeRepositoryRequestModel(
+    create_model=CodeRepositoryRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
         source={"module": "module", "type": "user"},
     ),
-    update_model=CodeRepositoryUpdateModel(
+    update_model=CodeRepositoryUpdate(
         name=sample_name("updated_sample_code_repository")
     ),
-    filter_model=CodeRepositoryFilterModel,
+    filter_model=CodeRepositoryFilter,
     entity_name="code_repository",
 )
 service_connector_crud_test_config = CrudTestConfig(
-    create_model=ServiceConnectorRequestModel(
+    create_model=ServiceConnectorRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_service_connector"),
@@ -864,10 +993,10 @@ service_connector_crud_test_config = CrudTestConfig(
             password="password",
         ),
     ),
-    update_model=ServiceConnectorUpdateModel(
+    update_model=ServiceConnectorUpdate(
         name=sample_name("updated_sample_service_connector"),
     ),
-    filter_model=ServiceConnectorFilterModel,
+    filter_model=ServiceConnectorFilter,
     entity_name="service_connector",
 )
 model_crud_test_config = CrudTestConfig(

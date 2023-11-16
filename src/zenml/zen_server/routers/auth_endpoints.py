@@ -46,16 +46,18 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    APIKeyInternalResponse,
     OAuthDeviceAuthorizationResponse,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
+    authenticate_api_key,
     authenticate_credentials,
     authenticate_device,
     authenticate_external_user,
@@ -85,7 +87,8 @@ class OAuthLoginRequestForm:
     This form allows multiple grant types to be used with the same endpoint:
     * standard OAuth2 password grant type
     * standard  OAuth2 device authorization grant type
-    * ZenML External Authenticator grant type
+    * ZenML service account + API key grant type (proprietary)
+    * ZenML External Authenticator grant type (proprietary)
     """
 
     def __init__(
@@ -113,6 +116,8 @@ class OAuthLoginRequestForm:
             # Detect the grant type from the form data
             if username is not None:
                 self.grant_type = OAuthGrantTypes.OAUTH_PASSWORD
+            elif password:
+                self.grant_type = OAuthGrantTypes.ZENML_API_KEY
             elif device_code:
                 self.grant_type = OAuthGrantTypes.OAUTH_DEVICE_CODE
             else:
@@ -164,7 +169,13 @@ class OAuthLoginRequestForm:
                     detail="Invalid request: invalid client ID.",
                 )
             self.device_code = device_code
-
+        elif self.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+            if not password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="API key is required.",
+                )
+            self.api_key = password
         elif self.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
             if config.auth_scheme != AuthScheme.EXTERNAL:
                 logger.info(
@@ -179,7 +190,8 @@ class OAuthLoginRequestForm:
 def generate_access_token(
     user_id: UUID,
     response: Response,
-    device: Optional[OAuthDeviceInternalResponseModel] = None,
+    device: Optional[OAuthDeviceInternalResponse] = None,
+    api_key: Optional[APIKeyInternalResponse] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -187,6 +199,7 @@ def generate_access_token(
         user_id: The ID of the user.
         response: The FastAPI response object.
         device: The device used for authentication.
+        api_key: The service account API key used for authentication.
 
     Returns:
         An authentication response with an access token.
@@ -216,6 +229,7 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         permissions=[],
+        api_key_id=api_key.id if api_key else None,
     ).encode(expires=expires)
 
     if not device:
@@ -270,6 +284,10 @@ def token(
             client_id=auth_form_data.client_id,
             device_code=auth_form_data.device_code,
         )
+    elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_API_KEY:
+        auth_context = authenticate_api_key(
+            api_key=auth_form_data.api_key,
+        )
 
     elif auth_form_data.grant_type == OAuthGrantTypes.ZENML_EXTERNAL:
         config = server_config()
@@ -318,6 +336,7 @@ def token(
         user_id=auth_context.user.id,
         response=response,
         device=auth_context.device,
+        api_key=auth_context.api_key,
     )
 
 
@@ -397,7 +416,7 @@ def device_authorization(
         )
     except KeyError:
         device_model = store.create_authorized_device(
-            OAuthDeviceInternalRequestModel(
+            OAuthDeviceInternalRequest(
                 client_id=client_id,
                 expires_in=config.device_auth_timeout,
                 ip_address=ip_address,
@@ -413,7 +432,7 @@ def device_authorization(
         # for authentication anymore.
         device_model = store.update_internal_authorized_device(
             device_id=device_model.id,
-            update=OAuthDeviceInternalUpdateModel(
+            update=OAuthDeviceInternalUpdate(
                 trusted_device=False,
                 expires_in=config.device_auth_timeout,
                 status=OAuthDeviceStatus.PENDING,

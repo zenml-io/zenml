@@ -20,8 +20,8 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from zenml.models import Page
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config

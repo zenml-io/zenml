@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import UserFilterModel
+from zenml.models import UserFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -72,7 +72,7 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@list_options(UserFilterModel)
+@list_options(UserFilter)
 @click.pass_context
 def list_users(ctx: click.Context, **kwargs: Any) -> None:
     """List all users.

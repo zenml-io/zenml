@@ -19,13 +19,13 @@ from fastapi import APIRouter, Depends, Security
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import (
-    PipelineFilterModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    PipelineUpdateModel,
+    Page,
+    PipelineFilter,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    PipelineUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -50,25 +50,24 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineResponseModel],
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
+    response_model=Page[PipelineResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipelines(
-    pipeline_filter_model: PipelineFilterModel = Depends(
-        make_dependable(PipelineFilterModel)
+    pipeline_filter_model: PipelineFilter = Depends(
+        make_dependable(PipelineFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[PipelineResponseModel]:
+) -> Page[PipelineResponse]:
     """Gets a list of pipelines.
 
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of pipeline objects.
@@ -77,47 +76,47 @@ def list_pipelines(
         filter_model=pipeline_filter_model,
         resource_type=ResourceType.PIPELINE,
         list_method=zen_store().list_pipelines,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{pipeline_id}",
-    response_model=PipelineResponseModel,
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
+    response_model=PipelineResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_pipeline(
     pipeline_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> PipelineResponseModel:
+) -> PipelineResponse:
     """Gets a specific pipeline using its unique id.
 
     Args:
         pipeline_id: ID of the pipeline to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific pipeline object.
     """
     return verify_permissions_and_get_entity(
-        id=pipeline_id, get_method=zen_store().get_pipeline
+        id=pipeline_id, get_method=zen_store().get_pipeline, hydrate=hydrate
     )
 
 
 @router.put(
     "/{pipeline_id}",
-    response_model=PipelineResponseModel,
+    response_model=PipelineResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_pipeline(
     pipeline_id: UUID,
-    pipeline_update: PipelineUpdateModel,
+    pipeline_update: PipelineUpdate,
     _: AuthContext = Security(authorize),
-) -> PipelineResponseModel:
+) -> PipelineResponse:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
@@ -158,21 +157,24 @@ def delete_pipeline(
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Page[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipeline_runs(
-    pipeline_run_filter_model: PipelineRunFilterModel = Depends(
-        make_dependable(PipelineRunFilterModel)
+    pipeline_run_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:
         pipeline_run_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.

@@ -48,21 +48,20 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    InternalComponentRequestModel,
-    InternalStackRequestModel,
-    StackFilterModel,
-    StackResponseModel,
-    UserRequestModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
-)
-from zenml.models.server_models import (
     ServerDatabaseType,
     ServerModel,
+    StackFilter,
+    StackResponse,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    WorkspaceResponse,
 )
-from zenml.models.user_models import UserFilterModel
+from zenml.models.v2.core.component import InternalComponentRequest
+from zenml.models.v2.core.stack import InternalStackRequest
 from zenml.utils.proxy_utils import make_proxy_class
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
@@ -121,6 +120,8 @@ class BaseZenStore(
 
         Raises:
             RuntimeError: If the store cannot be initialized.
+            AuthorizationException: If the store cannot be initialized due to
+                authentication errors.
         """
         super().__init__(**kwargs)
 
@@ -144,6 +145,12 @@ class BaseZenStore(
                     f"{self.url}` to reconnect to the server."
                 )
             raise RuntimeError(f"{error_message}\n{recommendation}") from e
+
+        except AuthorizationException as e:
+            raise AuthorizationException(
+                f"Authorization failed for store at '{self.url}'. Please check "
+                f"your credentials: {str(e)}"
+            )
 
         except Exception as e:
             raise RuntimeError(
@@ -338,7 +345,7 @@ class BaseZenStore(
         active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[WorkspaceResponseModel, StackResponseModel]:
+    ) -> Tuple[WorkspaceResponse, StackResponse]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active workspace and active
@@ -358,7 +365,7 @@ class BaseZenStore(
         Returns:
             A tuple containing the active workspace and active stack.
         """
-        active_workspace: WorkspaceResponseModel
+        active_workspace: WorkspaceResponse
 
         if active_workspace_name_or_id:
             try:
@@ -381,7 +388,7 @@ class BaseZenStore(
                 f"to '{active_workspace.name}'."
             )
 
-        active_stack: StackResponseModel
+        active_stack: StackResponse
 
         # Sanitize the active stack
         if active_stack_id:
@@ -431,7 +438,6 @@ class BaseZenStore(
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
-            zenml_cloud=False,
             secrets_store_type=self.secrets_store.type
             if self.secrets_store
             else SecretsStoreType.NONE,
@@ -447,9 +453,8 @@ class BaseZenStore(
         return self.get_store_info().is_local()
 
     def _get_or_create_default_stack(
-        self,
-        workspace: "WorkspaceResponseModel",
-    ) -> "StackResponseModel":
+        self, workspace: WorkspaceResponse
+    ) -> StackResponse:
         try:
             return self._get_default_stack(
                 workspace_id=workspace.id,
@@ -459,7 +464,7 @@ class BaseZenStore(
                 workspace_id=workspace.id,
             )
 
-    def _get_or_create_default_workspace(self) -> "WorkspaceResponseModel":
+    def _get_or_create_default_workspace(self) -> WorkspaceResponse:
         try:
             return self._default_workspace
         except KeyError:
@@ -508,7 +513,7 @@ class BaseZenStore(
     def _create_default_stack(
         self,
         workspace_id: UUID,
-    ) -> StackResponseModel:
+    ) -> StackResponse:
         """Create the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
@@ -528,9 +533,11 @@ class BaseZenStore(
                 f"Creating default stack in workspace {workspace.name}..."
             )
 
-            # Register the default orchestrator
             orchestrator = self.create_stack_component(
-                component=InternalComponentRequestModel(
+                component=InternalComponentRequest(
+                    # Passing `None` for the user here means the orchestrator
+                    # is owned by the server, which for RBAC indicates that
+                    # everyone can read it
                     user=None,
                     workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
@@ -540,9 +547,11 @@ class BaseZenStore(
                 ),
             )
 
-            # Register the default artifact store
             artifact_store = self.create_stack_component(
-                component=InternalComponentRequestModel(
+                component=InternalComponentRequest(
+                    # Passing `None` for the user here means the stack is owned
+                    # by the server, which for RBAC indicates that everyone can
+                    # read it
                     user=None,
                     workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
@@ -556,19 +565,20 @@ class BaseZenStore(
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
 
-            # Register the default stack
-            stack = InternalStackRequestModel(
+            stack = InternalStackRequest(
+                # Passing `None` for the user here means the stack is owned by
+                # the server, which for RBAC indicates that everyone can read it
+                user=None,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
                 workspace=workspace.id,
-                user=None,
             )
             return self.create_stack(stack=stack)
 
     def _get_default_stack(
         self,
         workspace_id: UUID,
-    ) -> StackResponseModel:
+    ) -> StackResponse:
         """Get the default stack for a user in a workspace.
 
         Args:
@@ -581,7 +591,7 @@ class BaseZenStore(
             KeyError: if the workspace or default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
-            StackFilterModel(
+            StackFilter(
                 workspace_id=workspace_id,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
             )
@@ -606,7 +616,7 @@ class BaseZenStore(
         return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
 
     @property
-    def _default_user(self) -> UserResponseModel:
+    def _default_user(self) -> UserResponse:
         """Get the default user.
 
         Returns:
@@ -621,7 +631,7 @@ class BaseZenStore(
         except KeyError:
             raise KeyError(f"The default user '{user_name}' is not configured")
 
-    def _create_default_user(self) -> UserResponseModel:
+    def _create_default_user(self) -> UserResponse:
         """Creates a default user.
 
         Returns:
@@ -634,7 +644,7 @@ class BaseZenStore(
 
         logger.info(f"Creating default user '{user_name}' ...")
         new_user = self.create_user(
-            UserRequestModel(
+            UserRequest(
                 name=user_name,
                 active=True,
                 password=user_password,
@@ -642,7 +652,7 @@ class BaseZenStore(
         )
         return new_user
 
-    def get_external_user(self, user_id: UUID) -> UserResponseModel:
+    def get_external_user(self, user_id: UUID) -> UserResponse:
         """Get a user by external ID.
 
         Args:
@@ -654,7 +664,7 @@ class BaseZenStore(
         Raises:
             KeyError: If the user doesn't exist.
         """
-        users = self.list_users(UserFilterModel(external_user_id=user_id))
+        users = self.list_users(UserFilter(external_user_id=user_id))
         if users.total == 0:
             raise KeyError(f"User with external ID '{user_id}' not found.")
         return users.items[0]
@@ -675,7 +685,7 @@ class BaseZenStore(
         )
 
     @property
-    def _default_workspace(self) -> WorkspaceResponseModel:
+    def _default_workspace(self) -> WorkspaceResponse:
         """Get the default workspace.
 
         Returns:
@@ -693,7 +703,7 @@ class BaseZenStore(
             )
 
     @abstractmethod
-    def _create_default_workspace(self) -> WorkspaceResponseModel:
+    def _create_default_workspace(self) -> WorkspaceResponse:
         """Creates a default workspace.
 
         Returns:

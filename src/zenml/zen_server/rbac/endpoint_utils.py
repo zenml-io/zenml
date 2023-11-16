@@ -63,7 +63,9 @@ def verify_permissions_and_create_entity(
 
 
 def verify_permissions_and_get_entity(
-    id: UUIDOrStr, get_method: Callable[[UUIDOrStr], AnyResponseModel]
+    id: UUIDOrStr,
+    get_method: Callable[[UUIDOrStr], AnyResponseModel],
+    **get_method_kwargs,
 ) -> AnyResponseModel:
     """Verify permissions and fetch an entity.
 
@@ -74,7 +76,7 @@ def verify_permissions_and_get_entity(
     Returns:
         A model of the fetched entity.
     """
-    model = get_method(id)
+    model = get_method(id, **get_method_kwargs)
     verify_permission_for_model(model, action=Action.READ)
     return dehydrate_response_model(model)
 
@@ -83,6 +85,7 @@ def verify_permissions_and_list_entities(
     filter_model: AnyFilterModel,
     resource_type: ResourceType,
     list_method: Callable[[AnyFilterModel], Page[AnyResponseModel]],
+    **list_method_kwargs,
 ) -> Page[AnyResponseModel]:
     """Verify permissions and list entities.
 
@@ -101,7 +104,7 @@ def verify_permissions_and_list_entities(
     filter_model.set_rbac_allowed_ids_and_user(
         allowed_ids=allowed_ids, user_id=auth_context.user.id
     )
-    page = list_method(filter_model)
+    page = list_method(filter_model, **list_method_kwargs)
     return dehydrate_page(page)
 
 

@@ -31,12 +31,12 @@ from zenml.enums import AuthScheme
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserUpdateModel,
+    Page,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserUpdate,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -75,25 +75,29 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponseModel],
+    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_users(
-    user_filter_model: UserFilterModel = Depends(
-        make_dependable(UserFilterModel)
-    ),
+    user_filter_model: UserFilter = Depends(make_dependable(UserFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[UserResponseModel]:
+) -> Page[UserResponse]:
     """Returns a list of all users.
 
     Args:
-        user_filter_model: Model that takes care of filtering, sorting and pagination
+        user_filter_model: Model that takes care of filtering, sorting and
+            pagination.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(user_filter_model=user_filter_model)
+    return zen_store().list_users(
+        user_filter_model=user_filter_model, hydrate=hydrate
+    )
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be created via the
@@ -102,7 +106,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -111,9 +115,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @handle_exceptions
     def create_user(
-        user: UserRequestModel,
+        user: UserRequest,
         _: AuthContext = Security(authorize),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Creates a user.
 
         # noqa: DAR401
@@ -140,29 +144,34 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # add back the original unhashed activation token, if generated, to
         # send it back to the client
         if token:
-            new_user.activation_token = token
+            new_user.get_body().activation_token = token
         return new_user
 
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponseModel,
+    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_user(
     user_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> UserResponseModel:
+) -> UserResponse:
     """Returns a specific user.
 
     Args:
         user_name_or_id: Name or ID of the user.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific user.
     """
-    return zen_store().get_user(user_name_or_id=user_name_or_id)
+    return zen_store().get_user(
+        user_name_or_id=user_name_or_id, hydrate=hydrate
+    )
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
@@ -171,7 +180,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -181,9 +190,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def update_user(
         user_name_or_id: Union[str, UUID],
-        user_update: UserUpdateModel,
+        user_update: UserUpdate,
         _: AuthContext = Security(authorize),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Updates a specific user.
 
         Args:
@@ -202,7 +211,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -212,8 +221,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def activate_user(
         user_name_or_id: Union[str, UUID],
-        user_update: UserUpdateModel,
-    ) -> UserResponseModel:
+        user_update: UserUpdate,
+    ) -> UserResponse:
         """Activates a specific user.
 
         Args:
@@ -225,6 +234,8 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
 
+        # NOTE: if the activation token is not set, this will raise an
+        # exception
         authenticate_credentials(
             user_name_or_id=user_name_or_id,
             activation_token=user_update.activation_token,
@@ -237,7 +248,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -248,7 +259,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def deactivate_user(
         user_name_or_id: Union[str, UUID],
         _: AuthContext = Security(authorize),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Deactivates a user and generates a new activation token for it.
 
         Args:
@@ -259,7 +270,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
 
-        user_update = UserUpdateModel(
+        user_update = UserUpdate(
             name=user.name,
             active=False,
         )
@@ -268,12 +279,12 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             user_id=user.id, user_update=user_update
         )
         # add back the original unhashed activation token
-        user.activation_token = token
+        user.get_body().activation_token = token
         return user
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -283,9 +294,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def email_opt_in_response(
         user_name_or_id: Union[str, UUID],
-        user_response: UserUpdateModel,
+        user_response: UserUpdate,
         auth_context: AuthContext = Security(authorize),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Sets the response of the user to the email prompt.
 
         Args:
@@ -303,7 +314,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         user = zen_store().get_user(user_name_or_id)
 
         if str(auth_context.user.id) == str(user_name_or_id):
-            user_update = UserUpdateModel(
+            user_update = UserUpdate(
                 name=user.name,
                 email=user_response.email,
                 email_opted_in=user_response.email_opted_in,
@@ -327,13 +338,13 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponseModel,
+    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_current_user(
     auth_context: AuthContext = Security(authorize),
-) -> UserResponseModel:
+) -> UserResponse:
     """Returns the model of the authenticated user.
 
     Args:
@@ -351,7 +362,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponseModel,
+        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -360,9 +371,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @handle_exceptions
     def update_myself(
-        user: UserUpdateModel,
+        user: UserUpdate,
         auth_context: AuthContext = Security(authorize),
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Updates a specific user.
 
         Args:

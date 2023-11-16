@@ -19,12 +19,12 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.models import (
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    Page,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -51,22 +51,22 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[FlavorResponseModel],
+    response_model=Page[FlavorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_flavors(
-    flavor_filter_model: FlavorFilterModel = Depends(
-        make_dependable(FlavorFilterModel)
-    ),
+    flavor_filter_model: FlavorFilter = Depends(make_dependable(FlavorFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[FlavorResponseModel]:
+) -> Page[FlavorResponse]:
     """Returns all flavors.
 
     Args:
         flavor_filter_model: Filter model used for pagination, sorting,
                              filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All flavors.
@@ -75,42 +75,46 @@ def list_flavors(
         filter_model=flavor_filter_model,
         resource_type=ResourceType.FLAVOR,
         list_method=zen_store().list_flavors,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Returns the requested flavor.
 
     Args:
         flavor_id: ID of the flavor.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
     return verify_permissions_and_get_entity(
-        id=flavor_id, get_method=zen_store().get_flavor
+        id=flavor_id, get_method=zen_store().get_flavor, hydrate=hydrate
     )
 
 
 @router.post(
     "",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_flavor(
-    flavor: FlavorRequestModel,
+    flavor: FlavorRequest,
     _: AuthContext = Security(authorize),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Creates a stack component flavor.
 
     Args:
@@ -128,15 +132,15 @@ def create_flavor(
 
 @router.put(
     "/{team_id}",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_flavor(
     flavor_id: UUID,
-    flavor_update: FlavorUpdateModel,
+    flavor_update: FlavorUpdate,
     _: AuthContext = Security(authorize),
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Updates a flavor.
 
     # noqa: DAR401

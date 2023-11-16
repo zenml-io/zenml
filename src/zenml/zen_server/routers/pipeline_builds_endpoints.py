@@ -17,8 +17,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_BUILDS, VERSION_1
-from zenml.models import PipelineBuildFilterModel, PipelineBuildResponseModel
-from zenml.models.page_model import Page
+from zenml.models import Page, PipelineBuildFilter, PipelineBuildResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -36,47 +35,55 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineBuildResponseModel],
+    response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_builds(
-    build_filter_model: PipelineBuildFilterModel = Depends(
-        make_dependable(PipelineBuildFilterModel)
+    build_filter_model: PipelineBuildFilter = Depends(
+        make_dependable(PipelineBuildFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[PipelineBuildResponseModel]:
+) -> Page[PipelineBuildResponse]:
     """Gets a list of builds.
 
     Args:
         build_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of build objects.
     """
-    return zen_store().list_builds(build_filter_model=build_filter_model)
+    return zen_store().list_builds(
+        build_filter_model=build_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
     "/{build_id}",
-    response_model=PipelineBuildResponseModel,
+    response_model=PipelineBuildResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_build(
     build_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> PipelineBuildResponseModel:
+) -> PipelineBuildResponse:
     """Gets a specific build using its unique id.
 
     Args:
         build_id: ID of the build to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific build object.
     """
-    return zen_store().get_build(build_id=build_id)
+    return zen_store().get_build(build_id=build_id, hydrate=hydrate)
 
 
 @router.delete(
