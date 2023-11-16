@@ -13,17 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for handling tags."""
 
-from typing import Union
 from uuid import UUID
 
 from zenml.utils.uuid_utils import generate_uuid_from_string
 
 
-def _get_tag_resource_id(
-    tag_id: Union[str, UUID], resource_id: Union[str, UUID]
-) -> UUID:
-    if isinstance(tag_id, str):
-        tag_id = UUID(tag_id)
-    if isinstance(resource_id, str):
-        resource_id = UUID(resource_id)
-    return generate_uuid_from_string(str(tag_id.hex) + str(resource_id.hex))
+def _get_tag_resource_id(tag_id: UUID, resource_id: UUID) -> UUID:
+    return generate_uuid_from_string(str(tag_id) + str(resource_id))
