@@ -156,10 +156,9 @@ class ModelVersionScopedFilterModel(ModelScopedFilterModel):
         """
         query = super().apply_filter(query=query, table=table)
 
-        if self._model_id:
-            query = query.where(
-                getattr(table, "model_version_id") == self._model_version_id
-            )
+        query = query.where(
+            getattr(table, "model_version_id") == self._model_version_id
+        )
 
         return query
 

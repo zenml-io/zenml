@@ -6817,7 +6817,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
-        model_version_id: Union[UUID],
+        model_version_id: UUID,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.

@@ -1527,7 +1527,9 @@ class TestModelVersion:
         with model_killer():
             client = Client()
 
-            client.delete_model_version(self.MODEL_NAME, self.VERSION_NAME)
+            client.delete_model_version(
+                client.get_model_version(self.MODEL_NAME, self.VERSION_NAME).id
+            )
 
             with pytest.raises(KeyError):
                 client.get_model_version(self.MODEL_NAME, self.VERSION_NAME)
@@ -1537,9 +1539,7 @@ class TestModelVersion:
             client = Client()
 
             with pytest.raises(KeyError):
-                client.delete_model_version(
-                    self.MODEL_NAME, self.VERSION_NAME + "@"
-                )
+                client.delete_model_version(uuid4())
 
 
 def _create_some_model_version(

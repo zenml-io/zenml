@@ -265,10 +265,11 @@ def test_recovery_of_steps(model_version: ModelVersion):
                 model_version=model_version
             )(3)
 
-        mv = client.zen_store.get_model_version(
+        mv = client.get_model_version(
             model_name_or_id="foo",
             model_version_name_or_number_or_id=model_version.version,
         )
+        mv = client.zen_store.get_model_version(mv.id)
         assert mv.name == model_version.version
         assert len(mv.data_artifact_ids) == 1
         assert (
@@ -402,10 +403,11 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             model_version=ModelVersion(name="foo", version=ModelStages.LATEST),
         )()
 
-        mv = client.zen_store.get_model_version(
+        mv = client.get_model_version(
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
+        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -455,10 +457,11 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
             run_name=run_name_2,
         )(ModelVersion(name="foo", version=ModelStages.LATEST))
 
-        mv = client.zen_store.get_model_version(
+        mv = client.get_model_version(
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
+        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -586,10 +589,12 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
         )()
 
         for model in models:
-            mv = client.zen_store.get_model_version(
+            mv = client.get_model_version(
                 model_name_or_id=model.id,
                 model_version_name_or_number_or_id=ModelStages.LATEST,
             )
+            mv = client.zen_store.get_model_version(mv.id)
+
             assert len(mv.pipeline_run_ids) == 2
             assert {run_name for run_name in mv.pipeline_run_ids} == {
                 run_name_1,
@@ -660,10 +665,12 @@ def test_that_consumption_also_registers_run_in_model_version():
         )()
 
         client = Client()
-        mv = client.zen_store.get_model_version(
+        mv = client.get_model_version(
             model_name_or_id="step",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
+        mv = client.zen_store.get_model_version(mv.id)
+
         assert len(mv.pipeline_run_ids) == 4
         assert {run_name for run_name in mv.pipeline_run_ids} == {
             producer_run,
@@ -701,16 +708,12 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
         assert len(mvs) == 2
         for mv, run_name in zip(mvs, (run_1, run_2)):
             assert (
-                len(
-                    client.zen_store.get_model_version(
-                        mv.name, mv.version
-                    ).pipeline_run_ids
-                )
+                len(client.zen_store.get_model_version(mv.id).pipeline_run_ids)
                 == 1
             )
-            assert client.zen_store.get_model_version(
-                mv.name, mv.version
-            ).pipeline_run_ids[run_name]
+            assert client.zen_store.get_model_version(mv.id).pipeline_run_ids[
+                run_name
+            ]
 
 
 def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
@@ -737,11 +740,7 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
         mvs = model.versions
         assert len(mvs) == 1
         assert (
-            len(
-                client.zen_store.get_model_version(
-                    mvs[0].name, mvs[0].version
-                ).pipeline_run_ids
-            )
+            len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
             == 0
         )
 
@@ -773,11 +772,7 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
         mvs = model.versions
         assert len(mvs) == 1
         assert (
-            len(
-                client.zen_store.get_model_version(
-                    mvs[0].name, mvs[0].version
-                ).pipeline_run_ids
-            )
+            len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
             == 0
         )
 
@@ -810,10 +805,6 @@ def test_that_artifact_is_removed_on_deletion():
         mvs = model.versions
         assert len(mvs) == 1
         assert (
-            len(
-                client.zen_store.get_model_version(
-                    mvs[0].name, mvs[0].version
-                ).pipeline_run_ids
-            )
+            len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
             == 0
         )

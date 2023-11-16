@@ -5666,7 +5666,7 @@ class Client(metaclass=ClientMetaClass):
                     ),
                 ).items
 
-                if len(model_versions) > 1:
+                if len(model_versions) > 0:
                     model_versions = [model_versions[0]]
                 else:
                     model_versions = []
@@ -5708,13 +5708,13 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
@@ -5722,12 +5722,6 @@ class Client(metaclass=ClientMetaClass):
         """Get model versions by filter from Model Control Plane.
 
         Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
             model_name_or_id: name or id of the model containing the model version.
             sort_by: The column to sort by
             page: The page of items
@@ -5752,12 +5746,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             number=number,
             stage=stage,
-            page=page,
-            sort_by=sort_by,
-            size=size,
-            logical_operator=logical_operator,
-            created=created,
-            updated=updated,
         )
 
         return self.zen_store.list_model_versions(
