@@ -16,12 +16,12 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from zenml.models import (
+    Page,
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.page_model import Page
 
 
 class SecretsStoreInterface(ABC):

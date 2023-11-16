@@ -19,10 +19,10 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentResponseModel,
+    Page,
+    PipelineDeploymentFilter,
+    PipelineDeploymentResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -40,49 +40,57 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineDeploymentResponseModel],
+    response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_deployments(
-    deployment_filter_model: PipelineDeploymentFilterModel = Depends(
-        make_dependable(PipelineDeploymentFilterModel)
+    deployment_filter_model: PipelineDeploymentFilter = Depends(
+        make_dependable(PipelineDeploymentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineDeploymentResponseModel]:
+) -> Page[PipelineDeploymentResponse]:
     """Gets a list of deployment.
 
     Args:
         deployment_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of deployment objects.
     """
     return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model
+        deployment_filter_model=deployment_filter_model, hydrate=hydrate
     )
 
 
 @router.get(
     "/{deployment_id}",
-    response_model=PipelineDeploymentResponseModel,
+    response_model=PipelineDeploymentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_deployment(
     deployment_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineDeploymentResponseModel:
+) -> PipelineDeploymentResponse:
     """Gets a specific deployment using its unique id.
 
     Args:
         deployment_id: ID of the deployment to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific deployment object.
     """
-    return zen_store().get_deployment(deployment_id=deployment_id)
+    return zen_store().get_deployment(
+        deployment_id=deployment_id, hydrate=hydrate
+    )
 
 
 @router.delete(

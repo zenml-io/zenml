@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot base VM orchestrator."""
+"""Implementation of the Skypilot base VM orchestrator."""
 
 import os
 import time
@@ -34,9 +34,7 @@ from zenml.stack import StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 
@@ -134,7 +132,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:

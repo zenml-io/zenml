@@ -24,9 +24,11 @@ from sqlmodel import TEXT, Column, Field, Relationship
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus
 from zenml.models import (
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunResponseBody,
+    PipelineRunResponseMetadata,
+    PipelineRunUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -163,14 +165,14 @@ class PipelineRunSchema(NamedSchema, table=True):
 
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
-    schedule: Optional[ScheduleSchema] = Relationship()
+    schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
 
     @classmethod
     def from_request(
-        cls, request: PipelineRunRequestModel
+        cls, request: "PipelineRunRequest"
     ) -> "PipelineRunSchema":
-        """Convert a `PipelineRunRequestModel` to a `PipelineRunSchema`.
+        """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
         Args:
             request: The request to convert.
@@ -192,11 +194,15 @@ class PipelineRunSchema(NamedSchema, table=True):
             deployment_id=request.deployment,
         )
 
-    def to_model(self) -> PipelineRunResponseModel:
-        """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
+    def to_model(self, hydrate: bool = False) -> "PipelineRunResponse":
+        """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `PipelineRunResponseModel`.
+            The created `PipelineRunResponse`.
 
         Raises:
             RuntimeError: if the model creation fails.
@@ -207,7 +213,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             else {}
         )
 
-        metadata = {
+        run_metadata = {
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
@@ -248,38 +254,41 @@ class PipelineRunSchema(NamedSchema, table=True):
                 "pipeline_configuration."
             )
 
-        return PipelineRunResponseModel(
-            id=self.id,
+        body = PipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
-            # Attributes of the PipelineRunBaseModel
-            name=self.name,
-            start_time=self.start_time,
-            end_time=self.end_time,
             status=self.status,
-            config=config,
-            orchestrator_run_id=self.orchestrator_run_id,
-            client_environment=client_environment,
-            orchestrator_environment=orchestrator_environment,
-            # Attributes of the WorkspaceScopedResponseModel
-            created=self.created,
-            updated=self.updated,
-            # Attributes of the PipelineRunResponseModel
             stack=stack,
             pipeline=pipeline,
             build=build,
             schedule=schedule,
+            created=self.created,
+            updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = PipelineRunResponseMetadata(
+                workspace=self.workspace.to_model(),
+                run_metadata=run_metadata,
+                config=config,
+                steps=steps,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
+                orchestrator_run_id=self.orchestrator_run_id,
+            )
+        return PipelineRunResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
             metadata=metadata,
-            steps=steps,
         )
 
-    def update(
-        self, run_update: "PipelineRunUpdateModel"
-    ) -> "PipelineRunSchema":
-        """Update a `PipelineRunSchema` with a `PipelineRunUpdateModel`.
+    def update(self, run_update: "PipelineRunUpdate") -> "PipelineRunSchema":
+        """Update a `PipelineRunSchema` with a `PipelineRunUpdate`.
 
         Args:
-            run_update: The `PipelineRunUpdateModel` to update with.
+            run_update: The `PipelineRunUpdate` to update with.
 
         Returns:
             The updated `PipelineRunSchema`.

@@ -26,14 +26,13 @@ import pytest
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponse
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from uuid import UUID
 
-    from zenml.models.pipeline_build_models import PipelineBuildResponseModel
-    from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models import PipelineBuildResponse, PipelineResponse
 
 
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
@@ -99,7 +98,7 @@ def run_example(
     pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     is_public_example: bool = False,
-) -> Generator[Dict[str, List[PipelineRunResponseModel]], None, None]:
+) -> Generator[Dict[str, List[PipelineRunResponse]], None, None]:
     """Runs the given example and validates it ran correctly.
 
     Args:
@@ -151,7 +150,7 @@ def run_example(
         cleanup_docker_files(existing_build_ids)
 
 
-def get_pipelines() -> List["PipelineResponseModel"]:
+def get_pipelines() -> List["PipelineResponse"]:
     """Get the existing pipelines."""
     from zenml.client import Client
 
@@ -159,7 +158,7 @@ def get_pipelines() -> List["PipelineResponseModel"]:
     return depaginate(list_method=client.list_pipelines)
 
 
-def get_builds() -> List["PipelineBuildResponseModel"]:
+def get_builds() -> List["PipelineBuildResponse"]:
     """Get the existing builds."""
     from zenml.client import Client
 
@@ -171,10 +170,10 @@ def wait_and_validate_pipeline_runs(
     pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
     older_than: Optional[datetime] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
-) -> Dict[str, List[PipelineRunResponseModel]]:
+) -> Dict[str, List[PipelineRunResponse]]:
     """Wait for and validate pipeline runs."""
     pipelines = pipelines or {}
-    runs: Dict[str, List[PipelineRunResponseModel]] = {}
+    runs: Dict[str, List[PipelineRunResponse]] = {}
     for pipeline_name, (run_count, step_count) in pipelines.items():
         runs[pipeline_name] = wait_and_validate_pipeline_run(
             pipeline_name=pipeline_name,
@@ -194,7 +193,7 @@ def wait_and_validate_pipeline_run(
     start_timeout: int = DEFAULT_PIPELINE_RUN_START_TIMEOUT,
     finish_timeout: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     poll_period: int = 10,
-) -> List[PipelineRunResponseModel]:
+) -> List[PipelineRunResponse]:
     """A basic example validation function.
 
     This function makes sure that a pipeline is registered and optionally waits
@@ -232,7 +231,7 @@ def wait_and_validate_pipeline_run(
     if not run_count:
         return []
 
-    runs: List[PipelineRunResponseModel] = []
+    runs: List[PipelineRunResponse] = []
 
     # Wait for all pipeline runs to be recorded and complete. We assume the
     # runs will be executed in sequence, so we wait for an increasing number
@@ -302,7 +301,7 @@ def cleanup_pipelines(
     existing_pipeline_ids: Set["UUID"],
     pipeline_names: List[str],
 ) -> None:
-    """Cleanup pipelines so they don't cause trouble in future example runs."""
+    """Cleanup pipelines, so they don't cause trouble in future example runs."""
     client = Client()
     pipelines = get_pipelines()
     for pipeline in pipelines:

@@ -21,8 +21,7 @@ from pydantic import Field, SecretStr
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.models.user_models import UserResponseModel
-    from zenml.models.workspace_models import WorkspaceResponseModel
+    from zenml.models import UserResponse, WorkspaceResponse
 
 
 # ------------#
@@ -115,7 +114,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Union["UserResponseModel", None] = Field(
+    user: Union["UserResponse", None] = Field(
         title="The user that created this resource.", nullable=True
     )
 
@@ -137,7 +136,7 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    workspace: "WorkspaceResponseModel" = Field(
+    workspace: "WorkspaceResponse" = Field(
         title="The workspace of this resource."
     )
 

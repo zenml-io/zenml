@@ -81,7 +81,8 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_config: Model(Version) configuration for this step as `ModelConfig` instance.
+        model_config: Model(Version) configuration for this step as
+            `ModelConfig` instance.
 
     Returns:
         A pipeline instance.

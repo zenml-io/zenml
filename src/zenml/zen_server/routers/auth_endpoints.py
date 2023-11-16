@@ -47,15 +47,15 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyInternalResponseModel,
+    APIKeyInternalResponse,
     OAuthDeviceAuthorizationResponse,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
-    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentFilter,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -192,8 +192,8 @@ class OAuthLoginRequestForm:
 def generate_access_token(
     user_id: UUID,
     response: Response,
-    device: Optional[OAuthDeviceInternalResponseModel] = None,
-    api_key: Optional[APIKeyInternalResponseModel] = None,
+    device: Optional[OAuthDeviceInternalResponse] = None,
+    api_key: Optional[APIKeyInternalResponse] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -207,7 +207,7 @@ def generate_access_token(
         An authentication response with an access token.
     """
     role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
+        user_role_assignment_filter_model=UserRoleAssignmentFilter(
             user_id=user_id
         )
     )
@@ -433,7 +433,7 @@ def device_authorization(
         )
     except KeyError:
         device_model = store.create_authorized_device(
-            OAuthDeviceInternalRequestModel(
+            OAuthDeviceInternalRequest(
                 client_id=client_id,
                 expires_in=config.device_auth_timeout,
                 ip_address=ip_address,
@@ -449,7 +449,7 @@ def device_authorization(
         # for authentication anymore.
         device_model = store.update_internal_authorized_device(
             device_id=device_model.id,
-            update=OAuthDeviceInternalUpdateModel(
+            update=OAuthDeviceInternalUpdate(
                 trusted_device=False,
                 expires_in=config.device_auth_timeout,
                 status=OAuthDeviceStatus.PENDING,
