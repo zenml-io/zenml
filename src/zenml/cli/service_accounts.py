@@ -110,21 +110,11 @@ def service_account() -> None:
     help=("Configure the local client to use the generated API key."),
     is_flag=True,
 )
-@click.option(
-    "--role",
-    "-r",
-    "initial_role",
-    help="Give the service account an initial role.",
-    required=False,
-    type=str,
-    default="admin",
-)
 def create_service_account(
     service_account_name: str,
     description: str = "",
     create_api_key: bool = True,
     set_api_key: bool = False,
-    initial_role: str = "admin",
 ) -> None:
     """Create a new service account.
 
@@ -133,14 +123,12 @@ def create_service_account(
         description: The API key description.
         create_api_key: Create an API key for the service account.
         set_api_key: Configure the local client to use the generated API key.
-        initial_role: Give the service account an initial role
     """
     client = Client()
     try:
         service_account = client.create_service_account(
             name=service_account_name,
             description=description,
-            initial_role=initial_role,
         )
 
         cli_utils.declare(f"Created service account '{service_account.name}'.")

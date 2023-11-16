@@ -131,7 +131,7 @@ def create_flavor(
 
 
 @router.put(
-    "/{team_id}",
+    "/{flavor_id}",
     response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -146,8 +146,8 @@ def update_flavor(
     # noqa: DAR401
 
     Args:
-        flavor_id: ID of the team to update.
-        flavor_update: Team update.
+        flavor_id: ID of the flavor to update.
+        flavor_update: Flavor update.
 
     Returns:
         The updated flavor.
