@@ -3018,7 +3018,7 @@ class SqlZenStore(BaseZenStore):
             ).to_model(hydrate=hydrate)
 
     def _replace_placeholder_run(
-        self, pipeline_run: PipelineBuildRequest
+        self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 

@@ -301,7 +301,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         return self
 
     def update_placeholder(
-        self, request: "PipelineRunRequestModel"
+        self, request: "PipelineRunRequest"
     ) -> "PipelineRunSchema":
         """Update a placeholder run.
 

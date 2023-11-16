@@ -709,7 +709,7 @@ class Pipeline:
                     # running.
                     start_time=datetime.utcnow(),
                     orchestrator_run_id=None,
-                    user=deployment_model.user.id,
+                    user=Client().active_user.id,
                     workspace=deployment_model.workspace.id,
                     deployment=deployment_model.id,
                     pipeline=deployment_model.pipeline.id
