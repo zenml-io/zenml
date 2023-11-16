@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
         test_environment:
           [
             "default",
@@ -53,14 +53,10 @@ jobs:
             test_environment: docker-server-docker-orchestrator
           # kubeflow is time-consuming to run, so we only run it on 3.8
           - test_environment: default-kubeflow-orchestrator
-            python-version: "3.7"
-          - test_environment: default-kubeflow-orchestrator
             python-version: "3.9"
           - test_environment: default-kubeflow-orchestrator
             python-version: "3.10"
           # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator
-            python-version: "3.7"
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator

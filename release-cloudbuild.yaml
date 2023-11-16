@@ -1,20 +1,4 @@
 steps:
-  # build base image - python 3.7
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - '-c'
-      - |
-        docker build \
-          --build-arg ZENML_VERSION=$TAG_NAME \
-          --build-arg PYTHON_VERSION=3.7 \
-          --target base \
-          -f docker/base.Dockerfile . \
-          -t $$USERNAME/zenml:$TAG_NAME-py3.7
-    id: build-base-3.7
-    waitFor: ['-']
-    entrypoint: bash
-    secretEnv:
-      - USERNAME
   
   # build base image - python 3.8
   - name: gcr.io/cloud-builders/docker
