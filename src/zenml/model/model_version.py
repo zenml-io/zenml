@@ -375,7 +375,7 @@ class ModelVersion(BaseModel):
             model_version_name_or_number_or_id=self.version,
         )
         if not self._id:
-            self._id = mv._id
+            self._id = mv.id
 
         return mv
 
