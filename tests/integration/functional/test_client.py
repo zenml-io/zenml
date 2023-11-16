@@ -1451,8 +1451,15 @@ class TestModelVersion:
                     self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
                 )
 
-            model_versions = client.list_model_versions(self.MODEL_NAME)
-            assert len(model_versions) == PAGE_SIZE_DEFAULT + 1
+            model_versions = client.list_model_versions(
+                self.MODEL_NAME, page=1
+            )
+            assert len(model_versions) == PAGE_SIZE_DEFAULT
+
+            model_versions = client.list_model_versions(
+                self.MODEL_NAME, page=2
+            )
+            assert len(model_versions) == 1
 
             model_versions = client.list_model_versions(
                 self.MODEL_NAME, name=f"{self.VERSION_NAME}_{1}"
