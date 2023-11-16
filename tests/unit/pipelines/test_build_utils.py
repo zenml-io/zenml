@@ -27,11 +27,16 @@ from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.source import Source
 from zenml.models import (
-    CodeRepositoryResponseModel,
+    CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
+    CodeRepositoryResponseMetadata,
     Page,
-    PipelineBuildResponseModel,
+    PipelineBuildResponse,
+    PipelineBuildResponseBody,
+    PipelineBuildResponseMetadata,
+    PipelineDeploymentBase,
+    PipelineDeploymentResponse,
 )
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
@@ -102,7 +107,7 @@ def test_build_is_skipped_when_not_required(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -136,7 +141,7 @@ def test_stack_with_container_registry_creates_non_local_build(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -149,7 +154,9 @@ def test_stack_with_container_registry_creates_non_local_build(
 
 
 def test_build_uses_correct_settings(
-    clean_client, mocker, empty_pipeline  # noqa: F811
+    clean_client,
+    mocker,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
@@ -168,7 +175,7 @@ def test_build_uses_correct_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -219,7 +226,7 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -255,7 +262,7 @@ def test_building_with_identical_keys_and_different_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -286,7 +293,7 @@ def test_building_with_different_keys_and_identical_settings(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -315,15 +322,19 @@ def test_custom_build_verification(
         ],
     )
 
-    missing_image_build = PipelineBuildResponseModel(
+    missing_image_build = PipelineBuildResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_deployment_response_model.user,
-        workspace=sample_deployment_response_model.workspace,
-        images={"wrong_key": {"image": "docker_image_name"}},
-        is_local=False,
-        contains_code=True,
+        body=PipelineBuildResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_deployment_response_model.user,
+        ),
+        metadata=PipelineBuildResponseMetadata(
+            workspace=sample_deployment_response_model.workspace,
+            images={"wrong_key": {"image": "docker_image_name"}},
+            is_local=False,
+            contains_code=True,
+        ),
     )
 
     with pytest.raises(RuntimeError):
@@ -333,9 +344,10 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    correct_build = PipelineBuildResponseModel.parse_obj(
+    correct_build = missing_image_build.copy(deep=True)
+    correct_build.metadata = PipelineBuildResponseMetadata.parse_obj(
         {
-            **missing_image_build.dict(),
+            **missing_image_build.metadata.dict(),
             "images": {"key": {"image": "docker_image_name"}},
         }
     )
@@ -347,20 +359,23 @@ def test_custom_build_verification(
             deployment=sample_deployment_response_model,
         )
 
-    build_that_requires_download = PipelineBuildResponseModel.parse_obj(
-        {
-            **missing_image_build.dict(),
-            "images": {
-                "key": {
-                    "image": "docker_image_name",
-                    "requires_code_download": True,
-                }
-            },
-        }
+    build_that_requires_download = missing_image_build.copy(deep=True)
+    build_that_requires_download.metadata = (
+        PipelineBuildResponseMetadata.parse_obj(
+            {
+                **missing_image_build.metadata.dict(),
+                "images": {
+                    "key": {
+                        "image": "docker_image_name",
+                        "requires_code_download": True,
+                    }
+                },
+            }
+        )
     )
 
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=True,
@@ -415,10 +430,21 @@ def test_build_checksum_computation(clean_client, mocker):
     assert checksum != new_checksum
 
 
-def test_local_repo_verification(mocker, sample_deployment_response_model):
+def test_local_repo_verification(
+    mocker, sample_deployment_response_model: PipelineDeploymentResponse
+):
     """Test the local repo verification."""
+
+    deployment = PipelineDeploymentBase(
+        run_name_template=sample_deployment_response_model.run_name_template,
+        pipeline_configuration=sample_deployment_response_model.pipeline_configuration,
+        step_configurations=sample_deployment_response_model.step_configurations,
+        client_environment=sample_deployment_response_model.client_environment,
+        client_version=sample_deployment_response_model.client_version,
+        server_version=sample_deployment_response_model.server_version,
+    )
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=False,
@@ -430,15 +456,15 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
     )
 
     assert not build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model, local_repo_context=None
+        deployment=deployment, local_repo_context=None
     )
     assert not build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model,
+        deployment=deployment,
         local_repo_context=context_with_local_changes,
     )
 
     mocker.patch.object(
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentBase,
         "requires_code_download",
         new_callable=mocker.PropertyMock,
         return_value=True,
@@ -447,34 +473,38 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
     with pytest.raises(RuntimeError):
         # No local repo
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=None,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=dirty_local_context,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=sample_deployment_response_model,
+            deployment=deployment,
             local_repo_context=context_with_local_changes,
         )
 
-    repo_response = CodeRepositoryResponseModel(
+    repo_response = CodeRepositoryResponse(
         id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_deployment_response_model.user,
-        workspace=sample_deployment_response_model.workspace,
         name="name",
-        config={"key": "value"},
-        source=Source(
-            module=StubCodeRepository.__module__,
-            attribute=StubCodeRepository.__name__,
-            type="unknown",
+        body=CodeRepositoryResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_deployment_response_model.user,
+            source=Source(
+                module=StubCodeRepository.__module__,
+                attribute=StubCodeRepository.__name__,
+                type="unknown",
+            ),
+        ),
+        metadata=CodeRepositoryResponseMetadata(
+            workspace=sample_deployment_response_model.workspace,
+            config={"key": "value"},
         ),
     )
 
@@ -485,7 +515,7 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
         is_dirty=False, has_local_changes=False
     )
     code_repo = build_utils.verify_local_repository_context(
-        deployment=sample_deployment_response_model,
+        deployment=deployment,
         local_repo_context=clean_local_context,
     )
     assert isinstance(code_repo, StubCodeRepository)

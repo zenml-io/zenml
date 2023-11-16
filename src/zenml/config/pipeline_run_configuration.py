@@ -20,7 +20,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model_config import ModelConfig
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
+from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
 
 
@@ -35,7 +35,7 @@ class PipelineRunConfiguration(
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     schedule: Optional[Schedule] = None
-    build: Union[PipelineBuildBaseModel, UUID, None] = None
+    build: Union[PipelineBuildBase, UUID, None] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}

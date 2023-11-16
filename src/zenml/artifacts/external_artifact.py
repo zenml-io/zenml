@@ -41,28 +41,28 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     write an additional step that returns this value.
 
     This class can be configured using the following parameters:
-    - value: The artifact value (any python object), that will be uploaded to the
-        artifact store.
+    - value: The artifact value (any python object), that will be uploaded to
+        the artifact store.
     - id: The ID of an artifact that is already registered in ZenML.
-    - pipeline_name & artifact_name: Name of a pipeline and artifact to search in
-        latest run.
-    - model_name & model_version & model_artifact_name & model_artifact_version: Name of a
-        model, model version, model artifact and artifact version to search.
+    - pipeline_name & artifact_name: Name of a pipeline and artifact to search
+        in latest run.
+    - model_name & model_version & model_artifact_name & model_artifact_version:
+        Name of a model, model version, model artifact and artifact version to
+        search.
 
     Args:
         value: The artifact value.
-
         id: The ID of an artifact that should be referenced by this external
             artifact.
-
         pipeline_name: Name of a pipeline to search for artifact in latest run.
-        artifact_name: Name of an artifact to be searched in latest pipeline run.
-
-        model_name: Name of a model to search for artifact in (if None - derived from step context).
-        model_version: Version of a model to search for artifact in (if None - derived from step context).
+        artifact_name: Name of an artifact to be searched in latest pipeline
+            run.
+        model_name: Name of a model to search for artifact in (if None -
+            derived from step context).
+        model_version: Version of a model to search for artifact in (if None -
+            derived from step context).
         model_artifact_name: Name of a model artifact to search for.
         model_artifact_version: Version of a model artifact to search for.
-
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should

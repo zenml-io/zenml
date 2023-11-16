@@ -27,7 +27,7 @@ from zenml.lineage_graph.lineage_graph import (
     LineageGraph,
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponse
 
 
 def test_generate_run_nodes_and_edges(
@@ -226,7 +226,7 @@ def test_add_external_artifacts(clean_client):
 
 
 def _validate_graph(
-    graph: LineageGraph, pipeline_run: PipelineRunResponseModel
+    graph: LineageGraph, pipeline_run: PipelineRunResponse
 ) -> None:
     """Validates that the generated lineage graph matches the pipeline run.
 

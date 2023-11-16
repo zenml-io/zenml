@@ -20,13 +20,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-)
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import BaseFilterModel
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.v2.base.filter import BaseFilter
 
 # Tags
 
@@ -52,7 +49,7 @@ class TagResponseModel(TagBaseModel, BaseResponseModel):
     )
 
 
-class TagFilterModel(BaseFilterModel):
+class TagFilterModel(BaseFilter):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str]
