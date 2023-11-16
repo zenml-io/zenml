@@ -57,19 +57,17 @@ from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
-    CodeReferenceRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunResponseModel,
-    ScheduleRequestModel,
+    CodeReferenceRequest,
+    PipelineBuildBase,
+    PipelineBuildResponse,
+    PipelineDeploymentBase,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunResponse,
+    ScheduleRequest,
 )
-from zenml.models.pipeline_build_models import (
-    PipelineBuildBaseModel,
-)
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelVersionRequest
 from zenml.stack import Stack
@@ -238,7 +236,7 @@ class Pipeline:
         return inspect.getsource(self.source_object)
 
     @classmethod
-    def from_model(cls, model: "PipelineResponseModel") -> "Pipeline":
+    def from_model(cls, model: "PipelineResponse") -> "Pipeline":
         """Creates a pipeline instance from a model.
 
         Args:
@@ -252,7 +250,7 @@ class Pipeline:
         return load_pipeline(model=model)
 
     @property
-    def model(self) -> "PipelineResponseModel":
+    def model(self) -> "PipelineResponse":
         """Gets the registered pipeline model for this instance.
 
         Returns:
@@ -440,7 +438,7 @@ class Pipeline:
             # is executed will be added as invocation to this pipeline instance.
             self._call_entrypoint(*args, **kwargs)
 
-    def register(self) -> "PipelineResponseModel":
+    def register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
 
         Returns:
@@ -472,7 +470,7 @@ class Pipeline:
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
         config_path: Optional[str] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
+    ) -> Optional["PipelineBuildResponse"]:
         """Builds Docker images for the pipeline.
 
         Args:
@@ -517,7 +515,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
-        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
@@ -600,7 +598,7 @@ class Pipeline:
                 logger.debug(f"Pipeline {self.name} is unlisted.")
 
             # TODO: check whether orchestrator even support scheduling before
-            # registering the schedule
+            #   registering the schedule
             schedule_id = None
             if schedule:
                 if schedule.name:
@@ -613,7 +611,7 @@ class Pipeline:
                     )
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
-                schedule_model = ScheduleRequestModel(
+                schedule_model = ScheduleRequest(
                     workspace=Client().active_workspace.id,
                     user=Client().active_user.id,
                     pipeline_id=pipeline_id,
@@ -664,13 +662,13 @@ class Pipeline:
                     .relative_to(local_repo_context.root)
                 )
 
-                code_reference = CodeReferenceRequestModel(
+                code_reference = CodeReferenceRequest(
                     commit=local_repo_context.current_commit,
                     subdirectory=subdirectory.as_posix(),
                     code_repository=local_repo_context.code_repository_id,
                 )
 
-            deployment_request = PipelineDeploymentRequestModel(
+            deployment_request = PipelineDeploymentRequest(
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
                 stack=stack.id,
@@ -732,7 +730,7 @@ class Pipeline:
 
     @staticmethod
     def log_pipeline_deployment_metadata(
-        deployment_model: PipelineDeploymentResponseModel,
+        deployment_model: PipelineDeploymentResponse,
     ) -> None:
         """Displays logs based on the deployment model upon running a pipeline.
 
@@ -785,7 +783,8 @@ class Pipeline:
                     )
 
             # Log about the user, stack and components
-            logger.info(f"Using user: `{deployment_model.user.name}`")
+            if deployment_model.user is not None:
+                logger.info(f"Using user: `{deployment_model.user.name}`")
 
             if deployment_model.stack is not None:
                 logger.info(f"Using stack: `{deployment_model.stack.name}`")
@@ -835,7 +834,7 @@ class Pipeline:
             other_model_configs.add(model_config)
 
     def get_new_version_requests(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> Dict[Tuple[str, Optional[str]], NewModelVersionRequest]:
         """Get the running versions of the models that are used in the pipeline run.
 
@@ -876,7 +875,8 @@ class Pipeline:
                 )
         elif deployment.pipeline_configuration.model_config is not None:
             logger.warning(
-                f"ModelConfig of pipeline `{self.name}` is overridden in all steps. "
+                f"ModelConfig of pipeline `{self.name}` is overridden in all "
+                f"steps. "
             )
 
         self._validate_new_version_requests(new_versions_requested)
@@ -896,6 +896,7 @@ class Pipeline:
 
         Args:
             new_versions_requested: A dict of new model version request objects.
+
         """
         for key, data in new_versions_requested.items():
             model_name, model_version = key
@@ -917,7 +918,8 @@ class Pipeline:
         """Registers the running versions of the models used in the given pipeline run.
 
         Args:
-            new_versions_requested: Dict of models requesting new versions and their definition points.
+            new_versions_requested: Dict of models requesting new versions and
+                their definition points.
         """
         for key, _ in new_versions_requested.items():
             model_name, model_version = key
@@ -955,7 +957,7 @@ class Pipeline:
                     model_version_name_or_id=model.id,
                 )
 
-    def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
+    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
         """(Deprecated) Get runs of this pipeline.
 
         Args:
@@ -1064,7 +1066,7 @@ class Pipeline:
 
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> Dict[str, Any]:
         """Returns the pipeline deployment metadata.
@@ -1103,10 +1105,10 @@ class Pipeline:
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
-        "PipelineDeploymentBaseModel",
+        "PipelineDeploymentBase",
         "PipelineSpec",
         Optional["Schedule"],
-        Union["PipelineBuildBaseModel", UUID, None],
+        Union["PipelineBuildBase", UUID, None],
     ]:
         """Compiles the pipeline.
 
@@ -1144,9 +1146,7 @@ class Pipeline:
 
         return deployment, pipeline_spec, run_config.schedule, run_config.build
 
-    def _register(
-        self, pipeline_spec: "PipelineSpec"
-    ) -> "PipelineResponseModel":
+    def _register(self, pipeline_spec: "PipelineSpec") -> "PipelineResponse":
         """Register the pipeline in the server.
 
         Args:
@@ -1177,7 +1177,7 @@ class Pipeline:
         latest_version = self._get_latest_version() or 0
         version = str(latest_version + 1)
 
-        request = PipelineRequestModel(
+        request = PipelineRequest(
             workspace=client.active_workspace.id,
             user=client.active_user.id,
             name=self.name,
@@ -1396,7 +1396,7 @@ class Pipeline:
         self,
         run_name: Optional[str] = None,
         schedule: Optional[Schedule] = None,
-        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
@@ -1484,8 +1484,8 @@ class Pipeline:
             # outputs of the entrypoint function
 
             # TODO: This currently ignores the configuration of the pipeline
-            # and instead applies the configuration of the previously active
-            # pipeline. Is this what we want?
+            #   and instead applies the configuration of the previously active
+            #   pipeline. Is this what we want?
             return self.entrypoint(*args, **kwargs)
 
         self.prepare(*args, **kwargs)

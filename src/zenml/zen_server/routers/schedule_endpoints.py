@@ -18,11 +18,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.page_model import Page
-from zenml.models.schedule_model import (
-    ScheduleFilterModel,
-    ScheduleResponseModel,
-    ScheduleUpdateModel,
+from zenml.models import (
+    Page,
+    ScheduleFilter,
+    ScheduleResponse,
+    ScheduleUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -41,62 +41,68 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ScheduleResponseModel],
+    response_model=Page[ScheduleResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_schedules(
-    schedule_filter_model: ScheduleFilterModel = Depends(
-        make_dependable(ScheduleFilterModel)
+    schedule_filter_model: ScheduleFilter = Depends(
+        make_dependable(ScheduleFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ScheduleResponseModel]:
+) -> Page[ScheduleResponse]:
     """Gets a list of schedules.
 
     Args:
         schedule_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of schedule objects.
     """
     return zen_store().list_schedules(
-        schedule_filter_model=schedule_filter_model
+        schedule_filter_model=schedule_filter_model, hydrate=hydrate
     )
 
 
 @router.get(
     "/{schedule_id}",
-    response_model=ScheduleResponseModel,
+    response_model=ScheduleResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_schedule(
     schedule_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ScheduleResponseModel:
+) -> ScheduleResponse:
     """Gets a specific schedule using its unique id.
 
     Args:
         schedule_id: ID of the schedule to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific schedule object.
     """
-    return zen_store().get_schedule(schedule_id=schedule_id)
+    return zen_store().get_schedule(schedule_id=schedule_id, hydrate=hydrate)
 
 
 @router.put(
     "/{schedule_id}",
-    response_model=ScheduleResponseModel,
+    response_model=ScheduleResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_schedule(
     schedule_id: UUID,
-    schedule_update: ScheduleUpdateModel,
+    schedule_update: ScheduleUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ScheduleResponseModel:
+) -> ScheduleResponse:
     """Updates the attribute on a specific schedule using its unique id.
 
     Args:

@@ -67,9 +67,6 @@ def event_check(
     assert properties["client_id"] == str(gc.user_id)
 
     if event == AnalyticsEvent.REGISTERED_STACK:
-        assert "workspace_id" in properties
-        assert properties["workspace_id"] == str(client.active_workspace.id)
-
         assert "entity_id" in properties
 
         assert StackComponentType.ARTIFACT_STORE in properties

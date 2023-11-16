@@ -62,8 +62,15 @@ class TagSchema(NamedSchema, table=True):
             color=request.color.value,
         )
 
-    def to_model(self) -> TagResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> TagResponseModel:
         """Convert an `TagSchema` to an `TagResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `TagResponseModel`.
@@ -137,8 +144,15 @@ class TagResourceSchema(BaseSchema, table=True):
             resource_type=request.resource_type.value,
         )
 
-    def to_model(self) -> TagResourceResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> TagResourceResponseModel:
         """Convert an `TagResourceSchema` to an `TagResourceResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `TagResourceResponseModel`.

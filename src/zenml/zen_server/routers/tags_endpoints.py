@@ -25,12 +25,12 @@ from zenml.constants import (
 )
 from zenml.enums import PermissionType
 from zenml.models import (
+    Page,
     TagFilterModel,
     TagRequestModel,
     TagResponseModel,
     TagUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (

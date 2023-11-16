@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["*.json", "*.js", "*.ipynb", "src/zenml/zen_stores/migrations/versions/", "tests/unit/materializers/test_built_in_materializer.py", "tests/integration/functional/cli/test_pipeline.py"]
+extend-exclude = ["*.json", "*.js", "*.ipynb", "src/zenml/zen_stores/migrations/versions/", "tests/unit/materializers/test_built_in_materializer.py", "tests/integration/functional/cli/test_pipeline.py", "src/zenml/zen_server/dashboard/"]
 
 [default.extend-identifiers]
 HashiCorp = "HashiCorp"

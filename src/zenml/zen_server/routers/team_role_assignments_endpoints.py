@@ -19,11 +19,11 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, TEAM_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
+    Page,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -41,40 +41,44 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[TeamRoleAssignmentResponseModel],
+    response_model=Page[TeamRoleAssignmentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_team_role_assignments(
-    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
-        make_dependable(TeamRoleAssignmentFilterModel)
+    team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
+        make_dependable(TeamRoleAssignmentFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamRoleAssignmentResponseModel]:
+) -> Page[TeamRoleAssignmentResponse]:
     """Returns a list of all role assignments.
 
     Args:
-        team_role_assignment_filter_model: filter models for team role assignments
-
+        team_role_assignment_filter_model: filter models for team role
+            assignments.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of all role assignments.
     """
     return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model
+        team_role_assignment_filter_model=team_role_assignment_filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.post(
     "",
-    response_model=TeamRoleAssignmentResponseModel,
+    response_model=TeamRoleAssignmentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_team_role_assignment(
-    role_assignment: TeamRoleAssignmentRequestModel,
+    role_assignment: TeamRoleAssignmentRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> TeamRoleAssignmentResponseModel:
+) -> TeamRoleAssignmentResponse:
     """Creates a role assignment.
 
     # noqa: DAR401
@@ -92,24 +96,27 @@ def create_team_role_assignment(
 
 @router.get(
     "/{role_assignment_id}",
-    response_model=TeamRoleAssignmentResponseModel,
+    response_model=TeamRoleAssignmentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_team_role_assignment(
     role_assignment_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> TeamRoleAssignmentResponseModel:
+) -> TeamRoleAssignmentResponse:
     """Returns a specific role assignment.
 
     Args:
         role_assignment_id: Name or ID of the role assignment.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific role assignment.
     """
     return zen_store().get_team_role_assignment(
-        team_role_assignment_id=role_assignment_id
+        team_role_assignment_id=role_assignment_id, hydrate=hydrate
     )
 
 

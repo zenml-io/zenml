@@ -29,7 +29,7 @@ from zenml.model import ArtifactConfig, ModelConfig, link_output_to_model
 from zenml.models import (
     ModelRequestModel,
     ModelVersionRequestModel,
-    PipelineRunUpdateModel,
+    PipelineRunUpdate,
 )
 
 
@@ -827,10 +827,12 @@ def test_that_artifact_is_removed_on_deletion():
 
         client = Client()
         run = client.get_pipeline_run(run_1)
-        client.delete_pipeline(run.pipeline.id)
-        client.delete_artifact(
+        pipeline_id = run.pipeline.id
+        artifact_id = (
             run.steps["_this_step_produces_output"].outputs["data"].id
         )
+        client.delete_pipeline(pipeline_id)
+        client.delete_artifact(artifact_id)
         model = client.get_model(model_name_or_id="step")
         assert len(model.versions) == 1
         assert len(model.versions[0].artifact_object_ids) == 0
@@ -866,7 +868,7 @@ def test_that_two_pipelines_cannot_run_at_the_same_time_requesting_new_unnamed_v
         run_id = client.get_pipeline_run(name_id_or_prefix=run_name_1).id
         client.zen_store.update_run(
             run_id=run_id,
-            run_update=PipelineRunUpdateModel(status=ExecutionStatus.RUNNING),
+            run_update=PipelineRunUpdate(status=ExecutionStatus.RUNNING),
         )
         with pytest.raises(
             RuntimeError,
