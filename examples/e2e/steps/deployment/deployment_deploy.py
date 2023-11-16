@@ -68,7 +68,7 @@ def deployment_deploy() -> (
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
             registry_model_name=model_version.name,
             registry_model_version=model_version.get_model_artifact("model")
-            .metadata["model_registry_version"]
+            .run_metadata["model_registry_version"]
             .value,
             replace_existing=True,
         )

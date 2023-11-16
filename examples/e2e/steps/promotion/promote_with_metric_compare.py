@@ -92,7 +92,7 @@ def promote_with_metric_compare(
         # Promote in Model Registry
         latest_version_model_registry_number = (
             latest_version.get_model_artifact("model")
-            .metadata["model_registry_version"]
+            .run_metadata["model_registry_version"]
             .value
         )
         if current_version_number is None:
@@ -102,7 +102,7 @@ def promote_with_metric_compare(
         else:
             current_version_model_registry_number = (
                 current_version.get_model_artifact("model")
-                .metadata["model_registry_version"]
+                .run_metadata["model_registry_version"]
                 .value
             )
         promote_in_model_registry(
@@ -115,7 +115,7 @@ def promote_with_metric_compare(
     else:
         promoted_version = (
             current_version.get_model_artifact("model")
-            .metadata["model_registry_version"]
+            .run_metadata["model_registry_version"]
             .value
         )
 
