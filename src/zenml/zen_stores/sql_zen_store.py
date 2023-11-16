@@ -6539,18 +6539,13 @@ class SqlZenStore(BaseZenStore):
         return mv
 
     def get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        self, model_version_id: UUID
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest is retrieved.
+            model_version_id: name, id, stage or number of the model version to
+                be retrieved. If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.
@@ -6559,54 +6554,24 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
-            query = select(ModelVersionSchema).where(
-                ModelVersionSchema.model_id == model.id
+            model_version = self._get_schema_by_name_or_id(
+                object_name_or_id=model_version_id,
+                schema_class=ModelVersionSchema,
+                schema_name="model_version",
+                session=session,
             )
-            if model_version_name_or_number_or_id is None:
-                model_version_name_or_number_or_id = ModelStages.LATEST
-            if (
-                str(model_version_name_or_number_or_id)
-                == ModelStages.LATEST.value
-            ):
-                query = query.order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
-            elif model_version_name_or_number_or_id in [
-                stage.value for stage in ModelStages
-            ]:
-                query = query.where(
-                    ModelVersionSchema.stage
-                    == model_version_name_or_number_or_id
-                )
-            elif isinstance(model_version_name_or_number_or_id, int):
-                query = query.where(
-                    ModelVersionSchema.number
-                    == model_version_name_or_number_or_id
-                )
-
-            else:
-                try:
-                    UUID(str(model_version_name_or_number_or_id))
-                    query = query.where(
-                        ModelVersionSchema.id
-                        == model_version_name_or_number_or_id
-                    )
-                except ValueError:
-                    query = query.where(
-                        ModelVersionSchema.name
-                        == model_version_name_or_number_or_id
-                    )
-            model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to get model version with identifier `{model_version_name_or_number_or_id}`: "
-                    f"No model version with this identifier found."
+                    f"Unable to get model version with ID "
+                    f"`{model_version_id}`: No model version with this "
+                    f"ID found."
                 )
             return ModelVersionSchema.to_model(model_version)
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
@@ -6619,7 +6584,10 @@ class SqlZenStore(BaseZenStore):
             A page of all model versions.
         """
         with Session(self.engine) as session:
-            model_version_filter_model.set_scope_model(model_name_or_id)
+            if model_name_or_id:
+                model = self.get_model(model_name_or_id)
+                model_version_filter_model.set_scope_model(model.id)
+
             query = select(ModelVersionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -6630,37 +6598,25 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_version_id: name or id of the model version to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
             query = select(ModelVersionSchema).where(
-                ModelVersionSchema.model_id == model.id
+                ModelVersionSchema.id == model_version_id
             )
-            try:
-                UUID(str(model_version_name_or_id))
-                query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
-                )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.name == model_version_name_or_id
-                )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to delete model version with name `{model_version_name_or_id}`: "
-                    f"No model version with this name found."
+                    f"Unable to delete model version with id `{model_version_id}`: "
+                    f"No model version with this id found."
                 )
             session.delete(model_version)
             session.commit()
@@ -6861,15 +6817,13 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: Union[UUID],
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -6877,12 +6831,8 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to artifact links.
         """
         with Session(self.engine) as session:
-            # issue: https://github.com/tiangolo/sqlmodel/issues/109
-            model_version_artifact_link_filter_model.set_scope_model(
-                model_name_or_id
-            )
             model_version_artifact_link_filter_model.set_scope_model_version(
-                model_version_name_or_id
+                model_version_id
             )
             if model_version_artifact_link_filter_model.only_data_artifacts:
                 query = (
@@ -6946,25 +6896,20 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version_artifact_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to artifact link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            self.get_model(model_name_or_id)
-            model_version = self.get_model_version(
-                model_name_or_id, model_version_name_or_id
-            )
+            model_version = self.get_model_version(model_version_id)
             query = select(ModelVersionArtifactSchema).where(
                 ModelVersionArtifactSchema.model_version_id == model_version.id
             )
@@ -7048,15 +6993,13 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -7064,11 +7007,8 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         with Session(self.engine) as session:
-            model_version_pipeline_run_link_filter_model.set_scope_model(
-                model_name_or_id
-            )
             model_version_pipeline_run_link_filter_model.set_scope_model_version(
-                model_version_name_or_id
+                model_version_id
             )
             return self.filter_and_paginate(
                 session=session,
@@ -7079,24 +7019,21 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version_pipeline_run_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
         """
         with Session(self.engine) as session:
-            self.get_model(model_name_or_id)
             model_version = self.get_model_version(
-                model_name_or_id, model_version_name_or_id
+                model_version_id=model_version_id
             )
             query = select(ModelVersionPipelineRunSchema).where(
                 ModelVersionPipelineRunSchema.model_version_id

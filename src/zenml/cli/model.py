@@ -429,7 +429,7 @@ def update_model_version(
             cli_utils.print_table(
                 [
                     _model_version_to_print(
-                        Client().zen_store.get_model_version(
+                        Client()._get_model_version(
                             model_name_or_id=model_version.model_id,
                             model_version_name_or_number_or_id=stage,
                         )
@@ -488,9 +488,12 @@ def delete_model_version(
             return
 
     try:
-        Client().delete_model_version(
+        model_version = Client().get_model_version(
             model_name_or_id=model_name_or_id,
-            model_version_name_or_id=model_version_name_or_number_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+        )
+        Client().delete_model_version(
+            model_version_id=model_version.id,
         )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
@@ -518,11 +521,14 @@ def _print_artifacts_links_generic(
         only_model_artifacts: If set, only print model artifacts.
         **kwargs: Keyword arguments to filter models.
     """
-    model_version = Client().zen_store.get_model_version(
+    model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
+    )
+    model_version_response_model = Client().zen_store.get_model_version(
+        model_version_id=model_version.id
     )
     type_ = (
         "data artifacts"
@@ -533,11 +539,18 @@ def _print_artifacts_links_generic(
     )
 
     if (
-        (only_data_artifacts and not model_version.data_artifact_ids)
-        or (
-            only_endpoint_artifacts and not model_version.endpoint_artifact_ids
+        (
+            only_data_artifacts
+            and not model_version_response_model.data_artifact_ids
         )
-        or (only_model_artifacts and not model_version.model_artifact_ids)
+        or (
+            only_endpoint_artifacts
+            and not model_version_response_model.endpoint_artifact_ids
+        )
+        or (
+            only_model_artifacts
+            and not model_version_response_model.model_artifact_ids
+        )
     ):
         cli_utils.declare(f"No {type_} linked to the model version found.")
         return
@@ -546,9 +559,13 @@ def _print_artifacts_links_generic(
         f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
     )
 
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+    )
+
     links = Client().list_model_version_artifact_links(
-        model_name_or_id=model_version.model.id,
-        model_version_name_or_number_or_id=model_version.id,
+        model_version_id=model_version.id,
         model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
             only_data_artifacts=only_data_artifacts,
             only_endpoint_artifacts=only_endpoint_artifacts,
@@ -674,23 +691,29 @@ def list_model_version_pipeline_runs(
             Or use 0 for the latest version.
         **kwargs: Keyword arguments to filter models.
     """
-    model_version = Client().zen_store.get_model_version(
+    model_version = Client().get_model_version(
         model_name_or_id=model_name_or_id,
         model_version_name_or_number_or_id=ModelStages.LATEST
         if model_version_name_or_number_or_id == "0"
         else model_version_name_or_number_or_id,
     )
+    model_version_response_model = Client().zen_store.get_model_version(
+        model_version_id=model_version.id
+    )
 
-    if not model_version.pipeline_run_ids:
+    if not model_version_response_model.pipeline_run_ids:
         cli_utils.declare("No pipeline runs attached to model version found.")
         return
     cli_utils.title(
-        f"Pipeline runs linked to the model version `{model_version.name}[{model_version.number}]`:"
+        f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
+    )
+    model_version = Client().get_model_version(
+        model_name_or_id=model_name_or_id,
+        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
     )
 
     links = Client().list_model_version_pipeline_run_links(
-        model_name_or_id=model_version.model.id,
-        model_version_name_or_number_or_id=model_version.id,
+        model_version_id=model_version.id,
         model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
             **kwargs,
         ),
