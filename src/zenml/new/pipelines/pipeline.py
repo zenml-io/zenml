@@ -572,7 +572,7 @@ class Pipeline:
                 self.name,
                 constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
-            return
+            return None
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 

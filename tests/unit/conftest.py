@@ -499,7 +499,6 @@ def sample_pipeline_deployment_request_model() -> (
 def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequestModel(
-        id=uuid4(),
         name="sample_run_name",
         config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
