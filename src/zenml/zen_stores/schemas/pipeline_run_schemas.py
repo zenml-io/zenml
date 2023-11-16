@@ -306,7 +306,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         """Update a placeholder run.
 
         Args:
-            request: The pipline run request which should replace the
+            request: The pipeline run request which should replace the
                 placeholder.
 
         Raises:

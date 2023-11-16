@@ -3147,13 +3147,13 @@ class SqlZenStore(BaseZenStore):
             #     `self.create_run(...)` will succeed. If no, a run with the
             #     same deployment_id and orchestrator_run_id already exists and
             #     the `self.create_run(...)` call will fail due to the unique
-            #     contraint on those columns.
+            #     constraint on those columns.
             # (2) Same as (1).
             # (3) A step of the same pipeline run replaced the placeholder
             #     run, which now contains the deployment_id and
             #     orchestrator_run_id of the run that we're trying to create.
             #     -> The `self.create_run(...) call will fail due to the unique
-            #     contraint on those columns.
+            #     constraint on those columns.
             return self.create_run(pipeline_run), True
         except IntegrityError:
             # Creating the run failed with an integrity error. This means we

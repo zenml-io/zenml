@@ -1027,7 +1027,7 @@ def test_rerunning_deloyment_does_not_fail(
 def test_failure_during_initialization_deletes_placeholder_run(
     clean_client, empty_pipeline, mocker  # noqa: F811
 ):
-    """Tests that when a pipeline run fails during intitialization, the
+    """Tests that when a pipeline run fails during initialization, the
     placeholder run that was created for it is deleted."""
     mock_create_run = mocker.patch.object(
         type(clean_client.zen_store),
