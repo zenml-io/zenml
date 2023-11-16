@@ -125,9 +125,6 @@ types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
 
-# test framework dependencies
-docker-compose = "^1.28"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

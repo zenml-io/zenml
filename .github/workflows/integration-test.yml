@@ -248,6 +248,10 @@ jobs:
           # install airflow requirements
           pip install apache-airflow-providers-docker
 
+      - name: Install docker-compose for non-default environments
+        if: inputs.test_environment != 'default'
+        run: pip install docker-compose
+        
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
