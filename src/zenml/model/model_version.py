@@ -31,10 +31,10 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.models import (
-        ArtifactResponseModel,
+        ArtifactResponse,
         ModelResponseModel,
         ModelVersionResponseModel,
-        PipelineRunResponseModel,
+        PipelineRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -158,7 +158,7 @@ class ModelVersion(BaseModel):
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponseModel"]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -183,7 +183,7 @@ class ModelVersion(BaseModel):
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponseModel"]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -208,7 +208,7 @@ class ModelVersion(BaseModel):
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponseModel"]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
@@ -227,14 +227,14 @@ class ModelVersion(BaseModel):
             step_name=step_name,
         )
 
-    def get_pipeline_run(self, name: str) -> "PipelineRunResponseModel":
+    def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
         """Get pipeline run linked to this version.
 
         Args:
             name: The name of the pipeline run to retrieve.
 
         Returns:
-            PipelineRun as PipelineRunResponseModel
+            PipelineRun as PipelineRunResponse
         """
         return self._get_or_create_model_version().get_pipeline_run(name=name)
 

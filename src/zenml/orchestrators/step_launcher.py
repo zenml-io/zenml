@@ -434,8 +434,8 @@ class StepLauncher:
                     artifact_config_._step_name = self._step_name
                     logger.debug(
                         f"Linking artifact `{artifact_config_.artifact_name}` "
-                        f"to model `{model_config.name}` version "
-                        f"`{model_config.version}`."
+                        f"to model `{model_version.name}` version "
+                        f"`{model_version.version}`."
                     )
                     artifact_config_.link_to_model(
                         artifact_uuid=output_,

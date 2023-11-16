@@ -244,7 +244,7 @@ class ModelVersionResponseModel(
         return mv
 
     @property
-    def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponse]]:
+    def model_artifacts(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all model artifacts linked to this model version.
 
         Returns:
@@ -261,7 +261,7 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def data_artifacts(self) -> Dict[str, Dict[str, ArtifactResponse]]:
+    def data_artifacts(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all data artifacts linked to this model version.
 
         Returns:
@@ -280,7 +280,7 @@ class ModelVersionResponseModel(
     @property
     def endpoint_artifacts(
         self,
-    ) -> Dict[str, Dict[str, ArtifactResponse]]:
+    ) -> Dict[str, Dict[str, "ArtifactResponse"]]:
         """Get all endpoint artifacts linked to this model version.
 
         Returns:

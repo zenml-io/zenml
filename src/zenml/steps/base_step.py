@@ -654,53 +654,48 @@ class BaseStep(metaclass=BaseStepMeta):
     ) -> T:
         """Configures the step.
 
-                Configuration merging example:
-                * `merge==True`:
-                    step.configure(extra={"key1": 1})
-                    step.configure(extra={"key2": 2}, merge=True)
-                    step.configuration.extra # {"key1": 1, "key2": 2}
-                * `merge==False`:
-                    step.configure(extra={"key1": 1})
-                    step.configure(extra={"key2": 2}, merge=False)
-                    step.configuration.extra # {"key2": 2}
+        Configuration merging example:
+        * `merge==True`:
+            step.configure(extra={"key1": 1})
+            step.configure(extra={"key2": 2}, merge=True)
+            step.configuration.extra # {"key1": 1, "key2": 2}
+        * `merge==False`:
+            step.configure(extra={"key1": 1})
+            step.configure(extra={"key2": 2}, merge=False)
+            step.configuration.extra # {"key2": 2}
 
-                Args:
-                    name: DEPRECATED: The name of the step.
-                    enable_cache: If caching should be enabled for this step.
-                    enable_artifact_metadata: If artifact metadata should be enabled
-                        for this step.
-                    enable_artifact_visualization: If artifact visualization should be
-                        enabled for this step.
-                    enable_step_logs: If step logs should be enabled for this step.
-                    experiment_tracker: The experiment tracker to use for this step.
-                    step_operator: The step operator to use for this step.
-                    parameters: Function parameters for this step
-                    output_materializers: Output materializers for this step. If
-                        given as a dict, the keys must be a subset of the output names
-                        of this step. If a single value (type or string) is given, the
-                        materializer will be used for all outputs.
-                    settings: settings for this step.
-                    extra: Extra configurations for this step.
-                    on_failure: Callback function in event of failure of the step. Can
-                        be a function with a single argument of type `BaseException`, or
-                        a source path to such a function (e.g. `module.my_function`).
-                    on_success: Callback function in event of success of the step. Can
-                        be a function with no arguments, or a source path to such a
-                        function (e.g. `module.my_function`).
-        <<<<<<< HEAD
-                    model_version: configuration of the model version in the Model Control Plane.
-        =======
-                    model_config: Model(Version) configuration for this step as
-                        `ModelConfig` instance.
-        >>>>>>> develop
-                    merge: If `True`, will merge the given dictionary configurations
-                        like `parameters` and `settings` with existing
-                        configurations. If `False` the given configurations will
-                        overwrite all existing ones. See the general description of this
-                        method for an example.
+        Args:
+            name: DEPRECATED: The name of the step.
+            enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
+            experiment_tracker: The experiment tracker to use for this step.
+            step_operator: The step operator to use for this step.
+            parameters: Function parameters for this step
+            output_materializers: Output materializers for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                materializer will be used for all outputs.
+            settings: settings for this step.
+            extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with a single argument of type `BaseException`, or
+                a source path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can
+                be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`).
+            model_version: configuration of the model version in the Model Control Plane.
+            merge: If `True`, will merge the given dictionary configurations
+                like `parameters` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
 
-                Returns:
-                    The step instance that this method was called on.
+        Returns:
+            The step instance that this method was called on.
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
         from zenml.hooks.hook_validators import resolve_and_validate_hook

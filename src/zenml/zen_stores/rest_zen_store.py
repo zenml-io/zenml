@@ -2929,15 +2929,8 @@ class RestZenStore(BaseZenStore):
     ) -> None:
         """Deletes a model version.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_id: name or id of the model version to be deleted.
-        =======
-                    model_name_or_id: name or id of the model containing the model
-                        version.
-                    model_version_name_or_id: name or id of the model version to be
-                        deleted.
-        >>>>>>> develop
+        Args:
+            model_version_id: name or id of the model version to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_id,
@@ -2949,20 +2942,12 @@ class RestZenStore(BaseZenStore):
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_id: name, id, stage or number of the model version to
-                        be retrieved. If skipped - latest is retrieved.
-        =======
-                    model_name_or_id: name or id of the model containing the
-                        model version.
-                    model_version_name_or_number_or_id: name, id, stage or number of
-                        the model version to be retrieved. If skipped - latest is
-                        retrieved.
-        >>>>>>> develop
+        Args:
+            model_version_id: name, id, stage or number of the model version to
+                be retrieved. If skipped - latest is retrieved.
 
-                Returns:
-                    The model version of interest.
+        Returns:
+            The model version of interest.
         """
         return self._get_resource(
             resource_id=model_version_id,
@@ -3050,22 +3035,13 @@ class RestZenStore(BaseZenStore):
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_id: ID of the model version containing the link.
-                    model_version_artifact_link_filter_model: All filter parameters including pagination
-                        params.
-        =======
-                    model_name_or_id: name or ID of the model containing the model
-                        version.
-                    model_version_name_or_id: name or ID of the model version containing
-                        the link.
-                    model_version_artifact_link_filter_model: All filter parameters
-                        including pagination params.
-        >>>>>>> develop
+        Args:
+            model_version_id: ID of the model version containing the link.
+            model_version_artifact_link_filter_model: All filter parameters including pagination
+                params.
 
-                Returns:
-                    A page of all model version to artifact links.
+        Returns:
+            A page of all model version to artifact links.
         """
         return self._list_paginated_resources(
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
@@ -3080,18 +3056,9 @@ class RestZenStore(BaseZenStore):
     ) -> None:
         """Deletes a model version to artifact link.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_id: ID of the model version containing the link.
-                    model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
-        =======
-                    model_name_or_id: name or ID of the model containing the model
-                        version.
-                    model_version_name_or_id: name or ID of the model version
-                        containing the link.
-                    model_version_artifact_link_name_or_id: name or ID of the model
-                        version to artifact link to be deleted.
-        >>>>>>> develop
+        Args:
+            model_version_id: ID of the model version containing the link.
+            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_artifact_link_name_or_id,
@@ -3152,18 +3119,9 @@ class RestZenStore(BaseZenStore):
     ) -> None:
         """Deletes a model version to pipeline run link.
 
-                Args:
-        <<<<<<< HEAD
-                    model_version_id: ID of the model version containing the link.
-                    model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
-        =======
-                    model_name_or_id: name or ID of the model containing the model
-                        version.
-                    model_version_name_or_id: name or ID of the model version
-                        containing the link.
-                    model_version_pipeline_run_link_name_or_id: name or ID of the model
-                        version to pipeline run link to be deleted.
-        >>>>>>> develop
+        Args:
+            model_version_id: ID of the model version containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_pipeline_run_link_name_or_id,

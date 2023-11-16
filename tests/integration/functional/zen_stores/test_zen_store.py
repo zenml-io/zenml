@@ -4778,15 +4778,15 @@ class TestModelVersionArtifactLinks:
             assert len(mv.endpoint_artifact_ids) == 1
 
             assert isinstance(
-                mv.get_model_object("link2", "1"),
+                mv.get_model_artifact("link2", "1"),
                 ArtifactResponse,
             )
             assert isinstance(
-                mv.get_artifact_object("link1", "1"),
+                mv.get_data_artifact("link1", "1"),
                 ArtifactResponse,
             )
             assert isinstance(
-                mv.get_deployment("link3", "1"),
+                mv.get_endpoint_artifact("link3", "1"),
                 ArtifactResponse,
             )
 

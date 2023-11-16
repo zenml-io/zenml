@@ -43,6 +43,9 @@ from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ComponentResponse,
+    ModelRequestModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,

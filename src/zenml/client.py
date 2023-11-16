@@ -5156,10 +5156,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model version of interest.
-
-        Raises:
-            RuntimeError: In case method inputs don't adhere to restrictions.
-            KeyError: In case no model version with the identifiers exists.
         """
         return self._get_model_version(
             model_name_or_id=model_name_or_id,
