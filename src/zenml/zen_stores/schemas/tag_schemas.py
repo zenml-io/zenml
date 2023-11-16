@@ -16,7 +16,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import VARCHAR, Column
 from sqlmodel import Field, Relationship
@@ -138,7 +138,7 @@ class TagResourceSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            id=request.tag_resource_id,
+            id=uuid4(),
             tag_id=request.tag_id,
             resource_id=request.resource_id,
             resource_type=request.resource_type.value,
