@@ -1,4 +1,10 @@
 <!-- markdown-link-check-disable -->
+# 0.31.2
+
+Backports some important fixes that have been introduced in more recent versions
+of ZenML to the 0.31.x release line.
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.31.1...0.31.2
 
 # 0.31.1
 
