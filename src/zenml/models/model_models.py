@@ -677,7 +677,21 @@ class ModelResponseModel(
         """
         from zenml.client import Client
 
-        return Client().list_model_versions(model_name_or_id=self.id)
+        client = Client()
+        model_versions = client.list_model_versions(
+            model_name_or_id=self.id, page=1
+        )
+        ret = [
+            mv.to_model_version(suppress_class_validation_warnings=True)
+            for mv in model_versions.items
+        ]
+        for i in range(2, model_versions.total_pages + 1):
+            ret += [
+                mv.to_model_version(suppress_class_validation_warnings=True)
+                for mv in model_versions.items
+            ]
+
+        return ret
 
 
 class ModelFilterModel(WorkspaceScopedFilterModel):

@@ -5516,28 +5516,40 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_model(model_name_or_id=model_name_or_id)
 
     def list_models(
-        self, name: Optional[str] = None
-    ) -> List[ModelResponseModel]:
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[ModelResponseModel]:
         """Get models by filter from Model Control Plane.
 
         Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
             name: The name of the model to filter by.
 
         Returns:
-            A list of all models.
+            A page object with all models.
         """
-        filter = ModelFilterModel(name=name)
-        models = self.zen_store.list_models(model_filter_model=filter)
+        filter = ModelFilterModel(
+            name=name,
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
+        )
 
-        ret = models.items
-        for page in range(2, models.total_pages + 1):
-            filter.page = page
-            models = self.zen_store.list_models(
-                model_filter_model=filter,
-            )
-            ret += models.items
-
-        return ret
+        return self.zen_store.list_models(model_filter_model=filter)
 
     #################
     # Model Versions
@@ -5696,17 +5708,17 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        sort_by: str = "created",
+        sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
         model_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
-    ) -> List["ModelVersion"]:
+    ) -> Page["ModelVersionResponseModel"]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
@@ -5717,12 +5729,18 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             model_name_or_id: name or id of the model containing the model version.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
             name: name or id of the model version.
             number: number of the model version.
             stage: stage of the model version.
 
         Returns:
-            A list of all model versions.
+            A page object with all model versions.
         """
         model_version_filter_model = ModelVersionFilterModel(
             page=page,
@@ -5734,28 +5752,18 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             number=number,
             stage=stage,
+            page=page,
+            sort_by=sort_by,
+            size=size,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
         )
 
-        model_versions = self.zen_store.list_model_versions(
+        return self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
         )
-        ret = [
-            mv.to_model_version(suppress_class_validation_warnings=True)
-            for mv in model_versions
-        ]
-        for page in range(2, model_versions.total_pages + 1):
-            model_version_filter_model.page = page
-            model_versions = self.zen_store.list_model_versions(
-                model_name_or_id=model_name_or_id,
-                model_version_filter_model=model_version_filter_model,
-            )
-            ret += [
-                mv.to_model_version(suppress_class_validation_warnings=True)
-                for mv in model_versions
-            ]
-
-        return ret
 
     def update_model_version(
         self,
