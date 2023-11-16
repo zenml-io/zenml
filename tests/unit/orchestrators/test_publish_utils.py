@@ -17,7 +17,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
-from zenml.models.page_model import Page
+from zenml.models import Page
 from zenml.orchestrators import publish_utils
 
 
@@ -128,7 +128,7 @@ def test_updating_the_pipeline_run_status(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.update_run",
     )
 
-    sample_pipeline_run.status = old_status
+    sample_pipeline_run.body.status = old_status
     publish_utils.update_pipeline_run_status(sample_pipeline_run, 1)
 
     if old_status == new_status:

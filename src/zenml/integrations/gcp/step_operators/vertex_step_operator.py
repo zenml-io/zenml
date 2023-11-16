@@ -47,9 +47,7 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -150,7 +148,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -217,7 +215,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             "api_endpoint": self.config.region + VERTEX_ENDPOINT_SUFFIX
         }
         # Initialize client that will be used to create and send requests.
-        # This client only needs to be created once, and can be reused for multiple requests.
+        # This client only needs to be created once, and can be reused for
+        # multiple requests.
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )

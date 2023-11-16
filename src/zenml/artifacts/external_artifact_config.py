@@ -26,7 +26,7 @@ MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
-    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models import ArtifactResponse
 
 
 logger = get_logger(__name__)
@@ -48,7 +48,7 @@ class ExternalArtifactConfiguration(BaseModel):
     model_artifact_pipeline_name: Optional[str] = None
     model_artifact_step_name: Optional[str] = None
 
-    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
+    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponse":
         """Get artifact from pipeline run.
 
         Returns:
@@ -62,7 +62,9 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         response = None
-        pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
+        pipeline = client.get_pipeline(
+            self.pipeline_name  # type:ignore[arg-type]
+        )
         for artifact in pipeline.last_successful_run.artifacts:
             if artifact.name == self.artifact_name:
                 response = artifact
@@ -79,7 +81,7 @@ class ExternalArtifactConfiguration(BaseModel):
 
     def _get_artifact_from_model(
         self, model_version: Optional["ModelVersion"] = None
-    ) -> "ArtifactResponseModel":
+    ) -> "ArtifactResponse":
         """Get artifact from Model Control Plane.
 
         Args:

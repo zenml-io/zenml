@@ -112,7 +112,6 @@ else:
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
 
-
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
 # Analytics constants
@@ -203,6 +202,7 @@ GRAPH = "/graph"
 STEPS = "/steps"
 LOGS = "/logs"
 ARTIFACTS = "/artifacts"
+ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 COMPONENT_TYPES = "/component-types"
 DEACTIVATE = "/deactivate"
 EMAIL_ANALYTICS = "/email-opt-in"
@@ -214,6 +214,7 @@ GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
 VISUALIZE = "/visualize"
 CODE_REPOSITORIES = "/code_repositories"
+CODE_REFERENCES = "/code_references"
 SERVICE_CONNECTORS = "/service_connectors"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
@@ -258,7 +259,6 @@ METADATA_ORCHESTRATOR_URL = "orchestrator_url"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
 
-
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"
 
@@ -294,6 +294,11 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "mlops_platform",
     "step_operator",
 ]
+
+# Parameters for internal ZenML Models
+TEXT_FIELD_MAX_LENGTH = 65535
+STR_FIELD_MAX_LENGTH = 255
+MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"

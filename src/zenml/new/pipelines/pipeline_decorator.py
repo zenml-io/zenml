@@ -66,25 +66,30 @@ def pipeline(
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
-    Args:
-        _func: The decorated function.
-        name: The name of the pipeline. If left empty, the name of the
-            decorated function will be used as a fallback.
-        enable_cache: Whether to use caching or not.
-        enable_artifact_metadata: Whether to enable artifact metadata or not.
-        enable_step_logs: If step logs should be enabled for this pipeline.
-        settings: Settings for this pipeline.
-        extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be a
-            function with a single argument of type `BaseException`, or a source
-            path to such a function (e.g. `module.my_function`).
-        on_success: Callback function in event of success of the step. Can be a
-            function with no arguments, or a source path to such a function
-            (e.g. `module.my_function`).
-        model_version: configuration of the model version in the Model Control Plane.
+        Args:
+            _func: The decorated function.
+            name: The name of the pipeline. If left empty, the name of the
+                decorated function will be used as a fallback.
+            enable_cache: Whether to use caching or not.
+            enable_artifact_metadata: Whether to enable artifact metadata or not.
+            enable_step_logs: If step logs should be enabled for this pipeline.
+            settings: Settings for this pipeline.
+            extra: Extra configurations for this pipeline.
+            on_failure: Callback function in event of failure of the step. Can be a
+                function with a single argument of type `BaseException`, or a source
+                path to such a function (e.g. `module.my_function`).
+            on_success: Callback function in event of success of the step. Can be a
+                function with no arguments, or a source path to such a function
+                (e.g. `module.my_function`).
+    <<<<<<< HEAD
+            model_version: configuration of the model version in the Model Control Plane.
+    =======
+            model_config: Model(Version) configuration for this step as
+                `ModelConfig` instance.
+    >>>>>>> develop
 
-    Returns:
-        A pipeline instance.
+        Returns:
+            A pipeline instance.
     """
 
     def inner_decorator(func: "F") -> "Pipeline":

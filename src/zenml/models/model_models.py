@@ -29,23 +29,26 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
+from zenml.constants import (
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.enums import ModelStages
 from zenml.logger import get_logger
-from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.model_base_model import ModelBaseModel
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.model.model_version import ModelVersion
+    from zenml.models.v2.core.artifact import ArtifactResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -70,7 +73,7 @@ class ModelVersionBaseModel(BaseModel):
     )
 
 
-class ModelScopedFilterModel(WorkspaceScopedFilterModel):
+class ModelScopedFilterModel(WorkspaceScopedFilter):
     """Base filter model inside Model Scope."""
 
     _model_id: UUID = PrivateAttr(None)
@@ -241,11 +244,11 @@ class ModelVersionResponseModel(
         return mv
 
     @property
-    def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def model_artifacts(self) -> Dict[str, Dict[str, ArtifactResponse]]:
         """Get all model artifacts linked to this model version.
 
         Returns:
-            Dictionary of model artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of model artifacts with versions as Dict[str, Dict[str, ArtifactResponse]]
         """
         from zenml.client import Client
 
@@ -258,11 +261,11 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def data_artifacts(self) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    def data_artifacts(self) -> Dict[str, Dict[str, ArtifactResponse]]:
         """Get all data artifacts linked to this model version.
 
         Returns:
-            Dictionary of data artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of data artifacts with versions as Dict[str, Dict[str, ArtifactResponse]]
         """
         from zenml.client import Client
 
@@ -277,11 +280,11 @@ class ModelVersionResponseModel(
     @property
     def endpoint_artifacts(
         self,
-    ) -> Dict[str, Dict[str, ArtifactResponseModel]]:
+    ) -> Dict[str, Dict[str, ArtifactResponse]]:
         """Get all endpoint artifacts linked to this model version.
 
         Returns:
-            Dictionary of endpoint artifacts with versions as Dict[str, Dict[str, ArtifactResponseModel]]
+            Dictionary of endpoint artifacts with versions as Dict[str, Dict[str, ArtifactResponse]]
         """
         from zenml.client import Client
 
@@ -294,7 +297,7 @@ class ModelVersionResponseModel(
         }
 
     @property
-    def pipeline_runs(self) -> Dict[str, PipelineRunResponseModel]:
+    def pipeline_runs(self) -> Dict[str, "PipelineRunResponse"]:
         """Get all pipeline runs linked to this version.
 
         Returns:
@@ -314,7 +317,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the artifact linked to this model version given type.
 
         Args:
@@ -364,7 +367,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -386,7 +389,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -408,7 +411,7 @@ class ModelVersionResponseModel(
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
-    ) -> Optional[ArtifactResponseModel]:
+    ) -> Optional["ArtifactResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
@@ -424,7 +427,7 @@ class ModelVersionResponseModel(
             self.endpoint_artifact_ids, name, version, pipeline_name, step_name
         )
 
-    def get_pipeline_run(self, name: str) -> PipelineRunResponseModel:
+    def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
         """Get pipeline run linked to this version.
 
         Args:
@@ -444,7 +447,8 @@ class ModelVersionResponseModel(
 
         Args:
             stage: the target stage for model version.
-            force: whether to force archiving of current model version in target stage or raise.
+            force: whether to force archiving of current model version in
+                target stage or raise.
 
         Returns:
             Updated Model Version object.
@@ -502,8 +506,8 @@ class ModelVersionUpdateModel(BaseModel):
         description="Target model version stage to be set", default=None
     )
     force: bool = Field(
-        description="Whether existing model version in target stage should be silently archived "
-        "or an error should be raised.",
+        description="Whether existing model version in target stage should be "
+        "silently archived or an error should be raised.",
         default=False,
     )
     name: Optional[str] = Field(
@@ -693,7 +697,7 @@ class ModelResponseModel(
         return ret
 
 
-class ModelFilterModel(WorkspaceScopedFilterModel):
+class ModelFilterModel(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(
@@ -708,7 +712,7 @@ class ModelFilterModel(WorkspaceScopedFilterModel):
     )
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "workspace_id",
         "user_id",
     ]

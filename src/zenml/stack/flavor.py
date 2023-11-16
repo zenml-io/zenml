@@ -18,8 +18,8 @@ from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import (
-    FlavorRequestModel,
-    FlavorResponseModel,
+    FlavorRequest,
+    FlavorResponse,
     ServiceConnectorRequirements,
 )
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
@@ -120,7 +120,7 @@ class Flavor:
         return None
 
     @classmethod
-    def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
+    def from_model(cls, flavor_model: FlavorResponse) -> "Flavor":
         """Loads a flavor from a model.
 
         Args:
@@ -137,7 +137,7 @@ class Flavor:
         integration: Optional[str] = None,
         scoped_by_workspace: bool = True,
         is_custom: bool = True,
-    ) -> FlavorRequestModel:
+    ) -> FlavorRequest:
         """Converts a flavor to a model.
 
         Args:
@@ -169,7 +169,7 @@ class Flavor:
             if connector_requirements
             else None
         )
-        model = FlavorRequestModel(
+        model = FlavorRequest(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
             name=self.name,

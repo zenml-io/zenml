@@ -12,78 +12,74 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import uuid
 from contextlib import ExitStack as does_not_raise
-from uuid import UUID
 
 import pytest
 from pydantic import ValidationError
 
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
-from zenml.models.artifact_models import ArtifactBaseModel
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models import ArtifactRequest
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
 
-def test_artifact_base_model_fails_with_long_name():
+def test_artifact_request_model_fails_with_long_name():
     """Test that the artifact base model fails with long strings."""
     with pytest.raises(ValidationError):
         long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactBaseModel(
+        ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name=long_name,
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
             uri="abc",
             materializer="abc",
             data_type="abc",
-            is_cached=False,
         )
 
 
-def test_artifact_base_model_fails_with_long_uri():
+def test_artifact_request_model_fails_with_long_uri():
     """Test that the artifact base model fails with long URIs."""
     long_uri = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        ArtifactBaseModel(
+        ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
             uri=long_uri,
             materializer="abc",
             data_type="abc",
-            is_cached=False,
         )
 
 
-def test_artifact_base_model_works_with_long_materializer():
+def test_artifact_request_model_works_with_long_materializer():
     """Test that the artifact base model works with long materializer strings."""
     with does_not_raise():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactBaseModel(
+        ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
             uri="abc",
             materializer=long_materializer,
             data_type="abc",
-            is_cached=False,
         )
 
 
-def test_artifact_base_model_works_with_long_data_type():
+def test_artifact_request_model_works_with_long_data_type():
     """Test that the artifact base model works with long data type strings."""
     with does_not_raise():
         long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactBaseModel(
+        ArtifactRequest(
+            user=uuid.uuid4(),
+            workspace=uuid.uuid4(),
             name="abc",
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
             uri="abc",
             materializer="abc",
             data_type=long_data_type,
-            is_cached=False,
         )

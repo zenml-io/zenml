@@ -19,13 +19,11 @@ from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models.pipeline_run_models import (
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-)
-from zenml.models.step_run_models import (
-    StepRunResponseModel,
-    StepRunUpdateModel,
+from zenml.models import (
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    StepRunResponse,
+    StepRunUpdate,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -37,7 +35,7 @@ if TYPE_CHECKING:
 
 def publish_successful_step_run(
     step_run_id: "UUID", output_artifact_ids: Dict[str, "UUID"]
-) -> "StepRunResponseModel":
+) -> "StepRunResponse":
     """Publishes a successful step run.
 
     Args:
@@ -49,7 +47,7 @@ def publish_successful_step_run(
     """
     return Client().zen_store.update_run_step(
         step_run_id=step_run_id,
-        step_run_update=StepRunUpdateModel(
+        step_run_update=StepRunUpdate(
             status=ExecutionStatus.COMPLETED,
             end_time=datetime.utcnow(),
             outputs=output_artifact_ids,
@@ -57,7 +55,7 @@ def publish_successful_step_run(
     )
 
 
-def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponseModel":
+def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     """Publishes a failed step run.
 
     Args:
@@ -68,7 +66,7 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponseModel":
     """
     return Client().zen_store.update_run_step(
         step_run_id=step_run_id,
-        step_run_update=StepRunUpdateModel(
+        step_run_update=StepRunUpdate(
             status=ExecutionStatus.FAILED,
             end_time=datetime.utcnow(),
         ),
@@ -77,7 +75,7 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponseModel":
 
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
-) -> "PipelineRunResponseModel":
+) -> "PipelineRunResponse":
     """Publishes a failed pipeline run.
 
     Args:
@@ -88,7 +86,7 @@ def publish_failed_pipeline_run(
     """
     return Client().zen_store.update_run(
         run_id=pipeline_run_id,
-        run_update=PipelineRunUpdateModel(
+        run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
             end_time=datetime.utcnow(),
         ),
@@ -119,7 +117,7 @@ def get_pipeline_run_status(
 
 
 def update_pipeline_run_status(
-    pipeline_run: PipelineRunResponseModel, num_steps: int
+    pipeline_run: "PipelineRunResponse", num_steps: int
 ) -> None:
     """Updates the status of the current pipeline run.
 
@@ -138,7 +136,7 @@ def update_pipeline_run_status(
     )
 
     if new_status != pipeline_run.status:
-        run_update = PipelineRunUpdateModel(status=new_status)
+        run_update = PipelineRunUpdate(status=new_status)
         if new_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
             run_update.end_time = datetime.utcnow()
 
