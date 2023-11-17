@@ -415,7 +415,7 @@ def get_resource_for_model(model: AnyResponseModel) -> Optional[Resource]:
 
 def get_surrogate_permission_model_for_model(
     model: AnyResponseModel, action: str
-) -> Union[BaseResponse, BaseResponseModel]:
+) -> Union[BaseResponse[Any, Any], BaseResponseModel]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
