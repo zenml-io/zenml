@@ -3038,6 +3038,39 @@ class TestModelVersionArtifactLinks:
                     )
                 )
 
+    def test_link_create_single_version_of_same_output_name_from_different_steps(
+        self,
+    ):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    artifact=artifacts[0].id,
+                )
+            )
+            zs.create_model_version_artifact_link(
+                ModelVersionArtifactRequestModel(
+                    user=model_version.user.id,
+                    workspace=model_version.workspace.id,
+                    model=model_version.model.id,
+                    model_version=model_version.id,
+                    artifact=artifacts[1].id,
+                )
+            )
+
+            links = zs.list_model_version_artifact_links(
+                model_name_or_id=model_version.model.id,
+                model_version_name_or_id=model_version.id,
+            )
+            assert len(links) == 2
+
     def test_link_delete_found(self):
         with ModelVersionContext(True, create_artifacts=1) as (
             model_version,

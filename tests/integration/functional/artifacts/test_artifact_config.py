@@ -146,6 +146,48 @@ def test_link_multiple_named_outputs():
         assert al.size == 3
 
 
+@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+def multi_named_output_step_not_tracked() -> (
+    Tuple[
+        Annotated[int, "1"],
+        Annotated[int, "2"],
+        Annotated[int, "3"],
+    ]
+):
+    """Here links would be implicitly created based on step ModelConfig."""
+    return 1, 2, 3
+
+
+@pipeline(enable_cache=False)
+def multi_named_pipeline_not_tracked():
+    """Here links would be implicitly created based on step ModelConfig."""
+    multi_named_output_step_not_tracked()
+
+
+def test_link_multiple_named_outputs_without_links():
+    """Test multi output step implicit linking based on step context."""
+    with model_killer():
+        client = Client()
+        user = client.active_user.id
+        ws = client.active_workspace.id
+
+        multi_named_pipeline_not_tracked()
+
+        model = client.get_model(MODEL_NAME)
+        assert model.name == MODEL_NAME
+        mv = client.get_model_version(MODEL_NAME)
+        assert mv.name == "1"
+        artifact_links = client.list_model_version_artifact_links(
+            model_name_or_id=model.id,
+            model_version_name_or_number_or_id=mv.id,
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                user_id=user,
+                workspace_id=ws,
+            ),
+        )
+        assert artifact_links.size == 3
+
+
 @step
 def multi_named_output_step_from_self() -> (
     Tuple[
