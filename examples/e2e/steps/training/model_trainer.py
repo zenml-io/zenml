@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 import mlflow
 import pandas as pd
 from sklearn.base import ClassifierMixin

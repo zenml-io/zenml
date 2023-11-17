@@ -18,8 +18,8 @@ from numpy import ndarray
 from typing_extensions import Annotated
 
 from zenml.model import (
-    ArtifactConfig,
-    DeploymentArtifactConfig,
+    DataArtifactConfig,
+    EndpointArtifactConfig,
     ModelArtifactConfig,
 )
 from zenml.orchestrators.step_runner import OutputSignature
@@ -84,7 +84,7 @@ def func_with_multiple_annotated_outputs() -> (
 
 
 def func_with_multiple_annotated_outputs_and_artifact_config() -> (
-    Tuple[Annotated[int, "custom_output", ArtifactConfig()], int]
+    Tuple[Annotated[int, "custom_output", DataArtifactConfig()], int]
 ):
     return 1, 2
 
@@ -103,7 +103,7 @@ def func_with_multiple_annotated_outputs_and_model_artifact_config() -> (
 
 
 def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
-    Tuple[Annotated[int, "custom_output", DeploymentArtifactConfig()], int]
+    Tuple[Annotated[int, "custom_output", EndpointArtifactConfig()], int]
 ):
     return 1, 2
 
@@ -178,7 +178,8 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             func_with_multiple_annotated_outputs_and_artifact_config,
             {
                 "custom_output": OutputSignature(
-                    resolved_annotation=int, artifact_config=ArtifactConfig()
+                    resolved_annotation=int,
+                    artifact_config=DataArtifactConfig(),
                 ),
                 "output_1": OutputSignature(
                     resolved_annotation=int, artifact_config=None
@@ -204,7 +205,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
             {
                 "custom_output": OutputSignature(
                     resolved_annotation=int,
-                    artifact_config=DeploymentArtifactConfig(),
+                    artifact_config=EndpointArtifactConfig(),
                 ),
                 "output_1": OutputSignature(
                     resolved_annotation=int, artifact_config=None

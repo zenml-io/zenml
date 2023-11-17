@@ -31,12 +31,12 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    Page,
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )

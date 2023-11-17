@@ -19,14 +19,18 @@ from uuid import UUID
 
 from sqlmodel import Relationship, SQLModel
 
-from zenml.models import StackResponseModel
+from zenml.models import (
+    StackResponse,
+    StackResponseBody,
+    StackResponseMetadata,
+    StackUpdate,
+)
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.models.stack_models import StackUpdateModel
     from zenml.zen_stores.schemas import (
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -44,7 +48,7 @@ class StackCompositionSchema(SQLModel, table=True):
 
     stack_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="stack",  # TODO: how to reference `StackSchema.__tablename__`?
+        target="stack",
         source_column="stack_id",
         target_column="id",
         ondelete="CASCADE",
@@ -53,7 +57,7 @@ class StackCompositionSchema(SQLModel, table=True):
     )
     component_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="stack_component",  # TODO: how to reference `StackComponentSchema.__tablename__`?
+        target="stack_component",
         source_column="component_id",
         target_column="id",
         ondelete="CASCADE",
@@ -99,13 +103,13 @@ class StackSchema(ShareableSchema, table=True):
 
     def update(
         self,
-        stack_update: "StackUpdateModel",
+        stack_update: "StackUpdate",
         components: List["StackComponentSchema"],
     ) -> "StackSchema":
         """Updates a stack schema with a stack update model.
 
         Args:
-            stack_update: `StackUpdateModel` to update the stack with.
+            stack_update: `StackUpdate` to update the stack with.
             components: List of `StackComponentSchema` to update the stack with.
 
         Returns:
@@ -127,20 +131,33 @@ class StackSchema(ShareableSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> "StackResponseModel":
+    def to_model(self, hydrate: bool = False) -> "StackResponse":
         """Converts the schema to a model.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The converted model.
         """
-        return StackResponseModel(
-            id=self.id,
-            name=self.name,
-            stack_spec_path=self.stack_spec_path,
-            user=self.user.to_model(True) if self.user else None,
-            workspace=self.workspace.to_model(),
+        body = StackResponseBody(
+            user=self.user.to_model() if self.user else None,
             is_shared=self.is_shared,
-            components={c.type: [c.to_model()] for c in self.components},
             created=self.created,
             updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = StackResponseMetadata(
+                workspace=self.workspace.to_model(),
+                components={c.type: [c.to_model()] for c in self.components},
+                stack_spec_path=self.stack_spec_path,
+            )
+
+        return StackResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )
