@@ -19,7 +19,6 @@ import pytest
 import yaml
 
 from zenml import get_step_context, pipeline, step
-from zenml.exceptions import StepInterfaceError
 from zenml.model import ModelVersion
 
 
@@ -248,8 +247,36 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
     assert p.configuration.parameters == {"foo": "bar"}
 
     with pytest.raises(
-        StepInterfaceError,
+        RuntimeError,
         match="Configured parameter for the step `assert_input_params` "
         "conflict with parameter passed in runtime",
     ):
         p()
+
+
+def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_with_pipeline_parameters(
+    clean_workspace, tmp_path
+):
+    """Test that the pipeline will fail with error, if configured with parameters
+    from a yaml file for the steps and same parameters are passed over in code.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = dict(
+        parameters={"foo": "bar"},
+        enable_cache=False,
+    )
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=True)
+    def assert_input_params_pipe(foo: str):
+        assert_input_params(bar=foo)
+
+    p = assert_input_params_pipe.with_options(config_path=str(config_path))
+    assert p.configuration.parameters == {"foo": "bar"}
+
+    with pytest.raises(
+        RuntimeError,
+        match="Configured parameter for the pipeline "
+        "`assert_input_params_pipe` conflict with parameter passed in runtime",
+    ):
+        p(foo="foo")

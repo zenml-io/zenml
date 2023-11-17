@@ -903,6 +903,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             StepInterfaceError: If the step requires no function parameters but
                 parameters were configured.
+            RuntimeError: If the step has parameters configured differently in
+                configuration file and code.
         """
         if not parameters:
             return
@@ -945,7 +947,7 @@ def pipeline_():
 ```
 To avoid this consider setting step parameters only in one place (config or code).
 """
-            raise StepInterfaceError(msg)
+            raise RuntimeError(msg)
 
     def _validate_outputs(
         self, outputs: Mapping[str, "PartialArtifactConfiguration"]

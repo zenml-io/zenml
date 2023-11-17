@@ -431,22 +431,46 @@ class Pipeline:
         Args:
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
+
+        Raises:
+            RuntimeError: If the pipeline has parameters configured differently in
+                configuration file and code.
         """
         # Clear existing parameters and invocations
         self._parameters = {}
         self._invocations = {}
 
+        conflicting_parameters = {}
         parameters_ = (self.configuration.parameters or {}).copy()
         if from_file_ := self._from_config_file.get("parameters", None):
             parameters_ = dict_utils.recursive_update(parameters_, from_file_)
         if parameters_:
             for k, v_runtime in kwargs.items():
                 if v_config := parameters_.get(k, None):
-                    logger.warning(
-                        f"Pipeline parameter `{k}` set in your configuration file is "
-                        "overridden by value set in the code. The value in configuration "
-                        f"file was `{v_config}`, value to be used from the code is `{v_runtime}`."
-                    )
+                    conflicting_parameters[k] = (v_config, v_runtime)
+            if conflicting_parameters:
+                is_plural = "s" if len(conflicting_parameters) > 1 else ""
+                msg = f"Configured parameter{is_plural} for the pipeline `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+                for key, values in conflicting_parameters.items():
+                    msg += f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
+                msg += """This happens, if you define values for pipeline parameters in configuration file and pass same parameters from the code. Example:
+```
+# config.yaml
+    parameters:
+        param_name: value1
+            
+            
+# pipeline.py
+@pipeline
+def pipeline_(param_name: str):
+    step_name()
+
+if __name__=="__main__":
+    pipeline_(param_name="value2")
+```
+To avoid this consider setting pipeline parameters only in one place (config or code).
+"""
+                raise RuntimeError(msg)
             for k, v_config in parameters_.items():
                 if k not in kwargs:
                     kwargs[k] = v_config
