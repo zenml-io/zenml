@@ -166,10 +166,13 @@ if __name__=="__main__":
     my_pipeline.with_options(config_paths="config.yaml")()
 ```
 {% hint style="warning" %}
-There might be conflicting settings for step inputs, while working with YAML configuration files. Such situation happens when you define a step parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
+There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
 Example of such a conflict:
 ```yaml
 # config.yaml
+parameters:
+    some_param: 24
+
 steps:
   my_step:
     parameters:
@@ -182,10 +185,15 @@ def my_step(input_1: int, input_2: int) -> None:
     pass
 
 @pipeline
-def my_pipeline():
+def my_pipeline(some_param: int):
     # here an error will be raised since `input_2` is
     # `42` in config, but `43` was provided in the code
     my_step(input_1=42, input_2=43)
+
+if __name__=="__main__":
+    # here an error will be raised since `some_param` is
+    # `24` in config, but `23` was provided in the code
+    my_pipeline(23)
 ```
 {% endhint %}
 
