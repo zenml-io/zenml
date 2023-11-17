@@ -134,6 +134,8 @@ def my_pipeline():
 
 Parameters of steps and pipelines can also be passed in using YAML configuration files. Following configuration file and python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
 ```yaml
+# config.yaml
+
 # these are parameters of the pipeline
 parameters:
     environment: production
@@ -159,6 +161,9 @@ def my_pipeline(environment: str):
     # We supply the value of `input_1` as an artifact and
     # `input_2` is coming from the configuration file
     my_step(input_1=int_artifact)
+
+if __name__=="__main__":
+    my_pipeline.with_options(config_paths="config.yaml")()
 ```
 {% hint style="warning" %}
 There might be conflicting settings for step inputs, while working with YAML configuration files. Such situation happens when you define a step parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
