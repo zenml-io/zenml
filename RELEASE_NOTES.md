@@ -1,5 +1,12 @@
 <!-- markdown-link-check-disable -->
 
+# 0.43.1
+
+Backports some important fixes that have been introduced in more recent versions
+of ZenML to the 0.43.x release line.
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.43.0...0.43.1
+
 # 0.43.0
 
 This release brings limited support for Python 3.11, 

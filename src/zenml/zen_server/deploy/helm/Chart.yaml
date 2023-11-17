@@ -10,4 +10,4 @@ home: https://zenml.io
 sources:
 - https://github.com/zenml-io/zenml
 icon: https://raw.githubusercontent.com/zenml-io/zenml/main/docs/book/.gitbook/assets/zenml_logo.png
-appVersion: "0.43.0"
+appVersion: "0.43.1"
