@@ -130,13 +130,22 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
         query = super().apply_filter(query=query, table=table)
 
         if self._rbac_allowed_model_ids is not None:
-            if self._rbac_user_id and hasattr(table, "user"):
-                query = query.where(
-                    or_(
-                        getattr(table, "model_id").in_(self._rbac_allowed_model_ids),  # type: ignore[attr-defined]
-                        getattr(table, "user") == self._rbac_user_id,
+            expressions = [
+                getattr(table, "model_id").in_(self._rbac_allowed_model_ids)
+            ]
+
+            if hasattr(table, "user_id"):
+                # Unowned entities are considered server-owned and can be seen
+                # by anyone
+                expressions.append(getattr(table, "user_id").is_(None))
+
+                if self._rbac_user_id:
+                    # The authenticated user owns this entity
+                    expressions.append(
+                        getattr(table, "user_id") == self._rbac_user_id
                     )
-                )
+
+            query = query.where(or_(*expressions))
 
         if self._model_id:
             query = query.where(getattr(table, "model_id") == self._model_id)

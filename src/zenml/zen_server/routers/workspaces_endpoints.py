@@ -1265,7 +1265,7 @@ def create_model_version(
 @handle_exceptions
 def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
-    model_version_id: Union[str, UUID],
+    model_version_id: UUID,
     model_version_artifact_link: ModelVersionArtifactRequestModel,
     auth_context: AuthContext = Security(authorize),
 ) -> ModelVersionArtifactResponseModel:
@@ -1273,7 +1273,7 @@ def create_model_version_artifact_link(
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
-        model_version_id: Name or ID of the model version.
+        model_version_id: ID of the model version.
         model_version_artifact_link: The model version to artifact link to create.
         auth_context: Authentication context.
 
@@ -1287,7 +1287,6 @@ def create_model_version_artifact_link(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     if str(model_version_id) != str(model_version_artifact_link.model_version):
-        breakpoint()
         raise IllegalOperationError(
             f"The model version id in your path `{model_version_id}` does not "
             f"match the model version specified in the request model "
@@ -1306,9 +1305,7 @@ def create_model_version_artifact_link(
             "is not supported."
         )
 
-    model_version = zen_store().get_model_version(
-        model_name_or_id, model_version_name_or_id
-    )
+    model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
     mv = zen_store().create_model_version_artifact_link(
@@ -1409,9 +1406,7 @@ def create_model_version_pipeline_run_link(
             "is not supported."
         )
 
-    model_version = zen_store().get_model_version(
-        model_name_or_id, model_version_name_or_id
-    )
+    model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
     mv = zen_store().create_model_version_pipeline_run_link(
