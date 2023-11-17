@@ -81,8 +81,7 @@ jobs:
 
       - name: Check-out fresh E2E template
         run: |
-          git rm -r --cached examples/e2e
-          rm -rf examples/e2e
+          git rm -r examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
           bash scripts/format.sh
