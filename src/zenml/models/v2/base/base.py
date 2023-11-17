@@ -22,7 +22,7 @@ from pydantic.generics import GenericModel
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
-from zenml.exceptions import HydrationError
+from zenml.exceptions import HydrationError, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
 
@@ -104,7 +104,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     id: UUID = Field(title="The unique resource id.")
 
     # Body and metadata pair
-    body: "AnyBody" = Field(title="The body of the resource.")
+    body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
     )
@@ -255,7 +255,17 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Returns:
             The body field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access the
+                entity represented by this response.
         """
+        if not self.body:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
         return self.body
 
     def get_metadata(self) -> "AnyMetadata":
@@ -263,7 +273,17 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Returns:
             The metadata field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access this
+                entity represented by this response.
         """
+        if not self.body:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
         if self.metadata is None:
             # If the metadata is not there, check the class first.
             metadata_type = self.__fields__["metadata"].type_
@@ -302,7 +322,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             the value of the property.
         """
-        return self.body.created
+        return self.get_body().created
 
     @property
     def updated(self) -> Optional[datetime]:
@@ -311,4 +331,4 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             the value of the property.
         """
-        return self.body.updated
+        return self.get_body().updated

@@ -21,7 +21,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.base_models import server_owned_request_model
+from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,

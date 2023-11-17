@@ -23,7 +23,7 @@ from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.utils import server_config
 
 if TYPE_CHECKING:
-    from zenml.models import UserResponseModel
+    from zenml.models import UserResponse
 
 
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
@@ -131,7 +131,7 @@ class ZenMLCloudRBAC(RBACInterface):
         self._session: Optional[requests.Session] = None
 
     def check_permissions(
-        self, user: "UserResponseModel", resources: Set[Resource], action: str
+        self, user: "UserResponse", resources: Set[Resource], action: str
     ) -> Dict[Resource, bool]:
         """Checks if a user has permissions to perform an action on resources.
 
@@ -164,7 +164,7 @@ class ZenMLCloudRBAC(RBACInterface):
         return {_convert_from_cloud_resource(k): v for k, v in value.items()}
 
     def list_allowed_resource_ids(
-        self, user: "UserResponseModel", resource: Resource, action: str
+        self, user: "UserResponse", resource: Resource, action: str
     ) -> Tuple[bool, List[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 

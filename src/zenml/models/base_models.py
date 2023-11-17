@@ -269,19 +269,3 @@ def update_model(_cls: Type[T]) -> Type[T]:
 
     return _cls
 
-
-def server_owned_request_model(_cls: Type[T]) -> Type[T]:
-    """Convert a request model to a model which does not require a user ID.
-
-    Args:
-        _cls: The class to decorate
-
-    Returns:
-        The decorated class.
-    """
-    if user_field := _cls.__fields__.get("user", None):
-        user_field.required = False
-        user_field.allow_none = True
-        user_field.default = None
-
-    return _cls

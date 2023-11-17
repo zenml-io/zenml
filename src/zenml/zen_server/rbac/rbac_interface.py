@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 from zenml.zen_server.rbac.models import Resource
 
 if TYPE_CHECKING:
-    from zenml.models import UserResponseModel
+    from zenml.models import UserResponse
 
 
 class RBACInterface(ABC):
@@ -27,7 +27,7 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def check_permissions(
-        self, user: "UserResponseModel", resources: Set[Resource], action: str
+        self, user: "UserResponse", resources: Set[Resource], action: str
     ) -> Dict[Resource, bool]:
         """Checks if a user has permissions to perform an action on resources.
 
@@ -43,7 +43,7 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def list_allowed_resource_ids(
-        self, user: "UserResponseModel", resource: Resource, action: str
+        self, user: "UserResponse", resource: Resource, action: str
     ) -> Tuple[bool, List[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 

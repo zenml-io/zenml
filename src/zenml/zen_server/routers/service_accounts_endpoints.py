@@ -25,7 +25,6 @@ from zenml.constants import (
     SERVICE_ACCOUNTS,
     VERSION_1,
 )
-from zenml.enums import PermissionType
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
@@ -69,7 +68,7 @@ router = APIRouter(
 @handle_exceptions
 def create_service_account(
     service_account: ServiceAccountRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ServiceAccountResponse:
     """Creates a service account.
 
@@ -93,7 +92,7 @@ def create_service_account(
 @handle_exceptions
 def get_service_account(
     service_account_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
     hydrate: bool = True,
 ) -> ServiceAccountResponse:
     """Returns a specific service account.
@@ -123,7 +122,7 @@ def list_service_accounts(
         make_dependable(ServiceAccountFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ServiceAccountResponse]:
     """Returns a list of service accounts.
 
@@ -154,7 +153,7 @@ def list_service_accounts(
 def update_service_account(
     service_account_name_or_id: Union[str, UUID],
     service_account_update: ServiceAccountUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ServiceAccountResponse:
     """Updates a specific service account.
 
@@ -178,7 +177,7 @@ def update_service_account(
 @handle_exceptions
 def delete_service_account(
     service_account_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a specific service account.
 
@@ -202,7 +201,7 @@ def delete_service_account(
 def create_api_key(
     service_account_id: UUID,
     api_key: APIKeyRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Creates an API key for a service account.
 
@@ -231,7 +230,7 @@ def get_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Returns the requested API key.
 
@@ -263,7 +262,7 @@ def list_api_keys(
     service_account_id: UUID,
     filter_model: APIKeyFilter = Depends(make_dependable(APIKeyFilter)),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> Page[APIKeyResponse]:
     """List API keys associated with a service account.
 
@@ -296,7 +295,7 @@ def update_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     api_key_update: APIKeyUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Updates an API key for a service account.
 
@@ -329,7 +328,7 @@ def rotate_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     rotate_request: APIKeyRotateRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Rotate an API key.
 
@@ -357,7 +356,7 @@ def rotate_api_key(
 def delete_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes an API key.
 

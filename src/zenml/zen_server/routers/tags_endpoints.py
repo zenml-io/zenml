@@ -23,7 +23,6 @@ from zenml.constants import (
     TAGS,
     VERSION_1,
 )
-from zenml.enums import PermissionType
 from zenml.models import (
     Page,
     TagFilterModel,
@@ -58,7 +57,7 @@ router = APIRouter(
 @handle_exceptions
 def create_tag(
     tag: TagRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Create a new tag.
 
@@ -81,7 +80,7 @@ def list_tags(
     tag_filter_model: TagFilterModel = Depends(
         make_dependable(TagFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[TagResponseModel]:
     """Get tags according to query filters.
 
@@ -106,7 +105,7 @@ def list_tags(
 @handle_exceptions
 def get_tag(
     tag_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Get a tag by name or ID.
 
@@ -128,7 +127,7 @@ def get_tag(
 def update_tag(
     tag_id: UUID,
     tag_update_model: TagUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Updates a tag.
 
@@ -152,7 +151,7 @@ def update_tag(
 @handle_exceptions
 def delete_tag(
     tag_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a tag by name or ID.
 
