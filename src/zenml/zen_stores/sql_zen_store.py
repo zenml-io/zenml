@@ -7636,7 +7636,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: specified ID not found.
-            RuntimeError: on resource type mismatch.
         """
         with Session(self.engine) as session:
             tag_model = self._get_tag_model_schema(
