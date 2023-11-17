@@ -107,7 +107,7 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
         Returns:
             The step that produced this artifact.
         """
-        from zenml.utils.artifact_utils import get_producer_step_of_artifact
+        from zenml.artifacts.utils import get_producer_step_of_artifact
 
         return get_producer_step_of_artifact(self)
 
@@ -126,9 +126,9 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
         Returns:
             The materialized data.
         """
-        from zenml.utils.artifact_utils import load_artifact
+        from zenml.artifacts.utils import load_artifact_from_model
 
-        return load_artifact(self)
+        return load_artifact_from_model(self)
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.

@@ -42,6 +42,10 @@ Materializers are designed to be extensible and customizable, allowing you to de
 
 When a pipeline runs, ZenML uses the appropriate materializers to save and load artifacts using the ZenML `fileio` system (built to work across multiple artifact stores). This not only simplifies the process of working with different data formats and storage systems but also enables artifact caching and lineage tracking. You can see an example of a default materializer (the `numpy` materializer) in action [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy_materializer.py).
 
+## Manual Artifact Saving and Loading
+
+Whenever you run a ZenML pipeline, all outputs of your steps are automatically saved as artifacts. However, for certain, specialized use cases, you might need other ways of saving and loading data, which are explained [here](./artifact-saving-loading.md).
+
 ## Visualizing Artifacts
 
 ![Visualizing artifacts](../../../.gitbook/assets/intro_dashboard_details.png)

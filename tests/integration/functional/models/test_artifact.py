@@ -24,12 +24,12 @@ from tests.integration.functional.conftest import (
 )
 from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.run_metadata_models import RunMetadataResponseModel
 from zenml.models.visualization_models import VisualizationModel
 from zenml.pipelines.base_pipeline import BasePipeline
-from zenml.utils.artifact_utils import load_artifact_visualization
 
 if TYPE_CHECKING:
     from zenml.client import Client

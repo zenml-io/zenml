@@ -46,6 +46,42 @@ def upgrade() -> None:
             existing_type=sqlmodel.sql.sqltypes.AutoString(),
         )
 
+    # Step Run Input/Output Artifacts Tables
+    with op.batch_alter_table(
+        "step_run_input_artifact", schema=None
+    ) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "type", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
+    with op.batch_alter_table(
+        "step_run_output_artifact", schema=None
+    ) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "type", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
+    op.execute("UPDATE step_run_input_artifact SET type = 'default'")
+    op.execute("UPDATE step_run_output_artifact SET type = 'default'")
+    with op.batch_alter_table(
+        "step_run_input_artifact", schema=None
+    ) as batch_op:
+        batch_op.alter_column(
+            "type",
+            nullable=False,
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+        )
+    with op.batch_alter_table(
+        "step_run_output_artifact", schema=None
+    ) as batch_op:
+        batch_op.alter_column(
+            "type",
+            nullable=False,
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+        )
+
     # Model Version Artifacts and Runs Tables
     with op.batch_alter_table(
         "model_versions_artifacts", schema=None

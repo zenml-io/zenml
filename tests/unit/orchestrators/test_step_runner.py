@@ -48,7 +48,7 @@ def test_running_a_successful_step(
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
     mocker.patch(
-        "zenml.utils.artifact_utils.upload_artifact",
+        "zenml.artifacts.utils.save_artifact",
         return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(
@@ -103,7 +103,7 @@ def test_running_a_failing_step(
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
     mocker.patch(
-        "zenml.utils.artifact_utils.upload_artifact",
+        "zenml.artifacts.utils.save_artifact",
         return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(

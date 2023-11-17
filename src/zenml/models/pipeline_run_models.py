@@ -135,7 +135,7 @@ class PipelineRunResponseModel(
         Returns:
             All output artifacts of this pipeline run (including cached ones).
         """
-        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
 
         return get_artifacts_of_pipeline_run(self)
 
@@ -146,7 +146,7 @@ class PipelineRunResponseModel(
         Returns:
             A list of all artifacts produced during this pipeline run.
         """
-        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
 
         return get_artifacts_of_pipeline_run(self, only_produced=True)
 

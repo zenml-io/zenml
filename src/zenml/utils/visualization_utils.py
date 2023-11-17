@@ -18,10 +18,10 @@ from typing import Optional
 
 from IPython.core.display import HTML, Image, Markdown, display
 
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import VisualizationType
 from zenml.environment import Environment
 from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.utils.artifact_utils import load_artifact_visualization
 
 
 def visualize_artifact(
