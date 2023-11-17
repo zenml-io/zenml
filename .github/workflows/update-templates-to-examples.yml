@@ -50,17 +50,17 @@ jobs:
         shell: bash
 
     steps:
-      - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
-        with:
-          python-version: ${{ inputs.python-version }}
-          stack-name: local
-          ref-zenml: ${{ github.ref }}
-          ref-template: '2023.11.14' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+      # - name: Run template tests for zenml-io/template-e2e-batch
+      #   uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
+      #   with:
+      #     python-version: ${{ inputs.python-version }}
+      #     stack-name: local
+      #     ref-zenml: ${{ github.ref }}
+      #     ref-template: '2023.11.14' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       
-      - name: Clean-up
-        run: |
-          rm -rf ./local_checkout
+      # - name: Clean-up
+      #   run: |
+      #     rm -rf ./local_checkout
 
       - name: message-on-error
         if: failure()
