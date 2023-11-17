@@ -494,9 +494,9 @@ def _import_components(
         component_type = StackComponentType(component_type_str)
         # the k3d recipe outputs a container registry component, though it
         # does not use it. we skip it here.
-        if (
+        if not (
             component_type == StackComponentType.CONTAINER_REGISTRY
-            and provider != "k3d"
+            and provider == "k3d"
         ):
             component_spec_path = os.path.join(
                 stack_spec_dir,
